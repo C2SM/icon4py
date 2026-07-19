@@ -110,7 +110,7 @@ import dataclasses
 import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
-from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import thermo as thermo_fn
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import bin_grid, thermo as thermo_fn
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.constants import AmpsConst
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.index_maps import LiquidPPV
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import AmpsLuts
@@ -196,13 +196,45 @@ def _safe_div(numerator: np.ndarray, denominator: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 
-def _mean_mass_and_active(con: np.ndarray, mass_total: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def _mean_mass_and_active(
+    con: np.ndarray, mass_total: np.ndarray, *, binb_top: float
+) -> tuple[np.ndarray, np.ndarray]:
     """Returns (mean_mass, active) -- `active` is `icond1==0` (bins the
     Fortran actually computes physics for), the logical negation of the
-    Fortran's own `icond1` flag."""
+    Fortran's own `icond1` flag.
+
+    `binb_top` (M2b Task 7 fix, added post-hoc -- NOT part of the literal
+    Fortran guard quoted above, which is a FLOOR only): the liquid bin
+    grid's own largest representable mean-drop mass (`bin_grid.make_bin_
+    grid("liquid", ...).binb[-1]`, ~0.52g for cloudlab's 40-bin grid --
+    already a generous largest-real-raindrop bound). A bin whose `con` is
+    a floating-point-noise-level residual (e.g. ~1e-11 to ~1e-14, well
+    above the bare `1e-30` floor above but physically negligible) paired
+    with an ordinary-magnitude leftover `mass_total` computes an absurd
+    `mean_mass` (observed real-dump values up to ~1.8e5 g) that clears
+    every existing guard and gets treated as a legitimate active bin --
+    `core/coalescence.py`'s own `collector_loop1` port hit this first
+    (fixed there via an analogous `active_collector_base` ceiling, see
+    that module's own "T7" docstring section) and it independently
+    corrupts `core/vapor_deposition.py`'s `icond3` mask too (both consume
+    THIS function's own `active`/`mean_mass` output): a real-dump
+    reproduction (rank=0, TIME_AMPS=0, i=3, j=3) showed a degenerate bin
+    15 (`mean_mass~5.4e6g`) making `vapor_deposition_liquid`'s own
+    multi-bin PDF-remap corrupt an UNRELATED bin 4 with a spurious
+    `rcon~1.9e5` (`#/g`) that does not exist in the real Fortran's own
+    `post` record -- confirmed by isolating the cause: reproducible with
+    BOTH activation and vapor-deposition active (neither alone
+    reproduces it -- an M2a activation<->vapor-deposition interaction,
+    not a collision/breakup issue: disabling collision entirely leaves it
+    unchanged), and eliminated bit-for-bit by capping `mean_mass` here.
+    Applied at THIS single, shared source (rather than duplicating the
+    cap separately in `core/coalescence.py` AND `core/vapor_deposition.py`)
+    so every consumer of `LiquidDiag.mean_mass`/`.active` benefits at
+    once -- see the M2b Task 7 report for the full derivation and the
+    specific real-dump reproduction this closes."""
     valid = (con > 1.0e-30) & (mass_total > 1.0e-30)
     mean_mass = np.where(valid, _safe_div(mass_total, con), 0.0)
-    active = valid & (mean_mass != 0.0)
+    active = valid & (mean_mass != 0.0) & (mean_mass <= binb_top)
     mean_mass = np.where(active, mean_mass, 0.0)
     return mean_mass, active
 
@@ -523,7 +555,14 @@ def diag_pq_liquid(
     mass_aero_total = liquid_state.values[LiquidPPV.rmat_q.py_idx, :, 0, :]
     mass_aero_soluble = liquid_state.values[LiquidPPV.rmas_q.py_idx, :, 0, :]
 
-    mean_mass, active = _mean_mass_and_active(con, mass_total)
+    # M2b Task 7 fix -- see _mean_mass_and_active's own docstring: caps
+    # mean_mass at the liquid bin grid's own top edge, closing a real-dump
+    # failure mode shared by core/coalescence.py and core/vapor_deposition.py
+    # (both consume this function's output).
+    binb_top = float(
+        bin_grid.make_bin_grid("liquid", config.num_h_bins[0], nbin_h=config.nbin_h).binb[-1]
+    )
+    mean_mass, active = _mean_mass_and_active(con, mass_total, binb_top=binb_top)
 
     # diag_pq's own eps_map diagnosis (G3 §5, lines 1937-1938), only for
     # active (icond1==0) bins -- inactive bins keep the eps_ap0(ica) group

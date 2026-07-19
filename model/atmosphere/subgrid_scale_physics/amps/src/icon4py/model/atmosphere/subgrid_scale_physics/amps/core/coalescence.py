@@ -1047,12 +1047,29 @@ def coalesce_rain(  # noqa: PLR0912, PLR0915, PLR0917 -- single verbatim-derived
     #   docstring "RECONCILING..." section), never hard-zeroed.
     n_col_bk = n_col.copy() if ibreak else n_col
 
+    # T7 companion fix (found while adding this task's own regression
+    # tests, see TestT7DegenerateBinGuards::
+    # test_mutually_degenerate_column_bounded_by_mean_mass_ceiling's own
+    # docstring): the "release excluded i's outgoing claims" step below
+    # MUST also cover a bin `i` that will NEVER run `_collector_scatter`
+    # because it fails `active_collector_base` from round 0 (T7's
+    # `mean_mass<=binb[-1]` ceiling, or the pre-existing `mean_mass>
+    # _MEAN_MASS_FLOOR` floor) -- NOT only `used_marker`-latched bins.
+    # Pre-T7, `active_collector_base=False` implied `mean_mass<=1e-15`,
+    # so any such bin's own outgoing claim (`unit_gain=con_i*mean_mass_j`)
+    # was already negligible and this gap was invisible; T7's own new
+    # ceiling exclusion can apply to a bin with a REAL, substantial `con`
+    # (just a wrong/absurd `mean_mass`), whose un-released phantom claim
+    # on a genuine collectee is a real, non-negligible mass LEAK (found
+    # empirically: a 2-bin fixture with a mean_mass-ceiling-excluded
+    # collector leaked ~17% of total mass without this release).
+    never_collects = ~active_collector_base
     used_marker = np.zeros((nbins, npoints), dtype=bool)
     left_n = con.copy()
     left_m = mass_tot.copy()
     for _round in range(nbins):
         n_col = np.where(
-            used_marker[:, None, :], 0.0, n_col
+            (used_marker | never_collects)[:, None, :], 0.0, n_col
         )  # release excluded i's outgoing claims
 
         used_n_2 = (n_col * e_coal).sum(axis=0)  # (nbins_j, npoints), summed over collector i

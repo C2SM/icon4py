@@ -481,6 +481,40 @@ _AMPS_DUMP_DIR_ENV = "AMPS_DUMP_DIR"
 WARM_REPLAY_RTOL = 1.0e-8
 WARM_REPLAY_ATOL = 1.0e-12
 
+# M2b Task 7 hardening (post-review re-diagnosis -- see module docstring's
+# "reference-data noise" section): the real dump's own `qrpvm`/`qapvm`
+# arrays carry PHYSICALLY-NEGLIGIBLE "dead"/orphaned-bookkeeping residue on
+# bins whose own concentration (`rcon_q`/`acon_q`) is ~1e-11 to ~1e-14 --
+# many orders of magnitude below any physically meaningful droplet/aerosol
+# concentration (typical cloud/rain number mixing ratios span roughly
+# 1e-3 to 1e3 #/g) -- ALREADY present pre-step and essentially unchanged
+# post-step (i.e. neither this port nor the real Fortran meaningfully
+# "process" these bins; the residue is inert reference-data bookkeeping,
+# confirmed empirically: a 60-pair/pre+post scan found ZERO `rmas_q>rmt_q`
+# violations (soluble aerosol mass exceeding total drop mass -- physically
+# impossible) on bins clearing this threshold, vs. ~99.8% violations below
+# it). `LIQUID_ACTIVE_CON_THRESH` sits deliberately between the two: far
+# above the observed noise ceiling, far below any real concentration.
+LIQUID_ACTIVE_CON_THRESH = 1.0e-6
+
+
+def _active_bin_mask(
+    actual_con: np.ndarray, expected_con: np.ndarray, thresh: float = LIQUID_ACTIVE_CON_THRESH
+) -> np.ndarray:
+    """A bin location (shape `(nbins, ncat, npoints)`, one `rcon_q`/`acon_q`
+    property-axis slice) is ACTIVE if EITHER side's own concentration
+    clears `thresh` -- keeps a genuine divergence where the port creates or
+    destroys real concentration fully visible to the comparison (only bins
+    negligible on BOTH sides are excluded), while dropping bins that are
+    reference-data noise on both sides (see `LIQUID_ACTIVE_CON_THRESH`'s
+    own comment). Broadcast against the full `(nprops, nbins, ncat,
+    npoints)` field array via `mask[None, :, :, :]` at the call site --
+    ALL 4 `LiquidPPV`/3 `AerosolPPV` properties at an inactive bin location
+    are excluded together (the noise is not confined to `rmas_q`/`ams_q`
+    alone; `rcon_q`/`rmat_q` at the same location are equally meaningless
+    reference-data residue)."""
+    return (actual_con > thresh) | (expected_con > thresh)
+
 
 def _amps_test_data_candidates() -> list[Path]:
     """Conventional `$ICON4PY_TEST_DATA_PATH/amps/` locations checked by
@@ -571,13 +605,25 @@ def _worst_point_mismatch(
     *,
     rtol: float,
     atol: float,
+    mask: np.ndarray | None = None,
 ) -> _FieldMismatch | None:
     """The worst (largest absolute-error) out-of-tolerance point in
     `actual` vs. `expected` for one field of one (pre, post) pair, or
-    `None` if every point is within `atol + rtol*|expected|` (numpy's own
-    `allclose` tolerance convention). A shape mismatch is reported as an
-    (always-worst, `abs_err=inf`) mismatch rather than raising -- it is
-    itself the finding this harness exists to catch."""
+    `None` if every (mask-included) point is within `atol + rtol*|expected|`
+    (numpy's own `allclose` tolerance convention). A shape mismatch is
+    reported as an (always-worst, `abs_err=inf`) mismatch rather than
+    raising -- it is itself the finding this harness exists to catch (NOT
+    affected by `mask`, which only ever narrows an already-shape-matched
+    comparison).
+
+    `mask`: optional, broadcastable to `actual.shape` -- `True` where a
+    point should be INCLUDED in the mismatch search (M2b Task 7 hardening:
+    `test_warm_replay_against_m0_dump`'s own `_active_bin_mask` excludes
+    bin locations that are physically negligible in BOTH `actual` and
+    `expected`, per that function's own docstring -- see the module
+    docstring's "reference-data noise" section for why this is needed and
+    the evidence it is reference-data noise, not a reader/mapping bug).
+    `None` (default) compares every point, unchanged prior behavior."""
     actual = np.asarray(actual, dtype=np.float64)
     expected = np.asarray(expected, dtype=np.float64)
     if actual.shape != expected.shape:
@@ -594,6 +640,8 @@ def _worst_point_mismatch(
     abs_err = np.abs(actual - expected)
     tol = atol + rtol * np.abs(expected)
     bad = abs_err > tol
+    if mask is not None:
+        bad = bad & np.broadcast_to(mask, bad.shape)
     if not np.any(bad):
         return None
 
@@ -671,51 +719,85 @@ def test_warm_replay_against_m0_dump() -> None:
       `_worst_point_mismatch`'s own shape-mismatch path) rather than a
       genuine physics fidelity number.
 
-    STILL NOT-1e-8 (M2b Task 7 status, updated from the earlier "M2b in
-    progress" framing): collision(rain,rain)+collisional breakup ARE now
-    wired (`implementations.warm_loop._coalescence`, M2b Tasks 3/5/6/7) --
-    that gap is CLOSED. Running this replay against the real dump surfaced
-    TWO genuine `core/coalescence.py` bugs neither this port's own
-    synthetic-fixture unit tests nor the T3/H2 fidelity notes anticipated
-    (both fixed as part of M2b Task 7, see that task's own report,
-    `.superpowers/sdd/m2b-task-7-report.md`): (1) `collector_loop1`'s own
-    `icond1` redefinition needs a COLUMN-LEVEL `counter(n)>0` conjunct
-    (`mod_amps_core.F90:1955-1958`, absent from every prior fact-doc
-    extraction), and (2) a real, physically-motivated `mean_mass<=binb[-1]`
-    ceiling is needed alongside the existing floor, closing a real-dump-
-    only failure mode where a floating-point-noise-level `con` paired with
-    a normal-magnitude leftover `mass_tot` computed an absurd per-drop
-    mass that a degenerate-fallback path scattered into the wrong bin.
-    Both are verified fixed against the specific real-dump reproductions
-    that found them, with NO regression to any pre-existing unit test.
+    STILL NOT-1e-8 (M2b Task 7 status, re-diagnosed post-review -- see
+    `.superpowers/sdd/m2b-task-7-report.md`'s own "post-review correction"
+    section for the FULL derivation; this docstring only summarizes the
+    CURRENT, verified-accurate picture): collision(rain,rain)+collisional
+    breakup ARE now wired (`implementations.warm_loop._coalescence`, M2b
+    Tasks 3/5/6/7) -- that gap is CLOSED. Running this replay against the
+    real dump surfaced a genuine, real class of bug (a floating-point-
+    noise-level `con` paired with a normal-magnitude leftover `mass_tot`
+    computing an absurd, unbounded `mean_mass`) with THREE fixes, all
+    verified against specific real-dump reproductions, all with regression
+    tests, NO regression to any pre-existing test:
 
-    This test is STILL expected to `xfail`, NOT because of collision/
-    breakup (M2b's own scope) but because of a SEPARATE, PRE-EXISTING,
-    OUT-OF-SCOPE bug this same investigation surfaced: `core/vapor_
-    deposition.py`'s `icond3 = diag.mean_mass > 0.0` (M2a Task 5) has the
-    IDENTICAL missing-upper-bound pattern `core/coalescence.py` just got
-    fixed for, and independently corrupts the SAME class of degenerate
-    bin via vapor-deposition's own bin-remap machinery -- confirmed by
-    reproducing the SAME real-dump divergence with `rain_rain_coalescence=
-    False` (collision entirely OFF): the corruption persisted bit-for-bit,
-    proving it is not sourced from collision at all. Fixing it is out of
-    THIS task's own dispatch scope (a different M2a module, used by many
-    other consumers of `diag.mean_mass` beyond vapor-deposition) and is
-    left as a precise, actionable follow-up (see the M2b Task 7 report).
-    `thermo.tv`/`thermo.qvv` (unaffected by the aerosol-mass-component
-    fields the degenerate bins corrupt) land MUCH closer to tolerance
-    (relative error ~1e-6 to ~1e-3 in spot sampling) than `liquid`/
-    `aerosol`, consistent with this diagnosis.
+    1. `core/coalescence.py`'s `collector_loop1` port needs a COLUMN-LEVEL
+       `counter(n)>0` conjunct (`mod_amps_core.F90:1955-1958`) AND a
+       `mean_mass<=binb[-1]` physical ceiling, both closing real-dump-only
+       failure modes where the degenerate bin's absurd mean_mass corrupted
+       an UNRELATED bin via `_collector_scatter`'s degenerate-fallback
+       destination search.
+    2. The mean_mass ceiling is applied at its SHARED, single source
+       (`core/liquid_diag.py`'s `_mean_mass_and_active`, feeding BOTH
+       `core/coalescence.py` AND `core/vapor_deposition.py`'s own
+       `icond3` mask) rather than duplicated per-consumer.
+    3. A companion mass-conservation bug in `core/coalescence.py`'s OWN
+       `iter_loop1` port, found while adding this task's own regression
+       tests: a bin excluded from `collector_loop1` by the NEW ceiling
+       (not merely by `used_marker`) still had its own OUTGOING claims on
+       OTHER bins counted (a "phantom claim" leak this port's own T3-era
+       `used_marker`-only release never anticipated, since pre-T7 a
+       ceiling-excluded bin's `con` was always negligible) -- fixed by
+       releasing `active_collector_base==False` bins' claims from round 0,
+       not only `used_marker`-latched ones.
+
+    POST-REVIEW CORRECTION (important -- do not re-introduce the earlier,
+    WRONG claim this replaces): an earlier draft of this docstring claimed
+    the residual divergence traced specifically to `core/vapor_
+    deposition.py:864`'s `icond3` mask alone and was purely out-of-scope.
+    That was WRONG for the specific mismatch it was checked against (a
+    review reproduced it and found disabling/patching vapor-deposition,
+    activation, or the proposed `icond3` fix ALL left that SPECIFIC
+    worst-offender mismatch byte-for-byte identical) -- because THAT
+    mismatch (real-dump-observed: `rmas_q>>rmt_q`, soluble aerosol mass
+    exceeding total drop mass, physically impossible) is REFERENCE-DATA
+    NOISE already present in the PRE record and essentially unchanged by
+    ANY process, on bins with negligible concentration -- confirmed with
+    evidence: a 60-pair/pre+post scan found ZERO `rmas_q>rmt_q`
+    violations on bins clearing `LIQUID_ACTIVE_CON_THRESH` (`1e-6 #/g`,
+    many orders of magnitude above the observed noise ceiling and below
+    any real concentration) vs. ~99.8% violations below it. This is why
+    `_active_bin_mask` (module-level, above) now excludes such bins from
+    the comparison -- reporting fidelity on ACTIVE bins only, where the
+    noise cannot masquerade as a physics divergence.
+
+    Once reference-data noise is properly excluded, a SEPARATE, genuinely
+    unresolved divergence remains (the fixes above close it for SOME but
+    not all real-dump reproductions): a bin can still end up with an
+    implausible, large concentration the real Fortran's own `post` record
+    does not show. Confirmed evidence gathered, NOT yet a confident
+    root-cause claim (unlike the three fixes above, each independently
+    verified via a bisection-style A/B test): requires vapor-deposition
+    AND activation BOTH active in at least one reproduction; in a
+    DIFFERENT reproduction, disabling collision ALSO changes the outcome
+    (unlike the fixed mean_mass-ceiling class, where `diag.mean_mass` is
+    confirmed all-zero for the corrupted column, ruling that specific
+    mechanism out) -- suggesting a THIRD, distinct failure mode in the
+    activation<->vapor-deposition<->(possibly collision-order-sensitive)
+    interaction that this task's own remaining time did not allow fully
+    isolating. Left as a precisely-evidenced (not vaguely-flagged) open
+    item for a follow-up task -- see the M2b Task 7 report's own
+    reproduction details (exact `(rank,TIME_AMPS,i,j,point,bin)` tuples).
 
     Rather than hard-failing red (which would look like a regression) or
     silently reporting a fake pass, a genuine mismatch calls `pytest.xfail`
     with the SAME worst-offender-per-field report the hard-fail path used
     to raise with -- visible in `pytest -rx` output. This is intentionally
     NOT a `@pytest.mark.xfail` decorator: `pytest.xfail()` is only reached
-    on the mismatch path below, so the moment the vapor-deposition gap
-    above also closes and every field lands within tolerance, this test
-    starts passing FOR REAL, with no marker to remember to remove --
-    flipping this into a real gate automatically."""
+    on the mismatch path below, so the moment the remaining gap above also
+    closes and every field lands within tolerance, this test starts
+    passing FOR REAL, with no marker to remember to remove -- flipping
+    this into a real gate automatically."""
     dump_source = _find_dump_source()
     if dump_source is None:
         pytest.skip(_SKIP_MESSAGE)
@@ -765,16 +847,39 @@ def test_warm_replay_against_m0_dump() -> None:
         n_compared += 1
         n_liquid_props = len(LiquidState.PROPS)
         n_aero_props = len(AerosolState.PROPS)
-        for field, actual, expected in (
-            ("liquid", result.final_liquid.values, post.qrpvm[:n_liquid_props]),
-            ("aerosol", result.final_aerosol.values, post.qapvm[:n_aero_props]),
-            ("thermo.tv", get_thermo_prop(result.final_thermo, ThermoProp.tv), post.tvm),
-            ("thermo.qvv", get_thermo_prop(result.final_thermo, ThermoProp.qvv), post.qvvm),
+        lp = index_maps.LiquidPPV
+        ap = index_maps.AerosolPPV
+        expected_liquid = post.qrpvm[:n_liquid_props]
+        expected_aerosol = post.qapvm[:n_aero_props]
+        # M2b Task 7 hardening: exclude bin locations that are physically
+        # negligible on BOTH sides (reference-data noise, see module
+        # docstring + LIQUID_ACTIVE_CON_THRESH's own comment) from the
+        # mismatch search -- broadcast the per-bin (nbins, ncat, npoints)
+        # activity mask against the full (nprops, nbins, ncat, npoints)
+        # field array (every property at an inactive location is excluded
+        # together, not just the concentration slot itself).
+        liquid_mask = _active_bin_mask(
+            result.final_liquid.values[lp.rcon_q.py_idx], expected_liquid[lp.rcon_q.py_idx]
+        )[None, :, :, :]
+        aerosol_mask = _active_bin_mask(
+            result.final_aerosol.values[ap.acon_q.py_idx], expected_aerosol[ap.acon_q.py_idx]
+        )[None, :, :, :]
+        for field, actual, expected, mask in (
+            ("liquid", result.final_liquid.values, expected_liquid, liquid_mask),
+            ("aerosol", result.final_aerosol.values, expected_aerosol, aerosol_mask),
+            ("thermo.tv", get_thermo_prop(result.final_thermo, ThermoProp.tv), post.tvm, None),
+            ("thermo.qvv", get_thermo_prop(result.final_thermo, ThermoProp.qvv), post.qvvm, None),
         ):
             _update_worst(
                 worst_per_field,
                 _worst_point_mismatch(
-                    pair_key, field, actual, expected, rtol=WARM_REPLAY_RTOL, atol=WARM_REPLAY_ATOL
+                    pair_key,
+                    field,
+                    actual,
+                    expected,
+                    rtol=WARM_REPLAY_RTOL,
+                    atol=WARM_REPLAY_ATOL,
+                    mask=mask,
                 ),
             )
 

@@ -849,3 +849,122 @@ class TestIbreakHook:
             liquid, diag, thermo, config, dt=2.0, luts=real_luts, ibreak=False
         )
         assert np.array_equal(out_default.values, out_explicit.values)
+
+
+# ---------------------------------------------------------------------------
+# T7 (M2b Task 7): two degenerate-bin corruption modes a real-dump
+# per-call validation surfaced -- neither triggered by this module's own
+# pre-existing synthetic fixtures (all "real magnitude", per the module
+# docstring's own note, but never a floating-point-noise-level `con` paired
+# with a normal-magnitude leftover `mass_tot`). Both fixed in `coalesce_
+# rain` itself (`active_collector_base`'s `mean_mass<=binb[-1]` ceiling,
+# `counter_active`'s column-level `counter(n)>0` gate -- see the module
+# docstring's own "T7" section). Reproduced here directly (no external dump
+# needed) so a regression is caught by the ordinary unit-test suite, not
+# only the external-data-gated replay harness (`tests/amps/integration_
+# tests/test_warm_replay.py`).
+# ---------------------------------------------------------------------------
+
+
+class TestT7DegenerateBinGuards:
+    # Real-dump-observed magnitudes (M2b Task 7 report): a bin whose own
+    # `con` is a floating-point-noise-level residual (comfortably above
+    # the bare `_ACTIVE_FLOOR=1e-30`, but physically negligible) paired
+    # with an ordinary-magnitude leftover `mass_tot` -- `mean_mass =
+    # mass_tot/con ~= 5.0e6 g`, ~1e7x beyond `binb[-1]~0.52g` (the grid's
+    # own largest representable mean-drop mass).
+    DEGENERATE_CON = 7.08e-14
+    DEGENERATE_MASS = 3.54e-7
+
+    def test_isolated_degenerate_bin_stays_inert_counter_gate(self, real_luts):
+        """T7 fix 1 (`counter(n)>0`): a column with EXACTLY ONE occupied
+        bin, whose own `con` is floating-point-noise-level -- no OTHER bin
+        exists to generate any real collision claim anywhere in the
+        column, so `counter(n)` must stay 0 and `collector_loop1` must
+        skip this bin entirely (regardless of its own absurd `mean_mass`
+        individually clearing every OTHER floor). Pre-fix, this bin's
+        `mean_mass` (~5.0e6g, `_diag_for` below) cleared
+        `_MEAN_MASS_FLOOR` and was treated as an eligible collector;
+        `_collector_scatter`'s own degenerate-fallback destination-bin
+        search (`_find_destination_bin`) then clipped it to the grid's TOP
+        bin (39) -- reproduced empirically against a real dump (M2b Task 7
+        report): `rel_err~1e17` at bin 39, `abs_err~2.9e5`."""
+        config = _config()
+        bin_idx = 15
+        liquid = _liquid_state({bin_idx: (self.DEGENERATE_MASS, self.DEGENERATE_CON, 0.0, 0.0)})
+        diag = _diag_for({bin_idx: (self.DEGENERATE_MASS / self.DEGENERATE_CON, 1.0, 1.0)})
+        thermo = _thermo_state()
+
+        out = coalescence.coalesce_rain(liquid, diag, thermo, config, dt=5.0, luts=real_luts)
+
+        lp = LiquidPPV
+        assert np.all(np.isfinite(out.values))
+        # The degenerate bin's own mass/con are UNCHANGED (re-added via
+        # the post-loop leftover mechanism, `excluded_by_t7`) -- NOT
+        # scattered to bin 39 or anywhere else.
+        assert out.values[lp.rmt_q.py_idx, bin_idx, 0, 0] == pytest.approx(
+            self.DEGENERATE_MASS, rel=1e-12
+        )
+        assert out.values[lp.rcon_q.py_idx, bin_idx, 0, 0] == pytest.approx(
+            self.DEGENERATE_CON, rel=1e-12
+        )
+        # Bin 39 (the grid's top bin -- the pre-fix corruption's own
+        # destination) stays exactly zero in every property.
+        assert out.values[lp.rmt_q.py_idx, 39, 0, 0] == 0.0
+        assert out.values[lp.rcon_q.py_idx, 39, 0, 0] == 0.0
+        assert out.values[lp.rmas_q.py_idx, 39, 0, 0] == 0.0
+        # No mass created or destroyed anywhere in the grid.
+        assert out.values[lp.rmt_q.py_idx].sum() == pytest.approx(self.DEGENERATE_MASS, rel=1e-12)
+
+    def test_mutually_degenerate_column_bounded_by_mean_mass_ceiling(self, real_luts):
+        """T7 fix 2 (`mean_mass<=binb[-1]`): a column where the collector
+        (`BIN_I`) and collectee (`BIN_J`) are the SAME real, known-good
+        collision pair `TestTwoBinCollection` already uses (real `con`/
+        `length`/`vtm`, guaranteed nonzero `KC`/`E_coal` -- see those
+        module-level constants' own comments), so `counter(n)>0` fires
+        genuinely (fix 1 alone does NOT exclude this pair, unlike the
+        isolated-bin case above) -- EXCEPT `diag.mean_mass[BIN_I]` is
+        deliberately overridden to the SAME absurd real-dump-observed
+        value (`~5.0e6g`, `_diag_for`'s own hand-picked-field convention,
+        matching e.g. `TestDestinationBin`/`TestNeedgiveRepair`) instead
+        of the physically-consistent `MEAN_MASS_I=1.0e-7g` -- isolating
+        `active_collector_base`'s OWN `mean_mass<=binb[-1]` ceiling
+        specifically (only fix 2 can exclude a bin whose OWN individual
+        `mean_mass` is absurd once `counter(n)>0` is already satisfied).
+        Pre-fix-2 (fix 1 present, fix 2 absent), this collector is
+        incorrectly treated as active and its real `con_i` population
+        scatters via `mean_mass`-computed intervals FAR outside the grid
+        -- an analogous real-dump scenario (an entire column of mutually-
+        active-but-one-degenerate bins) reproduced a SECOND failure mode
+        at a different destination bin (M2b Task 7 report)."""
+        config = _config()
+        con_i, con_j = 100.0, 500.0
+        liquid = _liquid_state(
+            {
+                BIN_I: (MEAN_MASS_I * con_i, con_i, 0.0, 0.0),
+                BIN_J: (MEAN_MASS_J * con_j, con_j, 0.0, 0.0),
+            }
+        )
+        diag = _diag_for({BIN_J: (MEAN_MASS_J, LEN_J, VTM_J), BIN_I: (5.0e6, LEN_I, VTM_I)})
+        thermo = _thermo_state()
+
+        out = coalescence.coalesce_rain(liquid, diag, thermo, config, dt=2.0, luts=real_luts)
+
+        lp = LiquidPPV
+        assert np.all(np.isfinite(out.values))
+        total_con_before = con_i + con_j  # 600 -- coalescence only ever DECREASES total number
+        total_mass_before = MEAN_MASS_I * con_i + MEAN_MASS_J * con_j
+        assert out.values[lp.rmt_q.py_idx].sum() == pytest.approx(total_mass_before, rel=1e-9)
+        # No implausible concentration anywhere in the grid -- the
+        # pre-fix-2 failure mode: `mean_mass=5e6` scattered `con_i=100`
+        # real drops via a shifted-boundary interval computed from that
+        # absurd mean mass, spraying garbage (real-dump values observed up
+        # to ~1e5-1e6 #/g, orders of magnitude beyond `total_con_before`)
+        # across potentially many bins. `<=total_con_before` (a physical
+        # bound: no bin can ever end up with more drops than existed
+        # anywhere in the whole grid to begin with) catches that failure
+        # mode while accepting the CORRECT post-fix outcome (both bins'
+        # `con` legitimately UNCHANGED at 500/100 -- BIN_I is excluded as
+        # a collector by the ceiling and its phantom claim on BIN_J is
+        # released, so neither bin is touched at all).
+        assert np.all(out.values[lp.rcon_q.py_idx] <= total_con_before + 1e-6)
