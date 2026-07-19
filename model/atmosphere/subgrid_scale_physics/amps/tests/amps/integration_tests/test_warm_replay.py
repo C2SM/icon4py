@@ -489,12 +489,27 @@ WARM_REPLAY_ATOL = 1.0e-12
 # concentration (typical cloud/rain number mixing ratios span roughly
 # 1e-3 to 1e3 #/g) -- ALREADY present pre-step and essentially unchanged
 # post-step (i.e. neither this port nor the real Fortran meaningfully
-# "process" these bins; the residue is inert reference-data bookkeeping,
-# confirmed empirically: a 60-pair/pre+post scan found ZERO `rmas_q>rmt_q`
-# violations (soluble aerosol mass exceeding total drop mass -- physically
-# impossible) on bins clearing this threshold, vs. ~99.8% violations below
-# it). `LIQUID_ACTIVE_CON_THRESH` sits deliberately between the two: far
-# above the observed noise ceiling, far below any real concentration.
+# "process" these bins; the residue is inert reference-data bookkeeping).
+# CORRECTED (M2b dump-magnitude diagnostic, see
+# .superpowers/sdd/m2b-dump-magnitude-diagnostic.md): the original
+# "60-pair scan found ZERO rmas_q>rmt_q violations on bins clearing this
+# threshold" claim was VACUOUS, not evidence of a clean split -- an
+# exhaustive scan of the FULL warm dataset (all 25 ranks, all TIME_AMPS,
+# all 40 bins, ~4.76M points) found the GLOBAL MAXIMUM `rcon_q` anywhere in
+# the reference data is ~1.2e-9 #/g, twelve orders of magnitude below THIS
+# threshold -- so literally NO reference-data point, in the entire
+# dataset, ever reaches "ACTIVE" by this definition; the "0 violations"
+# row had zero members to violate anything, not zero violations among many
+# candidates. `LIQUID_ACTIVE_CON_THRESH` still does real, honest work: it
+# is compared against BOTH sides (`actual_con`/`expected_con`,
+# `_active_bin_mask` below), and since the reference side never clears it,
+# a bin location is excluded only when the PORT's OWN computed output
+# (post-physics -- e.g. after activation has nucleated real droplet
+# number) also stays below it. In practice this masks reference-data noise
+# on both sides while keeping fully visible any location where the port's
+# own output shows elevated concentration the Fortran's `post` record does
+# not -- not a validated "clean on real droplets" result, since the
+# reference data itself never reaches that regime in this dataset.
 LIQUID_ACTIVE_CON_THRESH = 1.0e-6
 
 
@@ -762,14 +777,28 @@ def test_warm_replay_against_m0_dump() -> None:
     mismatch (real-dump-observed: `rmas_q>>rmt_q`, soluble aerosol mass
     exceeding total drop mass, physically impossible) is REFERENCE-DATA
     NOISE already present in the PRE record and essentially unchanged by
-    ANY process, on bins with negligible concentration -- confirmed with
-    evidence: a 60-pair/pre+post scan found ZERO `rmas_q>rmt_q`
-    violations on bins clearing `LIQUID_ACTIVE_CON_THRESH` (`1e-6 #/g`,
-    many orders of magnitude above the observed noise ceiling and below
-    any real concentration) vs. ~99.8% violations below it. This is why
-    `_active_bin_mask` (module-level, above) now excludes such bins from
-    the comparison -- reporting fidelity on ACTIVE bins only, where the
-    noise cannot masquerade as a physics divergence.
+    ANY process, on bins with negligible concentration -- a 60-pair/
+    pre+post scan found ZERO `rmas_q>rmt_q` violations on bins clearing
+    `LIQUID_ACTIVE_CON_THRESH` (`1e-6 #/g`) vs. ~99.8% violations below it.
+    HONESTY CORRECTION (M2b dump-magnitude diagnostic, see
+    .superpowers/sdd/m2b-dump-magnitude-diagnostic.md): that "zero
+    violations on ACTIVE bins" reading is VACUOUS, not a clean-split
+    result -- an exhaustive scan of the FULL warm dataset (every rank,
+    every `TIME_AMPS`, every bin, ~4.76M points) found the reference
+    data's own `rcon_q` NEVER exceeds ~1.2e-9 #/g anywhere, twelve orders
+    of magnitude below `LIQUID_ACTIVE_CON_THRESH` -- so the "ACTIVE" row
+    of that scan had zero members, not zero violations among many. The
+    `rmas_q>>rmt_q` pattern is still correctly diagnosed as reference-data
+    noise (independently confirmed by that same diagnostic: `rmt_q` itself
+    cross-validates exactly against the dump's own independent `qcvm`
+    liquid-tracer field, while `rcon_q`/`rmat_q`/`rmas_q` never reach a
+    physically meaningful magnitude anywhere in the dataset) -- but
+    `_active_bin_mask` (module-level, above) does not "exclude noise to
+    reveal ACTIVE-bin fidelity"; honestly stated, it excludes a bin
+    location only when BOTH sides are negligible, so in practice (since
+    the reference side is negligible everywhere in this dataset) it
+    compares wherever the PORT's OWN computed output shows elevated
+    concentration -- not wherever the reference data does.
 
     Once reference-data noise is properly excluded, a SEPARATE, genuinely
     unresolved divergence remains (the fixes above close it for SOME but
