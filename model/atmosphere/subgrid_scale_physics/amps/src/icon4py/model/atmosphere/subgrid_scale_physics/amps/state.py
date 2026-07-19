@@ -74,9 +74,29 @@ class ThermoProp(enum.IntEnum):
     """Per-column thermo-state fields, F4 SS1.1 (`Z_LOOP_01` thermo
     block, `scale_atmos_phy_mp_amps.F90` lines 1625-1672), numbered in
     the order each is computed there (NOT a Task 4 `core/index_maps.py`
-    enum -- see module docstring for why)."""
+    enum -- see module docstring for why).
 
-    ptotv = 1  # pressure; line 1641 `ptotv(k) = PRES(k,i,j)`
+    UNIT CONTRACT (`ptotv`, established by `core.packing._pack_thermo`/
+    `driver.box.case_from_micro_record`, both of which derive `thv` from
+    `ptotv` via the SCALE-SI Exner relation `thv = tv*(SCALE_PRE00/ptotv)
+    **(SCALE_RDRY/SCALE_CPDRY)`, `core/packing.py`'s own `SCALE_PRE00=1e5`
+    Pa): `ThermoState.ptotv` is SI Pa at this state-boundary, NOT the CGS
+    (`AmpsConst.p00=1e6`, dyn/cm^2) pressure `core.thermo.diag_t` and every
+    other AMPS-internal (`core/constants.py` `AmpsConst`-based) CGS-physics
+    formula expects. `1 Pa = 10 dyn/cm^2` -- every CGS-physics consumer
+    reading `ptotv` (`implementations.warm_loop._refresh_state`'s `diag_t`
+    call; `core.liquid_diag.diag_pq_liquid`'s `diffusivity`/terminal-
+    velocity calls; `core.activation.activate_and_advance_vapor` and
+    `core.vapor_deposition.vapor_deposition_liquid`'s supersaturation
+    formulas) MUST multiply by 10.0 at its OWN point of use -- this is a
+    real, previously-latent bug class (M2a Task 7 code review, exposed by
+    `driver.box.run_box`'s first realistic-pressure end-to-end path; masked
+    in every prior test by `ptotv` fixtures numerically equal to
+    `AmpsConst.p00` itself, giving a spuriously-exact ratio of 1 wherever
+    both sides of a mismatched conversion cancelled by construction -- see
+    each fixed call site's own comment for the citation)."""
+
+    ptotv = 1  # pressure, SI Pa; line 1641 `ptotv(k) = PRES(k,i,j)` -- see UNIT CONTRACT above
     tv = 2  # temperature; line 1643 `tv(k) = TEMP(k,i,j)`
     thv = 3  # potential temperature; line 1645
     piv = 4  # exner function; line 1647

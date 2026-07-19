@@ -487,7 +487,12 @@ def diag_pq_liquid(
         config.eps_ap[0],
     )
 
-    p = get_thermo_prop(thermo, ThermoProp.ptotv)[None, :]
+    # ThermoProp.ptotv is SI Pa (state.py's own UNIT CONTRACT note); both
+    # thermo_fn.diffusivity (F1 SS3e docstring: "p is ambient pressure in
+    # g/s^2/cm (CGS)") and _terminal_velocity below (its own `1013250.0`
+    # CGS reference pressure, matching diffusivity's `p_0`) need CGS --
+    # convert here, at the point of use.
+    p = get_thermo_prop(thermo, ThermoProp.ptotv)[None, :] * 10.0
     t = get_thermo_prop(thermo, ThermoProp.tv)[None, :]
     den = get_thermo_prop(thermo, ThermoProp.moist_denv)[None, :]
     qv = get_thermo_prop(thermo, ThermoProp.qvv)[None, :]

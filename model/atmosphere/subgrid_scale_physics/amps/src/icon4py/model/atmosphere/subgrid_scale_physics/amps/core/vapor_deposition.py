@@ -871,8 +871,11 @@ def vapor_deposition_liquid(  # noqa: PLR0915, PLR0917 [too-many-statements/posi
     if not icond3.any():
         return liquid, aerosol, thermo_state
 
-    # s_v_n -- see module docstring item 1.
-    p = get_thermo_prop(thermo_state, ThermoProp.ptotv)[None, :]
+    # s_v_n -- see module docstring item 1. ThermoProp.ptotv is SI Pa
+    # (state.py's own UNIT CONTRACT note); `_liquid_supersaturation` pairs
+    # `p` against `thermo_fn.esat_lk`'s CGS (dyn/cm^2) table output --
+    # convert here, at the point of use.
+    p = get_thermo_prop(thermo_state, ThermoProp.ptotv)[None, :] * 10.0
     t = get_thermo_prop(thermo_state, ThermoProp.tv)[None, :]
     qv = get_thermo_prop(thermo_state, ThermoProp.qvv)[None, :]
     estbar, esitbar = thermo_fn.make_esat_tables()

@@ -637,7 +637,15 @@ class TestBoxCaseValidation:
             dataclasses.replace(case, n_steps=0)
 
 
-def test_run_box_not_implemented():
+def test_run_box_raises_on_ice_bearing_case():
+    """`_make_pre_micro_record`'s `qipvm` is RNG-populated (uniformly
+    random, never all-zero) -- every case built from it therefore trips
+    `run_box`'s ice-mass guard (`moistthermo_mask`'s `qi>0`, `box.py`'s own
+    docstring), which is what actually raises here (M2a Task 7's warm path
+    landed after this test was first written under the name `test_run_box_
+    not_implemented`, when `run_box` itself was an unconditional stub; the
+    assertion below still holds, but for this specific, now-documented
+    reason, not because `run_box` is unimplemented)."""
     case = box.case_from_micro_record(_make_pre_micro_record())
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(NotImplementedError, match="ice mass"):
         box.run_box(case)

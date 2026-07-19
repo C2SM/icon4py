@@ -249,8 +249,12 @@ def _refresh_state(
     """
     mes_rc = _update_mesrc_warm(state.thermo, state.liquid)
     qr = _rain_specific_humidity(state.liquid, mes_rc)
-    p = get_thermo_prop(state.thermo, ThermoProp.ptotv)
-    t_new, _ierror1 = _diag_t_f1(state.thil, p, qr, 0.0)
+    # ThermoProp.ptotv is SI Pa (state.py's own UNIT CONTRACT note on that
+    # enum member); core.thermo.diag_t is CGS (AmpsConst.p00=1e6 dyn/cm^2,
+    # matching test_thermo.py's own `p_cgs = pt_pa * 10.0` round-trip
+    # precedent) -- convert at this, the point of use, not upstream.
+    p_cgs = get_thermo_prop(state.thermo, ThermoProp.ptotv) * 10.0
+    t_new, _ierror1 = _diag_t_f1(state.thil, p_cgs, qr, 0.0)
 
     thermo_values = state.thermo.values.copy()
     tv_prop_idx = list(ThermoState.PROPS).index(ThermoProp.tv)

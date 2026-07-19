@@ -79,10 +79,20 @@ def _thermo_state(
 ) -> ThermoState:
     """Single-point ThermoState; only ptotv/tv/qvv/moist_denv are given
     physically meaningful values (the rest default to `tv`/0, unused by
-    anything under test here)."""
+    anything under test here).
+
+    `ptotv` (this helper's own parameter) is the CGS pressure (dyn/cm^2,
+    `AmpsConst.p00`-scale) callers -- e.g. `TestRefreshStateDiagT`, which
+    cross-checks `_refresh_state` against a DIRECT `thermo.diag_t(thil_val,
+    p, ...)` call using this SAME value -- intend; the stored
+    `ThermoState.ptotv` field itself is SI Pa (`state.py`'s own UNIT
+    CONTRACT note on `ThermoProp.ptotv`), so it is divided by 10.0 here.
+    `_refresh_state`'s own CGS conversion (`* 10.0` at its point of use)
+    reconstructs exactly this `ptotv` argument, keeping every existing
+    diag_t cross-check in this file unchanged."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: ptotv,
+        ThermoProp.ptotv: ptotv / 10.0,
         ThermoProp.tv: tv,
         ThermoProp.thv: tv,
         ThermoProp.piv: 0.0,
@@ -515,9 +525,13 @@ class TestRefreshStateDiagT:
 
 
 def _thermo_state_multi(*, ptotv: float, tv: np.ndarray, npoints: int) -> ThermoState:
+    """`ptotv` is the CGS pressure this file's own diag_t cross-checks
+    (e.g. `test_vectorized_matches_per_point_diag_t`) use directly --
+    see `_thermo_state`'s own docstring for why it is stored `/ 10.0`
+    (SI Pa, `state.py`'s UNIT CONTRACT note)."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, npoints), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: np.full(npoints, ptotv),
+        ThermoProp.ptotv: np.full(npoints, ptotv) / 10.0,
         ThermoProp.tv: tv,
         ThermoProp.thv: tv,
         ThermoProp.piv: np.zeros(npoints),
@@ -678,7 +692,13 @@ class TestEndToEndSupersaturatedSpinUp:
 
         thermo_values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
         by_prop = {
-            ThermoProp.ptotv: p,
+            # p is the CGS pressure the "supersaturated at (p, t)" claim
+            # above is about; ThermoState.ptotv itself is SI Pa (state.py's
+            # own UNIT CONTRACT note) -- stored as p/10.0 so the warm loop's
+            # own CGS conversions (activation.py/vapor_deposition.py/
+            # liquid_diag.py, each `* 10.0` at their point of use)
+            # reconstruct exactly p.
+            ThermoProp.ptotv: p / 10.0,
             ThermoProp.tv: t,
             ThermoProp.thv: t,
             ThermoProp.piv: 0.0,

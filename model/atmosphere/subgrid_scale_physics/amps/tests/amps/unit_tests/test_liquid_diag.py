@@ -58,9 +58,16 @@ def luts() -> AmpsLuts:
 
 
 def _thermo_state(*, p: float, t: float, den: float, qv: float) -> ThermoState:
+    """`p` is the CGS pressure (dyn/cm^2, `AmpsConst.p00`-scale) this
+    file's own hand-computed "golden" references use directly;
+    `ThermoState.ptotv` itself is SI Pa (`state.py`'s own UNIT CONTRACT
+    note on `ThermoProp.ptotv`) -- stored as `p / 10.0` here so
+    `diag_pq_liquid`'s own CGS conversion (`core/liquid_diag.py`,
+    `* 10.0` at its point of use) reconstructs exactly `p`, keeping every
+    existing golden-value comparison in this file unchanged."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: p,
+        ThermoProp.ptotv: p / 10.0,
         ThermoProp.tv: t,
         ThermoProp.thv: t,
         ThermoProp.piv: 0.0,

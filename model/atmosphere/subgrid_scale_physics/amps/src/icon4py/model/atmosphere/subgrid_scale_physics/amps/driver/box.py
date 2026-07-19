@@ -162,11 +162,18 @@ def run_box(case: BoxCase, *, luts: AmpsLuts | None = None) -> BoxResult:
        silently dropping nonzero ice mass would be wrong, not merely
        incomplete.
     3. Build a `WarmLoopState` from `case.thermo`/`case.aerosol` + the
-       masked liquid + the derived `thil`/`qtp`, `mes_rc` seeded to 0
-       (harmless: `run_warm_micro_tendency`'s only step before its first
-       `_refresh_state` call -- which recomputes `mes_rc` from scratch --
-       is `_repair(phase="collision")`, which does not consume `mes_rc`;
-       see `core/repair.py`).
+       masked liquid + the derived `thil`/`qtp`, `mes_rc` seeded to 0, then
+       run ONE `_refresh_state` call before the loop -- parity with
+       `ifc_warm`'s own 5-step sequence (`reality_check -> _refresh_state
+       -> run_warm_micro_tendency`, that function's own docstring), so
+       `mes_rc`/`thermo.tv`/`state.diag` are populated from the start
+       rather than left at their placeholder seed values until
+       `run_warm_micro_tendency`'s own first internal refresh. Confirmed
+       inconsequential to the FINAL result either way (`run_warm_micro_
+       tendency`'s only step before its own first refresh is `_repair(
+       phase="collision")`, which reads neither `mes_rc` nor `state.diag`;
+       see `core/repair.py`) -- this exists for state-shape parity with
+       `ifc_warm`-driven runs, not because it changes the physics.
     4. Call `run_warm_micro_tendency` `case.n_steps` times (one call per
        `case.dt`-sized step, matching `case_from_micro_record`'s own
        "n_steps ... one 'pre'->'post' step" convention for a replayed
@@ -229,6 +236,19 @@ def run_box(case: BoxCase, *, luts: AmpsLuts | None = None) -> BoxResult:
         qtp=mask.qtp,
         mes_rc=np.zeros(case.thermo.npoints, dtype=np.int64),
     )
+    # Parity with `ifc_warm`'s own 5-step sequence (that function's own
+    # docstring: "reality_check -> refresh -> run_warm_micro_tendency"):
+    # one `_refresh_state` call before the loop, so `state.diag`/`mes_rc`/
+    # `thermo.tv` are populated from the start rather than left at this
+    # function's own placeholder seed values (`diag=None`, `mes_rc=0`)
+    # until `run_warm_micro_tendency`'s own internal vap-loop-head refresh
+    # first runs. Confirmed inconsequential to `run_warm_micro_tendency`'s
+    # OWN output (its first action is `_repair(phase="collision")`, which
+    # reads neither -- `core/repair.py`, `test_warm_loop.py`'s own
+    # `test_repair_does_not_require_diag`) -- this call exists for
+    # state-shape parity with `ifc_warm`, not because it changes the
+    # result.
+    state = warm_loop._refresh_state(state, case.config, luts)
     for _ in range(case.n_steps):
         state = warm_loop.run_warm_micro_tendency(state, case.config, case.dt, luts)
 

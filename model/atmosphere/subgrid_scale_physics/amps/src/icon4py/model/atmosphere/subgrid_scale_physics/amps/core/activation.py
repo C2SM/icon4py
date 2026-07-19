@@ -2081,7 +2081,14 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
     npoints = liquid.npoints
     t_0 = float(AmpsConst.T_0)
 
-    p = get_thermo_prop(thermo_state, ThermoProp.ptotv)
+    # ThermoProp.ptotv is SI Pa (state.py's own UNIT CONTRACT note); every
+    # downstream consumer of `p` in this function (`_liquid_supersaturation`,
+    # `_rv_saturation`, `_all_activated_supersaturation`, and `box.pressure`
+    # -- threaded into `func_vec`/the backward-Euler loop/zbrent) pairs it
+    # against `AmpsConst.Rdvchiarui`/`thermo.esat_lk`'s CGS (dyn/cm^2) table
+    # output -- convert ONCE here, at the point of use, so it propagates
+    # correctly everywhere `box.pressure` is read.
+    p = get_thermo_prop(thermo_state, ThermoProp.ptotv) * 10.0
     t = get_thermo_prop(thermo_state, ThermoProp.tv)
     den = get_thermo_prop(thermo_state, ThermoProp.moist_denv)
     qvv = get_thermo_prop(thermo_state, ThermoProp.qvv)

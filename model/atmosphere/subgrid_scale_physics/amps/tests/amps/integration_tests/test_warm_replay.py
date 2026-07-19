@@ -47,7 +47,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
-from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import index_maps
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import index_maps, packing
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.constants import AmpsConst
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import load_luts
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import get_thermo_prop
@@ -77,7 +77,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 
-def _supersaturated_box_case() -> box.BoxCase:
+def _supersaturated_box_case(*, ptotv_pa: float | None = None) -> box.BoxCase:
     """A cloudlab-shaped (40 liquid bins), single-column, supersaturated,
     no-pre-existing-liquid `BoxCase` -- the exact physical scenario
     `test_warm_loop.py`'s `TestEndToEndSupersaturatedSpinUp` uses
@@ -89,22 +89,48 @@ def _supersaturated_box_case() -> box.BoxCase:
     `thil=t`/`qtp=qv` -- i.e. `run_box` on this case is a faithful
     superset (adds the `moistthermo_mask` bridge + the ice-mass guard) of
     an already-proven-to-work scenario, not a new, unvalidated one.
+
+    `ptotv_pa`: the SI Pa pressure to store in `ThermoState.ptotv`
+    (`state.py`'s own UNIT CONTRACT note on `ThermoProp.ptotv`); defaults
+    to `AmpsConst.p00 / 10.0` (the CGS `P_STD` this scenario's own physical
+    intent is anchored to, exactly SI-Pa-converted -- see `core/
+    packing.py`'s `SCALE_PRE00`/`AmpsConst.p00` module docstring notes,
+    both `1e5 Pa`/`1e6 dyn/cm^2` being the SAME reference pressure).
+    `TestRunBoxRealisticPressure` below passes a genuinely DIFFERENT value
+    (`90000.0`, cloudlab range, `!= p00`'s SI equivalent) -- the M2a Task 7
+    code-review regression this parameter exists for (see that test's own
+    docstring: this exact scenario, with `ptotv` fixed at `p00` in every
+    prior test, is what masked the SI-Pa/CGS unit bug in the first place).
+
+    `thv` is DERIVED from `tv`/`ptotv_pa` via the same SI Exner relation
+    `core/packing.py`'s `_pack_thermo` uses (`thv = tv*(SCALE_PRE00/
+    ptotv_pa)**(SCALE_RDRY/SCALE_CPDRY)`), NOT hardcoded to `t` -- an
+    earlier draft of this fixture hardcoded `thv=t` (valid ONLY when
+    `ptotv_pa == SCALE_PRE00` exactly, the Exner ratio's `1.0` fixed
+    point), which silently produced an internally-INCONSISTENT state for
+    any other `ptotv_pa` (an ~8K spurious `tv` drift over one warm-loop
+    step, caught while calibrating `TestRunBoxRealisticPressure`'s own
+    tolerance below -- a fixture bug, not a `run_box` bug; fixed here by
+    deriving `thv` properly instead of loosening that test's tolerance to
+    paper over it).
     """
     liq_nbins = 40
-    p = float(AmpsConst.p00)
+    p_cgs = float(AmpsConst.p00)
+    ptotv_pa = ptotv_pa if ptotv_pa is not None else p_cgs / 10.0
     t = 280.0
-    qv = 1.15e-2  # supersaturated at (p, t)
+    qv = 1.15e-2  # supersaturated at (p_cgs, t)
+    thv = t * (packing.SCALE_PRE00 / ptotv_pa) ** (packing.SCALE_RDRY / packing.SCALE_CPDRY)
 
     thermo_values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: p,
+        ThermoProp.ptotv: ptotv_pa,
         ThermoProp.tv: t,
-        ThermoProp.thv: t,
-        ThermoProp.piv: 0.0,
+        ThermoProp.thv: thv,
+        ThermoProp.piv: t / thv * packing.SCALE_CPDRY,
         ThermoProp.pbv: 0.0,
         ThermoProp.moist_denv: 1.2e-3,
         ThermoProp.qvv: qv,
-        ThermoProp.thetav: t,
+        ThermoProp.thetav: thv * (1.0 + 0.61 * qv),
         ThermoProp.wbv: 0.0,
         ThermoProp.momv: 0.0,
     }
@@ -177,6 +203,62 @@ class TestRunBoxSyntheticSmoke:
         result = box.run_box(case)
 
         np.testing.assert_array_equal(result.final_ice.values, case.ice.values)
+
+
+# ---------------------------------------------------------------------------
+# TestRunBoxRealisticPressure -- unconditional regression test, M2a Task 7
+# code review: a SI-Pa/CGS unit mismatch (`ThermoState.ptotv` is SI Pa,
+# `core.thermo.diag_t` and every other AMPS-internal CGS-physics formula
+# expects CGS dyn/cm^2, `state.py`'s own UNIT CONTRACT note on
+# `ThermoProp.ptotv`) was latent since M2a Task 1 (`implementations.
+# warm_loop._refresh_state`'s own `diag_t` call passed `ptotv` straight
+# through, unconverted) and independently duplicated in `core/liquid_diag.
+# py`, `core/vapor_deposition.py`, `core/activation.py` -- ALL of them
+# masked by every prior test fixture (including this file's own
+# `_supersaturated_box_case`, before this fix) setting `ptotv` numerically
+# equal to `AmpsConst.p00` itself, giving a spuriously-exact ratio of 1
+# wherever both sides of a mismatched conversion cancelled by construction.
+# `run_box` was the first end-to-end path exercised at a REALISTIC pressure
+# (`!= p00`'s SI equivalent), which is what actually exposed the bug: with
+# it present, `til = thil*(p/p00)**Racp` used a ratio of ~0.1 instead of 1,
+# collapsing `tv` by roughly half (e.g. ~270K -> ~140K) for any ptotv in
+# the ordinary atmospheric range. This test pins the fix: a realistic,
+# non-`p00` pressure must NOT collapse `tv`.
+# ---------------------------------------------------------------------------
+
+
+class TestRunBoxRealisticPressure:
+    # Cloudlab-range surface pressure, SI Pa, deliberately NOT p00's SI
+    # equivalent (1.0e5) -- see class docstring: fixing ptotv AT p00 is
+    # exactly what masked this bug in every prior test.
+    REALISTIC_PTOTV_PA = 90_000.0
+
+    def test_tv_stays_physical_no_collapse(self) -> None:
+        """A near-adiabatic single step (qr=qi=0 initially, so `_refresh_
+        state`'s `til = thil*(p_cgs/p00)**Racp` reconstructs the input `tv`
+        EXACTLY when units are handled consistently -- `thil` itself comes
+        from `moistthermo_mask`'s `thp = thv/(1+0)` with no liquid/ice
+        present, i.e. `thil == thv`, and `thv`/`ptotv_pa` are related by
+        the SAME SI Exner relation `core/packing.py`'s `_pack_thermo` uses,
+        so the CGS round-trip is a mathematical identity, not a
+        coincidence): final `tv` must stay within a few K of the input
+        `tv=280.0`, not collapse toward `tv*(0.1)**Racp ~= 145K` (Racp
+        ~= 0.286, the ~50% collapse the code review's own bug report
+        describes)."""
+        t_initial = 280.0
+        case = _supersaturated_box_case(ptotv_pa=self.REALISTIC_PTOTV_PA)
+        assert case.thermo.values[
+            list(ThermoState.PROPS).index(ThermoProp.ptotv), 0, 0, 0
+        ] == pytest.approx(self.REALISTIC_PTOTV_PA)
+
+        result = box.run_box(case)
+
+        tv_final = get_thermo_prop(result.final_thermo, ThermoProp.tv)[0]
+        assert np.isfinite(tv_final)
+        # Generous margin (a few K) for the latent heat a real CCN-
+        # activation event releases within one dt=1s step -- NOT a
+        # tolerance loose enough to hide a ~50% (~135K) collapse.
+        assert tv_final == pytest.approx(t_initial, abs=5.0)
 
 
 # ---------------------------------------------------------------------------
@@ -337,7 +419,23 @@ def test_warm_replay_against_m0_dump() -> None:
     `box.run_box`'s own docstring documents as genuinely advanced by the
     warm loop; `thermo.thv`/`piv`/`moist_denv` are deliberately excluded
     (a documented `implementations.warm_loop` scope gap -- `update_
-    airgroup` has no port -- not something to (mis)validate here)."""
+    airgroup` has no port -- not something to (mis)validate here).
+
+    SCOPE CAVEAT (M2a Task 7 code review): this function's own logic was
+    verified end-to-end with a SELF-referential round-trip -- a synthetic
+    "post" `MicroRecord` built FROM `run_box`'s own output on a synthetic
+    "pre" record, fed back through this exact function, both to confirm
+    the pass path (exact match by construction) and the worst-offender
+    failure-reporting path (via a deliberately corrupted field). That
+    round-trip validates ONLY this harness's OWN bookkeeping -- dump
+    loading, pairing, field comparison, worst-offender tracking -- it
+    CANNOT catch a systematic error in `run_box`'s physics itself (the
+    same error, present on both the "actual" and "expected" side by
+    construction, trivially cancels; see the SI-Pa/CGS pressure bug this
+    same code review caught, which such a self-referential check would
+    NOT have exposed). Genuine physics validation requires this test to
+    run against an EXTERNAL scale_amps Fortran dump (see `_find_dump_
+    source`'s own docstring) -- something no local checkout has yet."""
     dump_source = _find_dump_source()
     if dump_source is None:
         pytest.skip(_SKIP_MESSAGE)
