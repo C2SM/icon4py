@@ -23,6 +23,14 @@ drop sizes spanning `cal_terminal_vel_vec`'s three nontrivial regimes
 (Stokes / empirical-fit / Bond-number) plus one aerosol-bearing bin, each
 compared against `diag_pq_liquid`'s batched output for the corresponding
 bin.
+
+`TestNpSelectDefaultsD1` -- D1 (M2a whole-branch review): `_terminal_
+velocity`/`_den_aclen`'s `np.select` calls now pass `default=np.nan`
+instead of falling back to np.select's own implicit `default=0` -- see
+`core/liquid_diag.py`'s own inline comments at each call site for why
+`_terminal_velocity`'s case is a genuinely reachable pre-fix bug (NaN
+`length` silently became `0.0`) while `_den_aclen`'s is defensive
+hardening (its own masks are an exhaustive partition, unreachable today).
 """
 
 from __future__ import annotations
@@ -523,6 +531,90 @@ class TestInactiveBinDefaults:
         liquid_no_mass = _liquid_state([(1.0e-31, 1.0, 0.0, 0.0)])
         diag = liquid_diag.diag_pq_liquid(liquid_no_mass, thermo_state, config, luts)
         assert _diag_field(diag, "density", 0) == 1.0
+
+
+# ---------------------------------------------------------------------------
+# D1 (M2a whole-branch review): np.select calls in _terminal_velocity/
+# _den_aclen previously had no `default=`, silently falling back to
+# np.select's own implicit `default=0` whenever none of a call's branch
+# conditions matched (e.g. every comparison against a NaN input is False) --
+# a bad/NaN value silently became a physically-plausible-looking `0.0`
+# rather than propagating/failing loud. Fixed by passing `default=np.nan`.
+# ---------------------------------------------------------------------------
+
+
+class TestNpSelectDefaultsD1:
+    def test_terminal_velocity_nan_length_propagates_not_silent_zero(self) -> None:
+        """THE reachable case: `_terminal_velocity` takes `length` as a raw
+        parameter (no `_safe_div`-style upstream masking), so a NaN
+        `length` makes every one of its four `np.select` conditions False
+        -- pre-fix this silently returned `0.0`; post-fix it must be NaN."""
+        length = np.array([np.nan])
+        p = np.array([P_STD])
+        t = np.array([T_STD])
+        den_a = np.array([1.2e-3])
+        d_vis = np.array([1.8e-4])
+        sig_wa = np.array([72.0])
+
+        vtm = liquid_diag._terminal_velocity(length, p, t, den_a=den_a, d_vis=d_vis, sig_wa=sig_wa)
+
+        assert np.isnan(vtm[0])
+
+    def test_terminal_velocity_finite_length_unaffected(self, luts) -> None:
+        """Regression: `default=np.nan` must not change any of the four
+        regimes' own (finite-input) values -- cross-checked against
+        `diag_pq_liquid`'s batched output for a real rain-size bin,
+        matching `TestRealisticDensity`'s own "mid" regime."""
+        config = AmpsConfig.cloudlab()
+        radius_cm = 200.0e-4  # "mid" cal_terminal_vel_vec regime
+        mean_mass = _drop_mean_mass(radius_cm)
+        liquid = _liquid_state([(mean_mass, 1.0, 0.0, 0.0)])
+        thermo_state = _thermo_state(p=P_STD, t=T_STD, den=DEN_STD, qv=QV_STD)
+
+        diag = liquid_diag.diag_pq_liquid(liquid, thermo_state, config, luts)
+
+        assert np.isfinite(_diag_field(diag, "terminal_velocity", 0))
+        assert _diag_field(diag, "terminal_velocity", 0) > 0.0
+
+    def test_den_aclen_masks_are_an_exhaustive_partition(self) -> None:
+        """`_den_aclen`'s own `default=np.nan` is DEFENSIVE hardening, not
+        a currently-reachable-bug fix (unlike `_terminal_velocity` above):
+        `small`/`medium`/`large` are constructed as `large = ~small &
+        ~medium`, an exhaustive partition by construction regardless of
+        `mean_mass`/`con`/`mass_aero_total`/`eps_map`'s own values -- and
+        this function's own `np.maximum(r_n*1.05, length)` floor plus
+        `_safe_div`'s `denominator<=0 -> 0` masking together prevent its
+        internally-computed `length` from ever coming out NaN in the first
+        place (confirmed: even `mean_mass=nan` still yields a FINITE
+        `length`/`a_len`/`c_len`, floored by `r_n*1.05`). So this test
+        pins that (a) the fix is a genuine no-op for every regime's
+        existing values (the three physical branches, still correct) and
+        (b) a NaN `mean_mass` input still comes back finite either way --
+        `default=np.nan` is here purely to guard a future edit that might
+        break the partition invariant, not to change today's behavior."""
+        den_as, den_ai = 1.79, 2.16
+
+        # One bin per size regime (small/medium/large -- verified directly
+        # against _den_aclen's own output at these mean_mass magnitudes)
+        # plus a NaN-mean_mass probe -- (b) above.
+        mean_mass = np.array([1.0e-12, 1.0e-4, 1.0e-3, np.nan])
+        con = np.array([1.0, 1.0, 1.0, 1.0])
+        mass_aero_total = np.array([1.0e-14, 1.0e-6, 1.0e-5, 1.0e-14])
+        eps_map = np.array([1.0, 1.0, 1.0, 1.0])
+
+        _density, length, a_len, c_len, _den_ap, _r_n = liquid_diag._den_aclen(
+            mean_mass, con, mass_aero_total, eps_map, den_as=den_as, den_ai=den_ai
+        )
+
+        assert np.all(np.isfinite(length))
+        assert np.all(np.isfinite(a_len))
+        assert np.all(np.isfinite(c_len))
+        # Regime sanity: length must actually span small/medium/large so
+        # this test genuinely exercises all three np.select branches, not
+        # just one.
+        assert length[0] <= 280.0e-4
+        assert 280.0e-4 < length[1] <= 1.0e-1
+        assert length[2] > 1.0e-1
 
 
 # ---------------------------------------------------------------------------

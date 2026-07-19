@@ -18,6 +18,11 @@ Groups, matching the task brief's test list:
   precondition + no-water no-op.
 * TestVaporDepositionLiquid -- `_vapor_deposition_liquid` (M2a Task 5,
   DONE): `state.diag` precondition + no-water no-op.
+* TestActivationDeferredApply -- B1 (M2a whole-branch review): `_activation`
+  defers its own liquid-bin increment (stashed on `pending_activation_
+  delta`) until the following `_vapor_deposition_liquid` call, mirroring
+  Fortran's `update_group_all(update_vapor=1)` apply-AFTER-vapor-dep
+  semantics -- see warm_loop.py's own module docstring.
 * TestRepair -- `_repair` (M2a Task 6, DONE): dispatches `phase="collision"`
   to `core.repair.repair_liquid` (af_col) and `phase="vapor"` to
   `core.repair.repair_vapor` (af_vap) -- these are DIFFERENT algorithms
@@ -53,6 +58,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables impo
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
     ScaleRawState,
     get_thermo_prop,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.vapor_deposition import (
+    vapor_deposition_liquid,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.implementations import warm_loop
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import (
@@ -267,6 +275,15 @@ class TestActivation:
         np.testing.assert_array_equal(activated.liquid.values, refreshed.liquid.values)
         np.testing.assert_array_equal(activated.aerosol.values, refreshed.aerosol.values)
         np.testing.assert_array_equal(activated.thermo.values, refreshed.thermo.values)
+        # B1 (deferred-apply): a pending delta is always stashed, but for a
+        # genuine no-water/no-activation box it must be all-zero -- proving
+        # the no-op is real, not merely an artifact of liquid always being
+        # left untouched by _activation now (see TestActivationDeferredApply).
+        assert activated.pending_activation_delta is not None
+        np.testing.assert_array_equal(
+            activated.pending_activation_delta.values,
+            np.zeros_like(activated.pending_activation_delta.values),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -299,6 +316,186 @@ class TestVaporDepositionLiquid:
 
         deposited = warm_loop._vapor_deposition_liquid(refreshed, config, 0.01, luts)
         np.testing.assert_array_equal(deposited.liquid.values, refreshed.liquid.values)
+
+
+# ---------------------------------------------------------------------------
+# B1 (M2a whole-branch review, activation deferred-apply): the REAL Fortran
+# defers activation's own liquid-bin increment to
+# update_group_all(update_vapor=1), which runs AFTER vapor_deposition(rain)
+# in the SAME vap-loop iteration -- so vapor_deposition's own growth kernel
+# reads the PRE-activation bin population, never one that already includes
+# this substep's own newly-nucleated droplets. `_activation` mirrors that
+# seam by stashing its own liquid increment on
+# `WarmLoopState.pending_activation_delta` instead of applying it to
+# `state.liquid`; `_vapor_deposition_liquid` consumes (adds) that pending
+# delta AFTER computing its own growth from the still-pre-activation
+# `state.liquid`. See warm_loop.py's own module docstring ("B1" note).
+# ---------------------------------------------------------------------------
+
+
+class TestActivationDeferredApply:
+    LIQ_NBINS = 40
+
+    def _state(self, *, prepopulate_bin0: bool = False) -> warm_loop.WarmLoopState:
+        """cloudlab-shaped (40 liquid bins), supersaturated single-column
+        state with a real CCN population --
+        `TestEndToEndSupersaturatedSpinUp`'s own proven-supersaturated
+        setup (`T=280K`, `P=p00`, `qv=1.15e-2`,
+        `(amt,acon,ams)=(3.164e-13,300.0,3.164e-13)`). `prepopulate_bin0`
+        seeds bin 0 with a pre-existing droplet population -- VERIFIED
+        (directly, by running `activate_and_advance_vapor` on this exact
+        scenario's all-empty liquid state) to be exactly one of the bins
+        {0,1,2} this CCN population's own newly-nucleated droplets land in
+        -- i.e. the B1 "overlap" case: a bin BOTH already active AND
+        newly activation-grown within the SAME vap-loop iteration."""
+        p = float(AmpsConst.p00)
+        t = 280.0
+        qv = 1.15e-2
+
+        thermo_values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
+        by_prop = {
+            ThermoProp.ptotv: p,
+            ThermoProp.tv: t,
+            ThermoProp.thv: t,
+            ThermoProp.piv: 0.0,
+            ThermoProp.pbv: 0.0,
+            ThermoProp.moist_denv: 1.2e-3,
+            ThermoProp.qvv: qv,
+            ThermoProp.thetav: t,
+            ThermoProp.wbv: 0.0,
+            ThermoProp.momv: 0.0,
+        }
+        for idx, prop in enumerate(ThermoState.PROPS):
+            thermo_values[idx, 0, 0, 0] = by_prop[ThermoProp(int(prop))]
+
+        lp = index_maps.LiquidPPV
+        liquid_values = np.zeros((len(LiquidState.PROPS), self.LIQ_NBINS, 1, 1), dtype=np.float64)
+        if prepopulate_bin0:
+            liquid_values[lp.rmt_q.py_idx, 0, 0, 0] = 3.0e-13
+            liquid_values[lp.rcon_q.py_idx, 0, 0, 0] = 50.0
+        liquid = LiquidState(values=liquid_values)
+
+        aerosol_values = np.zeros((len(AerosolState.PROPS), 1, 1, 1), dtype=np.float64)
+        aerosol_values[0, 0, 0, 0] = 3.164e-13
+        aerosol_values[1, 0, 0, 0] = 300.0
+        aerosol_values[2, 0, 0, 0] = 3.164e-13
+        aerosol = AerosolState(values=aerosol_values)
+
+        return warm_loop.WarmLoopState(
+            thermo=ThermoState(values=thermo_values),
+            liquid=liquid,
+            aerosol=aerosol,
+            thil=np.array([t]),
+            qtp=np.array([qv]),
+            mes_rc=np.zeros(1, dtype=np.int64),
+        )
+
+    def test_activation_leaves_state_liquid_untouched(self, luts):
+        """`_activation` must NOT modify `state.liquid` -- the bin
+        increment is deferred (stashed on `pending_activation_delta`),
+        matching Fortran's own apply-after-vapor-dep semantics."""
+        config = AmpsConfig.cloudlab()
+        refreshed = warm_loop._refresh_state(self._state(), config, luts)
+
+        activated = warm_loop._activation(refreshed, config, 0.1, luts)
+
+        np.testing.assert_array_equal(activated.liquid.values, refreshed.liquid.values)
+        assert activated.pending_activation_delta is not None
+        lp = index_maps.LiquidPPV
+        # Some activation must actually have happened -- not a vacuous
+        # all-zero delta (this scenario is proven supersaturated elsewhere,
+        # e.g. TestEndToEndSupersaturatedSpinUp).
+        assert activated.pending_activation_delta.values[lp.rmt_q.py_idx].sum() > 0.0
+
+    def test_activation_twice_without_consuming_raises(self, luts):
+        """Calling `_activation` again before `_vapor_deposition_liquid`
+        has consumed the pending delta would silently drop the first
+        call's increment -- must raise instead."""
+        config = AmpsConfig.cloudlab()
+        refreshed = warm_loop._refresh_state(self._state(), config, luts)
+        activated = warm_loop._activation(refreshed, config, 0.1, luts)
+
+        with pytest.raises(ValueError, match="pending_activation_delta"):
+            warm_loop._activation(activated, config, 0.1, luts)
+
+    def test_vapor_deposition_applies_pending_delta_on_top_of_its_own_growth(self, luts):
+        """`combined.liquid` must equal `core.vapor_deposition.
+        vapor_deposition_liquid`'s own output -- computed from the
+        PRE-activation `liquid` -- PLUS activation's stashed delta: the
+        exact deferred-apply mechanics (not merely "some combination")."""
+        config = AmpsConfig.cloudlab()
+        refreshed = warm_loop._refresh_state(self._state(prepopulate_bin0=True), config, luts)
+        activated = warm_loop._activation(refreshed, config, 0.1, luts)
+
+        combined = warm_loop._vapor_deposition_liquid(activated, config, 0.1, luts)
+        assert combined.pending_activation_delta is None  # consumed
+
+        expected_liquid, _expected_aerosol, _expected_thermo = vapor_deposition_liquid(
+            refreshed.liquid, activated.aerosol, activated.thermo, config, 0.1, refreshed.diag
+        )
+        np.testing.assert_allclose(
+            combined.liquid.values,
+            expected_liquid.values + activated.pending_activation_delta.values,
+            rtol=1.0e-13,
+        )
+
+    def test_vapor_deposition_grows_the_pre_activation_population_not_the_inline_one(self, luts):
+        """THE B1 fix, demonstrated: in the "overlap" bin (pre-existing
+        AND newly activation-grown, same substep), vapor-dep's own growth
+        must differ from what an INLINE-apply order (activation's
+        increment folded into `liquid` BEFORE vapor-dep reads it -- the
+        pre-B1-fix behavior) would have produced, because the two orders
+        feed vapor-dep's `con`/`mass_total` growth basis a genuinely
+        different bin population for the overlap bin."""
+        config = AmpsConfig.cloudlab()
+        refreshed = warm_loop._refresh_state(self._state(prepopulate_bin0=True), config, luts)
+        activated = warm_loop._activation(refreshed, config, 0.1, luts)
+        delta = activated.pending_activation_delta
+        assert delta is not None
+
+        combined = warm_loop._vapor_deposition_liquid(activated, config, 0.1, luts)
+
+        # The (incorrect, pre-B1-fix) inline-apply alternative: fold
+        # activation's increment into liquid FIRST, then run vapor-dep.
+        liquid_inline = LiquidState(values=refreshed.liquid.values + delta.values)
+        inline_liquid_out, _inline_aerosol, _inline_thermo = vapor_deposition_liquid(
+            liquid_inline, activated.aerosol, activated.thermo, config, 0.1, refreshed.diag
+        )
+
+        assert not np.allclose(combined.liquid.values, inline_liquid_out.values)
+
+    def test_total_water_conserved_across_activation_and_vapor_deposition(self, luts):
+        """Deferring WHEN activation's increment is folded in must not
+        break total-water conservation across the (activation, vapor-dep)
+        pair -- this task's own binding conservation constraint, checked
+        here at the unit-pair level (see also
+        `TestEndToEndSupersaturatedSpinUp::
+        test_total_water_conserved_across_full_loop` for the full-loop
+        acceptance check, unaffected by this change)."""
+        config = AmpsConfig.cloudlab()
+        refreshed = warm_loop._refresh_state(self._state(prepopulate_bin0=True), config, luts)
+
+        qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+        lp = index_maps.LiquidPPV
+        qv_before = float(refreshed.thermo.values[qvv_idx, 0, 0, 0])
+        water_before = float(
+            (
+                refreshed.liquid.values[lp.rmt_q.py_idx] - refreshed.liquid.values[lp.rmat_q.py_idx]
+            ).sum()
+        )
+
+        activated = warm_loop._activation(refreshed, config, 0.1, luts)
+        combined = warm_loop._vapor_deposition_liquid(activated, config, 0.1, luts)
+
+        qv_after = float(combined.thermo.values[qvv_idx, 0, 0, 0])
+        water_after = float(
+            (
+                combined.liquid.values[lp.rmt_q.py_idx] - combined.liquid.values[lp.rmat_q.py_idx]
+            ).sum()
+        )
+        np.testing.assert_allclose(
+            (qv_after + water_after) - (qv_before + water_before), 0.0, atol=1.0e-10, rtol=0.0
+        )
 
 
 # ---------------------------------------------------------------------------

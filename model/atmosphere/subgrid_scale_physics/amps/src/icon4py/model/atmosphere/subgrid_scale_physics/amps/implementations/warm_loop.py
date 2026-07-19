@@ -42,7 +42,9 @@ PROCESS kernels are explicitly OUT of scope here and land in later tasks:
   G1 §1 vap_loop) -- `core.activation.activate_and_advance_vapor`
   (`core/activation.py`). Requires `state.diag` (Task 2's `diag_pq_liquid`
   output); `_refresh_state` always populates it immediately before this
-  hook fires.
+  hook fires. `aerosol`/`thermo` are applied immediately (that threading
+  is unaffected by B1 below); the LIQUID bin increment (`rmt`/`rcon`/
+  `rmat`/`rmas`) is DEFERRED -- see "B1" note directly below.
 * Task 5 (DONE): `_vapor_deposition_liquid` (vapor deposition on rain,
   `vapor_deposition(CM%rain,...)`, G1 §1 vap_loop) --
   `core.vapor_deposition.vapor_deposition_liquid` (`core/
@@ -51,6 +53,35 @@ PROCESS kernels are explicitly OUT of scope here and land in later tasks:
   activation-added droplets -- see that module's own docstring item 2);
   `_refresh_state` always populates it immediately before this hook
   fires, exactly as for `_activation`.
+
+B1 (M2a whole-branch review, activation deferred-apply): the REAL Fortran
+defers activation's own liquid-bin increment (`gr%MS(i,n)%dmassdt(rmt,
+pro_type)=new_M(i,n,rmt)/gr%dt`, `activate_and_advance_vapor`'s own
+docstring) to `update_group_all(update_vapor=1)`, which runs AFTER
+`vapor_deposition(rain)` in the SAME vap-loop iteration -- so
+`vapor_deposition`'s own growth kernel (`d_mean_mass=(coef1*s_v_n+coef2)*
+dt`, `dmcon=con*d_mean_mass`) reads the bin's PRE-activation `con`/`mass`
+as its growth basis, never a population that already includes this
+substep's own newly-nucleated droplets. `_activation`/
+`_vapor_deposition_liquid` mirror that seam: `_activation` stashes the
+liquid increment on `WarmLoopState.pending_activation_delta` instead of
+applying it to `state.liquid` (so `state.liquid` stays at its
+PRE-activation value across the call); `_vapor_deposition_liquid`
+computes its own growth from that still-pre-activation `state.liquid`
+(exactly matching `icond3`'s own pre-existing staleness rationale, module
+docstring item 2 of `core/vapor_deposition.py`, one level further) and
+THEN adds the pending delta on top of its own output -- reproducing
+Fortran's "both tendencies flushed together, after vapor-dep" semantics
+without needing `core.activation.activate_and_advance_vapor`'s own
+signature (or its many direct unit tests, `test_activation.py`) to
+change: that function's own contract (apply inline to the `liquid` it is
+given) is unchanged: only WHEN this module folds its result into
+`state.liquid` moved. Total water conservation is invariant to this
+timing change (water is only ever moved by ADDITIVE, mutually
+independent debits/credits on each side -- see `test_warm_loop.py`'s own
+`TestActivationDeferredApply` for the algebraic proof and
+`TestEndToEndSupersaturatedSpinUp::test_total_water_conserved_across_
+full_loop`, unchanged, for the full-loop acceptance check).
 * Task 6 (DONE): `_repair` (repair, G1 §1, called once per col_loop
   iteration and once per vap_loop iteration with DIFFERENT algorithms,
   not just different tendency masks) -- `core.repair.repair_liquid` (af_col,
@@ -153,6 +184,18 @@ class WarmLoopState:
     first such refresh (e.g. right after `WarmLoopState.__init__`, or in
     tests that call `_refresh_state(state)` with no `config`/`luts` to
     probe only the `diag_t` refresh -- see `test_warm_loop.py`).
+
+    `pending_activation_delta`: `LiquidState | None` (default `None`) --
+    B1's deferred-apply seam (see module docstring). `_activation` stashes
+    its own `(rmt,rcon,rmat,rmas)` bin INCREMENT here instead of folding it
+    into `liquid` immediately; `_vapor_deposition_liquid` consumes
+    (adds, then clears back to `None`) it AFTER computing its own growth
+    from the still-pre-activation `liquid`. `None` whenever no activation
+    increment is outstanding (the common case outside the narrow
+    `_activation` -> `_vapor_deposition_liquid` window one vap-loop
+    iteration spans) -- `_activation` itself raises if called again while
+    a previous call's delta is still unconsumed (see its own docstring),
+    rather than silently dropping it.
     """
 
     thermo: ThermoState
@@ -162,6 +205,7 @@ class WarmLoopState:
     qtp: np.ndarray  # (npoints,) total water mixing ratio, G1 §1 `qtp(*)`
     mes_rc: np.ndarray  # (npoints,) hydrometeor phase flag, G1 §4a
     diag: LiquidDiag | None = None  # (nbins, npoints) per field; see above
+    pending_activation_delta: LiquidState | None = None  # B1, see above
 
     def __post_init__(self) -> None:
         npoints = {
@@ -172,6 +216,8 @@ class WarmLoopState:
             "qtp": self.qtp.shape[0],
             "mes_rc": self.mes_rc.shape[0],
         }
+        if self.pending_activation_delta is not None:
+            npoints["pending_activation_delta"] = self.pending_activation_delta.npoints
         if len(set(npoints.values())) != 1:
             raise ValueError(
                 f"WarmLoopState fields must share the same npoints (single packed "
@@ -304,6 +350,19 @@ def _activation(
     naming the missing precondition if called directly on a state that
     skipped that refresh (e.g. a bare `WarmLoopState(...)`, `diag=None` by
     default).
+
+    B1 (deferred-apply, see module docstring): `aerosol`/`thermo` are
+    applied immediately (unchanged threading); the returned state's
+    `liquid` is `state.liquid`, UNCHANGED -- `activate_and_advance_vapor`'s
+    own liquid-bin increment is stashed on `pending_activation_delta`
+    instead, for `_vapor_deposition_liquid` to fold in AFTER it computes
+    its own growth from this same still-pre-activation `liquid`. Raises
+    `ValueError` if `state.pending_activation_delta` is already populated
+    (an earlier `_activation` call's increment was never consumed by a
+    following `_vapor_deposition_liquid` call -- `run_warm_micro_tendency`
+    always pairs the two 1:1 within one vap-loop iteration; calling
+    `_activation` twice in a row would otherwise silently DROP the first
+    call's pending increment).
     """
     if state.diag is None:
         raise ValueError(
@@ -312,10 +371,25 @@ def _activation(
             "(run_warm_micro_tendency's own vap-loop head always does, immediately "
             "before this hook)."
         )
-    liquid, aerosol, thermo = activate_and_advance_vapor(
+    if state.pending_activation_delta is not None:
+        raise ValueError(
+            "_activation: state.pending_activation_delta is already populated -- an "
+            "earlier _activation call's liquid-bin increment was never consumed by a "
+            "following _vapor_deposition_liquid call (run_warm_micro_tendency's own "
+            "vap-loop body always pairs the two 1:1); calling _activation again now "
+            "would silently drop that pending increment."
+        )
+    liquid_after, aerosol, thermo = activate_and_advance_vapor(
         state.liquid, state.aerosol, state.thermo, config, dt_vp, luts, state.diag
     )
-    return dataclasses.replace(state, liquid=liquid, aerosol=aerosol, thermo=thermo)
+    # B1: defer the liquid bin increment -- state.liquid stays at its
+    # PRE-activation value; the increment itself is stashed for
+    # _vapor_deposition_liquid to add AFTER computing its own growth from
+    # that same pre-activation liquid (see module docstring).
+    delta = LiquidState(values=liquid_after.values - state.liquid.values)
+    return dataclasses.replace(
+        state, aerosol=aerosol, thermo=thermo, pending_activation_delta=delta
+    )
 
 
 def _vapor_deposition_liquid(
@@ -340,6 +414,18 @@ def _vapor_deposition_liquid(
     `run_warm_micro_tendency`'s own vap-loop head) -- raises `ValueError`
     naming the missing precondition if called directly on a state that
     skipped that refresh, matching `_activation`'s own precondition check.
+
+    B1 (deferred-apply, see module docstring): computes its own growth
+    from `state.liquid` AS GIVEN (the PRE-activation population whenever
+    this is called immediately after `_activation`, per
+    `run_warm_micro_tendency`'s own wiring -- `_activation` deliberately
+    leaves `state.liquid` untouched) and THEN, if `state.
+    pending_activation_delta` is populated, adds it on top of its own
+    output before returning -- reproducing Fortran's `update_group_all(
+    update_vapor=1)` "both tendencies flushed together, after
+    vapor_deposition" semantics. `pending_activation_delta` is cleared
+    (`None`) on the returned state either way (a no-op add when it was
+    already `None` -- e.g. a direct call with no preceding `_activation`).
     """
     del luts
     if state.diag is None:
@@ -352,7 +438,11 @@ def _vapor_deposition_liquid(
     liquid, aerosol, thermo = vapor_deposition_liquid(
         state.liquid, state.aerosol, state.thermo, config, dt_vp, state.diag
     )
-    return dataclasses.replace(state, liquid=liquid, aerosol=aerosol, thermo=thermo)
+    if state.pending_activation_delta is not None:
+        liquid = LiquidState(values=liquid.values + state.pending_activation_delta.values)
+    return dataclasses.replace(
+        state, liquid=liquid, aerosol=aerosol, thermo=thermo, pending_activation_delta=None
+    )
 
 
 def _repair(state: WarmLoopState, config: AmpsConfig, phase: str) -> WarmLoopState:
@@ -418,9 +508,14 @@ def run_warm_micro_tendency(
     vap_loop body (G1 §1's own CCN-activation-then-vapor-deposition
     ordering), `_repair` once per col_loop iteration (before the vap_loop)
     and once per vap_loop iteration (after `_vapor_deposition_liquid`) --
-    `update_group_all` is inlined-by-design (module docstring): each
-    process hook already returns its own advanced `WarmLoopState`, so there
-    is no separate "apply accumulated tendencies" step to model.
+    `update_group_all` is inlined-by-design (module docstring): `_repair`
+    and (as a PAIR) `_activation`+`_vapor_deposition_liquid` each return
+    their own advanced `WarmLoopState` by the time the pair completes, so
+    there is no separate "apply accumulated tendencies" step to model.
+    `_activation` alone does NOT advance `state.liquid` (B1, module
+    docstring) -- only the immediately-following `_vapor_deposition_liquid`
+    call folds its stashed increment in, matching Fortran's own
+    `update_group_all(update_vapor=1)` apply-after-vapor-dep timing.
 
     Per G1 §1 (warm-only reduction, module docstring): the collision-substep
     physics (`coalescence(rain,rain)`, `hydrodyn_breakup(rain)`, Task 3) and

@@ -241,13 +241,29 @@ def _den_aclen(
     alpha_large = np.maximum(_alpha_poly(dum_clamped), 1.0e-5)
     dum_large = length / (8.0 * alpha_large) ** (1.0 / 3.0)
 
+    # D1 (M2a whole-branch review): `default=np.nan` -- `small`/`medium`/
+    # `large` are constructed as an exhaustive partition (`large = ~small &
+    # ~medium`), so np.select's own implicit `default=0` branch is
+    # provably unreachable for THIS mask construction (confirmed: the
+    # `np.maximum(r_n*1.05, length)` floor above + `_safe_div`'s own
+    # `denominator<=0 -> 0` masking together prevent `length` itself from
+    # ever coming out NaN via this function's own inputs, so there is no
+    # reachable NaN-input regression to pin here -- see
+    # `test_liquid_diag.py`'s own D1 test group for the verified case,
+    # `_terminal_velocity` below, where the analogous default WAS
+    # reachable and WAS silently returning 0). Kept anyway as defensive
+    # hardening: a silent integer-flavored `0` masking a future edit that
+    # breaks the partition invariant (e.g. a fourth regime added without
+    # updating `large`) would be far harder to notice than a loud NaN.
     a_len = np.select(
         [small, medium, large],
         [length / 2.0, dum_medium, dum_large],
+        default=np.nan,
     )
     c_len = np.select(
         [small, medium, large],
         [length / 2.0, dum_medium * alpha_medium, dum_large * alpha_large],
+        default=np.nan,
     )
 
     return density, length, a_len, c_len, den_ap, r_n
@@ -317,9 +333,20 @@ def _terminal_velocity(
         nre_d = np_ ** (1.0 / 6.0) * np.exp(_poly(_VTM_HIGH_POLY, x_d))
         vtm_high = nre_d * d_vis / (2.0 * rad_d * den_a)
 
+        # D1 (M2a whole-branch review): `default=np.nan` -- the four
+        # conditions are exhaustive for any FINITE `rad`, but a NaN `rad`
+        # (e.g. a NaN `length` reaching this function directly -- it takes
+        # `length` as a raw parameter, no `_safe_div`-style masking
+        # upstream) makes every comparison False (NaN comparisons are
+        # never True, including `>=`), so this fell through to np.select's
+        # own implicit `default=0` pre-fix: a bad/NaN input silently
+        # returned a physically-plausible-looking `0.0` fall speed instead
+        # of failing loud. Verified reachable (unlike `_den_aclen`'s
+        # analogous case above): see `test_liquid_diag.py`'s own D1 test.
         return np.select(
             [rad < 0.5e-4, rad < 10.0e-4, rad < 535.0e-4, rad >= 535.0e-4],
             [np.zeros_like(rad), vtm_stokes, vtm_mid, vtm_high],
+            default=np.nan,
         )
 
 

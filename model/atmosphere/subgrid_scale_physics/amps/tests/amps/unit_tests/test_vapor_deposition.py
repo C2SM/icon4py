@@ -41,9 +41,14 @@ Groups:
 * TestConservationAcrossEvaporation -- the explicit, paramount
   requirement: total water (vapor+liquid) AND total aerosol mass/number
   conserved to 1e-12 across an evaporation step.
-* test_vapor_deposition_replay_against_m0_dump (`pytest.mark.datatest`,
-  skipped) -- per-call replay vs spin-up dumps, matching
-  `test_activation.py`'s own precedent.
+
+B2 (M2a whole-branch review): the orphan per-call-replay `pytest.skip`
+stub this file used to carry (`test_vapor_deposition_replay_against_m0_
+dump`, matching `test_activation.py`'s own former precedent) was deleted
+-- `tests/amps/integration_tests/test_warm_replay.py::test_warm_replay_
+against_m0_dump` is the one centralized per-call replay harness now
+(covers the composed activation + vapor-deposition + repair path, not
+this module in isolation).
 """
 
 from __future__ import annotations
@@ -994,26 +999,11 @@ class TestConservationAcrossEvaporation:
         assert number_after == pytest.approx(number_before, abs=1e-12, rel=1e-11)
 
 
-# ---------------------------------------------------------------------------
-# Per-call replay against a real scale_amps M0 dump (marker-gated).
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.datatest
-def test_vapor_deposition_replay_against_m0_dump() -> None:
-    """Would spin up a pre-recorded liquid+aerosol+thermo state (scale_amps
-    M0 per-call DEBUG dump, `vapor_deposition` LIQUID call site), run
-    `vapor_deposition_liquid`, and compare the resulting liquid/aerosol/
-    thermo state against the recorded post-call state (rtol ~1e-8).
-    SKIPPED: no local scale_amps M0 per-call vapor-deposition dumps exist
-    in this checkout (`driver/ref_data.py` can load `amps_dump_r*.bin` if
-    produced by a real scale_amps DEBUG run -- see that module's
-    `read_dump_file`/`load_reference` -- none are committed here; matches
-    `test_activation.py`'s own `test_activation_replay_against_m0_dump`
-    precedent)."""
-    pytest.skip(
-        "No local scale_amps M0 per-call vapor-deposition dumps available in this checkout -- "
-        "see driver/ref_data.py (read_dump_file/load_reference) for the loader once real "
-        "amps_dump_r*.bin files (DEBUG-mode scale_amps run, vapor_deposition LIQUID call site) "
-        "exist."
-    )
+# B2 (M2a whole-branch review): the orphan `test_vapor_deposition_replay_
+# against_m0_dump` stub (bare `pytest.skip`, no local scale_amps M0 dump
+# ever available in this checkout to gate against) was DELETED here -- the
+# centralized `tests/amps/integration_tests/test_warm_replay.py::
+# test_warm_replay_against_m0_dump` covers the composed (activation +
+# vapor-deposition + repair) per-call replay path end-to-end and already
+# activates automatically the moment a real dump lands; this file-local
+# duplicate added no coverage of its own.

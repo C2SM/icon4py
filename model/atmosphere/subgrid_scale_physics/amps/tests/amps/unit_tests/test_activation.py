@@ -45,12 +45,10 @@ Groups, matching the task brief's test list:
   is present, regardless of `config.ice_nucleation_deposition`.
 * `TestSkipMask` -- an all-skipped grid box (`icycle_n==1` everywhere)
   returns the input state unchanged.
-* `test_activation_replay_against_m0_dump` (`pytest.mark.datatest`) --
-  SKIPPED with a pointer: no local scale_amps M0 per-call activation dumps
-  exist in this checkout (`driver/ref_data.py` can load
-  `amps_dump_r*.bin` if produced by a real scale_amps DEBUG run; none are
-  committed here, matching `test_ref_data.py`'s own synthesized-only
-  fixtures).
+* `TestNonP00Pressure` -- D2 (M2a whole-branch review): every other class
+  in this file pins `ptotv == p00`, the Exner-ratio "1.0" fixed point that
+  can mask a `p`-threading bug; this exercises the same pure-nucleation
+  scenario at a realistic, non-p00 pressure.
 
 Whole-branch review (C1, this file's own acceptance-test round): `core/
 activation.py` fed per-unit-mass `LiquidState`/`AerosolState` mixing-ratio
@@ -429,6 +427,112 @@ class TestMassConservation:
         np.testing.assert_array_equal(liquid_after.values, liquid.values)
         np.testing.assert_array_equal(aerosol_after.values, aerosol.values)
         np.testing.assert_array_equal(thermo_after.values, thermo_state.values)
+
+
+# ---------------------------------------------------------------------------
+# D2 (M2a whole-branch review): every test above (and most of this file)
+# pins `ptotv == P_STD == AmpsConst.p00` -- the Exner ratio `(p/p00)**Racp`
+# `core.thermo.diag_t`/`cal_air_temp` use is IDENTICALLY 1.0 there,
+# masking any latent bug in how `p`/`ptotv` threads through this driver's
+# own pressure-dependent physics (the exact "ratio-1 masking value" class
+# of bug `test_warm_replay.py`'s own `TestRunBoxRealisticPressure` was
+# added to catch at the `run_box` level -- see that class's docstring).
+# This exercises `activate_and_advance_vapor` at a genuinely non-p00
+# pressure directly.
+# ---------------------------------------------------------------------------
+
+
+class TestNonP00Pressure:
+    """A realistic, non-p00 pressure (~850 hPa CGS) must not silently
+    break activation -- same pure-nucleation scenario as
+    `TestMassConservation.test_water_mass_conserved`, just at a pressure
+    that actually exercises any `p`/`p00` ratio dependency instead of
+    trivially collapsing it to 1."""
+
+    P_REALISTIC = 0.85 * P_STD  # ~850 hPa CGS, deliberately != p00
+
+    def test_water_mass_conserved_at_realistic_pressure(self) -> None:
+        config = _base_config()
+        luts_ = load_luts()
+
+        qv = 1.15e-2
+        thermo_state = _thermo_state(p=self.P_REALISTIC, t=T_STD, den=DEN_STD, qv=qv)
+        liquid = _liquid_state_40bin({})  # no pre-existing droplets
+        aerosol = _aerosol_state_single_bin((3.164e-13, 300.0, 3.164e-13))
+        diag = _diag_for(liquid, thermo_state, config, luts_)
+
+        # Sanity: still supersaturated at this lower pressure (sw scales
+        # with p, so this is not guaranteed a priori) -- else activation
+        # would be a vacuous no-op below.
+        estbar, esitbar = thermo.make_esat_tables()
+        sw0 = activation._liquid_supersaturation(
+            np.array([self.P_REALISTIC]), np.array([qv]), np.array([T_STD]), estbar, esitbar
+        )
+        assert sw0[0] > 0.0
+
+        liquid_after, _aerosol_after, thermo_after = activation.activate_and_advance_vapor(
+            liquid, aerosol, thermo_state, config, dt_vp=1.0, luts=luts_, diag=diag
+        )
+
+        qv_after = float(
+            thermo_after.values[list(ThermoState.PROPS).index(ThermoProp.qvv), 0, 0, 0]
+        )
+        lp = index_maps.LiquidPPV
+        water_after = float(
+            (liquid_after.values[lp.rmt_q.py_idx] - liquid_after.values[lp.rmat_q.py_idx]).sum()
+        )
+
+        # Activation actually occurred (not vacuous), and total water
+        # (vapor + condensate) is conserved -- same identity/tolerance as
+        # TestMassConservation.test_water_mass_conserved, now at a
+        # realistic (non-p00) pressure.
+        assert water_after > 0.0
+        np.testing.assert_allclose(qv_after + water_after, qv, atol=1.0e-8, rtol=0.0)
+
+    def test_activation_outcome_differs_from_p00(self) -> None:
+        """Regression guard against `p` being silently ignored/hardcoded
+        to `p00` somewhere on this call path: the SAME `(t, qv, aerosol)`
+        scenario run at `P_REALISTIC` vs. `P_STD` must produce genuinely
+        different activated liquid -- if it didn't, `p` would not actually
+        be influencing the outcome.
+
+        `QV_MARGINAL` is deliberately tuned (not `TestMassConservation`'s
+        own `1.15e-2`, which pushes `sw` far enough above every CCN
+        quadrature bin's own critical supersaturation, at BOTH pressures,
+        that the activated fraction saturates at the same value regardless
+        of `p` -- confirmed empirically to give a bit-identical,
+        non-diagnostic result): at `QV_MARGINAL`, `sw` sits at ~0.19
+        (p00) vs. ~0.012 (`P_REALISTIC`) -- both still supersaturated
+        (genuine activation at both pressures, not one side vacuously
+        skipping), but straddling this aerosol population's own CCN
+        critical-supersaturation spectrum differently enough that a
+        DIFFERENT number of quadrature bins actually activate."""
+
+        QV_MARGINAL = 7.43e-3
+
+        config = _base_config()
+        luts_ = load_luts()
+        aerosol = _aerosol_state_single_bin((3.164e-13, 300.0, 3.164e-13))
+        liquid = _liquid_state_40bin({})
+
+        def _run(p: float):
+            thermo_state = _thermo_state(p=p, t=T_STD, den=DEN_STD, qv=QV_MARGINAL)
+            diag = _diag_for(liquid, thermo_state, config, luts_)
+            return activation.activate_and_advance_vapor(
+                liquid, aerosol, thermo_state, config, dt_vp=1.0, luts=luts_, diag=diag
+            )
+
+        liquid_p00, _, _ = _run(P_STD)
+        liquid_realistic, _, _ = _run(self.P_REALISTIC)
+
+        lp = index_maps.LiquidPPV
+        # Sanity: genuine activation at BOTH pressures (neither side is a
+        # vacuous no-op) -- the divergence below is a real "different
+        # amount activated", not "one side activated, the other didn't".
+        assert liquid_p00.values[lp.rmt_q.py_idx].sum() > 0.0
+        assert liquid_realistic.values[lp.rmt_q.py_idx].sum() > 0.0
+
+        assert not np.allclose(liquid_p00.values, liquid_realistic.values)
 
 
 # ---------------------------------------------------------------------------
@@ -846,24 +950,11 @@ class TestSkipMask:
         assert thermo_after is thermo_state
 
 
-# ---------------------------------------------------------------------------
-# Per-call replay against a real scale_amps M0 dump (marker-gated).
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.datatest
-def test_activation_replay_against_m0_dump() -> None:
-    """Would spin up a pre-recorded aerosol+thermo state (scale_amps M0
-    per-call DEBUG dump), run `activate_and_advance_vapor`, and compare the
-    resulting activated liquid + advanced vapor against the recorded
-    post-activation state (rtol ~1e-8). SKIPPED: no local scale_amps M0
-    per-call activation dumps exist in this checkout (`driver/ref_data.py`
-    can load `amps_dump_r*.bin` if produced by a real scale_amps DEBUG
-    run -- see that module's `read_dump_file`/`load_reference` -- none are
-    committed here; `test_ref_data.py` itself only exercises synthesized
-    in-memory fixtures, never a real dump directory)."""
-    pytest.skip(
-        "No local scale_amps M0 per-call activation dumps available in this checkout -- "
-        "see driver/ref_data.py (read_dump_file/load_reference) for the loader once real "
-        "amps_dump_r*.bin files (DEBUG-mode scale_amps run, activation call site) exist."
-    )
+# B2 (M2a whole-branch review): the orphan `test_activation_replay_against_
+# m0_dump` stub (bare `pytest.skip`, no local scale_amps M0 dump ever
+# available in this checkout to gate against) was DELETED here -- the
+# centralized `tests/amps/integration_tests/test_warm_replay.py::
+# test_warm_replay_against_m0_dump` covers the composed (activation +
+# vapor-deposition + repair) per-call replay path end-to-end and already
+# activates automatically the moment a real dump lands; this file-local
+# duplicate added no coverage of its own.

@@ -486,7 +486,6 @@ class ActivationBoxState:
     qi_0: np.ndarray  #: ice mixing ratio before this vapor-advance step, `qi_0(n)`
     gain_mi_rim: np.ndarray  #: riming mass gain, `gain_Mi_rim(n)`
     gain_mi_frn: np.ndarray  #: freezing mass gain, `gain_Mi_frn(n)`
-    den: np.ndarray  #: moist-air density, `ag%TV(n)%den`
     qtp: np.ndarray  #: total water mixing ratio, `qtp(n)`
     pressure: np.ndarray  #: ambient pressure, `ag%TV(n)%P`
     qr_b: np.ndarray  #: previous-iterate liquid mixing ratio, `qr_b(n)` (`func_vec` `iswitch==0`)
@@ -2155,14 +2154,23 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
     p = get_thermo_prop(thermo_state, ThermoProp.ptotv)
     t = get_thermo_prop(thermo_state, ThermoProp.tv)
     # ThermoProp.moist_denv is CGS g/cm^3 (state.py's own UNIT CONTRACT
-    # note -- canonicalized at the two ThermoState producers); `box.den`
-    # (this `den`, stored below) is divided into CGS mass quantities
-    # throughout the backward-Euler/zbrent internals (`used_mr_act/box.den`
-    # etc.) and feeds `_all_activated_supersaturation` -- read directly,
-    # already CGS, no conversion needed here. `_diag_mes_rc_and_qr0` below
-    # reads this SAME already-CGS `den`: its own `m_v = qvv*moist_denv` is a
-    # `<= 0.0` sign check only, scale-invariant, so it would be unaffected
-    # either way.
+    # note -- canonicalized at the two ThermoState producers) -- read
+    # directly, already CGS, no conversion needed here. Cleanup (M2a
+    # whole-branch review): this comment used to claim `box.den` (this
+    # `den`, stored on `ActivationBoxState` below) was "divided into CGS
+    # mass quantities throughout the backward-Euler/zbrent internals" --
+    # that was the C1 PER-MASS UNIT FIX's OWN spurious `/box.den` on the
+    # vapor debit (see `func_vec`'s docstring, "PER-MASS UNIT FIX", and
+    # `TestMassConservationRealMagnitudes`), removed there; every
+    # remaining `box.den`/`/box.den` mention anywhere in this file is now
+    # itself a comment/docstring (grep-confirmed), never executable code,
+    # and `_all_activated_supersaturation` does not take `den` as a
+    # parameter at all (its own docstring says so explicitly). This local
+    # `den` is used directly (NOT via `box.den`) in exactly two places
+    # below: `_diag_mes_rc_and_qr0`'s `m_v = qvv*den` (a `<= 0.0` sign
+    # check only, scale-invariant either way) and `ccn_max_permass =
+    # CCNMAX/den` (a genuine per-volume -> per-mass unit conversion, see
+    # that assignment's own comment).
     den = get_thermo_prop(thermo_state, ThermoProp.moist_denv)
     qvv = get_thermo_prop(thermo_state, ThermoProp.qvv)
 
@@ -2263,7 +2271,6 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
         qi_0=qi_0,
         gain_mi_rim=gain_mi_rim,
         gain_mi_frn=gain_mi_frn,
-        den=den,
         qtp=qtp,
         pressure=p,
         qr_b=qr_0.copy(),

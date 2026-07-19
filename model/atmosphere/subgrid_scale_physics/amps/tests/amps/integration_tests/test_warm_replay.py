@@ -138,16 +138,21 @@ def _supersaturated_box_case(*, ptotv_pa: float | None = None) -> box.BoxCase:
         ThermoProp.thv: thv,
         ThermoProp.piv: t / thv * packing.SCALE_CPDRY,
         ThermoProp.pbv: 0.0,
-        # Pre-M2a-hardening this literal (1.2e-3) was stored directly in the
-        # nominally-SI moist_denv field, then divided down again by the
-        # (now-removed) consumer `* 1.0e-3` conversion -- an inert (no
-        # pre-existing liquid bins are active at t=0 here, so `den` does
-        # not gate any assertion this class makes) but real actual-physics
-        # value of `1.2e-3 * 1.0e-3 = 1.2e-6` g/cm^3. Preserved bit-for-bit
-        # here (NOT "fixed" to a realistic magnitude) so this refactor
-        # stays behavior-preserving -- see `TestRunBoxRealisticDensity`
-        # below for the fixture that DOES use a realistic CGS magnitude.
-        ThermoProp.moist_denv: 1.2e-3 * 1.0e-3,
+        # D3 (M2a whole-branch review): `1.2e-3` g/cm^3 -- the real CGS
+        # moist-air-density magnitude (matches every other `moist_denv`
+        # fixture in this file/test suite, e.g. `TestRealisticDensity`'s
+        # own `moist_denv_si=1.0-1.2`, and `test_activation.py`'s/
+        # `test_liquid_diag.py`'s own `DEN_STD=1.2e-3`). PRE-D3 this field
+        # carried a stale `1.2e-3 * 1.0e-3 = 1.2e-6` g/cm^3 -- a leftover
+        # artifact of a pre-M2a-hardening consumer-side `* 1.0e-3`
+        # conversion that no longer exists (ThermoState.moist_denv is CGS-
+        # canonical at the two producers, state.py's own UNIT CONTRACT
+        # note) -- ~1000x too small, an inert bug for THIS class's own
+        # all-zero-initial-liquid assertions (no pre-existing bin reads
+        # `den` before any droplets exist), but silently wrong for anyone
+        # reusing this fixture at a point where `den` DOES matter (e.g.
+        # `core.liquid_diag`'s terminal-velocity/ventilation formulas).
+        ThermoProp.moist_denv: 1.2e-3,
         ThermoProp.qvv: qv,
         ThermoProp.thetav: thv * (1.0 + 0.61 * qv),
         ThermoProp.wbv: 0.0,
