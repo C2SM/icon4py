@@ -420,7 +420,17 @@ def cal_air_temp(til: npt.ArrayLike, qr: npt.ArrayLike, qi: npt.ArrayLike) -> np
 @dataclasses.dataclass(frozen=True)
 class LiquidBinState:
     """Per-liquid-bin arrays `func_liqvap_vec` needs, `(nbins, npoints)`.
-    Field names/units mirror `gr%MS(j,n)%<field>` in G2's `func_liqvap_vec`."""
+    Field names mirror `gr%MS(j,n)%<field>` in G2's `func_liqvap_vec` --
+    UNITS do NOT: the literal Fortran's `gr%MS(j,n)%con`/`mass` are
+    PER-VOLUME concentrations, but Task 4's driver (`core/activation.py`
+    Part 2, `_ccn_precompute`/the `liq=LiquidBinState(...)` call site)
+    populates `con`/`mass_total`/`mass_aerosol` DIRECTLY from `LiquidState`
+    (already per-unit-mass mixing ratios -- see `func_vec`'s own docstring,
+    "PER-MASS UNIT FIX", for the full citation trail), with no `*den`
+    conversion. `func_liqvap_vec`'s own formulas are unaffected either way
+    (`d_mean_mass*con` is dimensionally consistent regardless, so long as
+    its CONSUMERS -- `func_vec`'s `qr`/`qi` combination -- don't apply a
+    second, now-spurious `/den`, which they no longer do)."""
 
     con: np.ndarray  #: number concentration, `gr%MS(j,n)%con`
     mass_total: np.ndarray  #: total particle mass, `gr%MS(j,n)%mass(rmt)` (`LiquidMassIndex.rmt`)
@@ -485,7 +495,7 @@ class ActivationBoxState:
     sw: (
         np.ndarray
     )  #: box's baseline liquid supersaturation, `sw(n)` (`func_liqvap_vec`'s `x>0` gate)
-    used_ma_act: np.ndarray  #: total activatable aerosol mass, `used_Ma_act(n)`
+    used_ma_act: np.ndarray  #: total activatable aerosol mass, `used_Ma_act(n)` -- PER-UNIT-MASS in this port (built directly from `AerosolState`, no `*den`); see `func_vec`'s docstring "PER-MASS UNIT FIX"
     akk_lmt: np.ndarray  #: CCN-number-cap activation-fraction limiter, `akk_lmt(n)`
     sw_allact: np.ndarray  #: "all activated" supersaturation offset, `sw_allact(n)`
     si_alldep: (
@@ -983,6 +993,27 @@ def func_vec(  # noqa: PLR0917 [too-many-positional-arguments]
     The Fortran's own `em(n)` (a diagnostic side-output, `iswitch+10` or
     `0`, never read elsewhere in the quoted source) is intentionally not
     returned.
+
+    PER-MASS UNIT FIX (found in whole-branch review, applied here): the
+    literal Fortran divides `used_Mr_act`/`used_Mr_vap`/`trans_Mi` (etc.)
+    by `ag%TV(n)%den` because ITS `gr%MS(j,n)%con`/`mass` (and `ga(ica)%
+    MS(1,n)%con`/`mass`) are PER-VOLUME concentrations (`qrpv`/`qapv` are
+    converted `*den` going INTO Fortran bin-physics space and `/den` going
+    back OUT -- `mod_amps_utility.F90:6817-6818`/`6961-6962`, confirmed
+    directly). This port's `LiquidBinState.con`/`.mass_total`/
+    `.mass_aerosol` and `ActivationBoxState.used_ma_act` (Part 2's own
+    `_ccn_precompute`) are instead built DIRECTLY from `LiquidState`/
+    `AerosolState`, which are themselves already PER-UNIT-MASS mixing
+    ratios (confirmed via `core/packing.py`'s `_unpack_liquid`:
+    `dql=((rmt_after-rmat_after)*moist_denv_after-...)`, i.e. `rmt`/`rmat`
+    ARE mixing ratios, not concentrations) -- matching `core/
+    vapor_deposition.py`'s own already-correct, established convention
+    (`dmcon=con*d_mean_mass` added straight to `mass_total`/subtracted
+    straight from `qvv`, no `den` anywhere). So `used_Mr_act`/`used_Mr_vap`
+    (etc.) are ALREADY per-mass here, and dividing by `box.den` again is a
+    spurious extra unit conversion -- REMOVED (not present in this port,
+    unlike the literal Fortran) for water-mass conservation. `func_vec` is
+    otherwise verbatim.
     """
     x_arr = np.asarray(x, dtype=np.float64)
     y_arr = np.asarray(y, dtype=np.float64)
@@ -1003,14 +1034,14 @@ def func_vec(  # noqa: PLR0917 [too-many-positional-arguments]
         trans_mi = icevap.loss_mi_mlt - np.minimum(
             liqvap.liq_left, box.gain_mi_rim + box.gain_mi_frn
         )
-        qr = np.maximum(
-            0.0, box.qr_0 + (liqvap.used_mr_act + liqvap.used_mr_vap + trans_mi) / box.den
-        )
+        # NOTE: no `/box.den` here -- see this function's own docstring
+        # ("PER-MASS UNIT FIX"). `used_mr_act`/`used_mr_vap`/`trans_mi`
+        # (and the ice-side terms below) are already per-unit-mass in this
+        # port.
+        qr = np.maximum(0.0, box.qr_0 + liqvap.used_mr_act + liqvap.used_mr_vap + trans_mi)
         qi = np.maximum(
             0.0,
-            box.qi_0
-            + (icevap.used_mi_vap + icevap.used_mi_vapliq + icevap.used_mi_act - trans_mi)
-            / box.den,
+            box.qi_0 + icevap.used_mi_vap + icevap.used_mi_vapliq + icevap.used_mi_act - trans_mi,
         )
 
         y_n = cal_air_temp(box.til, qr, qi)
@@ -1036,14 +1067,16 @@ def func_vec(  # noqa: PLR0917 [too-many-positional-arguments]
             trans_mi2 = icevap2.loss_mi_mlt - np.minimum(
                 liqvap2.liq_left, box.gain_mi_rim + box.gain_mi_frn
             )
-            qr2 = np.maximum(
-                0.0, box.qr_0 + (liqvap2.used_mr_act + liqvap2.used_mr_vap + trans_mi2) / box.den
-            )
+            # NOTE: no `/box.den` here either -- same "PER-MASS UNIT FIX" as
+            # the primary qr/qi computation above.
+            qr2 = np.maximum(0.0, box.qr_0 + liqvap2.used_mr_act + liqvap2.used_mr_vap + trans_mi2)
             qi2 = np.maximum(
                 0.0,
                 box.qi_0
-                + (icevap2.used_mi_vap + icevap2.used_mi_vapliq + icevap2.used_mi_act - trans_mi2)
-                / box.den,
+                + icevap2.used_mi_vap
+                + icevap2.used_mi_vapliq
+                + icevap2.used_mi_act
+                - trans_mi2,
             )
             residual = (qr + qi - qr2 - qi2) / np.maximum(1.0e-9, box.rv)
         elif iswitch == 2:
@@ -1735,16 +1768,25 @@ def _ccn_precompute(  # noqa: PLR0915 -- single verbatim G2 section 1c transcrip
 
 
 def _all_activated_supersaturation(
-    used_ma_act: np.ndarray, p: np.ndarray, rv_sat: np.ndarray, den: np.ndarray, e_satw: np.ndarray
+    used_ma_act: np.ndarray, p: np.ndarray, rv_sat: np.ndarray, e_satw: np.ndarray
 ) -> np.ndarray:
     """`sw_allact` (G2 section 1f, read directly, `mod_amps_core.F90:
-    7055-7057`), verbatim:
+    7055-7057`):
 
         e_n=P*(rv_sat(1)+used_Ma_act/den)/(Rdvchiarui+(rv_sat(1)+used_Ma_act/den))
         sw_allact=e_n/e_sat(1)-1.0
+
+    PER-MASS UNIT FIX (see `func_vec`'s docstring for the full citation
+    trail): the literal Fortran's `used_Ma_act` is per-VOLUME, so dividing
+    by `den` converts it to a mixing-ratio-equivalent before adding to the
+    (mixing-ratio) `rv_sat`. This port's `used_Ma_act` (`used_ma_act`,
+    `ActivationBoxState.used_ma_act` -- Part 2's own `_ccn_precompute`,
+    built directly from `AerosolState`) is ALREADY per-unit-mass, so no
+    `/den` is needed (or taken as a parameter) here -- `rv_eff =
+    rv_sat + used_ma_act` directly.
     """
     rdv = float(AmpsConst.Rdvchiarui)
-    rv_eff = rv_sat + used_ma_act / den
+    rv_eff = rv_sat + used_ma_act
     e_n = p * rv_eff / (rdv + rv_eff)
     return e_n / e_satw - 1.0
 
@@ -1828,6 +1870,8 @@ def _diagnose_condensate(  # noqa: PLR0917
     *,
     allow_shed_placeholder: bool,
 ) -> tuple[np.ndarray, np.ndarray]:
+    """Mirrors `func_vec`'s own shared prefix -- see `func_vec`'s docstring
+    ("PER-MASS UNIT FIX") for why there is no `/box.den` here either."""
     liqvap = func_liqvap_vec(x, box, liq, flagp_r=flags.flagp_r, dt=flags.dt)
     icevap = func_icevap_vec(
         x, y, box, ice, flags, estbar, esitbar, allow_shed_placeholder=allow_shed_placeholder
@@ -1836,14 +1880,10 @@ def _diagnose_condensate(  # noqa: PLR0917
         trans_mi = icevap.loss_mi_mlt - np.minimum(
             liqvap.liq_left, box.gain_mi_rim + box.gain_mi_frn
         )
-        qr = np.maximum(
-            0.0, box.qr_0 + (liqvap.used_mr_act + liqvap.used_mr_vap + trans_mi) / box.den
-        )
+        qr = np.maximum(0.0, box.qr_0 + liqvap.used_mr_act + liqvap.used_mr_vap + trans_mi)
         qi = np.maximum(
             0.0,
-            box.qi_0
-            + (icevap.used_mi_vap + icevap.used_mi_vapliq + icevap.used_mi_act - trans_mi)
-            / box.den,
+            box.qi_0 + icevap.used_mi_vap + icevap.used_mi_vapliq + icevap.used_mi_act - trans_mi,
         )
     return qr, qi
 
@@ -2082,6 +2122,23 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
     s_v_n) are updated; the aerosol-mass sink from activation
     (`ga(ica)%MS(1,n)%dcondt/dmassdt`, G2 section 1k) is applied to
     `aerosol'`.
+
+    Water conservation (whole-branch review): `qvv` and `liquid'`'s own
+    `rmt-rmat` are kept internally self-consistent by construction --
+    `qv_final` (section 1n) is derived from EXACTLY the mass this call
+    itself places into `liquid'` (newly-activated droplets only, see
+    section 1k's own comment), not from the internal solve's own
+    `used_mr_vap` term (pre-existing-bin condensational growth, needed
+    ONLY for this driver's T/sw self-consistency solve -- that mass is
+    `vapor_deposition_liquid`'s (M2a Task 5) responsibility, applied on
+    ITS OWN subsequent call). So a bare call with NO pre-existing liquid
+    conserves `qvv + Σ(rmt-rmat)` exactly (`TestMassConservation`/
+    `TestMassConservationRealMagnitudes`, `tests/.../test_activation.py`),
+    and composes correctly across a full `col_loop x vap_loop` run once
+    paired with `vapor_deposition_liquid`
+    (`TestEndToEndSupersaturatedSpinUp::
+    test_total_water_conserved_across_full_loop`,
+    `tests/.../test_warm_loop.py`).
     """
     estbar, esitbar = thermo.make_esat_tables()
 
@@ -2163,7 +2220,7 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
     used_ma_act = np.maximum(0.0, ccn.n_act * ccn.mean_mass_grown - ccn.m_act).sum(axis=(0, 1))
     used_na_act = ccn.n_act.sum(axis=(0, 1))
 
-    sw_allact = _all_activated_supersaturation(used_ma_act, p, rv_sat, den, e_satw0)
+    sw_allact = _all_activated_supersaturation(used_ma_act, p, rv_sat, e_satw0)
 
     dhf_fields = _dhf_precompute(
         npoints, iflg_dhf=iflg_dhf, allow_dhf_placeholder=allow_dhf_placeholder
@@ -2176,9 +2233,20 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
     )
 
     nr_0 = np.where(mes_rc == 2, liquid.values[LiquidPPV.rcon_q.py_idx].sum(axis=(0, 1)), 0.0)
-    ccn_max = float(config.CCNMAX)
+    # `config.CCNMAX` is a genuine physical constant in PER-VOLUME number
+    # concentration units (#/cm^3, matching the literal Fortran's own
+    # `akk_lmt(n)=max(0,(min(CCNMAX,used_Na_act(n))-nr_0(n))/...)`, where
+    # `used_Na_act`/`nr_0` are ALSO per-volume there). This port's
+    # `used_na_act`/`nr_0` (built directly from `AerosolState`/
+    # `LiquidState`, see `func_vec`'s docstring "PER-MASS UNIT FIX") are
+    # per-unit-mass instead -- so `CCNMAX` itself is converted to the SAME
+    # per-mass footing (`CCNMAX[#/cm^3] / den[g/cm^3] = [#/g]`) before the
+    # comparison, rather than converting `used_na_act`/`nr_0` to
+    # per-volume (equivalent either way; this keeps the comparison in this
+    # port's OWN native per-mass units, matching everything else here).
+    ccn_max_permass = float(config.CCNMAX) / den
     akk_lmt = np.maximum(
-        0.0, (np.minimum(ccn_max, used_na_act) - nr_0) / np.maximum(1.0e-30, used_na_act)
+        0.0, (np.minimum(ccn_max_permass, used_na_act) - nr_0) / np.maximum(1.0e-30, used_na_act)
     )
 
     # ---- assemble ActivationBoxState / LiquidBinState / trivial IceBinState
@@ -2502,19 +2570,41 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
     tv_idx = list(ThermoState.PROPS).index(ThermoProp.tv)
     thermo_values[tv_idx, 0, 0, :] = np.where(icycle_active, final_t, t)
     qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
-    qr_final, qi_final = _diagnose_condensate(
-        final_sw,
-        final_t,
-        box,
-        liq,
-        ice,
-        flags,
-        estbar,
-        esitbar,
-        allow_shed_placeholder=allow_shed_placeholder,
-    )
-    del qi_final  # no ice group; qtp-qr-qi collapses to qtp-qr here
-    qv_final = np.maximum(0.0, box.qtp - qr_final)
+    # `qv_final` is derived from what was ACTUALLY placed into
+    # `liquid_after` above (`new_m`), NOT from a fresh `_diagnose_condensate`
+    # call at `(final_sw, final_t)` -- found in whole-branch review
+    # (full-loop water-conservation acceptance test, `test_warm_loop.py`'s
+    # `TestEndToEndSupersaturatedSpinUp::
+    # test_total_water_conserved_across_full_loop`), a SEPARATE gap from
+    # C1 (the `/box.den` unit bug fixed elsewhere in this function): a
+    # fresh `_diagnose_condensate` call bundles `used_mr_vap`
+    # (condensational growth/evaporation of PRE-EXISTING liquid bins,
+    # needed ONLY for this driver's own internal T/sw self-consistency
+    # solve -- see `func_liqvap_vec`'s own G2 citation) into the vapor
+    # debit, but that growth is NEVER applied to `liquid_after` (section
+    # 1k's `add_simple`/`new_m` only ever reflect NEWLY ACTIVATED
+    # droplets, exactly matching G2's own `cal_aptact_var8_kc04dep` output
+    # tendency, `gr%MS(i,n)%dmassdt(rmt,pro_type)=new_M(i,n,rmt)/gr%dt` --
+    # see this function's own docstring). Applying PRE-EXISTING-bin growth
+    # to the RETURNED vapor but not the RETURNED liquid double-counts that
+    # vapor loss once `vapor_deposition_liquid` (M2a Task 5, the process
+    # that DOES own pre-existing-bin growth) separately credits the SAME
+    # growth to both fields on its own subsequent call -- a real,
+    # measurable water-conservation violation that accumulates across
+    # substeps as liquid mass builds up (confirmed empirically: invisible
+    # in a single bare `activate_and_advance_vapor` call with NO
+    # pre-existing liquid, as in `TestMassConservation`/
+    # `TestMassConservationRealMagnitudes` above, but ~2.8e-3 (24% of qv)
+    # over a full 10-substep `run_warm_micro_tendency` run where liquid
+    # accumulates). Fixed by deriving `qv_final` from the SAME `new_m`
+    # this function returns, so the vapor and liquid outputs are
+    # internally self-consistent by construction: water added to drops =
+    # `Σ(new_m[...,rmt]) - Σ(new_m[...,rmat])` (total placed mass minus
+    # its own aerosol-mass component, i.e. the PURE WATER portion --
+    # exactly what `func_vec`'s own `used_Mr_act` term represents, see
+    # this function's docstring).
+    water_added = np.sum(new_m[:, :, 0] - new_m[:, :, LiquidMassIndex.rmat.py_idx], axis=0)
+    qv_final = np.maximum(0.0, qvv - water_added)
     thermo_values[qvv_idx, 0, 0, :] = np.where(icycle_active, qv_final, qvv)
     thermo_out = ThermoState(values=thermo_values)
 

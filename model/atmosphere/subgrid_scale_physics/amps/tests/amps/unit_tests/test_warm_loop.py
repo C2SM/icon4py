@@ -775,3 +775,41 @@ class TestEndToEndSupersaturatedSpinUp:
 
         lp = index_maps.LiquidPPV
         assert result.liquid.values[lp.rmt_q.py_idx].sum() > 0.0
+
+    def test_total_water_conserved_across_full_loop(self, luts):
+        """Full `col_loop x vap_loop` total-water conservation (M2a
+        whole-branch review, C1 acceptance criterion): `_activation`
+        (per-mass-consistent as of the C1 fix -- see `core/activation.py`'s
+        `func_vec` docstring, "PER-MASS UNIT FIX") and
+        `_vapor_deposition_liquid` (already per-mass-consistent,
+        `core/vapor_deposition.py`'s own `dmcon=con*d_mean_mass` convention)
+        both only move mass between `qvv` and `liquid.rmt-rmat` (pure
+        water); `_repair` is a genuine no-op in THIS scenario (no
+        rain/ice-group interaction its own phases touch here). So total
+        water (vapor + liquid water) must be conserved across the WHOLE
+        `n_step_cl*n_step_vp`-substep run, not just one activation call --
+        this is the "and add a full-loop total-water assertion ... repair
+        is a no-op there -> must conserve exactly" acceptance criterion."""
+        config = self._config()
+        state = self._state()
+
+        qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+        lp = index_maps.LiquidPPV
+        qv_before = float(state.thermo.values[qvv_idx, 0, 0, 0])
+        water_before = float(
+            (state.liquid.values[lp.rmt_q.py_idx] - state.liquid.values[lp.rmat_q.py_idx]).sum()
+        )
+
+        result = warm_loop.run_warm_micro_tendency(state, config, dt=1.0, luts=luts)
+
+        qv_after = float(result.thermo.values[qvv_idx, 0, 0, 0])
+        water_after = float(
+            (result.liquid.values[lp.rmt_q.py_idx] - result.liquid.values[lp.rmat_q.py_idx]).sum()
+        )
+
+        # Some activation must actually have happened (not a vacuous 0==0).
+        assert water_after > 0.0
+
+        np.testing.assert_allclose(
+            (qv_after + water_after) - (qv_before + water_before), 0.0, atol=1.0e-8, rtol=0.0
+        )

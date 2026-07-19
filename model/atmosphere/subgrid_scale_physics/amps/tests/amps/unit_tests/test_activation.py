@@ -22,12 +22,20 @@ Groups, matching the task brief's test list:
   codes the G2 formulas themselves, not a copy of the module-under-test's
   numpy code") and `test_liquid_diag.py`'s `_golden_bin`.
 * `TestMassConservation` -- vapor+condensate mass conservation across an
-  activation step (a pure-nucleation scenario, no pre-existing liquid, so
-  the conservation identity is EXACT -- see `core/activation.py`'s own
-  `activate_and_advance_vapor` docstring for why this driver's own output
-  is conservative in isolation only when there is no pre-existing
-  condensational growth to account for; `vapor_deposition`, M2a Task 5,
-  owns that separately).
+  activation step (a pure-nucleation scenario, no pre-existing liquid),
+  directly in mixing-ratio (per-unit-mass) space -- NO density
+  re-division in the assertion itself (an earlier `/DEN_STD` there masked
+  the C1 unit bug below; see `TestMassConservationRealMagnitudes`).
+* `TestMassConservationRealMagnitudes` -- M2a whole-branch-review C1
+  acceptance test: built from `pack_scale_to_amps` REAL SI-unit
+  `ScaleRawState` magnitudes (not a `den=1.0`-style mini-world), asserting
+  the closed water+aerosol mass balance across ONE `activate_and_advance_
+  vapor` call. Confirmed RED pre-fix / GREEN post-fix (see the M2a task
+  report / commit message).
+* `TestZbrentPath` -- forces routing through zbrent stage 2 (a
+  pre-existing liquid bin, no CCN aerosol, strongly supersaturated); also
+  covers the "PER-MASS UNIT FIX" finalize-`qv` behavior (no aerosol here
+  -> vapor untouched, matching the unchanged liquid state).
 * `TestDropletPlacement` -- activated droplets land in the liquid bin
   whose mass range contains their own grown mean mass (`add_simple_vec`).
 * `TestDhfToggle` -- `config.ice_nucleation_dhf` toggles the DHF
@@ -43,6 +51,13 @@ Groups, matching the task brief's test list:
   `amps_dump_r*.bin` if produced by a real scale_amps DEBUG run; none are
   committed here, matching `test_ref_data.py`'s own synthesized-only
   fixtures).
+
+Whole-branch review (C1, this file's own acceptance-test round): `core/
+activation.py` fed per-unit-mass `LiquidState`/`AerosolState` mixing-ratio
+arrays into physics transcribed from Fortran bin routines that expect
+PER-VOLUME concentrations, but kept the Fortran's own `/den` unit
+conversions on the vapor debit -- see `core/activation.py`'s `func_vec`
+docstring ("PER-MASS UNIT FIX") for the full citation trail and fix.
 """
 
 from __future__ import annotations
@@ -66,8 +81,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables impo
     AmpsLuts,
     load_luts,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
+    ScaleRawState,
+    get_thermo_prop,
+    pack_scale_to_amps,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import (
     AerosolState,
+    IceState,
     LiquidState,
     ThermoProp,
     ThermoState,
@@ -363,18 +384,33 @@ class TestMassConservation:
             thermo_after.values[list(ThermoState.PROPS).index(ThermoProp.qvv), 0, 0, 0]
         )
         lp = index_maps.LiquidPPV
-        water_after = (
-            float(
-                (liquid_after.values[lp.rmt_q.py_idx] - liquid_after.values[lp.rmat_q.py_idx]).sum()
-            )
-            / DEN_STD
+        # NO `/DEN_STD` here: `rmt`/`rmat` (LiquidState) are ALREADY
+        # per-unit-mass mixing ratios (see `func_vec`'s own docstring,
+        # "PER-MASS UNIT FIX", and `core/packing.py`'s `_unpack_liquid`:
+        # `dql=((rmt_after-rmat_after)*moist_denv_after-...)`, i.e.
+        # `(rmt-rmat)` is mixing-ratio space, directly addable to `qv`
+        # without any density conversion). Dividing by `DEN_STD` here was
+        # itself a bug (found in whole-branch review) that MASKED the
+        # real one (activation.py's own spurious `/box.den` on the vapor
+        # debit, since the two errors happened to cancel for this
+        # scenario's own self-consistent akk/sw_allact bookkeeping) --
+        # see `TestMassConservationRealMagnitudes` below for the
+        # `pack_scale_to_amps`-built acceptance test that would have
+        # caught this on its own.
+        water_after = float(
+            (liquid_after.values[lp.rmt_q.py_idx] - liquid_after.values[lp.rmat_q.py_idx]).sum()
         )
 
         # Some activation must actually have happened for this to be a
         # meaningful test (not a vacuous 0==0).
         assert water_after > 0.0
 
-        np.testing.assert_allclose(qv_after + water_after, qv, rtol=1.0e-9)
+        # atol (not a tight rtol): the backward-Euler/zbrent solve itself
+        # only converges to ALIM1=1e-5/ZBRENT_TOL=1e-6, so the placement's
+        # own independently-recomputed `akk` (section 1k) and the solve's
+        # own internal `qr_final` agree only to a similarly small
+        # ABSOLUTE residual, not to float64 machine precision.
+        np.testing.assert_allclose(qv_after + water_after, qv, atol=1.0e-8, rtol=0.0)
 
     def test_no_activation_is_a_no_op(self) -> None:
         """Sub-saturated box (sw<=0): the grid-box skip mask (G2 section
@@ -393,6 +429,171 @@ class TestMassConservation:
         np.testing.assert_array_equal(liquid_after.values, liquid.values)
         np.testing.assert_array_equal(aerosol_after.values, aerosol.values)
         np.testing.assert_array_equal(thermo_after.values, thermo_state.values)
+
+
+# ---------------------------------------------------------------------------
+# Acceptance test for the whole-branch-review C1 fix (per-mass water
+# conservation across activate_and_advance_vapor). Built from
+# `pack_scale_to_amps` REAL SI-unit SCALE-side magnitudes -- NOT a
+# den=1.0-style "mini-world" where a `*den`/`/den` unit-conversion bug
+# would numerically cancel and go undetected -- asserting the closed mass
+# balance directly in mixing-ratio (per-unit-mass) space, no re-division
+# by density anywhere in the assertion itself (that was `TestMassConservation`'s
+# own masking bug, fixed above).
+# ---------------------------------------------------------------------------
+
+
+class TestMassConservationRealMagnitudes:
+    """C1 (whole-branch review): `core/activation.py` fed per-mass
+    `LiquidState`/`AerosolState` mixing-ratio arrays into physics
+    transcribed from Fortran bin routines that expect PER-VOLUME
+    concentrations, but kept the Fortran's own `/den` conversions on the
+    vapor debit (`func_vec`'s `qr`/`qi`, `_all_activated_supersaturation`'s
+    `rv_eff`) while the liquid-gain side (`add_simple_vec`/section-1k
+    placement) was already correctly per-mass (no `/den`) -- so vapor was
+    debited by an extra, spurious `1/den` factor relative to the liquid
+    actually placed, breaking water conservation. Fixed by removing the
+    spurious `/den` (see `func_vec`'s own docstring, "PER-MASS UNIT FIX").
+
+    This test builds its scenario via `pack_scale_to_amps` (real SI
+    `ScaleRawState` magnitudes: `dens~1.2 kg/m^3`, `pres~1e5 Pa`,
+    `temp=280K` -- the SAME physical regime as `TestMassConservation`
+    above, just threaded through the REAL SI->CGS/mixing-ratio pack path
+    instead of hand-built CGS `ThermoState`/`LiquidState` values) so the
+    whole unit-conversion pipeline is exercised, not just this module's
+    own internals.
+    """
+
+    T = 280.0  # K
+    P_PA = 1.0e5  # Pa (~1000 hPa)
+    QV_TARGET = 1.15e-2  # AMPS (post-pack) vapor mixing ratio -- supersaturated at (T, P_PA)
+    DEN_TARGET_CGS = 1.2e-3  # g/cm^3, moist air (matches test_activation.py's own DEN_STD)
+
+    # Post-pack (per-UNIT-MASS mixing ratio) CCN population -- a genuine
+    # per-VOLUME ambient concentration (1000 #/cm^3, a realistic
+    # continental/polluted-regime accumulation-mode CCN number density)
+    # converted to this port's own native per-mass units via
+    # `/DEN_TARGET_CGS` (NOT left as "1000", which would be a
+    # per-volume-flavored magnitude mislabeled as per-mass -- exactly the
+    # kind of mismatch that let C1 hide: with `used_ma_act` too small,
+    # `used_ma_act/den`'s absolute deviation from the correct (undivided)
+    # value can fall under a naive atol and the bug goes numerically
+    # invisible -- 1000 #/cm^3 gives this test a comfortable RED margin,
+    # confirmed >1e-9 pre-fix, not a borderline one). Per-particle mass
+    # from a realistic dry radius (`config.ap_mean[0]=0.052e-4 cm`,
+    # cloudlab's own category-0 value) and density
+    # (`config.den_aps[0]=1.79 g/cm^3`, ammonium sulfate):
+    # `coef4pi3*r^3*den ~= 1.0546e-15 g`.
+    ACON_FINAL = 1000.0 / DEN_TARGET_CGS  # #/g
+    _MEAN_MASS_PER_PARTICLE = 1.0546e-15  # g
+    AMT_FINAL = ACON_FINAL * _MEAN_MASS_PER_PARTICLE  # g/g
+    AMS_FINAL = AMT_FINAL  # fully soluble (eps=1), matching this file's other CCN fixtures
+
+    def _packed(self):
+        npoints = 1
+        qdry = 1.0
+        # Solve qv/(qdry+qv) = QV_TARGET for qv, given qdry=1 (F4 SS1.1's
+        # own `factor_mxr1 = qdry+qv`, `qvv = qv/factor_mxr1`).
+        qv = self.QV_TARGET * qdry / (1.0 - self.QV_TARGET)
+        factor_mxr1 = qdry + qv
+        # moist_denv_cgs = dens[SI kg/m^3] * factor_mxr1 * 1e-3 = DEN_TARGET_CGS
+        dens = self.DEN_TARGET_CGS / 1.0e-3 / factor_mxr1
+
+        nbr = LIQ_NBINS
+        raw_liquid_ppv = LiquidState(
+            values=np.zeros((len(LiquidState.PROPS), nbr, 1, npoints), dtype=np.float64)
+        )
+        raw_ql = np.zeros((nbr, npoints), dtype=np.float64)
+
+        nbi = 1
+        raw_ice_ppv = IceState(
+            values=np.zeros((len(IceState.PROPS), nbi, 1, npoints), dtype=np.float64)
+        )
+        raw_qi = np.zeros((nbi, npoints), dtype=np.float64)
+
+        # Raw (pre-factor_mxr1) aerosol PPV values, chosen so the PACKED
+        # (post-pack_scale_to_amps) AerosolState comes out to exactly
+        # (AMT_FINAL, ACON_FINAL, AMS_FINAL) -- `_AEROSOL_MASS_PLAIN`
+        # (amt_q/ams_q) divides by `factor_mxr1`; `_AEROSOL_NONMASS`
+        # (acon_q) divides by `factor_mxr1*0.001` (core/packing.py).
+        raw_aerosol_values = np.zeros((len(AerosolState.PROPS), 1, 1, npoints), dtype=np.float64)
+        raw_aerosol_values[0, 0, 0, :] = self.AMT_FINAL * factor_mxr1
+        raw_aerosol_values[1, 0, 0, :] = self.ACON_FINAL * factor_mxr1 * 0.001
+        raw_aerosol_values[2, 0, 0, :] = self.AMS_FINAL * factor_mxr1
+        raw_aerosol_ppv = AerosolState(values=raw_aerosol_values)
+
+        scale = ScaleRawState(
+            dens=np.array([dens]),
+            qdry=np.array([qdry]),
+            qv=np.array([qv]),
+            pres=np.array([self.P_PA]),
+            temp=np.array([self.T]),
+            w=np.zeros(npoints),
+            momz=np.zeros(npoints),
+            ql=raw_ql,
+            qi=raw_qi,
+            liquid_ppv=raw_liquid_ppv,
+            ice_ppv=raw_ice_ppv,
+            aerosol_ppv=raw_aerosol_ppv,
+        )
+        return pack_scale_to_amps(scale, l_no_ice_heat=False)
+
+    def test_water_and_aerosol_mass_conserved_across_activation(self) -> None:
+        config = _base_config()
+        luts_ = load_luts()
+        packed = self._packed()
+
+        # Sanity: genuinely supersaturated at the PACKED (post-conversion)
+        # thermo state, else this test would be vacuous.
+        estbar, esitbar = thermo.make_esat_tables()
+        p_cgs = get_thermo_prop(packed.thermo, ThermoProp.ptotv)
+        t_cgs = get_thermo_prop(packed.thermo, ThermoProp.tv)
+        qvv0 = get_thermo_prop(packed.thermo, ThermoProp.qvv)
+        np.testing.assert_allclose(float(qvv0[0]), self.QV_TARGET, rtol=1.0e-12)
+        sw0 = activation._liquid_supersaturation(p_cgs, qvv0, t_cgs, estbar, esitbar)
+        assert sw0[0] > 0.0
+
+        diag = liquid_diag.diag_pq_liquid(packed.liquid, packed.thermo, config, luts_)
+
+        liquid_after, aerosol_after, thermo_after = activation.activate_and_advance_vapor(
+            packed.liquid, packed.aerosol, packed.thermo, config, dt_vp=1.0, luts=luts_, diag=diag
+        )
+
+        qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
+        qv_before = float(packed.thermo.values[qvv_idx, 0, 0, 0])
+        qv_after = float(thermo_after.values[qvv_idx, 0, 0, 0])
+
+        lp = index_maps.LiquidPPV
+        rmt_before = float(packed.liquid.values[lp.rmt_q.py_idx].sum())
+        rmt_after = float(liquid_after.values[lp.rmt_q.py_idx].sum())
+        rmat_before = float(packed.liquid.values[lp.rmat_q.py_idx].sum())
+        rmat_after = float(liquid_after.values[lp.rmat_q.py_idx].sum())
+
+        ap = index_maps.AerosolPPV
+        amt_before = float(packed.aerosol.values[ap.amt_q.py_idx].sum())
+        amt_after = float(aerosol_after.values[ap.amt_q.py_idx].sum())
+
+        # Some activation must actually have happened -- otherwise every
+        # delta below is trivially 0 and this test is vacuous.
+        assert (rmt_after - rmat_after) > 0.0
+        assert amt_after < amt_before
+
+        d_qvv = qv_after - qv_before
+        d_water = (rmt_after - rmat_after) - (rmt_before - rmat_before)
+        d_aerosol_net = (rmat_after - rmat_before) + (amt_after - amt_before)
+
+        # (1) THE C1 REGRESSION GUARD: vapor consumed == pure water added to
+        # drops, directly in mixing-ratio space (no density re-division
+        # anywhere in this assertion).
+        np.testing.assert_allclose(d_qvv + d_water, 0.0, atol=1.0e-9, rtol=0.0)
+        # (2) aerosol mass that entered drops (rmat) == mass that left the
+        # aerosol group (amt) -- untouched by C1 (add_simple_vec/section-1k
+        # never divided by den), checked here for completeness/regression.
+        np.testing.assert_allclose(d_aerosol_net, 0.0, atol=1.0e-9, rtol=0.0)
+        # (3) grand total: vapor + liquid-TOTAL(incl. aerosol content) +
+        # aerosol-group mass -- the full closed system, combining (1)+(2).
+        d_total = d_qvv + (rmt_after - rmt_before) + (amt_after - amt_before)
+        np.testing.assert_allclose(d_total, 0.0, atol=1.0e-9, rtol=0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -513,8 +714,13 @@ class TestZbrentPath:
     def test_activated_liquid_and_vapor_are_finite_and_sane(self) -> None:
         """The zbrent-routed box's own outputs are finite and physically
         sane: no CCN aerosol in this scenario, so NO newly activated
-        droplets (liquid state unchanged); some vapor is consumed by the
-        pre-existing bin's own condensational growth (qv decreases)."""
+        droplets -- liquid state unchanged, AND (whole-branch review: see
+        `activate_and_advance_vapor`'s own "section 1n" docstring note)
+        vapor unchanged too, since `qv_final` is now derived from what was
+        ACTUALLY placed into the returned `LiquidState` (nothing, here),
+        not from the internal solve's own `used_mr_vap` (pre-existing-bin
+        condensational growth -- `vapor_deposition_liquid`'s job, a
+        SEPARATE call this test does not make)."""
         liquid, aerosol, thermo_state, config, luts_, diag = self._scenario()
         liquid_after, _, thermo_after = activation.activate_and_advance_vapor(
             liquid, aerosol, thermo_state, config, dt_vp=1.0, luts=luts_, diag=diag
@@ -525,7 +731,7 @@ class TestZbrentPath:
         qvv_idx = list(ThermoState.PROPS).index(ThermoProp.qvv)
         qv_after = float(thermo_after.values[qvv_idx, 0, 0, 0])
         qv_before = float(thermo_state.values[qvv_idx, 0, 0, 0])
-        assert 0.0 <= qv_after < qv_before
+        assert qv_after == qv_before
 
         np.testing.assert_array_equal(liquid_after.values, liquid.values)
 
