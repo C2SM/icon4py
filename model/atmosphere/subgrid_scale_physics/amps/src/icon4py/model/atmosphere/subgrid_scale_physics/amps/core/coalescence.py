@@ -237,28 +237,77 @@ PER-VOLUME basis (H1 SS5) and SIMPLIFICATIONS RELATIVE TO THE FULL FORTRAN
   **Fidelity note on (2), stated plainly**: literal `ibreak=0`
   Fortran does NOT release an excluded collector's own outgoing claims
   -- that release exists in the source but is gated behind
-  `if(ibreak==1)` (`mod_amps_core.F90:1748-1786`/`:1836-1874`), which
-  never fires for rain-rain (`ibreak=0` throughout this module's scope).
-  This port applies the SAME release UNCONDITIONALLY (not gated by
-  `ibreak`) as a deliberate, physically-motivated correction: a fully-
-  depleted collector cannot ALSO be independently collecting elsewhere,
-  regardless of whether collisional breakup accounting happens to be
-  active. Read as literally as possible, the real Fortran's own
-  `ibreak=0` path may therefore leak mass in this same class of
-  configuration -- this is flagged as an open question for per-call
-  dump validation (Task 7, real dumps now available) to confirm one way
-  or the other; this port prioritizes GUARANTEED conservation (the
-  task's own explicit, paramount bar) over bit-for-bit fidelity to a
-  control-flow gap whose own conservation properties for `ibreak=0` are,
-  as far as this task's own re-reading of `mod_amps_core.F90` can tell,
-  genuinely unresolved without running the real code.
+  `if(ibreak==1)` (`mod_amps_core.F90:1748-1786`/`:1836-1874`). This port
+  applies the SAME release UNCONDITIONALLY (not gated by `ibreak`) as a
+  deliberate, physically-motivated correction: a fully-depleted collector
+  cannot ALSO be independently collecting elsewhere, regardless of whether
+  collisional breakup accounting happens to be active. Read as literally
+  as possible, the real Fortran's own `ibreak=0` path may therefore leak
+  mass in this same class of configuration -- this remains an open
+  question for per-call dump validation (real dumps now available,
+  M2b Task 7) to confirm one way or the other for `ibreak=0`; this port
+  prioritizes GUARANTEED conservation (the task's own explicit, paramount
+  bar) over bit-for-bit fidelity to a control-flow gap whose own
+  conservation properties for `ibreak=0` are, as far as this task's own
+  re-reading of `mod_amps_core.F90` can tell, genuinely unresolved without
+  running the real code.
+
+  **M2b Task 5 update -- `ibreak=1` IS now implemented** (`core/
+  breakup.py`, wired in below). For `ibreak=1`, this SAME unconditional
+  release is no longer merely "this port's own correction" -- reading the
+  literal `if(ibreak==1)` block in full (not just the fidelity note above,
+  which only quotes the LOCATION of the gate) shows it performs EXACTLY
+  this release (a depleted collectee's own outgoing claims, scaled down)
+  as its OWN mechanism, just with a numerically different form (graded
+  `*mod_ratio` scaling per inner iteration vs. this port's hard
+  zero-at-latch per outer fixed-point round). See `core/breakup.py`'s own
+  module docstring ("RECONCILING T3's unconditional release with REAL
+  `ibreak==1`") for the full derivation of this reconciliation, read
+  directly from `mod_amps_core.F90:1712-1890` per this task's own dispatch
+  instruction.
   `_needgive_repair` (`cal_needgive`, G4 SS6, KEPT per the reviewer's
   explicit instruction) remains as a residual safety net for any OTHER
   source of negative mass (e.g. floating-point edge cases in the PDF
   fit/scatter round trip), not as the primary over-depletion guard.
-* **`add_fragments_col_vec` (collisional breakup, `ibreak=1`) is NOT
-  ported** -- M2b Task 5 scope, `ibreak=True` raises `NotImplementedError`
-  immediately (unchanged from the original revision).
+* **`add_fragments_col_vec` (collisional breakup, `ibreak=1`) IS now
+  ported** -- M2b Task 5, `core/breakup.py`. `ibreak=True` requires
+  `config.rain_collisional_breakup=True` (raises `ValueError` otherwise --
+  the runtime physics below assumes `micexfg(18)==1`, `core/breakup.py`'s
+  own module docstring) and a `breakup_tables: BreakupFragmentTables`
+  argument (M2b Task 6's `lookup_tables.make_breakup_fragment_tables`
+  output; also `ValueError` if omitted). Two pieces are added ONLY when
+  `ibreak=True`, both delegated to `core/breakup.py` (see that module's own
+  docstring for the full derivation, including the T3-vs-real-`ibreak==1`
+  reconciliation the dispatch that added this explicitly asked for):
+
+  1. `breakup.breakup_number_consumed` -- an ADDITIONAL depletion
+     (`used_N_b`, H2 SS1c) applied to EVERY bin (both collector and
+     collectee roles) inside this module's own `iter_loop1` fixed-point
+     loop, from the `(1-E_coal)` breakup fraction of `N_col`, masked to
+     `core.breakup.DenseFragmentTables.valid` (only pairs with an ACTUAL
+     fragment-table entry contribute -- guarantees every unit of mass
+     removed here has a matching fragment re-injection, see (2)).
+  2. `breakup.add_fragments_col_vec` -- called once per `collector_loop1`
+     iteration (same `i`), gated by `used_marker[i] | icond1_i` (H2 SS3a's
+     own `used_marker(i,n)==1.or.icond1(i,n)==1`) -- NOT the same gate as
+     the ordinary H/F/LM growth-pass call (`icond1_i` alone), since a bin
+     already excluded from growing (`used_marker=1`) can still have
+     (already-released-to-near-zero) outgoing breakup collisions to
+     account for. Injects fragment number/mass (scaled by
+     `N_bk*mod_rat`) into the SAME `new_N_1`/`new_M_1(rmt/rmat/rmas)`
+     accumulators the growth pass writes.
+
+  Mass balance (verified in `core/breakup.py`'s module docstring and
+  empirically in `tests/.../test_breakup.py::TestCoalesceRainIbreak`): for
+  every `(i,j)` pair with a valid fragment-table entry, fragment mass
+  injected `= N_bk(i,j)*mod_rat(i,j)*bu_tmass(pair) = N_bk(i,j)*
+  (mean_mass_i+mean_mass_j)` (since `mod_rat=(mean_mass_i+mean_mass_j)/
+  bu_tmass` and `sum_k(bu_fd(1,kk))=bu_tmass` by the table's own `mrat`
+  normalization, `core/breakfragment.py`) EXACTLY equals the mass removed
+  from bins `i` and `j` via their own `used_N_b` contributions
+  (`N_bk(i,j)*mean_mass_i` from `i`'s own "as collector" term +
+  `N_bk(i,j)*mean_mass_j` from `j`'s own "as collectee" term) -- a
+  transfer, not a leak, by construction.
 * **The KiD autoconversion/accretion diagnostic second scatter**
   (H1 SS1.6i, `dM_auto`/`dM_accr`) is NOT computed -- not part of this
   task's Deliverable return signature (a `LiquidState`, not a
@@ -283,11 +332,15 @@ import numpy as np
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import (
     bin_grid,
+    breakup,
     collision_kernel as ck,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.index_maps import LiquidPPV
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.liquid_diag import LiquidDiag
-from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import AmpsLuts
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import (
+    AmpsLuts,
+    BreakupFragmentTables,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.vapor_deposition import (
     _gather_remap as _cal_transbin_gather_remap,
     _linear_fit as _cal_lincubprms_linear_fit,
@@ -702,7 +755,7 @@ def _collector_scatter(  # noqa: PLR0915, PLR0917 -- single verbatim-derived eng
     return add_n, add_rmt, add_rmat, add_rmas, h_gain, f_gain, lm_gain
 
 
-def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, many H1/G4 sub-steps
+def coalesce_rain(  # noqa: PLR0912, PLR0915, PLR0917 -- single verbatim-derived engine, many H1/G4 sub-steps
     liquid_pv: LiquidState,
     diag: LiquidDiag,
     thermo: ThermoState,
@@ -711,6 +764,7 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
     luts: AmpsLuts,
     *,
     ibreak: bool = False,
+    breakup_tables: BreakupFragmentTables | None = None,
 ) -> LiquidState:
     """The rain-rain (`token 1-1`) bin-pair collection engine --
     `collector_loop1` ported in full (H/F/LM categorization, multi-bin
@@ -751,22 +805,41 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
         dt: collision-substep timestep (s), scalar.
         luts: `AmpsLuts` (Task 2's `collision_efficiency`'s own `drpdrp`
             LUT requirement).
-        ibreak: collisional-breakup flag -- ONLY `False` (the default) is
-            implemented; `True` raises `NotImplementedError` (M2b Task 5
-            scope, see module docstring).
+        ibreak: collisional-breakup flag (`micexfg(18)`/H2's own `ibreak`).
+            `True` requires `config.rain_collisional_breakup=True` AND a
+            `breakup_tables` argument (both validated below, `ValueError`
+            otherwise) -- M2b Task 5, `core/breakup.py`, see module
+            docstring's `add_fragments_col_vec` section.
+        breakup_tables: `BreakupFragmentTables` (M2b Task 6,
+            `lookup_tables.make_breakup_fragment_tables(config.
+            num_h_bins[0], config.nbin_h)`) -- required when `ibreak=True`,
+            ignored otherwise. NOT rebuilt internally (unlike `binb`
+            above): it depends only on static config, not the runtime
+            `liquid_pv`, so the caller is expected to build it ONCE and
+            reuse it across timesteps (building it costs ~0.3s for
+            cloudlab's 40-bin grid, M2b Task 6's own report).
 
     Returns:
         A NEW, PER-VOLUME `LiquidState` (same shape as `liquid_pv`;
         `liquid_pv` itself is never mutated).
 
     Raises:
-        NotImplementedError: `ibreak=True`, or `liquid_pv.ncat != 1`.
+        NotImplementedError: `liquid_pv.ncat != 1`.
+        ValueError: `ibreak=True` with `config.rain_collisional_breakup
+            =False` or `breakup_tables=None`.
     """
-    if ibreak:
-        raise NotImplementedError(
-            "coalesce_rain: ibreak=True (collisional breakup, add_fragments_col_vec, "
-            "H1 SS1.6j/G4 SS2.3) is M2b Task 5 scope -- this engine only implements the "
-            "ibreak=0 (no-breakup) path. See core/coalescence.py's module docstring."
+    if ibreak and not config.rain_collisional_breakup:
+        raise ValueError(
+            "coalesce_rain: ibreak=True requires config.rain_collisional_breakup=True "
+            "(micexfg(18)==1) -- the ibreak=1 runtime (E_coal/N_col accounting, fragment "
+            "injection) assumes breakup is the active config, not just a caller override. "
+            "See core/breakup.py's module docstring."
+        )
+    if ibreak and breakup_tables is None:
+        raise ValueError(
+            "coalesce_rain: ibreak=True requires breakup_tables (a BreakupFragmentTables, "
+            "e.g. lookup_tables.make_breakup_fragment_tables(config.num_h_bins[0], "
+            "config.nbin_h)) -- see core/breakup.py."
         )
     if liquid_pv.ncat != 1:
         raise NotImplementedError(
@@ -808,6 +881,33 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
             f"config (config.num_h_bins[0]={config.num_h_bins[0]}) -- liquid_pv must be on "
             f"config's own liquid bin grid."
         )
+    # `icolbin_min` is a pure function of `binb` alone -- computed here
+    # (moved up from just before `collector_loop1` below) so the `ibreak`
+    # domain assertion right below can use it too.
+    icolbin_min = _icolbin_min(binb)
+
+    dense: breakup.DenseFragmentTables | None = None
+    if ibreak:
+        assert breakup_tables is not None  # validated above
+        dense = breakup.dense_fragment_tables(breakup_tables, nbins)
+        # `breakup_number_consumed`/`add_fragments_col_vec` are only ever
+        # consulted for `i>=dense.imin_bk` (the fragment table's own
+        # domain) -- `collector_loop1` below never visits `i<icolbin_min`,
+        # so conservation (module docstring's "conservation-by-
+        # construction" note in `core/breakup.py`) requires the table's
+        # own collector range to lie ENTIRELY inside the loop's own range.
+        # Holds for cloudlab (`icolbin_min` is a tiny haze-scale cutoff far
+        # below `jmin_bk`'s `D_0=0.01cm` rain-scale cutoff, M2b Task 6's
+        # own report) -- asserted explicitly rather than silently risking
+        # a mass leak for a hypothetical config where it does not.
+        if dense.imin_bk < icolbin_min:
+            raise ValueError(
+                f"coalesce_rain: ibreak=True requires breakup_tables.imin_bk "
+                f"({dense.imin_bk + 1}, 1-based) >= icolbin_min ({icolbin_min + 1}, 1-based) "
+                f"-- collector_loop1 only visits i>=icolbin_min, so a smaller imin_bk would "
+                f"leave some breakup-consumption pairs without a matching fragment-injection "
+                f"call (see core/breakup.py's module docstring)."
+            )
 
     # --- Task 2 kernel / efficiency, icond1-masked. `errstate` suppresses
     # benign 0/0 or x/0 RuntimeWarnings from `collision_efficiency`'s own
@@ -878,6 +978,33 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
     # point this loop iterates on.
     active_collector_base = active & (mean_mass > _MEAN_MASS_FLOOR)
 
+    # `ibreak=True` needs TWO DISTINCT views of the collision-count grid,
+    # both derived from the SAME initial `n_col` but evolving DIFFERENTLY
+    # across the fixed-point rounds below -- discovered empirically (a
+    # single shared `n_col` oscillates/leaks, see the report):
+    #
+    # * `n_col` ("growth" claims, E_coal-weighted): ordinary coalescence
+    #   NEVER depletes the COLLECTOR's own population (only the
+    #   COLLECTEE's) -- a fully-used_marker'd collector `i` cannot ALSO
+    #   independently grow via ordinary absorption (it never runs
+    #   `_collector_scatter` at all, `icond1_i=False` below), so `i`'s row
+    #   must be released to a HARD ZERO (T3's own original bug-(2) fix,
+    #   UNCHANGED, both `ibreak` values) once `i` latches `used_marker` --
+    #   any mass a used_marker'd `i` would have "claimed" via ordinary
+    #   growth must NEVER be subtracted from a collectee either (nothing
+    #   would ever receive it).
+    # * `n_col_bk` ("breakup" claims, `(1-E_coal)`-weighted, `ibreak=True`
+    #   ONLY): breakup DOES deplete BOTH participants regardless of role
+    #   (H2 SS1c's own `used_N_b`, both loops) -- fragment injection
+    #   (`add_fragments_col_vec`, below) STILL needs to fire for a
+    #   used_marker'd collector's own breakup interactions (a fully
+    #   consumed bin's ENTIRE population may have gone into fragmenting
+    #   collisions, not ordinary growth), so this view is GRADED
+    #   (proportionally rescaled, both row AND column, matching H2's own
+    #   literal `ibreak==1` mechanism -- `core/breakup.py`'s module
+    #   docstring "RECONCILING..." section), never hard-zeroed.
+    n_col_bk = n_col.copy() if ibreak else n_col
+
     used_marker = np.zeros((nbins, npoints), dtype=bool)
     left_n = con.copy()
     left_m = mass_tot.copy()
@@ -885,12 +1012,35 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
         n_col = np.where(
             used_marker[:, None, :], 0.0, n_col
         )  # release excluded i's outgoing claims
+
         used_n_2 = (n_col * e_coal).sum(axis=0)  # (nbins_j, npoints), summed over collector i
+        if ibreak:
+            # H2 SS1c's `used_N_b` -- ADDITIONAL depletion (both collector
+            # and collectee roles) from the breakup fraction of N_col, on
+            # TOP of the ordinary coalescence-only collectee depletion
+            # above. See core/breakup.py's module docstring for the full
+            # `ibreak==1` reconciliation.
+            assert dense is not None
+            used_n_2 = used_n_2 + breakup.breakup_number_consumed(n_col_bk, e_coal, dense)
         over_claimed = used_n_2 > con
         rescale = np.where(over_claimed, _safe_div(con, used_n_2), 1.0)
-        n_col = n_col * rescale[None, :, :]
+        n_col = n_col * rescale[None, :, :]  # column k (as collectee) rescale -- BOTH ibreak values
+        if ibreak:
+            # H2's own `ibreak==1`-gated block (`mod_amps_core.F90:1748-
+            # 1762`/`:1836-1850`, read directly per this task's dispatch --
+            # see core/breakup.py's module docstring for the full quote):
+            # `n_col_bk` gets BOTH the column rescale (over-claimed as
+            # collectee, same factor as `n_col` above) AND the row rescale
+            # (over-claimed as collector-via-breakup, `k`'s OWN outgoing
+            # claims `n_col_bk[k,j]` for `j/=k`) -- graded, not zeroed, so
+            # a used_marker'd `k`'s own breakup consumption still fires at
+            # the CORRECT (population-capped) level.
+            n_col_bk = n_col_bk * rescale[None, :, :] * rescale[:, None, :]
 
         used_n_2 = (n_col * e_coal).sum(axis=0)
+        if ibreak:
+            assert dense is not None
+            used_n_2 = used_n_2 + breakup.breakup_number_consumed(n_col_bk, e_coal, dense)
         used_m_2 = used_n_2 * mean_mass  # mean_mass(j) doesn't depend on i, factor out
         left_n = np.maximum(con - used_n_2, 0.0)
         left_m = np.maximum(mass_tot - used_m_2, 0.0)
@@ -907,46 +1057,73 @@ def coalesce_rain(  # noqa: PLR0915, PLR0917 -- single verbatim-derived engine, 
     new_m_rmat = np.zeros((nbins, npoints))
     new_m_rmas = np.zeros((nbins, npoints))
 
-    icolbin_min = _icolbin_min(binb)
-
     # collector_loop1: do i=g_1%N_bin,icolbin_min,-1 (H1 SS1.6 verbatim,
     # Fortran 1-based descending) -- Python 0-based descending equivalent:
     for i in range(nbins - 1, icolbin_min - 1, -1):
         icond1_i = active_collector_base[i] & ~used_marker[i]
-        if not icond1_i.any():
-            continue
+        if icond1_i.any():
+            add_n, add_rmt, add_rmat, add_rmas, h_gain, f_gain, lm_gain = _collector_scatter(
+                i,
+                binb,
+                con[i],
+                mean_mass[i],
+                mass_tot[i],
+                mass_aero_tot[i],
+                mass_aero_sol[i],
+                left_n[i],
+                n_col[i],
+                e_coal[i],
+                mean_mass,
+                ratio_aero_tot,
+                ratio_aero_sol,
+                icond1_i,
+            )
+            new_n_1 = new_n_1 + add_n
+            new_m_rmt = new_m_rmt + add_rmt
+            new_m_rmat = new_m_rmat + add_rmat
+            new_m_rmas = new_m_rmas + add_rmas
 
-        add_n, add_rmt, add_rmat, add_rmas, h_gain, f_gain, lm_gain = _collector_scatter(
-            i,
-            binb,
-            con[i],
-            mean_mass[i],
-            mass_tot[i],
-            mass_aero_tot[i],
-            mass_aero_sol[i],
-            left_n[i],
-            n_col[i],
-            e_coal[i],
-            mean_mass,
-            ratio_aero_tot,
-            ratio_aero_sol,
-            icond1_i,
-        )
-        new_n_1 = new_n_1 + add_n
-        new_m_rmt = new_m_rmt + add_rmt
-        new_m_rmat = new_m_rmat + add_rmat
-        new_m_rmas = new_m_rmas + add_rmas
+            # Sequenced used_M_2 update, H then F then LM (module
+            # docstring's "STRUCTURAL PIECES" section) -- ONLY the H-pass
+            # may set used_marker; F/LM clamp used_M_2 without setting it.
+            used_m_2_after_h = used_m_2_total + h_gain
+            newly_marked = used_m_2_after_h >= mass_tot
+            used_m_2_total = np.where(newly_marked, mass_tot, used_m_2_after_h)
+            used_marker = used_marker | newly_marked
 
-        # Sequenced used_M_2 update, H then F then LM (module docstring's
-        # "STRUCTURAL PIECES" section) -- ONLY the H-pass may set
-        # used_marker; F/LM clamp used_M_2 without setting it.
-        used_m_2_after_h = used_m_2_total + h_gain
-        newly_marked = used_m_2_after_h >= mass_tot
-        used_m_2_total = np.where(newly_marked, mass_tot, used_m_2_after_h)
-        used_marker = used_marker | newly_marked
+            used_m_2_total = np.minimum(used_m_2_total + f_gain, mass_tot)
+            used_m_2_total = np.minimum(used_m_2_total + lm_gain, mass_tot)
 
-        used_m_2_total = np.minimum(used_m_2_total + f_gain, mass_tot)
-        used_m_2_total = np.minimum(used_m_2_total + lm_gain, mass_tot)
+        if ibreak:
+            # H2 SS3a's own `used_marker(i,n)==1.or.icond1(i,n)==1` gate --
+            # BROADER than `icond1_i` alone (a bin already excluded from
+            # growing can still have outgoing breakup collisions to
+            # account for, module docstring's `add_fragments_col_vec`
+            # section). Called for THIS SAME i, after the growth pass
+            # above (H2's own call-site ordering, mod_amps_core.F90:
+            # 2884-2893), using `n_col_bk[i]` (the GRADED breakup view, NOT
+            # `n_col[i]` -- the growth view's row is hard-zeroed once `i`
+            # is used_marker'd, which would incorrectly zero out `i`'s own
+            # breakup interactions too; see this loop's own fixed-point
+            # comment above).
+            assert dense is not None
+            frag_gate_i = used_marker[i] | icond1_i
+            if frag_gate_i.any():
+                add_n_f, add_rmt_f, add_rmat_f, add_rmas_f = breakup.add_fragments_col_vec(
+                    i,
+                    n_col_bk[i],
+                    e_coal[i],
+                    mean_mass,
+                    mass_tot,
+                    mass_aero_tot,
+                    mass_aero_sol,
+                    frag_gate_i,
+                    dense,
+                )
+                new_n_1 = new_n_1 + add_n_f
+                new_m_rmt = new_m_rmt + add_rmt_f
+                new_m_rmat = new_m_rmat + add_rmat_f
+                new_m_rmas = new_m_rmas + add_rmas_f
 
     # --- Post-loop leftover re-add, G4 SS1.6k verbatim
     # (`mod_amps_core.F90:2899-2925`) PLUS this module's own documented,

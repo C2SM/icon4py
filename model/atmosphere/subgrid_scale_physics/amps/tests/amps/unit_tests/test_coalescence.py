@@ -78,6 +78,8 @@ Groups:
 
 from __future__ import annotations
 
+import dataclasses
+
 import numpy as np
 import pytest
 
@@ -781,21 +783,55 @@ class TestConstantKernelClosedForm:
 
 
 # ---------------------------------------------------------------------------
-# TestIbreakHook -- ibreak=True must raise, not silently no-op.
+# TestIbreakHook -- ibreak=True validation (M2b Task 5: the runtime is now
+# implemented, see test_breakup.py::TestCoalesceRainIbreak for the actual
+# ibreak=1 physics/conservation tests). This module keeps only the
+# ARGUMENT-VALIDATION contract tests (missing config/tables must raise a
+# clear ValueError, not silently no-op or crash obscurely) -- the ibreak=0
+# vs ibreak=1 comparison and fragment-table wiring itself belongs in
+# test_breakup.py, which owns `core/breakup.py`.
 # ---------------------------------------------------------------------------
 
 
 class TestIbreakHook:
-    def test_ibreak_true_raises_not_implemented(self, real_luts):
+    def test_ibreak_true_without_config_flag_raises_value_error(self, real_luts):
+        """`ibreak=True` requires `config.rain_collisional_breakup=True`
+        (core/breakup.py's own module docstring) -- a config/caller
+        mismatch must raise clearly, not silently ignore `ibreak`."""
+        liquid = _two_bin_liquid()
+        diag = _two_bin_diag()
+        thermo = _thermo_state()
+        config = dataclasses.replace(AmpsConfig.cloudlab(), rain_collisional_breakup=False)
+
+        with pytest.raises(ValueError, match="rain_collisional_breakup"):
+            coalescence.coalesce_rain(
+                liquid, diag, thermo, config, dt=2.0, luts=real_luts, ibreak=True
+            )
+
+    def test_ibreak_true_without_breakup_tables_raises_value_error(self, real_luts):
+        """`ibreak=True` requires a `breakup_tables` argument (M2b Task 6's
+        `BreakupFragmentTables`) -- omitting it must raise clearly."""
+        liquid = _two_bin_liquid()
+        diag = _two_bin_diag()
+        thermo = _thermo_state()
+        config = _config()
+        assert config.rain_collisional_breakup is True
+
+        with pytest.raises(ValueError, match="breakup_tables"):
+            coalescence.coalesce_rain(
+                liquid, diag, thermo, config, dt=2.0, luts=real_luts, ibreak=True
+            )
+
+    def test_ibreak_false_is_the_default(self, real_luts):
+        """`ibreak` defaults to `False` -- omitting it entirely must NOT
+        require `breakup_tables` or raise."""
         liquid = _two_bin_liquid()
         diag = _two_bin_diag()
         thermo = _thermo_state()
         config = _config()
 
-        with pytest.raises(NotImplementedError):
-            coalescence.coalesce_rain(
-                liquid, diag, thermo, config, dt=2.0, luts=real_luts, ibreak=True
-            )
+        out = coalescence.coalesce_rain(liquid, diag, thermo, config, dt=2.0, luts=real_luts)
+        assert np.all(np.isfinite(out.values))
 
     def test_ibreak_false_is_the_default(self, real_luts):
         liquid = _two_bin_liquid()
