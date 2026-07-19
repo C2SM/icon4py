@@ -39,6 +39,18 @@ Groups, matching the task brief's test list:
   requirement: a synthetic multi-bin supersaturated spin-up-like state runs
   `run_warm_micro_tendency` end-to-end (all three process hooks real) and
   produces a finite, non-negative liquid state.
+* TestCoalescence -- `_coalescence` (M2b Task 7, DONE): the `config.
+  rain_rain_coalescence`/`flagp_r`-equivalent gate (both no-ops protect
+  every rain-free single-bin fixture above from `coalesce_rain`'s own
+  bin-grid-shape assertion), the `state.diag` precondition (D5), the
+  per-mass<->per-volume round trip, and real mass conservation on a
+  40-bin rain-bearing state.
+* TestNStepClRealCollisionCoverage -- D4 (M2b Task 1 whole-branch-review
+  carry-forward): cloudlab's own `n_step_cl=1` means every OTHER test in
+  this suite exercises `_coalescence` at most once per `run_warm_micro_
+  tendency` call; this class uses `n_step_cl=2` with pre-existing rain to
+  prove collision genuinely re-runs (real physics, not a stub) at EVERY
+  `it_cl` iteration.
 """
 
 from __future__ import annotations
@@ -54,6 +66,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.constants import A
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import (
     AmpsLuts,
     load_luts,
+    make_breakup_fragment_tables,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
     ScaleRawState,
@@ -1010,3 +1023,279 @@ class TestEndToEndSupersaturatedSpinUp:
         np.testing.assert_allclose(
             (qv_after + water_after) - (qv_before + water_before), 0.0, atol=1.0e-8, rtol=0.0
         )
+
+
+# ---------------------------------------------------------------------------
+# _coalescence (M2b Task 7, DONE): rain-rain collision-coalescence +
+# collisional breakup, H1 §0 + G1 §1's col_loop call site. See
+# `implementations/warm_loop.py`'s own `_coalescence` docstring for the full
+# gate/per-mass<->per-volume/D5 derivation.
+# ---------------------------------------------------------------------------
+
+
+def _rain_bearing_state(
+    *,
+    liq_nbins: int = 40,
+    bin_idx: int = 30,
+    con: float = 5.0e3,
+    radius_cm: float = 100.0e-4,
+    collectee_bin_idx: int | None = 20,
+    collectee_con: float = 2.0e3,
+    collectee_radius_cm: float = 30.0e-4,
+) -> warm_loop.WarmLoopState:
+    """A cloudlab-shaped (40 liquid bins), single-column state with a REAL
+    rain-size bin population (`bin_idx=30`, ~100um radius -- large enough
+    for `coalesce_rain`'s own `AMIN_MASS`/`icolbin_min`/`_MEAN_MASS_FLOOR`
+    floors to treat it as an active collector, small enough to stay well
+    inside cloudlab's 40-bin liquid grid) plus a modest CCN population and
+    near-saturated (not pushed hard into activation -- this fixture is
+    about the PRE-EXISTING rain bin's own collision physics, not CCN
+    activation noise) thermo state. Mirrors `test_warm_replay.py`'s own
+    `_rain_bin_box_case` fixture (same physical scenario, `WarmLoopState`-
+    level instead of `BoxCase`-level).
+
+    `collectee_bin_idx` (default bin 20, a SMALLER bin than `bin_idx`):
+    a SECOND, smaller-drop population is REQUIRED for genuine collision
+    activity -- T7's own `counter(n)>0` fix (`core/coalescence.py`'s
+    module docstring) means a column with only ONE occupied bin generates
+    no real `N_col` claims anywhere (nothing to collide WITH), so
+    `collector_loop1` correctly no-ops entirely for such a column --
+    exactly the real-dump degenerate case that fix targets, NOT the
+    "real collision physics ran" scenario most of this class's own tests
+    need. Pass `collectee_bin_idx=None` to reproduce the single-bin
+    (post-T7, correctly-inert) case explicitly, e.g. for a test that
+    wants to confirm counter(n)==0 behavior directly."""
+    p = float(AmpsConst.p00)
+    t = 280.0
+    qv = 1.0e-2  # near-saturated, not pushed hard into activation
+
+    thermo_values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
+    by_prop = {
+        ThermoProp.ptotv: p,
+        ThermoProp.tv: t,
+        ThermoProp.thv: t,
+        ThermoProp.piv: 0.0,
+        ThermoProp.pbv: 0.0,
+        ThermoProp.moist_denv: 1.2e-3,
+        ThermoProp.qvv: qv,
+        ThermoProp.thetav: t,
+        ThermoProp.wbv: 0.0,
+        ThermoProp.momv: 0.0,
+    }
+    for idx, prop in enumerate(ThermoState.PROPS):
+        thermo_values[idx, 0, 0, 0] = by_prop[ThermoProp(int(prop))]
+
+    lp = index_maps.LiquidPPV
+    liquid_values = np.zeros((len(LiquidState.PROPS), liq_nbins, 1, 1), dtype=np.float64)
+    mean_mass = (np.pi / 6.0) * (2.0 * radius_cm) ** 3 * 1.0  # den_w=1.0 g/cm^3, pure water
+    liquid_values[lp.rcon_q.py_idx, bin_idx, 0, 0] = con
+    liquid_values[lp.rmt_q.py_idx, bin_idx, 0, 0] = mean_mass * con
+    if collectee_bin_idx is not None:
+        collectee_mean_mass = (np.pi / 6.0) * (2.0 * collectee_radius_cm) ** 3 * 1.0
+        liquid_values[lp.rcon_q.py_idx, collectee_bin_idx, 0, 0] = collectee_con
+        liquid_values[lp.rmt_q.py_idx, collectee_bin_idx, 0, 0] = (
+            collectee_mean_mass * collectee_con
+        )
+    liquid = LiquidState(values=liquid_values)
+
+    aerosol_values = np.zeros((len(AerosolState.PROPS), 1, 1, 1), dtype=np.float64)
+    ap = index_maps.AerosolPPV
+    aerosol_values[ap.amt_q.py_idx, 0, 0, 0] = 3.164e-13
+    aerosol_values[ap.acon_q.py_idx, 0, 0, 0] = 300.0
+    aerosol_values[ap.ams_q.py_idx, 0, 0, 0] = 3.164e-13
+    aerosol = AerosolState(values=aerosol_values)
+
+    return warm_loop.WarmLoopState(
+        thermo=ThermoState(values=thermo_values),
+        liquid=liquid,
+        aerosol=aerosol,
+        thil=np.array([t]),
+        qtp=np.array([qv]),
+        mes_rc=np.zeros(1, dtype=np.int64),
+    )
+
+
+class TestCoalescence:
+    def _config(self) -> AmpsConfig:
+        base = AmpsConfig.cloudlab()
+        assert base.num_h_bins[0] == 40
+        return base
+
+    def test_noop_when_config_disabled(self, luts):
+        """`config.rain_rain_coalescence=False` (`micexfg(2)!=1`) -- a
+        complete no-op, matching the Fortran's own `if(CM%micexfg(2)==1...)`
+        skip-if-false guard."""
+        config = dataclasses.replace(self._config(), rain_rain_coalescence=False)
+        refreshed = warm_loop._refresh_state(_rain_bearing_state(), config, luts)
+
+        result = warm_loop._coalescence(refreshed, config, 1.0, luts)
+
+        np.testing.assert_array_equal(result.liquid.values, refreshed.liquid.values)
+
+    def test_noop_when_no_rain_present(self, luts):
+        """`state.mes_rc` all-0 (no rain anywhere) -- the `flagp_r>0`-
+        equivalent gate no-ops WITHOUT ever calling `coalesce_rain` (proven
+        by using a single-bin `_make_warm_state()` fixture below, which
+        would raise a bin-grid-shape `ValueError` if `coalesce_rain` were
+        actually invoked -- the gate's own real job, see `_coalescence`'s
+        docstring)."""
+        config = self._config()
+        state = _make_warm_state(rmt=0.0, rmat=0.0, qtp=0.0, qvv=0.0)
+        refreshed = warm_loop._refresh_state(state, config, luts)
+        assert refreshed.mes_rc[0] == 0
+
+        result = warm_loop._coalescence(refreshed, config, 1.0, luts)
+
+        np.testing.assert_array_equal(result.liquid.values, refreshed.liquid.values)
+
+    def test_raises_without_diag_when_rain_present(self, luts):
+        """Calling `_coalescence` directly on a state whose `mes_rc`
+        already says "rain present" but skipped `_refresh_state`
+        (`diag=None`) must raise a clear `ValueError` -- D5's own
+        enforcement backstop, matching `_activation`'s/`_vapor_deposition_
+        liquid`'s established precondition-check idiom."""
+        config = self._config()
+        state = dataclasses.replace(_rain_bearing_state(), mes_rc=np.array([2], dtype=np.int64))
+        assert state.diag is None
+
+        with pytest.raises(ValueError, match="state\\.diag"):
+            warm_loop._coalescence(state, config, 1.0, luts)
+
+    def test_real_run_is_finite_nonnegative_and_changes_liquid(self, luts):
+        config = self._config()
+        refreshed = warm_loop._refresh_state(_rain_bearing_state(), config, luts)
+        assert refreshed.mes_rc[0] == 2  # sanity: gate is genuinely exercised
+
+        result = warm_loop._coalescence(refreshed, config, 5.0, luts)
+
+        lp = index_maps.LiquidPPV
+        assert np.all(np.isfinite(result.liquid.values))
+        assert np.all(result.liquid.values[lp.rmt_q.py_idx] >= 0.0)
+        assert np.all(result.liquid.values[lp.rcon_q.py_idx] >= 0.0)
+        assert not np.array_equal(result.liquid.values, refreshed.liquid.values)
+
+    def test_conserves_total_liquid_mass_across_per_mass_per_volume_roundtrip(self, luts):
+        """Total liquid mass (`sum(rmt)`) must be conserved by the
+        per-mass round trip: `coalesce_rain` itself conserves per-VOLUME
+        mass by construction (`core/coalescence.py`'s own module docstring,
+        `_needgive_repair`/the fixed-point loop); multiplying and dividing
+        by the SAME per-point `den` is an exact algebraic identity, so
+        conservation must survive the per-mass<->per-volume boundary this
+        function adds, unchanged."""
+        config = self._config()
+        refreshed = warm_loop._refresh_state(_rain_bearing_state(), config, luts)
+        lp = index_maps.LiquidPPV
+        mass_before = float(refreshed.liquid.values[lp.rmt_q.py_idx].sum())
+
+        result = warm_loop._coalescence(refreshed, config, 5.0, luts)
+
+        mass_after = float(result.liquid.values[lp.rmt_q.py_idx].sum())
+        np.testing.assert_allclose(mass_after, mass_before, rtol=1.0e-10)
+
+    def test_breakup_off_still_conserves_and_runs(self, luts):
+        """`config.rain_collisional_breakup=False` (`ibreak=0`) -- collision
+        still runs (a DIFFERENT config toggle from `rain_rain_coalescence`),
+        no `breakup_tables` needed, and mass is still conserved."""
+        config = dataclasses.replace(self._config(), rain_collisional_breakup=False)
+        refreshed = warm_loop._refresh_state(_rain_bearing_state(), config, luts)
+        lp = index_maps.LiquidPPV
+        mass_before = float(refreshed.liquid.values[lp.rmt_q.py_idx].sum())
+
+        result = warm_loop._coalescence(refreshed, config, 5.0, luts)
+
+        mass_after = float(result.liquid.values[lp.rmt_q.py_idx].sum())
+        np.testing.assert_allclose(mass_after, mass_before, rtol=1.0e-10)
+        assert not np.array_equal(result.liquid.values, refreshed.liquid.values)
+
+    def test_wired_before_repair_in_col_loop(self, monkeypatch, luts):
+        """H1 §0 + G1 §1's own call-order: `coalescence(rain,rain,...)`
+        BEFORE `repair(...,'af_col')`. Patches both `_coalescence` and
+        `_repair` to record call order on a state with rain present (so
+        `_coalescence` is NOT gated to a no-op) and asserts collision is
+        seen first."""
+        config = self._config()
+        order: list[str] = []
+        real_repair = warm_loop._repair
+
+        def _recording_coalescence(s, c, dt_cl, luts_, breakup_tables=None):
+            order.append("coalescence")
+            return s
+
+        def _recording_repair(s, c, phase):
+            if phase == "collision":
+                order.append("repair_collision")
+            return real_repair(s, c, phase)
+
+        monkeypatch.setattr(warm_loop, "_coalescence", _recording_coalescence)
+        monkeypatch.setattr(warm_loop, "_repair", _recording_repair)
+        monkeypatch.setattr(warm_loop, "_activation", lambda s, c, dt, luts_, **kwargs: s)
+        monkeypatch.setattr(warm_loop, "_vapor_deposition_liquid", lambda s, c, dt, luts_: s)
+
+        warm_loop.run_warm_micro_tendency(_make_warm_state(), config, 1.0, luts)
+
+        assert order == ["coalescence", "repair_collision"]
+
+
+# ---------------------------------------------------------------------------
+# D4 (M2b Task 1 whole-branch-review carry-forward): n_step_cl>1 real-physics
+# coverage. Every OTHER test in this suite uses cloudlab's own n_step_cl=1,
+# so `_coalescence` never got exercised more than once per
+# `run_warm_micro_tendency` call before this class.
+# ---------------------------------------------------------------------------
+
+
+class TestNStepClRealCollisionCoverage:
+    def test_coalesce_rain_runs_once_per_it_cl_with_real_physics(self, monkeypatch, luts):
+        """n_step_cl=2, rain present from the START (so the gate is true at
+        BOTH it_cl==1 and it_cl==2, not merely re-checked) -- wraps the
+        REAL `coalesce_rain` (still calling through, not a stub) to count
+        invocations: must be called exactly `n_step_cl` times, and the
+        run must still complete finite/non-negative -- proving n_step_cl>1
+        now drives genuine, repeated collision physics, closing D4."""
+        config = dataclasses.replace(AmpsConfig.cloudlab(), n_step_cl=2, n_step_vp=1)
+        state = warm_loop._refresh_state(_rain_bearing_state(), config, luts)
+        assert state.mes_rc[0] == 2
+
+        calls = {"n": 0}
+        real_coalesce_rain = warm_loop.coalesce_rain
+
+        def _counting_coalesce_rain(*args, **kwargs):
+            calls["n"] += 1
+            return real_coalesce_rain(*args, **kwargs)
+
+        monkeypatch.setattr(warm_loop, "coalesce_rain", _counting_coalesce_rain)
+
+        result = warm_loop.run_warm_micro_tendency(state, config, dt=2.0, luts=luts)
+
+        assert calls["n"] == config.n_step_cl == 2
+        lp = index_maps.LiquidPPV
+        assert np.all(np.isfinite(result.liquid.values))
+        assert np.all(result.liquid.values[lp.rmt_q.py_idx] >= 0.0)
+        assert np.all(result.liquid.values[lp.rcon_q.py_idx] >= 0.0)
+
+    def test_breakup_tables_built_once_and_reused_across_it_cl(self, monkeypatch, luts):
+        """`breakup_tables=None` (the default): `_coalescence`'s own lazy
+        build must fire AT MOST once per `it_cl` where the gate is true --
+        this test additionally confirms `run_warm_micro_tendency`'s own
+        `breakup_tables` PARAMETER (explicitly pre-built and passed in
+        here) is reused bit-identically across every it_cl, i.e. NOT
+        rebuilt internally when the caller already supplied one."""
+        config = dataclasses.replace(AmpsConfig.cloudlab(), n_step_cl=2, n_step_vp=1)
+        state = warm_loop._refresh_state(_rain_bearing_state(), config, luts)
+
+        prebuilt = make_breakup_fragment_tables(config.num_h_bins[0], config.nbin_h)
+        build_calls = {"n": 0}
+        real_make = warm_loop.make_breakup_fragment_tables
+
+        def _counting_make(*args, **kwargs):
+            build_calls["n"] += 1
+            return real_make(*args, **kwargs)
+
+        monkeypatch.setattr(warm_loop, "make_breakup_fragment_tables", _counting_make)
+
+        result = warm_loop.run_warm_micro_tendency(
+            state, config, dt=2.0, luts=luts, breakup_tables=prebuilt
+        )
+
+        assert build_calls["n"] == 0  # never rebuilt -- the pre-built table was reused
+        assert np.all(np.isfinite(result.liquid.values))

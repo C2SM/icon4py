@@ -53,7 +53,9 @@ import numpy as np
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import (
     AmpsLuts,
+    BreakupFragmentTables,
     load_luts,
+    make_breakup_fragment_tables,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
     SCALE_CPDRY,
@@ -131,6 +133,7 @@ def run_box(
     case: BoxCase,
     *,
     luts: AmpsLuts | None = None,
+    breakup_tables: BreakupFragmentTables | None = None,
     allow_shed_placeholder: bool = False,
     allow_dhf_placeholder: bool = False,
     allow_dep_placeholder: bool = False,
@@ -224,6 +227,20 @@ def run_box(
             harness iterating `ref_data.RefDataset.micro_pairs()`) should
             load once and pass the same `AmpsLuts` through rather than
             paying that cost per case. Defaults to loading internally.
+        breakup_tables: optional pre-built `BreakupFragmentTables` (M2b
+            Task 6/7) -- threaded through to every `implementations.
+            warm_loop.run_warm_micro_tendency`/`_coalescence` call this
+            function makes (`case.n_steps` of them). `core.lookup_tables.
+            make_breakup_fragment_tables` costs ~0.3s for cloudlab's
+            40-bin grid (M2b Task 6's own report) -- built ONCE here, below
+            (if `case.config.rain_rain_coalescence and case.config.
+            rain_collisional_breakup` and no table was supplied), REUSED
+            across every one of this call's own `n_steps` iterations,
+            exactly mirroring `luts`'s own "caller builds once" convention
+            above. Callers making MANY `run_box` calls (e.g. the per-call
+            replay harness) should build ONCE, further up, and pass the
+            SAME table through here to avoid paying that ~0.3s cost per
+            case too.
 
     Raises:
         NotImplementedError: if `case` carries nonzero ice mass (the
@@ -231,6 +248,12 @@ def run_box(
     """
     if luts is None:
         luts = load_luts()
+    if (
+        breakup_tables is None
+        and case.config.rain_rain_coalescence
+        and case.config.rain_collisional_breakup
+    ):
+        breakup_tables = make_breakup_fragment_tables(case.config.num_h_bins[0], case.config.nbin_h)
 
     qv = get_thermo_prop(case.thermo, ThermoProp.qvv)
     th = get_thermo_prop(case.thermo, ThermoProp.thv)
@@ -261,12 +284,17 @@ def run_box(
     # `thermo.tv` are populated from the start rather than left at this
     # function's own placeholder seed values (`diag=None`, `mes_rc=0`)
     # until `run_warm_micro_tendency`'s own internal vap-loop-head refresh
-    # first runs. Confirmed inconsequential to `run_warm_micro_tendency`'s
-    # OWN output (its first action is `_repair(phase="collision")`, which
-    # reads neither -- `core/repair.py`, `test_warm_loop.py`'s own
-    # `test_repair_does_not_require_diag`) -- this call exists for
-    # state-shape parity with `ifc_warm`, not because it changes the
-    # result.
+    # first runs. Pre-M2b-Task-7 this was "confirmed inconsequential" to
+    # `run_warm_micro_tendency`'s OWN output (its first action used to be
+    # `_repair(phase="collision")`, reading neither) -- Task 7 makes it a
+    # GENUINE requirement, not merely parity: `_coalescence` now runs
+    # FIRST each it_cl (H1 §0 + G1 §1) and gates on `state.mes_rc` (its own
+    # `flagp_r`-equivalent, D5 -- `implementations.warm_loop._coalescence`'s
+    # own docstring), so a `case` whose `mask.liquid` already carries rain
+    # (e.g. a mid-run replay record) needs this refresh to see it BEFORE
+    # `run_warm_micro_tendency`'s it_cl==1 -- without it, `mes_rc` would
+    # still read this function's own placeholder `0` and collision would
+    # incorrectly no-op on the very first substep.
     state = warm_loop._refresh_state(state, case.config, luts)
     for _ in range(case.n_steps):
         state = warm_loop.run_warm_micro_tendency(
@@ -274,6 +302,7 @@ def run_box(
             case.config,
             case.dt,
             luts,
+            breakup_tables=breakup_tables,
             allow_shed_placeholder=allow_shed_placeholder,
             allow_dhf_placeholder=allow_dhf_placeholder,
             allow_dep_placeholder=allow_dep_placeholder,

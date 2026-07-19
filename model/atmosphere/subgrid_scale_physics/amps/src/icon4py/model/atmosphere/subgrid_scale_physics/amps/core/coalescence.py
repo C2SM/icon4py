@@ -156,6 +156,18 @@ STRUCTURAL PIECES NOT PART OF H1's OWN QUOTED EXCERPT, RESOLVED BY READING
   clause as `used_marker(i,n)/=1` (the OR's second disjunct is always
   FALSE for rain-rain): a bin whose ENTIRE mass was already consumed as
   a COLLECTEE is EXCLUDED from ALSO acting as its own COLLECTOR.
+* **T7 (M2b Task 7, warm-dump-validation fix): `collector_loop1`'s OWN
+  `icond1` redefinition ALSO requires a COLUMN-LEVEL `counter(n)>0`**
+  (`mod_amps_core.F90:1955-1958`, quoted in full at this function's own
+  `counter_active` computation below) -- `counter(n)` (`:1899-1907`)
+  counts, per column, how many bins the O(n^2) kernel pass actually
+  claimed (`used_N_2(i,n)>0`); `counter(n)==0` means `collector_loop1`
+  skips EVERY bin in that column, independent of any individual bin's own
+  con/mass_tot/mean_mass. G4/H1's own quoted excerpts never mention this
+  conjunct (an omission this task's own real-dump validation surfaced,
+  not a pre-existing fact-gap flagged by an earlier task) -- see
+  `counter_active`'s own inline comment, at its point of use, for the
+  full derivation and the exact real-dump failure mode it fixes.
 * **`used_M_2` (NOT `used_N_2`) is reset to zero immediately before
   `collector_loop1` starts** (`mod_amps_core.F90:1938`:
   `used_M_2(:,:) = 0.0_PS`) -- collector_loop1's OWN H/F/LM-pass
@@ -976,7 +988,37 @@ def coalesce_rain(  # noqa: PLR0912, PLR0915, PLR0917 -- single verbatim-derived
     # 1955-1966`): adds the mean_mass floor -- the `used_marker/=1` half
     # (for rain-rain, pro_type=2, see module docstring) is the fixed
     # point this loop iterates on.
-    active_collector_base = active & (mean_mass > _MEAN_MASS_FLOOR)
+    #
+    # T7 (M2b Task 7, warm-dump-validation fix) ADDS `mean_mass<=binb[-1]`
+    # -- NOT part of any literal Fortran `icond1` clause (G4/H1's own
+    # `con>1e-30 .and. mass(1)>1e-30 .and. mean_mass>1e-15` is a FLOOR only,
+    # no ceiling anywhere in the quoted text), but a real-dump validation
+    # necessity `_MEAN_MASS_FLOOR` alone cannot catch: a bin with a
+    # floating-point-noise-level `con` (e.g. ~1e-14 per-volume, far above
+    # `_ACTIVE_FLOOR`/the Fortran's own `1e-30`) paired with an ordinary-
+    # magnitude leftover `mass_tot` computes `mean_mass=mass_tot/con` many
+    # ORDERS OF MAGNITUDE beyond `binb[-1]` (the grid's own largest
+    # representable mean-drop mass, ~0.52g for cloudlab's 40-bin liquid
+    # grid -- already a generous upper bound on real raindrop size) --
+    # observed real-dump values up to ~1.8e5 g (a "raindrop" ~1000x more
+    # massive than a car). `_collector_scatter`'s own degenerate-fallback
+    # path (`_find_destination_bin`) then clips such an out-of-grid mean
+    # mass to the TOP bin, corrupting it with that noise bin's real (but
+    # tiny) mass and its raw, never-consulted-by-the-real-Fortran `rmat`/
+    # `rmas` payload -- confirmed against a real dump (M2b Task 7 report):
+    # this is NOT a rare tail case, it recurs across many replayed
+    # records/points, and is NOT the T3 `ibreak=0`-conservation hypothesis
+    # this task was dispatched expecting to confirm/refute. `binb[-1]` (not
+    # a per-bin `binb[i+1]`) is the deliberately LOOSE choice -- catching
+    # only genuinely pathological (order(s)-of-magnitude) violations, never
+    # a legitimate bin whose own PDF-remap-approximated mean mass lands
+    # slightly outside ITS OWN narrow bin range but still well inside the
+    # grid overall (an ordinary, harmless bin-scheme approximation, not a
+    # defect). See also `counter_active`, below -- a SEPARATE, ALSO-
+    # necessary T7 fix for the companion case (a column with only ONE
+    # occupied bin, whose own mean_mass may be perfectly ordinary but which
+    # never generates any genuine collision claim either way).
+    active_collector_base = active & (mean_mass > _MEAN_MASS_FLOOR) & (mean_mass <= binb[-1])
 
     # `ibreak=True` needs TWO DISTINCT views of the collision-count grid,
     # both derived from the SAME initial `n_col` but evolving DIFFERENTLY
@@ -1051,6 +1093,60 @@ def coalesce_rain(  # noqa: PLR0912, PLR0915, PLR0917 -- single verbatim-derived
         if converged:
             break
 
+    # M2b Task 7 warm-dump-validation fix (T7): `counter(n)>0`, G4/H1's OWN
+    # excerpts never quote this -- found by reading `mod_amps_core.F90:
+    # 1899-1907`/`:1955-1958` DIRECTLY (dispatch-authorized) while
+    # diagnosing a real-dump divergence. `collector_loop1`'s OWN `icond1`
+    # redefinition (`:1955-1966`) is `icycle_n(n)==0 .and. counter(n)>0
+    # .and. (con>1e-30 .and. mass(1)>1e-30 .and. mean_mass>1e-15) .and.
+    # (used_marker/=1 .or. pro_type/=2)` -- a COLUMN-LEVEL `counter(n)>0`
+    # conjunct this module's own `active_collector_base` (the parenthesized
+    # per-bin clause alone) was missing entirely. `counter(n)` (`:1899-1907`,
+    # computed AFTER `iter_loop1` finishes, from the SAME final `used_N_2`
+    # this loop's own `used_n_2` matches) counts, per column, how many bins
+    # were ACTUALLY claimed as a collectee by the O(n^2) kernel pass --
+    # `counter(n)==0` means NOTHING in that whole column ever had a
+    # meaningful collision claim, so `collector_loop1` skips EVERY bin in
+    # that column, REGARDLESS of any individual bin's own con/mass_tot/
+    # mean_mass. Root cause of a real-dump-only failure mode this port's
+    # synthetic-fixture tests never triggered: a bin with a floating-point-
+    # noise-level residual `con` (e.g. ~1e-14 per-volume, comfortably above
+    # the bare `>1e-30` floor but PHYSICALLY negligible) paired with a
+    # normal-magnitude leftover `mass_tot` computes an absurd `mean_mass=
+    # mass_tot/con` (millions of grams per "drop") that clears
+    # `_MEAN_MASS_FLOOR` easily and gets treated as a legitimate ACTIVE
+    # COLLECTOR -- `_collector_scatter`'s own degenerate-fallback path
+    # (`_find_destination_bin`) then clips that absurd mean_mass to the
+    # GRID'S OWN TOP BIN, corrupting it with the noise bin's real (but
+    # tiny) mass AND its raw, never-consulted-by-the-real-Fortran `rmat`/
+    # `rmas` payload. `counter(n)>0` is EXACTLY the guard that (in the real
+    # Fortran) keeps such a bin inert: if it never generated/received a
+    # real collision claim (which a ~1e-14 con bin never will, since every
+    # `N_col` claim against/from it is clamped by that same tiny `con`),
+    # `counter(n)` for its WHOLE column stays 0 and `collector_loop1` never
+    # touches ANY bin there.
+    counter_active = np.any(used_n_2 > 0.0, axis=0)  # (npoints,)
+
+    # A bin that would have been an eligible collector under the PRE-T7
+    # rule (`active & mean_mass>_MEAN_MASS_FLOOR`, the module's own
+    # original `active_collector_base` formula) but is excluded by EITHER
+    # new T7 conjunct (`mean_mass<=binb[-1]` or `counter_active`) still
+    # holds its own genuine `left_n`/`left_m` (unchanged from `con`/
+    # `mass_tot` minus whatever a VALID other collector legitimately
+    # claimed of it as a collectee -- itself naturally small, since a bin
+    # excluded here has either a degenerate mean_mass or sits in a column
+    # with no real collision activity) -- re-added below, mirroring the
+    # icolbin_min-excluded-bin precedent (module docstring). Bins that
+    # were ALREADY excluded pre-T7 (`mean_mass<=_MEAN_MASS_FLOOR`) are
+    # UNCHANGED by this -- that pre-existing, narrower gap (both con AND
+    # mass_tot near-zero, contributing ~nothing either way) is out of this
+    # fix's own scope.
+    excluded_by_t7 = (
+        active
+        & (mean_mass > _MEAN_MASS_FLOOR)
+        & ((mean_mass > binb[-1]) | ~counter_active[None, :])
+    )
+
     used_m_2_total = np.zeros((nbins, npoints))
     new_n_1 = np.zeros((nbins, npoints))
     new_m_rmt = np.zeros((nbins, npoints))
@@ -1060,7 +1156,7 @@ def coalesce_rain(  # noqa: PLR0912, PLR0915, PLR0917 -- single verbatim-derived
     # collector_loop1: do i=g_1%N_bin,icolbin_min,-1 (H1 SS1.6 verbatim,
     # Fortran 1-based descending) -- Python 0-based descending equivalent:
     for i in range(nbins - 1, icolbin_min - 1, -1):
-        icond1_i = active_collector_base[i] & ~used_marker[i]
+        icond1_i = active_collector_base[i] & ~used_marker[i] & counter_active
         if icond1_i.any():
             add_n, add_rmt, add_rmat, add_rmas, h_gain, f_gain, lm_gain = _collector_scatter(
                 i,
@@ -1127,11 +1223,25 @@ def coalesce_rain(  # noqa: PLR0912, PLR0915, PLR0917 -- single verbatim-derived
 
     # --- Post-loop leftover re-add, G4 SS1.6k verbatim
     # (`mod_amps_core.F90:2899-2925`) PLUS this module's own documented,
-    # mass-safe extension to icolbin_min-excluded bins (module docstring's
-    # "STRUCTURAL PIECES" section). ---
+    # mass-safe extensions: icolbin_min-excluded bins (module docstring's
+    # "STRUCTURAL PIECES" section) AND, as of the T7 fixes above,
+    # `excluded_by_t7` bins -- a bin excluded from `collector_loop1` by
+    # EITHER new T7 gate (`mean_mass>binb[-1]` or `counter_active==False`)
+    # is, by the SAME construction as an icolbin_min-excluded bin, inert
+    # for THIS role (`left_n`/`left_m` reflecting only whatever a VALID
+    # other collector legitimately claimed of it as a collectee, if
+    # anything): re-adding it is what reproduces the real Fortran's own
+    # observed behavior for such a bin (bit-identical pre->post for the
+    # isolated-degenerate-bin case, confirmed against a real dump -- see
+    # the M2b Task 7 report) -- NOT the literal Fortran's own quoted
+    # `used_marker(i,n)==1`-only condition (H1 SS1.6k), which this port's
+    # own architecture (computing REPLACEMENT `new_N_1`/`new_M_1` values,
+    # not the raw Fortran's `assign_tendency_vec`-mediated tendencies) has
+    # no other mechanism to reproduce -- same "documented, MASS-SAFE choice
+    # for a genuinely underspecified corner" precedent as icolbin_min. ---
     below_icolbin_min = np.zeros(nbins, dtype=bool)
     below_icolbin_min[:icolbin_min] = True
-    re_add = used_marker | below_icolbin_min[:, None]
+    re_add = used_marker | below_icolbin_min[:, None] | excluded_by_t7
     new_n_1 = new_n_1 + np.where(re_add, left_n, 0.0)
     new_m_rmt = new_m_rmt + np.where(re_add, left_m, 0.0)
     new_m_rmat = new_m_rmat + np.where(re_add, left_m * ratio_aero_tot, 0.0)

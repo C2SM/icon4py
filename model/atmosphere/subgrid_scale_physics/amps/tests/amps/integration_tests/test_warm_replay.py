@@ -61,7 +61,10 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import index_maps, packing
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.constants import AmpsConst
-from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import load_luts
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import (
+    load_luts,
+    make_breakup_fragment_tables,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import get_thermo_prop
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.driver import box, ref_data
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import (
@@ -668,28 +671,68 @@ def test_warm_replay_against_m0_dump() -> None:
       `_worst_point_mismatch`'s own shape-mismatch path) rather than a
       genuine physics fidelity number.
 
-    NOT-YET-1e-8 IS EXPECTED (M2b in progress): the M2a warm loop this
-    test replays omits collision(rain,rain)/breakup entirely (M2b Tasks
-    3-7, in progress -- `implementations/warm_loop.py`'s own module
-    docstring). A real `warm` dump's micro pre->post pair brackets the
-    WHOLE `ifc_cloud_micro` call, collision/breakup included (both are ON
-    in this run: `micexfg` 2/18) -- so this test's `WARM_REPLAY_RTOL=1e-8`
-    target is NOT expected to pass yet, by construction, not because of a
-    bug here. Rather than hard-failing red (which would look like a
-    regression) or silently reporting a fake pass, a genuine mismatch
-    calls `pytest.xfail` with the SAME worst-offender-per-field report the
-    hard-fail path used to raise with -- visible in `pytest -rx` output.
-    This is intentionally NOT a `@pytest.mark.xfail` decorator: `pytest.
-    xfail()` is only reached on the mismatch path below, so the moment
-    M2b's collision/breakup wiring closes the gap and every field lands
-    within tolerance, this test starts passing FOR REAL, with no marker to
-    remember to remove -- flipping this into a real gate automatically."""
+    STILL NOT-1e-8 (M2b Task 7 status, updated from the earlier "M2b in
+    progress" framing): collision(rain,rain)+collisional breakup ARE now
+    wired (`implementations.warm_loop._coalescence`, M2b Tasks 3/5/6/7) --
+    that gap is CLOSED. Running this replay against the real dump surfaced
+    TWO genuine `core/coalescence.py` bugs neither this port's own
+    synthetic-fixture unit tests nor the T3/H2 fidelity notes anticipated
+    (both fixed as part of M2b Task 7, see that task's own report,
+    `.superpowers/sdd/m2b-task-7-report.md`): (1) `collector_loop1`'s own
+    `icond1` redefinition needs a COLUMN-LEVEL `counter(n)>0` conjunct
+    (`mod_amps_core.F90:1955-1958`, absent from every prior fact-doc
+    extraction), and (2) a real, physically-motivated `mean_mass<=binb[-1]`
+    ceiling is needed alongside the existing floor, closing a real-dump-
+    only failure mode where a floating-point-noise-level `con` paired with
+    a normal-magnitude leftover `mass_tot` computed an absurd per-drop
+    mass that a degenerate-fallback path scattered into the wrong bin.
+    Both are verified fixed against the specific real-dump reproductions
+    that found them, with NO regression to any pre-existing unit test.
+
+    This test is STILL expected to `xfail`, NOT because of collision/
+    breakup (M2b's own scope) but because of a SEPARATE, PRE-EXISTING,
+    OUT-OF-SCOPE bug this same investigation surfaced: `core/vapor_
+    deposition.py`'s `icond3 = diag.mean_mass > 0.0` (M2a Task 5) has the
+    IDENTICAL missing-upper-bound pattern `core/coalescence.py` just got
+    fixed for, and independently corrupts the SAME class of degenerate
+    bin via vapor-deposition's own bin-remap machinery -- confirmed by
+    reproducing the SAME real-dump divergence with `rain_rain_coalescence=
+    False` (collision entirely OFF): the corruption persisted bit-for-bit,
+    proving it is not sourced from collision at all. Fixing it is out of
+    THIS task's own dispatch scope (a different M2a module, used by many
+    other consumers of `diag.mean_mass` beyond vapor-deposition) and is
+    left as a precise, actionable follow-up (see the M2b Task 7 report).
+    `thermo.tv`/`thermo.qvv` (unaffected by the aerosol-mass-component
+    fields the degenerate bins corrupt) land MUCH closer to tolerance
+    (relative error ~1e-6 to ~1e-3 in spot sampling) than `liquid`/
+    `aerosol`, consistent with this diagnosis.
+
+    Rather than hard-failing red (which would look like a regression) or
+    silently reporting a fake pass, a genuine mismatch calls `pytest.xfail`
+    with the SAME worst-offender-per-field report the hard-fail path used
+    to raise with -- visible in `pytest -rx` output. This is intentionally
+    NOT a `@pytest.mark.xfail` decorator: `pytest.xfail()` is only reached
+    on the mismatch path below, so the moment the vapor-deposition gap
+    above also closes and every field lands within tolerance, this test
+    starts passing FOR REAL, with no marker to remember to remove --
+    flipping this into a real gate automatically."""
     dump_source = _find_dump_source()
     if dump_source is None:
         pytest.skip(_SKIP_MESSAGE)
 
     dataset = ref_data.load_reference(dump_source)
     luts = load_luts()
+    # M2b Task 7: collision(rain,rain)+breakup are now wired (implementations.
+    # warm_loop._coalescence) and ON by default (AmpsConfig.cloudlab()'s own
+    # micexfg 2/18 -- rain_rain_coalescence/rain_collisional_breakup both
+    # True) -- build the Low-List fragment table ONCE here (mirrors `luts`
+    # immediately above; box.run_box's own docstring: "caller builds once,
+    # passes through" for any MANY-call site) rather than paying
+    # make_breakup_fragment_tables' ~0.3s cost on every one of potentially
+    # thousands of replayed records.
+    breakup_tables = make_breakup_fragment_tables(
+        AmpsConfig.cloudlab().num_h_bins[0], AmpsConfig.cloudlab().nbin_h
+    )
 
     worst_per_field: dict[str, _FieldMismatch] = {}
     n_compared = 0
@@ -702,6 +745,7 @@ def test_warm_replay_against_m0_dump() -> None:
             result = box.run_box(
                 case,
                 luts=luts,
+                breakup_tables=breakup_tables,
                 allow_shed_placeholder=True,
                 allow_dhf_placeholder=True,
                 allow_dep_placeholder=True,

@@ -34,10 +34,20 @@ PROCESS kernels are explicitly OUT of scope here and land in later tasks:
   docstring for why), populating `WarmLoopState.diag`.
   `update_airgroup` itself (imported by name in G1 §1 but not quoted
   verbatim anywhere in G1) still has no M1 port -- see below.
-* Task 3: collision-substep warm physics (`coalescence(rain,rain)`,
-  `hydrodyn_breakup(rain)`) -- NOT modeled at all in this skeleton (no
-  stub hook exists for them here); Task 3 is expected to splice its calls
-  into `run_warm_micro_tendency`'s col_loop body directly.
+* Task 7 (DONE): `_coalescence` (rain-rain collision-coalescence +
+  collisional breakup, `coalescence(rain,rain,...)`, G1 §1 col_loop,
+  guard `micexfg(2)==1 .and. flagp_r>0` per H1 §0) -- M2b Task 3/5/6's
+  `core.coalescence.coalesce_rain` (the composed collector_loop1 engine,
+  with the T5/T6 `ibreak=1` breakup hook wired through). See `_coalescence`'s
+  own docstring for the per-mass<->per-volume boundary (H1 §5), the
+  `flagp_r`-equivalent gate, and D4/D5 (M2b Task 1's whole-branch-review
+  carry-forward items this task closes).
+  `hydrodyn_breakup(rain)` (a SEPARATE, spontaneous/large-drop mechanism,
+  `core/breakup.py`'s own docstring: "NOT wired into `coalesce_rain`'s
+  `ibreak` hook... no fact document or dispatch instruction ties
+  `micexfg(18)`/`ibreak` to the spontaneous mechanism at all") remains
+  NOT modeled here -- out of THIS task's own dispatch scope (collision +
+  Low-List collisional breakup only), left for a future task.
 * Task 4 (DONE): `_activation` (CCN activation, `cal_aptact_var8_kc04dep`,
   G1 §1 vap_loop) -- `core.activation.activate_and_advance_vapor`
   (`core/activation.py`). Requires `state.diag` (Task 2's `diag_pq_liquid`
@@ -96,8 +106,8 @@ full_loop`, unchanged, for the full-loop acceptance check).
 `update_group_all`/`cal_dmtend_scale` (G1 §4c, tendency bookkeeping) are
 likewise NOT modeled here -- no M1 port exists for them and they are not
 named in this task's brief-scoped deliverables (`WarmLoopState`,
-`run_warm_micro_tendency`, `ifc_warm`, the three stub hooks above); a
-future task wires them in alongside Task 3's collision-substep physics.
+`run_warm_micro_tendency`, `ifc_warm`, the process hooks above); a future
+task wires them in, independent of Task 7's collision wiring above.
 
 `update_airgroup` (`class_AirGroup.F90`, imported by name in G1 §1 but not
 quoted verbatim anywhere in G1) has no M1 port either; `_refresh_state`
@@ -120,11 +130,16 @@ from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import index_maps
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.activation import (
     activate_and_advance_vapor,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.coalescence import coalesce_rain
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.liquid_diag import (
     LiquidDiag,
     diag_pq_liquid,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import AmpsLuts
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.lookup_tables import (
+    AmpsLuts,
+    BreakupFragmentTables,
+    make_breakup_fragment_tables,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import (
     PackedAmpsState,
     ScaleRawState,
@@ -330,9 +345,177 @@ def _refresh_state(
 
 
 # ---------------------------------------------------------------------------
-# Process hooks -- Tasks 4/5/6. `_activation` (Task 4), `_vapor_deposition_
-# liquid` (Task 5), and `_repair` (Task 6) are all now implemented.
+# Process hooks -- Tasks 4/5/6/7. `_coalescence` (Task 7), `_activation`
+# (Task 4), `_vapor_deposition_liquid` (Task 5), and `_repair` (Task 6) are
+# all now implemented.
 # ---------------------------------------------------------------------------
+
+
+def _coalescence(
+    state: WarmLoopState,
+    config: AmpsConfig,
+    dt_cl: float,
+    luts: AmpsLuts,
+    breakup_tables: BreakupFragmentTables | None = None,
+) -> WarmLoopState:
+    """Rain-rain collision-coalescence + collisional breakup (G1 §1
+    col_loop: `coalescence(CM%rain,CM%rain,...)`, H1 §0 verbatim caller,
+    `class_Cloud_Micro.F90:1015-1028`) -- M2b Task 3/5/6's
+    `core.coalescence.coalesce_rain` (the composed `collector_loop1`
+    engine, with the T5 `add_fragments_col_vec`/T6 fragment-table
+    `ibreak=1` hook already wired INSIDE `coalesce_rain` itself; this
+    function's own job is only the WarmLoopState/per-mass<->per-volume
+    boundary and the two Fortran guards, not any of the collision physics
+    itself).
+
+    Placement in `run_warm_micro_tendency`'s col_loop: after the (it_cl>1-
+    conditional) `_refresh_state` call, BEFORE `_repair(phase="collision")`
+    -- H1 §0 + G1's own call-order table (`micro-tendency-orchestration.md`
+    §1: `coalescence(rain,rain,...)` at `:1015-1028`, `repair(...,'af_col')`
+    at `:1146-1150`, nothing else in between). Runs ONCE per `it_cl`
+    (col-loop) iteration, BEFORE the `it_vp` vap_loop that hosts
+    `_activation`/`_vapor_deposition_liquid` -- those two hooks (B1's own
+    deferred-apply seam, `pending_activation_delta`) are entirely
+    consumed/cleared within ONE vap_loop iteration, so by construction
+    `state.pending_activation_delta` is always `None` when this function
+    runs (either the very first it_cl, before any vap_loop has run, or a
+    later it_cl, after the PREVIOUS it_cl's own last vap_loop iteration
+    already cleared it) -- collision operates on `state.liquid` alone, no
+    interaction with that seam.
+
+    Two Fortran guards, both checked BEFORE touching `state.diag`/
+    `state.liquid` (so a caller whose gate is false never pays for or
+    validates against the per-mass<->per-volume conversion or
+    `coalesce_rain`'s own liquid-bin-grid-shape assertion -- see below):
+
+    1. `config.rain_rain_coalescence` (`micexfg(2)==1`) -- the collision
+       on/off config toggle.
+    2. `flagp_r>0` ("rain present") -- H1 §0's own verbatim guard. G1's own
+       orchestration table shows `flagp_r` is a scalar, whole-batch
+       existence flag (e.g. `diag_pq(CM%rain,...)` at G1 `:1219-1220` is
+       ALSO gated `if(CM%flagp_r>0)`), not a per-point mask -- `WarmLoopState`
+       carries no separate `flagp_r` field, so this is reconstructed here as
+       `np.any(state.mes_rc==2)` ("does at least one column point currently
+       have rain", `_update_mesrc_warm`'s own `mes_rc==2` convention) --
+       the natural, batch-scalar existence-flag reading of `flagp_r`
+       consistent with how `mes_rc` is already this port's own stand-in for
+       every OTHER `flagp_r`/`flagp_s`-gated quantity (`diag_t`'s `qr_0`
+       accumulation, `_rain_specific_humidity`, above). Per-point
+       heterogeneity within a "yes" batch (some points have rain, some
+       don't) is left to `coalesce_rain`'s OWN internal `icond1_active`/
+       `active_collector_base` per-point/per-bin masking to no-op
+       correctly -- exactly how `_activation`/`_vapor_deposition_liquid`
+       already handle per-point heterogeneity today (no separate outer
+       per-point mask in THIS module for those two hooks either). Unlike
+       those two hooks, though, this guard is NOT purely an optimization:
+       `coalesce_rain` HARD-REQUIRES `liquid_pv.nbins==config.num_h_bins[0]`
+       (raises `ValueError` otherwise) -- a real, full-bin-grid `state.liquid`
+       (every `ifc_warm`/`box.run_box` caller) always satisfies this, but
+       several `test_warm_loop.py` fixtures (`_make_warm_state`'s own
+       single-bin convenience `LiquidState`) do not; those fixtures all
+       default to `rmt=0.0` (no rain, `mes_rc` stays 0), so this gate keeps
+       them safely no-op'd rather than tripping that shape assertion --
+       the dispatch's own "Gate on config.rain_coalescence & rain present"
+       instruction, applied.
+
+    D5 (M2b Task 1's whole-branch-review carry-forward, enforced here):
+    "it_cl==1 diag currency -- collision consumes diag, so the it_cl==1
+    refresh must be current." `state.diag`/`state.mes_rc` are ALWAYS
+    populated TOGETHER, by the SAME `_refresh_state` call (that function's
+    own body: `diag_pq_liquid` runs immediately after `_update_mesrc_warm`,
+    both stored on the SAME returned `WarmLoopState`) -- so whenever this
+    guard's `mes_rc`-based gate is current (which it always is: nothing
+    mutates `state.liquid`/`state.mes_rc` between the last `_refresh_state`
+    call and this function running, for EITHER it_cl==1 -- where the "last
+    refresh" is the caller's own mandatory pre-loop refresh, `ifc_warm`/
+    `run_box`'s own docstrings -- or it_cl>1, where it is this SAME
+    iteration's own `if it_cl>1: state=_refresh_state(...)` call
+    immediately above in `run_warm_micro_tendency`), `state.diag` is
+    EQUALLY current by construction -- staleness cannot arise. The
+    `state.diag is None` check below is the enforcement backstop for a
+    caller that violates that invariant (e.g. calls `run_warm_micro_
+    tendency` on a hand-built `WarmLoopState` with rain present but no
+    prior refresh) -- raises a clear `ValueError` naming the missing
+    precondition, matching `_activation`'s/`_vapor_deposition_liquid`'s own
+    established precondition-check idiom, rather than silently consuming a
+    `None`/stale `diag`.
+
+    Per-mass<->per-volume boundary (H1 §5, the density-convention
+    supplement absent from G4): `coalesce_rain` operates on PER-VOLUME
+    quantities (`con`/`mass=q*den`) -- the OPPOSITE convention from the
+    per-mass activation/vapor-deposition ports. `state.liquid` (like every
+    other `WarmLoopState.liquid` in this module) is per-mass throughout, so
+    this function multiplies EVERY `LiquidPPV` slot (`rmt_q`/`rcon_q`/
+    `rmat_q`/`rmas_q` -- all 4, matching H1 §5's own `class_Group.F90:
+    756-758`/`779-781`/`811` entry conversion, ALL of `LiquidState.PROPS`)
+    by `state.thermo`'s `moist_denv` (CGS g/cm^3, `state.py`'s own UNIT
+    CONTRACT -- read as-is, no further conversion needed) before calling
+    `coalesce_rain`, and divides the SAME 4 slots back out afterward
+    (H1 §5's own `class_Group.F90:3910-3921` exit conversion) -- a direct
+    `/den`, matching `core/activation.py`'s own established precedent for
+    dividing a per-volume quantity by `moist_denv` with no extra
+    zero-guard (`den` is a physical moist-air density, always positive).
+    `state.diag` itself needs NO separate conversion: `coalesce_rain`'s own
+    docstring confirms `mean_mass`/`length`/`terminal_velocity`/`nre` are
+    RATIO-invariant to the per-volume/per-mass convention (numerator and
+    denominator both carry the SAME `den` factor, which cancels).
+
+    `dt_cl`: the COLLISION substep timestep (`CM%rain%dt=CM%dt_cl`, G1 §1,
+    set once per it_cl iteration, distinct from `_activation`'s/
+    `_vapor_deposition_liquid`'s own `dt_vp`).
+
+    `breakup_tables`: threaded straight through to `coalesce_rain`'s own
+    `breakup_tables` argument. `None` is a valid, common case (skipped
+    entirely when `config.rain_collisional_breakup=False`); when breakup IS
+    on and no table was supplied, one is built HERE, lazily, via
+    `lookup_tables.make_breakup_fragment_tables(config.num_h_bins[0],
+    config.nbin_h)` -- gated behind the SAME `flagp_r`-equivalent check
+    above, so this ~0.3s-per-cloudlab-grid build (M2b Task 6's own report)
+    is NEVER paid by the many rain-free `test_warm_loop.py` fixtures that
+    exercise `run_warm_micro_tendency`/`ifc_warm` for other reasons (no
+    gate, no build). Callers making MANY repeated calls with rain present
+    (`box.run_box`'s own `n_steps` loop, the per-call replay harness
+    iterating many records) should build ONCE and pass the SAME
+    `BreakupFragmentTables` through `run_warm_micro_tendency`'s/
+    `run_box`'s own `breakup_tables` parameter instead -- exactly
+    `AmpsLuts`'/`load_luts`'s own established "caller builds once, passes
+    through" convention (`run_box`'s own docstring), avoiding a rebuild on
+    every `it_cl` iteration this function's own lazy fallback would
+    otherwise pay for a repeated, un-cached caller.
+    """
+    if not config.rain_rain_coalescence:
+        return state
+    has_rain = bool(np.any(state.mes_rc == 2))
+    if not has_rain:
+        return state
+    if state.diag is None:
+        raise ValueError(
+            "_coalescence requires state.diag (core.liquid_diag.LiquidDiag) to be "
+            "populated -- call _refresh_state(state, config, luts) first (D5: "
+            "run_warm_micro_tendency's own col_loop always refreshes before this hook "
+            "runs, either via the it_cl>1 in-loop refresh or the caller's mandatory "
+            "pre-loop refresh at it_cl==1 -- ifc_warm/box.run_box's own docstrings)."
+        )
+    if config.rain_collisional_breakup and breakup_tables is None:
+        breakup_tables = make_breakup_fragment_tables(config.num_h_bins[0], config.nbin_h)
+
+    den = get_thermo_prop(state.thermo, ThermoProp.moist_denv)
+    den_b = den[None, None, None, :]
+    liquid_pv = LiquidState(values=state.liquid.values * den_b)
+
+    liquid_pv_after = coalesce_rain(
+        liquid_pv,
+        state.diag,
+        state.thermo,
+        config,
+        dt_cl,
+        luts,
+        ibreak=config.rain_collisional_breakup,
+        breakup_tables=breakup_tables,
+    )
+
+    liquid_after = LiquidState(values=liquid_pv_after.values / den_b)
+    return dataclasses.replace(state, liquid=liquid_after)
 
 
 def _activation(
@@ -544,6 +727,7 @@ def run_warm_micro_tendency(
     dt: float,
     luts: AmpsLuts,
     *,
+    breakup_tables: BreakupFragmentTables | None = None,
     allow_shed_placeholder: bool = False,
     allow_dhf_placeholder: bool = False,
     allow_dep_placeholder: bool = False,
@@ -552,26 +736,30 @@ def run_warm_micro_tendency(
     `n_step_cl` collision substeps, dt=`dt_cl`) x `vap_loop` (over
     `n_step_vp` vapor substeps, dt=`dt_vp`) structure, with the refresh
     preamble (`_refresh_state`) at every G1-identified refresh point and
-    the Task 4/5/6 process hooks (`_activation`, `_vapor_deposition_liquid`,
-    `_repair` -- all implemented, Tasks 4/5/6) at their G1-identified call
-    sites: `_activation` then `_vapor_deposition_liquid` inside the
-    vap_loop body (G1 §1's own CCN-activation-then-vapor-deposition
-    ordering), `_repair` once per col_loop iteration (before the vap_loop)
-    and once per vap_loop iteration (after `_vapor_deposition_liquid`) --
-    `update_group_all` is inlined-by-design (module docstring): `_repair`
-    and (as a PAIR) `_activation`+`_vapor_deposition_liquid` each return
-    their own advanced `WarmLoopState` by the time the pair completes, so
-    there is no separate "apply accumulated tendencies" step to model.
-    `_activation` alone does NOT advance `state.liquid` (B1, module
-    docstring) -- only the immediately-following `_vapor_deposition_liquid`
-    call folds its stashed increment in, matching Fortran's own
-    `update_group_all(update_vapor=1)` apply-after-vapor-dep timing.
+    the Task 4/5/6/7 process hooks (`_coalescence`, `_activation`,
+    `_vapor_deposition_liquid`, `_repair` -- all implemented) at their
+    G1-identified call sites: `_coalescence` once per col_loop iteration
+    (before the vap_loop, H1 §0), `_activation` then `_vapor_deposition_
+    liquid` inside the vap_loop body (G1 §1's own CCN-activation-then-
+    vapor-deposition ordering), `_repair` once per col_loop iteration
+    (before the vap_loop) and once per vap_loop iteration (after
+    `_vapor_deposition_liquid`) -- `update_group_all` is inlined-by-design
+    (module docstring): `_repair` and (as a PAIR) `_activation`+
+    `_vapor_deposition_liquid` each return their own advanced
+    `WarmLoopState` by the time the pair completes, so there is no separate
+    "apply accumulated tendencies" step to model. `_activation` alone does
+    NOT advance `state.liquid` (B1, module docstring) -- only the
+    immediately-following `_vapor_deposition_liquid` call folds its stashed
+    increment in, matching Fortran's own `update_group_all(update_vapor=1)`
+    apply-after-vapor-dep timing.
 
-    Per G1 §1 (warm-only reduction, module docstring): the collision-substep
-    physics (`coalescence(rain,rain)`, `hydrodyn_breakup(rain)`, Task 3) and
+    Per G1 §1 (warm-only reduction, module docstring): `hydrodyn_breakup
+    (rain)` (a separate, spontaneous/large-drop mechanism, NOT the Low-List
+    collisional breakup `_coalescence` already wires via `ibreak`) and
     `update_group_all`/`cal_dmtend_scale` bookkeeping are NOT modeled in
-    this skeleton -- only the refresh + `_repair` bookkeeping G1 §1's
-    `col_loop1` body performs unconditionally every iteration is here.
+    this skeleton -- only the refresh + `_coalescence`/`_repair` bookkeeping
+    G1 §1's `col_loop1` body performs unconditionally every iteration is
+    here.
 
     Refresh call sites, exactly G1 §1's four (one dropped -- see below):
       1. col-loop `it_cl>1` block (906-916) -- conditional, `n_step_cl-1`
@@ -582,6 +770,17 @@ def run_warm_micro_tendency(
       3. vap-loop head (1206-1214) -- unconditional, every
          `(it_cl, it_vp)` pair, `n_step_cl*n_step_vp` times total.
       4. final post-loop refresh (1374-1381) -- unconditional, once.
+
+    `breakup_tables`: threaded straight through to every `_coalescence`
+    call (same object reused across every `it_cl` iteration within this
+    ONE `run_warm_micro_tendency` call -- built at most once here, not
+    once per `it_cl`). `None` (the default) defers the "build lazily if
+    needed" decision to `_coalescence` itself (see that function's own
+    docstring) -- callers making MANY `run_warm_micro_tendency` calls with
+    rain present (`box.run_box`'s own `n_steps` loop) should build once and
+    pass the SAME `BreakupFragmentTables` through this parameter instead,
+    exactly `luts`'s own established "caller builds once, passes through"
+    convention.
 
     `allow_shed_placeholder`/`allow_dhf_placeholder`/`allow_dep_placeholder`:
     threaded straight through to every `_activation` call (all default
@@ -595,8 +794,9 @@ def run_warm_micro_tendency(
         if it_cl > 1:
             state = _refresh_state(state, config, luts)
 
-        # Collision substep: G1 §1's warm-phase coalescence/breakup calls
-        # (Task 3) are NOT modeled here -- see module/function docstrings.
+        # Collision substep (H1 §0 + G1 §1): coalescence(rain,rain) runs
+        # once per it_cl, BEFORE repair('af_col') -- Task 7.
+        state = _coalescence(state, config, dts.dt_cl, luts, breakup_tables)
         state = _repair(state, config, phase="collision")
 
         for _it_vp in range(1, config.n_step_vp + 1):
@@ -643,6 +843,7 @@ def ifc_warm(  # noqa: PLR0917 [too-many-positional-arguments]
     *,
     dens_t: np.ndarray,
     l_no_ice_heat: bool = False,
+    breakup_tables: BreakupFragmentTables | None = None,
 ) -> ScaleTendencies:
     """Warm path of `ifc_cloud_micro` (G1 §2), reusing M1's
     `core.packing`/`state` throughout, per the task brief's 5-step
@@ -657,6 +858,12 @@ def ifc_warm(  # noqa: PLR0917 [too-many-positional-arguments]
     pass-through arguments there too -- computed by an earlier,
     out-of-band `moistthermo2_scale` host-driver step, NOT inside
     `ifc_cloud_micro` itself, so `ifc_warm` does not compute them either).
+
+    `breakup_tables`: threaded straight through to `run_warm_micro_
+    tendency` (see that function's own docstring, and `_coalescence`'s,
+    Task 7) -- `None` (the default) lets `_coalescence` build one lazily,
+    only if/when rain is actually present; a caller making MANY `ifc_warm`
+    calls should build once and pass the same table through instead.
 
     Does NOT model `check_water_apmass`/`update_terminal_vel` (G1 §2's
     other `ifc_cloud_micro` calls) -- out of the brief's 5-step sequence.
@@ -676,7 +883,9 @@ def ifc_warm(  # noqa: PLR0917 [too-many-positional-arguments]
     )
     warm_state = _reality_check_stub(warm_state)
     warm_state = _refresh_state(warm_state, config, luts)
-    warm_state = run_warm_micro_tendency(warm_state, config, dt, luts)
+    warm_state = run_warm_micro_tendency(
+        warm_state, config, dt, luts, breakup_tables=breakup_tables
+    )
 
     amps_after = PackedAmpsState(
         thermo=warm_state.thermo,
