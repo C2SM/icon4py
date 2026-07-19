@@ -184,6 +184,19 @@ fixed point was judged higher regression risk than the (empirically
 inconsequential, for cloudlab) fidelity gap it would close. Flagged, not
 silently decided -- see the task report's fact-gaps section.
 
+One more note in the same vein: the Fortran's OWN pre-loop `used_N_b` tally
+(H2 SS1c, `mod_amps_core.F90:1668-1707`, `breakup_number_consumed`'s own
+model) runs over the FULL `(g_1%N_BIN, g_2%N_BIN)` bin grid, not restricted
+to `[imin_bk,imax_bk]x[jmin_bk,jmax_bk]` -- so the LITERAL reference Fortran
+could, in principle, tally breakup consumption for a pair OUTSIDE the
+Low-List table's own domain (no `add_fragments_col_vec` re-injection ever
+consults such a pair, since that routine's own `j=1,i-1` loop is gated by
+`imin_bk`/`jmin_bk`/`jmax_bk`), a theoretical mass leak in the REFERENCE
+Fortran itself. This port's `dense.valid` masking (mirroring the SAME
+"conservation-over-fidelity" precedent T3 already established for `ibreak=0`)
+avoids this by construction: `breakup_number_consumed` only ever tallies a
+pair that `add_fragments_col_vec` can also re-inject.
+
 Units: CGS, float64, per-volume throughout (matches `core/coalescence.py`'s
 own contract -- no `den` factor anywhere in this module).
 """

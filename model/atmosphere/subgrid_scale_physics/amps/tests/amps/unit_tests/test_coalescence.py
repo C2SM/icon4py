@@ -822,7 +822,7 @@ class TestIbreakHook:
                 liquid, diag, thermo, config, dt=2.0, luts=real_luts, ibreak=True
             )
 
-    def test_ibreak_false_is_the_default(self, real_luts):
+    def test_ibreak_false_is_the_default_without_breakup_tables(self, real_luts):
         """`ibreak` defaults to `False` -- omitting it entirely must NOT
         require `breakup_tables` or raise."""
         liquid = _two_bin_liquid()
@@ -834,6 +834,9 @@ class TestIbreakHook:
         assert np.all(np.isfinite(out.values))
 
     def test_ibreak_false_is_the_default(self, real_luts):
+        """Pre-existing baseline test (predates M2b Task 5): calling
+        `coalesce_rain` without `ibreak` at all must be identical to
+        passing `ibreak=False` explicitly."""
         liquid = _two_bin_liquid()
         diag = _two_bin_diag()
         thermo = _thermo_state()
