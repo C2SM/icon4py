@@ -1514,7 +1514,14 @@ def _diag_mes_rc_and_qr0(
     reachable values (0=no water,1=vapor only,2=rain) since this driver's
     own inputs carry no ice group either. Matching this module's OWN
     `_safe_div`-duplication precedent from `core/liquid_diag.py` for small
-    module-private helpers."""
+    module-private helpers.
+
+    `moist_denv` is passed through AS `activate_and_advance_vapor` gives
+    it (already CGS-converted there, see that function's own comment on
+    `den`'s conversion) -- but this specific `m_v` use would be scale-
+    invariant either way, matching `implementations.warm_loop.
+    _update_mesrc_warm`'s own identical `m_v = qvv*moist_denv` `<= 0.0`
+    sign check (that function's own docstring has the full reasoning)."""
     lp = LiquidPPV
     rmt = liquid.values[lp.rmt_q.py_idx]
     rmat = liquid.values[lp.rmat_q.py_idx]
@@ -2090,7 +2097,17 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
     # correctly everywhere `box.pressure` is read.
     p = get_thermo_prop(thermo_state, ThermoProp.ptotv) * 10.0
     t = get_thermo_prop(thermo_state, ThermoProp.tv)
-    den = get_thermo_prop(thermo_state, ThermoProp.moist_denv)
+    # ThermoProp.moist_denv is SI kg/m^3 (state.py's own UNIT CONTRACT
+    # note); `box.den` (this `den`, stored below) is divided into CGS mass
+    # quantities throughout the backward-Euler/zbrent internals
+    # (`used_mr_act/box.den` etc.) and feeds `_all_activated_supersaturation`
+    # -- convert ONCE here, at the point of use, so it propagates correctly
+    # everywhere `box.den` is read. `_diag_mes_rc_and_qr0` below is the ONE
+    # exception: its own `m_v = qvv*moist_denv` is a `<= 0.0` sign check
+    # only, scale-invariant, so it is unaffected either way -- converting
+    # here regardless keeps a single, consistent `den` for the whole
+    # function rather than two differently-scaled locals.
+    den = get_thermo_prop(thermo_state, ThermoProp.moist_denv) * 1.0e-3
     qvv = get_thermo_prop(thermo_state, ThermoProp.qvv)
 
     mes_rc, qr_0 = _diag_mes_rc_and_qr0(liquid, qvv, den)

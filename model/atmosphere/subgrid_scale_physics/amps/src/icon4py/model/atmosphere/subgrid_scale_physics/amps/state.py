@@ -76,36 +76,85 @@ class ThermoProp(enum.IntEnum):
     the order each is computed there (NOT a Task 4 `core/index_maps.py`
     enum -- see module docstring for why).
 
-    UNIT CONTRACT (`ptotv`, established by `core.packing._pack_thermo`/
-    `driver.box.case_from_micro_record`, both of which derive `thv` from
-    `ptotv` via the SCALE-SI Exner relation `thv = tv*(SCALE_PRE00/ptotv)
-    **(SCALE_RDRY/SCALE_CPDRY)`, `core/packing.py`'s own `SCALE_PRE00=1e5`
-    Pa): `ThermoState.ptotv` is SI Pa at this state-boundary, NOT the CGS
-    (`AmpsConst.p00=1e6`, dyn/cm^2) pressure `core.thermo.diag_t` and every
-    other AMPS-internal (`core/constants.py` `AmpsConst`-based) CGS-physics
-    formula expects. `1 Pa = 10 dyn/cm^2` -- every CGS-physics consumer
-    reading `ptotv` (`implementations.warm_loop._refresh_state`'s `diag_t`
-    call; `core.liquid_diag.diag_pq_liquid`'s `diffusivity`/terminal-
-    velocity calls; `core.activation.activate_and_advance_vapor` and
-    `core.vapor_deposition.vapor_deposition_liquid`'s supersaturation
-    formulas) MUST multiply by 10.0 at its OWN point of use -- this is a
-    real, previously-latent bug class (M2a Task 7 code review, exposed by
-    `driver.box.run_box`'s first realistic-pressure end-to-end path; masked
-    in every prior test by `ptotv` fixtures numerically equal to
-    `AmpsConst.p00` itself, giving a spuriously-exact ratio of 1 wherever
-    both sides of a mismatched conversion cancelled by construction -- see
-    each fixed call site's own comment for the citation)."""
+    UNIT CONTRACT (established by `core.packing._pack_thermo`/`driver.box.
+    case_from_micro_record`, the two ONLY producers of a `ThermoState`):
+    every field is stored SI (Pa / K / kg-m^-3) or dimensionless
+    (mixing ratio) at this state-boundary -- NEVER the CGS (`core/
+    constants.py`'s `AmpsConst`-based, `mod_amps_const.F90`-derived) units
+    every AMPS-internal physics formula (`core/thermo.py`, `core/
+    liquid_diag.py`, `core/activation.py`, `core/vapor_deposition.py`,
+    `implementations/warm_loop.py`) natively uses. Each CGS-physics
+    consumer MUST convert at its OWN point of use, not upstream -- this is
+    a real bug class, caught TWICE by M2a Task 7 code review (`ptotv` the
+    first time, `moist_denv` the second, both independently exposed only
+    by `driver.box.run_box`'s first realistic-magnitude end-to-end path;
+    every prior test fixture happened to store the CGS-scaled NUMBER in
+    the nominally-SI field, masking a missing conversion by giving a
+    spuriously-exact ratio of 1 -- see each fixed call site's own comment
+    for the citation). Per-field disposition, established by tracing
+    every actual consumer in the five modules listed above (`core/
+    repair.py` has none):
+
+    * `ptotv` (SI Pa): CGS-physics consumers (`core.thermo.diag_t`;
+      `core.thermo.diffusivity`/`_terminal_velocity`'s CGS reference
+      pressure; the `_liquid_supersaturation`/`_rv_saturation`/
+      `_all_activated_supersaturation` family, paired against
+      `core.thermo.esat_lk`'s CGS dyn/cm^2 table) all convert
+      `* 10.0` (`1 Pa = 10 dyn/cm^2`) at their own point of use.
+    * `tv` (K): Kelvin is the SAME numeric scale in SI and CGS (no
+      base-unit change) -- every consumer (`esat_lk`, `diffusivity`,
+      `thermal_conductivity`, `dynamic_viscosity`, `sfc_tension`,
+      `diag_t`'s own `T` output, every supersaturation formula) reads it
+      as-is, no conversion needed or present anywhere.
+    * `thv`/`thetav` (K): derived from `tv` via the SI Exner relation
+      (`thv = tv*(SCALE_PRE00/ptotv)**(SCALE_RDRY/SCALE_CPDRY)`,
+      `thetav = thv*(1+0.61*qvv)`, both SI-constant-consistent, so both
+      stay K, no unit crossing in their own derivation) -- consumed ONLY
+      by `driver.box.run_box` (`core.packing.moistthermo_mask`'s own `th`
+      argument, itself SI-Exner-consistent throughout, `SCALE_LHV0`/
+      `SCALE_CPDRY`) -- no CGS consumer exists for either field, no
+      conversion needed.
+    * `piv` (SI, `J/(K*kg)`-family: `piv = tv/thv*SCALE_CPDRY`): NOT READ
+      by any consumer in `core/`/`implementations/` as of this task
+      (write-only, `_pack_thermo`/`case_from_micro_record`) -- no live
+      bug; a future CGS consumer of `piv` would need the same treatment.
+    * `pbv` (always 0): no units to get wrong.
+    * `moist_denv` (SI kg/m^3, `_pack_thermo`: `dens*factor_mxr1`,
+      `ScaleRawState.dens` documented `kg/m^3`): the SECOND confirmed bug
+      -- `core.liquid_diag.diag_pq_liquid` (feeds `_terminal_velocity`'s
+      `den_w - den_a` against `AmpsConst.den_w=1.0` g/cm^3, AND
+      `_ventilation`'s/`_vapdep_coef`'s own CGS `d_vis`/`L_e`/`C_pa`
+      formulas) and `core.activation.activate_and_advance_vapor` (`box.
+      den`, divides activated/condensed CGS mass quantities into mixing
+      ratios throughout the backward-Euler/zbrent internals) both convert
+      `* 1.0e-3` (`1 kg/m^3 = 1.0e-3 g/cm^3`) at their own point of use.
+      TWO uses are genuinely unit-INSENSITIVE and take NO conversion,
+      documented at their own call sites rather than "fixed": `implementations.
+      warm_loop._update_mesrc_warm`'s and `core.activation._diag_mes_rc_
+      and_qr0`'s own `m_v = qvv*moist_denv`, used ONLY in a `<= 0.0` sign
+      check (scale-invariant: a positive quantity times a positive
+      density is non-negative regardless of which unit system the density
+      is expressed in).
+    * `qvv` (dimensionless, `scale.qv/factor_mxr1`, a ratio of two
+      already-dimensionless SCALE mixing ratios): genuinely unit-
+      independent -- no SI/CGS distinction applies to a ratio, no
+      conversion needed or present anywhere.
+    * `wbv`/`momv` (SI m/s -- `scale.w`/`scale.momz`, both documented
+      `m/s`): not consumed anywhere in `core/`/`implementations/`
+      (sedimentation-only, out of the warm-loop's own scope per `driver/
+      box.py`'s module docstring) -- no live bug, flagged for whoever
+      wires up a sedimentation consumer later."""
 
     ptotv = 1  # pressure, SI Pa; line 1641 `ptotv(k) = PRES(k,i,j)` -- see UNIT CONTRACT above
-    tv = 2  # temperature; line 1643 `tv(k) = TEMP(k,i,j)`
-    thv = 3  # potential temperature; line 1645
-    piv = 4  # exner function; line 1647
+    tv = 2  # temperature, K; line 1643 `tv(k) = TEMP(k,i,j)` -- see UNIT CONTRACT above
+    thv = 3  # potential temperature, K; line 1645 -- see UNIT CONTRACT above
+    piv = 4  # exner function, SI; line 1647 -- see UNIT CONTRACT above
     pbv = 5  # unknown/perturbation pressure, always 0; line 1649
-    moist_denv = 6  # moist-air density; line 1651
-    qvv = 7  # vapor mixing ratio, per moist air; line 1653
-    thetav = 8  # virtual potential temperature; line 1657
-    wbv = 9  # w at full grid; line 1659
-    momv = 10  # w at half grid / MOMZ; line 1661
+    moist_denv = 6  # moist-air density, SI kg/m^3; line 1651 -- see UNIT CONTRACT above
+    qvv = 7  # vapor mixing ratio, per moist air, dimensionless; line 1653
+    thetav = 8  # virtual potential temperature, K; line 1657 -- see UNIT CONTRACT above
+    wbv = 9  # w at full grid, SI m/s; line 1659 -- see UNIT CONTRACT above
+    momv = 10  # w at half grid / MOMZ, SI m/s; line 1661 -- see UNIT CONTRACT above
 
 
 def _sorted_props(prop_cls: type[enum.IntEnum]) -> tuple[enum.IntEnum, ...]:

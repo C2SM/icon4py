@@ -494,7 +494,12 @@ def diag_pq_liquid(
     # convert here, at the point of use.
     p = get_thermo_prop(thermo, ThermoProp.ptotv)[None, :] * 10.0
     t = get_thermo_prop(thermo, ThermoProp.tv)[None, :]
-    den = get_thermo_prop(thermo, ThermoProp.moist_denv)[None, :]
+    # ThermoProp.moist_denv is SI kg/m^3 (state.py's own UNIT CONTRACT
+    # note); _terminal_velocity's `den_w - den_a` (AmpsConst.den_w=1.0
+    # g/cm^3) and _ventilation's/_vapdep_coef's own CGS d_vis/L_e/C_pa
+    # formulas (both fed `den`/`den_a` below) need CGS -- convert here, at
+    # the point of use, BEFORE deriving den_a so both come out CGS.
+    den = get_thermo_prop(thermo, ThermoProp.moist_denv)[None, :] * 1.0e-3
     qv = get_thermo_prop(thermo, ThermoProp.qvv)[None, :]
     den_a = den * (1.0 - qv)  # see module docstring's dry-air-density note
 

@@ -89,7 +89,12 @@ def _thermo_state(
     CONTRACT note on `ThermoProp.ptotv`), so it is divided by 10.0 here.
     `_refresh_state`'s own CGS conversion (`* 10.0` at its point of use)
     reconstructs exactly this `ptotv` argument, keeping every existing
-    diag_t cross-check in this file unchanged."""
+    diag_t cross-check in this file unchanged. `moist_denv` (this
+    helper's own parameter, default `1.2e-3`) is likewise the CGS density
+    (g/cm^3) callers intend; stored `* 1000.0` (SI kg/m^3) so `core.
+    liquid_diag.diag_pq_liquid`'s own CGS conversion (`* 1.0e-3`, fired
+    whenever `run_warm_micro_tendency`/an explicit `config`+`luts`
+    `_refresh_state` call reaches it) reconstructs exactly this argument."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
         ThermoProp.ptotv: ptotv / 10.0,
@@ -97,7 +102,7 @@ def _thermo_state(
         ThermoProp.thv: tv,
         ThermoProp.piv: 0.0,
         ThermoProp.pbv: 0.0,
-        ThermoProp.moist_denv: moist_denv,
+        ThermoProp.moist_denv: moist_denv * 1000.0,
         ThermoProp.qvv: qvv,
         ThermoProp.thetav: tv,
         ThermoProp.wbv: 0.0,
@@ -528,7 +533,13 @@ def _thermo_state_multi(*, ptotv: float, tv: np.ndarray, npoints: int) -> Thermo
     """`ptotv` is the CGS pressure this file's own diag_t cross-checks
     (e.g. `test_vectorized_matches_per_point_diag_t`) use directly --
     see `_thermo_state`'s own docstring for why it is stored `/ 10.0`
-    (SI Pa, `state.py`'s UNIT CONTRACT note)."""
+    (SI Pa, `state.py`'s UNIT CONTRACT note). `moist_denv` is stored at a
+    realistic SI (kg/m^3) magnitude for the same contract-consistency
+    reason `_thermo_state`'s own default is -- this helper's only caller
+    (`test_vectorized_matches_per_point_diag_t`) calls `_refresh_state`
+    with no `config`/`luts`, so `diag_pq_liquid` (the one consumer that
+    reads `moist_denv`) never actually fires here; kept consistent anyway
+    rather than leaving a CGS-magnitude number in an SI-contract field."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, npoints), dtype=np.float64)
     by_prop = {
         ThermoProp.ptotv: np.full(npoints, ptotv) / 10.0,
@@ -536,7 +547,7 @@ def _thermo_state_multi(*, ptotv: float, tv: np.ndarray, npoints: int) -> Thermo
         ThermoProp.thv: tv,
         ThermoProp.piv: np.zeros(npoints),
         ThermoProp.pbv: np.zeros(npoints),
-        ThermoProp.moist_denv: np.full(npoints, 1.2e-3),
+        ThermoProp.moist_denv: np.full(npoints, 1.2),
         ThermoProp.qvv: np.full(npoints, 1.0e-2),
         ThermoProp.thetav: tv,
         ThermoProp.wbv: np.zeros(npoints),
@@ -703,7 +714,14 @@ class TestEndToEndSupersaturatedSpinUp:
             ThermoProp.thv: t,
             ThermoProp.piv: 0.0,
             ThermoProp.pbv: 0.0,
-            ThermoProp.moist_denv: 1.2e-3,
+            # 1.2e-3 is the CGS moist-air density (g/cm^3, AmpsConst.den_w
+            # -scale) this scenario intends; ThermoState.moist_denv itself
+            # is SI kg/m^3 (state.py's own UNIT CONTRACT note) -- stored as
+            # 1.2e-3*1000.0=1.2 so core.liquid_diag.diag_pq_liquid's own
+            # CGS conversion (`* 1.0e-3` at its point of use, fired every
+            # `run_warm_micro_tendency` refresh) reconstructs exactly
+            # 1.2e-3.
+            ThermoProp.moist_denv: 1.2e-3 * 1000.0,
             ThermoProp.qvv: qv,
             ThermoProp.thetav: t,
             ThermoProp.wbv: 0.0,

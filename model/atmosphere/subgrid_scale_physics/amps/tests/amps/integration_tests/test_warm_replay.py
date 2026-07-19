@@ -40,6 +40,7 @@ Two groups, matching the dispatch's own test list:
 from __future__ import annotations
 
 import dataclasses
+import math
 import os
 from pathlib import Path
 
@@ -259,6 +260,156 @@ class TestRunBoxRealisticPressure:
         # activation event releases within one dt=1s step -- NOT a
         # tolerance loose enough to hide a ~50% (~135K) collapse.
         assert tv_final == pytest.approx(t_initial, abs=5.0)
+
+
+# ---------------------------------------------------------------------------
+# TestRunBoxRealisticDensity -- unconditional regression test, M2a Task 7
+# code review (second pass): a SECOND, independent SI/CGS unit mismatch --
+# `ThermoState.moist_denv` is SI kg/m^3 (state.py's own UNIT CONTRACT note),
+# but `core.liquid_diag.diag_pq_liquid`'s `_terminal_velocity` compares it
+# (as `den_a`, dry-air density) against `AmpsConst.den_w=1.0` (CGS g/cm^3)
+# UNCONVERTED. Reviewer's own repro: `den_a=1.2` (realistic SI magnitude)
+# flips `den_w - den_a` negative -> `np.log()` of a negative number -> NaN,
+# for any liquid bin in the "mid"/"large" cal_terminal_vel_vec regimes
+# (radius > ~10um -- exactly where real rain lives). Masked identically to
+# the ptotv bug: every prior fixture hardcoded `moist_denv` at CGS magnitude
+# (~1.2e-3), so a missing conversion was invisible. See test_liquid_diag.
+# py::TestRealisticSiDensity for the isolated diag_pq_liquid-level repro
+# (that one DOES assert `np.isfinite` directly on `terminal_velocity` and
+# fails pre-fix on exactly that assertion).
+#
+# IMPORTANT, established by tracing the actual failure empirically (not
+# assumed): the NaN does NOT survive to `run_box`'s own output as a NaN --
+# `_ventilation`'s `_ventilation_piecewise` uses `np.select` with NO
+# `default=` override, so `x_v=nan` (from `sqrt(nan)`, itself from `nre=
+# np.maximum(nan, 0.0)` staying NaN) matches none of `np.select`'s three
+# comparison conditions (all NaN comparisons are False) and silently falls
+# through to `np.select`'s own implicit default, `0.0` -- NOT NaN. That
+# 0.0 then flows into `coef1`/`coef2` (`_vapdep_coef`), silently
+# DISABLING vapor-deposition growth for that bin (`d_mean_mass = (coef1*
+# s_v_n + coef2)*dt_vp = 0`) rather than corrupting it with NaN. So the
+# regression signal at THIS (run_box) level is not `isfinite` (which
+# passes regardless, confirmed by first writing this test against the
+# unfixed code and finding it a false-negative) -- it is that the
+# pre-existing rain bin's own mass must actually CHANGE across the run
+# (real vapor-deposition physics ran), not stay frozen at its input value
+# (physics silently no-op'd by the laundered-to-zero coefficient).
+# ---------------------------------------------------------------------------
+
+RAIN_BIN = 35  # a large-radius bin in cloudlab's 40-bin liquid grid
+
+
+def _rain_bin_box_case(*, moist_denv_si: float) -> box.BoxCase:
+    """A cloudlab-shaped `BoxCase` with a REALISTIC `moist_denv` (SI
+    kg/m^3) AND a pre-existing rain-size liquid bin (200um radius --
+    `test_liquid_diag.py`'s own `TestRealisticSiDensity.RAIN_RADIUS_CM`,
+    the `cal_terminal_vel_vec` "mid" regime), near-saturated (not pushed
+    hard into activation -- this scenario is about the pre-existing rain
+    bin's own vapor-deposition/ventilation path, not CCN activation)."""
+    liq_nbins = 40
+    p_pa = 90_000.0  # realistic SI Pa, cloudlab range (also != p00's SI equiv)
+    t = 280.0
+    qv = 1.0e-2  # near-saturated
+    thv = t * (packing.SCALE_PRE00 / p_pa) ** (packing.SCALE_RDRY / packing.SCALE_CPDRY)
+
+    thermo_values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
+    by_prop = {
+        ThermoProp.ptotv: p_pa,
+        ThermoProp.tv: t,
+        ThermoProp.thv: thv,
+        ThermoProp.piv: t / thv * packing.SCALE_CPDRY,
+        ThermoProp.pbv: 0.0,
+        ThermoProp.moist_denv: moist_denv_si,
+        ThermoProp.qvv: qv,
+        ThermoProp.thetav: thv * (1.0 + 0.61 * qv),
+        ThermoProp.wbv: 0.0,
+        ThermoProp.momv: 0.0,
+    }
+    for idx, prop in enumerate(ThermoState.PROPS):
+        thermo_values[idx, 0, 0, 0] = by_prop[ThermoProp(int(prop))]
+
+    lp = index_maps.LiquidPPV
+    liquid_values = np.zeros((len(LiquidState.PROPS), liq_nbins, 1, 1), dtype=np.float64)
+    radius_cm = 200.0e-4  # 200um -- "mid" cal_terminal_vel_vec regime
+    mean_mass = (math.pi / 6.0) * (2.0 * radius_cm) ** 3 * 1.0  # den_w=1.0 g/cm^3, pure water
+    con = 1.0
+    liquid_values[lp.rcon_q.py_idx, RAIN_BIN, 0, 0] = con
+    liquid_values[lp.rmt_q.py_idx, RAIN_BIN, 0, 0] = mean_mass * con
+    liquid = LiquidState(values=liquid_values)
+
+    ice = IceState(values=np.zeros((len(IceState.PROPS), 2, 1, 1), dtype=np.float64))
+
+    aerosol_values = np.zeros((len(AerosolState.PROPS), 1, 1, 1), dtype=np.float64)
+    ap = index_maps.AerosolPPV
+    aerosol_values[ap.amt_q.py_idx, 0, 0, 0] = 3.164e-13
+    aerosol_values[ap.acon_q.py_idx, 0, 0, 0] = 300.0
+    aerosol_values[ap.ams_q.py_idx, 0, 0, 0] = 3.164e-13
+    aerosol = AerosolState(values=aerosol_values)
+
+    config = AmpsConfig.cloudlab()
+    assert config.num_h_bins[0] == liq_nbins
+
+    return box.BoxCase(
+        thermo=ThermoState(values=thermo_values),
+        liquid=liquid,
+        ice=ice,
+        aerosol=aerosol,
+        config=config,
+        dt=1.0,
+        n_steps=1,
+    )
+
+
+class TestRunBoxRealisticDensity:
+    def test_finite_nonnegative_with_realistic_density_and_rain_bin(self) -> None:
+        """`moist_denv=1.2` (SI kg/m^3, realistic magnitude, NOT `1.2e-3`
+        the CGS magnitude every prior fixture used) combined with a
+        pre-existing 200um-radius (rain-size) liquid bin must produce a
+        finite, non-negative `BoxResult` -- not NaN."""
+        case = _rain_bin_box_case(moist_denv_si=1.2)
+
+        result = box.run_box(case)
+
+        assert np.all(np.isfinite(result.final_liquid.values)), result.final_liquid.values
+        assert np.all(np.isfinite(result.final_thermo.values)), result.final_thermo.values
+        assert np.all(np.isfinite(result.final_aerosol.values)), result.final_aerosol.values
+        lp = index_maps.LiquidPPV
+        assert np.all(result.final_liquid.values[lp.rmt_q.py_idx] >= 0.0)
+        assert np.all(result.final_liquid.values[lp.rcon_q.py_idx] >= 0.0)
+
+    def test_rain_bin_vapor_deposition_actually_ran(self) -> None:
+        """THE discriminating assertion (see class docstring above: the
+        bug does NOT surface as a NaN in `run_box`'s own output -- it
+        surfaces as `np.select`'s NaN-comparisons-are-False fallback
+        silently zeroing `coef1`/`coef2`, which silently DISABLES vapor-
+        deposition growth for the rain bin). Verified empirically against
+        the unfixed code (temporarily reverted `core/liquid_diag.py` +
+        `core/activation.py` via `git stash`, this exact scenario): the
+        rain bin's `rmt` came back bit-IDENTICAL to its input (`3.35103e-05
+        == 3.35103e-05`, physics silently no-op'd); with the fix, it comes
+        back measurably different (`3.35527e-05`, real Chen-Lamb growth)."""
+        case = _rain_bin_box_case(moist_denv_si=1.2)
+        lp = index_maps.LiquidPPV
+        rmt_before = float(case.liquid.values[lp.rmt_q.py_idx, RAIN_BIN, 0, 0])
+        assert rmt_before > 0.0  # sanity: the rain bin fixture is non-vacuous
+
+        result = box.run_box(case)
+
+        rmt_after = float(result.final_liquid.values[lp.rmt_q.py_idx, RAIN_BIN, 0, 0])
+        assert np.isfinite(rmt_after)
+        assert rmt_after != pytest.approx(rmt_before, rel=1.0e-6), (
+            f"rain bin mass unchanged ({rmt_before!r} -> {rmt_after!r}) -- vapor-deposition "
+            "physics silently no-op'd (moist_denv SI/CGS bug regressed)"
+        )
+
+    @pytest.mark.parametrize("moist_denv_si", [1.0, 1.1, 1.2])
+    def test_finite_across_realistic_density_range(self, moist_denv_si) -> None:
+        case = _rain_bin_box_case(moist_denv_si=moist_denv_si)
+
+        result = box.run_box(case)
+
+        assert np.all(np.isfinite(result.final_liquid.values))
+        assert np.all(np.isfinite(result.final_thermo.values))
 
 
 # ---------------------------------------------------------------------------

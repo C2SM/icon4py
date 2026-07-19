@@ -198,6 +198,15 @@ def _update_mesrc_warm(thermo: ThermoState, liquid: LiquidState) -> np.ndarray:
     subtraction here; that only happens in `diag_t`'s own `qr_0`
     accumulation, `_rain_specific_humidity` below). `M_v(n)` is
     `qvv*moist_denv` (G1 §4a: `M_v(n) = ag%tv(n)%rv*ag%tv(n)%den`).
+
+    `moist_denv` is SI kg/m^3 (`state.py`'s own UNIT CONTRACT note on
+    `ThermoProp.moist_denv`), UNCONVERTED here -- deliberately: `m_v` only
+    ever feeds the `m_tot <= 0.0` sign check below, and `qvv`/`moist_denv`
+    are both non-negative, so the check is scale-invariant regardless of
+    which unit system the density is expressed in. This is the ONE
+    documented exception to that field's "CGS consumers convert" rule (the
+    other `core.liquid_diag`/`core.activation` consumers of `moist_denv`
+    DO need the conversion -- see `state.py`'s own UNIT CONTRACT note).
     """
     lp = index_maps.LiquidPPV
     m_v = get_thermo_prop(thermo, ThermoProp.qvv) * get_thermo_prop(thermo, ThermoProp.moist_denv)

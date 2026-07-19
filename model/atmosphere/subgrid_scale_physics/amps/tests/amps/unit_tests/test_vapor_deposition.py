@@ -95,7 +95,13 @@ def _thermo_state(*, p: float = P_STD, t: float = T_STD, qv: float = QV_STD) -> 
         ThermoProp.thv: t,
         ThermoProp.piv: 0.0,
         ThermoProp.pbv: 0.0,
-        ThermoProp.moist_denv: 1.2e-3,
+        # SI kg/m^3 (state.py's own UNIT CONTRACT note on ThermoProp.
+        # moist_denv) -- INERT for this module (vapor_deposition_liquid
+        # never reads ThermoProp.moist_denv, confirmed by grep), stored at
+        # a realistic SI magnitude purely for contract consistency with
+        # every other _thermo_state helper in this test suite, not because
+        # its value affects any assertion in this file.
+        ThermoProp.moist_denv: 1.2,
         ThermoProp.qvv: qv,
         ThermoProp.thetav: t,
         ThermoProp.wbv: 0.0,

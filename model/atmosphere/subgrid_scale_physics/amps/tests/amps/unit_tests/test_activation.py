@@ -95,14 +95,15 @@ NBIN_H = 20
 
 
 def _thermo_state(*, p: float, t: float, den: float, qv: float) -> ThermoState:
-    """`p` is the CGS pressure (dyn/cm^2, `AmpsConst.p00`-scale) this
-    file's own hand-computed "golden" references use directly;
-    `ThermoState.ptotv` itself is SI Pa (`state.py`'s own UNIT CONTRACT
-    note on `ThermoProp.ptotv`) -- stored as `p / 10.0` here so
-    `activate_and_advance_vapor`'s own CGS conversion (`core/
-    activation.py`, `* 10.0` at its point of use) reconstructs exactly
-    `p`, keeping every existing golden-value comparison in this file
-    unchanged."""
+    """`p`/`den` are the CGS pressure (dyn/cm^2, `AmpsConst.p00`-scale)
+    and CGS moist-air density (g/cm^3) this file's own hand-computed
+    "golden" references (e.g. `TestMassConservation`'s own `/ DEN_STD`)
+    use directly; `ThermoState.ptotv`/`moist_denv` themselves are SI Pa /
+    SI kg/m^3 (`state.py`'s own UNIT CONTRACT note) -- stored as
+    `p / 10.0` / `den * 1000.0` here so `activate_and_advance_vapor`'s own
+    CGS conversions (`core/activation.py`, `* 10.0` / `* 1.0e-3` at their
+    point of use) reconstruct exactly `p`/`den`, keeping every existing
+    golden-value comparison in this file unchanged."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
         ThermoProp.ptotv: p / 10.0,
@@ -110,7 +111,7 @@ def _thermo_state(*, p: float, t: float, den: float, qv: float) -> ThermoState:
         ThermoProp.thv: t,
         ThermoProp.piv: 0.0,
         ThermoProp.pbv: 0.0,
-        ThermoProp.moist_denv: den,
+        ThermoProp.moist_denv: den * 1000.0,
         ThermoProp.qvv: qv,
         ThermoProp.thetav: t,
         ThermoProp.wbv: 0.0,
