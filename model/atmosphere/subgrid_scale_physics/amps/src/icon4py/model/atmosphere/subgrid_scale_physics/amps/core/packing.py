@@ -272,16 +272,30 @@ def _require_gaxis_version_1(l_gaxis_version: int) -> None:
 def _pack_thermo(
     scale: ScaleRawState, factor_mxr1: np.ndarray, moist_denv: np.ndarray
 ) -> ThermoState:
-    """F4 SS1.1, `Z_LOOP_01` thermo block (lines 1625-1672)."""
-    ptotv = scale.pres
+    """F4 SS1.1, `Z_LOOP_01` thermo block (lines 1625-1672).
+
+    One of `ThermoState`'s two ONLY producers (`driver.box.
+    case_from_micro_record` is the other) -- CGS canonicalization point
+    for `ptotv`/`moist_denv` (`state.py`'s `ThermoProp` UNIT CONTRACT):
+    `scale.pres` (SI Pa) and `moist_denv` (SI kg/m^3, this function's own
+    argument, `pack_scale_to_amps`'s `dens*factor_mxr1`) are used in their
+    NATIVE SI form for the SI-Exner `thv`/`piv`/`thetav` derivation below
+    (`SCALE_PRE00`/`SCALE_RDRY`/`SCALE_CPDRY` are genuinely SI constants),
+    then converted to CGS ONLY for the two `ThermoState` fields that get
+    stored -- `1 Pa = 10 dyn/cm^2`, `1 kg/m^3 = 1.0e-3 g/cm^3`.
+    """
+    ptotv_si = scale.pres
     tv = scale.temp
-    thv = tv * (SCALE_PRE00 / ptotv) ** (SCALE_RDRY / SCALE_CPDRY)
+    thv = tv * (SCALE_PRE00 / ptotv_si) ** (SCALE_RDRY / SCALE_CPDRY)
     piv = tv / thv * SCALE_CPDRY
     pbv = np.zeros_like(tv)
     qvv = scale.qv / factor_mxr1
     thetav = thv * (1.0 + 0.61 * qvv)
     wbv = scale.w
     momv = scale.momz
+
+    ptotv = ptotv_si * 10.0  # SI Pa -> CGS dyn/cm^2, ThermoState's own UNIT CONTRACT
+    moist_denv_cgs = moist_denv * 1.0e-3  # SI kg/m^3 -> CGS g/cm^3, ThermoState's own UNIT CONTRACT
 
     npoints = tv.shape[0]
     by_prop: dict[ThermoProp, np.ndarray] = {
@@ -290,7 +304,7 @@ def _pack_thermo(
         ThermoProp.thv: thv,
         ThermoProp.piv: piv,
         ThermoProp.pbv: pbv,
-        ThermoProp.moist_denv: moist_denv,
+        ThermoProp.moist_denv: moist_denv_cgs,
         ThermoProp.qvv: qvv,
         ThermoProp.thetav: thetav,
         ThermoProp.wbv: wbv,
@@ -622,7 +636,15 @@ def unpack_amps_to_scale(
     dens_t = np.asarray(dens_t, dtype=np.float64)
     dens_new = dens + dens_t * dt  # DENS_NEW(k), F4 SS2.2
 
-    moist_denv_after = get_thermo_prop(amps_after.thermo, ThermoProp.moist_denv)
+    # ThermoProp.moist_denv is CGS g/cm^3 (state.py's own UNIT CONTRACT
+    # note), but every RHOQ_t/CPtot_t/CVtot_t/RHOE_t recipe below divides
+    # it against/multiplies it with `scale_before.dens`/`dens_new` (SI
+    # kg/m^3, the SCALE-tracer-array boundary `ScaleRawState` uses -- a
+    # DIFFERENT boundary than ThermoState's own CGS contract) -- convert
+    # back to SI ONCE here, the mirror image of `core.packing._pack_
+    # thermo`'s/`driver.box.case_from_micro_record`'s own SI->CGS
+    # conversion at the producer side.
+    moist_denv_after = get_thermo_prop(amps_after.thermo, ThermoProp.moist_denv) * 1.0e3
     qv_after = get_thermo_prop(amps_after.thermo, ThermoProp.qvv)
 
     dqv = (qv_after * moist_denv_after - scale_before.qv * dens) / dt  # F4 SS2.2

@@ -98,20 +98,20 @@ def _thermo_state(*, p: float, t: float, den: float, qv: float) -> ThermoState:
     """`p`/`den` are the CGS pressure (dyn/cm^2, `AmpsConst.p00`-scale)
     and CGS moist-air density (g/cm^3) this file's own hand-computed
     "golden" references (e.g. `TestMassConservation`'s own `/ DEN_STD`)
-    use directly; `ThermoState.ptotv`/`moist_denv` themselves are SI Pa /
-    SI kg/m^3 (`state.py`'s own UNIT CONTRACT note) -- stored as
-    `p / 10.0` / `den * 1000.0` here so `activate_and_advance_vapor`'s own
-    CGS conversions (`core/activation.py`, `* 10.0` / `* 1.0e-3` at their
-    point of use) reconstruct exactly `p`/`den`, keeping every existing
+    use directly; `ThermoState.ptotv`/`moist_denv` are themselves CGS
+    (`state.py`'s own UNIT CONTRACT note, canonicalized at the two
+    `ThermoState` producers) -- stored directly (no conversion) here, so
+    `activate_and_advance_vapor` (`core/activation.py`, which now reads
+    both fields as-is) sees exactly `p`/`den`, keeping every existing
     golden-value comparison in this file unchanged."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: p / 10.0,
+        ThermoProp.ptotv: p,
         ThermoProp.tv: t,
         ThermoProp.thv: t,
         ThermoProp.piv: 0.0,
         ThermoProp.pbv: 0.0,
-        ThermoProp.moist_denv: den * 1000.0,
+        ThermoProp.moist_denv: den,
         ThermoProp.qvv: qv,
         ThermoProp.thetav: t,
         ThermoProp.wbv: 0.0,

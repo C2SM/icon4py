@@ -91,29 +91,38 @@ def _supersaturated_box_case(*, ptotv_pa: float | None = None) -> box.BoxCase:
     superset (adds the `moistthermo_mask` bridge + the ice-mass guard) of
     an already-proven-to-work scenario, not a new, unvalidated one.
 
-    `ptotv_pa`: the SI Pa pressure to store in `ThermoState.ptotv`
-    (`state.py`'s own UNIT CONTRACT note on `ThermoProp.ptotv`); defaults
-    to `AmpsConst.p00 / 10.0` (the CGS `P_STD` this scenario's own physical
-    intent is anchored to, exactly SI-Pa-converted -- see `core/
-    packing.py`'s `SCALE_PRE00`/`AmpsConst.p00` module docstring notes,
-    both `1e5 Pa`/`1e6 dyn/cm^2` being the SAME reference pressure).
-    `TestRunBoxRealisticPressure` below passes a genuinely DIFFERENT value
-    (`90000.0`, cloudlab range, `!= p00`'s SI equivalent) -- the M2a Task 7
-    code-review regression this parameter exists for (see that test's own
-    docstring: this exact scenario, with `ptotv` fixed at `p00` in every
-    prior test, is what masked the SI-Pa/CGS unit bug in the first place).
+    `ptotv_pa`: the SI Pa pressure this fixture's own SI-Exner `thv`
+    derivation uses (see below); defaults to `AmpsConst.p00 / 10.0` (the
+    CGS `P_STD` this scenario's own physical intent is anchored to, exactly
+    SI-Pa-converted -- see `core/packing.py`'s `SCALE_PRE00`/`AmpsConst.
+    p00` module docstring notes, both `1e5 Pa`/`1e6 dyn/cm^2` being the
+    SAME reference pressure). `ThermoState.ptotv` itself is stored CGS
+    (`ptotv_pa * 10.0`, `state.py`'s own UNIT CONTRACT note on
+    `ThermoProp.ptotv`, canonicalized at the two `ThermoState` producers --
+    this fixture constructs a `ThermoState` directly, so it performs that
+    SAME SI->CGS conversion itself, mirroring `core/packing.py`'s
+    `_pack_thermo`). `TestRunBoxRealisticPressure` below passes a
+    genuinely DIFFERENT value (`90000.0`, cloudlab range, `!= p00`'s SI
+    equivalent) -- a regression originally added for the M2a Task 7
+    SI-Pa/CGS unit-mismatch code review (see that test's own docstring:
+    this exact scenario, with `ptotv` fixed at `p00` in every prior test,
+    is what masked the bug in the first place); still exercised post-M2a-
+    hardening as a plain "non-p00 realistic pressure" regression, since the
+    original bug class is now structurally impossible (conversion happens
+    ONCE, at the two producers).
 
     `thv` is DERIVED from `tv`/`ptotv_pa` via the same SI Exner relation
     `core/packing.py`'s `_pack_thermo` uses (`thv = tv*(SCALE_PRE00/
-    ptotv_pa)**(SCALE_RDRY/SCALE_CPDRY)`), NOT hardcoded to `t` -- an
-    earlier draft of this fixture hardcoded `thv=t` (valid ONLY when
-    `ptotv_pa == SCALE_PRE00` exactly, the Exner ratio's `1.0` fixed
-    point), which silently produced an internally-INCONSISTENT state for
-    any other `ptotv_pa` (an ~8K spurious `tv` drift over one warm-loop
-    step, caught while calibrating `TestRunBoxRealisticPressure`'s own
-    tolerance below -- a fixture bug, not a `run_box` bug; fixed here by
-    deriving `thv` properly instead of loosening that test's tolerance to
-    paper over it).
+    ptotv_pa)**(SCALE_RDRY/SCALE_CPDRY)`, using the SI `ptotv_pa`, NOT the
+    CGS-converted stored field -- `SCALE_PRE00` is an SI constant), NOT
+    hardcoded to `t` -- an earlier draft of this fixture hardcoded `thv=t`
+    (valid ONLY when `ptotv_pa == SCALE_PRE00` exactly, the Exner ratio's
+    `1.0` fixed point), which silently produced an internally-INCONSISTENT
+    state for any other `ptotv_pa` (an ~8K spurious `tv` drift over one
+    warm-loop step, caught while calibrating `TestRunBoxRealisticPressure`'s
+    own tolerance below -- a fixture bug, not a `run_box` bug; fixed here
+    by deriving `thv` properly instead of loosening that test's tolerance
+    to paper over it).
     """
     liq_nbins = 40
     p_cgs = float(AmpsConst.p00)
@@ -124,12 +133,21 @@ def _supersaturated_box_case(*, ptotv_pa: float | None = None) -> box.BoxCase:
 
     thermo_values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: ptotv_pa,
+        ThermoProp.ptotv: ptotv_pa * 10.0,  # SI Pa -> CGS dyn/cm^2, ThermoState's own UNIT CONTRACT
         ThermoProp.tv: t,
         ThermoProp.thv: thv,
         ThermoProp.piv: t / thv * packing.SCALE_CPDRY,
         ThermoProp.pbv: 0.0,
-        ThermoProp.moist_denv: 1.2e-3,
+        # Pre-M2a-hardening this literal (1.2e-3) was stored directly in the
+        # nominally-SI moist_denv field, then divided down again by the
+        # (now-removed) consumer `* 1.0e-3` conversion -- an inert (no
+        # pre-existing liquid bins are active at t=0 here, so `den` does
+        # not gate any assertion this class makes) but real actual-physics
+        # value of `1.2e-3 * 1.0e-3 = 1.2e-6` g/cm^3. Preserved bit-for-bit
+        # here (NOT "fixed" to a realistic magnitude) so this refactor
+        # stays behavior-preserving -- see `TestRunBoxRealisticDensity`
+        # below for the fixture that DOES use a realistic CGS magnitude.
+        ThermoProp.moist_denv: 1.2e-3 * 1.0e-3,
         ThermoProp.qvv: qv,
         ThermoProp.thetav: thv * (1.0 + 0.61 * qv),
         ThermoProp.wbv: 0.0,
@@ -207,31 +225,37 @@ class TestRunBoxSyntheticSmoke:
 
 
 # ---------------------------------------------------------------------------
-# TestRunBoxRealisticPressure -- unconditional regression test, M2a Task 7
-# code review: a SI-Pa/CGS unit mismatch (`ThermoState.ptotv` is SI Pa,
+# TestRunBoxRealisticPressure -- unconditional regression test, originally
+# added for the M2a Task 7 code review: a SI-Pa/CGS unit mismatch
+# (`ThermoState.ptotv` was, pre-M2a-hardening, stored SI Pa while
 # `core.thermo.diag_t` and every other AMPS-internal CGS-physics formula
-# expects CGS dyn/cm^2, `state.py`'s own UNIT CONTRACT note on
-# `ThermoProp.ptotv`) was latent since M2a Task 1 (`implementations.
+# expects CGS dyn/cm^2) was latent since M2a Task 1 (`implementations.
 # warm_loop._refresh_state`'s own `diag_t` call passed `ptotv` straight
 # through, unconverted) and independently duplicated in `core/liquid_diag.
 # py`, `core/vapor_deposition.py`, `core/activation.py` -- ALL of them
 # masked by every prior test fixture (including this file's own
-# `_supersaturated_box_case`, before this fix) setting `ptotv` numerically
+# `_supersaturated_box_case`, before that fix) setting `ptotv` numerically
 # equal to `AmpsConst.p00` itself, giving a spuriously-exact ratio of 1
 # wherever both sides of a mismatched conversion cancelled by construction.
 # `run_box` was the first end-to-end path exercised at a REALISTIC pressure
 # (`!= p00`'s SI equivalent), which is what actually exposed the bug: with
 # it present, `til = thil*(p/p00)**Racp` used a ratio of ~0.1 instead of 1,
 # collapsing `tv` by roughly half (e.g. ~270K -> ~140K) for any ptotv in
-# the ordinary atmospheric range. This test pins the fix: a realistic,
-# non-`p00` pressure must NOT collapse `tv`.
+# the ordinary atmospheric range.
+#
+# Post-M2a-hardening, `ThermoState.ptotv` is CGS-canonical (`state.py`'s
+# own UNIT CONTRACT note, converted ONCE at the two producers) -- the
+# original SI-Pa/CGS mismatch bug class is now structurally impossible (no
+# per-consumer conversion left to omit). This test remains as a plain
+# "non-p00 realistic pressure must not collapse tv" regression, still
+# pinning the SAME physical outcome.
 # ---------------------------------------------------------------------------
 
 
 class TestRunBoxRealisticPressure:
     # Cloudlab-range surface pressure, SI Pa, deliberately NOT p00's SI
     # equivalent (1.0e5) -- see class docstring: fixing ptotv AT p00 is
-    # exactly what masked this bug in every prior test.
+    # exactly what masked the original bug in every prior test.
     REALISTIC_PTOTV_PA = 90_000.0
 
     def test_tv_stays_physical_no_collapse(self) -> None:
@@ -250,7 +274,7 @@ class TestRunBoxRealisticPressure:
         case = _supersaturated_box_case(ptotv_pa=self.REALISTIC_PTOTV_PA)
         assert case.thermo.values[
             list(ThermoState.PROPS).index(ThermoProp.ptotv), 0, 0, 0
-        ] == pytest.approx(self.REALISTIC_PTOTV_PA)
+        ] == pytest.approx(self.REALISTIC_PTOTV_PA * 10.0)  # stored CGS, state.py's UNIT CONTRACT
 
         result = box.run_box(case)
 
@@ -263,20 +287,21 @@ class TestRunBoxRealisticPressure:
 
 
 # ---------------------------------------------------------------------------
-# TestRunBoxRealisticDensity -- unconditional regression test, M2a Task 7
-# code review (second pass): a SECOND, independent SI/CGS unit mismatch --
-# `ThermoState.moist_denv` is SI kg/m^3 (state.py's own UNIT CONTRACT note),
-# but `core.liquid_diag.diag_pq_liquid`'s `_terminal_velocity` compares it
-# (as `den_a`, dry-air density) against `AmpsConst.den_w=1.0` (CGS g/cm^3)
-# UNCONVERTED. Reviewer's own repro: `den_a=1.2` (realistic SI magnitude)
-# flips `den_w - den_a` negative -> `np.log()` of a negative number -> NaN,
-# for any liquid bin in the "mid"/"large" cal_terminal_vel_vec regimes
-# (radius > ~10um -- exactly where real rain lives). Masked identically to
-# the ptotv bug: every prior fixture hardcoded `moist_denv` at CGS magnitude
-# (~1.2e-3), so a missing conversion was invisible. See test_liquid_diag.
-# py::TestRealisticSiDensity for the isolated diag_pq_liquid-level repro
-# (that one DOES assert `np.isfinite` directly on `terminal_velocity` and
-# fails pre-fix on exactly that assertion).
+# TestRunBoxRealisticDensity -- unconditional regression test, originally
+# added for the M2a Task 7 code review (second pass): a SECOND, independent
+# SI/CGS unit mismatch -- `ThermoState.moist_denv` was, pre-M2a-hardening,
+# stored SI kg/m^3, but `core.liquid_diag.diag_pq_liquid`'s
+# `_terminal_velocity` compares it (as `den_a`, dry-air density) against
+# `AmpsConst.den_w=1.0` (CGS g/cm^3) UNCONVERTED. Reviewer's own repro:
+# `den_a=1.2` (realistic SI magnitude) flips `den_w - den_a` negative ->
+# `np.log()` of a negative number -> NaN, for any liquid bin in the
+# "mid"/"large" cal_terminal_vel_vec regimes (radius > ~10um -- exactly
+# where real rain lives). Masked identically to the ptotv bug: every prior
+# fixture hardcoded `moist_denv` at CGS magnitude (~1.2e-3), so a missing
+# conversion was invisible. See test_liquid_diag.py::TestRealisticDensity
+# for the isolated diag_pq_liquid-level repro (that one DOES assert
+# `np.isfinite` directly on `terminal_velocity` and failed pre-fix on
+# exactly that assertion).
 #
 # IMPORTANT, established by tracing the actual failure empirically (not
 # assumed): the NaN does NOT survive to `run_box`'s own output as a NaN --
@@ -294,6 +319,16 @@ class TestRunBoxRealisticPressure:
 # pre-existing rain bin's own mass must actually CHANGE across the run
 # (real vapor-deposition physics ran), not stay frozen at its input value
 # (physics silently no-op'd by the laundered-to-zero coefficient).
+#
+# Post-M2a-hardening, `ThermoState.moist_denv` is CGS-canonical (`state.py`'s
+# own UNIT CONTRACT note, converted ONCE at the two producers) -- the
+# original SI/CGS mismatch bug class is now structurally impossible. This
+# test remains as a plain "realistic density + rain bin -> real vapor-
+# deposition physics, not silently disabled" regression, still pinning the
+# SAME physical outcome; `_rain_bin_box_case`'s own `moist_denv_si`
+# parameter keeps its SI-input semantics (a realistic kg/m^3 magnitude) and
+# converts to CGS internally when building the (now CGS-canonical)
+# `ThermoState`, mirroring `core/packing.py`'s own producer-side conversion.
 # ---------------------------------------------------------------------------
 
 RAIN_BIN = 35  # a large-radius bin in cloudlab's 40-bin liquid grid
@@ -301,11 +336,13 @@ RAIN_BIN = 35  # a large-radius bin in cloudlab's 40-bin liquid grid
 
 def _rain_bin_box_case(*, moist_denv_si: float) -> box.BoxCase:
     """A cloudlab-shaped `BoxCase` with a REALISTIC `moist_denv` (SI
-    kg/m^3) AND a pre-existing rain-size liquid bin (200um radius --
-    `test_liquid_diag.py`'s own `TestRealisticSiDensity.RAIN_RADIUS_CM`,
-    the `cal_terminal_vel_vec` "mid" regime), near-saturated (not pushed
-    hard into activation -- this scenario is about the pre-existing rain
-    bin's own vapor-deposition/ventilation path, not CCN activation)."""
+    kg/m^3, this function's own parameter, converted to CGS below when
+    building the `ThermoState`) AND a pre-existing rain-size liquid bin
+    (200um radius -- `test_liquid_diag.py`'s own `TestRealisticDensity.
+    RAIN_RADIUS_CM`, the `cal_terminal_vel_vec` "mid" regime),
+    near-saturated (not pushed hard into activation -- this scenario is
+    about the pre-existing rain bin's own vapor-deposition/ventilation
+    path, not CCN activation)."""
     liq_nbins = 40
     p_pa = 90_000.0  # realistic SI Pa, cloudlab range (also != p00's SI equiv)
     t = 280.0
@@ -314,12 +351,12 @@ def _rain_bin_box_case(*, moist_denv_si: float) -> box.BoxCase:
 
     thermo_values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: p_pa,
+        ThermoProp.ptotv: p_pa * 10.0,  # SI Pa -> CGS dyn/cm^2, ThermoState's own UNIT CONTRACT
         ThermoProp.tv: t,
         ThermoProp.thv: thv,
         ThermoProp.piv: t / thv * packing.SCALE_CPDRY,
         ThermoProp.pbv: 0.0,
-        ThermoProp.moist_denv: moist_denv_si,
+        ThermoProp.moist_denv: moist_denv_si * 1.0e-3,  # SI kg/m^3 -> CGS g/cm^3
         ThermoProp.qvv: qv,
         ThermoProp.thetav: thv * (1.0 + 0.61 * qv),
         ThermoProp.wbv: 0.0,

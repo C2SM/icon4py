@@ -82,26 +82,26 @@ NBIN_H = 20
 def _thermo_state(*, p: float = P_STD, t: float = T_STD, qv: float = QV_STD) -> ThermoState:
     """`p` is the CGS pressure (dyn/cm^2, `AmpsConst.p00`-scale) this
     file's own hand-computed "golden" references use directly;
-    `ThermoState.ptotv` itself is SI Pa (`state.py`'s own UNIT CONTRACT
-    note on `ThermoProp.ptotv`) -- stored as `p / 10.0` here so
-    `vapor_deposition_liquid`'s own CGS conversion (`core/
-    vapor_deposition.py`, `* 10.0` at its point of use) reconstructs
-    exactly `p`, keeping every existing golden-value comparison in this
-    file unchanged."""
+    `ThermoState.ptotv` itself is CGS (`state.py`'s own UNIT CONTRACT
+    note on `ThermoProp.ptotv`, canonicalized at the two `ThermoState`
+    producers) -- stored directly (no conversion) here, so
+    `vapor_deposition_liquid` (`core/vapor_deposition.py`, which now
+    reads it as-is) sees exactly `p`, keeping every existing golden-value
+    comparison in this file unchanged."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: p / 10.0,
+        ThermoProp.ptotv: p,
         ThermoProp.tv: t,
         ThermoProp.thv: t,
         ThermoProp.piv: 0.0,
         ThermoProp.pbv: 0.0,
-        # SI kg/m^3 (state.py's own UNIT CONTRACT note on ThermoProp.
+        # CGS g/cm^3 (state.py's own UNIT CONTRACT note on ThermoProp.
         # moist_denv) -- INERT for this module (vapor_deposition_liquid
         # never reads ThermoProp.moist_denv, confirmed by grep), stored at
-        # a realistic SI magnitude purely for contract consistency with
+        # a realistic CGS magnitude purely for contract consistency with
         # every other _thermo_state helper in this test suite, not because
         # its value affects any assertion in this file.
-        ThermoProp.moist_denv: 1.2,
+        ThermoProp.moist_denv: 1.2e-3,
         ThermoProp.qvv: qv,
         ThermoProp.thetav: t,
         ThermoProp.wbv: 0.0,

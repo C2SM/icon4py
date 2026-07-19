@@ -199,14 +199,17 @@ def _update_mesrc_warm(thermo: ThermoState, liquid: LiquidState) -> np.ndarray:
     accumulation, `_rain_specific_humidity` below). `M_v(n)` is
     `qvv*moist_denv` (G1 §4a: `M_v(n) = ag%tv(n)%rv*ag%tv(n)%den`).
 
-    `moist_denv` is SI kg/m^3 (`state.py`'s own UNIT CONTRACT note on
-    `ThermoProp.moist_denv`), UNCONVERTED here -- deliberately: `m_v` only
-    ever feeds the `m_tot <= 0.0` sign check below, and `qvv`/`moist_denv`
-    are both non-negative, so the check is scale-invariant regardless of
-    which unit system the density is expressed in. This is the ONE
-    documented exception to that field's "CGS consumers convert" rule (the
-    other `core.liquid_diag`/`core.activation` consumers of `moist_denv`
-    DO need the conversion -- see `state.py`'s own UNIT CONTRACT note).
+    `moist_denv` is CGS g/cm^3 (`state.py`'s own UNIT CONTRACT note on
+    `ThermoProp.moist_denv`, canonicalized at the two ThermoState
+    producers), read here as-is: `m_v` only ever feeds the `m_tot <= 0.0`
+    sign check below, and `qvv`/`moist_denv` are both non-negative, so the
+    check is scale-invariant regardless of which unit system the density
+    is expressed in -- it would be equally correct reading the pre-M2a-
+    hardening SI value directly, no conversion either way. Documented here
+    since it is the ONE `moist_denv` use in this module that does NOT
+    care about the unit contract (every other `core.liquid_diag`/`core.
+    activation` consumer of `moist_denv` DOES rely on it being CGS -- see
+    `state.py`'s own UNIT CONTRACT note).
     """
     lp = index_maps.LiquidPPV
     m_v = get_thermo_prop(thermo, ThermoProp.qvv) * get_thermo_prop(thermo, ThermoProp.moist_denv)
@@ -258,11 +261,12 @@ def _refresh_state(
     """
     mes_rc = _update_mesrc_warm(state.thermo, state.liquid)
     qr = _rain_specific_humidity(state.liquid, mes_rc)
-    # ThermoProp.ptotv is SI Pa (state.py's own UNIT CONTRACT note on that
-    # enum member); core.thermo.diag_t is CGS (AmpsConst.p00=1e6 dyn/cm^2,
-    # matching test_thermo.py's own `p_cgs = pt_pa * 10.0` round-trip
-    # precedent) -- convert at this, the point of use, not upstream.
-    p_cgs = get_thermo_prop(state.thermo, ThermoProp.ptotv) * 10.0
+    # ThermoProp.ptotv is CGS dyn/cm^2 (state.py's own UNIT CONTRACT note on
+    # that enum member -- canonicalized at the two ThermoState producers);
+    # core.thermo.diag_t is CGS (AmpsConst.p00=1e6 dyn/cm^2, matching
+    # test_thermo.py's own `p_cgs = pt_pa * 10.0` round-trip precedent) --
+    # read directly, already CGS, no conversion needed here.
+    p_cgs = get_thermo_prop(state.thermo, ThermoProp.ptotv)
     t_new, _ierror1 = _diag_t_f1(state.thil, p_cgs, qr, 0.0)
 
     thermo_values = state.thermo.values.copy()

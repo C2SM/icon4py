@@ -124,15 +124,19 @@ def _prop(thermo: ThermoState, prop: ThermoProp) -> np.ndarray:
 
 class TestPackThermo:
     def test_factor_mxr1_moist_denv_and_qvv(self):
+        """`ptotv`/`moist_denv` are CGS-canonicalized at this producer
+        (state.py's own UNIT CONTRACT note on `ThermoProp.ptotv`/
+        `ThermoProp.moist_denv`) -- `* 10.0`/`* 1.0e-3` off the raw SI
+        `scale.pres`/`scale.dens * factor_mxr1` inputs."""
         scale = _make_scale_raw()
         packed = packing.pack_scale_to_amps(scale, l_no_ice_heat=False)
 
         factor_mxr1 = scale.qdry + scale.qv
         np.testing.assert_allclose(
-            _prop(packed.thermo, ThermoProp.moist_denv), scale.dens * factor_mxr1
+            _prop(packed.thermo, ThermoProp.moist_denv), scale.dens * factor_mxr1 * 1.0e-3
         )
         np.testing.assert_allclose(_prop(packed.thermo, ThermoProp.qvv), scale.qv / factor_mxr1)
-        np.testing.assert_allclose(_prop(packed.thermo, ThermoProp.ptotv), scale.pres)
+        np.testing.assert_allclose(_prop(packed.thermo, ThermoProp.ptotv), scale.pres * 10.0)
         np.testing.assert_allclose(_prop(packed.thermo, ThermoProp.tv), scale.temp)
         np.testing.assert_allclose(_prop(packed.thermo, ThermoProp.wbv), scale.w)
         np.testing.assert_allclose(_prop(packed.thermo, ThermoProp.momv), scale.momz)

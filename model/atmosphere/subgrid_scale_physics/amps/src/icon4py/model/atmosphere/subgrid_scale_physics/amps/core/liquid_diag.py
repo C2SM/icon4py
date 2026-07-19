@@ -487,19 +487,21 @@ def diag_pq_liquid(
         config.eps_ap[0],
     )
 
-    # ThermoProp.ptotv is SI Pa (state.py's own UNIT CONTRACT note); both
-    # thermo_fn.diffusivity (F1 SS3e docstring: "p is ambient pressure in
-    # g/s^2/cm (CGS)") and _terminal_velocity below (its own `1013250.0`
-    # CGS reference pressure, matching diffusivity's `p_0`) need CGS --
-    # convert here, at the point of use.
-    p = get_thermo_prop(thermo, ThermoProp.ptotv)[None, :] * 10.0
+    # ThermoProp.ptotv is CGS dyn/cm^2 (state.py's own UNIT CONTRACT note --
+    # canonicalized at the two ThermoState producers); both thermo_fn.
+    # diffusivity (F1 SS3e docstring: "p is ambient pressure in g/s^2/cm
+    # (CGS)") and _terminal_velocity below (its own `1013250.0` CGS
+    # reference pressure, matching diffusivity's `p_0`) read it directly,
+    # already CGS, no conversion needed here.
+    p = get_thermo_prop(thermo, ThermoProp.ptotv)[None, :]
     t = get_thermo_prop(thermo, ThermoProp.tv)[None, :]
-    # ThermoProp.moist_denv is SI kg/m^3 (state.py's own UNIT CONTRACT
-    # note); _terminal_velocity's `den_w - den_a` (AmpsConst.den_w=1.0
-    # g/cm^3) and _ventilation's/_vapdep_coef's own CGS d_vis/L_e/C_pa
-    # formulas (both fed `den`/`den_a` below) need CGS -- convert here, at
-    # the point of use, BEFORE deriving den_a so both come out CGS.
-    den = get_thermo_prop(thermo, ThermoProp.moist_denv)[None, :] * 1.0e-3
+    # ThermoProp.moist_denv is CGS g/cm^3 (state.py's own UNIT CONTRACT
+    # note -- canonicalized at the two ThermoState producers);
+    # _terminal_velocity's `den_w - den_a` (AmpsConst.den_w=1.0 g/cm^3) and
+    # _ventilation's/_vapdep_coef's own CGS d_vis/L_e/C_pa formulas (both
+    # fed `den`/`den_a` below) read it directly, already CGS, no conversion
+    # needed here.
+    den = get_thermo_prop(thermo, ThermoProp.moist_denv)[None, :]
     qv = get_thermo_prop(thermo, ThermoProp.qvv)[None, :]
     den_a = den * (1.0 - qv)  # see module docstring's dry-air-density note
 

@@ -1517,11 +1517,11 @@ def _diag_mes_rc_and_qr0(
     module-private helpers.
 
     `moist_denv` is passed through AS `activate_and_advance_vapor` gives
-    it (already CGS-converted there, see that function's own comment on
-    `den`'s conversion) -- but this specific `m_v` use would be scale-
-    invariant either way, matching `implementations.warm_loop.
-    _update_mesrc_warm`'s own identical `m_v = qvv*moist_denv` `<= 0.0`
-    sign check (that function's own docstring has the full reasoning)."""
+    it (already CGS, `ThermoState`'s own UNIT CONTRACT, `state.py`) --
+    but this specific `m_v` use would be scale-invariant either way,
+    matching `implementations.warm_loop._update_mesrc_warm`'s own
+    identical `m_v = qvv*moist_denv` `<= 0.0` sign check (that function's
+    own docstring has the full reasoning)."""
     lp = LiquidPPV
     rmt = liquid.values[lp.rmt_q.py_idx]
     rmat = liquid.values[lp.rmat_q.py_idx]
@@ -2088,26 +2088,25 @@ def activate_and_advance_vapor(  # noqa: PLR0915, PLR0917 -- single driver, many
     npoints = liquid.npoints
     t_0 = float(AmpsConst.T_0)
 
-    # ThermoProp.ptotv is SI Pa (state.py's own UNIT CONTRACT note); every
-    # downstream consumer of `p` in this function (`_liquid_supersaturation`,
+    # ThermoProp.ptotv is CGS dyn/cm^2 (state.py's own UNIT CONTRACT note --
+    # canonicalized at the two ThermoState producers); every downstream
+    # consumer of `p` in this function (`_liquid_supersaturation`,
     # `_rv_saturation`, `_all_activated_supersaturation`, and `box.pressure`
     # -- threaded into `func_vec`/the backward-Euler loop/zbrent) pairs it
     # against `AmpsConst.Rdvchiarui`/`thermo.esat_lk`'s CGS (dyn/cm^2) table
-    # output -- convert ONCE here, at the point of use, so it propagates
-    # correctly everywhere `box.pressure` is read.
-    p = get_thermo_prop(thermo_state, ThermoProp.ptotv) * 10.0
+    # output -- read directly, already CGS, no conversion needed here.
+    p = get_thermo_prop(thermo_state, ThermoProp.ptotv)
     t = get_thermo_prop(thermo_state, ThermoProp.tv)
-    # ThermoProp.moist_denv is SI kg/m^3 (state.py's own UNIT CONTRACT
-    # note); `box.den` (this `den`, stored below) is divided into CGS mass
-    # quantities throughout the backward-Euler/zbrent internals
-    # (`used_mr_act/box.den` etc.) and feeds `_all_activated_supersaturation`
-    # -- convert ONCE here, at the point of use, so it propagates correctly
-    # everywhere `box.den` is read. `_diag_mes_rc_and_qr0` below is the ONE
-    # exception: its own `m_v = qvv*moist_denv` is a `<= 0.0` sign check
-    # only, scale-invariant, so it is unaffected either way -- converting
-    # here regardless keeps a single, consistent `den` for the whole
-    # function rather than two differently-scaled locals.
-    den = get_thermo_prop(thermo_state, ThermoProp.moist_denv) * 1.0e-3
+    # ThermoProp.moist_denv is CGS g/cm^3 (state.py's own UNIT CONTRACT
+    # note -- canonicalized at the two ThermoState producers); `box.den`
+    # (this `den`, stored below) is divided into CGS mass quantities
+    # throughout the backward-Euler/zbrent internals (`used_mr_act/box.den`
+    # etc.) and feeds `_all_activated_supersaturation` -- read directly,
+    # already CGS, no conversion needed here. `_diag_mes_rc_and_qr0` below
+    # reads this SAME already-CGS `den`: its own `m_v = qvv*moist_denv` is a
+    # `<= 0.0` sign check only, scale-invariant, so it would be unaffected
+    # either way.
+    den = get_thermo_prop(thermo_state, ThermoProp.moist_denv)
     qvv = get_thermo_prop(thermo_state, ThermoProp.qvv)
 
     mes_rc, qr_0 = _diag_mes_rc_and_qr0(liquid, qvv, den)

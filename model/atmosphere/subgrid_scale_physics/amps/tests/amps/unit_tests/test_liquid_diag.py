@@ -61,20 +61,20 @@ def _thermo_state(*, p: float, t: float, den: float, qv: float) -> ThermoState:
     """`p`/`den` are the CGS pressure (dyn/cm^2, `AmpsConst.p00`-scale)
     and CGS moist-air density (g/cm^3, `AmpsConst.den_w`-scale) this
     file's own hand-computed "golden" references use directly;
-    `ThermoState.ptotv`/`moist_denv` themselves are SI Pa / SI kg/m^3
-    (`state.py`'s own UNIT CONTRACT note) -- stored as `p / 10.0` /
-    `den * 1000.0` here so `diag_pq_liquid`'s own CGS conversions (`core/
-    liquid_diag.py`, `* 10.0` / `* 1.0e-3` at their point of use)
-    reconstruct exactly `p`/`den`, keeping every existing golden-value
-    comparison in this file unchanged."""
+    `ThermoState.ptotv`/`moist_denv` are themselves CGS (`state.py`'s own
+    UNIT CONTRACT note, canonicalized at the two `ThermoState` producers)
+    -- stored directly (no conversion) here, so `diag_pq_liquid` (`core/
+    liquid_diag.py`, which now reads both fields as-is) sees exactly
+    `p`/`den`, keeping every existing golden-value comparison in this
+    file unchanged."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: p / 10.0,
+        ThermoProp.ptotv: p,
         ThermoProp.tv: t,
         ThermoProp.thv: t,
         ThermoProp.piv: 0.0,
         ThermoProp.pbv: 0.0,
-        ThermoProp.moist_denv: den * 1000.0,
+        ThermoProp.moist_denv: den,
         ThermoProp.qvv: qv,
         ThermoProp.thetav: t,
         ThermoProp.wbv: 0.0,
@@ -380,33 +380,40 @@ class TestGoldenBin:
 
 
 # ---------------------------------------------------------------------------
-# TestRealisticSiDensity -- M2a Task 7 code-review regression: a REALISTIC
-# ThermoState.moist_denv (SI kg/m^3, ~1.0-1.2 -- state.py's own UNIT
-# CONTRACT note) at a rain-size bin (radius > 10um, the "mid"/"large"
-# cal_terminal_vel_vec regimes _terminal_velocity's own `np.log(den_w -
-# den_a)` calls) must NOT produce NaN. Reviewer's own repro: den_a=1.2 (SI
-# magnitude, fed unconverted) makes `den_w - den_a = 1.0 - 1.2` negative
-# (AmpsConst.den_w=1.0 g/cm^3, CGS) -> log() of a negative number -> NaN,
-# for any bin the "mid"/"large" branches select (radius >~10um, i.e. every
-# realistic raindrop). This test constructs its ThermoState DIRECTLY
-# (bypassing the shared `_thermo_state` helper) so it exercises the exact
-# realistic magnitude the review's repro used, independent of that
-# helper's own conversion.
+# TestRealisticDensity -- M2a Task 7 code-review regression, updated for the
+# M2a hardening's CGS-canonical ThermoState (state.py's own UNIT CONTRACT
+# note): a REALISTIC ThermoState.moist_denv (CGS g/cm^3, ~1.0e-3-1.2e-3, the
+# genuine physical magnitude of moist-air density) at a rain-size bin
+# (radius > 10um, the "mid"/"large" cal_terminal_vel_vec regimes
+# _terminal_velocity's own `np.log(den_w - den_a)` calls) must NOT produce
+# NaN. Original reviewer's repro (pre-hardening, when ThermoState stored SI
+# and each consumer converted at its own point of use): a realistic SI
+# magnitude (1.2 kg/m^3) fed through a MISSING `* 1.0e-3` consumer
+# conversion made `den_w - den_a = 1.0 - 1.2` negative (AmpsConst.den_w=1.0
+# g/cm^3, CGS) -> log() of a negative number -> NaN. That specific missing-
+# conversion bug class is now structurally impossible (the CGS conversion
+# happens ONCE, at the two ThermoState producers -- core/liquid_diag.py has
+# no conversion left to omit); this test now instead pins the CORRECT CGS
+# magnitude (1.0e-3-1.2e-3 g/cm^3, matching a real `_pack_thermo`/
+# `case_from_micro_record` output) directly, preserving the same NaN-safety
+# regression coverage at realistic density magnitudes. This test constructs
+# its ThermoState DIRECTLY (bypassing the shared `_thermo_state` helper)
+# purely to keep the realistic-magnitude intent self-documenting here.
 # ---------------------------------------------------------------------------
 
 
-class TestRealisticSiDensity:
+class TestRealisticDensity:
     RAIN_RADIUS_CM = 200.0e-4  # 200um -- "mid" cal_terminal_vel_vec regime
 
-    def _realistic_thermo_state(self, *, moist_denv_si: float) -> ThermoState:
+    def _realistic_thermo_state(self, *, moist_denv_cgs: float) -> ThermoState:
         values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
         by_prop = {
-            ThermoProp.ptotv: 90_000.0,  # realistic SI Pa, cloudlab range
+            ThermoProp.ptotv: 900_000.0,  # realistic CGS dyn/cm^2 (90_000 Pa * 10), cloudlab range
             ThermoProp.tv: T_STD,
             ThermoProp.thv: T_STD,
             ThermoProp.piv: 0.0,
             ThermoProp.pbv: 0.0,
-            ThermoProp.moist_denv: moist_denv_si,
+            ThermoProp.moist_denv: moist_denv_cgs,
             ThermoProp.qvv: QV_STD,
             ThermoProp.thetav: T_STD,
             ThermoProp.wbv: 0.0,
@@ -422,14 +429,14 @@ class TestRealisticSiDensity:
         rmt = mean_mass * rcon
         return _liquid_state([(rmt, rcon, 0.0, 0.0)])
 
-    def test_terminal_velocity_finite_at_realistic_si_density(self, luts) -> None:
-        """`moist_denv=1.2` (kg/m^3, realistic SI magnitude -- NOT
-        `1.2e-3`, the CGS magnitude every OTHER fixture in this file
-        stores via `_thermo_state`'s own `* 1000.0` conversion) must
-        produce a finite, physically reasonable terminal velocity for a
-        rain-size bin, not NaN."""
+    def test_terminal_velocity_finite_at_realistic_density(self, luts) -> None:
+        """`moist_denv=1.2e-3` (g/cm^3, realistic CGS magnitude -- the
+        genuine physical moist-air density, matching what a real
+        `_pack_thermo`/`case_from_micro_record` producer output would
+        store post-M2a-hardening) must produce a finite, physically
+        reasonable terminal velocity for a rain-size bin, not NaN."""
         config = AmpsConfig.cloudlab()
-        thermo_state = self._realistic_thermo_state(moist_denv_si=1.2)
+        thermo_state = self._realistic_thermo_state(moist_denv_cgs=1.2e-3)
         liquid = self._rain_bin_liquid()
 
         diag = liquid_diag.diag_pq_liquid(liquid, thermo_state, config, luts)
@@ -440,10 +447,10 @@ class TestRealisticSiDensity:
         # (order 1 m/s = 100 cm/s in CGS) -- not merely finite-but-absurd.
         assert 0.0 < vtm < 1000.0
 
-    @pytest.mark.parametrize("moist_denv_si", [1.0, 1.1, 1.2])
-    def test_finite_across_realistic_si_density_range(self, luts, moist_denv_si) -> None:
+    @pytest.mark.parametrize("moist_denv_cgs", [1.0e-3, 1.1e-3, 1.2e-3])
+    def test_finite_across_realistic_density_range(self, luts, moist_denv_cgs) -> None:
         config = AmpsConfig.cloudlab()
-        thermo_state = self._realistic_thermo_state(moist_denv_si=moist_denv_si)
+        thermo_state = self._realistic_thermo_state(moist_denv_cgs=moist_denv_cgs)
         liquid = self._rain_bin_liquid()
 
         diag = liquid_diag.diag_pq_liquid(liquid, thermo_state, config, luts)

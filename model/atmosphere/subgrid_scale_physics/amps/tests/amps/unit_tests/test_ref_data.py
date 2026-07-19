@@ -548,10 +548,14 @@ class TestCaseFromMicroRecord:
         assert np.array_equal(case.aerosol.values, rec.qapvm)
 
         thermo = case.thermo
-        assert np.array_equal(_thermo_prop(thermo, ThermoProp.ptotv), rec.ptotvm)
+        # ptotv/moist_denv are CGS-canonicalized here (state.py's own UNIT
+        # CONTRACT note, this function being one of ThermoState's two ONLY
+        # producers) -- `* 10.0`/`* 1.0e-3` off the raw dumped SI
+        # `rec.ptotvm`/`rec.moist_denvm`, NOT direct copies.
+        assert np.array_equal(_thermo_prop(thermo, ThermoProp.ptotv), rec.ptotvm * 10.0)
         assert np.array_equal(_thermo_prop(thermo, ThermoProp.tv), rec.tvm)
         assert np.array_equal(_thermo_prop(thermo, ThermoProp.qvv), rec.qvvm)
-        assert np.array_equal(_thermo_prop(thermo, ThermoProp.moist_denv), rec.moist_denvm)
+        assert np.array_equal(_thermo_prop(thermo, ThermoProp.moist_denv), rec.moist_denvm * 1.0e-3)
         assert np.array_equal(_thermo_prop(thermo, ThermoProp.wbv), rec.wbvm)
         assert np.allclose(_thermo_prop(thermo, ThermoProp.pbv), 0.0)
         # FACT-GAP: momv is never captured by AMPS_DUMP_micro (see box.py's

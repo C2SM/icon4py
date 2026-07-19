@@ -283,17 +283,24 @@ def case_from_micro_record(
       `len(LiquidPPV)/len(IcePPV)/len(AerosolPPV)` -- validated here
       (raises `ValueError` on mismatch rather than silently
       misinterpreting the array axes).
-    * `thermo.ptotv = rec.ptotvm`, `.tv = rec.tvm`, `.qvv = rec.qvvm`,
-      `.moist_denv = rec.moist_denvm`, `.wbv = rec.wbvm` -- direct copies
-      (all dumped, `Z_LOOP_01` lines 1638/1641/1653/1656/1664).
+    * `thermo.tv = rec.tvm`, `.qvv = rec.qvvm`, `.wbv = rec.wbvm` -- direct
+      copies (all dumped, `Z_LOOP_01` lines 1643/1653/1664).
+    * `thermo.ptotv = rec.ptotvm * 10.0`, `.moist_denv = rec.moist_denvm *
+      1.0e-3` -- CGS-canonicalized, NOT direct copies: `rec.ptotvm`/`rec.
+      moist_denvm` are the raw dumped SI values (`Z_LOOP_01` lines
+      1641/1651), converted here to CGS (`ThermoState`'s own UNIT
+      CONTRACT, `state.py`'s `ThermoProp` docstring) -- this function is
+      one of `ThermoState`'s two ONLY producers, alongside `core.packing.
+      _pack_thermo`.
     * `thermo.pbv = 0` (constant, `Z_LOOP_01` line 1650: `pbv(k) = 0.0_RP`).
     * `thermo.thv`, `.piv`, `.thetav` -- reconstructed via the SAME Exner
       relation `ref_data.py`'s sed-input derivation notes use, but WITHOUT
       that note's `thskinv`/`pgnd` caveat: here `ptotv`/`tv` are BOTH
       dumped directly (`ptotvm`/`tvm`), so no `QDRY`-dependent inversion is
-      needed -- `thv = tv*(PRE00/ptotv)**(Rdry/CPdry)` (line 1644, exact),
-      `piv = tv/thv*CPdry` (line 1647, exact), `thetav = thv*(1+0.61*qvv)`
-      (line 1661, exact).
+      needed -- `thv = tv*(PRE00/ptotv_si)**(Rdry/CPdry)` (line 1644,
+      exact, using the pre-conversion SI `ptotvm` -- `PRE00` is an SI
+      constant), `piv = tv/thv*CPdry` (line 1647, exact), `thetav =
+      thv*(1+0.61*qvv)` (line 1661, exact).
     * `thermo.momv = 0` -- FACT-GAP, not exact: `AMPS_DUMP_micro` never
       captures `momv`/MOMZ at all (only `AMPS_DUMP_sed` does, as
       `momz_col`); see module docstring. Defaulted to zero rather than
@@ -355,17 +362,30 @@ def case_from_micro_record(
     ice = IceState(values=rec.qipvm)
     aerosol = AerosolState(values=rec.qapvm)
 
-    ptotv = rec.ptotvm
+    # `rec.ptotvm`/`rec.moist_denvm` are the RAW dumped SI values (`Z_LOOP_01`
+    # lines 1641/1651: `ptotv(k) = PRES(k,i,j)` Pa, `moist_denv(k) =
+    # DENS*factor_mxr1` kg/m^3) -- used in their native SI form for the
+    # SI-Exner thv/piv/thetav derivation below (same as core/packing.py's
+    # own _pack_thermo), then converted to CGS ONLY for the two ThermoState
+    # fields that get stored, this being ThermoState's OTHER producer and
+    # thus the other CGS-canonicalization point (state.py's ThermoProp UNIT
+    # CONTRACT) -- `1 Pa = 10 dyn/cm^2`, `1 kg/m^3 = 1.0e-3 g/cm^3`.
+    ptotv_si = rec.ptotvm
     tv = rec.tvm
     qvv = rec.qvvm
     # Same SCALE_RDRY/SCALE_CPDRY/SCALE_PRE00 Exner relation core/packing.py's
     # own _pack_thermo uses (Z_LOOP_01 lines 1644/1647/1650/1661) -- reused,
     # not re-derived.
-    thv = tv * (SCALE_PRE00 / ptotv) ** (SCALE_RDRY / SCALE_CPDRY)  # line 1644
+    thv = tv * (SCALE_PRE00 / ptotv_si) ** (SCALE_RDRY / SCALE_CPDRY)  # line 1644
     piv = tv / thv * SCALE_CPDRY  # line 1647
-    pbv = np.zeros_like(ptotv)  # line 1650
+    pbv = np.zeros_like(ptotv_si)  # line 1650
     thetav = thv * (1.0 + 0.61 * qvv)  # line 1661
-    momv = np.zeros_like(ptotv)  # FACT-GAP -- see docstring above
+    momv = np.zeros_like(ptotv_si)  # FACT-GAP -- see docstring above
+
+    ptotv = ptotv_si * 10.0  # SI Pa -> CGS dyn/cm^2, ThermoState's own UNIT CONTRACT
+    moist_denv = (
+        rec.moist_denvm * 1.0e-3
+    )  # SI kg/m^3 -> CGS g/cm^3, ThermoState's own UNIT CONTRACT
 
     nmic = rec.nmic
     thermo_values = np.empty((len(ThermoState.PROPS), 1, 1, nmic), dtype=np.float64)
@@ -375,7 +395,7 @@ def case_from_micro_record(
         ThermoProp.thv: thv,
         ThermoProp.piv: piv,
         ThermoProp.pbv: pbv,
-        ThermoProp.moist_denv: rec.moist_denvm,
+        ThermoProp.moist_denv: moist_denv,
         ThermoProp.qvv: qvv,
         ThermoProp.thetav: thetav,
         ThermoProp.wbv: rec.wbvm,

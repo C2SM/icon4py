@@ -84,25 +84,26 @@ def _thermo_state(
     `ptotv` (this helper's own parameter) is the CGS pressure (dyn/cm^2,
     `AmpsConst.p00`-scale) callers -- e.g. `TestRefreshStateDiagT`, which
     cross-checks `_refresh_state` against a DIRECT `thermo.diag_t(thil_val,
-    p, ...)` call using this SAME value -- intend; the stored
-    `ThermoState.ptotv` field itself is SI Pa (`state.py`'s own UNIT
-    CONTRACT note on `ThermoProp.ptotv`), so it is divided by 10.0 here.
-    `_refresh_state`'s own CGS conversion (`* 10.0` at its point of use)
-    reconstructs exactly this `ptotv` argument, keeping every existing
-    diag_t cross-check in this file unchanged. `moist_denv` (this
-    helper's own parameter, default `1.2e-3`) is likewise the CGS density
-    (g/cm^3) callers intend; stored `* 1000.0` (SI kg/m^3) so `core.
-    liquid_diag.diag_pq_liquid`'s own CGS conversion (`* 1.0e-3`, fired
-    whenever `run_warm_micro_tendency`/an explicit `config`+`luts`
-    `_refresh_state` call reaches it) reconstructs exactly this argument."""
+    p, ...)` call using this SAME value -- intend; `ThermoState.ptotv`
+    itself is ALSO CGS (`state.py`'s own UNIT CONTRACT note on
+    `ThermoProp.ptotv`, canonicalized at the two `ThermoState` producers),
+    so it is stored directly here, no conversion. `_refresh_state` now
+    reads it as-is, reconstructing exactly this `ptotv` argument, keeping
+    every existing diag_t cross-check in this file unchanged. `moist_denv`
+    (this helper's own parameter, default `1.2e-3`) is likewise the CGS
+    density (g/cm^3) callers intend; stored directly (no conversion) so
+    `core.liquid_diag.diag_pq_liquid` (which now reads `ThermoProp.
+    moist_denv` as-is, fired whenever `run_warm_micro_tendency`/an
+    explicit `config`+`luts` `_refresh_state` call reaches it)
+    reconstructs exactly this argument."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: ptotv / 10.0,
+        ThermoProp.ptotv: ptotv,
         ThermoProp.tv: tv,
         ThermoProp.thv: tv,
         ThermoProp.piv: 0.0,
         ThermoProp.pbv: 0.0,
-        ThermoProp.moist_denv: moist_denv * 1000.0,
+        ThermoProp.moist_denv: moist_denv,
         ThermoProp.qvv: qvv,
         ThermoProp.thetav: tv,
         ThermoProp.wbv: 0.0,
@@ -532,22 +533,23 @@ class TestRefreshStateDiagT:
 def _thermo_state_multi(*, ptotv: float, tv: np.ndarray, npoints: int) -> ThermoState:
     """`ptotv` is the CGS pressure this file's own diag_t cross-checks
     (e.g. `test_vectorized_matches_per_point_diag_t`) use directly --
-    see `_thermo_state`'s own docstring for why it is stored `/ 10.0`
-    (SI Pa, `state.py`'s UNIT CONTRACT note). `moist_denv` is stored at a
-    realistic SI (kg/m^3) magnitude for the same contract-consistency
-    reason `_thermo_state`'s own default is -- this helper's only caller
+    see `_thermo_state`'s own docstring for why it is stored AS-IS (CGS,
+    `state.py`'s UNIT CONTRACT note, canonicalized at the two
+    `ThermoState` producers). `moist_denv` is stored at a realistic CGS
+    (g/cm^3) magnitude for the same contract-consistency reason
+    `_thermo_state`'s own default is -- this helper's only caller
     (`test_vectorized_matches_per_point_diag_t`) calls `_refresh_state`
     with no `config`/`luts`, so `diag_pq_liquid` (the one consumer that
-    reads `moist_denv`) never actually fires here; kept consistent anyway
-    rather than leaving a CGS-magnitude number in an SI-contract field."""
+    reads `moist_denv`) never actually fires here; kept consistent
+    anyway."""
     values = np.zeros((len(ThermoState.PROPS), 1, 1, npoints), dtype=np.float64)
     by_prop = {
-        ThermoProp.ptotv: np.full(npoints, ptotv) / 10.0,
+        ThermoProp.ptotv: np.full(npoints, ptotv),
         ThermoProp.tv: tv,
         ThermoProp.thv: tv,
         ThermoProp.piv: np.zeros(npoints),
         ThermoProp.pbv: np.zeros(npoints),
-        ThermoProp.moist_denv: np.full(npoints, 1.2),
+        ThermoProp.moist_denv: np.full(npoints, 1.2e-3),
         ThermoProp.qvv: np.full(npoints, 1.0e-2),
         ThermoProp.thetav: tv,
         ThermoProp.wbv: np.zeros(npoints),
@@ -704,24 +706,22 @@ class TestEndToEndSupersaturatedSpinUp:
         thermo_values = np.zeros((len(ThermoState.PROPS), 1, 1, 1), dtype=np.float64)
         by_prop = {
             # p is the CGS pressure the "supersaturated at (p, t)" claim
-            # above is about; ThermoState.ptotv itself is SI Pa (state.py's
-            # own UNIT CONTRACT note) -- stored as p/10.0 so the warm loop's
-            # own CGS conversions (activation.py/vapor_deposition.py/
-            # liquid_diag.py, each `* 10.0` at their point of use)
-            # reconstruct exactly p.
-            ThermoProp.ptotv: p / 10.0,
+            # above is about; ThermoState.ptotv itself is ALSO CGS
+            # (state.py's own UNIT CONTRACT note, canonicalized at the two
+            # ThermoState producers) -- stored directly, no conversion; the
+            # warm loop's own consumers (activation.py/vapor_deposition.py/
+            # liquid_diag.py) now read it as-is, reconstructing exactly p.
+            ThermoProp.ptotv: p,
             ThermoProp.tv: t,
             ThermoProp.thv: t,
             ThermoProp.piv: 0.0,
             ThermoProp.pbv: 0.0,
             # 1.2e-3 is the CGS moist-air density (g/cm^3, AmpsConst.den_w
             # -scale) this scenario intends; ThermoState.moist_denv itself
-            # is SI kg/m^3 (state.py's own UNIT CONTRACT note) -- stored as
-            # 1.2e-3*1000.0=1.2 so core.liquid_diag.diag_pq_liquid's own
-            # CGS conversion (`* 1.0e-3` at its point of use, fired every
-            # `run_warm_micro_tendency` refresh) reconstructs exactly
-            # 1.2e-3.
-            ThermoProp.moist_denv: 1.2e-3 * 1000.0,
+            # is ALSO CGS (state.py's own UNIT CONTRACT note) -- stored
+            # directly, no conversion; core.liquid_diag.diag_pq_liquid now
+            # reads it as-is, reconstructing exactly 1.2e-3.
+            ThermoProp.moist_denv: 1.2e-3,
             ThermoProp.qvv: qv,
             ThermoProp.thetav: t,
             ThermoProp.wbv: 0.0,
