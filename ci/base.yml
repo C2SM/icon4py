@@ -179,10 +179,6 @@ variables:
         # compiler flags like -ffp-contract=off and others that may be required to
         # actually get bitwise identical results.
         ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE: "1"
-        # Print max diff per field instead of hard-failing on the first
-        # non-zero mismatch, so remaining CPU/GPU divergences are observable
-        # while the reproducibility flags mature.
-        ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: "1"
         # Compute RBF interpolation coefficients with a host (numpy) linear
         # solve instead of batched cupy.linalg.solve, whose results depend on
         # the batch extent (= rank-local element count) and therefore on the
