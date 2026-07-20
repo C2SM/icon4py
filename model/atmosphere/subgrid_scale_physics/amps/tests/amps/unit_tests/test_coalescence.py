@@ -867,32 +867,68 @@ class TestIbreakHook:
 
 
 class TestT7DegenerateBinGuards:
-    # Real-dump-observed magnitudes (M2b Task 7 report): a bin whose own
     # `con` is a floating-point-noise-level residual (comfortably above
-    # the bare `_ACTIVE_FLOOR=1e-30`, but physically negligible) paired
-    # with an ordinary-magnitude leftover `mass_tot` -- `mean_mass =
-    # mass_tot/con ~= 5.0e6 g`, ~1e7x beyond `binb[-1]~0.52g` (the grid's
-    # own largest representable mean-drop mass).
+    # the bare `_ACTIVE_FLOOR=1e-30`, but physically negligible) -- the
+    # real-dump-observed magnitude from the M2b Task 7 report.
+    # `MEAN_MASS_PLAUSIBLE` is deliberately kept well UNDER `binb[-1]~
+    # 0.52g` (the grid's own largest representable mean-drop mass) --
+    # see `test_isolated_degenerate_bin_stays_inert_counter_gate`'s own
+    # docstring for why: the ORIGINAL version of this fixture paired
+    # `DEGENERATE_CON` with an absurd `mean_mass~5.0e6g` (~1e7x beyond
+    # `binb[-1]`), which is excluded by the UNRELATED `mean_mass<=
+    # binb[-1]` ceiling (T7 fix 2) regardless of the counter gate (T7
+    # fix 1) -- a test-hygiene bug this rework fixes by keeping
+    # `mean_mass` on the LEGAL side of that ceiling, isolating fix 1.
     DEGENERATE_CON = 7.08e-14
-    DEGENERATE_MASS = 3.54e-7
+    MEAN_MASS_PLAUSIBLE = 1.0e-3  # g -- ordinary raindrop-scale, << binb[-1]
+    DEGENERATE_MASS = DEGENERATE_CON * MEAN_MASS_PLAUSIBLE
 
     def test_isolated_degenerate_bin_stays_inert_counter_gate(self, real_luts):
         """T7 fix 1 (`counter(n)>0`): a column with EXACTLY ONE occupied
         bin, whose own `con` is floating-point-noise-level -- no OTHER bin
         exists to generate any real collision claim anywhere in the
         column, so `counter(n)` must stay 0 and `collector_loop1` must
-        skip this bin entirely (regardless of its own absurd `mean_mass`
-        individually clearing every OTHER floor). Pre-fix, this bin's
-        `mean_mass` (~5.0e6g, `_diag_for` below) cleared
-        `_MEAN_MASS_FLOOR` and was treated as an eligible collector;
-        `_collector_scatter`'s own degenerate-fallback destination-bin
-        search (`_find_destination_bin`) then clipped it to the grid's TOP
-        bin (39) -- reproduced empirically against a real dump (M2b Task 7
-        report): `rel_err~1e17` at bin 39, `abs_err~2.9e5`."""
+        skip this bin entirely, REGARDLESS of its own `mean_mass`
+        individually clearing every OTHER floor/ceiling.
+
+        Fixture-hygiene note (this test's own history): an earlier
+        version of this fixture used `mean_mass~5.0e6g` (matching the M2b
+        Task 7 report's real-dump observation) -- but that value ALSO
+        clears the UNRELATED `mean_mass<=binb[-1]` ceiling (T7 fix 2,
+        `test_mutually_degenerate_column_bounded_by_mean_mass_ceiling`
+        below), so the bin was excluded by fix 2 regardless of fix 1: a
+        whole-branch review found that disabling ONLY the counter gate
+        (`counter_active`) left that version of this test still PASSING
+        -- it never actually exercised what it claimed to. `MEAN_MASS_
+        PLAUSIBLE` (1e-3g, comfortably `<=binb[-1]~0.52g`) fixes that: fix
+        2 can no longer exclude this bin, so the counter gate is the ONLY
+        remaining exclusion mechanism.
+
+        `MEAN_MASS_PLAUSIBLE` is deliberately set INCONSISTENT with
+        `bin_idx=15`'s own natural array-slot mass range (`binb[15:17]
+        ~=[1.0e-9, 2.4e-9]g`) -- the SAME "override `diag.mean_mass`
+        independent of the bin's own array slot" fixture pattern
+        `test_mutually_degenerate_column_bounded_by_mean_mass_ceiling`
+        below already uses. This is load-bearing, not cosmetic: a
+        SELF-consistent isolated bin (`mean_mass` matching bin 15's own
+        natural range) round-trips through `_collector_scatter` BIT-
+        IDENTICALLY even with the counter gate disabled (`_collector_
+        scatter`'s own linear-fit + multi-bin-scatter is exactly
+        conservative when the fit interval already coincides with the
+        bin's own boundaries and nothing grows it) -- verified
+        empirically while reworking this fixture -- so it would ALSO fail
+        to catch a dropped gate. With the inconsistency here, a dropped
+        gate is instead loudly observable: `collector_loop1` would fit
+        this bin's population against interval `[binb[15],binb[16])`
+        while its ACTUAL mean mass is `1e-3`g, the fit fails, and
+        `_find_destination_bin`'s own fallback relocates the bin's ENTIRE
+        population to a distant bin matching that mean mass (empirically:
+        bin 32) -- confirmed by temporarily disabling `counter_active` in
+        `core/coalescence.py` (M2b Task 7 test-hygiene follow-up)."""
         config = _config()
         bin_idx = 15
         liquid = _liquid_state({bin_idx: (self.DEGENERATE_MASS, self.DEGENERATE_CON, 0.0, 0.0)})
-        diag = _diag_for({bin_idx: (self.DEGENERATE_MASS / self.DEGENERATE_CON, 1.0, 1.0)})
+        diag = _diag_for({bin_idx: (self.MEAN_MASS_PLAUSIBLE, 1.0, 1.0)})
         thermo = _thermo_state()
 
         out = coalescence.coalesce_rain(liquid, diag, thermo, config, dt=5.0, luts=real_luts)
@@ -901,19 +937,26 @@ class TestT7DegenerateBinGuards:
         assert np.all(np.isfinite(out.values))
         # The degenerate bin's own mass/con are UNCHANGED (re-added via
         # the post-loop leftover mechanism, `excluded_by_t7`) -- NOT
-        # scattered to bin 39 or anywhere else.
-        assert out.values[lp.rmt_q.py_idx, bin_idx, 0, 0] == pytest.approx(
-            self.DEGENERATE_MASS, rel=1e-12
-        )
-        assert out.values[lp.rcon_q.py_idx, bin_idx, 0, 0] == pytest.approx(
-            self.DEGENERATE_CON, rel=1e-12
-        )
-        # Bin 39 (the grid's top bin -- the pre-fix corruption's own
-        # destination) stays exactly zero in every property.
-        assert out.values[lp.rmt_q.py_idx, 39, 0, 0] == 0.0
-        assert out.values[lp.rcon_q.py_idx, 39, 0, 0] == 0.0
-        assert out.values[lp.rmas_q.py_idx, 39, 0, 0] == 0.0
-        # No mass created or destroyed anywhere in the grid.
+        # scattered anywhere else. Bit-exact (not `pytest.approx`): this
+        # code path never runs `_collector_scatter` for this bin at all
+        # (`excluded_by_t7`'s direct `left_n`/`left_m` re-add is a pure
+        # copy, no floating-point round trip) -- see the docstring above
+        # for why a self-consistent fixture cannot get this tight a bound
+        # and still catch a dropped gate.
+        assert out.values[lp.rmt_q.py_idx, bin_idx, 0, 0] == self.DEGENERATE_MASS
+        assert out.values[lp.rcon_q.py_idx, bin_idx, 0, 0] == self.DEGENERATE_CON
+        # No mass/number created, destroyed, or relocated ANYWHERE in the
+        # grid -- the WHOLE output array must equal the input exactly
+        # (strictly stronger than, and replaces, an earlier version of
+        # this test's own single-bin-39 spot-check: that check would NOT
+        # have caught this fixture's own dropped-gate relocation target,
+        # bin 32, which is a different bin than the original bug's own
+        # bin-39 corruption target).
+        assert np.array_equal(out.values, liquid.values)
+        # No mass created or destroyed anywhere in the grid (redundant
+        # with the array-equality check above, kept as an explicit,
+        # narrower conservation statement matching this class's other
+        # test's own style).
         assert out.values[lp.rmt_q.py_idx].sum() == pytest.approx(self.DEGENERATE_MASS, rel=1e-12)
 
     def test_mutually_degenerate_column_bounded_by_mean_mass_ceiling(self, real_luts):
