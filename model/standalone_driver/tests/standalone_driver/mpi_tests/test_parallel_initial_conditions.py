@@ -12,17 +12,17 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import initial_condition, model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_states,
     prognostic_state as prognostics,
 )
 from icon4py.model.standalone_driver import (
     config as driver_config,
     driver_states,
     driver_utils,
-    initial_condition,
     standalone_driver,
 )
 from icon4py.model.testing import (
@@ -54,6 +54,8 @@ _log = logging.getLogger(__file__)
     "experiment_description",
     [
         test_defs.Experiments.JW,
+        test_defs.Experiments.GAUSS3D,
+        test_defs.Experiments.MCH_CH_R04B09,
         test_defs.Experiments.EXCLAIM_APE_AES,
     ],
 )
@@ -110,10 +112,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         process_props=single_rank_process_props,
     )
-    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            config=single_rank_config,  # type: ignore[arg-type]
+            config=single_rank_config,
             grid_manager=single_rank_grid_manager,
             process_props=single_rank_process_props,
             backend=backend,
@@ -125,6 +126,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         tracer_config=single_rank_icon4py_driver.config.tracer_config,
     )
+    single_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
+        grid=single_rank_icon4py_driver.grid, allocator=allocator
+    )
     initial_condition.create(
         config=single_rank_icon4py_driver.config.initial_condition,
         vertical_config=single_rank_icon4py_driver.config.vertical_grid,
@@ -134,6 +138,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=single_rank_icon4py_driver.backend,
         exchange=single_rank_icon4py_driver.exchange,
         global_reductions=single_rank_icon4py_driver.global_reductions,
+        solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
     )
     single_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
@@ -147,6 +152,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         prognostic_state_now=single_rank_prognostic,
         diagnostic_state=single_rank_diagnostic,
         experiment_config=single_rank_icon4py_driver.config,
+        solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
     )
 
     multi_rank_config = experiment.config.with_overrides(
@@ -158,10 +164,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         process_props=process_props,
     )
-    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
         standalone_driver.initialize_driver(
-            config=multi_rank_config,  # type: ignore[arg-type]
+            config=multi_rank_config,
             grid_manager=multi_rank_grid_manager,
             process_props=process_props,
             backend=backend,
@@ -173,6 +178,9 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         tracer_config=multi_rank_icon4py_driver.config.tracer_config,
     )
+    multi_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
+        grid=multi_rank_icon4py_driver.grid, allocator=allocator
+    )
     initial_condition.create(
         config=multi_rank_icon4py_driver.config.initial_condition,
         vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
@@ -182,6 +190,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         backend=multi_rank_icon4py_driver.backend,
         exchange=multi_rank_icon4py_driver.exchange,
         global_reductions=multi_rank_icon4py_driver.global_reductions,
+        solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
     )
     multi_rank_diagnostic = diagnostics.initialize_diagnostic_state(
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
@@ -195,6 +204,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         prognostic_state_now=multi_rank_prognostic,
         diagnostic_state=multi_rank_diagnostic,
         experiment_config=multi_rank_icon4py_driver.config,
+        solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
     )
 
     fields_to_check: list[tuple[str, object, object]] = [

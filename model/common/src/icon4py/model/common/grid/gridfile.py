@@ -59,7 +59,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         return xp.asarray(xp.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
 
-class GridFileName(str, enum.Enum):
+class GridFileName(enum.StrEnum):
     pass
 
 

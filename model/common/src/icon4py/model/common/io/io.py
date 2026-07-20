@@ -15,7 +15,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any, TypeAlias
 
-from icon4py.model.common import exceptions
+from icon4py.model.common import exceptions, time
 from icon4py.model.common.components import monitor
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGrid
@@ -26,17 +26,15 @@ from icon4py.model.common.io.writers import GlobalFileAttributes
 log = logging.getLogger(__name__)
 
 
-DeltaT: TypeAlias = dt.timedelta
-NumTimeSteps: TypeAlias = int
 #: Output schedule given as either a number of model steps or a simulation-time delta.
 #: A time delta is normalized to a number of steps internally (using the model time step),
 #: so the schedule is always evaluated in steps.
-OutputInterval: TypeAlias = DeltaT | NumTimeSteps
+OutputInterval: TypeAlias = time.RelativeTime | time.NumTimeSteps  # noqa: UP040
 
 
-def _interval_in_steps(output_interval: OutputInterval, dtime: DeltaT) -> int:
+def _interval_in_steps(output_interval: OutputInterval, dtime: time.RelativeTime) -> int:
     """Normalize an output interval to a number of model steps."""
-    if isinstance(output_interval, DeltaT):
+    if isinstance(output_interval, time.RelativeTime):
         steps = round(output_interval / dtime)
         if steps < 1:
             raise exceptions.InvalidConfigError(
@@ -83,7 +81,7 @@ class FieldGroupIOConfig(Config):
     #: Output schedule: either a number of model steps (``int``) or a simulation-time
     #: delta (``datetime.timedelta``); a delta is normalized to steps using the model time
     #: step. Defaults to every step.
-    output_interval: OutputInterval = NumTimeSteps(1)  # noqa: RUF009 [function-call-in-dataclass-default-argument] NumTimeSteps is immutable (int)
+    output_interval: OutputInterval = time.NumTimeSteps(1)
     timesteps_per_file: int = 10
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
@@ -108,8 +106,8 @@ class FieldGroupIOConfig(Config):
                 f"Output interval must be of type {OutputInterval}: {self.output_interval!r}."
             )
         positive = (
-            self.output_interval > DeltaT(0)
-            if isinstance(self.output_interval, DeltaT)
+            self.output_interval > time.RelativeTime(0)
+            if isinstance(self.output_interval, time.RelativeTime)
             else self.output_interval > 0
         )
         if not positive:
@@ -160,7 +158,7 @@ class IOMonitor(monitor.Monitor):
         horizontal_size: base.HorizontalGridSize,
         grid_file_name: pathlib.Path,
         grid_id: uuid.UUID,
-        dtime: DeltaT,
+        dtime: time.RelativeTime,
     ):
         self.config = config
         # ``grid_file_name`` is the source grid NetCDF, used solely to regenerate the UGRID
@@ -228,7 +226,7 @@ class FieldGroupMonitor(monitor.Monitor):
         vertical: VerticalGrid,
         horizontal: base.HorizontalGridSize,
         grid_id: uuid.UUID,
-        dtime: DeltaT,
+        dtime: time.RelativeTime,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
         calendar: str = cf_utils.DEFAULT_CALENDAR,
         output_path: pathlib.Path = pathlib.Path(__file__).parent,
