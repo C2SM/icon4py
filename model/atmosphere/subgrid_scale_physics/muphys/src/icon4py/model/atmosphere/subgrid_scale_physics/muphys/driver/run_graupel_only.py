@@ -57,6 +57,7 @@ def get_args():
 
 
 def setup_graupel(
+    *,
     dt: float,
     qnc: float,
     backend: model_backends.BackendLike,
@@ -93,7 +94,7 @@ def setup_graupel(
                 "vertical_start": vertical_start,
                 "vertical_end": vertical_end,
             },
-            offset_provider={"Koff": dims.KDim},
+            offset_provider={},
         )
         gtx.wait_for_compilation()
         return graupel_run_program

@@ -50,6 +50,7 @@ def gnomonic_proj(
 
 
 def diff_on_edges_torus_numpy(
+    *,
     cc_cv_x: float,
     cc_cv_y: float,
     cc_cell_x: float,

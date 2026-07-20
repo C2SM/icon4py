@@ -12,26 +12,37 @@ jobs:
           refresh-message-position: true
           message: |2
 
-            **Mandatory Tests**
+            When developing, you can test your changes on CSCS CI before merge with the `default` pipeline: `cscs-ci run default`. This will run a default subset of tests.
 
-            Please make sure you run these tests via comment before you merge!
+            You can pass options to override pipeline variables, for example:
 
-            * `cscs-ci run default`
-            * `cscs-ci run distributed`
+            * `cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit`
+            * `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSIONS=model`
+            **Avoid running the pipeline for all tests when you are developing.**
+
+            Available options are:
+            * `SESSIONS`: `model`, `model_mpi`, or `tools` (correspond to nox sessions)
+            * `MODEL_SUBSETS`: `datatest`, `basic`, or `stencils` (correspond to nox session selections)
+            * `MODEL_SUBPACKAGES`: subpackages for non-MPI tests (last component, e.g. `diffusion`, `standalone_driver`)
+            * `MODEL_MPI_SUBPACKAGES`: subpackages for MPI tests (as above)
+            * `BACKENDS`: backends
+            * `GRIDS`: grids for stencil tests (`simple`, `icon_regional`, or `icon_global`)
+            * `LEVELS`: testing level for non-stencil tests (`unit` or `integration`)
+
+            For each option, `all` can be used as a shorthand for all possible values of that variable, e.g. `LEVELS=all`.
+
+            See `scripts/python/generate_ci_pipeline.py` and `noxfile.py` for available values for each option.
+
+            The `all` pipeline can be run with `cscs-ci run all`. This will run all icon4py tests in CSCS CI which can be expensive. This pipeline runs on a schedule on main, and can be run when extensive validation is needed (e.g. before releases).
+
+            **Merging**
+
+            Once your PR is approved and ready for merging, add it to the merge queue. The `merge` CSCS CI pipeline will run automatically on the merge-queue branch and must pass before the PR is merged. A dummy `merge` check will be triggered on the PR itself since it's required to add a PR to the merge queue.
 
             **Optional Tests**
 
             To run benchmarks you can use:
 
             * `cscs-ci run benchmark-bencher`
-
-            To run tests and benchmarks with the DaCe backend you can use:
-
-            * `cscs-ci run dace`
-
-            To run test levels ignored by the default test suite (mostly simple datatest for static fields computations) you can use:
-             * `cscs-ci run extra`
-
-
 
             For more detailed information please look at [CI in the EXCLAIM universe](https://github.com/C2SM/icon-exclaim/wiki).

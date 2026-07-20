@@ -44,7 +44,7 @@ _log = logging.getLogger(__name__)
     ],
 )
 @pytest.mark.mpi
-def test_run_solve_nonhydro_single_step(
+def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init: int,
     istep_exit: int,
     step_date_init: str,
@@ -91,8 +91,9 @@ def test_run_solve_nonhydro_single_step(
         f"rank={process_props.rank}/{process_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = experiment.config.nonhydrostatic
-    nonhydro_params = nh.NonHydrostaticParams(config)
+    assert experiment.config.nonhydrostatic is not None
+
+    nonhydro_params = nh.NonHydrostaticParams(experiment.config.nonhydrostatic)
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
@@ -121,7 +122,7 @@ def test_run_solve_nonhydro_single_step(
 
     solve_nonhydro = nh.SolveNonhydro(
         grid=icon_grid,
-        config=config,
+        config=experiment.config.nonhydrostatic,
         params=nonhydro_params,
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -143,11 +144,11 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
-        ndyn_substeps_var=experiment.config.diffusion.ndyn_substeps,
+        ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=(substep_init == 1),
-        at_last_substep=(substep_init == experiment.config.diffusion.ndyn_substeps),
+        at_last_substep=(substep_init == experiment.config.driver.ndyn_substeps),
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
     )
@@ -165,43 +166,44 @@ def test_run_solve_nonhydro_single_step(
         expected_exner,
         calculated_exner,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         prognostic_states.next.vn.asnumpy(),
+        atol=1e-14,
         rtol=1e-10,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.w_new().asnumpy(),
         prognostic_states.next.w.asnumpy(),
-        atol=8e-14,
+        atol=1e-14,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_new().asnumpy(),
         prognostic_states.next.rho.asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
         diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         diagnostic_state_nh.mass_flux_at_edges_on_model_levels.asnumpy(),
         rtol=1e-10,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         prep_adv.mass_flx_me.asnumpy(),
         rtol=1e-10,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         prep_adv.vn_traj.asnumpy(),
         rtol=1e-10,

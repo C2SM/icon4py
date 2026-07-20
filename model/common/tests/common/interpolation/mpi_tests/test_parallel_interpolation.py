@@ -62,7 +62,7 @@ if TYPE_CHECKING:
         (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-9, 1e-8),
     ],
 )
-def test_distributed_interpolation_with_custom_tolerance(
+def test_distributed_interpolation_with_custom_tolerance(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -101,7 +101,7 @@ def test_distributed_interpolation_with_custom_tolerance(
         (attrs.CELL_AW_VERTS, "c_intp"),
     ],
 )
-def test_distributed_interpolation_fields(
+def test_distributed_interpolation_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -124,7 +124,7 @@ def test_distributed_interpolation_fields(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_interpolation_grg(
+def test_distributed_interpolation_grg(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -158,7 +158,7 @@ def test_distributed_interpolation_grg(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_interpolation_geofac_rot(
+def test_distributed_interpolation_geofac_rot(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -194,7 +194,7 @@ def test_distributed_interpolation_geofac_rot(
         (attrs.RBF_VEC_COEFF_V2, "rbf_vec_coeff_v2"),
     ],
 )
-def test_distributed_interpolation_rbf(
+def test_distributed_interpolation_rbf(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -213,14 +213,14 @@ def test_distributed_interpolation_rbf(
     field = factory.get(attrs_name)
     dim = field.domain.dims[0]
     assert test_utils.dallclose(
-        field.asnumpy(), field_ref.asnumpy(), atol=RBF_TOLERANCES[dim][experiment.name]
+        field.asnumpy(), field_ref.asnumpy(), atol=RBF_TOLERANCES[dim][experiment.description]
     )
 
 
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_distributed_interpolation_lsq_pseudoinv(
+def test_distributed_interpolation_lsq_pseudoinv(  # noqa: PLR0917 [too-many-positional-arguments]
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,

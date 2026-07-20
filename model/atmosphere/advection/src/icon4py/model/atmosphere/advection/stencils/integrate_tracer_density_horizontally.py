@@ -74,14 +74,14 @@ def integrate_tracer_density_horizontally(
     vertical_end: gtx.int32,
 ) -> None:
     _integrate_tracer_density_horizontally(
-        p_mass_flx_e,
-        geofac_div,
-        z_rhofluxdiv_c,
-        z_tracer_mflx,
-        z_rho_now,
-        z_tracer_now,
-        z_dtsub,
-        nsub,
+        p_mass_flx_e=p_mass_flx_e,
+        geofac_div=geofac_div,
+        z_rhofluxdiv_c=z_rhofluxdiv_c,
+        z_tracer_mflx=z_tracer_mflx,
+        z_rho_now=z_rho_now,
+        z_tracer_now=z_tracer_now,
+        z_dtsub=z_dtsub,
+        nsub=nsub,
         out=(z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

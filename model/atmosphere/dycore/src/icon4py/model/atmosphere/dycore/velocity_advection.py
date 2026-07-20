@@ -35,13 +35,14 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class VelocityAdvection:
     def __init__(
         self,
+        *,
         grid: icon_grid.IconGrid,
         metric_state: dycore_states.MetricStateNonHydro,
         interpolation_state: dycore_states.InterpolationState,
@@ -179,7 +180,7 @@ class VelocityAdvection:
             offset_provider=self._grid.connectivities,
         )
 
-    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
         self._horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
@@ -198,7 +199,7 @@ class VelocityAdvection:
             self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
 
-    def _determine_local_domains(self):
+    def _determine_local_domains(self) -> None:
         vertex_domain = h_grid.domain(dims.VertexDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
         cell_domain = h_grid.domain(dims.CellDim)
@@ -233,15 +234,16 @@ class VelocityAdvection:
 
     def run_predictor_step(
         self,
+        *,
         skip_compute_predictor_vertical_advection: bool,
-        diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-        tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat],
+        contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
+        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
+        tangential_wind_on_half_levels: fa.EdgeKField[ta.anyfloat],
         dtime: ta.wpfloat,
         cell_areas: fa.CellField[ta.wpfloat],
-    ):
+    ) -> None:
         """
         Compute some diagnostic variables that are used in the predictor step
         of the dycore and advective tendency of normal and vertical winds.
@@ -289,12 +291,12 @@ class VelocityAdvection:
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = self._vertical_cfl.array_ns.max(
+        max_vertical_cfl = self._vertical_cfl.array_ns.max(  # type: ignore[attr-defined]
             self._vertical_cfl.ndarray[
                 self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
-            ].ravel(order="K")
+            ].ravel(order="K")  # type: ignore[attr-defined]
         )
-        diagnostic_state.max_vertical_cfl = self._vertical_cfl.array_ns.maximum(
+        diagnostic_state.max_vertical_cfl = self._vertical_cfl.array_ns.maximum(  # type: ignore[attr-defined]
             max_vertical_cfl, diagnostic_state.max_vertical_cfl
         )
 
@@ -315,20 +317,21 @@ class VelocityAdvection:
             apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
         )
 
-    def _scale_factors_by_dtime(self, dtime):
+    def _scale_factors_by_dtime(self, dtime: float) -> tuple[float, float]:
         scaled_cfl_w_limit = self._cfl_w_limit / dtime
         scalfac_exdiff = self._scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
         return scaled_cfl_w_limit, scalfac_exdiff
 
     def run_corrector_step(
         self,
-        diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        *,
+        diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-        tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat],
+        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
+        tangential_wind_on_half_levels: fa.EdgeKField[ta.anyfloat],
         dtime: ta.wpfloat,
         cell_areas: fa.CellField[ta.wpfloat],
-    ):
+    ) -> None:
         """
         Compute some diagnostic variables that are used in the corrector step
         of the dycore and advective tendency of normal and vertical winds.
@@ -360,13 +363,13 @@ class VelocityAdvection:
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = self._vertical_cfl.array_ns.max(
+        max_vertical_cfl = self._vertical_cfl.array_ns.max(  # type: ignore[attr-defined]
             self._vertical_cfl.ndarray[
                 self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
-            ].ravel(order="K")
+            ].ravel(order="K")  # type: ignore[attr-defined]
         )
 
-        diagnostic_state.max_vertical_cfl = self._vertical_cfl.array_ns.maximum(
+        diagnostic_state.max_vertical_cfl = self._vertical_cfl.array_ns.maximum(  # type: ignore[attr-defined]
             max_vertical_cfl, diagnostic_state.max_vertical_cfl
         )
 

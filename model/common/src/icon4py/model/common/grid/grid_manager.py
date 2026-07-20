@@ -9,7 +9,7 @@ import functools
 import logging
 import pathlib
 from types import ModuleType
-from typing import Literal, TypeAlias
+from typing import Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -42,11 +42,9 @@ class IconGridError(RuntimeError):
     pass
 
 
-CoordinateDict: TypeAlias = dict[
-    gtx.Dimension, dict[Literal["lat", "lon", "x", "y", "z"], gtx.Field]
-]
+type CoordinateDict = dict[gtx.Dimension, dict[Literal["lat", "lon", "x", "y", "z"], gtx.Field]]
 # TODO (halungge): use a TypeDict for that
-GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
+type GeometryDict = dict[gridfile.GeometryName, gtx.Field]
 
 
 class GridManager:
@@ -370,6 +368,11 @@ class GridManager:
         return refinement_control_fields
 
     @property
+    def file_path(self) -> str:
+        """Path of the ICON grid file this manager reads from."""
+        return self._file_name
+
+    @property
     def grid(self) -> icon.IconGrid:
         return self._grid
 
@@ -462,7 +465,7 @@ class GridManager:
         )
 
         self._grid = icon.icon_grid(
-            self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
+            id_=self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
             allocator=allocator,
             config=grid_config,
             neighbor_tables=neighbor_tables,

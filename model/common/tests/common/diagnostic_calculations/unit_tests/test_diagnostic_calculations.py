@@ -184,7 +184,7 @@ def test_diagnose_surface_pressure(
         horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
         vertical_start=icon_grid.num_levels,
         vertical_end=icon_grid.num_levels + 1,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert test_utils.dallclose(
@@ -251,7 +251,7 @@ def test_diagnose_pressure(
 )
 @pytest.mark.parametrize("location", ["interface-nwp"])
 @pytest.mark.datatest
-def test_diagnostic_update_after_saturation_adjustement(
+def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-many-positional-arguments]
     location: str,
     date: str,
     experiment: definitions.Experiment,
@@ -346,7 +346,7 @@ def test_diagnostic_update_after_saturation_adjustement(
         horizontal_end=end_cell_local,
         vertical_start=icon_grid.num_levels,
         vertical_end=gtx.int32(icon_grid.num_levels + 1),
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     diagnose_pressure.diagnose_pressure.with_backend(backend)(

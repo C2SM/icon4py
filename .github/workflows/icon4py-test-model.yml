@@ -8,6 +8,7 @@ on:
     branches:
       - main
     types: [opened, reopened, synchronize]
+  merge_group:
 
 env:
   ICON4PY_TEST_DATA_PATH: "${{ github.workspace }}/testdata"
@@ -21,12 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.14"]
+        python-version: ["3.12", "3.13", "3.14"]
         backend: ["embedded", "dace_cpu", "gtfn_cpu"]
         component: ["advection", "diffusion", "dycore", "microphysics", "muphys", "common", "standalone_driver"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install system dependencies
         run: |
@@ -48,7 +49,7 @@ jobs:
 
       - name: gridfile cache
         id: grid-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: testdata/grids
           key: ${{ steps.cache-key.outputs.key }}
@@ -69,7 +70,7 @@ jobs:
       - name: restore GT4Py cache
         id: gt4py-cache-restore
         if: github.ref != 'refs/heads/main'
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.GT4PY_BUILD_CACHE_DIR }}
           key: gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
@@ -89,7 +90,7 @@ jobs:
 
       - name: save GT4Py cache
         if: always()
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: ${{ env.GT4PY_BUILD_CACHE_DIR }}
           key: gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}

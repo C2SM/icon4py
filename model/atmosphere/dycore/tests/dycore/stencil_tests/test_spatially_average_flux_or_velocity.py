@@ -43,6 +43,7 @@ class TestSpatiallyAverageFluxOrVelocity(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         e_flx_avg: np.ndarray,
         flux_or_velocity: np.ndarray,
         **kwargs: Any,

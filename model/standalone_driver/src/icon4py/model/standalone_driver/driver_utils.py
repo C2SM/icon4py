@@ -6,12 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
 
 import dataclasses
 import logging
+import os
 import pathlib
 import sys
-import time
 from typing import Any, Literal
 
 import gt4py.next as gtx
@@ -24,6 +25,7 @@ from icon4py.model.common import (
     constants,
     field_type_aliases as fa,
     model_backends,
+    time,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import (
@@ -33,6 +35,7 @@ from icon4py.model.common.decomposition import (
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
+    geometry_config as geometry_configuration,
     grid_manager as gm,
     gridfile,
     icon as icon_grid,
@@ -41,13 +44,15 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory as states_factory
+from icon4py.model.common.states import factory as states_factory, static_fields
+from icon4py.model.common.states.tracer_state import TracerConfig
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import config as driver_config, driver_states
-from icon4py.model.testing import config as testing_config
+from icon4py.model.standalone_driver import config as driver_config, driver_constants, driver_states
 
 
 log = logging.getLogger(__name__)
+
+DRIVER_LOGGING_LEVEL: str = os.environ.get("ICON4PY_DRIVER_LOGGING_LEVEL", "debug")
 
 _LOGGING_LEVELS: dict[str, int] = {
     "notset": logging.NOTSET,
@@ -57,6 +62,56 @@ _LOGGING_LEVELS: dict[str, int] = {
     "error": logging.ERROR,
     "critical": logging.CRITICAL,
 }
+
+
+@dataclasses.dataclass
+class Granules:
+    diffusion: diffusion.Diffusion | None = None
+    solve_nonhydro: solve_nh.SolveNonhydro | None = None
+    tracer_advection: advection.Advection | None = None
+
+
+def validate_granule_state_consistency(
+    config: driver_config.ExperimentConfig,
+    granules: Granules,
+    states: driver_states.DriverStates,
+) -> None:
+    """
+    Validate that enabled granules have their required states allocated.
+    The graupel granule is currently not checked as it will be moved to the
+    physics interface.
+
+    Raises:
+        ValueError: if a granule is enabled but a state it requires is None.
+    """
+
+    if config.diffusion is not None and granules.diffusion is None:
+        raise ValueError("diffusion is enabled but granules.diffusion is None.")
+    if config.nonhydrostatic is not None and granules.solve_nonhydro is None:
+        raise ValueError("solve_nonhydro is enabled but granules.solve_nonhydro is None.")
+    if config.tracer_advection is not None and granules.tracer_advection is None:
+        raise ValueError("tracer_advection is enabled but granules.tracer_advection is None.")
+
+    if granules.diffusion is not None and states.diffusion_diagnostic is None:
+        raise ValueError("diffusion granule is present but diffusion_diagnostic state is None.")
+    if granules.solve_nonhydro is not None:
+        if states.solve_nonhydro_diagnostic is None:
+            raise ValueError(
+                "solve_nonhydro granule is present but solve_nonhydro_diagnostic state is None."
+            )
+        if states.prep_advection_prognostic is None:
+            raise ValueError(
+                "solve_nonhydro granule is present but prep_advection_prognostic state is None."
+            )
+    if granules.tracer_advection is not None:
+        if states.tracer_advection_diagnostic is None:
+            raise ValueError(
+                "tracer_advection granule is present but tracer_advection_diagnostic state is None."
+            )
+        if states.prep_tracer_advection_prognostic is None:
+            raise ValueError(
+                "tracer_advection granule is present but prep_tracer_advection_prognostic state is None."
+            )
 
 
 def create_grid_manager(
@@ -102,14 +157,19 @@ def create_vertical_grid(
 
 
 def create_static_field_factories(
+    *,
     grid_manager: gm.GridManager,
     decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
+    process_props: decomposition_defs.ProcessProperties,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
-) -> driver_states.StaticFieldFactories:
+    geometry_config: geometry_configuration.GeometryConfig,
+    interpolation_config: interpolation_factory.InterpolationConfig,
+    metrics_config: metrics_factory.MetricsConfig,
+) -> static_fields.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
@@ -117,12 +177,14 @@ def create_static_field_factories(
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
+        config=geometry_config,
+        process_props=process_props,
         exchange=exchange,
         global_reductions=global_reductions,
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        config=interpolation_factory.InterpolationConfig(),
+        config=interpolation_config,
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
@@ -140,37 +202,29 @@ def create_static_field_factories(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        config=metrics_factory.MetricsConfig(
-            rayleigh_type=constants.RayleighType.KLEMP,
-            rayleigh_coeff=0.1,
-            exner_expol=1.0 / 3.0,
-            vwind_offctr=0.15,
-            thslp_zdiffu=0.025,
-            thhgtd_zdiffu=200.0,
-        ),
+        config=metrics_config,
         exchange=exchange,
         global_reductions=global_reductions,
     )
 
-    return driver_states.StaticFieldFactories(
+    return static_fields.StaticFieldFactories(
         geometry_field_source, interpolation_field_source, metrics_field_source
     )
 
 
 def initialize_granules(
+    *,
+    config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
-    diffusion_config: diffusion.DiffusionConfig,
-    solve_nh_config: solve_nh.NonHydrostaticConfig,
-    advection_config: advection.AdvectionConfig,
-    static_field_factories: driver_states.StaticFieldFactories,
+    static_field_factories: static_fields.StaticFieldFactories,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
-) -> tuple[diffusion.Diffusion, solve_nh.SolveNonhydro, advection.Advection]:
-    geometry_field_source = static_field_factories.geometry_field_source
-    interpolation_field_source = static_field_factories.interpolation_field_source
-    metrics_field_source = static_field_factories.metrics_field_source
+) -> Granules:
+    geometry_field_source = static_field_factories.geometry
+    interpolation_field_source = static_field_factories.interpolation
+    metrics_field_source = static_field_factories.metrics
 
     log.info("creating cell geometry")
     cell_geometry = grid_states.CellParams(
@@ -315,73 +369,108 @@ def initialize_granules(
         coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
     )
 
-    diffusion_params = diffusion.DiffusionParams(diffusion_config)
+    solve_nonhydro_granule: solve_nh.SolveNonhydro | None = None
+    if config.nonhydrostatic is not None:
+        nonhydro_params = solve_nh.NonHydrostaticParams(config.nonhydrostatic)
+        solve_nonhydro_granule = solve_nh.SolveNonhydro(
+            grid=grid,
+            backend=backend,
+            config=config.nonhydrostatic,
+            params=nonhydro_params,
+            metric_state_nonhydro=solve_nonhydro_metric_state,
+            interpolation_state=solve_nonhydro_interpolation_state,
+            vertical_params=vertical_grid,
+            edge_geometry=edge_geometry,
+            cell_geometry=cell_geometry,
+            owner_mask=owner_mask,
+            exchange=exchange,
+        )
 
-    diffusion_granule = diffusion.Diffusion(
-        grid=grid,
-        config=diffusion_config,
-        params=diffusion_params,
-        vertical_grid=vertical_grid,
-        metric_state=diffusion_metric_state,
-        interpolation_state=diffusion_interpolation_state,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-        backend=backend,
-        exchange=exchange,
+    diffusion_granule: diffusion.Diffusion | None = None
+    if config.diffusion is not None:
+        diffusion_params = diffusion.DiffusionParams(config.diffusion)
+        diffusion_granule = diffusion.Diffusion(
+            grid=grid,
+            config=config.diffusion,
+            params=diffusion_params,
+            vertical_grid=vertical_grid,
+            metric_state=diffusion_metric_state,
+            interpolation_state=diffusion_interpolation_state,
+            edge_params=edge_geometry,
+            cell_params=cell_geometry,
+            backend=backend,
+            exchange=exchange,
+        )
+
+    tracer_advection_granule: advection.Advection | None = None
+    if config.tracer_advection is not None:
+        tracer_advection_granule = advection.convert_config_to_advection(
+            grid=grid,
+            backend=backend,
+            config=config.tracer_advection,
+            interpolation_state=advection_states.AdvectionInterpolationState(
+                geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
+                rbf_vec_coeff_e=interpolation_field_source.get(
+                    interpolation_attributes.RBF_VEC_COEFF_E
+                ),
+                pos_on_tplane_e_1=interpolation_field_source.get(
+                    interpolation_attributes.POS_ON_TPLANE_E_X
+                ),
+                pos_on_tplane_e_2=interpolation_field_source.get(
+                    interpolation_attributes.POS_ON_TPLANE_E_Y
+                ),
+            ),
+            least_squares_state=advection_states.AdvectionLeastSquaresState(
+                lsq_pseudoinv_1=interpolation_field_source.get(
+                    interpolation_attributes.LSQ_PSEUDOINV
+                )[:, 0, :],
+                lsq_pseudoinv_2=interpolation_field_source.get(
+                    interpolation_attributes.LSQ_PSEUDOINV
+                )[:, 1, :],
+            ),
+            metric_state=advection_states.AdvectionMetricState(
+                deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
+                deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
+                deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
+                ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
+            ),
+            edge_params=edge_geometry,
+            cell_params=cell_geometry,
+            exchange=exchange,
+        )
+
+    return Granules(
+        solve_nonhydro=solve_nonhydro_granule,
+        diffusion=diffusion_granule,
+        tracer_advection=tracer_advection_granule,
     )
 
-    nonhydro_params = solve_nh.NonHydrostaticParams(solve_nh_config)
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        grid=grid,
-        backend=backend,
-        config=solve_nh_config,
-        params=nonhydro_params,
-        metric_state_nonhydro=solve_nonhydro_metric_state,
-        interpolation_state=solve_nonhydro_interpolation_state,
-        vertical_params=vertical_grid,
-        edge_geometry=edge_geometry,
-        cell_geometry=cell_geometry,
-        owner_mask=owner_mask,
-        exchange=exchange,
+def spinup_second_order_divdamp_factor(
+    *,
+    elapsed_time_in_seconds: ta.wpfloat,
+    fourth_order_divdamp_factor: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Second order divergence damping factor (divdamp_fac_o2) during the spin-up phase.
+
+    update_spinup_damping in mo_nh_stepping.f90: the damping is enhanced during
+    the first half hour of integration and then decreases linearly to zero.
+    """
+    initial_period = driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+    transition_end_period = driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+    enhanced_factor = (
+        driver_constants.ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP * fourth_order_divdamp_factor
     )
-
-    advection_granule = advection.convert_config_to_advection(
-        grid=grid,
-        backend=backend,
-        config=advection_config,
-        interpolation_state=advection_states.AdvectionInterpolationState(
-            geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-            rbf_vec_coeff_e=interpolation_field_source.get(
-                interpolation_attributes.RBF_VEC_COEFF_E
-            ),
-            pos_on_tplane_e_1=interpolation_field_source.get(
-                interpolation_attributes.POS_ON_TPLANE_E_X
-            ),
-            pos_on_tplane_e_2=interpolation_field_source.get(
-                interpolation_attributes.POS_ON_TPLANE_E_Y
-            ),
-        ),
-        least_squares_state=advection_states.AdvectionLeastSquaresState(
-            lsq_pseudoinv_1=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
-                :, 0, :
-            ],
-            lsq_pseudoinv_2=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
-                :, 1, :
-            ],
-        ),
-        metric_state=advection_states.AdvectionMetricState(
-            deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
-            deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
-            deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
-            ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
-        ),
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-        exchange=exchange,
-    )
-
-    return diffusion_granule, solve_nonhydro_granule, advection_granule
+    if elapsed_time_in_seconds <= initial_period:
+        return enhanced_factor
+    if elapsed_time_in_seconds <= transition_end_period:
+        return (
+            enhanced_factor
+            * (transition_end_period - elapsed_time_in_seconds)
+            / (transition_end_period - initial_period)
+        )
+    return ta.wpfloat("0.0")
 
 
 def find_maximum_from_field(
@@ -396,7 +485,7 @@ def find_maximum_from_field(
 
 
 def display_icon4py_logo_in_log_file() -> None:
-    """
+    r"""
     Print out icon4py signature and some important information of the initial setup to the log file.
 
                                                                ___
@@ -456,21 +545,33 @@ def display_icon4py_logo_in_log_file() -> None:
 
 
 def display_driver_setup_in_log_file(
-    n_time_steps: int,
-    vertical_params: v_grid.VerticalGrid,
     config: driver_config.DriverConfig,
+    model_time_variables: driver_states.ModelTimeVariables,
+    vertical_params: v_grid.VerticalGrid,
+    tracer_config: TracerConfig | None = None,
 ) -> None:
+    if tracer_config is None:
+        tracer_config = TracerConfig.none()
     log.info("===== ICON4Py Driver Configuration =====")
     log.info(f"Experiment name        : {config.experiment_name}")
-    log.info(f"Time step (dtime)      : {config.dtime.total_seconds()} s")
-    log.info(f"Start date             : {config.start_date}")
-    log.info(f"End date               : {config.end_date}")
-    log.info(f"Number of timesteps    : {n_time_steps}")
+    log.info(f"Time step              : {config.dtime.total_seconds()} s")
+    log.info(f"Start of simulation    : {model_time_variables.simulation_start_datetime}")
+    log.info(f"End of simulation      : {model_time_variables.simulation_end_datetime}")
+    log.info(f"Number of timesteps    : {model_time_variables.n_time_steps}")
+    match config.end_of_simulation:
+        case time.NumTimeSteps():
+            log.info("Running mode           : num_timesteps")
+        case time.RelativeTime():
+            log.info("Running mode           : relative_time")
+        case time.AbsoluteTime():
+            log.info("Running mode           : absolute_time")
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
-    log.info(f"Statistics enabled     : {config.enable_statistics_output}")
-    log.info(f"Number of tracers      : {config.ntracer}")
+    log.info(f"Prepare advection      : {config.do_prep_adv}")
+    log.info(f"Initial diffusion      : {config.diffuse_before_time_loop}")
+    log.info(f"Statistics enabled     : {config.enable_statistics_logging}")
+    log.info(f"Active tracers         : {tracer_config}")
     log.info("")
 
     log.info("==== Vertical Grid Parameters ====")
@@ -573,9 +674,8 @@ def configure_logging(
     )
     driver_module_name = __name__[: __name__.rindex(".")]
     logging.getLogger("icon4py.model").setLevel(_LOGGING_LEVELS[logging_level])
-    # TODO (ongchia): not ideal to import testing_config.DRIVER_LOGGING_LEVEL, waiting for proper logging config
     logging.getLogger(driver_module_name).setLevel(
-        _LOGGING_LEVELS[testing_config.DRIVER_LOGGING_LEVEL]
+        _LOGGING_LEVELS.get(DRIVER_LOGGING_LEVEL, logging.DEBUG)
     )
     logging.getLogger("filelock").setLevel(logging.WARNING)
     logging.getLogger("factory.generate").setLevel(logging.WARNING)

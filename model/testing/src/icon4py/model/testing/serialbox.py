@@ -8,7 +8,7 @@
 import functools
 import logging
 from collections.abc import Sequence
-from typing import Final, Literal, TypeAlias
+from typing import Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -20,25 +20,18 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, model_backends, type_alias
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
+from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 
 
 log = logging.getLogger(__name__)
 
-TimeIndex: TypeAlias = Literal[0, 1]
-FourIndex: TypeAlias = Literal[0, 1, 2, 3]
-TwoIndex: TypeAlias = Literal[0, 1]
-
-#: ICON default indices for the tracers, see mo_advection_utils.f90
-QV: Final[int] = 0
-QC: Final[int] = 1
-QI: Final[int] = 2
-QR: Final[int] = 3
-QS: Final[int] = 4
-QG: Final[int] = 5
+type TimeIndex = Literal[0, 1]
+type FourIndex = Literal[0, 1, 2, 3]
+type TwoIndex = Literal[0, 1]
 
 
-TracerIndex: TypeAlias = Literal[QV, QC, QI, QR, QS, QG]
+type TracerIndex = Literal[QV, QC, QI, QR, QS, QG]
 
 
 class IconSavepoint:
@@ -156,6 +149,7 @@ class IconSavepoint:
 class IconGridSavepoint(IconSavepoint):
     def __init__(
         self,
+        *,
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         grid_id: str,
@@ -680,10 +674,14 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("nudgecoeff_e", dims.EdgeDim)
 
     def pos_on_tplane_e_x(self):
-        return self._get_field("pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim)[:, 0:2]
+        return self._get_field(
+            "pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim, slice_=(slice(None), slice(0, 2))
+        )
 
     def pos_on_tplane_e_y(self):
-        return self._get_field("pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim)[:, 0:2]
+        return self._get_field(
+            "pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim, slice_=(slice(None), slice(0, 2))
+        )
 
     def rbf_vec_coeff_e(self):
         return self._get_field("rbf_vec_coeff_e", dims.EdgeDim, dims.E2C2EDim, transpose=(1, 0))
@@ -718,10 +716,10 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("rbf_vec_idx_v", dims.VertexDim, dims.V2EDim)
 
     def lsq_pseudoinv_1(self):
-        return self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.LsqCDim)
+        return self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.C2E2CDim)
 
     def lsq_pseudoinv_2(self):
-        return self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.LsqCDim)
+        return self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.C2E2CDim)
 
 
 class MetricSavepoint(IconSavepoint):
@@ -1832,8 +1830,14 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
     def vn_now(self):
         return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
+    def w_now(self):
+        return self._get_field("w_now", dims.CellDim, dims.KDim)
+
     def theta_v_now(self):
         return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+    def tracer_now(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers_now", ntracer, (dims.CellDim, dims.KDim))
 
 
 class IconGraupelSavepoint(IconSavepoint):
@@ -1961,6 +1965,7 @@ class TopographySavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
+        *,
         backend: gtx_typing.Backend | None,
         fname_prefix,
         path=".",
@@ -2002,8 +2007,8 @@ class IconSerialDataProvider:
     def from_savepoint_grid(self, grid_id: str, grid_params: icon.GridParams) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
-            savepoint,
-            self.serializer,
+            sp=savepoint,
+            ser=self.serializer,
             grid_id=grid_id,
             size=self.grid_size,
             grid_params=grid_params,

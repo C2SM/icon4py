@@ -12,18 +12,44 @@ import os
 import re
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Final, Literal, TypeAlias
+from typing import Final, Literal, TypedDict, get_args
 
 import nox
 
 
 # -- nox configuration --
-nox.options.default_venv_backend = "uv"
+def _use_active_venv() -> bool:
+    """Return True when nox should run in the active Python environment."""
+    return os.environ.get("ICON4PY_NOX_USE_ACTIVE_VENV") == "1"
+
+
 nox.options.sessions = ["test_model", "test_tools_and_bindings"]
+nox.options.default_venv_backend = "uv"
+
+
+class _VenvBackendKwargs(TypedDict, total=False):
+    venv_backend: str
+
+
+# When running inside the already-active project venv, avoid creating per-session
+# venvs. Applied only to test sessions; benchmark/bencher sessions keep their
+# default uv backend.
+_VENV_BACKEND_KWARG: Final[_VenvBackendKwargs] = (
+    {"venv_backend": "none"} if _use_active_venv() else {}
+)
+NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
+
+_rank = (
+    os.environ.get("PMI_RANK")
+    or os.environ.get("OMPI_COMM_WORLD_RANK")
+    or os.environ.get("SLURM_PROCID")
+)
+if _rank is not None:
+    nox.options.envdir = f".nox/mpi-rank-{_rank}"
 
 
 # -- Parameter sets --
-ModelSubpackagePath: TypeAlias = Literal[
+type ModelSubpackagePath = Literal[
     "atmosphere/advection",
     "atmosphere/diffusion",
     "atmosphere/dycore",
@@ -34,22 +60,27 @@ ModelSubpackagePath: TypeAlias = Literal[
     "testing",
 ]
 MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
-    nox.param(arg, id=arg.split("/")[-1]) for arg in ModelSubpackagePath.__args__
+    nox.param(arg, id=arg.split("/")[-1]) for arg in get_args(ModelSubpackagePath.__value__)
 ]
 
-ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
-MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
-    nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
+type ModelTestsSubset = Literal["datatest", "stencils", "basic"]
+MODEL_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
+    nox.param(arg, id=arg, tags=[arg]) for arg in get_args(ModelTestsSubset.__value__)
 ]
-SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+# Stencil tests are by definition serial
+MODEL_MPI_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
+    nox.param(arg, id=arg, tags=[arg])
+    for arg in get_args(ModelTestsSubset.__value__)
+    if arg != "stencils"
+]
+type ToolsBindingsTestsSubset = Literal["datatest", "unittest"]
+TOOLS_BINDINGS_TESTS_SUBSETS: Final[Sequence[nox.Param]] = [
+    nox.param(arg, id=arg, tags=[arg]) for arg in get_args(ToolsBindingsTestsSubset.__value__)
+]
+SUPPORTED_PYTHON_VERSIONS: Final[Sequence[str]] = ["3.12", "3.13", "3.14"]
 
 
 # -- nox sessions --
-#: This should just be `pytest.ExitCode.NO_TESTS_COLLECTED` but `pytest`
-#: is not guaranteed to be available in the venv where `nox` is running.
-NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
-
-
 # Model benchmark sessions
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
@@ -144,7 +175,7 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
 # Model test sessions
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, **_VENV_BACKEND_KWARG)
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_TESTS_SUBSETS)
 def test_model(
@@ -154,16 +185,52 @@ def test_model(
     _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
+    success_codes = (
+        [0] if "--collect-only" in session.posargs else [0, NO_TESTS_COLLECTED_EXIT_CODE]
+    )
     with session.chdir(f"model/{subpackage}"):
         session.run(
             *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
+            "tests",
             *session.posargs,
-            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+            success_codes=success_codes,
         )
 
 
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+# MPI test session. Per-rank venv isolation is handled automatically by setting
+# nox.options.envdir to ".nox/mpi-rank-<rank>" at import time when an MPI
+# rank variable is present. Note that the session assumes that MPI is wrapped
+# around the nox call; nox will not call mpirun or srun itself.
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, **_VENV_BACKEND_KWARG)
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+@nox.parametrize("selection", MODEL_MPI_TESTS_SUBSETS)
+def test_model_mpi(
+    session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath
+) -> None:
+    """Run MPI tests for selected icon4py model subpackages."""
+    _install_session_venv(session, extras=["all"], groups=["test"])
+
+    pytest_args = _selection_to_pytest_args(selection)
+    success_codes = (
+        [0] if "--collect-only" in session.posargs else [0, NO_TESTS_COLLECTED_EXIT_CODE]
+    )
+    with session.chdir(f"model/{subpackage}"):
+        session.run(
+            "pytest",
+            "-sv",
+            "--benchmark-disable",
+            "-n0",
+            "--only-mpi",
+            "-k mpi_tests",
+            *pytest_args,
+            "tests",
+            *session.posargs,
+            success_codes=success_codes,
+        )
+
+
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, **_VENV_BACKEND_KWARG)
 @nox.parametrize("selection", ["basic"])
 def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
     session.notify(f"test_model-{session.python}(selection='{selection}', subpackage='testing')")
@@ -171,31 +238,35 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
 
 # Bindings test sessions (includes py2fgen tool tests)
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
-@nox.parametrize(
-    "datatest",
-    [
-        nox.param(True, id="datatest", tags=["datatest"]),
-        nox.param(
-            False,
-            id="unittest",
-        ),
-    ],
-)
-def test_tools_and_bindings(session: nox.Session, datatest: bool) -> None:
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, **_VENV_BACKEND_KWARG)
+@nox.parametrize("selection", TOOLS_BINDINGS_TESTS_SUBSETS)
+def test_tools_and_bindings(session: nox.Session, selection: ToolsBindingsTestsSubset) -> None:
     """Run tests for the Fortran bindings and integration tools."""
     _install_session_venv(
         session, extras=["fortran", "io", "testing", "profiling"], groups=["test"]
     )
 
-    datatest_flag = "--datatest-only" if datatest else "--datatest-skip"
+    datatest_flag = "--datatest-only" if selection == "datatest" else "--datatest-skip"
     pytest_base = f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {datatest_flag}"
-    if not datatest:
-        # tools/ has no datatest-marked tests, so skip it in datatest mode
+    success_codes = (
+        [0] if "--collect-only" in session.posargs else [0, NO_TESTS_COLLECTED_EXIT_CODE]
+    )
+    if selection == "unittest":
+        # tools/ only has unit tests, so skip it in datatest mode
         with session.chdir("tools"):
-            session.run(*pytest_base.split(), *session.posargs)
+            session.run(
+                *pytest_base.split(),
+                "tests",
+                *session.posargs,
+                success_codes=success_codes,
+            )
     with session.chdir("bindings"):
-        session.run(*pytest_base.split(), *session.posargs)
+        session.run(
+            *pytest_base.split(),
+            "tests",
+            *session.posargs,
+            success_codes=success_codes,
+        )
 
 
 # -- utils --
@@ -206,6 +277,9 @@ def _install_session_venv(
     groups: Sequence[str] = (),
 ) -> None:
     """Install session packages using uv."""
+    if _use_active_venv():
+        return
+
     # TODO(egparedes): remove this workaround once `backend` parameter is added to sessions
     if env_extras := os.environ.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", ""):
         extras = [*extras, *re.split(r"\W+", env_extras)]

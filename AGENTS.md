@@ -131,15 +131,15 @@ uv run --group test --frozen pytest -n0 <paths>
 
 Registered by `icon4py.model.testing.pytest_hooks` (auto-loaded via `addopts`):
 
-| Option                            | Description                                                              |
-| --------------------------------- | ------------------------------------------------------------------------ |
-| `--datatest-only`                 | Run only `@pytest.mark.datatest` tests                                   |
-| `--datatest-skip`                 | Skip all datatests                                                       |
-| `--backend <name>`                | GT4Py backend (default: roundtrip; others: gtfn_cpu, gtfn_gpu, embedded) |
-| `--grid <name>`                   | Grid to use                                                              |
-| `--enable-mixed-precision`        | Switch from double to mixed-precision                                    |
-| `--level {any,unit,integration}`  | Filter by `@pytest.mark.level` marker                                    |
-| `--skip-stenciltest-verification` | Skip verification of StencilTest against reference outputs               |
+| Option                                      | Description                                                                       |
+| ------------------------------------------- | --------------------------------------------------------------------------------- |
+| `--datatest-only`                           | Run only `@pytest.mark.datatest` tests                                            |
+| `--datatest-skip`                           | Skip all datatests                                                                |
+| `--backend <name>`                          | GT4Py backend (default: roundtrip; others: gtfn_cpu, gtfn_gpu, embedded)          |
+| `--grid <name>`                             | Grid to use                                                                       |
+| `--enable-mixed-precision`                  | Switch from double to mixed-precision                                             |
+| `--level {any,unit,integration,validation}` | Filter by `@pytest.mark.level` marker. `any` (default) excludes validation tests. |
+| `--skip-stenciltest-verification`           | Skip verification of StencilTest against reference outputs                        |
 
 ### Test directory convention
 

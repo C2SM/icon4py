@@ -11,26 +11,15 @@ from __future__ import annotations
 import copy
 import dataclasses
 import pathlib
-from typing import TYPE_CHECKING, Final
+from typing import Final
 
-from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
-    single_moment_six_class_gscp_graupel as graupel,
-)
-from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
-from icon4py.model.common.interpolation import interpolation_factory
-from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import config
 
 
-if TYPE_CHECKING:
-    from icon4py.model.atmosphere.diffusion import diffusion
-    from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
-
-
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
-NAMELIST_ICON_FNAME: Final = "NAMELIST_ICON_output_atm"
 GRID_DATA_DIR: Final = "grids"
 EXPERIMENT_DATA_DIR: Final = "experiments"
 MUPHYS_DATA_DIR: Final = "muphys"
@@ -45,7 +34,7 @@ def grids_path() -> pathlib.Path:
     return config.TEST_DATA_PATH.joinpath(GRID_DATA_DIR)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class GridDescription:
     name: str
     description: str
@@ -162,32 +151,23 @@ class Grids:
     )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ExperimentDescription:
     name: str
     long_name: str
     grid: GridDescription
-    version: int = 3
-
-
-@dataclasses.dataclass
-class ExperimentConfig:
-    driver: driver_config.DriverConfig
-    vertical_grid: v_grid.VerticalGridConfig
-    nonhydrostatic: solve_nh.NonHydrostaticConfig
-    diffusion: diffusion.DiffusionConfig
-    metrics: metrics_factory.MetricsConfig
-    interpolation: interpolation_factory.InterpolationConfig
-    graupel: graupel.SingleMomentSixClassIconGraupelConfig
+    version: int = 5
 
 
 @dataclasses.dataclass
 class Experiment:
     description: ExperimentDescription
-    _config: ExperimentConfig
+    _config: driver_config.ExperimentConfig
 
     def __init__(
-        self, experiment_description: ExperimentDescription, experiment_config: ExperimentConfig
+        self,
+        experiment_description: ExperimentDescription,
+        experiment_config: driver_config.ExperimentConfig,
     ) -> None:
         self.description = experiment_description
         self._config = experiment_config
@@ -201,7 +181,7 @@ class Experiment:
         return self.description.grid
 
     @property
-    def config(self) -> ExperimentConfig:
+    def config(self) -> driver_config.ExperimentConfig:
         # Return a deep copy so that tests cannot mutate the shared cached config.
         return copy.deepcopy(self._config)
 
@@ -210,6 +190,11 @@ class Experiments:
     EXCLAIM_APE: Final = ExperimentDescription(
         name="exclaim_ape_R02B04",
         long_name="EXCLAIM Aquaplanet experiment",
+        grid=Grids.R02B04_GLOBAL,
+    )
+    EXCLAIM_APE_AES: Final = ExperimentDescription(
+        name="exclaim_ape_aesPhys",
+        long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
         grid=Grids.R02B04_GLOBAL,
     )
     MCH_CH_R04B09: Final = ExperimentDescription(

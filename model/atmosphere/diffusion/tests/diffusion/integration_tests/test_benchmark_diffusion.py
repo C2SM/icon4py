@@ -40,7 +40,7 @@ from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-def test_diffusion_benchmark(
+def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     geometry_field_source: grid_geometry.GridGeometry,
     grid_manager: gm.GridManager,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
@@ -53,17 +53,17 @@ def test_diffusion_benchmark(
 
     config = diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
+        apply_to_vertical_wind=True,
+        apply_to_horizontal_wind=True,
         type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
         type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
         hdiff_efdt_ratio=24.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
-        zdiffu_t=False,
-        velocity_boundary_diffusion_denom=150.0,
+        apply_zdiffusion_t=False,
+        velocity_boundary_diffusion_denominator=150.0,
         max_nudging_coefficient=0.375,
-        n_substeps=5,
+        ndyn_substeps=5,
         shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 

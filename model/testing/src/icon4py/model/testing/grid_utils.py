@@ -19,6 +19,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
 
 
@@ -96,24 +97,34 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
 
 
 def get_grid_geometry(
-    backend: gtx_typing.Backend | None, experiment: definitions.Experiment
+    backend: gtx_typing.Backend | None,
+    grid: definitions.GridDescription,
+    experiment_config: driver_config.ExperimentConfig,
 ) -> geometry.GridGeometry:
-    register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
+    register_name = "_".join(
+        (
+            grid.name,
+            data_alloc.backend_name(backend),
+            str(experiment_config.geometry.use_analytical_means),
+        )
+    )
 
     def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = get_grid_manager_from_identifier(
-            experiment.grid,
-            num_levels=experiment.config.vertical_grid.num_levels,
+            grid,
+            num_levels=experiment_config.vertical_grid.num_levels,
             keep_skip_values=True,
             allocator=model_backends.get_allocator(backend),
         )
         return geometry.GridGeometry(
-            gm.grid,
-            gm.decomposition_info,
-            backend,
-            gm.coordinates,
-            gm.geometry_fields,
-            geometry_attrs.attrs,
+            grid=gm.grid,
+            decomposition_info=gm.decomposition_info,
+            backend=backend,
+            coordinates=gm.coordinates,
+            extra_fields=gm.geometry_fields,
+            metadata=geometry_attrs.attrs,
+            config=experiment_config.geometry,
+            process_props=decomposition.SingleNodeProcessProperties(),
             exchange=decomposition.single_node_exchange,
         )
 
