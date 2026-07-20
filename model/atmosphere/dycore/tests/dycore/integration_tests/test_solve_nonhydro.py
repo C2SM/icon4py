@@ -1470,6 +1470,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
         end_edge_nudging=end_edge_nudging,
+        end_edge_local=end_edge_local,
         end_edge_halo=end_edge_halo,
         horizontal_start=gtx.int32(0),
         horizontal_end=gtx.int32(end_edge_halo_level_2),

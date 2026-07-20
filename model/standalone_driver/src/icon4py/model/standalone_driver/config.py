@@ -24,7 +24,13 @@ from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
-from icon4py.model.common import initial_condition, time, topography, type_alias as ta
+from icon4py.model.common import (
+    initial_condition,
+    prescribed_tendencies,
+    time,
+    topography,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file
@@ -78,13 +84,23 @@ class DriverConfig:
     profiling_stats: ProfilingStats | None
     dtime: time.RelativeTime
     start_of_simulation: time.AbsoluteTime
+    start_of_timestepping: time.AbsoluteTime  # = start_of_simulation for an initial run; start_of_simulation < start_of_timestepping < end_of_simulation when restarting
     end_of_simulation: time.EndOfSimulation
     output_path: pathlib.Path = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: bool = False
+    do_prep_adv: bool = False  # lprep_adv in fortran
+    diffuse_before_time_loop: bool = False
     vertical_cfl_threshold: ta.wpfloat = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
     enable_output: bool = False
+
+    def __post_init__(self) -> None:
+        if self.start_of_timestepping < self.start_of_simulation:
+            raise ValueError(
+                f"the time loop cannot start at {self.start_of_timestepping}, before the "
+                f"beginning of the simulation ({self.start_of_simulation})."
+            )
 
     @classmethod
     def from_fortran_dict(
@@ -104,21 +120,35 @@ class DriverConfig:
         )
         start_datetime_str = master_time_control_nml["experimentstartdate"]
         end_datetime_str = master_time_control_nml["experimentstopdate"]
+        is_testcase = run_nml["ltestcase"]
+        start_of_simulation = datetime.datetime.fromisoformat(
+            start_datetime_str.replace("Z", "+00:00")
+        )
         return cls(
             experiment_name=master_model_nml["model_namelist_filename"]
             .removeprefix("NAMELIST_")
             .removesuffix("_sb_atm"),
             dtime=dtime,
-            start_of_simulation=datetime.datetime.fromisoformat(
-                start_datetime_str.replace("Z", "+00:00")
-            ),
+            start_of_simulation=start_of_simulation,
+            # the time loop starts at the beginning of the simulation; a restart overrides it
+            start_of_timestepping=start_of_simulation,
             end_of_simulation=datetime.datetime.fromisoformat(
                 end_datetime_str.replace("Z", "+00:00")
             ),
             # apply_extra_second_order_divdamp does not have a namelist
             # variable in fortran. It is coded as follows in mo_nh_stepping.f90:
             # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)
-            apply_extra_second_order_divdamp=not run_nml.get("ltestcase", False),
+            apply_extra_second_order_divdamp=not is_testcase,
+            # mo_nh_stepping.f90 (integrate_nh), where linit_dyn is only true at the first
+            # time step of a simulation that is not a restart, and both ldynamics and
+            # lhdiff_vn are checked by the driver against its granules:
+            # IF (ldynamics .AND. .NOT.ltestcase .AND. linit_dyn(jg) .AND.
+            #     diffusion_config(jg)%lhdiff_vn .AND. init_mode /= MODE_IAU)
+            # The incremental analysis update (MODE_IAU) is not implemented in ICON4Py.
+            diffuse_before_time_loop=not is_testcase,
+            # lprep_adv is 'ltransport .OR. (n_childdom > 0 .AND. grf_intmethod_e == 6)' in
+            # mo_nh_stepping.f90. ICON4Py has no nested domains, so it is ltransport.
+            do_prep_adv=run_nml["ltransport"],
             vertical_cfl_threshold=ta.wpfloat(str(nonhydrostatic_nml["vcfl_threshold"])),
             ndyn_substeps=nonhydrostatic_nml["ndyn_substeps"],
             **overrides,
@@ -133,12 +163,32 @@ class ExperimentConfig:
     vertical_grid: v_grid.VerticalGridConfig
     topography: topography.TopographyConfig
     initial_condition: initial_condition.InitialConditionConfig
+    prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
     tracer_config: tracer_state.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
+
+    def __post_init__(self) -> None:
+        # The file-based initial condition needs the clock of the driver to know which
+        # savepoint to read: the initial state, or the state of a later time step when
+        # restarting. 'with_overrides' rebuilds the config, so the two stay in sync.
+        initial_condition_config = self.initial_condition.config
+        if isinstance(initial_condition_config, from_file.FromFileConfig):
+            initial_condition_config.start_of_simulation = self.driver.start_of_simulation
+            initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
+            initial_condition_config.dtime = self.driver.dtime
+
+        if self.driver.diffuse_before_time_loop and not (
+            self.nonhydrostatic is not None
+            and self.diffusion is not None
+            and self.diffusion.apply_to_horizontal_wind
+        ):
+            object.__setattr__(
+                self, "driver", dataclasses.replace(self.driver, diffuse_before_time_loop=False)
+            )
 
     def with_overrides(self, **overrides: Any) -> ExperimentConfig:
         replacements: dict[str, Any] = {}
@@ -216,8 +266,23 @@ def read_experiment_config_from_fortran(
         else None
     )
 
+    profiling_stats = ProfilingStats() if enable_profiling else None
+    driver_cfg = DriverConfig.from_fortran_dict(
+        atm_dict=atm_dict,
+        master_dict=master_dict,
+        profiling_stats=profiling_stats,
+        enable_statistics_output=enable_statistics_output,
+    )
+
+    # the file-based initial condition needs the clock of the driver to know which
+    # savepoint to read: the initial state, or a later one when restarting
     initial_condition_cfg = initial_condition.InitialConditionConfig.from_fortran_dict(
-        atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
+        atm_dict=atm_dict,
+        input_dict=input_dict,
+        data_path=config_file_path,
+        start_of_simulation=driver_cfg.start_of_simulation,
+        start_of_timestepping=driver_cfg.start_of_timestepping,
+        dtime=driver_cfg.dtime,
     )
 
     if not do_tracer_advection and isinstance(
@@ -227,14 +292,6 @@ def read_experiment_config_from_fortran(
             initial_condition_cfg,
             config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
         )
-
-    profiling_stats = ProfilingStats() if enable_profiling else None
-    driver_cfg = DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict,
-        master_dict=master_dict,
-        profiling_stats=profiling_stats,
-        enable_statistics_output=enable_statistics_output,
-    )
 
     return ExperimentConfig(
         geometry=geometry_cfg,
@@ -248,6 +305,9 @@ def read_experiment_config_from_fortran(
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         initial_condition=initial_condition_cfg,
+        prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
+            atm_dict=atm_dict, data_path=config_file_path
+        ),
         driver=driver_cfg,
     )
 
