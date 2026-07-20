@@ -12,18 +12,24 @@ cd $ICON4PY_GIT_ROOT
 source $ICON4PY_GIT_ROOT/amd_scripts/setup_env.sh
 
 # Install uv locally
-export PATH="$PWD/bin:$PATH"
-if [ ! -x "$PWD/bin/uv" ]; then
-    curl -LsSf https://astral.sh/uv/install.sh | UV_UNMANAGED_INSTALL="$PWD/bin" sh
-else
-    echo "# uv already installed at $PWD/bin/uv"
-fi
+# export PATH="$PWD/bin:$PATH"
+# if [ ! -x "$PWD/bin/uv" ]; then
+#     curl -LsSf https://astral.sh/uv/install.sh | UV_UNMANAGED_INSTALL="$PWD/bin" sh
+# else
+#     echo "# uv already installed at $PWD/bin/uv"
+# fi
 
 # Install icon4py, gt4py, DaCe and other basic dependencies using uv
-uv sync --extra rocm7 --python $(which python3.12)
+export GHEX_USE_GPU=ON
+export GHEX_GPU_TYPE=AMD
+export GHEX_GPU_ARCH="gfx942"
+export GHEX_TRANSPORT_BACKEND=MPI
+export MPICH_CXX=$(which g++)
+export MPICH_CC=$(which gcc)
+uv sync --no-binary-package mpi4py --extra all --extra distributed --extra rocm7 --python $(which python) --refresh --active
 
 # Activate virtual environment
-source .venv/bin/activate
+# source .venv/bin/activate
 
 # Install the requirements for rocprofiler-compute so we can run the profiler from the same environment.
 # Auto-detect under /user-environment/ — versioned spack hash differs per uenv, so glob.
