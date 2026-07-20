@@ -101,6 +101,19 @@ class BoxCase:
 
     Every state bundle's `npoints` must agree (single-column consistency,
     see module docstring) -- validated in `__post_init__`.
+
+    `thil`/`qtp`: OPTIONAL ground-truth `thil`/`qtp` (theta_il / total
+    water), `(npoints,)` each, both `None` by default. When a case is built
+    from a real dumped `ref_data.MicroRecord` (`case_from_micro_record`),
+    these carry that record's OWN `trpv_thil`/`trpv_qtp` -- the values
+    Fortran's `moistthermo2_scale` actually computed and the dump captured,
+    ground truth for that replayed column, not merely `run_box`'s own
+    recomputation of the same formula (see `run_box`'s own docstring for
+    why recomputing risks tiny divergence from the ground-truth dumped
+    values). Left `None` for synthetic cases with no dumped ground truth
+    (every hand-built `BoxCase` in this repo's own tests) -- `run_box`
+    falls back to its own `core.packing.moistthermo_mask`-derived `thp`/
+    `qtp` in that case, unchanged prior behavior.
     """
 
     thermo: ThermoState
@@ -110,6 +123,8 @@ class BoxCase:
     config: AmpsConfig
     dt: float
     n_steps: int
+    thil: np.ndarray | None = None
+    qtp: np.ndarray | None = None
 
     def __post_init__(self) -> None:
         npoints = {
@@ -118,6 +133,10 @@ class BoxCase:
             "ice": self.ice.npoints,
             "aerosol": self.aerosol.npoints,
         }
+        if self.thil is not None:
+            npoints["thil"] = int(np.asarray(self.thil).shape[0])
+        if self.qtp is not None:
+            npoints["qtp"] = int(np.asarray(self.qtp).shape[0])
         if len(set(npoints.values())) != 1:
             raise ValueError(
                 f"BoxCase state bundles must share the same npoints (single-column "
@@ -166,10 +185,7 @@ def run_box(
     `implementations.warm_loop.run_warm_micro_tendency` (which additionally
     needs `thil`/`qtp`, the per-column scalars G1 §1
     (`docs/superpowers/facts/m2/micro-tendency-orchestration.md`) threads
-    through `cal_micro_tendency` -- `BoxCase` does not carry them;
-    `case_from_micro_record`'s own docstring explicitly does not map the
-    record's `trpv_thil`/`trpv_qtp` fields, leaving this the open bridge
-    this function closes):
+    through `cal_micro_tendency`):
 
     1. Derive `thil`/`qtp` (and a cloudy-mask-passed `liquid`) via
        `core.packing.moistthermo_mask` (F4 SS3.2,
@@ -177,7 +193,24 @@ def run_box(
        `moistthermo2_scale`'s own "qc/qr/qi bin partition + cloudy mask +
        thil/qtp diagnosis") from `case.thermo`/`liquid`/`ice` -- the SAME
        algorithm that produces the Fortran's own `trpv_thil`/`trpv_qtp` in
-       the first place, not an approximation of it.
+       the first place, not an approximation of it. The masked `liquid`
+       (bin-partitioned by `moistthermo_mask`) and its `qi` ice-mass check
+       (step 2 below) are ALWAYS used, regardless of `thil`/`qtp`'s source
+       below -- ONLY the `thil`/`qtp` scalars themselves have a second
+       source. If `case.thil`/`case.qtp` are set (`case_from_micro_record`
+       populates them from a real dumped `MicroRecord`'s OWN
+       `trpv_thil`/`trpv_qtp` -- Fortran's `moistthermo2_scale` output,
+       captured at dump time, GROUND TRUTH for that column, not this
+       function's own recomputation of the same formula), those dumped
+       values are used for the warm-loop state's `thil`/`qtp` INSTEAD of
+       `moistthermo_mask`'s recomputed `thp`/`qtp` -- avoiding even tiny
+       floating-point divergence from ground truth right at the start of a
+       replayed step, which would otherwise poison per-call validation
+       (`tests/amps/integration_tests/test_warm_replay.py`). A synthetic
+       `case` with no dumped ground truth (`case.thil`/`case.qtp` both
+       `None`, every hand-built `BoxCase` in this repo's own tests) falls
+       back to the recomputed `mask.thp`/`mask.qtp`, unchanged prior
+       behavior.
     2. If the derived `qi` (total ice mixing ratio) is nonzero anywhere,
        raise `NotImplementedError`: an ice-bearing/mixed-phase column is
        M3 scope -- `WarmLoopState` has no ice group to advance it with, so
@@ -270,12 +303,23 @@ def run_box(
             "('warm') cases run today, via implementations.warm_loop."
         )
 
+    # `case.thil`/`case.qtp`, when set, are the DUMPED ground-truth values
+    # (`case_from_micro_record` populates them from a real MicroRecord's own
+    # `trpv_thil`/`trpv_qtp` -- Fortran's `moistthermo2_scale` output,
+    # captured at dump time) -- preferred over `mask.thp`/`mask.qtp`'s own
+    # recomputation of that same formula, to avoid poisoning per-call replay
+    # validation with tiny recomputation divergence (see this function's own
+    # docstring). `None` (every synthetic, non-replay `case`) falls back to
+    # the recomputed values, unchanged prior behavior.
+    thil = case.thil if case.thil is not None else mask.thp
+    qtp = case.qtp if case.qtp is not None else mask.qtp
+
     state = warm_loop.WarmLoopState(
         thermo=case.thermo,
         liquid=mask.liquid,
         aerosol=case.aerosol,
-        thil=mask.thp,
-        qtp=mask.qtp,
+        thil=thil,
+        qtp=qtp,
         mes_rc=np.zeros(case.thermo.npoints, dtype=np.int64),
     )
     # Parity with `ifc_warm`'s own 5-step sequence (that function's own
@@ -398,6 +442,18 @@ def case_from_micro_record(
       `momz_col`); see module docstring. Defaulted to zero rather than
       guessed, since it is not consumed by any process a micro-phase
       record represents.
+    * `thil = rec.trpv_thil`, `qtp = rec.trpv_qtp` -- direct copies, GROUND
+      TRUTH: `moistthermo2_scale` computes `thil`/`qtp` in Fortran and the
+      dump is captured AFTER that call, so these are the values `ifc_cloud_
+      micro`'s own warm loop actually ran with, not this port's own
+      recomputation of the same formula. `run_box` uses them directly for
+      the warm-loop state's `thil`/`qtp` (in place of `core.packing.
+      moistthermo_mask`'s recomputed `thp`/`qtp`) -- see that function's own
+      docstring for why: recomputing risks tiny divergence from ground
+      truth right at the start of every replayed step, which would poison
+      per-call validation. `moistthermo_mask` is STILL called and STILL
+      used for its `liquid` bin-partition + `qi` ice-mass guard -- only the
+      `thil`/`qtp` SOURCE changes for a record-built case.
     * `config`: caller-supplied; defaults to `AmpsConfig.cloudlab()` since
       every M0 dump comes from the cloudlab reference run.
     * `dt = rec.dt` -- the record's own captured microphysics-substep `dt`.
@@ -532,4 +588,9 @@ def case_from_micro_record(
         config=config,
         dt=rec.dt,
         n_steps=n_steps,
+        # Ground-truth thil/qtp -- see docstring above and BoxCase's/run_box's
+        # own docstrings for why these are threaded through directly rather
+        # than left for run_box's moistthermo_mask to recompute.
+        thil=np.asarray(rec.trpv_thil, dtype=np.float64),
+        qtp=np.asarray(rec.trpv_qtp, dtype=np.float64),
     )

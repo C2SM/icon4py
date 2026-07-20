@@ -34,7 +34,10 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.config import AmpsConfig
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import index_maps
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.constants import AmpsConst
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.core.packing import get_thermo_prop
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.driver import box, ref_data
+from icon4py.model.atmosphere.subgrid_scale_physics.amps.implementations import warm_loop
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.state import ThermoProp, ThermoState
 
 
@@ -547,6 +550,16 @@ class TestCaseFromMicroRecord:
         assert np.array_equal(case.ice.values, rec.qipvm)
         assert np.array_equal(case.aerosol.values, rec.qapvm)
 
+        # `case.thil`/`case.qtp` carry the record's OWN dumped `trpv_thil`/
+        # `trpv_qtp` -- ground truth captured AFTER Fortran's own
+        # `moistthermo2_scale` call, direct copies, NOT run through any
+        # recomputation here (`run_box`'s own `core.packing.moistthermo_mask`
+        # call is the sole recomputation path, and only used as a fallback
+        # when these are `None` -- see `box.py`'s module/BoxCase/run_box
+        # docstrings).
+        assert np.array_equal(case.thil, rec.trpv_thil)
+        assert np.array_equal(case.qtp, rec.trpv_qtp)
+
         thermo = case.thermo
         # ptotv/moist_denv are CGS-canonicalized here (state.py's own UNIT
         # CONTRACT note, this function being one of ThermoState's two ONLY
@@ -616,6 +629,165 @@ class TestCaseFromMicroRecord:
         rec = dataclasses.replace(_make_pre_micro_record(), ncr=2)
         with pytest.raises(ValueError, match="ncr"):
             box.case_from_micro_record(rec)
+
+
+# ---------------------------------------------------------------------------
+# run_box uses the record's OWN dumped trpv_thil/trpv_qtp (ground truth,
+# captured AFTER Fortran's moistthermo2_scale call), not a recomputation of
+# them -- the fix this module's tests were extended for. `_make_pre_micro_
+# record`'s tiny (nbr=3) bin grid is fine for the field-mapping-only checks
+# above, but running the REAL warm loop end-to-end needs a cloudlab-shaped
+# (40 liquid bins) case, so a dedicated ice-free fixture is used here,
+# mirroring `test_warm_replay.py`'s own `_supersaturated_box_case` scenario
+# (same T/qv/CCN population, proven to run `run_box` cleanly with no
+# ice-nucleation-gap workarounds needed) but built FROM a `MicroRecord`
+# (via `case_from_micro_record`) instead of a hand-built `BoxCase`.
+# ---------------------------------------------------------------------------
+
+
+def _make_cloudlab_pre_micro_record_ice_free(
+    *,
+    nmic: int = 1,
+    trpv_thil_offset: float = 7.5,
+    trpv_qtp_offset: float = 2.0e-3,
+) -> ref_data.MicroRecord:
+    """A cloudlab-shaped (40 liquid bins), ice-free, phase=1 `MicroRecord`
+    whose `trpv_thil`/`trpv_qtp` are DELIBERATELY offset from what
+    `core.packing.moistthermo_mask` would recompute from `qvvm`/`tvm`/
+    `ptotvm` alone: with all-zero liquid/ice (this fixture's own `qrpvm`/
+    `qipvm`), `moistthermo_mask`'s `thp`/`qtp` reduce to `thv`/`qvvm`
+    exactly (`qc=qr=qi=0` in its formula) -- so a non-zero offset here makes
+    `rec.trpv_thil`/`rec.trpv_qtp` UNAMBIGUOUSLY distinguishable from the
+    recomputed values, letting a test assert `run_box` used the DUMPED ones
+    without that assertion being trivially true either way.
+
+    `tvm`/`ptotvm` reuse `test_warm_replay.py`'s `_supersaturated_box_case`
+    scenario (`ptotv_pa == SCALE_PRE00` exactly, so `thv == tv == 280.0`
+    with no Exner-ratio arithmetic to duplicate here) and its own CCN
+    population, both already proven (by that file's own
+    `TestRunBoxSyntheticSmoke`) to run `run_box` end-to-end with no
+    ice-nucleation-gap `allow_*_placeholder` workarounds needed.
+    """
+    liq_nbins = 40  # AmpsConfig.cloudlab()'s own num_h_bins[0]
+    nbi, nba = 2, 1  # ice/aerosol bin counts -- unconstrained by LUTs here,
+    # see test_warm_replay.py's own ice/aerosol fixtures for the same choice
+    npr, npi, npa = len(index_maps.LiquidPPV), len(index_maps.IcePPV), len(index_maps.AerosolPPV)
+
+    ptotv_pa = float(AmpsConst.p00) / 10.0  # == SCALE_PRE00 exactly -> thv == tv
+    tv = 280.0
+    qv = 1.15e-2  # supersaturated at (p00, 280K), same as _supersaturated_box_case
+    thv = tv  # exact, since ptotv_pa == SCALE_PRE00 (Exner ratio == 1)
+
+    ap = index_maps.AerosolPPV
+    qapvm = np.zeros((npa, nba, 1, nmic), dtype=np.float64)
+    qapvm[ap.amt_q.py_idx, 0, 0, :] = 3.164e-13
+    qapvm[ap.acon_q.py_idx, 0, 0, :] = 300.0
+    qapvm[ap.ams_q.py_idx, 0, 0, :] = 3.164e-13
+
+    return ref_data.MicroRecord(
+        rank=0,
+        phase=ref_data.MicroRecord.PHASE_PRE,
+        TIME_AMPS=0,
+        i=0,
+        j=0,
+        isect=1,
+        nmic=nmic,
+        npr=npr,
+        nbr=liq_nbins,
+        ncr=1,
+        npi=npi,
+        nbi=nbi,
+        nci=1,
+        npa=npa,
+        nba=nba,
+        nca=1,
+        mxnbin=liq_nbins,
+        istrt=1,
+        jseed=1,
+        ifrst=0,
+        isect_seed=1,
+        nextn=1,
+        dt=1.0,
+        kmicvm=np.arange(1, 1 + nmic, dtype=np.int32),
+        qcvm=np.zeros(nmic),
+        v3v=np.zeros(nmic),
+        qvvm=np.full(nmic, qv),
+        moist_denvm=np.full(nmic, 1.2),  # SI kg/m^3 -> CGS 1.2e-3 g/cm^3
+        ptotvm=np.full(nmic, ptotv_pa),
+        tvm=np.full(nmic, tv),
+        wbvm=np.zeros(nmic),
+        trpv_thil=np.full(nmic, thv + trpv_thil_offset),
+        trpv_qtp=np.full(nmic, qv + trpv_qtp_offset),
+        qrpvm=np.zeros((npr, liq_nbins, 1, nmic), dtype=np.float64),
+        qipvm=np.zeros((npi, nbi, 1, nmic), dtype=np.float64),
+        qapvm=qapvm,
+    )
+
+
+class TestRunBoxUsesDumpedThilQtp:
+    def test_run_box_uses_dumped_thil_qtp_not_recomputed(self, monkeypatch):
+        rec = _make_cloudlab_pre_micro_record_ice_free()
+        case = box.case_from_micro_record(rec)
+
+        # Sanity (see fixture docstring): the dumped values are DISTINCT
+        # from what moistthermo_mask would recompute for this all-zero-
+        # liquid/ice case (thp -> thv, qtp -> qvv exactly) -- otherwise this
+        # test could pass vacuously even if run_box silently ignored
+        # case.thil/case.qtp.
+        recomputed_thp = get_thermo_prop(case.thermo, ThermoProp.thv)
+        recomputed_qtp = get_thermo_prop(case.thermo, ThermoProp.qvv)
+        assert not np.allclose(rec.trpv_thil, recomputed_thp)
+        assert not np.allclose(rec.trpv_qtp, recomputed_qtp)
+
+        # Spy on _refresh_state (the first thing run_box calls after
+        # building its initial WarmLoopState, box.py's own docstring) to
+        # capture the thil/qtp it was actually seeded with, then delegate to
+        # the real implementation so run_box's own behavior is unaffected.
+        captured: dict[str, np.ndarray] = {}
+        original_refresh_state = warm_loop._refresh_state
+
+        def _spy_refresh_state(state, config, luts):
+            captured.setdefault("thil", np.array(state.thil))
+            captured.setdefault("qtp", np.array(state.qtp))
+            return original_refresh_state(state, config, luts)
+
+        monkeypatch.setattr(warm_loop, "_refresh_state", _spy_refresh_state)
+
+        box.run_box(case)
+
+        assert "thil" in captured, "run_box never reached _refresh_state"
+        np.testing.assert_array_equal(captured["thil"], rec.trpv_thil)
+        np.testing.assert_array_equal(captured["qtp"], rec.trpv_qtp)
+
+    def test_run_box_falls_back_to_recomputed_thil_qtp_for_synthetic_case(self, monkeypatch):
+        """Backward-compatibility companion to the test above: a `BoxCase`
+        with no dumped ground truth (`thil`/`qtp` both `None`, the same
+        `case_from_micro_record`-free construction every synthetic test in
+        this repo uses) must still fall back to `core.packing.
+        moistthermo_mask`'s recomputed `thp`/`qtp` -- unchanged prior
+        behavior."""
+        rec = _make_cloudlab_pre_micro_record_ice_free()
+        case = box.case_from_micro_record(rec)
+        synthetic_case = dataclasses.replace(case, thil=None, qtp=None)
+
+        recomputed_thp = get_thermo_prop(synthetic_case.thermo, ThermoProp.thv)
+        recomputed_qtp = get_thermo_prop(synthetic_case.thermo, ThermoProp.qvv)
+
+        captured: dict[str, np.ndarray] = {}
+        original_refresh_state = warm_loop._refresh_state
+
+        def _spy_refresh_state(state, config, luts):
+            captured.setdefault("thil", np.array(state.thil))
+            captured.setdefault("qtp", np.array(state.qtp))
+            return original_refresh_state(state, config, luts)
+
+        monkeypatch.setattr(warm_loop, "_refresh_state", _spy_refresh_state)
+
+        box.run_box(synthetic_case)
+
+        assert "thil" in captured, "run_box never reached _refresh_state"
+        np.testing.assert_array_equal(captured["thil"], recomputed_thp)
+        np.testing.assert_array_equal(captured["qtp"], recomputed_qtp)
 
 
 # ---------------------------------------------------------------------------
