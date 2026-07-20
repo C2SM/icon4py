@@ -186,8 +186,7 @@ variables:
         # multi-rank results on GPU; production runs keep the GPU solve.
         ICON4PY_DETERMINISTIC_RBF_COEFFS: "1"
         CXXFLAGS: "-ffp-contract=off"
-        # GPU reproducibility flags (no-op on CPU backends where the related
-        # tooling is unused):
+        # GPU reproducibility flags:
         #   NVCC_APPEND_FLAGS: disable FMA contraction (GPU counterpart of
         #     -ffp-contract=off) and pin IEEE-compliant division/sqrt.
         #   CUPY_ACCELERATORS: disable CUB/cuTENSOR so CuPy uses its own
