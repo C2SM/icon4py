@@ -9,10 +9,12 @@
 from __future__ import annotations
 
 import functools
+import os
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 import pytest
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 
 if TYPE_CHECKING:
@@ -338,3 +340,6 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
     )
+
+    if gtx_metrics.sources:
+        gtx_metrics.dump_json("dycore_gt4py_program_metrics.json")

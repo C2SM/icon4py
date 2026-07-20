@@ -53,6 +53,17 @@ def get_dace_options(
     # due to it falling into a less optimized code generation (on santis).
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
+    # TODO(AMD): For now disable problematic `hipMallocAsync` calls on each GT4Py Program call that have high runtime variability.
+    #            Needs to be fixed for realistic simulations due to increased memory footprint of persistent memory.
+    if backend_descriptor["device"] == model_backends.DeviceType.ROCM:
+        optimization_args["gpu_memory_pool"] = False
+        optimization_args["make_persistent"] = True
+        # AMD MI300A: (256,1,1) for 2D maps gives ~20% speedup on the solver.
+        # All threads on Cell dimension maximizes coalescing on MI300A.
+        optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
+        # Setting a block size of (256,1,1) for 1D maps doesn't give a significant
+        # speedup on MI300A but it doesn't hurt either
+        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
         if not is_rocm_device:
