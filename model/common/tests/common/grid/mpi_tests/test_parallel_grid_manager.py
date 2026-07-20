@@ -353,11 +353,6 @@ def _compare_interpolation_fields_single_multi_rank(
     field = multi_rank_interpolation.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
-    # Default tolerances cover the GPU runtime computation of the rbf (and
-    # pos_on_tplane) coefficients, which is not bitwise decomposition
-    # independent (batched cupy.linalg.solve). With
-    # ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE (plus reproducible compiler flags
-    # and ICON4PY_DETERMINISTIC_RBF_COEFFS) the comparison is bitwise.
     atol, rtol = test_utils.get_mpi_comparison_tolerance(
         backend,
         atol=3e-9
