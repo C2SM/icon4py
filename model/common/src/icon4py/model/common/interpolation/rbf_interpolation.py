@@ -8,7 +8,6 @@
 
 import enum
 import math
-from types import ModuleType
 
 import gt4py.next as gtx
 from gt4py.next import astype
@@ -296,18 +295,6 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
             return u, v, array_ns.zeros_like(u)
 
 
-def _solve_rbf_systems(
-    mat_batch: data_alloc.NDArray,
-    rhs_batch: data_alloc.NDArray,
-    array_ns: ModuleType,
-) -> data_alloc.NDArray:
-    # rhs_batch is expanded to 3D so both numpy and cupy treat it as a
-    # batched column vector (core dims (nv, 1)) rather than a matrix
-    # (core dims (B, nv)), which would mismatch m=nv from the LHS.
-    # This problem is well explained in https://github.com/numpy/numpy/issues/26598
-    return array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
-
-
 def _compute_rbf_interpolation_coeffs(
     *,
     element_center_lat: data_alloc.NDArray,
@@ -455,11 +442,17 @@ def _compute_rbf_interpolation_coeffs(
         mat_batch = z_rbfmat[array_ns.ix_(group_idx, valid_cols, valid_cols)]
         for j in range(num_zonal_meridional_components):
             rhs_batch = rhs[j][array_ns.ix_(group_idx, valid_cols)]
+            # array_ns.linalg.solve supports batched inputs: mat_batch (B, nv, nv),
+            # rhs_batch (B, nv, 1). The solution of mat_batch x = rhs_batch is sol.
+            # rhs_batch is expanded to 3D so both numpy and cupy treat it as a
+            # batched column vector (core dims (nv,1)) rather than a matrix
+            # (core dims (B, nv)), which would mismatch m=nv from the LHS.
+            # This problem is well explained in https://github.com/numpy/numpy/issues/26598
             # The RBF matrix is symmetric and positive definite. However,
             # the Cholesky method is not chosen, as in ICON, simply because scipy
             # does not support batched solving of the linear equation,
             # necessitating a Python loop and resulting in poor performance.
-            sol = _solve_rbf_systems(mat_batch, rhs_batch, array_ns)
+            sol = array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
             rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
 
     rbf_vec_coeff = tuple(rbf_vec_coeff)
