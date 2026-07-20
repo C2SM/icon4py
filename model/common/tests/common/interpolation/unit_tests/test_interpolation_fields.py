@@ -453,32 +453,21 @@ def test_compute_lsq_coeffs(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    c2e2c = icon_grid.get_connectivity(dims.C2E2C).ndarray
-    cell_owner_mask = grid_savepoint.c_owner_mask().ndarray
-    cell_center_x = grid_savepoint.cell_center_cart_x().ndarray
-    cell_center_y = grid_savepoint.cell_center_cart_y().ndarray
-    cell_lat = grid_savepoint.cell_center_lat().ndarray
-    cell_lon = grid_savepoint.cell_center_lon().ndarray
-    domain_length = experiment.grid.params.domain_length
-    domain_height = experiment.grid.params.domain_height
-    start_idx = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    min_rlcell_int = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-
     lsq_pseudoinv = compute_lsq_coeffs(
-        cell_center_x=cell_center_x,
-        cell_center_y=cell_center_y,
-        cell_lat=cell_lat,
-        cell_lon=cell_lon,
-        c2e2c=c2e2c,
-        cell_owner_mask=cell_owner_mask,
-        domain_length=domain_length,
-        domain_height=domain_height,
+        cell_center_x=grid_savepoint.cell_center_cart_x().ndarray,
+        cell_center_y=grid_savepoint.cell_center_cart_y().ndarray,
+        cell_lat=grid_savepoint.cell_center_lat().ndarray,
+        cell_lon=grid_savepoint.cell_center_lon().ndarray,
+        c2e2c=icon_grid.get_connectivity(dims.C2E2C).ndarray,
+        cell_owner_mask=grid_savepoint.c_owner_mask().ndarray,
+        domain_length=experiment.grid.params.domain_length,
+        domain_height=experiment.grid.params.domain_height,
         grid_sphere_radius=constants.EARTH_RADIUS,
         lsq_dim_unk=experiment.config.interpolation.lsq_dim_unk,
         lsq_dim_c=experiment.config.interpolation.lsq_dim_c,
         lsq_wgt_exp=experiment.config.interpolation.lsq_wgt_exp,
-        start_idx=start_idx,
-        min_rlcell_int=min_rlcell_int,
+        start_idx=icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
+        min_rlcell_int=icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
         geometry_type=icon_grid.grid_params.geometry_type,
         exchange=decomposition.single_node_exchange,
     )

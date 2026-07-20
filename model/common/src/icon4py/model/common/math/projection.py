@@ -59,16 +59,30 @@ def compute_cell_distance_on_torus(
     domain_length: float,
     domain_height: float,
 ) -> data_alloc.NDArray:
+    """
+    Compute Cartesian distance between two points, assuming periodic boundary condition.
+
+    gnomonic_proj
+    Args:
+        source_cell_x: x coordinate of source cell
+        source_cell_y: y coordinate of source cell
+        target_cell_x: x coordinate of target cell
+        target_cell_y: y coordinate of target cell
+        domain_length: domain length of the periodic domain
+        domain_height: domain height of the periodic domain
+    Returns:
+        x- and y- distance between the two points, taking into account periodicity
+    """
     array_ns = data_alloc.array_namespace(source_cell_x)
     x_diff = target_cell_x - source_cell_x
     y_diff = target_cell_y - source_cell_y
     x_diff = array_ns.where(
-        domain_length - array_ns.abs(x_diff) > array_ns.abs(x_diff),
+        domain_length - array_ns.abs(x_diff) >= array_ns.abs(x_diff),
         x_diff,
         x_diff - array_ns.sign(x_diff) * domain_length,
     )
     y_diff = array_ns.where(
-        domain_height - array_ns.abs(y_diff) > array_ns.abs(y_diff),
+        domain_height - array_ns.abs(y_diff) >= array_ns.abs(y_diff),
         y_diff,
         y_diff - array_ns.sign(y_diff) * domain_height,
     )
