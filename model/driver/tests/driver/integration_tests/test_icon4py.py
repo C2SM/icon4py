@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
@@ -267,7 +267,7 @@ def test_run_timeloop_single_step(
     )
 
     current_index, next_index = (1, 0) if not linit else (0, 1)
-    nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
+    nonhydro_diagnostic_state = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),

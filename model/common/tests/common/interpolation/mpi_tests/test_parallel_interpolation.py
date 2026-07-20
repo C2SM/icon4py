@@ -213,7 +213,7 @@ def test_distributed_interpolation_rbf(  # noqa: PLR0917 [too-many-positional-ar
     field = factory.get(attrs_name)
     dim = field.domain.dims[0]
     assert test_utils.dallclose(
-        field.asnumpy(), field_ref.asnumpy(), atol=RBF_TOLERANCES[dim][experiment.name]
+        field.asnumpy(), field_ref.asnumpy(), atol=RBF_TOLERANCES[dim][experiment.description]
     )
 
 

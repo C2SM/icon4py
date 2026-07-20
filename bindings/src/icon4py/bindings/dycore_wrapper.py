@@ -19,7 +19,7 @@ Fortran granule interfaces:
 import dataclasses
 import logging
 from collections.abc import Callable
-from typing import Annotated, TypeAlias
+from typing import Annotated
 
 import gt4py.next as gtx
 import numpy as np
@@ -35,6 +35,7 @@ from icon4py.bindings import (
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
+from icon4py.model.common.states import nonhydro_states
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 from icon4py.tools import py2fgen
@@ -290,7 +291,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
         gtx.wait_for_compilation()
 
 
-NumpyFloatArray1D: TypeAlias = Annotated[
+type NumpyFloatArray1D = Annotated[
     np.ndarray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -377,7 +378,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
     max_vcfl = data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)
 
-    diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+    diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=max_vcfl,
         theta_v_at_cells_on_half_levels=theta_v_ic,
         perturbed_exner_at_cells_on_model_levels=exner_pr,

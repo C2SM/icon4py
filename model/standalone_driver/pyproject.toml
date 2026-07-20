@@ -15,8 +15,6 @@ classifiers = [
   'Programming Language :: Python',
   'Programming Language :: Python :: 3',
   'Programming Language :: Python :: 3 :: Only',
-  'Programming Language :: Python :: 3.10',
-  'Programming Language :: Python :: 3.11',
   'Programming Language :: Python :: 3.12',
   'Programming Language :: Python :: 3.13',
   'Programming Language :: Python :: 3.14',
@@ -30,19 +28,17 @@ dependencies = [
   "icon4py-atmosphere-dycore~=0.2.0",
   "icon4py-atmosphere-diffusion~=0.2.0",
   "icon4py-common[io]~=0.2.0",
-  "icon4py-testing~=0.2.0",  # TODO(): remove this dependency when driver is fully standalone
   # external dependencies
   "typer>=0.20.0",
   "devtools>=0.12",
   "gt4py==1.1.11",
-  "packaging>=20.0",
-  "serialbox4py>=2.6.2"  # needed to read IC from file until IO is done
+  "packaging>=20.0"
 ]
 description = "ICON model driver."
 license = {text = "BSD-3 License"}
 name = "icon4py-standalone_driver"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 # managed by bump-my-version:
 version = "0.2.0"
 
