@@ -31,7 +31,7 @@ dependencies = [
   # external dependencies
   "typer>=0.20.0",
   "devtools>=0.12",
-  "gt4py==1.1.11",
+  "gt4py==1.1.12",
   "packaging>=20.0"
 ]
 description = "ICON model driver."
