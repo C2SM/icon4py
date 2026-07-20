@@ -13,12 +13,15 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
 
-from icon4py.model.common.utils import fortran_config
-from icon4py.model.standalone_driver.initial_condition import from_file as from_file_ic
-from icon4py.model.standalone_driver.initial_condition.analytical import (
+from icon4py.model.common import time
+from icon4py.model.common.initial_condition import from_file as from_file_ic
+from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
 )
+from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
+from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.utils import fortran_config
 
 
 if TYPE_CHECKING:
@@ -26,8 +29,11 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
-    from icon4py.model.common.states import prognostic_state as prognostics
-    from icon4py.model.standalone_driver import driver_states
+    from icon4py.model.common.states import (
+        nonhydro_states,
+        prognostic_state as prognostics,
+        static_fields,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -43,15 +49,20 @@ class InitialConditionConfig:
         atm_dict: dict[str, Any],
         input_dict: dict[str, Any],
         data_path: pathlib.Path,
+        start_of_simulation: time.AbsoluteTime,
+        start_of_timestepping: time.AbsoluteTime,
+        dtime: time.RelativeTime,
     ) -> InitialConditionConfig:
-        run_nml = atm_dict.get("run_nml", {})
-        if not run_nml.get("ltestcase", False):
-            ntracer = fortran_config.list_to_value(run_nml.get("ntracer", 0))
+        run_nml = atm_dict["run_nml"]
+        if not run_nml["ltestcase"]:
             log.info("Reading initial condition from file")
             return cls(
                 config=from_file_ic.FromFileConfig(
                     data_path=data_path / fortran_config.SER_DATA_SUBDIR,
-                    ntracer=ntracer,
+                    start_of_simulation=start_of_simulation,
+                    start_of_timestepping=start_of_timestepping,
+                    dtime=dtime,
+                    ntracer=fortran_config.list_to_value(run_nml["ntracer"]),
                 ),
             )
 
@@ -89,13 +100,20 @@ def create(
     config: InitialConditionConfig,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
-    static_fields: driver_states.StaticFieldFactories,
+    static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
+    solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
 ) -> None:
-    """Fill a PrognosticState by dispatching on the type of ``config.config``."""
+    """
+    Fill the prognostic state by dispatching on the type of ``config.config``.
+
+    The perturbed exner function of the dycore is initialized too, when its diagnostic
+    state is given: diagnosed from the initial state, or, when restarting, read from the
+    serialized data together with the advective tendencies of the previous time step.
+    """
     match config.config:
         case jw_ic.JablonowskiWilliamsonConfig():
             jw_ic.jablonowski_williamson(
@@ -119,7 +137,21 @@ def create(
                 exchange=exchange,
             )
         case from_file_ic.FromFileConfig():
-            from_file_ic.read_from_file(
+            if config.config.is_restart:
+                if solve_nonhydro_diagnostic_state is None:
+                    raise ValueError(
+                        "restarting needs the diagnostic state of the dycore to initialize."
+                    )
+                from_file_ic.read_restart_from_file(
+                    config=config.config,
+                    grid=grid,
+                    prognostic_state_now=prognostic_state_now,
+                    solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+                    backend=backend,
+                    exchange=exchange,
+                )
+                return
+            from_file_ic.read_initial_condition_from_file(
                 config=config.config,
                 grid=grid,
                 prognostic_state_now=prognostic_state_now,
@@ -128,3 +160,16 @@ def create(
             )
         case _:
             raise TypeError(f"Unknown initial conditions config type: {type(config.config)!r}")
+
+    if solve_nonhydro_diagnostic_state is not None:
+        # exner_pr, diagnosed from the initial state (compute_exner_pert in mo_nh_stepping.f90)
+        gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
+            field_a=prognostic_state_now.exner,
+            field_b=static_fields.metrics.get(metrics_attributes.EXNER_REF_MC),
+            output_field=solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            vertical_start=0,
+            vertical_end=grid.num_levels,
+            offset_provider={},
+        )
