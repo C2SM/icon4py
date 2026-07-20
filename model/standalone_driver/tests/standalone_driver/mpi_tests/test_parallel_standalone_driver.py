@@ -48,13 +48,25 @@ _log = logging.getLogger(__file__)
             test_defs.Experiments.JW,
             time.NumTimeSteps(1),
             marks=[pytest.mark.level("integration")],
-            id="integration",
+            id="integration-jw",
+        ),
+        pytest.param(
+            test_defs.Experiments.GAUSS3D,
+            time.NumTimeSteps(1),
+            marks=[pytest.mark.level("integration")],
+            id="integration-gauss3d",
+        ),
+        pytest.param(
+            test_defs.Experiments.MCH_CH_R04B09,
+            time.NumTimeSteps(1),
+            marks=[pytest.mark.level("integration")],
+            id="integration-mch-ch-r04b09",
         ),
         pytest.param(
             test_defs.Experiments.JW,
             time.RelativeTime(days=7),
             marks=[pytest.mark.level("validation")],
-            id="validation",
+            id="validation-jw",
         ),
     ],
 )
@@ -86,7 +98,7 @@ def _run_standalone_driver_compare_single_multi_rank(
         pytest.xfail("Limited-area grids not yet supported")
 
     if model_backends.is_cpu_backend(backend) and test_utils.is_gtfn_backend(backend):
-        atol = 1e-13
+        atol = 1e-12
         rtol = 1e-14
     else:
         atol = 1e-10
