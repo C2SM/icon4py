@@ -136,17 +136,19 @@ largest single table).
   interpolated point recomputed independently from the transcribed
   formula.
 
-## Known limitation (BLOCKED, follow-up task needed)
+## Formerly-blocked item, now resolved (M2b Task 6)
 
 - **Low-List breakup fragment table VALUES** (`bu_fd`/`bu_tmass`,
-  `core/lookup_tables.py`'s `make_breakup_fragment_tables`): still
-  zero-filled (allocation/sizing only). Per coordinator authorization, the
-  call chain beyond F3's quoted `cal_breakfragment` was followed directly
-  in the Fortran; it requires 13 additional named routines across 6 files
-  (mod_amps_core.F90, class_Group.F90, class_Mass_Bin.F90,
-  class_AirGroup.F90, class_Thermo_Var.F90, mod_amps_utility.F90),
-  roughly 1200-1400 lines even trimmed to only the liquid/spherical
-  branches actually exercised -- well past this task's transcription
-  budget. See the M1 Task 5 report's "Item 1: breakup fragment tables --
-  BLOCKED" section for the full routine-by-routine call-tree inventory
-  (each with its file:line range), tracked as a scoped follow-up task.
+  `core/lookup_tables.py`'s `make_breakup_fragment_tables`): **REAL fill
+  ported in M2b Task 6** (commit `3ae71e2fb`). No longer zero-filled and
+  no longer an `allow_placeholder` opt-in — `make_breakup_fragment_tables`
+  now computes the real Low-List fragment distribution (`cal_breakfragment`
+  driver, `mod_amps_lib.F90:1831-2017`, F3 SS5.5) and returns
+  `is_placeholder=False`. The call chain that was previously deferred (13
+  routines across 6 files -- mod_amps_core.F90, class_Group.F90,
+  class_Mass_Bin.F90, class_AirGroup.F90, class_Thermo_Var.F90,
+  mod_amps_utility.F90, ~1200-1400 lines trimmed to the liquid/spherical
+  branches) was followed and ported for the liquid path. Historical
+  call-tree inventory (each routine with its file:line range) remains in
+  the M1 Task 5 report's "Item 1: breakup fragment tables -- BLOCKED"
+  section.

@@ -87,9 +87,13 @@ the full citation):
    (`sedimentation-terminalvel.md`) itself only NAMES `get_vip` at a
    different call site, never quotes it -- so this is a genuine missing
    upstream prerequisite, not a truncated-citation gap this task's ground
-   truth can resolve. Matching this codebase's own precedent
-   (`core/lookup_tables.py`'s `make_breakup_fragment_tables`,
-   `allow_placeholder=True` opt-in + `is_placeholder` result flag),
+   truth can resolve. Matching the opt-in placeholder pattern this
+   codebase used for the M1/M2a-era zero-filled breakup tables
+   (`core/lookup_tables.py`'s `make_breakup_fragment_tables` -- since
+   SUPERSEDED by the M2b Task 6 real `cal_breakfragment` fill, so that
+   routine no longer takes an `allow_placeholder` opt-in and always
+   returns `is_placeholder=False`; the `is_placeholder` result-flag
+   convention lives on),
    `func_icevap_vec` raises `NotImplementedError` when the partial-melt
    -shed branch is actually reached UNLESS the caller passes
    `allow_shed_placeholder=True`, in which case `m_shed` is treated as 0

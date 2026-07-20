@@ -36,9 +36,31 @@ Paths below are relative to this package root
 | `src/.../amps/core/vapor_deposition.py`     | Liquid condensation/evaporation growth (`vapor_deposition_liquid`): Chen & Lamb (1994) semidiscrete growth, the full `cal_lincubprms_vec` linear/cubic mass-space bin remap, and aerosol/vapor diversion on evaporation.                                                                                                                  |
 | `src/.../amps/core/repair.py`               | Post-substep budget closure, both independent phases: `repair_liquid` (af_col, per-bin mass/concentration non-negativity, `cal_mass_budget_col`/`cal_con_budget_col`) and `repair_vapor` (af_vap, point-level vapor-supply closure, `cal_mass_budget_vapor`).                                                                             |
 
-Status: M2a (warm-phase activation+condensation+liquid diagnosis) complete;
-per-call replay validation pending reference dumps; M2b (collection+breakup)
-next.
+## Module map (M2b additions -- warm-phase: rain-rain collection + collisional breakup)
+
+| Module                                      | Purpose                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/.../amps/core/collision_kernel.py`     | Collision efficiency (`drpdrp` bilinear lookup-table gather) and the stochastic-collection rate matrix (rain-rain, per-VOLUME basis).                                                                                                                                                                                                     |
+| `src/.../amps/core/coalescence.py`          | `coalesce_rain`: the rain-rain (`token 1-1`) bin-pair collection engine -- real `collector_loop1` (H/F/LM rate categorization + sub-bin PDF multi-bin scatter reusing `cal_lincubprms_vec`), with `iter_loop1` `used_marker` fixed-point mass conservation. Operates per-VOLUME (`x den` in / `/ den` out).                                 |
+| `src/.../amps/core/breakup.py`              | Low-List (1982) collisional-breakup RUNTIME (`ibreak==1`): consumes the fragment tables and redistributes fragments across bins.                                                                                                                                                                                                          |
+| `src/.../amps/core/breakfragment.py`        | Low-List (1982) collisional-breakup fragment-table GENERATOR (`cal_breakfragment`, `mod_amps_lib.F90:1831-2017`) -- the real `bu_fd`/`bu_tmass` fill (Marshall-Palmer `%len`), replacing the M1/M2a zero-filled placeholder.                                                                                                                |
+| `src/.../amps/codegen/collection_gen.py`    | DSL-source-string builder for the collection (coalescence) rate-matrix kernel -- emits SPLIT operators (M0 gate: <=8 bins/op; monolithic 40-bin gtfn compile is NO-GO).                                                                                                                                                                    |
+
+Status: M2b (warm-phase collection + collisional breakup) **code complete**;
+wired into `implementations/warm_loop.py`'s operator-split loop (rain-rain
+coalescence + Low-List breakup, gated on `config.rain_rain_coalescence` /
+`config.rain_collisional_breakup`); 798 tests pass. Per-call warm-dump
+replay validation is **BLOCKED**, not passing: the reference dump's mass
+fields (`rmt_q`) validate exactly against the dump's own `qcvm`, but its
+NUMBER/aerosol PPVs (`rcon_q`/`rmat_q`/`rmas_q`) are uniformly trace
+(max `rcon_q` ~1e-9 #/g, ~14 orders below physical), traced to the Fortran
+number-PPV dump side (under diagnosis by the scale_amps author). Open
+fast-follows clustered on degenerate-`con` collection handling (a
+`counter(n)>0`-gate isolating test, the `mean_mass<=binb[-1]` ceiling's
+production necessity, and a degenerate-`con` robustness blow-up) are held
+pending trustworthy reference number data -- see the scale_amps
+`fortran-mapping.md` M2b divergences and `.superpowers/sdd/progress.md`.
+M2c (sedimentation) next.
 
 See also, in the scale_amps repository: the design spec
 (`docs/superpowers/specs/2026-07-16-amps-icon4py-port-design.md`) and the
