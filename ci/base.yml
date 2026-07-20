@@ -203,10 +203,6 @@ variables:
         NVCC_APPEND_FLAGS: "--fmad=false -prec-div=true -prec-sqrt=true --ptxas-options=--opt-level=0"
         CUPY_ACCELERATORS: ""
         CUBLAS_WORKSPACE_CONFIG: ":4096:8"
-        # Override the .test_template_aarch64 default ("persistent") so the
-        # cache is scoped to this session, ensuring kernels are freshly
-        # compiled.
-        GT4PY_BUILD_CACHE_LIFETIME: "session"
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'
         # TODO(msimberg): Use shared partition when time limit can be set to at
