@@ -50,40 +50,26 @@ def gnomonic_proj(
     return array_ns.column_stack((x, y)) * sphere_radius
 
 
-def compute_cell_distance_on_torus(
+def diff_on_edges_torus_numpy(
     *,
-    source_cell_x: data_alloc.NDArray,
-    source_cell_y: data_alloc.NDArray,
-    target_cell_x: data_alloc.NDArray,
-    target_cell_y: data_alloc.NDArray,
+    cc_cv_x: float,
+    cc_cv_y: float,
+    cc_cell_x: float,
+    cc_cell_y: float,
     domain_length: float,
     domain_height: float,
-) -> data_alloc.NDArray:
-    """
-    Compute Cartesian distance between two points, assuming periodic boundary condition.
+) -> tuple[float, float]:
+    if abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length:
+        x1 = cc_cell_x
+    elif cc_cv_x > cc_cell_x:
+        x1 = cc_cell_x + domain_length
+    else:
+        x1 = cc_cell_x - domain_length
 
-    gnomonic_proj
-    Args:
-        source_cell_x: x coordinate of source cell
-        source_cell_y: y coordinate of source cell
-        target_cell_x: x coordinate of target cell
-        target_cell_y: y coordinate of target cell
-        domain_length: domain length of the periodic domain
-        domain_height: domain height of the periodic domain
-    Returns:
-        x- and y- distance between the two points, taking into account periodicity
-    """
-    array_ns = data_alloc.array_namespace(source_cell_x)
-    x_diff = target_cell_x - source_cell_x
-    y_diff = target_cell_y - source_cell_y
-    x_diff = array_ns.where(
-        domain_length - array_ns.abs(x_diff) >= array_ns.abs(x_diff),
-        x_diff,
-        x_diff - array_ns.sign(x_diff) * domain_length,
-    )
-    y_diff = array_ns.where(
-        domain_height - array_ns.abs(y_diff) >= array_ns.abs(y_diff),
-        y_diff,
-        y_diff - array_ns.sign(y_diff) * domain_height,
-    )
-    return array_ns.column_stack((x_diff, y_diff))
+    if abs(cc_cell_y - cc_cv_y) <= 0.5 * domain_height:
+        y1 = cc_cell_y
+    elif cc_cv_y > cc_cell_y:
+        y1 = cc_cell_y + domain_height
+    else:
+        y1 = cc_cell_y - domain_height
+    return x1, y1

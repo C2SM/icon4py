@@ -1300,15 +1300,22 @@ def compute_lsq_coeffs(
                 )
 
         case icon_grid.GeometryType.TORUS:
-            for js in range(lsq_dim_c):
-                neighbor_center_dist[:, js, :] = projection.compute_cell_distance_on_torus(
-                    source_cell_x=cell_center_x,
-                    source_cell_y=cell_center_y,
-                    target_cell_x=cell_center_x[c2e2c[:, js]],
-                    target_cell_y=cell_center_y[c2e2c[:, js]],
-                    domain_length=domain_length,
-                    domain_height=domain_height,
-                )
+            for jc in range(start_idx, min_rlcell_int):
+                ilc_s = c2e2c[jc, :lsq_dim_c]
+                cc_cell = array_ns.zeros((lsq_dim_c, 2))
+                cc_cv = array_ns.asarray((cell_center_x[jc], cell_center_y[jc]))
+                for js in range(lsq_dim_c):
+                    cc_cell[js, :] = array_ns.asarray(
+                        projection.diff_on_edges_torus_numpy(
+                            cc_cv_x=cell_center_x[jc],
+                            cc_cv_y=cell_center_y[jc],
+                            cc_cell_x=cell_center_x[ilc_s][js],
+                            cc_cell_y=cell_center_y[ilc_s][js],
+                            domain_length=domain_length,
+                            domain_height=domain_height,
+                        )
+                    )
+                neighbor_center_dist[jc, :, :] = cc_cell - cc_cv
 
     lsq_weights_c = compute_lsq_weights_c(neighbor_center_dist, lsq_wgt_exp)
 
