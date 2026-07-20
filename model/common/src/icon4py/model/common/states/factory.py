@@ -49,7 +49,7 @@ import inspect
 import logging
 import types
 import typing
-from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, Sequence
 from types import ModuleType
 from typing import Any, Literal, Protocol, TypeVar, overload
 
@@ -268,6 +268,17 @@ class FieldSource(GridProvider, Protocol):
 
         for field in provider.fields:
             self._providers[field] = provider
+
+
+def compile_providers(
+    providers: Iterable[FieldProvider],
+    backend: gtx_typing.Backend,
+    grid_provider: GridProvider,
+) -> None:
+    """Eagerly compile every unique provider that exposes a ``compile`` method."""
+    for provider in dict.fromkeys(providers):
+        if hasattr(provider, "compile"):
+            provider.compile(backend=backend, grid_provider=grid_provider)
 
 
 class CompositeSource(FieldSource):
@@ -529,6 +540,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
             name: None for name in fields.values()
         }
         self._do_exchange = do_exchange
+        self._compiled_program: Callable[..., None] | None = None
 
     def _allocate(
         self,
@@ -600,6 +612,16 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
     def needs_exchange(self) -> bool:
         return self._do_exchange
 
+    def compile(self, *, backend: gtx_typing.Backend | None, grid_provider: GridProvider) -> None:
+        if backend is None:
+            return
+        offset_providers = self._get_offset_providers(grid_provider.grid)
+        self._compiled_program = (
+            self._func.with_backend(backend)
+            .with_compilation_options(enable_jit=False)
+            .compile(offset_provider=offset_providers)
+        )
+
     def __call__(
         self,
         *,
@@ -635,7 +657,10 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         dims = self._domain_args(grid.grid, grid.vertical_grid)
         offset_providers = self._get_offset_providers(grid.grid)
         deps.update(dims)
-        self._func.with_backend(backend)(**deps, offset_provider=offset_providers)
+        if self._compiled_program is not None:
+            self._compiled_program(**deps, offset_provider=offset_providers)
+        else:
+            self._func.with_backend(backend)(**deps, offset_provider=offset_providers)
 
     @property
     def fields(self) -> Mapping[str, state_utils.FieldType]:
