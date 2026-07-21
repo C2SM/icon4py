@@ -1,0 +1,3 @@
+shear_type: vertical_horizontal_of_horizontal_wind
+ndyn_substeps: 4
+apply_zdiffusion_t: false

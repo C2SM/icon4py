@@ -46,7 +46,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends
-from icon4py.model.common.config import options as common_conf_opt
+from icon4py.model.common.config import options as common_conf_opt, reader as cc_reader
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
@@ -65,6 +65,7 @@ Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 log = logging.getLogger(__name__)
 
 
+@cc_reader.register_enum
 class DiffusionType(int, enum.Enum):
     """
     Order of nabla operator for diffusion.
@@ -80,6 +81,7 @@ class DiffusionType(int, enum.Enum):
     SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
 
 
+@cc_reader.register_enum
 class SmagorinskyStencilType(int, enum.Enum):
     """
     Type of the reconstruction stencil for the Smagorinsky diffusion of normal wind (vn).
@@ -94,6 +96,7 @@ class SmagorinskyStencilType(int, enum.Enum):
     CELLS_AND_VERTICES = 2  #: Smagorinsky diffusion of vn with stencil on neighboring vertices (E2V) and cell centers (E2C)
 
 
+@cc_reader.register_enum
 class TemperatureDiscretizationType(int, enum.Enum):
     """
     Type of the discretization of the Smagorinsky diffusion of temperature.
@@ -106,6 +109,7 @@ class TemperatureDiscretizationType(int, enum.Enum):
     HETEROGENEOUS = 2  #: Div (K Grad(T))
 
 
+@cc_reader.register_enum
 class TurbulenceShearForcingType(int, enum.Enum):
     """
     Type of shear forcing used in turbulence.
@@ -123,6 +127,7 @@ class TurbulenceShearForcingType(int, enum.Enum):
     VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
 
 
+@cc_reader.register_enum
 class ForcingType(int, enum.Enum):
     """
     Type of physics forcing applied to the model.
