@@ -14,7 +14,7 @@ import pytest
 from gt4py.next import typing as gtx_typing
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.atmosphere.advection import advection
+from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -120,7 +120,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     experiment: test_defs.Experiment,
     process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
-    construct_advection_lsq_state: Any,
+    construct_advection_lsq_state: advection_states.AdvectionLeastSquaresState,
 ) -> None:
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
