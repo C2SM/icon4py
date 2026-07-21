@@ -109,7 +109,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    xp = data_alloc.array_namespace(theta_ref_mc)
+    xp = data_alloc.array_namespace(theta_ref_mc.ndarray)
     on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu

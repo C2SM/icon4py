@@ -213,6 +213,17 @@ module = [
 ]
 
 [[tool.mypy.overrides]]
+# GT4Py Field dim type variance: constructing Diffusion*State with concrete-dimension
+# fields is rejected by mypy even though the program accepts them at runtime.
+# NOTE: ~11 errors in bindings/diffusion_wrapper.py.
+# Per-line ignores would add ~11 lines of identical boilerplate with no
+# type-safety benefit. Module-level override kept per D6 documented-justification rule.
+disable_error_code = ["arg-type"]
+module = [
+  "icon4py.bindings.diffusion_wrapper"
+]
+
+[[tool.mypy.overrides]]
 ignore_missing_imports = true
 # dace is an optional dependency with no type stubs. Treat it as Any so the
 # muphys graupel module can be checked consistently whether dace is installed.
