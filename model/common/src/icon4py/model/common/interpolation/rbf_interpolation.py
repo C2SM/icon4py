@@ -524,6 +524,29 @@ def _compute_rbf_interpolation_coeffs_dispatch(
         )
         return tuple(array_ns.asarray(coeff) for coeff in host_coeffs)
 
+    return _compute_rbf_interpolation_coeffs(
+        element_center_lat=element_center_lat,
+        element_center_lon=element_center_lon,
+        element_center_x=element_center_x,
+        element_center_y=element_center_y,
+        element_center_z=element_center_z,
+        edge_center_x=edge_center_x,
+        edge_center_y=edge_center_y,
+        edge_center_z=edge_center_z,
+        edge_normal_x=edge_normal_x,
+        edge_normal_y=edge_normal_y,
+        edge_normal_z=edge_normal_z,
+        uv=uv,
+        rbf_offset=rbf_offset,
+        rbf_kernel=rbf_kernel,
+        geometry_type=geometry_type,
+        scale_factor=scale_factor,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+
 
 def compute_rbf_interpolation_coeffs_cell(
     *,
