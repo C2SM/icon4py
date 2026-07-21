@@ -44,16 +44,16 @@ def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
         ("PT0.5S", 0.5),
     ],
 )
-def test_timedelta_from_iso8601_valid(duration: str, expected_seconds: float) -> None:
-    assert driver_config._timedelta_from_iso8601(duration) == datetime.timedelta(
+def test_relativetime_from_iso8601_valid(duration: str, expected_seconds: float) -> None:
+    assert driver_config.relativetime_from_iso8601(duration) == datetime.timedelta(
         seconds=expected_seconds
     )
 
 
 @pytest.mark.parametrize("duration", ["", "P", "PT", "P1Y", "P1M", "300", "PT300", "P1DT", "P1WT"])
-def test_timedelta_from_iso8601_invalid(duration: str) -> None:
+def test_relativetime_from_iso8601_invalid(duration: str) -> None:
     with pytest.raises(ValueError, match="Invalid ISO 8601 duration"):
-        driver_config._timedelta_from_iso8601(duration)
+        driver_config.relativetime_from_iso8601(duration)
 
 
 def test_modeltimestep_takes_priority_over_dtime() -> None:
@@ -62,7 +62,7 @@ def test_modeltimestep_takes_priority_over_dtime() -> None:
         {"dtime": 999.0, "modeltimestep": "PT300S                          "}
     )
     config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
+        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
     )
     assert config.dtime == datetime.timedelta(seconds=300)
 
@@ -70,7 +70,7 @@ def test_modeltimestep_takes_priority_over_dtime() -> None:
 def test_empty_modeltimestep_falls_back_to_dtime() -> None:
     atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "        "})
     config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
+        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
     )
     assert config.dtime == datetime.timedelta(seconds=120)
 
@@ -83,7 +83,7 @@ def test_do_prep_adv_from_ltransport(ltransport: bool) -> None:
         {"dtime": 10.0, "modeltimestep": "  ", "ltransport": ltransport}
     )
     config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
+        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
     )
     assert config.do_prep_adv is ltransport
 
@@ -96,7 +96,7 @@ def test_diffuse_before_time_loop(ltestcase: bool) -> None:
         {"dtime": 10.0, "modeltimestep": "  ", "ltestcase": ltestcase}
     )
     config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
+        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
     )
     assert config.diffuse_before_time_loop is (not ltestcase)
     assert config.apply_extra_second_order_divdamp is (not ltestcase)
@@ -108,7 +108,7 @@ def _driver_config(
     # the experiment runs from 2000-01-01T00:00:00 to 01:00:00, with a 120 s time step
     atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "  "})
     config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_stats=None
+        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
     )
     if start_of_timestepping is None:
         return config

@@ -176,10 +176,13 @@ class Icon4pyDriver:
             self._diffuse_before_time_loop(diffusion_diagnostic_state, prognostic_states.current)
 
             for time_step in range(self.model_time_variables.n_time_steps):
-                if self.config.driver.profiling_stats is not None:
-                    if not self.config.driver.profiling_stats.skip_first_timestep or time_step > 0:
+                if self.config.driver.profiling_options is not None:
+                    if (
+                        not self.config.driver.profiling_options.skip_first_timestep
+                        or time_step > 0
+                    ):
                         gtx_config.COLLECT_METRICS_LEVEL = (
-                            self.config.driver.profiling_stats.gt4py_metrics_level
+                            self.config.driver.profiling_options.gt4py_metrics_level
                         )
 
                 log.info(
@@ -227,11 +230,11 @@ class Icon4pyDriver:
 
         self.timer_collection.show_timer_report()
         if (
-            self.config.driver.profiling_stats is not None
-            and self.config.driver.profiling_stats.gt4py_metrics_level > gtx_metrics.DISABLED
+            self.config.driver.profiling_options is not None
+            and self.config.driver.profiling_options.gt4py_metrics_level > gtx_metrics.DISABLED
         ):
             print(gtx_metrics.dumps())
-            gtx_metrics.dump_json(self.config.driver.profiling_stats.gt4py_metrics_output_file)
+            gtx_metrics.dump_json(self.config.driver.profiling_options.gt4py_metrics_output_file)
 
     def _integrate_one_time_step(
         self,
@@ -548,7 +551,7 @@ class Icon4pyDriver:
         Compute relevant statistics of prognostic variables at the beginning of every time step. The statistics include:
         absolute maximum value of rho, vn, and w, as well as the levels at which their maximum value is found.
         """
-        if self.config.driver.enable_statistics_output:
+        if self.config.driver.enable_statistics_logging:
             # TODO (Chia Rui): Do global max when multinode is ready
             rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
                 prognostic_states.rho,
@@ -577,7 +580,7 @@ class Icon4pyDriver:
     def _compute_total_mass_and_energy(
         self, prognostic_states: prognostics.PrognosticState
     ) -> None:
-        if self.config.driver.enable_statistics_output:
+        if self.config.driver.enable_statistics_logging:
             rho_ndarray = prognostic_states.rho.ndarray
             cell_area_ndarray = self.static_field_factories.geometry.get(
                 geom_attr.CELL_AREA
@@ -595,7 +598,7 @@ class Icon4pyDriver:
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
     ) -> None:
-        if self.config.driver.enable_statistics_output:
+        if self.config.driver.enable_statistics_logging:
             rho_ndarray = prognostic_states.rho.ndarray
             vn_ndarray = prognostic_states.vn.ndarray
             w_ndarray = prognostic_states.w.ndarray
