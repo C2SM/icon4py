@@ -5,7 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,7 +22,6 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_density_horizo
     integrate_tracer_density_horizontally,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
@@ -63,7 +69,7 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         z_rhofluxdiv_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

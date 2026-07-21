@@ -9,6 +9,7 @@ import dataclasses
 import functools
 import logging
 from collections.abc import Callable, Sequence
+from typing import cast
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -29,7 +30,7 @@ class HorizontalGridSize:
     num_edges: int
     num_cells: int
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__} (<num_cells = {self.num_cells}>, <num_edges={self.num_edges}>, <num_verts = {self.num_vertices})"
 
 
@@ -46,19 +47,19 @@ class GridConfig:
     keep_skip_values: bool = True
 
     @property
-    def num_levels(self):
+    def num_levels(self) -> int:
         return self.vertical_size
 
     @property
-    def num_vertices(self):
+    def num_vertices(self) -> int:
         return self.horizontal_config.num_vertices
 
     @property
-    def num_edges(self):
+    def num_edges(self) -> int:
         return self.horizontal_config.num_edges
 
     @property
-    def num_cells(self):
+    def num_cells(self) -> int:
         return self.horizontal_config.num_cells
 
 
@@ -99,7 +100,7 @@ class Grid:
         # extract sizes from connectivities
         for offset, connectivity in self.connectivities.items():
             if gtx_common.is_neighbor_table(connectivity):
-                for dim, size in zip(connectivity.domain.dims, connectivity.shape, strict=True):
+                for dim, size in zip(connectivity.domain.dims, connectivity.shape, strict=True):  # type: ignore[attr-defined]  # NeighborTable Protocol lacks shape, present at runtime
                     if dim in sizes:
                         if sizes[dim] != size:
                             raise ValueError(
@@ -135,13 +136,13 @@ class Grid:
 
     def get_connectivity(self, offset: str | gtx.FieldOffset) -> gtx_common.NeighborTable:
         """Get the connectivity by its name."""
-        if isinstance(offset, gtx.FieldOffset):
-            offset = offset.value
-        if offset not in self.connectivities:
+        name = offset.value if isinstance(offset, gtx.FieldOffset) else offset
+        assert isinstance(name, str)
+        if name not in self.connectivities:
             raise exceptions.MissingConnectivityError(
-                f"Missing connectivity for offset {offset} in grid {self.id}."
+                f"Missing connectivity for offset {name} in grid {self.id}."
             )
-        connectivity = self.connectivities[offset]
+        connectivity = self.connectivities[name]
         assert gtx_common.is_neighbor_table(connectivity)
         return connectivity
 
@@ -153,26 +154,30 @@ def construct_connectivity(
     *,
     allocator: gtx_typing.Allocator | None = None,
     replace_skip_values: bool = False,
-):
-    from_dim, dim = offset.target
+) -> gtx_common.NeighborTable:
+    target = offset.target
+    assert isinstance(target, tuple)
+    from_dim, dim = cast(tuple[gtx.Dimension, gtx.Dimension], target)
     to_dim = offset.source
     if replace_skip_values:
         _log.debug(f"Replacing skip values in connectivity for {dim} with max valid neighbor.")
         skip_value = None
         table = _replace_skip_values(dim, table)
 
-    return gtx.as_connectivity(
+    result = gtx.as_connectivity(
         [from_dim, dim],
         to_dim,
-        data=table,
+        data=table,  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol doesn't match data_alloc.NDArray union
         dtype=gtx.int32,
         skip_value=skip_value,
         allocator=allocator,
     )
+    assert gtx_common.is_neighbor_table(result)
+    return result
 
 
 def _replace_skip_values(
-    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray
+    domain: gtx.Dimension | Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     """
     Manipulate a Connectivity's neighbor table to remove invalid indices.

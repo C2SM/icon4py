@@ -91,7 +91,7 @@ def as_exchangeable_field(field: state_utils.GTXFieldType) -> Iterator[state_uti
         original_shape = field.ndarray.shape
         tail_size = original_shape[1] * original_shape[2]
         field = gtx_common._field(
-            field.ndarray.reshape(original_shape[0], -1),
+            field.ndarray.reshape(original_shape[0], -1),  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks reshape
             domain={original_dims[0]: (0, original_shape[0]), original_dims[1]: (0, tail_size)},
         )
     yield field
@@ -111,6 +111,8 @@ class NeedsExchange(Protocol):
             # hence as a simple workaround we loop over the fields
             for name, field in fields.items():
                 log.debug(f"preparing exchange of {name} - {field}")
+                if not isinstance(field, gtx.Field):
+                    continue
                 first_dim = field.domain.dims[0]
                 assert first_dim.kind == gtx.DimensionKind.HORIZONTAL, (
                     f"1st dimension {first_dim} needs to be one of {list(dims.horizontal_dims())} for exchange"
@@ -250,12 +252,12 @@ class FieldSource(GridProvider, Protocol):
                 return (
                     buffer
                     if type_ in (RetrievalType.FIELD, RetrievalType.SCALAR)
-                    else state_utils.to_data_array(buffer, self.metadata[field_name])
+                    else state_utils.to_data_array(buffer, self.metadata[field_name])  # type: ignore[arg-type]  # FieldMetaData is a TypedDict, not a MutableMapping subtype in mypy
                 )
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
 
-    def _provided_by_source(self, name) -> str:
+    def _provided_by_source(self, name: str) -> bool:
         return name in self._sources._providers or name in self._sources.metadata
 
     def register_provider(self, provider: FieldProvider) -> None:
@@ -353,7 +355,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         self._func = func
         self._dims: (
             dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...]
-        ) = domain
+        ) = domain  # type: ignore[assignment]  # DomainType TypeVar constraints don't cover mixed h_grid.Domain/v_grid.Domain
         self._dependencies = deps
         self._output = fields
         self._params = {} if params is None else params
@@ -377,7 +379,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
     def func(self) -> Callable:
         return self._func
 
-    def __call__(
+    def __call__(  # type: ignore[override]  # returns FieldType (includes NDArray) vs supertype's GTXFieldType | ScalarType
         self,
         *,
         field_name: str,
@@ -388,6 +390,8 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
             log.debug(f"computing fields  {self.fields.keys()}")
+            # runtime invariant: field computation requires a non-None source
+            assert field_src is not None, "field_src must not be None"
             self._compute(field_src, grid)
             self.exchange(self.fields, exchange)
         return self.fields[field_name]
@@ -402,7 +406,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         )
         xp = data_alloc.import_array_ns(factory.backend)
         metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields}
-        self._fields = self._allocate_fields(compute_backend, grid_provider, xp, metadata)
+        self._fields = self._allocate_fields(compute_backend, grid_provider, xp, metadata)  # type: ignore[assignment]  # FieldType vs FieldType | ScalarType | None
         # call field operator
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
@@ -412,23 +416,23 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         }
 
         providers = self._get_offset_providers(grid_provider.grid)
-        self._func(**deps, out=self._unravel_output_fields(), offset_provider=providers)
+        self._func(**deps, out=self._unravel_output_fields(), offset_provider=providers)  # type: ignore[arg-type]  # GT4Py field operator **kwargs are dynamically typed
         # transfer to target backend, the fields might have been computed on a compute backend
         for k, v in self._fields.items():
             log.debug(
                 f"transferring result {k} to target backend: "
                 f"{data_alloc.backend_name(factory.backend)}"
             )
-            self._fields[k] = data_alloc.as_field(v, allocator=factory.backend)
+            self._fields[k] = data_alloc.as_field(v, allocator=factory.backend)  # type: ignore[arg-type]  # v could be ScalarType | None, not just Field
 
-    def _unravel_output_fields(self):
-        out_fields = tuple(self._fields.values())
+    def _unravel_output_fields(self) -> Any:
+        out_fields: Any = tuple(self._fields.values())
         if len(out_fields) == 1:
             out_fields = out_fields[0]
         return out_fields
 
     # TODO(): do we need that here?
-    def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
+    def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, Any]:
         offset_providers = {}
         for dim in self._dims:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
@@ -459,9 +463,9 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         def _map_size(dim: gtx.Dimension, grids: GridProvider) -> int:
             match dim:
                 case dims.KHalfDim:
-                    return grids.vertical_grid.num_levels + 1
+                    return grids.vertical_grid.num_levels + 1  # type: ignore[union-attr]  # vertical_grid is not None for KHalfDim case
                 case dims.KDim:
-                    return grids.vertical_grid.num_levels
+                    return grids.vertical_grid.num_levels  # type: ignore[union-attr]  # vertical_grid is not None for KDim case
                 case _:
                     return grids.grid.size[dim]
 
@@ -474,9 +478,9 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
 
         def _allocate(
             grid_provider: GridProvider,
-            backend: gtx_typing.Backend,
+            backend: gtx_typing.Backend | None,
             array_ns: ModuleType,
-            dtype: state_utils.ScalarType = ta.wpfloat,
+            dtype: Any = ta.wpfloat,
         ) -> gtx.Field:
             shape = tuple(_map_size(dim, grid_provider) for dim in self._dims)
             dims = tuple(_map_dim(dim) for dim in self._dims)
@@ -519,8 +523,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         params: dict[str, state_utils.ScalarType] | None = None,
     ):
         self._func = func
-        self._compute_domain = domain
-        self._dims = domain.keys()
+        self._compute_domain: dict[gtx.Dimension, Any] = domain
+        self._dims: Any = domain.keys()
         self._dependencies = deps
         self._output = fields
         self._params = params if params is not None else {}
@@ -546,13 +550,13 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
                 return dims.KDim
             return dim
 
-        allocate = gtx.constructors.zeros.partial(allocator=backend)
+        allocate = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]  # GT4Py constructors don't expose .partial in type stubs
         field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
         return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
     # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
-    def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
+    def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, Any]:
         offset_providers = {}
         for dim in self._compute_domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
@@ -574,8 +578,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         return offset_providers
 
     def _domain_args(
-        self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid
-    ) -> dict[str : gtx.int32]:
+        self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid | None
+    ) -> dict[str, gtx.int32]:
         domain_args = {}
 
         for dim in self._compute_domain:
@@ -587,6 +591,9 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
                     }
                 )
             elif dim.kind == gtx.DimensionKind.VERTICAL:
+                assert vertical_grid is not None, (
+                    "vertical_grid must not be None for vertical-domain programs"
+                )
                 domain_args.update(
                     {
                         "vertical_start": vertical_grid.index(self._compute_domain[dim][0]),
@@ -600,7 +607,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
     def needs_exchange(self) -> bool:
         return self._do_exchange
 
-    def __call__(
+    def __call__(  # type: ignore[override]  # returns FieldType (includes NDArray) vs supertype's GTXFieldType | ScalarType
         self,
         *,
         field_name: str,
@@ -608,8 +615,10 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
-    ):
+    ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
+            # runtime invariant: field computation requires a non-None source
+            assert field_src is not None, "field_src must not be None"
             self._compute(field_src=field_src, grid=grid, backend=backend)
             self.exchange(self.fields, exchange=exchange)
         return self.fields[field_name]
@@ -627,15 +636,19 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         except (ValueError, KeyError):
             dtype = {v: ta.wpfloat for v in self._output.values()}
 
-        self._fields = self._allocate(backend, grid.grid, dtype=dtype)
+        self._fields = self._allocate(backend, grid.grid, dtype=dtype)  # type: ignore[assignment,arg-type]  # GT4Py Field type narrowing
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
         deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
-        deps.update(self._params)
-        deps.update({k: self._fields[v] for k, v in self._output.items()})
+        deps.update(self._params)  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
+        deps.update({k: self._fields[v] for k, v in self._output.items()})  # type: ignore[misc]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
+        if any(dim.kind == gtx.DimensionKind.VERTICAL for dim in self._compute_domain):
+            assert grid.vertical_grid is not None, (
+                "vertical_grid must not be None for vertical-domain programs"
+            )
         dims = self._domain_args(grid.grid, grid.vertical_grid)
         offset_providers = self._get_offset_providers(grid.grid)
-        deps.update(dims)
-        self._func.with_backend(backend)(**deps, offset_provider=offset_providers)
+        deps.update(dims)  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
+        self._func.with_backend(backend)(**deps, offset_provider=offset_providers)  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
 
     @property
     def fields(self) -> Mapping[str, state_utils.FieldType]:
@@ -687,7 +700,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self._params = params if params is not None else {}
         self._do_exchange = do_exchange
 
-    def __call__(
+    def __call__(  # type: ignore[override]  # returns FieldType (includes NDArray) vs supertype's GTXFieldType | ScalarType
         self,
         *,
         field_name: str,
@@ -721,7 +734,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
             for k, v in self._connectivities.items()
         }
         args.update(offsets)
-        args.update(self._params)
+        args.update(self._params)  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
         results = self._func(**args)
         # convert to tuple
         results = (results,) if not isinstance(results, tuple) else results
@@ -733,7 +746,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
     def _as_field(
         self, backend: gtx_typing.Backend | None, value: data_alloc.NDArray
     ) -> state_utils.GTXFieldType:
-        return gtx.as_field(tuple(self._dims), value, allocator=backend)
+        return gtx.as_field(tuple(self._dims), value, allocator=backend)  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
 
     def _validate_dependencies(self) -> None:
         # TODO(egparedes): dealing with type annotations at run-time is error prone
@@ -812,9 +825,7 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.__name__
 
 
-def dtype_or_default(
-    field_name: str, metadata: dict[str, model.FieldMetaData]
-) -> state_utils.ScalarType:
+def dtype_or_default(field_name: str, metadata: dict[str, model.FieldMetaData]) -> Any:
     return metadata[field_name].get("dtype", ta.wpfloat)
 
 

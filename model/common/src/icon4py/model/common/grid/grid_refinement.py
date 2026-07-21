@@ -176,7 +176,7 @@ def compute_domain_bounds(
     dim: gtx.Dimension,
     refinement_fields: dict[gtx.Dimension, gtx.Field],
     decomposition_info: decomposition.DecompositionInfo,
-) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
+) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:
     """
     Compute the domain bounds (start_index, end_index) based on a grid Domain.
 
@@ -247,8 +247,8 @@ def compute_domain_bounds(
         else:
             start_index = start_halo_2
             end_index = end_halo_2
-        start_indices[domain] = gtx.int32(start_index)  # type: ignore [attr-defined]
-        end_indices[domain] = gtx.int32(end_index)  # type: ignore [attr-defined]
+        start_indices[domain] = gtx.int32(start_index)
+        end_indices[domain] = gtx.int32(end_index)
 
     ordered_domains = h_grid.get_ordered_domains(dim)
     for domain in ordered_domains:
@@ -286,7 +286,7 @@ def get_nudging_refinement_value(dim: gtx.Dimension) -> int:
 
 
 def is_unordered_field(field: data_alloc.NDArray, dim: gtx.Dimension) -> data_alloc.NDArray:
-    assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"  # type: ignore [attr-defined]
+    assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
     array_ns = data_alloc.array_namespace(field)
     return array_ns.isin(field, _UNORDERED[dim])
 
@@ -299,7 +299,7 @@ def convert_to_non_nested_refinement_values(
 
     The nested values are used for example in the radiation grids.
     """
-    assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"  # type: ignore [attr-defined]
+    assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
     array_ns = data_alloc.array_namespace(field)
     return array_ns.where(field == _UNORDERED[dim][1], 0, array_ns.where(field < 0, -field, field))
 

@@ -118,7 +118,7 @@ class MetricsConfig:
     igradp_method: int = 3
     """Method for computing the horizontal pressure gradient."""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.rayleigh_type != constants.RayleighType.KLEMP:
             raise NotImplementedError(
                 f"Only rayleigh_type = KLEMP is implemented, got {self.rayleigh_type}."
@@ -184,14 +184,16 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._allocator)
         e_owner_mask = gtx.as_field(
             (dims.EdgeDim,),
-            self._decomposition_info.owner_mask(dims.EdgeDim),
+            self._decomposition_info.owner_mask(dims.EdgeDim),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
             allocator=self._allocator,
         )
         c_owner_mask = gtx.as_field(
             (dims.CellDim,),
-            self._decomposition_info.owner_mask(dims.CellDim),
+            self._decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
             allocator=self._allocator,
         )
+        # runtime invariant: icon_grid() always sets refinement_control to {} or a dict
+        assert self._grid.refinement_control is not None, "refinement_control must not be None"
         c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
 
         e_refin_ctrl = self._grid.refinement_control[dims.EdgeDim]
@@ -254,7 +256,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(vertical_coordinates_on_half_levels)
 
-        height = factory.ProgramFieldProvider(
+        height = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=vertical_ops.average_two_vertical_levels_downwards_on_cells.with_backend(
                 self._backend
             ),
@@ -271,7 +273,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(height)
 
-        compute_ddqz_z_half = factory.ProgramFieldProvider(
+        compute_ddqz_z_half = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=mf.compute_ddqz_z_half.with_backend(self._backend),
             domain={
                 dims.CellDim: (
@@ -293,7 +295,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddqz_z_half)
 
-        ddqz_z_full_and_inverse = factory.ProgramFieldProvider(
+        ddqz_z_full_and_inverse = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=mf.compute_ddqz_z_full_and_inverse.with_backend(self._backend),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
             domain={
@@ -311,7 +313,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(ddqz_z_full_and_inverse)
 
-        ddqz_full_on_edges = factory.ProgramFieldProvider(
+        ddqz_full_on_edges = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
             deps={"in_field": attrs.DDQZ_Z_FULL, "coeff": interpolation_attributes.C_LIN_E},
             domain={
@@ -369,7 +371,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_rayleigh_w)
 
-        compute_coeff_dwdz = factory.ProgramFieldProvider(
+        compute_coeff_dwdz = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=mf.compute_coeff_dwdz.with_backend(self._backend),
             deps={
                 "ddqz_z_full": attrs.DDQZ_Z_FULL,
@@ -390,7 +392,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_coeff_dwdz)
 
-        compute_theta_exner_rho_ref_mc = factory.ProgramFieldProvider(
+        compute_theta_exner_rho_ref_mc = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=ra.compute_reference_atmosphere_cell_fields.with_backend(self._backend),
             deps={
                 "z_height": attrs.Z_MC,
@@ -424,7 +426,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_theta_exner_rho_ref_mc)
 
-        compute_theta_rho_ref_me = factory.ProgramFieldProvider(
+        compute_theta_rho_ref_me = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=ra.compute_reference_atmosphere_edge_fields.with_backend(self._backend),
             deps={"z_mc": attrs.Z_MC, "c_lin_e": interpolation_attributes.C_LIN_E},
             domain={
@@ -455,7 +457,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_theta_rho_ref_me)
 
-        compute_theta_d_exner_dz_ref_ic = factory.ProgramFieldProvider(
+        compute_theta_d_exner_dz_ref_ic = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=ra.compute_theta_d_exner_dz_ref_ic.with_backend(self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -489,7 +491,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_theta_d_exner_dz_ref_ic)
 
-        compute_d2dexdz2_fac_mc = factory.ProgramFieldProvider(
+        compute_d2dexdz2_fac_mc = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=reference_atmosphere.compute_d2dexdz2_fac_mc.with_backend(self._backend),
             deps={
                 "theta_ref_mc": attrs.THETA_REF_MC,
@@ -521,7 +523,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_d2dexdz2_fac_mc)
 
-        compute_ddxt_z_half_e = factory.ProgramFieldProvider(
+        compute_ddxt_z_half_e = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=mf.compute_ddxt_z_half_e.with_backend(self._backend),
             deps={
                 "cell_in": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -544,7 +546,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxt_z_half_e)
 
-        compute_ddxn_z_half_e = factory.ProgramFieldProvider(
+        compute_ddxn_z_half_e = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=mf.compute_ddxn_z_half_e.with_backend(self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -566,7 +568,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxn_z_half_e)
 
         # ddxn_z_full is dependent only on attrs.DDXN_Z_HALF_E, which has halo exchange. That's why halo_exchange is set to True
-        compute_ddxn_z_full = factory.ProgramFieldProvider(
+        compute_ddxn_z_full = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=vertical_ops.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
             ),
@@ -588,7 +590,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxn_z_full)
 
-        compute_ddxt_z_full = factory.ProgramFieldProvider(
+        compute_ddxt_z_full = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=vertical_ops.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
             ),
@@ -648,7 +650,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_exner_w_explicit_weight_parameter)
 
-        compute_exner_exfac = factory.ProgramFieldProvider(
+        compute_exner_exfac = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=mf.compute_exner_exfac.with_backend(self._backend),
             deps={
                 "maxslp": attrs.MAXSLP,
@@ -675,7 +677,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_exner_exfac)
 
-        wgtfac_c_provider = factory.ProgramFieldProvider(
+        wgtfac_c_provider = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=weight_factors.compute_wgtfac_c.with_backend(self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -693,7 +695,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(wgtfac_c_provider)
 
-        compute_wgtfac_e = factory.ProgramFieldProvider(
+        compute_wgtfac_e = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=mf.compute_wgtfac_e.with_backend(self._backend),
             deps={
                 "wgtfac_c": attrs.WGTFAC_C,
@@ -726,20 +728,20 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "k_lev": "k_lev",
             },
             connectivities={"e2c": dims.E2CDim},
-            domain={
+            domain={  # type: ignore[arg-type]  # dict not compatible with Sequence[Dimension]
                 dims.EdgeDim: (
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     edge_domain(h_grid.Zone.END),
                 ),
             },
-            fields={"flat_idx_max": attrs.FLAT_IDX_MAX},
+            fields={"flat_idx_max": attrs.FLAT_IDX_MAX},  # type: ignore[arg-type]  # dict not compatible with Sequence[str]
         )
         self.register_provider(max_flat_index_provider)
 
         nflat_gradp_provider = factory.NumpyDataProvider(
             func=functools.partial(
                 mf.compute_nflat_gradp,
-                min_reduction=self._global_reductions.min,
+                min_reduction=self._global_reductions.min,  # type: ignore[arg-type]  # min returns float | bool | int, not just int
             ),
             domain=(),
             deps={
@@ -756,7 +758,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(nflat_gradp_provider)
 
-        pressure_gradient_fields = factory.ProgramFieldProvider(
+        pressure_gradient_fields = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(
                 self._backend
             ),
@@ -819,8 +821,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP: attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP},
             params={
-                "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),  # type: ignore [attr-defined]
-                "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
+                "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
+                "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),
             },
             do_exchange=True,
         )
@@ -875,7 +877,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         compute_wgtfacq_c = factory.NumpyDataProvider(
             func=weight_factors.compute_wgtfacq_c_dsl,
-            domain=gtx.domain(
+            domain=gtx.domain(  # type: ignore[arg-type]  # Domain not compatible with Sequence[Dimension]
                 {
                     dims.CellDim: (0, self._grid.num_cells),
                     dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
@@ -899,7 +901,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "wgtfacq_c_dsl": attrs.WGTFACQ_C,
             },
             connectivities={"e2c": dims.E2CDim},
-            domain=gtx.domain(
+            domain=gtx.domain(  # type: ignore[arg-type]  # Domain not compatible with Sequence[Dimension]
                 {
                     dims.EdgeDim: (0, self._grid.num_edges),
                     dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
@@ -911,7 +913,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(compute_wgtfacq_e)
 
-        compute_maxslp_maxhgtd = factory.ProgramFieldProvider(
+        compute_maxslp_maxhgtd = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=mf.compute_maxslp_maxhgtd.with_backend(self._backend),
             deps={
                 "ddxn_z_full": attrs.DDXN_Z_FULL,
@@ -932,7 +934,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_maxslp_maxhgtd)
 
-        compute_weighted_cell_neighbor_sum = factory.ProgramFieldProvider(
+        compute_weighted_cell_neighbor_sum = factory.ProgramFieldProvider(  # type: ignore[type-var]  # domain dict mixes h_grid.Domain and v_grid.Domain
             func=mf.compute_weighted_cell_neighbor_sum.with_backend(self._backend),
             deps={
                 "maxslp": attrs.MAXSLP,

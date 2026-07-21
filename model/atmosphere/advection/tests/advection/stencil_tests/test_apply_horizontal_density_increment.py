@@ -7,7 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
 
 import gt4py.next as gtx
 import numpy as np
@@ -45,7 +49,7 @@ class TestApplyHorizontalDensityIncrement(stencil_tests.StencilTest):
         return dict(rhodz_ast2=rhodz_ast2)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         p_rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}

@@ -40,7 +40,7 @@ log = logging.getLogger(__name__)
 
 class TimeLoop:
     @classmethod
-    def name(cls):
+    def name(cls) -> str:
         return cls.__name__
 
     def __init__(
@@ -70,46 +70,46 @@ class TimeLoop:
             self.run_config.backend
         )
 
-    def re_init(self):
+    def re_init(self) -> None:
         self._simulation_date = self.run_config.start_date
         self._is_first_step_in_simulation = True
         self._n_substeps_var = self.run_config.n_substeps
 
-    def _validate_config(self):
+    def _validate_config(self) -> None:
         if self._n_time_steps < 0:
             raise ValueError("end_date should be larger than start_date. Please check.")
 
     @property
-    def first_step_in_simulation(self):
+    def first_step_in_simulation(self) -> bool:
         return self._is_first_step_in_simulation
 
-    def _is_last_substep(self, step_nr: int):
+    def _is_last_substep(self, step_nr: int) -> bool:
         return step_nr == (self.n_substeps_var - 1)
 
     @staticmethod
-    def _is_first_substep(step_nr: int):
+    def _is_first_substep(step_nr: int) -> bool:
         return step_nr == 0
 
-    def _next_simulation_date(self):
+    def _next_simulation_date(self) -> None:
         self._simulation_date += self.run_config.dtime
 
     @property
-    def n_substeps_var(self):
+    def n_substeps_var(self) -> int:
         return self._n_substeps_var
 
     @property
-    def simulation_date(self):
+    def simulation_date(self) -> datetime.datetime:
         return self._simulation_date
 
     @property
-    def n_time_steps(self):
+    def n_time_steps(self) -> int:
         return self._n_time_steps
 
     @property
-    def substep_timestep(self):
+    def substep_timestep(self) -> float:
         return self._substep_timestep
 
-    def _full_name(self, func: Callable):
+    def _full_name(self, func: Callable) -> str:
         return f"{self.__class__.__name__}:{func.__name__}"
 
     def time_integration(
@@ -122,7 +122,7 @@ class TimeLoop:
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
         profiling: driver_config.ProfilingConfig | None = None,
-    ):
+    ) -> None:
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
         )
@@ -209,7 +209,7 @@ class TimeLoop:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
-    ):
+    ) -> None:
         # TODO(OngChia): Add update_spinup_damping here to compute second_order_divdamp_factor
 
         self._do_dyn_substepping(
@@ -236,7 +236,7 @@ class TimeLoop:
         diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
         at_first_substep: bool,
         at_initial_timestep: bool,
-    ):
+    ) -> None:
         """
         Set time levels of advective tendency fields for call to velocity_tendencies.
 
@@ -278,7 +278,7 @@ class TimeLoop:
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
-    ):
+    ) -> None:
         # TODO(OngChia): compute airmass for prognostic_state here
 
         for dyn_substep in range(self.n_substeps_var):
@@ -380,6 +380,10 @@ def initialize(
 
     # TODO(havogt): Serialbox infrastructure needs to be upgraded to work with allocator instead of backend
     generic_concrete_backend = model_options.customize_backend(None, backend_like)
+    # serialbox requires a concrete backend; embedded (None) is not supported
+    assert generic_concrete_backend is not None, (
+        "embedded backend is not supported; serialbox requires a concrete backend"
+    )
 
     decomp_info = driver_init.read_decomp_info(
         path=file_path,
@@ -547,15 +551,15 @@ def initialize(
 )
 def icon4py_driver(
     *,
-    input_path,
-    run_path,
-    mpi,
-    serialization_type,
-    experiment_type,
-    grid_file,
-    enable_output,
-    enable_profiling,
-    icon4py_driver_backend,
+    input_path: str,
+    run_path: str,
+    mpi: bool,
+    serialization_type: str,
+    experiment_type: str,
+    grid_file: str,
+    enable_output: bool,
+    enable_profiling: bool,
+    icon4py_driver_backend: str,
 ) -> None:
     """
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
@@ -594,8 +598,8 @@ def icon4py_driver(
     time_loop, ds, dp = initialize(
         file_path=pathlib.Path(input_path),
         process_props=process_props,
-        serialization_type=serialization_type,
-        experiment_type=experiment_type,
+        serialization_type=driver_init.SerializationType(serialization_type),
+        experiment_type=driver_init.ExperimentType(experiment_type),
         grid_file=pathlib.Path(grid_file),
         backend_like=backend_like,
     )

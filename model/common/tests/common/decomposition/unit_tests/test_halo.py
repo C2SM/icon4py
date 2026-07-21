@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import numpy as np
 import pytest
 from gt4py.next import common as gtx_common
@@ -24,11 +26,13 @@ from .test_definitions import get_neighbor_tables_for_simple_grid, offsets
 
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
-def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like):
+def test_halo_constructor_owned_cells(
+    rank: int, simple_neighbor_tables: dict[str, np.ndarray], backend_like: Any
+) -> None:
     process_props = utils.DummyProps(rank=rank)
     allocator = model_backends.get_allocator(backend_like)
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        connectivities=simple_neighbor_tables,  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
         process_props=process_props,
         allocator=allocator,
     )
@@ -44,7 +48,9 @@ def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
-def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbor_tables, dim):
+def test_halo_constructor_decomposition_info_global_indices(
+    rank: int, simple_neighbor_tables: dict[str, np.ndarray], dim: gtx_common.Dimension
+) -> None:
     process_props = utils.dummy_four_ranks(rank=rank)
     if process_props.comm_size != 4:
         pytest.skip(
@@ -52,7 +58,7 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
         )
 
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        connectivities=simple_neighbor_tables,  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
         process_props=process_props,
     )
 
@@ -76,10 +82,12 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
 
 @pytest.mark.parametrize("dim", [dims.EdgeDim])
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
-def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neighbor_tables):
+def test_halo_constructor_decomposition_info_halo_levels(
+    rank: int, dim: gtx_common.Dimension, simple_neighbor_tables: dict[str, np.ndarray]
+) -> None:
     process_props = utils.DummyProps(rank=rank)
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        connectivities=simple_neighbor_tables,  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
         process_props=process_props,
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
@@ -127,7 +135,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     )
 
 
-def test_no_halo():
+def test_no_halo() -> None:
     grid_size = base_grid.HorizontalGridSize(num_cells=9, num_edges=14, num_vertices=6)
     halo_generator = halo.NoHalos(horizontal_size=grid_size, allocator=None)
     decomposition = decomp.SingleNodeDecomposer()
@@ -159,12 +167,14 @@ def test_no_halo():
     assert np.all(decomposition_info.owner_mask(dims.VertexDim))
 
 
-def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tables):
+def test_halo_constructor_validate_rank_mapping_wrong_shape(
+    simple_neighbor_tables: dict[str, np.ndarray],
+) -> None:
     process_props = utils.DummyProps(rank=2)
     num_cells = simple_neighbor_tables["C2E2C"].shape[0]
     with pytest.raises(exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
-            connectivities=simple_neighbor_tables,
+            connectivities=simple_neighbor_tables,  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
             process_props=process_props,
         )
         halo_generator(np.zeros((num_cells, 3), dtype=int))
@@ -172,13 +182,15 @@ def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tabl
 
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
-def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor_tables):
+def test_halo_constructor_validate_number_of_node_mismatch(
+    rank: int, simple_neighbor_tables: dict[str, np.ndarray]
+) -> None:
     process_props = utils.DummyProps(rank=rank)
     num_cells = simple_neighbor_tables["C2E2C"].shape[0]
     distribution = np.full(num_cells, process_props.comm_size + 1, dtype=int)
     with pytest.raises(expected_exception=exceptions.ValidationError) as e:
         halo_generator = halo.IconLikeHaloConstructor(
-            connectivities=simple_neighbor_tables,
+            connectivities=simple_neighbor_tables,  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
             process_props=process_props,
         )
         halo_generator(distribution)
@@ -186,11 +198,11 @@ def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor
 
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
-def test_owned_halo_mask_contiguous(rank):
+def test_owned_halo_mask_contiguous(rank: int) -> None:
     simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
     process_props = dummy_four_ranks(rank)
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        connectivities=simple_neighbor_tables,  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
         process_props=process_props,
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
@@ -210,13 +222,13 @@ def test_owned_halo_mask_contiguous(rank):
 
 @pytest.mark.parametrize("offset", offsets)
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
-def test_global_to_local_index(offset, rank):
+def test_global_to_local_index(offset: Any, rank: int) -> None:
     grid = simple.simple_grid()
     neighbor_tables = {
         k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
     process_props = dummy_four_ranks(rank)
-    halo_constructor = halo.IconLikeHaloConstructor(process_props, neighbor_tables)
+    halo_constructor = halo.IconLikeHaloConstructor(process_props, neighbor_tables)  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
     decomposition_info = halo_constructor(utils.SIMPLE_DISTRIBUTION)
     source_indices_on_local_grid = decomposition_info.global_index(offset.target[0])
 
@@ -235,7 +247,8 @@ def test_global_to_local_index(offset, rank):
             k_ = local_offset[i][k]
             if k_ == -1:
                 # global index is not on this local patch:
-                assert not np.isin(offset_full_grid[i][k], neighbor_index_full_grid)
+                val = int(offset_full_grid[i][k])  # type: ignore[call-overload]  # NDArrayObject Protocol limitation
+                assert not np.isin(val, neighbor_index_full_grid)
             else:
                 assert neighbor_index_full_grid[k_] == offset_full_grid[i][k], (
                     f"failed to map [{offset_full_grid[i]}] to local: [{local_offset[i]}]"
@@ -243,11 +256,11 @@ def test_global_to_local_index(offset, rank):
 
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
-def test_horizontal_size(rank):
+def test_horizontal_size(rank: int) -> None:
     simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
     process_props = dummy_four_ranks(rank)
     halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
+        connectivities=simple_neighbor_tables,  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
         process_props=process_props,
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)

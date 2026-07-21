@@ -27,7 +27,7 @@ class TracerField(NamedTuple):
 _TRACER_FIELDS: tuple[str, ...] = tuple(
     sorted(
         COMMON_TRACER_CF_ATTRIBUTES,
-        key=lambda k: COMMON_TRACER_CF_ATTRIBUTES[k]["icon_var_list_index"],  # type: ignore[index]
+        key=lambda k: COMMON_TRACER_CF_ATTRIBUTES[k]["icon_var_list_index"],
     )
 )
 

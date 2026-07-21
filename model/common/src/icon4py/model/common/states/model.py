@@ -10,10 +10,10 @@ import functools
 from collections.abc import Sequence
 from typing import Literal, Protocol, TypedDict, runtime_checkable
 
-import gt4py._core.definitions as gt_coredefs
 import gt4py.next as gtx
 import gt4py.next.common as gt_common
 import numpy.typing as np_t
+from gt4py._core import definitions as gt_coredefs
 
 import icon4py.model.common.type_alias as ta
 
@@ -21,7 +21,16 @@ import icon4py.model.common.type_alias as ta
 """Contains type definitions used for the model`s state representation."""
 type DimensionNames = Literal["cell", "edge", "vertex"]
 type BufferT = np_t.ArrayLike | gtx.Field
-type DTypeT = ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
+type DTypeT = (
+    type[ta.wpfloat]
+    | type[ta.vpfloat]
+    | type[gtx.int32]
+    | type[gtx.int64]
+    | type[gtx.float32]
+    | type[gtx.float64]
+    | type[bool]
+    | type[int]
+)
 
 
 class OptionalMetaData(TypedDict, total=False):
@@ -33,10 +42,21 @@ class OptionalMetaData(TypedDict, total=False):
     icon_var_list_index: int
     # TODO(halungge): dims should probably be required?
     dims: Sequence[gtx.Dimension]
-    dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
+    dtype: (
+        type[ta.wpfloat]
+        | type[ta.vpfloat]
+        | type[gtx.int32]
+        | type[gtx.int64]
+        | type[gtx.float32]
+        | type[gtx.float64]
+        | type[bool]
+        | type[int]
+    )
     #: whether the vertical dimension of the field lives on interface (half) levels
     #: rather than full levels
     is_on_half_levels: bool
+    #: CF convention: direction of increase for vertical coordinate
+    positive: str
 
 
 class RequiredMetaData(TypedDict, total=True):
@@ -60,8 +80,8 @@ class DataField(Protocol):
 
 @dataclasses.dataclass
 class ModelField(DataField):
-    data: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT]
-    attrs: FieldMetaData
+    data: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.Scalar]
+    attrs: FieldMetaData  # type: ignore[assignment]  # FieldMetaData is a TypedDict, not a subtype of dict in mypy
 
     @functools.cached_property
     def metadata(self) -> FieldMetaData:

@@ -27,17 +27,19 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import ghex  # type: ignore [import-not-found]
+    import ghex  # type: ignore[import-not-found]  # ghex has no type stubs
     import mpi4py
-    from ghex.context import make_context  # type: ignore [import-not-found]
-    from ghex.unstructured import (  # type: ignore [import-not-found]
+    from ghex.context import (  # type: ignore[import-not-found]
+        make_context,
+    )  # ghex submodule untyped
+    from ghex.unstructured import (  # type: ignore[import-not-found]  # ghex submodule untyped
         DomainDescriptor,
         HaloGenerator,
         make_communication_object,
         make_field_descriptor,
         make_pattern,
     )
-    from ghex.util import Architecture  # type: ignore [import-not-found]
+    from ghex.util import Architecture  # type: ignore[import-not-found]  # ghex submodule untyped
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -45,7 +47,7 @@ try:
     import_error: ImportError | None = None
 
 except ImportError as e:
-    mpi4py = None  # type: ignore[assignment]
+    mpi4py = None  # type: ignore[assignment]  # fallback when mpi4py/ghex import fails
     ghex = None
     unstructured = None
     import_error = e
@@ -98,15 +100,15 @@ class MPICommProcessProperties(decomp_defs.ProcessProperties):
     comm: mpi4py.MPI.Comm
 
     @functools.cached_property
-    def rank(self) -> int:  # type: ignore [override]
+    def rank(self) -> int:  # type: ignore[override]  # Protocol attributes are fields; implementation uses cached_property
         return self.comm.Get_rank()
 
     @functools.cached_property
-    def comm_name(self) -> str:  # type: ignore [override]
+    def comm_name(self) -> str:  # type: ignore[override]  # Protocol attributes are fields; implementation uses cached_property
         return self.comm.Get_name()
 
     @functools.cached_property
-    def comm_size(self) -> int:  # type: ignore [override]
+    def comm_size(self) -> int:  # type: ignore[override]  # Protocol attributes are fields; implementation uses cached_property
         return self.comm.Get_size()
 
 

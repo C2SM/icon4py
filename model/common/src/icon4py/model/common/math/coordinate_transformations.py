@@ -168,7 +168,7 @@ def compute_zonal_and_meridional_components_on_edges(  # noqa: PLR0917 [too-many
     v: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     zonal_and_meridional_components_on_edges(
         lat=lat,
         lon=lon,
@@ -223,7 +223,7 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     z: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
         lat=edge_lat,
         lon=edge_lon,
@@ -277,7 +277,7 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
     z: fa.CellField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
         lat=cell_lat,
         lon=cell_lon,

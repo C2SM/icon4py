@@ -11,7 +11,7 @@ import numpy as np
 from icon4py.model.common.grid import gridfile
 
 
-def revert_repeated_index_to_invalid(offset: np.ndarray):
+def revert_repeated_index_to_invalid(offset: np.ndarray) -> np.ndarray:
     num_elements = offset.shape[0]
     for i in range(num_elements):
         # convert repeated indices back into -1

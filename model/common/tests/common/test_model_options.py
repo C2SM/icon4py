@@ -16,13 +16,13 @@ from icon4py.model.common import field_type_aliases as fa, model_backends
 from icon4py.model.common.model_options import customize_backend, setup_program
 
 
-@gtx.field_operator  # type: ignore[call-overload]
+@gtx.field_operator
 def field_op_return_field(field: fa.CellKField[float], factor: float) -> fa.CellKField[float]:
     return field + factor
 
 
-@gtx.program  # type: ignore[call-overload]
-def program_return_field(field: fa.CellKField[float], factor: float):  # type: ignore[no-untyped-def]
+@gtx.program
+def program_return_field(field: fa.CellKField[float], factor: float) -> None:
     field_op_return_field(field, factor, out=field)
 
 
@@ -96,7 +96,7 @@ def test_setup_program_defaults(
                 "backend_factory": model_backends.make_custom_dace_backend,
                 "device": model_backends.GPU,
             },
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            model_backends.make_custom_dace_backend(device=model_backends.GPU),  # type: ignore[arg-type]  # GPU may be None when no GPU is available
         ),
         (
             {"backend_factory": model_backends.make_custom_dace_backend},
@@ -104,7 +104,7 @@ def test_setup_program_defaults(
         ),
         (
             {"device": model_backends.GPU},
-            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+            model_backends.make_custom_dace_backend(device=model_backends.GPU),  # type: ignore[arg-type]  # GPU may be None when no GPU is available
         ),
     ],
 )

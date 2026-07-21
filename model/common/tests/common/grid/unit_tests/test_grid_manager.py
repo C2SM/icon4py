@@ -109,6 +109,7 @@ def test_grid_manager_refin_ctrl(
         experiment.grid, keep_skip_values=True, backend=backend
     ).grid.refinement_control
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
+    assert refin_ctrl is not None, "refinement_control should be present for this grid"
     assert np.all(
         refin_ctrl_serialized.ndarray
         == refin.convert_to_non_nested_refinement_values(refin_ctrl[dim].ndarray, dim)
@@ -612,7 +613,7 @@ def test_decomposition_info_single_rank(
 )
 def test_local_connectivity(
     rank: int,
-    caplog: Iterator,
+    caplog: pytest.LogCaptureFixture,
     field_offset: gtx.FieldOffset,
     backend_like: model_backends.BackendLike,
 ) -> None:
@@ -650,7 +651,7 @@ def test_local_connectivity(
         f"max value in the connectivity is {np.max(connectivity)} is larger than the local patch size {max_local_index}"
     )
     # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
-    neighbor_dim = field_offset.target[1]  # type: ignore [misc]
+    neighbor_dim = field_offset.target[1]  # type: ignore[misc]  # FieldOffset.target is variable-length tuple; this offset has two dimensions
     dim = field_offset.target[0]
     last_halo_level = (
         decomp_defs.DecompositionFlag.THIRD_HALO_LEVEL

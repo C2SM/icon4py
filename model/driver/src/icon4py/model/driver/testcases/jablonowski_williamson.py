@@ -45,7 +45,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: gtx_typing.Backend | None,
-    rank=0,
+    rank: int = 0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
     nonhydro_states.DiagnosticStateNonHydro,
@@ -103,6 +103,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
         data_provider.from_metrics_savepoint().geopot(), allocator=allocator
     ).ndarray
 
+    assert cell_param.cell_center_lat is not None  # required for JW initialization
     cell_lat = cell_param.cell_center_lat.ndarray
     edge_lat = edge_param.edge_center[0].ndarray
     edge_lon = edge_param.edge_center[1].ndarray

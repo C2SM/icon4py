@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -26,12 +34,12 @@ class TestQsatRho(StencilTest):
         *,
         qs: np.ndarray,
         t: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(derivative=np.full(t.shape, 0.00030825070286492049))
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.Grid) -> dict:
         return dict(
             qs=data_alloc.constant_field(grid, 0.00448941, dims.CellDim, dims.KDim, dtype=wpfloat),
             t=data_alloc.constant_field(grid, 273.909, dims.CellDim, dims.KDim, dtype=wpfloat),

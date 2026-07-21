@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -58,24 +60,24 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         *,
-        area,
-        geofac_n2s,
-        geofac_grg_x,
-        geofac_grg_y,
-        w_old,
-        type_shear,
-        dwdx,
-        dwdy,
-        diff_multfac_w,
-        diff_multfac_n2w,
-        nrdmax,
-        interior_idx,
-        halo_idx,
-        horizontal_start,
-        horizontal_end,
-        vertical_start,
-        vertical_end,
-        **kwargs,
+        area: np.ndarray,
+        geofac_n2s: np.ndarray,
+        geofac_grg_x: np.ndarray,
+        geofac_grg_y: np.ndarray,
+        w_old: np.ndarray,
+        type_shear: int,
+        dwdx: np.ndarray,
+        dwdy: np.ndarray,
+        diff_multfac_w: float,
+        diff_multfac_n2w: np.ndarray,
+        nrdmax: int,
+        interior_idx: int,
+        halo_idx: int,
+        horizontal_start: int,
+        horizontal_end: int,
+        vertical_start: int,
+        vertical_end: int,
+        **kwargs: Any,
     ) -> dict:
         k = np.arange(w_old.shape[1])
         cell = np.arange(w_old.shape[0])

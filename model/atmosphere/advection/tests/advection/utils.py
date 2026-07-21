@@ -6,7 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -17,6 +20,10 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb, test_utils
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
 
 
 log = logging.getLogger(__name__)
@@ -39,21 +46,23 @@ def construct_least_squares_state(
     return advection_states.AdvectionLeastSquaresState(
         lsq_pseudoinv_1=gtx.as_field(
             (dims.CellDim, dims.C2E2CDim),
-            least_squares_coeffs[:, 0, :],
+            least_squares_coeffs[:, 0, :],  # type: ignore[arg-type]  # NDArrayObject Protocol limitation
             allocator=backend,
         ),
         lsq_pseudoinv_2=gtx.as_field(
             (dims.CellDim, dims.C2E2CDim),
-            least_squares_coeffs[:, 1, :],
+            least_squares_coeffs[:, 1, :],  # type: ignore[arg-type]  # NDArrayObject Protocol limitation
             allocator=backend,
         ),
     )
 
 
 def construct_metric_state(
-    icon_grid, savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend | None
+    grid: base_grid.Grid,
+    savepoint: sb.MetricSavepoint,
+    backend: gtx_typing.Backend | None,
 ) -> advection_states.AdvectionMetricState:
-    constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim, allocator=backend)
+    constant_f = data_alloc.constant_field(grid, 1.0, dims.KDim, allocator=backend)
     ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
     return advection_states.AdvectionMetricState(
         deepatmo_divh=constant_f,
@@ -64,7 +73,7 @@ def construct_metric_state(
 
 
 def construct_diagnostic_init_state(
-    icon_grid,
+    grid: base_grid.Grid,
     savepoint: sb.AdvectionInitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
@@ -73,23 +82,23 @@ def construct_diagnostic_init_state(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
-        hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend),
+        hfl_tracer=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend),
         vfl_tracer=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         ),
     )
 
 
 def construct_diagnostic_exit_state(
-    icon_grid,
+    grid: base_grid.Grid,
     savepoint: sb.AdvectionExitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
 ) -> advection_states.AdvectionDiagnosticState:
     return advection_states.AdvectionDiagnosticState(
-        airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
-        airmass_new=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
-        grf_tend_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        airmass_now=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
+        airmass_new=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
+        grf_tend_tracer=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
         hfl_tracer=savepoint.hfl_tracer(ntracer),
         vfl_tracer=savepoint.vfl_tracer(ntracer),
     )
@@ -105,7 +114,7 @@ def construct_prep_adv(
     )
 
 
-def log_dbg(field, name=""):
+def log_dbg(field: Any, name: str = "") -> None:
     log.debug(f"{name}: min={field.min()}, max={field.max()}, mean={field.mean()}")
 
 
@@ -114,7 +123,7 @@ def log_serialized(
     prep_adv: advection_states.AdvectionPrepAdvState,
     p_tracer_now: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
-):
+) -> None:
     log_dbg(diagnostic_state.airmass_now.asnumpy(), "airmass_now")
     log_dbg(diagnostic_state.airmass_new.asnumpy(), "airmass_new")
     log_dbg(diagnostic_state.grf_tend_tracer.asnumpy(), "grf_tend_tracer")
@@ -133,7 +142,7 @@ def verify_advection_fields(
     p_tracer_new: fa.CellKField[ta.wpfloat],
     p_tracer_new_ref: fa.CellKField[ta.wpfloat],
     even_timestep: bool,
-):
+) -> None:
     # cell indices
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_lateral_boundary = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))

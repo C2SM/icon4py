@@ -401,8 +401,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         k_lev=k.ndarray,
         exchange=decomposition.single_node_exchange,
     )
-    # TODO (nfarabullini): fix type ignore
-    flat_idx = gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend)  # type: ignore [arg-type]
+    flat_idx = gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend)  # type: ignore[arg-type]  # numpy array accepted as field data
     mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
         z_mc=z_mc,
         topography=topography,

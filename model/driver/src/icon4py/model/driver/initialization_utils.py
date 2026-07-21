@@ -229,7 +229,7 @@ def read_initial_state(
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: gtx_typing.Backend,
-    rank=0,
+    rank: int = 0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
@@ -396,7 +396,7 @@ def read_decomp_info(
     grid_file: pathlib.Path,
     process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
-    ser_type=SerializationType.SB,
+    ser_type: SerializationType = SerializationType.SB,
 ) -> decomposition.DecompositionInfo:
     if ser_type == SerializationType.SB:
         return _grid_savepoint(

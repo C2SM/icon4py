@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -35,7 +37,7 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
     OUTPUTS = ("w",)
 
     @pytest.fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(self, grid: base.Grid) -> dict:
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         diff_multfac_n2w = random_field(grid, dims.KDim, dtype=wpfloat)
         cell_area = random_field(grid, dims.CellDim, dtype=wpfloat)
@@ -60,7 +62,7 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
         diff_multfac_n2w: np.ndarray,
         cell_area: np.ndarray,
         z_nabla2_c: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         w = apply_nabla2_to_w_in_upper_damping_layer_numpy(
             w, diff_multfac_n2w, cell_area, z_nabla2_c

@@ -16,6 +16,7 @@ from collections.abc import Callable
 
 import gt4py.next as gtx
 from gt4py.next import config as gtx_config
+from gt4py.next.custom_layout_allocators import FieldBufferAllocatorProtocol
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
@@ -100,7 +101,7 @@ class Icon4pyDriver:
         )
 
     @functools.cached_property
-    def _allocator(self) -> gtx.typing.Backend:
+    def _allocator(self) -> FieldBufferAllocatorProtocol:
         return model_backends.get_allocator(self.backend)
 
     @functools.cached_property

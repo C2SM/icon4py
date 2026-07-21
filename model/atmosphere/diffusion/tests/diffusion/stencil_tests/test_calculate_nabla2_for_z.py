@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,7 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.stencil_tests import StencilTest
@@ -25,7 +27,7 @@ def calculate_nabla2_for_z_numpy(
     inv_dual_edge_length: np.ndarray,
     theta_v: np.ndarray,
     z_nabla2_e: np.ndarray,
-    **kwargs,
+    **kwargs: Any,
 ) -> np.ndarray:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
@@ -49,7 +51,7 @@ class TestCalculateNabla2ForZ(StencilTest):
         inv_dual_edge_length: np.ndarray,
         theta_v: np.ndarray,
         z_nabla2_e: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_nabla2_e = calculate_nabla2_for_z_numpy(
             connectivities, kh_smag_e, inv_dual_edge_length, theta_v, z_nabla2_e, **kwargs
@@ -57,7 +59,7 @@ class TestCalculateNabla2ForZ(StencilTest):
         return dict(z_nabla2_e=z_nabla2_e)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid) -> dict:
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

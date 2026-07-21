@@ -6,6 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import pathlib
+from collections.abc import Generator
+
 import numpy as np
 import pytest
 import xarray as xa
@@ -22,7 +25,7 @@ from icon4py.model.testing import datatest_utils, definitions, grid_utils
 from ...fixtures import test_path
 
 
-def grid_files():
+def grid_files() -> Generator[pathlib.Path, None, None]:
     grids = [
         definitions.Grids.R02B04_GLOBAL,
         definitions.Grids.MCH_CH_R04B09_DSL,
@@ -33,7 +36,7 @@ def grid_files():
 
 
 @pytest.mark.parametrize("file", grid_files())
-def test_convert_to_ugrid(file):
+def test_convert_to_ugrid(file: pathlib.Path) -> None:
     with load_data_file(file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds, validate=True)
@@ -49,7 +52,7 @@ def test_convert_to_ugrid(file):
 
 
 @pytest.mark.parametrize("file", grid_files())
-def test_icon_ugrid_writer_writes_ugrid_file(file, test_path):
+def test_icon_ugrid_writer_writes_ugrid_file(file: pathlib.Path, test_path: pathlib.Path) -> None:
     output_dir = test_path.joinpath("output")
     output_dir.mkdir(0o755, exist_ok=True)
     writer = IconUGridWriter(file, output_dir)
@@ -59,7 +62,7 @@ def test_icon_ugrid_writer_writes_ugrid_file(file, test_path):
 
 
 @pytest.mark.parametrize("file", grid_files())
-def test_icon_ugrid_patch_index_transformation(file):
+def test_icon_ugrid_patch_index_transformation(file: pathlib.Path) -> None:
     with load_data_file(file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds)
@@ -69,7 +72,7 @@ def test_icon_ugrid_patch_index_transformation(file):
 
 
 @pytest.mark.parametrize("file", grid_files())
-def test_icon_ugrid_patch_transposed_index_lists(file):
+def test_icon_ugrid_patch_transposed_index_lists(file: pathlib.Path) -> None:
     with load_data_file(file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds)
@@ -83,7 +86,7 @@ def test_icon_ugrid_patch_transposed_index_lists(file):
 
 
 @pytest.mark.parametrize("file", grid_files())
-def test_icon_ugrid_patch_fill_value(file):
+def test_icon_ugrid_patch_fill_value(file: pathlib.Path) -> None:
     with load_data_file(file) as ds:
         patch = IconUGridPatcher()
         uxds = patch(ds)
@@ -92,13 +95,13 @@ def test_icon_ugrid_patch_fill_value(file):
             assert uxds[name].attrs["_FillValue"] == FILL_VALUE
 
 
-def assert_start_index(uxds: xa.Dataset, name: str):
+def assert_start_index(uxds: xa.Dataset, name: str) -> None:
     assert uxds[name].attrs["start_index"] == 0
     assert np.min(np.nonzero(uxds[name].data > FILL_VALUE)) == 0
 
 
 @pytest.mark.parametrize("file", grid_files())
-def test_extract_horizontal_coordinates(file):
+def test_extract_horizontal_coordinates(file: pathlib.Path) -> None:
     with load_data_file(file) as ds:
         dim_sizes = ds.sizes
         coords = extract_horizontal_coordinates(ds)

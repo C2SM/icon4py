@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 
 import gt4py.next as gtx
 import numpy as np
@@ -30,9 +38,9 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         p_cc: np.ndarray,
         p_rhodz_now: np.ndarray,
         p_mflx_tracer_h: np.ndarray,
-        p_dtime,
-        dbl_eps,
-        **kwargs,
+        p_dtime: float,
+        dbl_eps: float,
+        **kwargs: Any,
     ) -> dict:
         c2e = connectivities[dims.C2EDim]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
@@ -55,7 +63,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         return dict(r_m=r_m)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

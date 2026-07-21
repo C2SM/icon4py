@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 
 import gt4py.next as gtx
 import numpy as np
@@ -56,7 +64,7 @@ class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
         dual_normal_cell_y: np.ndarray,
         lvn_sys_pos: np.ndarray,
         p_dt: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         lvn_pos = p_vn >= 0.0
         cell_idx = np.expand_dims(cell_idx, axis=-1)
@@ -147,7 +155,7 @@ class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
         }
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base_grid.Grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         cell_idx = grid.get_connectivity("E2C")

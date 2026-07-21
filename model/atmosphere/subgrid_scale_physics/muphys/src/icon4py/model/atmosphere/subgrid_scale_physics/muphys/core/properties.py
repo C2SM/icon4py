@@ -49,7 +49,7 @@ def deposition_auto_conversion(
     m_ice: fa.CellKField[ta.wpfloat],  # Ice crystal mass
     ice_dep: fa.CellKField[ta.wpfloat],  # Rate of ice deposition (some to snow)
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _deposition_auto_conversion(qi=qi, m_ice=m_ice, ice_dep=ice_dep, out=conversion_rate)
 
 
@@ -82,7 +82,7 @@ def deposition_factor(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     qvsi: fa.CellKField[ta.wpfloat],  # Saturation (ice) specific vapor mass
     deposition_rate: fa.CellKField[ta.wpfloat],  # deposition rate
-):
+) -> None:
     _deposition_factor(t=t, qvsi=qvsi, out=deposition_rate)
 
 
@@ -135,7 +135,7 @@ def fall_speed_scalar(
     offset: ta.wpfloat,
     exponent: ta.wpfloat,
     speed: ta.wpfloat,  # output
-):
+) -> None:
     _fall_speed_scalar(
         density=density, prefactor=prefactor, offset=offset, exponent=exponent, out=speed
     )
@@ -148,7 +148,7 @@ def fall_speed(
     offset: ta.wpfloat,
     exponent: ta.wpfloat,
     speed: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _fall_speed(density=density, prefactor=prefactor, offset=offset, exponent=exponent, out=speed)
 
 
@@ -193,7 +193,7 @@ def ice_deposition_nucleation(  # noqa: PLR0917 [too-many-positional-arguments]
     dvsi: fa.CellKField[ta.wpfloat],  # Vapor excess with respect to ice sat
     dt: ta.wpfloat,  # Time step
     vapor_deposition_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _ice_deposition_nucleation(
         t=t, qc=qc, qi=qi, ni=ni, dvsi=dvsi, dt=dt, out=vapor_deposition_rate
     )
@@ -222,7 +222,7 @@ def ice_mass(
     qi: fa.CellKField[ta.wpfloat],  # Specific humidity of ice
     ni: fa.CellKField[ta.wpfloat],  # Ice crystal number
     mass: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _ice_mass(qi=qi, ni=ni, out=mass)
 
 
@@ -251,7 +251,7 @@ def ice_number(
     t: fa.CellKField[ta.wpfloat],  # Ambient temperature
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     number: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _ice_number(t=t, rho=rho, out=number)
 
 
@@ -285,7 +285,7 @@ def _ice_sticking(
 def ice_sticking(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     sticking_factor: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _ice_sticking(t=t, out=sticking_factor)
 
 
@@ -319,7 +319,7 @@ def snow_lambda(
     qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
     ns: fa.CellKField[ta.wpfloat],  # Snow number
     riming_snow_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _snow_lambda(rho=rho, qs=qs, ns=ns, out=riming_snow_rate)
 
 
@@ -427,7 +427,7 @@ def snow_number(
     rho: fa.CellKField[ta.wpfloat],  # Ambient air density
     qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
     number: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _snow_number(t=t, rho=rho, qs=qs, out=number)
 
 
@@ -541,7 +541,7 @@ def _vel_scale_factor_default_scalar(
 def vel_scale_factor_ice(
     xrho: fa.CellKField[ta.wpfloat],  # sqrt(rho_00/rho)
     scale_factor: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _vel_scale_factor_ice(xrho=xrho, out=scale_factor)
 
 

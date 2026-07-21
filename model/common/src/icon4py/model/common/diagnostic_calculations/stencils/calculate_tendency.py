@@ -66,7 +66,7 @@ def calculate_virtual_temperature_tendency(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_virtual_temperature_tendency(
         dtime=dtime,
         qv=qv,
@@ -123,7 +123,7 @@ def calculate_exner_tendency(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_exner_tendency(
         dtime=dtime,
         virtual_temperature=virtual_temperature,

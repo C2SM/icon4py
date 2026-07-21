@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -36,7 +36,7 @@ class TestSaturationAdjustment(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         te: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(
             te_out=np.full(te.shape, 273.91226488486984),

@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import pytest
 
 from icon4py.model.testing.fixtures import (
@@ -32,10 +34,10 @@ from icon4py.model.testing.fixtures import (
 
 @pytest.fixture
 def timeloop_diffusion_savepoint_init(
-    data_provider,  # imported fixtures data_provider
-    step_date_init,  # imported fixtures data_provider
-    timeloop_diffusion_linit_init,
-):
+    data_provider: Any,  # imported fixtures data_provider
+    step_date_init: str,  # imported fixtures data_provider
+    timeloop_diffusion_linit_init: bool,
+) -> Any:
     """
     Load data from ICON savepoint at start of diffusion module.
 
@@ -55,10 +57,10 @@ def linit(timeloop_diffusion_linit_exit: bool) -> bool:
 
 
 @pytest.fixture
-def timeloop_date_init():
+def timeloop_date_init() -> str:
     return "2021-06-20T12:00:00.000"
 
 
 @pytest.fixture
-def timeloop_date_exit():
+def timeloop_date_exit() -> str:
     return "2021-06-20T12:00:10.000"

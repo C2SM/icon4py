@@ -6,6 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
+from typing import Any
+
 import gt4py.next.typing as gtx_typing
 import pytest
 
@@ -109,24 +113,24 @@ from ..utils import (
     ],
 )
 def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    date,
-    even_timestep,
-    ntracer,
-    horizontal_advection_type,
-    horizontal_advection_limiter,
-    vertical_advection_type,
-    vertical_advection_limiter,
+    date: str,
+    even_timestep: bool,
+    ntracer: int,
+    horizontal_advection_type: advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: advection.HorizontalAdvectionLimiter,
+    vertical_advection_type: advection.VerticalAdvectionType,
+    vertical_advection_limiter: advection.VerticalAdvectionLimiter,
     *,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
+    grid_savepoint: Any,
+    icon_grid: base_grid.Grid,
+    interpolation_savepoint: Any,
+    metrics_savepoint: Any,
     # data_provider,
-    backend,
-    advection_init_savepoint,
-    advection_exit_savepoint,
+    backend: gtx_typing.Backend | None,
+    advection_init_savepoint: Any,
+    advection_exit_savepoint: Any,
     experiment: definitions.Experiment,
-):
+) -> None:
     # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
     if (
         even_timestep
@@ -151,8 +155,8 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
         cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
         c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
         cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
-        domain_length=geometry.grid.grid_params.domain_length,
-        domain_height=geometry.grid.grid_params.domain_height,
+        domain_length=geometry.grid.grid_params.domain_length,  # type: ignore[arg-type]  # float | None, compute_lsq_coeffs handles None for icosahedron grids
+        domain_height=geometry.grid.grid_params.domain_height,  # type: ignore[arg-type]  # float | None, compute_lsq_coeffs handles None for icosahedron grids
         grid_sphere_radius=constants.EARTH_RADIUS,
         lsq_dim_unk=2,
         lsq_dim_c=3,
@@ -162,7 +166,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
             h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
-        geometry_type=icon_grid.grid_params.geometry_type,
+        geometry_type=icon_grid.grid_params.geometry_type,  # type: ignore[attr-defined]  # icon_grid is base_grid.Grid at type level, but actually IconGrid
         exchange=decomposition.single_node_exchange,
     )
 
@@ -174,7 +178,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
 
     advection_granule = advection.convert_config_to_advection(
         config=config,
-        grid=icon_grid,
+        grid=icon_grid,  # type: ignore[arg-type]  # fixture returns base_grid.Grid but is actually IconGrid
         interpolation_state=interpolation_state,
         least_squares_state=least_squares_state,
         metric_state=metric_state,
@@ -204,7 +208,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
 
     diagnostic_state_ref = construct_diagnostic_exit_state(
-        icon_grid=icon_grid,
+        grid=icon_grid,
         savepoint=advection_exit_savepoint,
         ntracer=ntracer,
         backend=backend,
@@ -212,7 +216,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
     verify_advection_fields(
-        grid=icon_grid,
+        grid=icon_grid,  # type: ignore[arg-type]  # fixture returns base_grid.Grid but is actually IconGrid
         diagnostic_state=diagnostic_state,
         diagnostic_state_ref=diagnostic_state_ref,
         p_tracer_new=p_tracer_new,
@@ -265,8 +269,8 @@ def test_compute_lsq_coeffs(
         cell_lon=cell_lon,
         c2e2c=c2e2c,
         cell_owner_mask=cell_owner_mask,
-        domain_length=domain_length,
-        domain_height=domain_height,
+        domain_length=domain_length,  # type: ignore[arg-type]  # float | None, compute_lsq_coeffs handles None for icosahedron grids
+        domain_height=domain_height,  # type: ignore[arg-type]  # float | None, compute_lsq_coeffs handles None for icosahedron grids
         grid_sphere_radius=grid_sphere_radius,
         lsq_dim_unk=lsq_dim_unk,
         lsq_dim_c=lsq_dim_c,
@@ -274,7 +278,7 @@ def test_compute_lsq_coeffs(
         lsq_dim_stencil=lsq_dim_stencil,
         start_idx=start_idx,
         min_rlcell_int=min_rlcell_int,
-        geometry_type=icon_grid.grid_params.geometry_type,
+        geometry_type=icon_grid.grid_params.geometry_type,  # type: ignore[attr-defined]  # icon_grid is base_grid.Grid at type level, but actually IconGrid
         exchange=decomposition.single_node_exchange,
     )
 

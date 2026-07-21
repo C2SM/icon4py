@@ -175,7 +175,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         eta_old = array_ns.full(num_cells, fill_value=ta.wpfloat("1.0e-7"), dtype=ta.wpfloat)
         log.info(f"In Newton iteration, k = {k_index}")
         for _ in range(100):
-            eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
+            eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
             cos_etav = array_ns.cos(eta_v_ndarray[:, k_index])
             sin_etav = array_ns.sin(eta_v_ndarray[:, k_index])
 
@@ -211,10 +211,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             newton_function_prime = -phy_const.RD / eta_old * temperature_jw
             eta_old = eta_old - newton_function / newton_function_prime
 
-        eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
-        exner_ndarray[:, k_index] = (eta_old * p_sfc / phy_const.P0REF) ** phy_const.RD_O_CPD
-        theta_v_ndarray[:, k_index] = temperature_jw / exner_ndarray[:, k_index]
-        rho_ndarray[:, k_index] = (
+        eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
+        exner_ndarray[:, k_index] = (eta_old * p_sfc / phy_const.P0REF) ** phy_const.RD_O_CPD  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
+        theta_v_ndarray[:, k_index] = temperature_jw / exner_ndarray[:, k_index]  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
+        rho_ndarray[:, k_index] = (  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
             exner_ndarray[:, k_index] ** phy_const.CVD_O_RD
             * phy_const.P0REF
             / phy_const.RD
@@ -235,7 +235,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     exchange.exchange(dims.EdgeDim, eta_v_at_edge)
     log.info("Cell-to-edge eta_v computation completed.")
 
-    prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
+    prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
         grid=grid,
         u0=u0,
         baroclinic_amplitude=jw_baroclinic_amplitude,
@@ -250,7 +250,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
 
-    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
         grid=grid,
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,

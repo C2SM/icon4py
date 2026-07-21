@@ -8,6 +8,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from icon4py.model.atmosphere.advection import advection_states
@@ -27,7 +29,7 @@ def date() -> str:
 
 
 @pytest.fixture
-def advection_init_savepoint(data_provider, date):
+def advection_init_savepoint(data_provider: Any, date: str) -> Any:
     """
     Load data from advection init ICON savepoint.
 
@@ -38,7 +40,7 @@ def advection_init_savepoint(data_provider, date):
 
 
 @pytest.fixture
-def advection_exit_savepoint(data_provider, date):
+def advection_exit_savepoint(data_provider: Any, date: str) -> Any:
     """
     Load data from advection exit ICON savepoint.
 

@@ -26,6 +26,7 @@ exclude = [
     "ghex",
     "dace",
     "mpi4py",
+    "mypy",  # only needed by the icon4py mypy plugin, not a runtime dependency
     "netcdf4",
     "pymetis",
     "xarray",

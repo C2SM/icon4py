@@ -9,7 +9,7 @@ import functools
 import logging
 import math
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from typing import Any, cast
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -121,11 +121,11 @@ class GridGeometry(factory.FieldSource):
         self._providers = {}
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
+        self._allocator = gtx.constructors.zeros.partial(allocator=backend)  # type: ignore[attr-defined]  # GT4Py constructors don't expose .partial in type stubs
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._geometry_type: icon.GeometryType = grid.grid_params.geometry_type
+        self._geometry_type: icon.GeometryType = grid.grid_params.geometry_type  # type: ignore[assignment]  # geometry_type is not None for IconGrid
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         self._config = config
         self._exchange = exchange
@@ -179,19 +179,19 @@ class GridGeometry(factory.FieldSource):
                 ],
                 "edge_owner_mask": gtx.as_field(
                     (dims.EdgeDim,),
-                    decomposition_info.owner_mask(dims.EdgeDim),
+                    decomposition_info.owner_mask(dims.EdgeDim),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                     dtype=bool,
                     allocator=self._backend,
                 ),
                 "vertex_owner_mask": gtx.as_field(
                     (dims.VertexDim,),
-                    decomposition_info.owner_mask(dims.VertexDim),
+                    decomposition_info.owner_mask(dims.VertexDim),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                     allocator=self._backend,
                     dtype=bool,
                 ),
                 "cell_owner_mask": gtx.as_field(
                     (dims.CellDim,),
-                    decomposition_info.owner_mask(dims.CellDim),
+                    decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                     allocator=self._backend,
                     dtype=bool,
                 ),
@@ -222,7 +222,11 @@ class GridGeometry(factory.FieldSource):
         match self._geometry_type:
             case icon.GeometryType.ICOSAHEDRON:
                 radius = grid_params.radius
+                # runtime invariant: icosahedron grid_params always has radius
+                assert radius is not None, "radius must not be None for icosahedron"
                 subdivision = grid_params.subdivision
+                # runtime invariant: icosahedron grid_params always has subdivision
+                assert subdivision is not None, "subdivision must not be None for icosahedron"
                 root = subdivision.root
                 level = subdivision.level
                 num_cells = 20 * root**2 * 4**level
@@ -240,13 +244,13 @@ class GridGeometry(factory.FieldSource):
                 # MPIMPropertyName.MEAN_EDGE_LENGTH).
                 edge_length = self.get(attrs.EDGE_LENGTH).ndarray
                 if self._process_props.comm is not None:
-                    assert edge_length.size > 0
+                    assert edge_length.size > 0  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks size
                     send_buffer = np.empty(1, dtype=edge_length.dtype)
                     send_buffer[0] = edge_length[0]
                     self._process_props.comm.Bcast(send_buffer, root=0)
                     mean_edge_length = float(send_buffer[0])
                 else:
-                    mean_edge_length = float(edge_length[0])
+                    mean_edge_length = float(edge_length[0])  # type: ignore[arg-type]  # NDArrayObject not compatible with float()
                 mean_cell_area = mean_edge_length**2 * math.sqrt(3.0) / 4.0
                 mean_dual_area = 2.0 * mean_cell_area
                 mean_dual_edge_length = mean_edge_length / math.sqrt(3.0)
@@ -309,7 +313,7 @@ class GridGeometry(factory.FieldSource):
                         "vertex_lat": attrs.VERTEX_LAT,
                         "vertex_lon": attrs.VERTEX_LON,
                     },
-                    params={"radius": self._grid.grid_params.radius},
+                    params={"radius": self._grid.grid_params.radius},  # type: ignore[dict-item]  # radius is float | None
                     do_exchange=True,
                 )
                 self.register_provider(vertex_vertex_distance)
@@ -332,6 +336,9 @@ class GridGeometry(factory.FieldSource):
                 self._register_normals_and_tangents_icosahedron()
 
             case icon.GeometryType.TORUS:
+                assert self._backend is not None, (
+                    "backend must not be None for geometry computation"
+                )
                 vertex_vertex_distance = factory.ProgramFieldProvider(
                     func=stencils.compute_distance_of_far_edges_in_diamond_torus,
                     domain={
@@ -346,14 +353,14 @@ class GridGeometry(factory.FieldSource):
                         "vertex_y": attrs.VERTEX_Y,
                     },
                     params={
-                        "domain_length": self._grid.grid_params.domain_length,
-                        "domain_height": self._grid.grid_params.domain_height,
+                        "domain_length": self._grid.grid_params.domain_length,  # type: ignore[dict-item]  # domain_length is float | None
+                        "domain_height": self._grid.grid_params.domain_height,  # type: ignore[dict-item]  # domain_height is float | None
                     },
                     do_exchange=True,
                 )
                 self.register_provider(vertex_vertex_distance)
 
-                coriolis_param = factory.PrecomputedFieldProvider(
+                coriolis_param = factory.PrecomputedFieldProvider(  # type: ignore[assignment]  # variable was ProgramFieldProvider in icosahedron case
                     fields={
                         # TODO(jcanton): this constant (0.0) should eventually
                         # come from the config
@@ -700,8 +707,8 @@ class GridGeometry(factory.FieldSource):
                 )
             },
             params={
-                "domain_length": self._grid.grid_params.domain_length,
-                "domain_height": self._grid.grid_params.domain_height,
+                "domain_length": self._grid.grid_params.domain_length,  # type: ignore[dict-item]  # domain_length is float | None
+                "domain_height": self._grid.grid_params.domain_height,  # type: ignore[dict-item]  # domain_height is float | None
             },
             do_exchange=False,
         )
@@ -854,7 +861,7 @@ class GridGeometry(factory.FieldSource):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_typing.Backend:
+    def backend(self) -> gtx_typing.Backend | None:
         return self._backend
 
     @property
@@ -880,11 +887,13 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         assert target_dims[1].kind == gtx.DimensionKind.LOCAL
         self._wrapped_provider = field_provider
         self._fields = {name: None for name in fields}
-        self._func = functools.partial(as_sparse_field, target_dims)
+        self._func = functools.partial(
+            as_sparse_field, cast(tuple[gtx.Dimension, gtx.Dimension], target_dims)
+        )
         self._pairs = pairs
         self._do_exchange = do_exchange
 
-    def __call__(
+    def __call__(  # type: ignore[override]  # returns FieldType (includes NDArray) vs supertype's GTXFieldType | ScalarType
         self,
         *,
         field_name: str,
@@ -894,6 +903,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | None:
         if self._fields.get(field_name) is None:
+            assert field_src is not None, "field_src must not be None when fields are not cached"
             # get the fields from the wrapped provider
             input_fields = []
             for p in self._pairs:
@@ -991,8 +1001,8 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     lon = cell_lon.ndarray[e2c_table]
     for i in (0, 1):
         boundary_edges = xp.where(e2c_table[:, i] == gridfile.GridFile.INVALID_INDEX)
-        lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]
-        lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]
+        lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__
+        lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__
 
     return (
         gtx.as_field((dims.EdgeDim,), lat[:, 0], allocator=allocator),

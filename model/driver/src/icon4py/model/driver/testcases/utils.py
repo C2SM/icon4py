@@ -244,25 +244,30 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)
-    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)
-    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
-    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
-    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator)
+    # gtx.as_field expects NDArrayObject; numpy ndarrays don't conform (GT4Py limitation)
+    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
     virtual_temperature = gtx.as_field(
-        (dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator
+        (dims.CellDim, dims.KDim),
+        temperature_ndarray,  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+        allocator=allocator,
     )
-    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=allocator)
-    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)
+    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
     pressure_ifc = gtx.as_field(
-        (dims.CellDim, dims.KDim), pressure_ifc_ndarray, allocator=allocator
+        (dims.CellDim, dims.KDim),
+        pressure_ifc_ndarray,  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+        allocator=allocator,
     )
 
-    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)
-    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)
-    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
-    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
-    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)
+    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
+    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)  # type: ignore[arg-type]  # numpy ndarray doesn't conform to GT4Py NDArrayObject Protocol
 
     u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
     v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)

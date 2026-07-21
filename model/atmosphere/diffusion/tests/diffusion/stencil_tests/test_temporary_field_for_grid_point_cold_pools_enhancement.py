@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -30,9 +32,9 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
         *,
         theta_v: np.ndarray,
         theta_ref_mc: np.ndarray,
-        thresh_tdiff,
-        smallest_vpfloat,
-        **kwargs,
+        thresh_tdiff: float,
+        smallest_vpfloat: float,
+        **kwargs: Any,
     ) -> dict:
         c2e2c = connectivities[dims.C2E2CDim]
         tdiff = (

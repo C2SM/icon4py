@@ -267,7 +267,7 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal(  # noqa: PLR0917 [
     normal_z: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     cartesian_coordinates_edge_tangent_and_normal(
         vertex_lat=vertex_lat,
         vertex_lon=vertex_lon,
@@ -300,7 +300,7 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal_torus(  # noqa: PLR
     domain_height: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     cartesian_coordinates_edge_tangent_and_normal_torus(
         vertex_x=vertex_x,
         vertex_y=vertex_y,
@@ -413,7 +413,7 @@ def compute_zonal_and_meridional_component_of_edge_field_at_vertex(  # noqa: PLR
     v_vertex_4: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     zonal_and_meridional_component_of_edge_field_at_vertex(
         vertex_lat=vertex_lat,
         vertex_lon=vertex_lon,
@@ -493,7 +493,7 @@ def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(  # noqa
     v_cell_2: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     zonal_and_meridional_component_of_edge_field_at_cell_center(
         cell_lat=cell_lat,
         cell_lon=cell_lon,
@@ -658,7 +658,7 @@ def compute_edge_length(  # noqa: PLR0917 [too-many-positional-arguments]
     length: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     edge_length(
         vertex_lat=vertex_lat,
         vertex_lon=vertex_lon,
@@ -678,7 +678,7 @@ def compute_cell_center_arc_distance(  # noqa: PLR0917 [too-many-positional-argu
     dual_edge_length: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     cell_center_arc_distance(
         lat_neighbor_0=edge_neighbor_0_lat,
         lon_neighbor_0=edge_neighbor_0_lon,
@@ -698,7 +698,7 @@ def compute_arc_distance_of_far_edges_in_diamond(  # noqa: PLR0917 [too-many-pos
     far_vertex_distance: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     arc_distance_of_far_edges_in_diamond(
         vertex_lat=vertex_lat,
         vertex_lon=vertex_lon,
@@ -717,7 +717,7 @@ def compute_distance_of_far_edges_in_diamond_torus(  # noqa: PLR0917 [too-many-p
     far_vertex_distance: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     distance_of_far_edges_in_diamond_torus(
         vertex_x=vertex_x,
         vertex_y=vertex_y,
@@ -756,7 +756,7 @@ def compute_edge_area(  # noqa: PLR0917 [too-many-positional-arguments]
     area: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     edge_area(
         owner_mask=owner_mask,
         primal_edge_length=primal_edge_length,

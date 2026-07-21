@@ -62,7 +62,7 @@ def T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     dz: fa.CellKField[ta.wpfloat],  # Extent of grid cell
     temperature: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _T_from_internal_energy(u=u, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=temperature)
 
 
@@ -112,7 +112,7 @@ def T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-argumen
     rho: ta.wpfloat,  # Ambient density
     dz: ta.wpfloat,  # Extent of grid cell
     temperature: ta.wpfloat,  # output
-):
+) -> None:
     _T_from_internal_energy_scalar(
         u=u, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=temperature
     )
@@ -193,7 +193,7 @@ def internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     dz: fa.CellKField[ta.wpfloat],  # Extent of grid cell
     energy: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _internal_energy(t=t, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=energy)
 
 
@@ -225,7 +225,7 @@ def qsat_ice_rho(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     rho: fa.CellKField[ta.wpfloat],  # Density
     pressure: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _qsat_ice_rho(t=t, rho=rho, out=pressure)
 
 
@@ -257,7 +257,7 @@ def qsat_rho(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     rho: fa.CellKField[ta.wpfloat],  # Density
     pressure: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _qsat_rho(t=t, rho=rho, out=pressure)
 
 
@@ -282,7 +282,7 @@ def _qsat_rho_tmelt(
 def qsat_rho_tmelt(
     rho: fa.CellKField[ta.wpfloat],  # Density
     pressure: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _qsat_rho_tmelt(rho=rho, out=pressure)
 
 
@@ -312,7 +312,7 @@ def dqsatdT_rho(
     qs: fa.CellKField[ta.wpfloat],  # Saturation vapor pressure (over liquid)
     t: fa.CellKField[ta.wpfloat],  # Temperature
     derivative: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _dqsatdT_rho(qs=qs, t=t, out=derivative)
 
 
@@ -339,7 +339,7 @@ def _sat_pres_ice(
 def sat_pres_ice(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     pressure: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _sat_pres_ice(t=t, out=pressure)
 
 

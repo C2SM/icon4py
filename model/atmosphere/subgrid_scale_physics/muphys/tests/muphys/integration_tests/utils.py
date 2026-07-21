@@ -46,7 +46,7 @@ class MuphysExperiment:
     def reference_file(self) -> pathlib.Path:
         return _path_to_experiment_testdata(self) / "reference.nc"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 

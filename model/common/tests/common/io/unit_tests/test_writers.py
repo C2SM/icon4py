@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import pathlib
 from datetime import datetime, timedelta
 
 import gt4py.next as gtx
@@ -22,32 +23,32 @@ from .. import utils as test_io_utils
 
 
 @pytest.mark.parametrize("value", ["air_density", "upward_air_velocity"])
-def test_filter_by_standard_name(value):
+def test_filter_by_standard_name(value: str) -> None:
     state = test_io_utils.model_state(test_io_utils.simple_grid)
     assert writers.filter_by_standard_name(state, value) == {value: state[value]}
 
 
-def test_filter_by_standard_name_key_differs_from_name():
+def test_filter_by_standard_name_key_differs_from_name() -> None:
     state = test_io_utils.model_state(test_io_utils.simple_grid)
     assert writers.filter_by_standard_name(state, "virtual_potential_temperature") == {
         "theta_v": state["theta_v"]
     }
 
 
-def test_filter_by_standard_name_non_existing_name():
+def test_filter_by_standard_name_non_existing_name() -> None:
     state = test_io_utils.model_state(test_io_utils.simple_grid)
     assert writers.filter_by_standard_name(state, "does_not_exist") == {}
 
 
 def initialized_writer(
-    test_path, random_name, grid=test_io_utils.simple_grid
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid = test_io_utils.simple_grid
 ) -> tuple[writers.NETCDFWriter, grid_def.Grid]:
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
     vertical_params = v_grid.VerticalGrid(
         vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), heights),
+        vct_a=gtx.as_field((dims.KDim,), heights),  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
         vct_b=None,
     )
     horizontal = grid.config.horizontal_config
@@ -59,13 +60,13 @@ def initialized_writer(
         time_properties=writers.TimeProperties(
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
         ),
-        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},  # type: ignore[typeddict-item]  # Test doesn't need all required fields
     )
     writer.initialize_dataset()
     return writer, grid
 
 
-def test_initialize_writer_time_var(test_path, random_name):
+def test_initialize_writer_time_var(test_path: pathlib.Path, random_name: str) -> None:
     dataset, _ = initialized_writer(test_path, random_name)
     time_var = dataset.variables[writers.TIME]
     assert time_var.dimensions == ("time",)
@@ -76,7 +77,7 @@ def test_initialize_writer_time_var(test_path, random_name):
     assert len(time_var) == 0
 
 
-def test_initialize_writer_vertical_model_levels(test_path, random_name):
+def test_initialize_writer_vertical_model_levels(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     vertical = dataset.variables[writers.MODEL_LEVEL]
     assert vertical.units == "1"
@@ -88,7 +89,7 @@ def test_initialize_writer_vertical_model_levels(test_path, random_name):
     assert np.all(vertical == np.arange(grid.num_levels))
 
 
-def test_initialize_writer_half_levels(test_path, random_name):
+def test_initialize_writer_half_levels(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     half_levels = dataset.variables[writers.MODEL_HALF_LEVEL]
     assert half_levels.units == "1"
@@ -99,7 +100,7 @@ def test_initialize_writer_half_levels(test_path, random_name):
     assert np.all(half_levels == np.arange(grid.num_levels + 1))
 
 
-def test_initialize_writer_heights(test_path, random_name):
+def test_initialize_writer_heights(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     heights = dataset.variables["height"]
     assert heights.units == "m"
@@ -111,11 +112,11 @@ def test_initialize_writer_heights(test_path, random_name):
     assert heights[-1] == 0.0
 
 
-def test_writer_append_timeslice(test_path, random_name):
+def test_writer_append_timeslice(test_path: pathlib.Path, random_name: str) -> None:
     writer, _ = initialized_writer(test_path, random_name)
     time = datetime.now()
     assert len(writer.variables[writers.TIME]) == 0
-    slice1 = {}
+    slice1: dict = {}
     writer.append(slice1, time)
     assert len(writer.variables[writers.TIME]) == 1
     time1 = time + timedelta(hours=1)
@@ -132,7 +133,7 @@ def test_writer_append_timeslice(test_path, random_name):
     )
 
 
-def test_writer_append_timeslice_create_new_var(test_path, random_name):
+def test_writer_append_timeslice_create_new_var(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
     assert len(dataset.variables[writers.TIME]) == 0
@@ -155,7 +156,7 @@ def test_writer_append_timeslice_create_new_var(test_path, random_name):
     assert np.allclose(dataset.variables["air_density"][0], state["air_density"].data.T)
 
 
-def test_writer_append_timeslice_to_existing_var(test_path, random_name):
+def test_writer_append_timeslice_to_existing_var(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
     state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
@@ -177,13 +178,13 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
         grid.num_levels,
         grid.num_cells,
     )
-    assert np.allclose(dataset.variables["air_density"][1], new_rho.ndarray.T)
+    assert np.allclose(dataset.variables["air_density"][1], new_rho.ndarray.T)  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks .T attribute
 
 
 def test_initialize_writer_create_dimensions(
-    test_path,
-    random_name,
-):
+    test_path: pathlib.Path,
+    random_name: str,
+) -> None:
     writer, grid = initialized_writer(test_path, random_name)
 
     assert writer["title"] == "test"

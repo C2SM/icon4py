@@ -264,7 +264,7 @@ def test_compute_c_bln_avg(
 
     c2e2c0 = icon_grid.get_connectivity(dims.C2E2CO).ndarray
 
-    match icon_grid.grid_params.geometry_type:
+    match icon_grid.grid_params.geometry_type:  # type: ignore[attr-defined]  # IconGrid-specific attribute
         case icon.GeometryType.ICOSAHEDRON:
             c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight(
                 c2e2c0=c2e2c0,
@@ -378,7 +378,7 @@ def test_compute_e_bln_c_s(
     edges_lat = grid_savepoint.edges_center_lat().ndarray
     edges_lon = grid_savepoint.edges_center_lon().ndarray
 
-    match icon_grid.grid_params.geometry_type:
+    match icon_grid.grid_params.geometry_type:  # type: ignore[attr-defined]  # IconGrid-specific attribute
         case icon.GeometryType.ICOSAHEDRON:
             e_bln_c_s = compute_e_bln_c_s(
                 c2e=c2e,
@@ -418,7 +418,7 @@ def test_compute_pos_on_tplane_e(
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
-    match icon_grid.grid_params.geometry_type:
+    match icon_grid.grid_params.geometry_type:  # type: ignore[attr-defined]  # IconGrid-specific attribute
         case icon.GeometryType.ICOSAHEDRON:
             pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
                 grid_sphere_radius=sphere_radius,
