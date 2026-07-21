@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any, Final, TypeAlias, TypeGuard
+from typing import Any, Final, TypeAlias, TypeGuard, cast
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -67,21 +67,14 @@ def get_allocator(
     raise ValueError(f"Cannot get allocator from {backend}")
 
 
-def make_custom_gtfn_backend(
-    device: DeviceType, cached: bool = True, **kwargs: Any
-) -> gtfn.GTFNBackendFactory:
+def make_custom_gtfn_backend(device: DeviceType, **_: Any) -> gtx_typing.Backend:
     on_gpu = device == GPU
-    return gtfn.GTFNBackendFactory(
-        gpu=on_gpu,
-        cached=cached,
-        otf_workflow__cached_translation=cached,
-    )
+    return cast(gtx_typing.Backend, gtfn.GTFNBackendFactory(gpu=on_gpu))
 
 
 def make_custom_dace_backend(
     *,
     device: DeviceType,
-    cached: bool = True,
     auto_optimize: bool = True,
     async_sdfg_call: bool = True,
     optimization_args: dict[str, Any] | None = None,
@@ -94,7 +87,6 @@ def make_custom_dace_backend(
 
     Args:
         device: The target device.
-        cached: Cache the lowered SDFG as a JSON file and the compiled programs.
         auto_optimize: Enable the SDFG auto-optimize pipeline.
         async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
             of GPU kernel execution with the Python driver code.
@@ -112,7 +104,6 @@ def make_custom_dace_backend(
     on_gpu = device == GPU
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
-        cached=cached,
         auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
         optimization_args=optimization_args,

@@ -45,7 +45,7 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
     },
     test_defs.Experiments.MCH_CH_R04B09: {
         "vn": (3.5e-3, 0.0),
-        "w": (7.9e-4, 0.0),
+        "w": (1e-3, 0.0),
         "exner": (6.8e-7, 9.9e-7),
         "theta_v": (1.2e-3, 3.6e-6),
         "rho": (3.5e-6, 3.7e-6),

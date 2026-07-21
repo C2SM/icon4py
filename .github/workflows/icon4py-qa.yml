@@ -9,6 +9,7 @@ on:
     branches:
       - main
     types: [opened, reopened, synchronize]
+  merge_group:
 jobs:
   pre-commit-icon4py-model:
     runs-on: ubuntu-latest
