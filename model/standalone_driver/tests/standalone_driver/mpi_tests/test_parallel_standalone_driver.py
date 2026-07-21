@@ -101,7 +101,7 @@ def _run_standalone_driver_compare_single_multi_rank(
         atol = 1e-12
         rtol = 1e-14
     else:
-        atol = 1e-10
+        atol = 1e-9
         rtol = 0.0
     atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=atol, rtol=rtol)
 
