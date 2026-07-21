@@ -1172,9 +1172,9 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-sdist = {url = "https://files.pythonhosted.org/packages/c3/f8/2401889078017475ce1293af212b76cfdb8a5771ece179851d441ef363f3/dace-2.0.0a3.tar.gz", hash = "sha256:94cbaac4b1f4ef312d24f4151b0905a0e6292a9cfdf9c8b643dabdb2e95b02fa", size = 6005767, upload-time = "2026-05-11T14:49:16.021Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/3a/07/a0410822c1aaef052c0015e7a8399a7d7da76a11e0a97939027c15d125ee/dace-2.0.0a4.tar.gz", hash = "sha256:f45f84b59a34846e0049347559416c1fac39c739aa6cbc791e27e1973d58b1ad", size = 6026693, upload-time = "2026-06-25T14:09:32.009Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "2.0.0a3"
+version = "2.0.0a4"
 
 [[package]]
 dependencies = [
@@ -1632,6 +1632,7 @@ dependencies = [
   {name = "nanobind"},
   {name = "ninja"},
   {name = "numpy"},
+  {name = "ordered-set"},
   {name = "packaging"},
   {name = "pybind11"},
   {name = "setuptools"},
@@ -1642,11 +1643,11 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-sdist = {url = "https://files.pythonhosted.org/packages/31/ac/b44c6e62b282d601921d51a45cf32fceeb907b12c84b9534d38eb0e4aaee/gt4py-1.1.11.tar.gz", hash = "sha256:82a8eccc1e3a16e6661357361613b01424a32fae8bc93bf214cc208163ffabb8", size = 835514, upload-time = "2026-06-18T19:15:08.064Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/f3/a6/08dc6048622fc1219becbfe6c01175247fae30ea5315de3551d06584a8a7/gt4py-1.1.12.tar.gz", hash = "sha256:1d8dcb49fa244e4bd5e770ef9ae5865a710fdb0b78396afabc2dcdaaba5f2ef5", size = 859588, upload-time = "2026-07-20T13:35:00.063Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "1.1.11"
+version = "1.1.12"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/63/51/5322b424cb806901898f8aad026ae6a817b5cb6cae5f5df05e46ace250de/gt4py-1.1.11-py3-none-any.whl", hash = "sha256:1c4dbc80d490f5df0527bcb704c1b718e4603ef34b852d5e0da46ed44fec0817", size = 1050945, upload-time = "2026-06-18T19:15:06.331Z"}
+  {url = "https://files.pythonhosted.org/packages/e7/7f/84113ba9e57bfefe1d64597b20c31df2d18dfdbbc845caede17c4d6df15e/gt4py-1.1.12-py3-none-any.whl", hash = "sha256:c5bbe385aedeae10a2b77e9350b1fcb2f2c793e6f311808010ed27e0bf3ca470", size = 1077990, upload-time = "2026-07-20T13:34:58.18Z"}
 ]
 
 [package.optional-dependencies]
@@ -2020,7 +2021,7 @@ version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", specifier = "==1.1.12"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2037,7 +2038,7 @@ version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", specifier = "==1.1.12"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2054,7 +2055,7 @@ version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", specifier = "==1.1.12"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2071,7 +2072,7 @@ version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", specifier = "==1.1.12"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2089,7 +2090,7 @@ version = "0.2.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", specifier = "==1.1.12"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
@@ -2119,7 +2120,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", specifier = "==1.1.12"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
@@ -2167,7 +2168,7 @@ requires-dist = [
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.7.0"},
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", specifier = "==1.1.12"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
   {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'"},
@@ -2245,7 +2246,7 @@ version = "0.2.0"
 [package.metadata]
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", specifier = "==1.1.12"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
@@ -2271,7 +2272,7 @@ version = "0.2.0"
 [package.metadata]
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", specifier = "==1.1.12"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"},
@@ -2303,7 +2304,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.1.7"},
   {name = "configargparse", specifier = ">=1.7.1"},
   {name = "fprettify", specifier = ">=0.3.7"},
-  {name = "gt4py", specifier = "==1.1.11"},
+  {name = "gt4py", specifier = "==1.1.12"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
@@ -3443,6 +3444,15 @@ wheels = [
 numpy = [
   {name = "numpy"},
   {name = "numpy-typing-compat"}
+]
+
+[[package]]
+name = "ordered-set"
+sdist = {url = "https://files.pythonhosted.org/packages/4c/ca/bfac8bc689799bcca4157e0e0ced07e70ce125193fc2e166d2e685b7e2fe/ordered-set-4.1.0.tar.gz", hash = "sha256:694a8e44c87657c59292ede72891eb91d34131f6531463aab3009191c77364a8", size = 12826, upload-time = "2022-01-26T14:38:56.6Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "4.1.0"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/33/55/af02708f230eb77084a299d7b08175cff006dea4f2721074b92cdb0296c0/ordered_set-4.1.0-py3-none-any.whl", hash = "sha256:046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562", size = 7634, upload-time = "2022-01-26T14:38:48.677Z"}
 ]
 
 [[package]]
