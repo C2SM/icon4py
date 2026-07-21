@@ -1187,7 +1187,7 @@ def compute_pos_on_tplane_e_x_y_torus(
 def compute_lsq_pseudoinv(
     *,
     cell_owner_mask: data_alloc.NDArray,
-    lsq_matrix: data_alloc.NDArray,
+    z_lsq_mat_c: data_alloc.NDArray,
     lsq_weights_c: data_alloc.NDArray,
     start_idx: int,
     min_rlcell_int: int,
@@ -1200,10 +1200,10 @@ def compute_lsq_pseudoinv(
     let lsq_dim_c = c, lsq_dim_unk = k, where c is the number of neighboring cells for the least squares fit,
     and k is the number of unknowns we want to solve for (e.g. k=2 for a linear fit in 2D: f(x) = a + b*x)
 
-    lsq_matrix can be a non-square matrix, so we need to compute pseudo inverse for the inverse matrix of lsq_matrix.
-    let lsq_pseudoinv be the inverse matrix of lsq_matrix.
-    lsq_matrix has dimensions (c, k), lsq_pseudoinv has (k, c), and lsq_weights_c has (c)
-    singular value decomposition of the matrix lsq_matrix gives u_matrix (c, k), s_matrix (k), v_t_matrix (k, k)
+    z_lsq_mat_c can be a non-square matrix, so we need to compute pseudo inverse for the inverse matrix of z_lsq_mat_c.
+    let lsq_pseudoinv be the inverse matrix of z_lsq_mat_c.
+    z_lsq_mat_c has dimensions (c, k), lsq_pseudoinv has (k, c), and lsq_weights_c has (c)
+    singular value decomposition of the matrix z_lsq_mat_c gives u_matrix (c, k), s_matrix (k), v_t_matrix (k, k)
     lsq_pseudoinv = v_t_matrix^T u_matrix^T / s * lsq_weights_c
     """
     array_ns = data_alloc.array_namespace(cell_owner_mask)
@@ -1213,7 +1213,7 @@ def compute_lsq_pseudoinv(
         cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
     )
     lsq_pseudoinv = array_ns.zeros((cell_size, lsq_dim_unk, lsq_dim_c), dtype=ta.wpfloat)
-    u_matrix, s_matrix, v_t_matrix = array_ns.linalg.svd(lsq_matrix[valid_cell_mask, :, :])
+    u_matrix, s_matrix, v_t_matrix = array_ns.linalg.svd(z_lsq_mat_c[valid_cell_mask, :, :])
     v_t_over_s = (
         v_t_matrix[:, :lsq_dim_unk, :lsq_dim_unk] / s_matrix[:, :lsq_dim_unk, array_ns.newaxis]
     )  # (n_valid_cells, lsq_dim_unk, lsq_dim_unk)
@@ -1228,21 +1228,21 @@ def compute_lsq_pseudoinv(
 
 
 def compute_lsq_weights_c(
-    neighbor_center_dist: data_alloc.NDArray,
+    z_dist_g: data_alloc.NDArray,
     lsq_wgt_exp: int,
 ) -> data_alloc.NDArray:
-    array_ns = data_alloc.array_namespace(neighbor_center_dist)
-    z_norm = array_ns.sqrt(array_ns.sum(neighbor_center_dist**2, axis=2))
+    array_ns = data_alloc.array_namespace(z_dist_g)
+    z_norm = array_ns.sqrt(array_ns.sum(z_dist_g**2, axis=2))
     lsq_weights_c = 1.0 / (z_norm**lsq_wgt_exp)
     lsq_weights_c = lsq_weights_c / array_ns.max(lsq_weights_c, axis=1)[:, array_ns.newaxis]
     return lsq_weights_c
 
 
-def compute_lsq_matrix(
+def compute_z_lsq_mat_c(
     *,
     cell_owner_mask: data_alloc.NDArray,
     lsq_weights_c: data_alloc.NDArray,
-    neighbor_center_dist: data_alloc.NDArray,
+    z_dist_g: data_alloc.NDArray,
     start_idx: int,
     min_rlcell_int: int,
     lsq_dim_unk: int,
@@ -1252,19 +1252,19 @@ def compute_lsq_matrix(
     cell_size = cell_owner_mask.shape[0]
     cell_sequence = array_ns.arange(cell_size)
     min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
-    lsq_matrix = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c), dtype=ta.wpfloat)
+    z_lsq_mat_c = array_ns.zeros((cell_size, lsq_dim_c, lsq_dim_c), dtype=ta.wpfloat)
 
     valid_cell_mask = (
         cell_owner_mask & (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
     )
-    lsq_matrix[valid_cell_mask, :min_lsq_bound, :min_lsq_bound] = 1.0
+    z_lsq_mat_c[valid_cell_mask, :min_lsq_bound, :min_lsq_bound] = 1.0
     valid_cell_mask_with_halo = (cell_sequence >= start_idx) & (cell_sequence < min_rlcell_int)
 
-    lsq_matrix[valid_cell_mask_with_halo, :lsq_dim_c, :lsq_dim_unk] = (
+    z_lsq_mat_c[valid_cell_mask_with_halo, :lsq_dim_c, :lsq_dim_unk] = (
         lsq_weights_c[valid_cell_mask_with_halo, :lsq_dim_c, array_ns.newaxis]
-        * neighbor_center_dist[valid_cell_mask_with_halo, :lsq_dim_c, :]
+        * z_dist_g[valid_cell_mask_with_halo, :lsq_dim_c, :]
     )
-    return lsq_matrix
+    return z_lsq_mat_c
 
 
 def compute_lsq_coeffs(
@@ -1286,12 +1286,21 @@ def compute_lsq_coeffs(
     geometry_type: int,
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
+    if lsq_dim_unk != 2:
+        raise NotImplementedError(
+            "Only linear least squares reconstruction (lsq_dim_unk = 2) is implemented, but got lsq_dim_unk = {lsq_dim_unk}."
+        )
+    if lsq_dim_c != 3:
+        raise NotImplementedError(
+            "Only 3 neighboring cells (lsq_dim_c = 3) is implemented and tested, but got lsq_dim_c = {lsq_dim_c}."
+        )
+
     array_ns = data_alloc.array_namespace(cell_center_x)
-    neighbor_center_dist = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
+    z_dist_g = array_ns.zeros((cell_owner_mask.shape[0], lsq_dim_c, 2))
     match icon_grid.GeometryType(geometry_type):
         case icon_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_c):
-                neighbor_center_dist[:, js, :] = projection.gnomonic_proj(
+                z_dist_g[:, js, :] = projection.gnomonic_proj(
                     cell_lon,
                     cell_lat,
                     cell_lon[c2e2c[:, js]],
@@ -1315,14 +1324,14 @@ def compute_lsq_coeffs(
                             domain_height=domain_height,
                         )
                     )
-                neighbor_center_dist[jc, :, :] = cc_cell - cc_cv
+                z_dist_g[jc, :, :] = cc_cell - cc_cv
 
-    lsq_weights_c = compute_lsq_weights_c(neighbor_center_dist, lsq_wgt_exp)
+    lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_wgt_exp)
 
-    lsq_matrix = compute_lsq_matrix(
+    z_lsq_mat_c = compute_z_lsq_mat_c(
         cell_owner_mask=cell_owner_mask,
         lsq_weights_c=lsq_weights_c,
-        neighbor_center_dist=neighbor_center_dist,
+        z_dist_g=z_dist_g,
         start_idx=start_idx,
         min_rlcell_int=min_rlcell_int,
         lsq_dim_unk=lsq_dim_unk,
@@ -1333,7 +1342,7 @@ def compute_lsq_coeffs(
 
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask=cell_owner_mask,
-        lsq_matrix=lsq_matrix,
+        z_lsq_mat_c=z_lsq_mat_c,
         lsq_weights_c=lsq_weights_c,
         start_idx=start_idx,
         min_rlcell_int=min_rlcell_int,
