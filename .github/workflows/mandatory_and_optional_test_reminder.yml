@@ -17,13 +17,13 @@ jobs:
             You can pass options to override pipeline variables, for example:
 
             * `cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit`
-            * `cscs-ci run default;MODEL_SUBPACKAGES=common:standalone_driver;SESSIONS=model`
+            * `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSIONS=model`
             **Avoid running the pipeline for all tests when you are developing.**
 
             Available options are:
             * `SESSIONS`: `model`, `model_mpi`, or `tools` (correspond to nox sessions)
             * `MODEL_SUBSETS`: `datatest`, `basic`, or `stencils` (correspond to nox session selections)
-            * `MODEL_SUBPACKAGES`: subpackages for non-MPI tests (last component, e.g. `diffusion`, `standalone_driver`)
+            * `MODEL_SUBPACKAGES`: subpackages for non-MPI tests (last component, e.g. `diffusion`, `driver`)
             * `MODEL_MPI_SUBPACKAGES`: subpackages for MPI tests (as above)
             * `BACKENDS`: backends
             * `GRIDS`: grids for stencil tests (`simple`, `icon_regional`, or `icon_global`)

@@ -19,12 +19,7 @@ from icon4py.model.common.states import (
     nonhydro_states,
     prognostic_state as prognostics,
 )
-from icon4py.model.standalone_driver import (
-    config as driver_config,
-    driver_states,
-    driver_utils,
-    standalone_driver,
-)
+from icon4py.model.driver import config as driver_config, driver, driver_states, driver_utils
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
@@ -112,13 +107,11 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         process_props=single_rank_process_props,
     )
-    single_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
-        standalone_driver.initialize_driver(
-            config=single_rank_config,
-            grid_manager=single_rank_grid_manager,
-            process_props=single_rank_process_props,
-            backend=backend,
-        )
+    single_rank_icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
+        config=single_rank_config,
+        grid_manager=single_rank_grid_manager,
+        process_props=single_rank_process_props,
+        backend=backend,
     )
 
     single_rank_prognostic = prognostics.initialize_prognostic_state(
@@ -164,13 +157,11 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         allocator=allocator,
         process_props=process_props,
     )
-    multi_rank_icon4py_driver: standalone_driver.Icon4pyDriver = (
-        standalone_driver.initialize_driver(
-            config=multi_rank_config,
-            grid_manager=multi_rank_grid_manager,
-            process_props=process_props,
-            backend=backend,
-        )
+    multi_rank_icon4py_driver: driver.Icon4pyDriver = driver.initialize_driver(
+        config=multi_rank_config,
+        grid_manager=multi_rank_grid_manager,
+        process_props=process_props,
+        backend=backend,
     )
 
     multi_rank_prognostic = prognostics.initialize_prognostic_state(

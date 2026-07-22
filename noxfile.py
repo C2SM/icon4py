@@ -56,7 +56,7 @@ type ModelSubpackagePath = Literal[
     "atmosphere/subgrid_scale_physics/microphysics",
     "atmosphere/subgrid_scale_physics/muphys",
     "common",
-    "standalone_driver",
+    "driver",
     "testing",
 ]
 MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [

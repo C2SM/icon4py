@@ -15,7 +15,7 @@ import urllib.parse
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.driver import config as driver_config
 from icon4py.model.testing import data_handling, definitions, serialbox
 
 
