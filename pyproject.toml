@@ -88,7 +88,6 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
-  # workspace members
   "icon4py-atmosphere-advection~=0.3.0",
   "icon4py-atmosphere-diffusion~=0.3.0",
   "icon4py-atmosphere-dycore~=0.3.0",
