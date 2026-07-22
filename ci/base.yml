@@ -187,8 +187,8 @@ variables:
         ICON4PY_DETERMINISTIC_RBF_COEFFS: "1"
         CXXFLAGS: "-ffp-contract=off"
         # Disable FMA contraction in nvcc. This is the only GPU flag required
-        # for bitwise-identical single- vs multi-rank results on gtfn_gpu in
-        # the standalone_driver validation tests.
+        # for bitwise-identical single- vs multi-rank results on GPU backends
+        # in the standalone_driver validation tests.
         NVCC_APPEND_FLAGS: "--fmad=false"
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'
