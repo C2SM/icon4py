@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Physics orchestrator: the ``PhysicsDriver`` and its process / time-control types."""
+"""The ``PhysicsDriver`` and its process / time-control types."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import datetime
 import enum
 from typing import TYPE_CHECKING, Any
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_interface.process_time_control import (
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
 from icon4py.model.common.components.components import Component
@@ -68,7 +68,7 @@ class PhysicsProcess:
 
 
 class PhysicsDriver:
-    """Physics orchestrator."""
+    """The physics driver: runs each registered physics process in order."""
 
     def __init__(
         self,

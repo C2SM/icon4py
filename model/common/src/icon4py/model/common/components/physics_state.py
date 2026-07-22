@@ -23,7 +23,7 @@ class PhysicsState(Protocol):
 
     The concrete implementations live with their process (e.g.
     ``icon4py.model.atmosphere.subgrid_scale_physics.muphys.state.State``); this
-    module only declares the interface the orchestrator relies on, so the driver
+    module only declares the interface the ``PhysicsDriver`` relies on, so it
     stays decoupled from any specific physics state.
     """
 

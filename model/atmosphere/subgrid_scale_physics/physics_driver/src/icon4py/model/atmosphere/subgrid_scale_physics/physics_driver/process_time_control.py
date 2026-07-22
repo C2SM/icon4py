@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Per-process time control for the physics orchestrator."""
+"""Per-process time control for the physics driver."""
 
 from __future__ import annotations
 

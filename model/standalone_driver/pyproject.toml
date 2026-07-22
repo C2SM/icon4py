@@ -27,7 +27,7 @@ dependencies = [
   # workspace members
   "icon4py-atmosphere-dycore~=0.3.0",
   "icon4py-atmosphere-diffusion~=0.3.0",
-  "icon4py-atmosphere-physics-interface~=0.3.0",
+  "icon4py-atmosphere-physics-driver~=0.3.0",
   "icon4py-atmosphere-muphys~=0.3.0",
   "icon4py-common[io]~=0.3.0",
   # external dependencies

@@ -11,12 +11,12 @@ import datetime
 
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_interface.physics_driver import (
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_driver import (
     ForcingMode,
     PhysicsDriver,
     PhysicsProcess,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_interface.process_time_control import (
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
 from icon4py.model.common.states.model import FieldMetaData

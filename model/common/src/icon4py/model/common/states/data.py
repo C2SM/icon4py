@@ -145,12 +145,11 @@ DIAGNOSTIC_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     ),
 )
 
-# CF attributes of microphysics precipitation-flux diagnostics.
-# Shared across microphysics schemes (muphys, NWP graupel)
-MICROPHYSICS_PRECIP_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
+# CF attributes of precipitation-flux diagnostics.
+PRECIPITATION_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     precipitation_flux=dict(
         standard_name="precipitation_flux",
-        long_name="precipitation flux",
+        long_name="total precipitation flux (rain + snow + graupel + ice)",
         units="kg m-2 s-1",
         kind="diagnostic",
     ),
@@ -166,21 +165,21 @@ MICROPHYSICS_PRECIP_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
         units="kg m-2 s-1",
         kind="diagnostic",
     ),
-    graupel_fall_flux=dict(
-        standard_name="graupel_fall_flux",
-        long_name="graupel fall flux",
+    graupelfall_flux=dict(
+        standard_name="graupelfall_flux",
+        long_name="graupelfall flux",
         units="kg m-2 s-1",
         kind="diagnostic",
     ),
-    ice_fall_flux=dict(
-        standard_name="ice_fall_flux",
-        long_name="ice fall flux",
+    icefall_flux=dict(
+        standard_name="icefall_flux",
+        long_name="icefall flux",
         units="kg m-2 s-1",
         kind="diagnostic",
     ),
     precipitation_energy_flux=dict(
         standard_name="precipitation_energy_flux",
-        long_name="precipitation energy flux",
+        long_name="energy flux carried by precipitation",
         units="W m-2",
         kind="diagnostic",
     ),

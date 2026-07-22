@@ -25,7 +25,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     component as muphys_component,
     state as muphys_state,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_interface import physics_driver
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
 from icon4py.model.common import (
     constants,
     field_type_aliases as fa,
@@ -85,7 +85,7 @@ def validate_granule_state_consistency(
     """
     Validate that enabled granules have their required states allocated.
     The graupel granule is currently not checked as it will be moved to the
-    physics interface.
+    physics driver.
 
     Raises:
         ValueError: if a granule is enabled but a state it requires is None.
