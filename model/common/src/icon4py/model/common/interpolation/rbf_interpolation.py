@@ -17,6 +17,9 @@ from icon4py.model.common.grid import base as base_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, env
 
 
+_DETERMINISTIC_RBF_COEFFS = env.flag_to_bool("ICON4PY_DETERMINISTIC_RBF_COEFFS", False)
+
+
 class RBFDimension(enum.Enum):
     CELL = "cell"
     EDGE = "edge"
@@ -492,7 +495,7 @@ def _compute_rbf_interpolation_coeffs_dispatch(
     # array_namespace returns array_api_compat wrapper modules, so detect the
     # device by name rather than by module identity.
     on_gpu = "cupy" in getattr(array_ns, "__name__", "")
-    if on_gpu and env.flag_to_bool("ICON4PY_DETERMINISTIC_RBF_COEFFS", False):
+    if on_gpu and _DETERMINISTIC_RBF_COEFFS:
         # cupy's batched kernels (matmul in the matrix assembly, linalg.solve,
         # axis reductions in the normalization) are not bitwise
         # batch-size-independent, and the batch extent is the rank-local
