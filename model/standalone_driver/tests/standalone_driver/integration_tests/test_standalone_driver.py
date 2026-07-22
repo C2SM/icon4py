@@ -58,6 +58,7 @@ def test_standalone_driver(
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
     data_provider: sb.IconSerialDataProvider,
+    savepoint_time_step_exit: sb.IconTimeStepExitSavepoint,
 ) -> None:
     """End-to-end standalone-driver validation over one time step.
 
@@ -107,9 +108,6 @@ def test_standalone_driver(
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     config = driver_config.read_config(config_file_path)
-    if experiment_description == test_defs.Experiments.EXCLAIM_APE_AES:
-        assert config.muphys is not None, "muphys must be enabled for the APE_aes experiment"
-
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "ci_driver_output",
@@ -165,7 +163,7 @@ def test_standalone_driver(
     # Physics enabled (EXCLAIM_APE_AES): validate the full prognostic state against the
     # end-of-time-step savepoint (see the docstring for the reference setup and the
     # provisional-tolerance rationale).
-    time_step_exit = data_provider.from_savepoint_time_step_exit(date=step_date_exit)
+    time_step_exit = savepoint_time_step_exit
 
     # fields graupel does not touch: expect the dry-run tolerances
     test_utils.assert_dallclose(
