@@ -145,8 +145,13 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         * gtx.float64(phy_const.EARTH_ANGULAR_VELOCITY)
     )
     lapse_rate = gtx.float64(phy_const.RD) * gamma / gtx.float64(phy_const.GRAV)
+    initial_guess = 1.0
+    epsilon = gtx.float64(phy_const.WP_EPS)  # error never smaller than this for double-precision
+    # TODO(pstark): Could be changed to epsilon = gtx.maximum(gtx.float64(phy_const.WP_EPS), 10 * phy_const.DP_EPS)
+    # if we would want to make double version faster too
+    # I expect the error compared to the Fortran version to be of similar magnitude with and without that
     for k_index in range(num_levels - 1, -1, -1):
-        eta_old = array_ns.full(num_cells, fill_value=1e-7, dtype=gtx.float64)
+        eta_old = array_ns.full(num_cells, fill_value=initial_guess, dtype=gtx.float64)
         log.info(f"In Newton iteration, k = {k_index}")
         for _ in range(100):
             eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
@@ -181,7 +186,21 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             newton_function = geopot_jw - geopot[:, k_index]
             newton_function_prime = -gtx.float64(phy_const.RD) / eta_old * temperature_jw
 
-            eta_old = eta_old - newton_function / newton_function_prime
+            delta = newton_function / newton_function_prime
+            eta_old = eta_old - delta
+
+            log.info(
+                f"eta_mean,std: {eta_old.mean()}, {eta_old.std()} <-> delta: {delta.mean()}, {delta.std()}"
+            )
+
+            if array_ns.abs(delta, out=delta).max() < eta_old.max() * epsilon:
+                log.info(f"delta_abs_max={delta.max()}, eta_max={eta_old.max()}, epsilon={epsilon}")
+                break
+
+        log.info(
+            f"potential eps-factor: {array_ns.abs(delta, out=delta).max() / (eta_old.max() * gtx.float64(phy_const.WP_EPS))} (that woudl have exited)"
+        )
+        initial_guess = eta_old.min()
 
         eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
         exner_dp[:, k_index] = (eta_old * p_sfc / gtx.float64(phy_const.P0REF)) ** gtx.float64(
