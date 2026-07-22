@@ -892,13 +892,8 @@ class Diffusion:
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
             )
 
-        # Halo exchange of z_nabla2_e before the second RBF interpolation.
-        # The first stencil (calculate_nabla2_and_smag_coefficients_for_vn)
-        # computes z_nabla2_e over HALO_LEVEL_2 edges, where the E2C2V
-        # connectivity may reference vertices beyond the local grid
-        # (INVALID_INDEX). Exchanging z_nabla2_e fills the HALO with correct
-        # values from neighbouring ranks' interior, matching ICON Fortran
-        # (mo_nh_diffusion.f90: sync_patch_array(SYNC_E, ..., z_nabla2_e)).
+        # 5.  HALO EXCHANGE -- CALL sync_patch_array(SYNC_E, z_nabla2_e)
+        # ICON: mo_nh_diffusion.f90:853. Fill halo edges before second RBF.
         log.debug("communication of z_nabla2_e - start")
         self._exchange.exchange(
             dims.EdgeDim,
