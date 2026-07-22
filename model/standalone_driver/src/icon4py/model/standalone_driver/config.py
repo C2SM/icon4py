@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.common import (
     initial_condition,
     prescribed_tendencies,
@@ -324,6 +325,7 @@ class ExperimentConfig:
     tracer_config: tracer_state.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
+    muphys: muphys_config.MuphysConfig | None = None
 
     def __post_init__(self) -> None:
         # The file-based initial condition needs the clock of the driver to know which
@@ -395,9 +397,19 @@ def read_experiment_config_from_fortran(
     do_tracer_advection = not (
         "exclaim_ch_r04b09_dsl" in config_file_path.name
         or "exclaim_ape_R02B04" in config_file_path.name
+        or "exclaim_ape_aesPhys" in config_file_path.name
     )
-    # The experiments above were run in fortran with a tracer advection scheme
-    # that has not been ported to ICON4Py and can not be used for testing.
+    # These experiments' references run with tracer transport ON, but the standalone
+    # driver can't run tracer advection yet: it never computes airmass (rho*ddqz) or
+    # supplies live mass fluxes for the advection inputs (open TODO(OngChia) "compute
+    # airmass" in the driver's dynamics substepping), so advection divides tracer
+    # density by a zero airmass -> 0/0 -> NaN. The MIURA/PPM scheme itself IS ported +
+    # tested; the gap is the driver's advection setup. We therefore disable it here.
+    # For exclaim_ape_aesPhys this makes the muphys datatest validate muphys in
+    # isolation -- a known transport-off mismatch vs the reference (see the
+    # test_standalone_driver docstring). Its moisture comes from the analytical JW IC
+    # (normalize_global_moisture), independent of ntracer/advection, so disabling
+    # advection leaves muphys' tracers intact.
     # TODO (jcanton): this isn't the right place to keep a special case
     # handling. Either fix these experiments or move the special case handling.
     tracer_advection_cfg = (
@@ -408,7 +420,12 @@ def read_experiment_config_from_fortran(
     ntracer = (
         fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
     )
-    tracer_cfg = tracer_state.TracerConfig.from_ntracer(ntracer)
+    is_ape_aes = "exclaim_ape_aesPhys" in config_file_path.name
+    tracer_cfg = (
+        tracer_state.TracerConfig.all()
+        if is_ape_aes
+        else tracer_state.TracerConfig.from_ntracer(ntracer)
+    )
 
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
     # If these two namelists are missing it means that the experiment was run
@@ -447,6 +464,8 @@ def read_experiment_config_from_fortran(
             config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
         )
 
+    muphys_cfg = muphys_config.MuphysConfig() if is_ape_aes else None
+
     return ExperimentConfig(
         geometry=geometry_cfg,
         metrics=metrics_cfg,
@@ -458,6 +477,7 @@ def read_experiment_config_from_fortran(
         tracer_config=tracer_cfg,
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
+        muphys=muphys_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
             atm_dict=atm_dict, data_path=config_file_path
