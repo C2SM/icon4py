@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import datetime
 import types
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, cast
@@ -28,6 +27,7 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     model_backends,
     model_options,
+    time,
     type_alias as ta,
 )
 from icon4py.model.common.diagnostic_calculations.stencils import calculate_tendency
@@ -52,7 +52,7 @@ class MuphysComponent:
         self,
         ncells: int,
         nlev: int,
-        dtime: datetime.timedelta,
+        dtime: time.RelativeTime,
         qnc: float,
         backend: gtx_typing.Backend | None = None,
         *,
@@ -158,7 +158,7 @@ class MuphysComponent:
         )
 
     def __call__(
-        self, state: dict[str, model.DataField], time_step: datetime.datetime
+        self, state: dict[str, model.DataField], time_step: time.AbsoluteTime
     ) -> dict[str, model.DataField]:
         """Run muphys, then convert its updated state into tendencies.
 
