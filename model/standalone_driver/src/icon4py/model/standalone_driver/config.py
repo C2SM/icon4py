@@ -197,9 +197,19 @@ def read_config(
     do_tracer_advection = not (
         "exclaim_ch_r04b09_dsl" in config_file_path.name
         or "exclaim_ape_R02B04" in config_file_path.name
+        or "exclaim_ape_aesPhys" in config_file_path.name
     )
-    # The experiments above were run in fortran with a tracer advection scheme
-    # that has not been ported to ICON4Py and can not be used for testing.
+    # These experiments' references run with tracer transport ON, but the standalone
+    # driver can't run tracer advection yet: it never computes airmass (rho*ddqz) or
+    # supplies live mass fluxes for the advection inputs (see TODO(OngChia) "compute
+    # airmass" in _do_dyn_substepping), so advection divides tracer density by a zero
+    # airmass -> 0/0 -> NaN. The MIURA/PPM scheme itself IS ported + tested; the gap is
+    # the driver's advection setup. We therefore disable advection for these cases.
+    # For exclaim_ape_aesPhys this makes the muphys datatest validate muphys in
+    # isolation -- a known transport-off mismatch vs the reference (see the
+    # test_standalone_driver docstring). Its moisture comes from the analytical JW IC
+    # (normalize_global_moisture), independent of ntracer/advection, so disabling
+    # advection leaves muphys' tracers intact.
     # TODO (jcanton): this isn't the right place to keep a special case
     # handling. Either fix these experiments or move the special case handling.
     tracer_advection_config = (
