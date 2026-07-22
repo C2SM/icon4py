@@ -460,8 +460,12 @@ def test_compute_lsq_coeffs(
         cell_lon=grid_savepoint.cell_center_lon().ndarray,
         c2e2c=icon_grid.get_connectivity(dims.C2E2C).ndarray,
         cell_owner_mask=grid_savepoint.c_owner_mask().ndarray,
-        domain_length=experiment.grid.params.domain_length,
-        domain_height=experiment.grid.params.domain_height,
+        domain_length=0.0
+        if experiment.grid.params.domain_length is None
+        else experiment.grid.params.domain_length,
+        domain_height=0.0
+        if experiment.grid.params.domain_height is None
+        else experiment.grid.params.domain_height,
         grid_sphere_radius=constants.EARTH_RADIUS,
         lsq_dim_unk=experiment.config.interpolation.lsq_dim_unk,
         lsq_dim_c=experiment.config.interpolation.lsq_dim_c,
