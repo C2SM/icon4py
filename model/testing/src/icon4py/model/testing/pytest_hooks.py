@@ -140,31 +140,38 @@ def pytest_collection_modifyitems(config, items):
             pytest.exit("No tests assigned to this MPI subcomm group", returncode=0)
 
     test_level = config.getoption("--level")
-    for item in items:
-        if (marker := item.get_closest_marker("level")) is not None:
-            assert all(level in _TEST_LEVELS for level in marker.args), (
-                f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
-            )
-            if test_level == "any":
-                # Default mode: run unit and integration, but exclude validation tests
+    if test_level == "any":
+        for item in items:
+            if (marker := item.get_closest_marker("level")) is not None:
+                assert all(level in _TEST_LEVELS for level in marker.args), (
+                    f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
+                )
                 if "validation" in marker.args:
                     item.add_marker(
                         pytest.mark.skip(
                             reason="Validation tests must be explicitly requested with --level=validation."
                         )
                     )
-            elif test_level not in marker.args:
-                item.add_marker(
-                    pytest.mark.skip(
-                        reason=f"Selected level '{test_level}' does not match the configured '{marker.args}' level for this test."
-                    )
-                )
-        elif test_level not in ("unit", "any"):
-            item.add_marker(
-                pytest.mark.skip(
-                    reason=f"Selected level '{test_level}' does not match the implicit level 'unit' for this test."
-                )
+        return
+
+    def _matches_level(item: pytest.Item) -> bool:
+        if (marker := item.get_closest_marker("level")) is not None:
+            assert all(level in _TEST_LEVELS for level in marker.args), (
+                f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
             )
+            return test_level in marker.args
+        return test_level == "unit"
+
+    matched_items = []
+    removed_items = []
+    for item in items:
+        if _matches_level(item):
+            matched_items.append(item)
+        else:
+            removed_items.append(item)
+    if removed_items:
+        config.hook.pytest_deselected(items=removed_items)
+    items[:] = matched_items
 
 
 @pytest.hookimpl(trylast=True)
