@@ -27,6 +27,7 @@ from icon4py.model.common.interpolation.stencils import (
 )
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_states,
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -47,7 +48,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
-    dycore_states.DiagnosticStateNonHydro,
+    nonhydro_states.DiagnosticStateNonHydro,
     dycore_states.PrepAdvection,
     float,
     diagnostics.DiagnosticState,
@@ -356,11 +357,10 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
         grid=grid, allocator=allocator
     )
-    solve_nonhydro_diagnostic_state = dycore_states.initialize_solve_nonhydro_diagnostic_state(
-        perturbed_exner_at_cells_on_model_levels=perturbed_exner,
-        grid=grid,
-        allocator=allocator,
+    solve_nonhydro_diagnostic_state = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
+        grid=grid, allocator=allocator
     )
+    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels = perturbed_exner
     prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
     log.info("Initialization completed.")
 

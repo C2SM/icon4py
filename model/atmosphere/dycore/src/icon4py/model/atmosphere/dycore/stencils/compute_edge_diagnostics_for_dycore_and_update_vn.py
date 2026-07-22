@@ -170,6 +170,7 @@ def _compute_rho_theta_pgrad_and_update_vn(
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
     end_edge_nudging: gtx.int32,
+    end_edge_local: gtx.int32,
     end_edge_halo: gtx.int32,
 ) -> tuple[
     fa.EdgeKField[ta.wpfloat],
@@ -206,22 +207,28 @@ def _compute_rho_theta_pgrad_and_update_vn(
         ),
     )
 
-    # Note: we overcompute `horizontal_pressure_gradient`, which is only needed
-    # from start_edge_nudging_level_2 <= dims.EdgeDim < end_edge_local
-    # TODO(havogt): with multiple output domains this should be fixed.
-    horizontal_pressure_gradient = _compute_horizontal_pressure_gradient(
-        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
-        ddxn_z_full=ddxn_z_full,
-        c_lin_e=c_lin_e,
-        ikoffset=ikoffset,
-        zdiff_gradp=zdiff_gradp,
-        pg_exdist=pg_exdist,
-        inv_dual_edge_length=inv_dual_edge_length,
-        nflatlev=nflatlev,
-        nflat_gradp=nflat_gradp,
+    # The pressure gradient is computed on [start_edge_nudging_level_2, end_edge_local),
+    # matching the Fortran compute domain rl = [grf_bdywidth_e+1, min_rledge_int]. Outside
+    # this interval the E2C neighbors and the ikoffset/zdiff_gradp/pg_exdist metric fields
+    # contain skip values (-1) or are uninitialized (outer lateral-boundary rows and halo
+    # edges), and the result is never consumed there; write 0.0 instead.
+    horizontal_pressure_gradient = concat_where(
+        (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
+        _compute_horizontal_pressure_gradient(
+            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
+            ddxn_z_full=ddxn_z_full,
+            c_lin_e=c_lin_e,
+            ikoffset=ikoffset,
+            zdiff_gradp=zdiff_gradp,
+            pg_exdist=pg_exdist,
+            inv_dual_edge_length=inv_dual_edge_length,
+            nflatlev=nflatlev,
+            nflat_gradp=nflat_gradp,
+        ),
+        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
     )
 
     # Note: we overcompute `next_vn`, which is only needed
@@ -412,6 +419,7 @@ def compute_rho_theta_pgrad_and_update_vn(
     start_edge_lateral_boundary_level_7: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
     end_edge_nudging: gtx.int32,
+    end_edge_local: gtx.int32,
     end_edge_halo: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -515,6 +523,7 @@ def compute_rho_theta_pgrad_and_update_vn(
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,
         end_edge_nudging=end_edge_nudging,
+        end_edge_local=end_edge_local,
         end_edge_halo=end_edge_halo,
         out=(
             rho_at_edges_on_model_levels,
