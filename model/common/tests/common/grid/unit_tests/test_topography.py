@@ -49,7 +49,7 @@ def test_topography_smoothing_with_serialized_data(
         geofac_n2s=geofac_n2s.ndarray,
         c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
         num_iterations=num_iterations,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     assert test_utils.dallclose(topography_smoothed_ref, topography_smoothed, atol=1.0e-14)

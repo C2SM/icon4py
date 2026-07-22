@@ -397,7 +397,7 @@ def test_compute_vertical_coordinate(  # noqa: PLR0917 [too-many-positional-argu
         SLEVE_minimum_layer_thickness_2=vertical_config._SLEVE_minimum_layer_thickness_2,
         SLEVE_minimum_relative_layer_thickness_2=vertical_config._SLEVE_minimum_relative_layer_thickness_2,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     assert test_utils.dallclose(

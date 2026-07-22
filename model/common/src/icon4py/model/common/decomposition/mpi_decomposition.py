@@ -292,7 +292,7 @@ class MultiNodeResult(decomp_defs.ExchangeResult):
         return self.handle.is_ready()
 
 
-@decomp_defs.create_exchange.register(MPICommProcessProperties)
+@decomp_defs.create_exchange.register(MPICommProcessProperties)  # type: ignore[attr-defined]
 def create_multinode_node_exchange(
     process_props: MPICommProcessProperties, decomp_info: decomp_defs.DecompositionInfo
 ) -> decomp_defs.ExchangeRuntime:
@@ -457,7 +457,7 @@ class GlobalReductions(Reductions):
         )
 
 
-@decomp_defs.create_reduction.register(MPICommProcessProperties)
+@decomp_defs.create_reduction.register(MPICommProcessProperties)  # type: ignore[attr-defined]
 def create_global_reduction(
     process_props: MPICommProcessProperties, decomposition_info: decomp_defs.DecompositionInfo
 ) -> Reductions:

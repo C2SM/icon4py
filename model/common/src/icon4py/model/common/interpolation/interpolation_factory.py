@@ -146,7 +146,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
         config: InterpolationConfig,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+        process_props: decomposition.ProcessProperties,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -156,7 +156,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
-        self._exchange = exchange
+        self._exchange = decomposition.create_exchange(process_props, decomposition_info)
         self._config = config
         domain_length = self.grid.grid_params.domain_length
         domain_height = self.grid.grid_params.domain_height

@@ -143,7 +143,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
         geometry_type=icon_grid.grid_params.geometry_type,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     least_squares_state = construct_least_squares_state(least_squares_coeffs, backend=backend)
@@ -162,7 +162,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
         cell_params=cell_geometry,
         even_timestep=even_timestep,
         backend=backend,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     diagnostic_state = construct_diagnostic_init_state(

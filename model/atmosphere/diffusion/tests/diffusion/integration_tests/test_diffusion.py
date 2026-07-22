@@ -186,7 +186,7 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
     )
 
     assert diffusion_granule.diff_multfac_w == min(
@@ -302,7 +302,7 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
     )
 
     _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule, backend)
@@ -370,7 +370,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
     )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -426,7 +426,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
     )
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v

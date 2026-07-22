@@ -30,12 +30,14 @@ def get_grid_manager_from_experiment(
     experiment: definitions.Experiment,
     keep_skip_values: bool,
     allocator: gtx_typing.Allocator,
+    process_props: decomposition.ProcessProperties | None = None,
 ) -> gm.GridManager:
     return get_grid_manager_from_identifier(
         experiment.grid,
         num_levels=experiment.config.vertical_grid.num_levels,
         keep_skip_values=keep_skip_values,
         allocator=allocator,
+        process_props=process_props,
     )
 
 
@@ -44,10 +46,15 @@ def get_grid_manager_from_identifier(
     num_levels: int,
     keep_skip_values: bool,
     allocator: gtx_typing.Allocator,
+    process_props: decomposition.ProcessProperties | None = None,
 ) -> gm.GridManager:
     grid_file = _download_grid_file(grid)
     return get_grid_manager(
-        grid_file, num_levels=num_levels, keep_skip_values=keep_skip_values, allocator=allocator
+        grid_file,
+        num_levels=num_levels,
+        keep_skip_values=keep_skip_values,
+        allocator=allocator,
+        process_props=process_props,
     )
 
 
@@ -56,6 +63,7 @@ def get_grid_manager(
     num_levels: int,
     keep_skip_values: bool,
     allocator: gtx_typing.Allocator,
+    process_props: decomposition.ProcessProperties | None = None,
 ) -> gm.GridManager:
     """
     Construct a GridManager instance for an ICON grid file.
@@ -64,14 +72,17 @@ def get_grid_manager(
         filename: full path to the file
         num_levels: number of vertical levels, needed for IconGrid construction but independent from grid file
         keep_skip_values: whether to keep skip values
-        backend: the gt4py Backend we are running on
+        allocator: the allocator to use
+        process_props: process properties, defaults to single-node if not provided
     """
+    if process_props is None:
+        process_props = decomposition.SingleNodeProcessProperties()
     manager = gm.GridManager(
         grid_file=filename,
         config=v_grid.VerticalGridConfig(num_levels=num_levels),
         offset_transformation=gridfile.ToZeroBasedIndexTransformation(),
     )
-    manager(allocator=allocator, keep_skip_values=keep_skip_values)
+    manager(allocator=allocator, keep_skip_values=keep_skip_values, process_props=process_props)
     return manager
 
 
@@ -125,7 +136,6 @@ def get_grid_geometry(
             metadata=geometry_attrs.attrs,
             config=experiment_config.geometry,
             process_props=decomposition.SingleNodeProcessProperties(),
-            exchange=decomposition.single_node_exchange,
         )
 
     if not grid_geometries.get(register_name):

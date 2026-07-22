@@ -155,8 +155,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
         config: MetricsConfig,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
-        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
+        process_props: decomposition.ProcessProperties,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -167,9 +166,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
-        self._exchange = exchange
+        self._exchange = decomposition.create_exchange(process_props, decomposition_info)
         self._interpolation_source = interpolation_source
-        self._global_reductions = global_reductions
+        self._global_reductions = decomposition.create_reduction(process_props, decomposition_info)
         log.info(
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )

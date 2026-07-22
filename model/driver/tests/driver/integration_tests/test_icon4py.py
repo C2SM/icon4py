@@ -169,7 +169,7 @@ def test_run_timeloop_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     sp = savepoint_nonhydro_init
@@ -244,7 +244,7 @@ def test_run_timeloop_single_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
