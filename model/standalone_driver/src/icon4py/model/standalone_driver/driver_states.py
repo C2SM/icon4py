@@ -252,8 +252,12 @@ def assemble_driver_states(
     )
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
-    rbf_vec_coeff_c1 = static_fields.interpolation.export(interpolation_attributes.RBF_VEC_COEFF_C1)
-    rbf_vec_coeff_c2 = static_fields.interpolation.export(interpolation_attributes.RBF_VEC_COEFF_C2)
+    rbf_vec_coeff_c1 = static_fields.interpolation.export_field(
+        interpolation_attributes.RBF_VEC_COEFF_C1
+    )
+    rbf_vec_coeff_c2 = static_fields.interpolation.export_field(
+        interpolation_attributes.RBF_VEC_COEFF_C2
+    )
 
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
         p_e_in=prognostic_states.current.vn,
@@ -272,7 +276,7 @@ def assemble_driver_states(
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
     gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
         field_a=prognostic_states.current.exner,
-        field_b=static_fields.metrics.export(metrics_attributes.EXNER_REF_MC),
+        field_b=static_fields.metrics.export_field(metrics_attributes.EXNER_REF_MC),
         output_field=perturbed_exner,
         horizontal_start=0,
         horizontal_end=grid.num_cells,
