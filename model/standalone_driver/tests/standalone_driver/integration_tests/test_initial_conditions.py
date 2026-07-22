@@ -11,11 +11,10 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import initial_condition, model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.states.data import QV
-from icon4py.model.standalone_driver import driver_utils, initial_condition, standalone_driver
+from icon4py.model.common.states import data, prognostic_state as prognostics
+from icon4py.model.standalone_driver import driver_utils, standalone_driver
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -25,6 +24,41 @@ from icon4py.model.testing.fixtures.datatest import (
     experiment_description,
     process_props,
 )
+
+
+# Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends
+# (gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu).
+_TOLERANCES: dict[definitions.ExperimentDescription, dict[str, tuple[float, float]]] = {
+    definitions.Experiments.JW: {
+        "rho": (6.5e-15, 1.3e-14),
+        "exner": (2.2e-15, 3.8e-15),
+        "theta_v": (2.2e-12, 3.7e-15),
+        "vn": (3.2e-13, 0.0),
+        "w": (1.5e-17, 0.0),
+    },
+    # No 'qv' yet: the tracers arrive with C2SM/icon4py#1301.
+    definitions.Experiments.EXCLAIM_APE_AES: {
+        "rho": (6.4e-15, 1.3e-14),
+        "exner": (2.2e-15, 3.8e-15),
+        "theta_v": (2.2e-12, 3.8e-15),
+        "vn": (3.2e-13, 0.0),
+        "w": (0.0, 0.0),
+    },
+    definitions.Experiments.GAUSS3D: {
+        "rho": (1.2e-15, 3e-15),
+        "exner": (6.7e-16, 1.3e-15),
+        "theta_v": (1.2e-13, 4e-16),
+        "vn": (0.0, 0.0),
+        "w": (0.0, 0.0),
+    },
+    definitions.Experiments.MCH_CH_R04B09: {
+        "rho": (0.0, 0.0),
+        "exner": (0.0, 0.0),
+        "theta_v": (0.0, 0.0),
+        "vn": (0.0, 0.0),
+        "w": (0.0, 0.0),
+    },
+}
 
 
 @pytest.mark.embedded_remap_error
@@ -39,7 +73,9 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 @pytest.mark.datatest
 def test_initial_conditions(
+    experiment_description: definitions.ExperimentDescription,
     experiment: definitions.Experiment,
+    *,
     data_provider: sb.IconSerialDataProvider,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
@@ -57,9 +93,8 @@ def test_initial_conditions(
         allocator=allocator,
         process_props=process_props,
     )
-    # TODO(1320): replace with shared ExperimentConfig protocol once duplication is resolved
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        config=config,  # type: ignore[arg-type]
+        config=config,
         grid_manager=grid_manager,
         process_props=process_props,
         backend=backend,
@@ -76,48 +111,41 @@ def test_initial_conditions(
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
+        solve_nonhydro_diagnostic_state=None,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
     )
     prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
-    test_utils.assert_dallclose(
-        prognostic_state_now.rho.asnumpy(),
-        prognostics_savepoint.rho_now().asnumpy(),
-    )
+    computed = {
+        "rho": prognostic_state_now.rho,
+        "exner": prognostic_state_now.exner,
+        "theta_v": prognostic_state_now.theta_v,
+        "vn": prognostic_state_now.vn,
+        "w": prognostic_state_now.w,
+    }
+    references = {
+        "rho": prognostics_savepoint.rho_now(),
+        "exner": prognostics_savepoint.exner_now(),
+        "theta_v": prognostics_savepoint.theta_v_now(),
+        "vn": prognostics_savepoint.vn_now(),
+        "w": prognostics_savepoint.w_now(),
+    }
 
-    test_utils.assert_dallclose(
-        prognostic_state_now.exner.asnumpy(),
-        prognostics_savepoint.exner_now().asnumpy(),
-        atol=1e-14,
-    )
-
-    test_utils.assert_dallclose(
-        prognostic_state_now.theta_v.asnumpy(),
-        prognostics_savepoint.theta_v_now().asnumpy(),
-        atol=1e-11,
-    )
-
-    test_utils.assert_dallclose(
-        prognostic_state_now.vn.asnumpy(),
-        prognostics_savepoint.vn_now().asnumpy(),
-        atol=1e-12,
-    )
-
-    test_utils.assert_dallclose(
-        prognostic_state_now.w.asnumpy(),
-        prognostics_savepoint.w_now().asnumpy(),
-        atol=1e-12,
-    )
-
-    # Moist experiments (e.g. APE) initialize the water-vapour tracer. qv is produced by an
-    # iterative solve (qv_from_relative_humidity), so it agrees with ICON only to round-off;
-    # use an absolute tolerance like the other prognostic checks above rather than the
-    # default atol=0 (max abs diff observed ~2e-14 on qv values ~1e-2).
+    # Moist experiments (e.g. APE) initialize the water-vapour tracer
     if prognostic_state_now.tracer.qv is not None:
+        computed["qv"] = prognostic_state_now.tracer.qv
+        references["qv"] = prognostics_savepoint.tracer_now(data.QV)
+
+    tolerances = _TOLERANCES[experiment_description]
+
+    for name, reference in references.items():
+        atol, rtol = tolerances[name]
         test_utils.assert_dallclose(
-            prognostic_state_now.tracer.qv.asnumpy(),
-            prognostics_savepoint.tracer_now(QV).asnumpy(),
-            atol=1e-13,
+            computed[name].asnumpy(),
+            reference.asnumpy(),
+            atol=atol,
+            rtol=rtol,
+            err_msg=name,
         )

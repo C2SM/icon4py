@@ -8,13 +8,9 @@
 
 import dataclasses
 import typing
-
-from typing_extensions import Self
+from typing import Self
 
 from icon4py.model.common.utils import fortran_config
-
-
-T = typing.TypeVar("T")
 
 
 class NotDataclassError(Exception): ...
@@ -24,6 +20,9 @@ class MissingConfigOptionAnnotationError(Exception): ...
 
 
 class MultipleOptionAnnotationsError(Exception): ...
+
+
+class NotRead: ...
 
 
 @dataclasses.dataclass
@@ -40,11 +39,95 @@ class IconOption:
     read_from_icon: bool = True
     converter: typing.Callable[[typing.Any], typing.Any] | None = None
 
+    def convert(
+        self: Self,
+        icon_config: dict,
+        fallback_converter: typing.Callable[[typing.Any], typing.Any] | None,
+    ) -> typing.Any | type[NotRead]:
+        """
+        Convert from ICON namelist value.
+
+        The `fallback_converter` parameter is usually the type of the dataclass field annotated with this instance.
+
+        Examples:
+
+            >>> icon_opt = IconOption(name="a", path=())
+            >>> icon_opt.convert({"a": "1"}, fallback_converter=int)
+            1
+
+            >>> icon_opt = IconOption(name="b", path=(), converter=lambda v: v + 1)
+            >>> icon_opt.convert({"b": 1}, fallback_converter=int)
+            2
+
+            >>> IconOption(name="c", path=(), read_from_icon=False).convert(
+            ...     {"c": 3}, fallback_converter=int
+            ... )
+            NotRead
+        """
+        if self.read_from_icon:
+            data = icon_config
+            for subsection in self.path:
+                data = data[subsection]
+            raw_value = data[self.name]
+            de_listified = (
+                fortran_config.list_to_value(raw_value) if self.list_to_value else raw_value
+            )
+            converter = self.converter or fallback_converter
+            return converter(de_listified) if converter else de_listified
+        else:
+            return NotRead
+
+
+@dataclasses.dataclass
+class IconMultiOption:
+    """
+    Merge multiple ICON config options into one ICON4Py option.
+
+    Individual options apply their own converter first if they have one.
+    They then pass the result into the multi-option's '.converter' as kwargs,
+    with keys corresponding to their '.name' attribute.
+    """
+
+    options: list[IconOption]
+    converter: typing.Callable[..., typing.Any]
+
+    def convert(self: Self, icon_config: dict, fallback_converter: type) -> typing.Any:
+        """
+        Merge and convert from multiple ICON namelist values
+
+        Examples:
+
+            >>> simple = IconMultiOption(
+            ...     options=[IconOption(name="a", path=()), IconOption(name="b", path=())],
+            ...     converter=lambda a, b: b or a,
+            ... )
+            >>> simple.convert({"a": True, "b": False})
+            True
+
+            >>> advanced = IconMultiOption(
+            ...     options=[
+            ...         IconOption(name="a", path=(), converter=lambda a: a == "on"),
+            ...         IconOption(name="b", path=(), converter=lambda b: b % 2 > 1),
+            ...     ],
+            ...     converter=lambda a, b: b or a,
+            ... )
+            >>> advanced.convert({"a": "on", "b": 6})
+            True
+        """
+        _ = fallback_converter
+        return self.converter(
+            **{
+                icon_opt.name: icon_opt.convert(icon_config, fallback_converter=None)
+                for icon_opt in self.options
+                if icon_opt.read_from_icon
+            }
+        )
+
 
 @dataclasses.dataclass
 class ConfigOption:
     description: str
-    icon_equivalent: IconOption | None = None
+    icon_equivalent: IconOption | IconMultiOption | None = None
 
     @classmethod
     def from_type_hint(cls: type[Self], annotated: typing.Any) -> Self:
@@ -129,23 +212,15 @@ def iter_pairs_from_icon(
     if not dataclasses.is_dataclass(config_cls):
         raise NotDataclassError(str(config_cls))
     for name, opt in ConfigOption.iter_from_config_class(config_cls):
-        if opt.icon_equivalent and opt.icon_equivalent.read_from_icon:
-            data = icon_config
-            for subsection in opt.icon_equivalent.path:
-                data = data[subsection]
-            raw_value = data[opt.icon_equivalent.name]
-            de_listified = (
-                fortran_config.list_to_value(raw_value)
-                if opt.icon_equivalent.list_to_value
-                else raw_value
-            )
-            converter = opt.icon_equivalent.converter or annotations[name]
-            yield name, converter(de_listified)
+        if opt.icon_equivalent:
+            converted = opt.icon_equivalent.convert(icon_config, annotations[name])
+            if converted is not NotRead:
+                yield name, converted
 
 
 def construct_config_from_icon(
-    config_cls: type[T], icon_config: dict[str, typing.Any], **overrides: typing.Any
-) -> T:
+    config_cls: type, icon_config: dict[str, typing.Any], **overrides: typing.Any
+) -> typing.Any:
     """
     Construct a configuration instance from a fortran ICON config dict.
 

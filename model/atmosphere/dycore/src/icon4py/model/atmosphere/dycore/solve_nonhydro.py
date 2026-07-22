@@ -66,7 +66,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -582,6 +582,7 @@ class SolveNonhydro:
                 "start_edge_lateral_boundary_level_7": self._start_edge_lateral_boundary_level_7,
                 "start_edge_nudging_level_2": self._start_edge_nudging_level_2,
                 "end_edge_nudging": self._end_edge_nudging,
+                "end_edge_local": self._end_edge_local,
                 "end_edge_halo": self._end_edge_halo,
                 "horizontal_start": gtx.int32(0),
                 "horizontal_end": self._end_edge_halo_level_2,
@@ -1113,7 +1114,7 @@ class SolveNonhydro:
     def time_step(
         self,
         *,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         second_order_divdamp_factor: float,
@@ -1197,7 +1198,7 @@ class SolveNonhydro:
     def run_predictor_step(
         self,
         *,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         dtime: float,
@@ -1375,7 +1376,7 @@ class SolveNonhydro:
     def run_corrector_step(
         self,
         *,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         second_order_divdamp_factor: float,
