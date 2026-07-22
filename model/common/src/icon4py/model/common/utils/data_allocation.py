@@ -221,7 +221,7 @@ def list2field(
     xp = array_namespace(values)
     arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
     arr[indices] = values
-    return gtx.as_field(domain, arr, allocator=allocator)
+    return gtx.as_field(domain, arr, allocator=allocator, dtype=type(default_value))
 
 
 def adjust_fortran_indices(inp: NDArray) -> NDArray:

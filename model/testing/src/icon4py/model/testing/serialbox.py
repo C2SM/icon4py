@@ -953,7 +953,7 @@ class MetricSavepoint(IconSavepoint):
                 slice(None),
                 data_alloc.adjust_fortran_indices(zd_vertidx),
             ),
-            default_value=gtx.float64(0.0),
+            default_value=wpfloat(0.0),
             allocator=model_backends.get_allocator(self.backend),
         )
 
@@ -969,7 +969,7 @@ class MetricSavepoint(IconSavepoint):
                 data_alloc.adjust_fortran_indices(zd_cellidx),
                 data_alloc.adjust_fortran_indices(zd_vertidx),
             ),
-            default_value=gtx.float64(0.0),
+            default_value=wpfloat(0.0),
             allocator=model_backends.get_allocator(self.backend),
         )
 

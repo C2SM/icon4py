@@ -14,7 +14,7 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import model_backends, model_options, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import datatest_utils as dt_utils, definitions
 
@@ -498,5 +498,5 @@ def is_iau_active() -> bool:
 
 
 @pytest.fixture
-def iau_wgt_dyn() -> float:
-    return 0.0
+def iau_wgt_dyn() -> ta.wpfloat:
+    return ta.wpfloat(0.0)
