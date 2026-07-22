@@ -7,8 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+from gt4py.next import astype
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import serialbox as sb
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
@@ -41,8 +43,8 @@ def interpolation_state(
     interpolation_savepoint: sb.InterpolationSavepoint,
 ) -> diffusion_states.DiffusionInterpolationState:
     return diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
-        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        e_bln_c_s=astype(interpolation_savepoint.e_bln_c_s(), wpfloat),
+        rbf_coeff_1=astype(interpolation_savepoint.rbf_vec_coeff_v1(), wpfloat),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
         geofac_div=interpolation_savepoint.geofac_div(),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),

@@ -22,7 +22,9 @@ from icon4py.model.common.type_alias import precision, vpfloat
 from icon4py.model.testing import config
 
 
-if precision == "double":
+wp_is_dp = precision == "double"
+
+if wp_is_dp:
 
     def scale_tol(x):
         """identity for double-precision"""
