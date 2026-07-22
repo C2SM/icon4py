@@ -473,7 +473,7 @@ def test_compute_lsq_coeffs(
         start_idx=icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         min_rlcell_int=icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
         geometry_type=icon_grid.grid_params.geometry_type,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     assert test_helpers.dallclose(
