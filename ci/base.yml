@@ -150,7 +150,7 @@ variables:
   # signal according to https://man7.org/linux/man-pages/man7/signal.7.html and
   # https://tldp.org/LDP/abs/html/exitcodes.html.
   retry:
-    max: 3
+    max: 2
     when:
       - runner_system_failure
       - runner_interrupted
