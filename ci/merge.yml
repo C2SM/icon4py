@@ -1,13 +1,6 @@
 include:
   - local: 'ci/base.yml'
 
-workflow:
-  rules:
-    # Completely skip the pipeline on main, not needed there.
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: never
-    - when: always
-
 variables:
   # See default.yml and generate_ci_pipeline.py for details on how these are
   # used. This pipeline gates merges and variables should not be overridden.
@@ -21,43 +14,41 @@ variables:
   GRIDS: "simple:icon_regional"
   TOOLS_SUBSETS: "datatest:unittest"
 
-.merge_queue_only:
-  rules: &merge_queue_only
+.only_merge_queue:
+  rules: &only_merge_queue
     - if: $CI_COMMIT_BRANCH =~ /^gh-readonly-queue/
       when: always
     - when: never
 
-.pr_only:
-  rules: &pr_only
+.not_merge_queue:
+  rules: &not_merge_queue
     - if: $CI_COMMIT_BRANCH =~ /^gh-readonly-queue/
-      when: never
-    - if: $CI_COMMIT_BRANCH == "main"
       when: never
     - when: always
 
 merge_check:
   extends: [.container-runner-lightweight-zen2]
-  rules: *pr_only
+  rules: *not_merge_queue
   image: alpine:latest
   script:
-    - echo "Skipping full CSCS merge tests on PR; will run in merge queue"
+    - echo "Skipping full merge pipeline; only runs in merge queue"
 
 build_baseimage_aarch64:
   extends: [.build_baseimage_aarch64]
-  rules: *merge_queue_only
+  rules: *only_merge_queue
 
 build_venv_aarch64:
   extends: [.build_venv_aarch64]
-  rules: *merge_queue_only
+  rules: *only_merge_queue
 
 build_image_aarch64:
   extends: [.build_image_aarch64]
-  rules: *merge_queue_only
+  rules: *only_merge_queue
 
 generate_test_child_pipeline:
   extends: [.generate_test_child_pipeline]
-  rules: *merge_queue_only
+  rules: *only_merge_queue
 
 trigger_test_child_pipeline:
   extends: [.trigger_test_child_pipeline]
-  rules: *merge_queue_only
+  rules: *only_merge_queue
