@@ -13,6 +13,7 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
 
+from icon4py.model.common.config import reader as confreader
 from icon4py.model.common.topography import from_file as from_file_topo
 from icon4py.model.common.topography.analytical import (
     flat_topography as flat_topo,
@@ -29,6 +30,51 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import grid_manager as gm
 
 log = logging.getLogger(__name__)
+
+
+@confreader.CONV.register_unstructure_hook
+def unstructure_topoconfig_union(
+    topoconfig: flat_topo.FlatTopographyConfig
+    | jw_topo.JablonowskiWilliamsonConfig
+    | gausshill_topo.GaussianHillConfig
+    | from_file_topo.FromFileConfig,
+) -> dict:
+    topotype = "unknown"
+    match topoconfig:
+        case flat_topo.FlatTopographyConfig():
+            topotype = "flat"
+        case jw_topo.JablonowskiWilliamsonConfig():
+            topotype = "jablonowski_williamson"
+        case gausshill_topo.GaussianHillConfig():
+            topotype = "gaussian_hill"
+        case from_file_topo.FromFileConfig():
+            topotype = "from_file"
+    return {"type": topotype, **confreader.CONV.unstructure(topoconfig)}
+
+
+@confreader.CONV.register_structure_hook
+def structure_topoconfig_union(
+    config_dict: dict, _: Any
+) -> (
+    flat_topo.FlatTopographyConfig
+    | jw_topo.JablonowskiWilliamsonConfig
+    | gausshill_topo.GaussianHillConfig
+    | from_file_topo.FromFileConfig
+):
+    topoclass: type | None
+    match topotype := config_dict.pop("type"):
+        case "flat":
+            topoclass = flat_topo.FlatTopographyConfig
+        case "jablonowski_williamson":
+            topoclass = jw_topo.JablonowskiWilliamsonConfig
+        case "gaussian_hill":
+            topoclass = gausshill_topo.GaussianHillConfig
+        case "from_file":
+            topoclass = from_file_topo.FromFileConfig
+        case _:
+            raise TypeError(f"Unsupported topography type: '{topotype}'.")
+
+    return confreader.CONV.structure(config_dict, topoclass)  # type: ignore[return-value]
 
 
 @dataclasses.dataclass

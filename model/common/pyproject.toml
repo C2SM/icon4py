@@ -27,8 +27,10 @@ dependencies = [
   'array-api-compat>=1.13.0',
   'gt4py==1.1.12',
   'packaging>=20.0',
-  'numpy>=1.23.3',
-  "serialbox4py>=2.6.2"  # needed to read topography from file until IO is done
+  'numpy>=1.23.3',  # needed to read topography from file until IO is done
+  "serialbox4py>=2.6.2",
+  "cattrs>=26.1.0",
+  "pyyaml>=6.0.3"
 ]
 description = "Shared code for the icon4py model."
 license = {text = "BSD-3 License"}
