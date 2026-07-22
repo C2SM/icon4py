@@ -53,7 +53,6 @@ ALL_MODEL_SUBPACKAGES = [
     "microphysics",
     "muphys",
     "common",
-    "driver",
     "standalone_driver",
 ]
 

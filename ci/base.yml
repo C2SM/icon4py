@@ -155,7 +155,7 @@ variables:
     - if: $MODEL_SUBPACKAGE == 'standalone_driver'
       variables:
         SLURM_TIMELIMIT: '00:50:00'
-    - if: $MODEL_SUBPACKAGE == 'driver' || $MODEL_SUBPACKAGE == 'dycore' || $MODEL_SUBPACKAGE == 'muphys'
+    - if: $MODEL_SUBPACKAGE == 'dycore' || $MODEL_SUBPACKAGE == 'muphys'
       variables:
         SLURM_TIMELIMIT: '00:30:00'
     - when: on_success
