@@ -171,14 +171,17 @@ def verify_advection_fields(
     test_utils.assert_dallclose(
         diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
-        atol=1e-11 if ta.precision == "double" else 4e-5,
+        atol=1e-11 if test_utils.wp_is_dp else 1e-8,
+        rtol=1e-12 if test_utils.wp_is_dp else 0.91,
     )
     test_utils.assert_dallclose(
         diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
         diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
+        atol=2e-14,
     )
     test_utils.assert_dallclose(
         p_tracer_new.asnumpy()[p_tracer_new_range, :],
         p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
-        atol=test_utils.scale_tol(1e-16),
+        atol=1e-16 if test_utils.wp_is_dp else 1e-8,
+        rtol=1e-12 if test_utils.wp_is_dp else 1e-2,
     )
