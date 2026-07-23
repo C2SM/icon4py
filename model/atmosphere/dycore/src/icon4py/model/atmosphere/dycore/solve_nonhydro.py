@@ -165,7 +165,7 @@ class NonHydrostaticConfig:
     iadv_rhotheta: typing.Annotated[
         dycore_states.RhoThetaAdvectionType,
         common_conf_opt.ConfigOption(
-            description="Advection method for rho and theta.",
+            description="Tracer advection method for rho and theta.",
             icon_equivalent=common_conf_opt.IconOption(
                 name="iadv_rhotheta", path=("nonhydrostatic_nml",)
             ),
