@@ -30,7 +30,7 @@ class TestSnowNumberAesGraupel(StencilTest):
         rho_s: np.ndarray,
         **kwargs,
     ) -> dict:
-        # mirrors icon-nwp mo_aes_graupel.f90 snow_number
+        # mirrors icon-mpim mo_aes_graupel.f90 snow_number
         n0s1 = 13.5 * 5.65e05
         tc = np.clip(t, 233.15, 273.15) - 273.15
         alf = 10.0 ** (-1.65 + tc * (5.45e-2 + tc * 3.27e-4))

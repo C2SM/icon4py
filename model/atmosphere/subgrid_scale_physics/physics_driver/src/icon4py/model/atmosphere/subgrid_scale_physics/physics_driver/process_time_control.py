@@ -49,3 +49,25 @@ class ProcessTimeControl:
             return False
         elapsed = simulation_current_datetime - self.start_date
         return elapsed % self.interval == datetime.timedelta(0)
+
+    def validate_interval(self, dtime: datetime.timedelta) -> None:
+        """Fail loud if the firing interval cannot align with the model timestep.
+
+        ``is_active`` fires only when the elapsed time is an exact multiple of
+        ``interval``. With a discrete timestep that is observed only when
+        ``interval`` is a positive integer multiple of ``dtime`` -- otherwise the
+        process fires only at common multiples of both (or never), silently.
+        """
+        if not self.enable_process:
+            return
+        if self.interval <= datetime.timedelta(0):
+            raise ValueError(
+                f"time-control interval must be positive for an enabled process, "
+                f"got {self.interval}"
+            )
+        if self.interval % dtime != datetime.timedelta(0):
+            raise ValueError(
+                f"time-control interval {self.interval} is not an integer multiple of "
+                f"the model timestep {dtime}: the process would fire only at common "
+                "multiples of both (or never)"
+            )

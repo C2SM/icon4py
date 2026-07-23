@@ -33,7 +33,7 @@ class TestCloudToSnowAesGraupel(StencilTest):
         lam: np.ndarray,
         **kwargs,
     ) -> dict:
-        # mirrors icon-nwp mo_aes_graupel.f90 cloud_to_snow (riming tuning factor 3.0)
+        # mirrors icon-mpim mo_aes_graupel.f90 cloud_to_snow (riming tuning factor 3.0)
         c_rim = 2.61 * 0.9 * 25.0 * 3.0
         rate = np.where(
             (np.minimum(qc, qs) > 1.0e-15) & (t > 236.15),

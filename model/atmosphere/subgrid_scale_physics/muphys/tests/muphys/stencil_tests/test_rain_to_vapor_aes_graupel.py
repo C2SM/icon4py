@@ -34,7 +34,7 @@ class TestRainToVaporAesGraupel(StencilTest):
         dt: np.ndarray,
         **kwargs,
     ) -> dict:
-        # mirrors icon-nwp mo_aes_graupel.f90 rain_to_vapor
+        # mirrors icon-mpim mo_aes_graupel.f90 rain_to_vapor
         a_ev = [-5.532194e00, 2.432848e-01, -4.145391e-02, -1.798439e-03, -1.405764e-05]
         tc = t - 273.15
         evap_max = (0.61 + tc * (-0.0163 + 1.111e-4 * tc)) * (-dvsw) / dt

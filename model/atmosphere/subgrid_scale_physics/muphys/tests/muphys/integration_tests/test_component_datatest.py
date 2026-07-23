@@ -30,6 +30,7 @@ _MINI = utils.MuphysExperiment(name="mini", type=utils.ExperimentType.FULL_MUPHY
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.level("integration")
 @pytest.mark.parametrize("experiment", [_MINI], ids=lambda e: e.name)
 def test_granule_matches_direct_muphys(
     backend_like: model_backends.BackendLike,

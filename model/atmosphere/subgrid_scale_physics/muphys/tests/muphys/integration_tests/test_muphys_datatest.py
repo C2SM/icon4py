@@ -57,6 +57,7 @@ if TYPE_CHECKING:
 #     1.0 and not set in the experiment, hence a no-op here).
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "experiment_description",
     [definitions.Experiments.EXCLAIM_APE_AES],

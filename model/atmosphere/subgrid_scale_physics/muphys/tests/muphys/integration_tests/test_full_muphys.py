@@ -41,6 +41,7 @@ class Experiments:
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "experiment",
     [

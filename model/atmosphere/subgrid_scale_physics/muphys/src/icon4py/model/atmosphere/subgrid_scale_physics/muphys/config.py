@@ -30,5 +30,5 @@ class MuphysScheme(enum.Enum):
 class MuphysConfig:
     """Configuration for the muphys microphysics component."""
 
-    qnc: float = 50.0e6  # cloud droplet number concentration [m^-3], matches Fortran cloud_num
-    scheme: MuphysScheme = MuphysScheme.AES_GRAUPEL  # the driver validates against icon-nwp
+    qnc: float = 50.0e6  # cloud droplet number concentration [m^-3]
+    scheme: MuphysScheme = MuphysScheme.AES_GRAUPEL

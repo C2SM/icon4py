@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_drive
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
+from icon4py.model.common.components.physics_state import PhysicsState
 from icon4py.model.common.states.model import FieldMetaData
 
 
@@ -103,6 +104,20 @@ class TestProcessTimeControl:
         with pytest.raises(dataclasses.FrozenInstanceError):
             tc.interval = datetime.timedelta(seconds=1)  # type: ignore[misc]
 
+    def test_validate_interval_accepts_integer_multiple(self) -> None:
+        _tc(interval=2 * _DT).validate_interval(_DT)
+
+    def test_validate_interval_rejects_non_multiple(self) -> None:
+        with pytest.raises(ValueError, match="integer multiple"):
+            _tc(interval=1.5 * _DT).validate_interval(_DT)
+
+    def test_validate_interval_rejects_zero_interval_when_enabled(self) -> None:
+        with pytest.raises(ValueError, match="positive"):
+            _tc(interval=datetime.timedelta(0)).validate_interval(_DT)
+
+    def test_validate_interval_skips_disabled_process(self) -> None:
+        _tc(interval=1.5 * _DT, enable_process=False).validate_interval(_DT)
+
 
 def test_physics_process_construction() -> None:
     class _DummyComponent:
@@ -159,7 +174,7 @@ class RecordingComponent:
 
 
 @dataclasses.dataclass
-class RecordingPhysicsState:
+class RecordingPhysicsState(PhysicsState):
     """Stub PhysicsState: records refresh / scatter; returns a fixed dict
     from as_component_input. Implements just enough surface for the PhysicsDriver."""
 
@@ -224,6 +239,30 @@ def test_run_invokes_components_in_order() -> None:
     # B's scatter must follow A's (operator-splitting ordering)
     assert state.scatter_calls[0][1] == {"tend_temperature": "A"}
     assert state.scatter_calls[1][1] == {"tend_temperature": "B"}
+
+
+def test_run_raises_for_non_multiple_interval() -> None:
+    state = RecordingPhysicsState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "X"},
+        output_kinds={"tend_temperature": "tendency"},
+    )
+    driver = PhysicsDriver(
+        processes=[
+            PhysicsProcess(
+                name="X", component=comp, state=state, time_control=_tc(interval=1.5 * _DT)
+            ),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="integer multiple"):
+        driver.run(
+            prognostic="prog",
+            tracers="tracers",
+            dtime=_DT,
+            simulation_current_datetime=_T0,
+        )
+    assert comp.call_count == 0
 
 
 def test_disabled_process_is_skipped() -> None:

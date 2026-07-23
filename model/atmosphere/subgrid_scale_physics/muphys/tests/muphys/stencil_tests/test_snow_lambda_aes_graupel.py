@@ -30,7 +30,7 @@ class TestSnowLambdaAesGraupel(StencilTest):
         ns: np.ndarray,
         **kwargs,
     ) -> dict:
-        # mirrors icon-nwp mo_aes_graupel.f90 snow_lambda
+        # mirrors icon-mpim mo_aes_graupel.f90 snow_lambda
         lam = np.where(rho_s > 1.0e-15, (2.0 * 0.069 * ns / rho_s) ** (1.0 / 3.0), 1.0e10)
         return dict(riming_snow_rate=lam)
 

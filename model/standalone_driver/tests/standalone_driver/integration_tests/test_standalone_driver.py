@@ -70,6 +70,7 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
 
 
 @pytest.mark.datatest
+@pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description, istep_exit, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",

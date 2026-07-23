@@ -85,9 +85,10 @@ class PhysicsDriver:
         simulation_current_datetime: datetime.datetime,
     ) -> None:
         for proc in self._processes:
+            tc = proc.time_control
+            tc.validate_interval(dtime)
             state = proc.state
             state.gather_from_prognostic(prognostic, tracers)
-            tc = proc.time_control
             if not tc.enable_process:
                 continue
             if not tc.is_in_window(simulation_current_datetime):

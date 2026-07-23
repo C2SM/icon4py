@@ -869,8 +869,7 @@ def _cloud_to_snow_aes_graupel(
     Compute the conversion rate from cloud to snow, AES_GRAUPEL scheme.
 
     Same as _cloud_to_snow with the additional riming tuning factor 3.0
-    (icon-mpim mo_aes_graupel.f90 cloud_to_snow; the icon-nwp version has no
-    tuning factor).
+    (icon-mpim mo_aes_graupel.f90 cloud_to_snow).
 
     Args:
         t:                  Temperature
