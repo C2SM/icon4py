@@ -119,7 +119,7 @@ nox -l
 nox -s 'test_common'
 
 # Run a test session for a specific python version and parameter value
-nox -s 'test_atmosphere_tracer_advection-3.10(datatest=True)'
+nox -s 'test_atmosphere_tracer_advection-3.12(datatest=True)'
 ```
 
 To run distributed tests, make sure an MPI implementation is installed and run `uv sync --extra distributed` or `uv sync --extra all`. Then run tests using `mpirun`, the `--with-mpi` pytest flag, and the `-k mpi_tests` filter:
