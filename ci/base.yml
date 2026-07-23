@@ -175,8 +175,7 @@ variables:
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
         NUM_PROCESSES: 8
-        # TODO: Increase back to normal
-        SLURM_TIMELIMIT: '00:05:00'
+        SLURM_TIMELIMIT: '01:00:00'
     - if: $MODEL_SUBPACKAGE == 'standalone_driver'
       variables:
         SLURM_TIMELIMIT: '00:50:00'
