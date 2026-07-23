@@ -18,9 +18,9 @@ from typing import TYPE_CHECKING, NamedTuple
 import devtools
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.atmosphere.tracer_advection import advection_states
 from icon4py.model.common import dimension as dims, time, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid

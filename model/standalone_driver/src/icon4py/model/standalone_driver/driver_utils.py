@@ -18,9 +18,9 @@ from typing import Any, Literal
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.tracer_advection import advection, advection_states
 from icon4py.model.common import (
     constants,
     field_type_aliases as fa,

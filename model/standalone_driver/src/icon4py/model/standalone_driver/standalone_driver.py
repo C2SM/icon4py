@@ -19,9 +19,9 @@ from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.atmosphere.tracer_advection import advection_states
 from icon4py.model.common import (
     dimension as dims,
     initial_condition,
