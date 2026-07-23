@@ -155,7 +155,7 @@ variables:
     - if: $MODEL_SUBPACKAGE == 'standalone_driver'
       variables:
         SLURM_TIMELIMIT: '00:50:00'
-    - if: $MODEL_SUBPACKAGE == 'driver' || $MODEL_SUBPACKAGE == 'dycore' || $MODEL_SUBPACKAGE == 'muphys'
+    - if: $MODEL_SUBPACKAGE == 'dycore' || $MODEL_SUBPACKAGE == 'muphys'
       variables:
         SLURM_TIMELIMIT: '00:30:00'
     - when: on_success
@@ -185,14 +185,14 @@ variables:
         # TODO(msimberg): Use shared partition when time limit can be set to at
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
-    - if: ($MODEL_MPI_SUBPACKAGE == 'standalone_driver' || $MODEL_MPI_SUBPACKAGE == 'common') && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')
+    - if: $MODEL_MPI_SUBPACKAGE == 'standalone_driver' || ($MODEL_MPI_SUBPACKAGE == 'common' && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'))
       variables:
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'
         # TODO(msimberg): Use shared partition when time limit can be set to at
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
-    - if: $MODEL_MPI_SUBPACKAGE == 'common' || $MODEL_MPI_SUBPACKAGE == 'standalone_driver'
+    - if: $MODEL_MPI_SUBPACKAGE == 'common'
       variables:
         SLURM_TIMELIMIT: '00:55:00'
     - when: on_success
@@ -205,14 +205,26 @@ variables:
 
 .generate_test_child_pipeline:
   stage: generate_test
-  extends: .container-runner-lightweight-gh200
-  image: ghcr.io/astral-sh/uv:0.11.15-python3.12-trixie-slim
-  timeout: 5m
+  # Run the generator on a GH200 container runner so it can use more than the
+  # CPU/memory limits of the lightweight K8s runner.
+  extends: .container-runner-santis-gh200
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+  needs: [build_image_aarch64]
+  timeout: 8h
   variables:
-    GIT_STRATEGY: fetch
-    KUBERNETES_MEMORY_REQUEST: 4Gi
-    KUBERNETES_MEMORY_LIMIT: 4Gi
+    ICON4PY_NOX_COLLECTION_WORKERS: "128"
+    ICON4PY_COLLECTION_VENV: "/icon4py/.venv"
+    # MPI is initialized during test discovery, but disable GPU-aware
+    # MPI since it's not necessary for test discovery. This avoids
+    # initializing CUDA on each worker.
+    OMPI_MCA_opal_cuda_support: "0"
+    OMPI_MCA_mpi_cuda_support: "0"
+    SLURM_NTASKS: "1"
+    SLURM_GPUS_PER_TASK: "1"
+    SLURM_PARTITION: "shared"
+    SLURM_TIMELIMIT: "00:10:00"
   script:
+    - cd /icon4py
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
     - cat $CI_PROJECT_DIR/test.yml
   artifacts:

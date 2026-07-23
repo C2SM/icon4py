@@ -9,7 +9,7 @@ It includes the following packages:
 - `atmosphere/advection`: Contains implementations of the advection component of the ICON model
 - `atmosphere/subgrid_scale_physics/microphysics`: Contains implementations of the microphysics and saturation adjustment components of the ICON model
 - `common`: Contains shared functionality that is required by multiple components.
-- `driver`: Contains the driving code for the model
+- `standalone_driver`: Contains the driving code for the model
 
 ## Installation instructions
 

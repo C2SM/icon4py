@@ -5,7 +5,7 @@ variables:
   # See default.yml and generate_ci_pipeline.py for details on how these are
   # used. This pipeline gates merges and variables should not be overridden.
   SESSIONS: "model:model_mpi:tools"
-  MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:driver:standalone_driver"
+  MODEL_SUBPACKAGES: "advection:diffusion:dycore:microphysics:muphys:common:standalone_driver"
   MODEL_SUBSETS: "stencils:datatest"
   MODEL_MPI_SUBPACKAGES: "advection:diffusion:dycore:common:standalone_driver"
   MODEL_MPI_SUBSETS: "datatest"
@@ -14,18 +14,41 @@ variables:
   GRIDS: "simple:icon_regional"
   TOOLS_SUBSETS: "datatest:unittest"
 
+.only_merge_queue:
+  rules: &only_merge_queue
+    - if: $CI_COMMIT_BRANCH =~ /^gh-readonly-queue/
+      when: always
+    - when: never
+
+.not_merge_queue:
+  rules: &not_merge_queue
+    - if: $CI_COMMIT_BRANCH =~ /^gh-readonly-queue/
+      when: never
+    - when: always
+
+merge_check:
+  extends: [.container-runner-lightweight-zen2]
+  rules: *not_merge_queue
+  image: alpine:latest
+  script:
+    - echo "Skipping full merge pipeline; only runs in merge queue"
 
 build_baseimage_aarch64:
   extends: [.build_baseimage_aarch64]
+  rules: *only_merge_queue
 
 build_venv_aarch64:
   extends: [.build_venv_aarch64]
+  rules: *only_merge_queue
 
 build_image_aarch64:
   extends: [.build_image_aarch64]
+  rules: *only_merge_queue
 
 generate_test_child_pipeline:
   extends: [.generate_test_child_pipeline]
+  rules: *only_merge_queue
 
 trigger_test_child_pipeline:
   extends: [.trigger_test_child_pipeline]
+  rules: *only_merge_queue
