@@ -94,7 +94,7 @@ dependencies = [
   "icon4py-atmosphere-microphysics~=0.3.0",
   "icon4py-atmosphere-muphys~=0.3.0",
   "icon4py-common~=0.3.0",
-  "icon4py-standalone_driver~=0.3.0"
+  "icon4py-driver~=0.3.0"
 ]
 description = 'ICON model in Python.'
 license = {text = "BSD-3 License"}
@@ -179,8 +179,8 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
   '$MYPY_CONFIG_FILE_DIR/tools/src/',
   '$MYPY_CONFIG_FILE_DIR/bindings/src/',
-  '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src',
-  '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests'
+  '$MYPY_CONFIG_FILE_DIR/model/driver/src',
+  '$MYPY_CONFIG_FILE_DIR/model/driver/tests'
 ]
 ignore_missing_imports = false
 implicit_reexport = true
@@ -191,8 +191,8 @@ $MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
-$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src:
-$MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests:
+$MYPY_CONFIG_FILE_DIR/model/driver/src:
+$MYPY_CONFIG_FILE_DIR/model/driver/tests:
 $MYPY_CONFIG_FILE_DIR/model/testing/src:
 $MYPY_CONFIG_FILE_DIR/tools/src:
 $MYPY_CONFIG_FILE_DIR/bindings/src:
@@ -270,7 +270,7 @@ pythonpath = [
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
-  "model/standalone_driver",
+  "model/driver",
   "model/testing",
   "tools"
 ]
@@ -420,7 +420,7 @@ icon4py-atmosphere-microphysics = {workspace = true}
 icon4py-atmosphere-muphys = {workspace = true}
 icon4py-bindings = {workspace = true}
 icon4py-common = {workspace = true}
-icon4py-standalone_driver = {workspace = true}
+icon4py-driver = {workspace = true}
 icon4py-testing = {workspace = true}
 icon4py-tools = {workspace = true}
 
@@ -433,7 +433,7 @@ members = [
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
-  "model/standalone_driver",
+  "model/driver",
   "model/testing",
   "tools"
 ]

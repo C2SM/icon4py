@@ -14,7 +14,7 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
+from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
@@ -100,7 +100,7 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         ),
     ],
 )
-def test_standalone_driver(
+def test_driver(
     experiment_description: test_defs.ExperimentDescription,
     timeloop_date_init: str,
     timeloop_date_exit: str,
@@ -139,7 +139,7 @@ def test_standalone_driver(
         allocator=allocator,
         process_props=process_props,
     )
-    ds, _ = standalone_driver.run_driver(
+    ds, _ = driver.run_driver(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,

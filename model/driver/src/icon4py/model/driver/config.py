@@ -276,7 +276,7 @@ class DriverConfig:
         common_conf_opt.ConfigOption(
             description=(
                 "Enable output to file. For now this is only documented in "
-                "'icon4py.model.standalone_driver.driver_io'."
+                "'icon4py.model.driver.driver_io'."
             ),
             icon_equivalent=None,
         ),

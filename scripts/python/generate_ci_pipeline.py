@@ -53,7 +53,7 @@ ALL_MODEL_SUBPACKAGES = [
     "microphysics",
     "muphys",
     "common",
-    "standalone_driver",
+    "driver",
 ]
 
 ALL_MODEL_MPI_SUBPACKAGES = [
@@ -61,7 +61,7 @@ ALL_MODEL_MPI_SUBPACKAGES = [
     "diffusion",
     "dycore",
     "common",
-    "standalone_driver",
+    "driver",
 ]
 ALL_BACKENDS = ["embedded", "dace_cpu", "dace_gpu", "gtfn_cpu", "gtfn_gpu"]
 ALL_GRIDS = ["simple", "icon_regional", "icon_global"]
