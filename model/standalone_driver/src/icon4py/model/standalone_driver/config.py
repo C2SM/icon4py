@@ -420,10 +420,13 @@ def read_experiment_config_from_fortran(
     ntracer = (
         fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
     )
-    is_ape_aes = "exclaim_ape_aesPhys" in config_file_path.name
+    # AES physics implies muphys is active for the experiments we support today; the presence
+    # of the aes_phy_nml namelist mirrors the graupel `do_physics` check below. A robust
+    # dt_mig>0 check needs the raw namelist (see docs/2026-07-22-muphys-namelist-dt-mig-gate.md).
+    aes_physics_on = "aes_phy_nml" in atm_dict
     tracer_cfg = (
         tracer_state.TracerConfig.all()
-        if is_ape_aes
+        if aes_physics_on
         else tracer_state.TracerConfig.from_ntracer(ntracer)
     )
 
@@ -464,7 +467,7 @@ def read_experiment_config_from_fortran(
             config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
         )
 
-    muphys_cfg = muphys_config.MuphysConfig() if is_ape_aes else None
+    muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
     return ExperimentConfig(
         geometry=geometry_cfg,

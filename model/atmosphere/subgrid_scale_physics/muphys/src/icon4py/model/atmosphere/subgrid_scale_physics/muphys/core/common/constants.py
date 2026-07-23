@@ -78,7 +78,7 @@ class IndexConsts(ta.wpfloat, enum.Enum):
     exponent_i = 0.160
     offset_i = 1.0e-12
     prefactor_s = 57.80
-    exponent_s = 0.16666666666666666
+    exponent_s = 1 / 6
     offset_s = 1.0e-12
     prefactor_g = 12.24
     exponent_g = 0.217
@@ -115,7 +115,7 @@ class AesGraupelConsts(ta.wpfloat, enum.Enum):
     vm_prefactor_i = 0.80
     vm_exponent_i = 0.160
     vm_prefactor_s = 115.60  # 2 * 57.80
-    vm_exponent_s = 0.16666666666666666
+    vm_exponent_s = 1 / 6
     vm_prefactor_g = 12.24
     vm_exponent_g = 0.217
     # snow_number: lower clamp on the snow mass density rho*qs
