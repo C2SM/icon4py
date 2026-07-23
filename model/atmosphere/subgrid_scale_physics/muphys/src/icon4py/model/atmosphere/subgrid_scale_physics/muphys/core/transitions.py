@@ -37,11 +37,10 @@ def _cloud_to_graupel(
     """
     A_RIM = wpfloat(4.43)
     B_RIM = wpfloat(0.94878)
-    ZERO = wpfloat(0.0)
     return where(
         (minimum(qc, qg) > GraupelConsts.qmin) & (t > GraupelConsts.tfrz_hom),
         A_RIM * qc * power(qg * rho, B_RIM),
-        ZERO,
+        wpfloat(0.0),
     )
 
 
@@ -84,20 +83,27 @@ def _cloud_to_rain(
     X3 = wpfloat(2.0e0)  # gamma exponent for cloud distribution
     X2 = wpfloat(2.6e-10)  # separating mass between cloud and rain
     X1 = wpfloat(9.44e9)  # kernel coeff for SB2001 autoconversion
-    ZERO = wpfloat(0.0)
-    ONE = wpfloat(1.0)
-    TWO = wpfloat(2.0)
-    THREE = wpfloat(3.0)
-    FOUR = wpfloat(4.0)
-    AU_KERNEL = X1 / (wpfloat(20.0) * X2) * (X3 + TWO) * (X3 + FOUR) / ((X3 + ONE) * (X3 + ONE))
+    AU_KERNEL = (
+        X1
+        / (wpfloat(20.0) * X2)
+        * (X3 + wpfloat(2.0))
+        * (X3 + wpfloat(4.0))
+        / ((X3 + wpfloat(1.0)) * (X3 + wpfloat(1.0)))
+    )
 
     # TO-DO: put as much of this into the WHERE statement as possible
-    tau = maximum(TAU_MIN, minimum(ONE - qc / (qc + qr), TAU_MAX))  # temporary cannot go in where
+    tau = maximum(
+        TAU_MIN, minimum(wpfloat(1.0) - qc / (qc + qr), TAU_MAX)
+    )  # temporary cannot go in where
     phi = power(tau, B_PHI)
-    phi = A_PHI * phi * power(ONE - phi, THREE)
-    xau = AU_KERNEL * power(qc * qc / nc, TWO) * (ONE + phi / power(ONE - tau, TWO))
-    xac = AC_KERNEL * qc * qr * power(tau / (tau + C_PHI), FOUR)
-    return where((qc > QMIN_AC) & (t > GraupelConsts.tfrz_hom), xau + xac, ZERO)
+    phi = A_PHI * phi * power(wpfloat(1.0) - phi, wpfloat(3.0))
+    xau = (
+        AU_KERNEL
+        * power(qc * qc / nc, wpfloat(2.0))
+        * (wpfloat(1.0) + phi / power(wpfloat(1.0) - tau, wpfloat(2.0)))
+    )
+    xac = AC_KERNEL * qc * qr * power(tau / (tau + C_PHI), wpfloat(4.0))
+    return where((qc > QMIN_AC) & (t > GraupelConsts.tfrz_hom), xau + xac, wpfloat(0.0))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -133,12 +139,12 @@ def _cloud_to_snow(
     """
     ECS = wpfloat(0.9)
     B_RIM = -(wpfloat(GraupelConsts.v1s) + wpfloat(3.0))
-    C_RIM = wpfloat(2.61) * ECS * GraupelConsts.v0s  # (with pi*gam(v1s+3)/4 = 2.610)
-    ZERO = wpfloat(0.0)
+    # ICON hardcodes the rounded 2.61 (pi*gam(v1s+3)/4 = 2.6102); keep literal for bit-exactness
+    C_RIM = wpfloat(2.61) * ECS * GraupelConsts.v0s
     return where(
         (minimum(qc, qs) > GraupelConsts.qmin) & (t > GraupelConsts.tfrz_hom),
         C_RIM * ns * qc * power(lam, B_RIM),
-        ZERO,
+        wpfloat(0.0),
     )
 
 
@@ -172,8 +178,7 @@ def _cloud_x_ice(
 
     Return:                 Freezing rate
     """
-    ZERO = wpfloat(0.0)
-    result = where((qc > GraupelConsts.qmin) & (t < GraupelConsts.tfrz_hom), qc / dt, ZERO)
+    result = where((qc > GraupelConsts.qmin) & (t < GraupelConsts.tfrz_hom), qc / dt, wpfloat(0.0))
     result = where((qi > GraupelConsts.qmin) & (t > ThermodynamicConsts.tmelt), -qi / dt, result)
     return result
 
@@ -213,7 +218,6 @@ def _graupel_to_rain(
     B_MELT = wpfloat(0.6)  # melting exponent
     C1_MELT = wpfloat(12.31698)  # Constants in melting formula
     C2_MELT = wpfloat(7.39441e-05)  # Constants in melting formula
-    ZERO = wpfloat(0.0)
     return where(
         (
             t
@@ -226,7 +230,7 @@ def _graupel_to_rain(
         (C1_MELT / p + C2_MELT)
         * (t - ThermodynamicConsts.tmelt + A_MELT * dvsw0)
         * power(qg * rho, B_MELT),
-        ZERO,
+        wpfloat(0.0),
     )
 
 
@@ -266,11 +270,10 @@ def _ice_to_graupel(
     B_CT = wpfloat(0.875)  # Exponent = 7/8
     C_AGG_CT = wpfloat(2.46)
     B_AGG_CT = wpfloat(0.94878)  # Exponent
-    ZERO = wpfloat(0.0)
     result = where(
         (qi > GraupelConsts.qmin) & (qg > GraupelConsts.qmin),
         sticking_eff * qi * C_AGG_CT * power(rho * qg, B_AGG_CT),
-        ZERO,
+        wpfloat(0.0),
     )
     result = where(
         (qi > GraupelConsts.qmin) & (qr > GraupelConsts.qmin),
@@ -312,14 +315,15 @@ def _ice_to_snow(
     """
     QI0 = wpfloat(0.0)  # Critical ice required for autoconversion
     C_IAU = wpfloat(1.0e-3)  # Coefficient of auto conversion
-    C_AGG = wpfloat(2.61) * GraupelConsts.v0s  # Coeff of aggregation (2.610 = pi*gam(v1s+3)/4)
+    # ICON hardcodes the rounded 2.61 (pi*gam(v1s+3)/4 = 2.6102); keep literal for bit-exactness
+    C_AGG = wpfloat(2.61) * GraupelConsts.v0s  # Coeff of aggregation
     B_AGG = -(GraupelConsts.v1s + wpfloat(3.0))  # Aggregation exponent
-    ZERO = wpfloat(0.0)
 
     return where(
         (qi > GraupelConsts.qmin),
-        sticking_eff * (C_IAU * maximum(ZERO, (qi - QI0)) + qi * (C_AGG * ns) * power(lam, B_AGG)),
-        ZERO,
+        sticking_eff
+        * (C_IAU * maximum(wpfloat(0.0), (qi - QI0)) + qi * (C_AGG * ns) * power(lam, B_AGG)),
+        wpfloat(0.0),
     )
 
 
@@ -372,14 +376,13 @@ def _rain_to_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     A2 = wpfloat(1.24e-3)  # (PI/24)*EIR*V0R*Gamma(6.5)*AR**(-5/8)
     B2 = wpfloat(1.625)  # exponent for rho*qr
     QS_CRIT = wpfloat(1.0e-7)  # critical humidity of snow
-    ZERO = wpfloat(0.0)
 
-    maskinner = (dvsw + qc <= ZERO) | (qr > C4 * qc)
+    maskinner = (dvsw + qc <= wpfloat(0.0)) | (qr > C4 * qc)
     mask = (qr > GraupelConsts.qmin) & (t < TFRZ_RAIN)
     result = where(
         mask & (t > GraupelConsts.tfrz_hom) & maskinner,
         (exp(C2 * (TFRZ_RAIN - t)) - C3) * (A1 * power((qr * rho), B1)),
-        ZERO,
+        wpfloat(0.0),
     )
     result = where(mask & (t <= GraupelConsts.tfrz_hom), qr / dt, result)
 
@@ -438,18 +441,17 @@ def _rain_to_vapor(  # noqa: PLR0917 [too-many-positional-arguments]
     A1_RV = wpfloat(1.536e-3)  # coefficient 1 in qr reconstruction
     A2_RV = wpfloat(1.0e0)  # coefficient 2 in qr reconstruction
     A3_RV = wpfloat(19.0621e0)  # coefficient 3 in qr reconstruction
-    ZERO = wpfloat(0.0)
 
     # TO-DO: move as much as possible into WHERE statement
     tc = t - ThermodynamicConsts.tmelt
     evap_max = (C1_RV + tc * (C2_RV + C3_RV * tc)) * (-dvsw) / dt
     return where(
-        (qr > GraupelConsts.qmin) & (dvsw + qc <= ZERO),
+        (qr > GraupelConsts.qmin) & (dvsw + qc <= wpfloat(0.0)),
         minimum(
             A1_RV * (A2_RV + A3_RV * power(qr * rho, B1_RV)) * (-dvsw) * power(qr * rho, B2_RV),
             evap_max,
         ),
-        ZERO,
+        wpfloat(0.0),
     )
 
 
@@ -486,11 +488,10 @@ def _snow_to_graupel(
     """
     A_RIM_CT = wpfloat(0.5)  # Constants in riming formula
     B_RIM_CT = wpfloat(0.75)
-    ZERO = wpfloat(0.0)
     return where(
         (minimum(qc, qs) > GraupelConsts.qmin) & (t > GraupelConsts.tfrz_hom),
         A_RIM_CT * qc * power(qs * rho, B_RIM_CT),
-        ZERO,
+        wpfloat(0.0),
     )
 
 
@@ -529,7 +530,6 @@ def _snow_to_rain(
     C2_SR = wpfloat(0.612654e-3)  # Constants in melting formula
     A_SR = GraupelConsts.tx - wpfloat(389.5)  # Melting prefactor
     B_SR = wpfloat(0.8)  # Melting exponent
-    ZERO = wpfloat(0.0)
     return where(
         (
             t
@@ -542,7 +542,7 @@ def _snow_to_rain(
         (C1_SR / p + C2_SR)
         * (t - ThermodynamicConsts.tmelt + A_SR * dvsw0)
         * power(qs * rho, B_SR),
-        ZERO,
+        wpfloat(0.0),
     )
 
 
@@ -593,17 +593,16 @@ def _vapor_x_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     A7 = wpfloat(0.0418521)
     A8 = wpfloat(-4.7524e-8)
     B_VG = wpfloat(0.6)
-    ZERO = wpfloat(0.0)
     result = where(
         (t < ThermodynamicConsts.tmelt),
         (A1_VG + A2_VG * t + A3 / p + A4 * p) * dvsi * power(qg * rho, B_VG),
         where(
             (t > (ThermodynamicConsts.tmelt - GraupelConsts.tx * dvsw0)),
-            (A5 + A6 * p) * minimum(ZERO, dvsw0) * power(qg * rho, B_VG),
+            (A5 + A6 * p) * minimum(wpfloat(0.0), dvsw0) * power(qg * rho, B_VG),
             (A7 + A8 * p) * dvsw * power(qg * rho, B_VG),
         ),
     )
-    return where(qg > GraupelConsts.qmin, maximum(result, -qg / dt), ZERO)
+    return where(qg > GraupelConsts.qmin, maximum(result, -qg / dt), wpfloat(0.0))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -650,15 +649,14 @@ def _vapor_x_ice(  # noqa: PLR0917 [too-many-positional-arguments]
     A_FACT = wpfloat(4.0) * AMI ** (
         wpfloat(-1.0) / wpfloat(3.0)
     )  #  Is (1.0/5.065797019100886) * 4.0
-    ZERO = wpfloat(0.0)
     # TO-DO: see if this can be folded into the WHERE statement
     result = (A_FACT * eta) * rho * qi * power(mi, B_EXP) * dvsi
     result = where(
-        result > ZERO,
+        result > wpfloat(0.0),
         minimum(result, dvsi / dt),
         maximum(maximum(result, dvsi / dt), -qi / dt),
     )
-    return where(qi > GraupelConsts.qmin, result, ZERO)
+    return where(qi > GraupelConsts.qmin, result, wpfloat(0.0))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -720,29 +718,30 @@ def _vapor_x_snow(  # noqa: PLR0917 [too-many-positional-arguments]
     C2_VS = wpfloat(0.241897)
     C3_VS = wpfloat(0.28003)
     C4_VS = wpfloat(-0.146293e-6)
-    ZERO = wpfloat(0.0)
 
     # See if this can be incorporated into WHERE statement
     result = where(
         (t < ThermodynamicConsts.tmelt),
         (CNX * ns * eta / rho) * (A0_VS + A1_VS * power(lam, A2_VS)) * dvsi / (lam * lam + EPS),
-        ZERO,
+        wpfloat(0.0),
     )
 
     # GZ: This mask>0 limitation, which was missing in the original graupel scheme,
     # is crucial for numerical stability in the tropics!
     # a meaningful distinction between cloud ice and snow
     result = where(
-        (t < ThermodynamicConsts.tmelt) & (result > ZERO),
+        (t < ThermodynamicConsts.tmelt) & (result > wpfloat(0.0)),
         minimum(result, dvsi / dt - ice_dep),
         result,
     )
-    result = where((t < ThermodynamicConsts.tmelt) & (qs <= QS_LIM), minimum(result, ZERO), result)
+    result = where(
+        (t < ThermodynamicConsts.tmelt) & (qs <= QS_LIM), minimum(result, wpfloat(0.0)), result
+    )
     # ELSE section
     result = where(
         (t >= ThermodynamicConsts.tmelt)
         & (t > (ThermodynamicConsts.tmelt - GraupelConsts.tx * dvsw0)),
-        (C1_VS / p + C2_VS) * minimum(ZERO, dvsw0) * power(qs * rho, B_VS),
+        (C1_VS / p + C2_VS) * minimum(wpfloat(0.0), dvsw0) * power(qs * rho, B_VS),
         result,
     )
     result = where(
@@ -751,7 +750,7 @@ def _vapor_x_snow(  # noqa: PLR0917 [too-many-positional-arguments]
         (C3_VS + C4_VS * p) * dvsw * power(qs * rho, B_VS),
         result,
     )
-    return where((qs > GraupelConsts.qmin), maximum(result, -qs / dt), ZERO)
+    return where((qs > GraupelConsts.qmin), maximum(result, -qs / dt), wpfloat(0.0))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -800,7 +799,7 @@ def _cloud_to_rain_aes_graupel(
 
     Same autoconversion as _cloud_to_rain, but the SB2001 accretion kernel is a
     degree-4 polynomial in log(clamped rho*qr) instead of a constant
-    (icon-nwp mo_aes_graupel.f90 cloud_to_rain).
+    (icon-mpim mo_aes_graupel.f90 cloud_to_rain).
 
     Args:
         t:                  Temperature
@@ -820,12 +819,13 @@ def _cloud_to_rain_aes_graupel(
     X3 = wpfloat(2.0e0)  # gamma exponent for cloud distribution
     X2 = wpfloat(2.6e-10)  # separating mass between cloud and rain
     X1 = wpfloat(9.44e9)  # kernel coeff for SB2001 autoconversion
-    ZERO = wpfloat(0.0)
-    ONE = wpfloat(1.0)
-    TWO = wpfloat(2.0)
-    THREE = wpfloat(3.0)
-    FOUR = wpfloat(4.0)
-    AU_KERNEL = X1 / (wpfloat(20.0) * X2) * (X3 + TWO) * (X3 + FOUR) / ((X3 + ONE) * (X3 + ONE))
+    AU_KERNEL = (
+        X1
+        / (wpfloat(20.0) * X2)
+        * (X3 + wpfloat(2.0))
+        * (X3 + wpfloat(4.0))
+        / ((X3 + wpfloat(1.0)) * (X3 + wpfloat(1.0)))
+    )
 
     x = log(minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho * qr)))
     ac_kernel = AesGraupelConsts.a_ac_1 + x * (
@@ -833,12 +833,16 @@ def _cloud_to_rain_aes_graupel(
         + x
         * (AesGraupelConsts.a_ac_3 + x * (AesGraupelConsts.a_ac_4 + x * AesGraupelConsts.a_ac_5))
     )
-    tau = maximum(TAU_MIN, minimum(ONE - qc / (qc + qr), TAU_MAX))
+    tau = maximum(TAU_MIN, minimum(wpfloat(1.0) - qc / (qc + qr), TAU_MAX))
     phi = power(tau, B_PHI)
-    phi = A_PHI * phi * power(ONE - phi, THREE)
-    xau = AU_KERNEL * power(qc * qc / nc, TWO) * (ONE + phi / power(ONE - tau, TWO))
-    xac = ac_kernel * qc * qr * power(tau / (tau + C_PHI), FOUR)
-    return where((qc > QMIN_AC) & (t > GraupelConsts.tfrz_hom), xau + xac, ZERO)
+    phi = A_PHI * phi * power(wpfloat(1.0) - phi, wpfloat(3.0))
+    xau = (
+        AU_KERNEL
+        * power(qc * qc / nc, wpfloat(2.0))
+        * (wpfloat(1.0) + phi / power(wpfloat(1.0) - tau, wpfloat(2.0)))
+    )
+    xac = ac_kernel * qc * qr * power(tau / (tau + C_PHI), wpfloat(4.0))
+    return where((qc > QMIN_AC) & (t > GraupelConsts.tfrz_hom), xau + xac, wpfloat(0.0))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -865,7 +869,8 @@ def _cloud_to_snow_aes_graupel(
     Compute the conversion rate from cloud to snow, AES_GRAUPEL scheme.
 
     Same as _cloud_to_snow with the additional riming tuning factor 3.0
-    (icon-nwp mo_aes_graupel.f90 cloud_to_snow).
+    (icon-mpim mo_aes_graupel.f90 cloud_to_snow; the icon-nwp version has no
+    tuning factor).
 
     Args:
         t:                  Temperature
@@ -878,13 +883,13 @@ def _cloud_to_snow_aes_graupel(
     """
     ECS = wpfloat(0.9)
     B_RIM = -(wpfloat(GraupelConsts.v1s) + wpfloat(3.0))
-    # pi*gam(v1s+3)/4 = 2.610 and tuning factor 3.0
+    # ICON hardcodes the rounded 2.61 (pi*gam(v1s+3)/4 = 2.6102); keep literal for bit-exactness.
+    # The extra 3.0 is the AES riming tuning factor (icon-mpim).
     C_RIM = wpfloat(2.61) * ECS * GraupelConsts.v0s * wpfloat(3.0)
-    ZERO = wpfloat(0.0)
     return where(
         (minimum(qc, qs) > GraupelConsts.qmin) & (t > GraupelConsts.tfrz_hom),
         C_RIM * ns * qc * power(lam, B_RIM),
-        ZERO,
+        wpfloat(0.0),
     )
 
 
@@ -914,7 +919,7 @@ def _rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
 
     Same trigger and evaporation cap as _rain_to_vapor, but the evaporation rate
     is the exponential of a degree-4 polynomial in log(clamped rho*qr) instead of
-    a power law (icon-nwp mo_aes_graupel.f90 rain_to_vapor).
+    a power law (icon-mpim mo_aes_graupel.f90 rain_to_vapor).
 
     Args:
         t:                  Temperature
@@ -929,7 +934,6 @@ def _rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     C1_RV = wpfloat(0.61)  # coefficient for tc^0 in quadratic expansion
     C2_RV = wpfloat(-0.0163)  # coefficient of tc^1 in quadratic expansion
     C3_RV = wpfloat(1.111e-4)  # coefficient of tc^2 in quadratic expansion
-    ZERO = wpfloat(0.0)
 
     tc = t - ThermodynamicConsts.tmelt
     evap_max = (C1_RV + tc * (C2_RV + C3_RV * tc)) * (-dvsw) / dt
@@ -950,9 +954,9 @@ def _rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
         * dvsw
     )
     return where(
-        (qr > GraupelConsts.qmin) & (dvsw + qc <= ZERO),
+        (qr > GraupelConsts.qmin) & (dvsw + qc <= wpfloat(0.0)),
         minimum(evap, evap_max),
-        ZERO,
+        wpfloat(0.0),
     )
 
 
