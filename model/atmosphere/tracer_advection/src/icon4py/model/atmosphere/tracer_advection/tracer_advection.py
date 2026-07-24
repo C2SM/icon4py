@@ -510,7 +510,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 backend=backend,
             )
         case _:
-            raise NotImplementedError("Unknown vertical tracer_advection type.")
+            raise NotImplementedError("Unknown vertical tracer advection type.")
 
     return horizontal_advection, vertical_advection
 
