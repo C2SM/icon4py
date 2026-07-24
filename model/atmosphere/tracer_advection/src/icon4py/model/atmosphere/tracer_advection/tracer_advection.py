@@ -56,7 +56,7 @@ class HorizontalAdvectionType(Enum):
     Horizontal operator scheme for tracer advection (originally ihadv_tracer).
     """
 
-    #: no horizontal tracer_advection
+    #: no horizontal tracer advection
     NO_ADVECTION = 0
     #: 2nd order MIURA with linear reconstruction
     LINEAR_2ND_ORDER = 2
