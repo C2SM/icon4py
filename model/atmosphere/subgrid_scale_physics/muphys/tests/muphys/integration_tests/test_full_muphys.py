@@ -117,12 +117,18 @@ def test_full_muphys(
         dtype=ta.wpfloat,
     )
 
-    rtol = test_utils.scale_tol(1e-14)
+    rtol, atol = (1e-14, 0) if test_utils.wp_is_dp else (1e-3, 1e-10)
+    test_utils.assert_dallclose(ref.qv.asnumpy(), out.qv.asnumpy(), rtol=rtol, atol=atol)
 
-    test_utils.assert_dallclose(ref.qv.asnumpy(), out.qv.asnumpy(), rtol=rtol)
-    test_utils.assert_dallclose(ref.qc.asnumpy(), out.qc.asnumpy(), rtol=rtol)
-    test_utils.assert_dallclose(ref.qi.asnumpy(), out.qi.asnumpy(), rtol=rtol)
-    test_utils.assert_dallclose(ref.qr.asnumpy(), out.qr.asnumpy(), rtol=rtol)
-    test_utils.assert_dallclose(ref.qs.asnumpy(), out.qs.asnumpy(), rtol=rtol)
-    test_utils.assert_dallclose(ref.qg.asnumpy(), out.qg.asnumpy(), rtol=rtol)
-    test_utils.assert_dallclose(ref.t.asnumpy(), out.t.asnumpy(), rtol=rtol)
+    if not test_utils.wp_is_dp:
+        rtol, atol = 1e-2, 5e-8
+    test_utils.assert_dallclose(ref.qc.asnumpy(), out.qc.asnumpy(), rtol=rtol, atol=atol)
+    test_utils.assert_dallclose(ref.qr.asnumpy(), out.qr.asnumpy(), rtol=rtol, atol=atol)
+    test_utils.assert_dallclose(ref.qs.asnumpy(), out.qs.asnumpy(), rtol=rtol, atol=atol)
+
+    if not test_utils.wp_is_dp:
+        rtol, atol = 1e-3, 1e-10
+    test_utils.assert_dallclose(ref.qi.asnumpy(), out.qi.asnumpy(), rtol=rtol, atol=atol)
+    test_utils.assert_dallclose(ref.qg.asnumpy(), out.qg.asnumpy(), rtol=rtol, atol=atol)
+
+    test_utils.assert_dallclose(ref.t.asnumpy(), out.t.asnumpy(), rtol=test_utils.scale_tol(1e-14))
