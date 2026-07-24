@@ -892,6 +892,16 @@ class Diffusion:
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
             )
 
+        # 5.  HALO EXCHANGE -- CALL sync_patch_array(SYNC_E, z_nabla2_e)
+        # ICON: mo_nh_diffusion.f90:853. Fill halo edges before second RBF.
+        log.debug("communication of z_nabla2_e - start")
+        self._exchange.exchange(
+            dims.EdgeDim,
+            self.z_nabla2_e,
+            stream=decomposition.DEFAULT_STREAM,
+        )
+        log.debug("communication of z_nabla2_e - end")
+
         log.debug("2nd rbf interpolation: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=self.z_nabla2_e, p_u_out=self.u_vert, p_v_out=self.v_vert

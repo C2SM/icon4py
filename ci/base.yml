@@ -172,14 +172,24 @@ variables:
   script:
     - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-${PYVERSION_SHORT}($SELECTION, $MODEL_MPI_SUBPACKAGE)" -- --backend=$BACKEND --level=$LEVEL
   rules:
-    - if: $MODEL_MPI_SUBPACKAGE == 'standalone_driver' && $LEVEL == 'validation'
+    - if: $MODEL_MPI_SUBPACKAGE == 'standalone_driver' || $MODEL_MPI_SUBPACKAGE == 'common'
       variables:
         # Signal to (selected) tests that they should expect bitwise identical
         # results between single- and multi-rank runs. This goes hand-in-hand with
         # compiler flags like -ffp-contract=off and others that may be required to
         # actually get bitwise identical results.
         ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE: "1"
+        # Compute RBF interpolation coefficients with a host (numpy) linear
+        # solve instead of batched cupy.linalg.solve, whose results depend on
+        # the batch extent (= rank-local element count) and therefore on the
+        # domain decomposition. Required for bitwise identical single- vs
+        # multi-rank results on GPU; production runs keep the GPU solve.
+        ICON4PY_DETERMINISTIC_RBF_COEFFS: "1"
         CXXFLAGS: "-ffp-contract=off"
+        # Disable FMA contraction in nvcc. This is the only GPU flag required
+        # for bitwise-identical single- vs multi-rank results on GPU backends
+        # in the standalone_driver validation tests.
+        NVCC_APPEND_FLAGS: "--fmad=false"
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'
         # TODO(msimberg): Use shared partition when time limit can be set to at
