@@ -532,7 +532,7 @@ def convert_config_to_advection(
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
         and config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION
     ):
-        # tracer_advection is disabled for all tracers
+        # tracer advection is disabled for all tracers
         return NoAdvection(grid=grid, backend=backend, exchange=exchange)
 
     horizontal_advection, vertical_advection = convert_config_to_horizontal_vertical_advection(
