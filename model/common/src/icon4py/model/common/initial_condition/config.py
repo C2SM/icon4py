@@ -14,6 +14,7 @@ import pathlib
 from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common import time
+from icon4py.model.common.config import reader as confreader
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
@@ -36,6 +37,41 @@ if TYPE_CHECKING:
     )
 
 log = logging.getLogger(__name__)
+
+
+@confreader.CONV.register_unstructure_hook
+def unstructure_initconfig_union(
+    initconfig: jw_ic.JablonowskiWilliamsonConfig
+    | gauss_ic.Gauss3DConfig
+    | from_file_ic.FromFileConfig,
+) -> dict:
+    inittype = "unknown"
+    match initconfig:
+        case jw_ic.JablonowskiWilliamsonConfig():
+            inittype = "jablonowski_williamson"
+        case gauss_ic.Gauss3DConfig():
+            inittype = "gauss_3d"
+        case from_file_ic.FromFileConfig():
+            inittype = "from_file"
+    return {"type": inittype, **confreader.CONV.unstructure(initconfig)}
+
+
+@confreader.CONV.register_structure_hook
+def structure_initconfig_union(
+    config_dict: dict, _: Any
+) -> jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig:
+    initclass: type | None
+    match inittype := config_dict.pop("type"):
+        case "jablonowski_williamson":
+            initclass = jw_ic.JablonowskiWilliamsonConfig
+        case "gauss_3d":
+            initclass = gauss_ic.Gauss3DConfig
+        case "from_file":
+            initclass = from_file_ic.FromFileConfig
+        case _:
+            raise TypeError(f"Unsupported initgraphy type: '{inittype}'.")
+
+    return confreader.CONV.structure(config_dict, initclass)
 
 
 @dataclasses.dataclass
