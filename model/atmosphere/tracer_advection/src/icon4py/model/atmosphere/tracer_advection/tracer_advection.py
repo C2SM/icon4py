@@ -88,7 +88,7 @@ class VerticalAdvectionType(Enum):
 
 class VerticalAdvectionLimiter(Enum):
     """
-    Limiter for vertical tracer_advection operator (originally itype_vlimit).
+    Limiter for vertical tracer advection operator (originally itype_vlimit).
     """
 
     #: no vertical limiter
