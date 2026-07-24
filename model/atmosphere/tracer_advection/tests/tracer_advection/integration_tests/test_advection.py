@@ -8,7 +8,7 @@
 
 import pytest
 
-from icon4py.model.atmosphere.tracer_advection import advection
+from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
@@ -63,37 +63,37 @@ from ..utils import (
             "2021-06-20T12:00:10.000",
             False,
             1,
-            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            advection.VerticalAdvectionType.NO_ADVECTION,
-            advection.VerticalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            tracer_advection.VerticalAdvectionType.NO_ADVECTION,
+            tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
         ),
         (
             "2021-06-20T12:00:20.000",
             True,
             1,
-            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            advection.VerticalAdvectionType.NO_ADVECTION,
-            advection.VerticalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            tracer_advection.VerticalAdvectionType.NO_ADVECTION,
+            tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
         ),
         (
             "2021-06-20T12:00:10.000",
             False,
             4,
-            advection.HorizontalAdvectionType.NO_ADVECTION,
-            advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+            tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
+            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
         (
             "2021-06-20T12:00:20.000",
             True,
             4,
-            advection.HorizontalAdvectionType.NO_ADVECTION,
-            advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+            tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
+            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
     ],
 )
@@ -116,7 +116,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     advection_exit_savepoint,
     experiment: definitions.Experiment,
 ):
-    config = advection.AdvectionConfig(
+    config = tracer_advection.AdvectionConfig(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
         vertical_advection_type=vertical_advection_type,
@@ -152,7 +152,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
 
-    advection_granule = advection.convert_config_to_advection(
+    advection_granule = tracer_advection.convert_config_to_advection(
         config=config,
         grid=icon_grid,
         interpolation_state=interpolation_state,

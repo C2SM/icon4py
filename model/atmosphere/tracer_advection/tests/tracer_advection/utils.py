@@ -12,7 +12,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.atmosphere.tracer_advection import advection_states
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -24,8 +24,8 @@ log = logging.getLogger(__name__)
 
 def construct_interpolation_state(
     savepoint: sb.InterpolationSavepoint, backend: gtx_typing.Backend | None
-) -> advection_states.AdvectionInterpolationState:
-    return advection_states.AdvectionInterpolationState(
+) -> tracer_advection_states.AdvectionInterpolationState:
+    return tracer_advection_states.AdvectionInterpolationState(
         geofac_div=savepoint.geofac_div(),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
@@ -35,8 +35,8 @@ def construct_interpolation_state(
 
 def construct_least_squares_state(
     least_squares_coeffs: data_alloc.NDArray, backend: gtx_typing.Backend | None
-) -> advection_states.AdvectionLeastSquaresState:
-    return advection_states.AdvectionLeastSquaresState(
+) -> tracer_advection_states.AdvectionLeastSquaresState:
+    return tracer_advection_states.AdvectionLeastSquaresState(
         lsq_pseudoinv_1=gtx.as_field(
             (dims.CellDim, dims.C2E2CDim),
             least_squares_coeffs[:, 0, :],
@@ -52,10 +52,10 @@ def construct_least_squares_state(
 
 def construct_metric_state(
     icon_grid, savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend | None
-) -> advection_states.AdvectionMetricState:
+) -> tracer_advection_states.AdvectionMetricState:
     constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim, allocator=backend)
     ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
-    return advection_states.AdvectionMetricState(
+    return tracer_advection_states.AdvectionMetricState(
         deepatmo_divh=constant_f,
         deepatmo_divzl=constant_f,
         deepatmo_divzu=constant_f,
@@ -68,8 +68,8 @@ def construct_diagnostic_init_state(
     savepoint: sb.AdvectionInitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
-) -> advection_states.AdvectionDiagnosticState:
-    return advection_states.AdvectionDiagnosticState(
+) -> tracer_advection_states.AdvectionDiagnosticState:
+    return tracer_advection_states.AdvectionDiagnosticState(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
@@ -85,8 +85,8 @@ def construct_diagnostic_exit_state(
     savepoint: sb.AdvectionExitSavepoint,
     ntracer: int,
     backend: gtx_typing.Backend | None,
-) -> advection_states.AdvectionDiagnosticState:
-    return advection_states.AdvectionDiagnosticState(
+) -> tracer_advection_states.AdvectionDiagnosticState:
+    return tracer_advection_states.AdvectionDiagnosticState(
         airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
         airmass_new=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
         grf_tend_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
@@ -97,8 +97,8 @@ def construct_diagnostic_exit_state(
 
 def construct_prep_adv(
     savepoint: sb.AdvectionInitSavepoint,
-) -> advection_states.AdvectionPrepAdvState:
-    return advection_states.AdvectionPrepAdvState(
+) -> tracer_advection_states.AdvectionPrepAdvState:
+    return tracer_advection_states.AdvectionPrepAdvState(
         vn_traj=savepoint.vn_traj(),
         mass_flx_me=savepoint.mass_flx_me(),
         mass_flx_ic=savepoint.mass_flx_ic(),
@@ -110,8 +110,8 @@ def log_dbg(field, name=""):
 
 
 def log_serialized(
-    diagnostic_state: advection_states.AdvectionDiagnosticState,
-    prep_adv: advection_states.AdvectionPrepAdvState,
+    diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
+    prep_adv: tracer_advection_states.AdvectionPrepAdvState,
     p_tracer_now: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
 ):
@@ -128,8 +128,8 @@ def log_serialized(
 def verify_advection_fields(
     *,
     grid: icon_grid.IconGrid,
-    diagnostic_state: advection_states.AdvectionDiagnosticState,
-    diagnostic_state_ref: advection_states.AdvectionDiagnosticState,
+    diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
+    diagnostic_state_ref: tracer_advection_states.AdvectionDiagnosticState,
     p_tracer_new: fa.CellKField[ta.wpfloat],
     p_tracer_new_ref: fa.CellKField[ta.wpfloat],
     even_timestep: bool,

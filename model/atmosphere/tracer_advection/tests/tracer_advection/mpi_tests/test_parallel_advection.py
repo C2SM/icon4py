@@ -10,7 +10,7 @@ import pytest
 from gt4py.next import typing as gtx_typing
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.atmosphere.tracer_advection import advection
+from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -62,37 +62,37 @@ from ..utils import (
             "2021-06-20T12:00:10.000",
             False,
             1,
-            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            advection.VerticalAdvectionType.NO_ADVECTION,
-            advection.VerticalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            tracer_advection.VerticalAdvectionType.NO_ADVECTION,
+            tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
         ),
         (
             "2021-06-20T12:00:20.000",
             True,
             1,
-            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            advection.VerticalAdvectionType.NO_ADVECTION,
-            advection.VerticalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            tracer_advection.VerticalAdvectionType.NO_ADVECTION,
+            tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
         ),
         (
             "2021-06-20T12:00:10.000",
             False,
             4,
-            advection.HorizontalAdvectionType.NO_ADVECTION,
-            advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+            tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
+            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
         (
             "2021-06-20T12:00:20.000",
             True,
             4,
-            advection.HorizontalAdvectionType.NO_ADVECTION,
-            advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+            tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
+            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
     ],
 )
@@ -124,7 +124,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no tracer_advection because the horizontal flux is not zero. Further check required.
     if (
         even_timestep
-        and horizontal_advection_type == advection.HorizontalAdvectionType.NO_ADVECTION
+        and horizontal_advection_type == tracer_advection.HorizontalAdvectionType.NO_ADVECTION
     ):
         pytest.xfail(
             "This test is skipped until the cause of nonzero horizontal tracer_advection if revealed."
@@ -133,7 +133,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     parallel_helpers.check_comm_size(process_props)
     parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    config = advection.AdvectionConfig(
+    config = tracer_advection.AdvectionConfig(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
         vertical_advection_type=vertical_advection_type,
@@ -151,7 +151,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     cell_geometry = grid_savepoint.construct_cell_geometry()
     exchange_runtime = definitions.create_exchange(process_props, decomposition_info)
 
-    advection_granule = advection.convert_config_to_advection(
+    advection_granule = tracer_advection.convert_config_to_advection(
         config=config,
         grid=icon_grid,
         interpolation_state=interpolation_state,

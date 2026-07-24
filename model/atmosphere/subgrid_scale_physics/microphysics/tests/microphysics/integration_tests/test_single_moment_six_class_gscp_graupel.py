@@ -20,7 +20,7 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
-    tracer_state as tracers,
+    tracer_states as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils

@@ -12,7 +12,7 @@ import logging
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.atmosphere.tracer_advection import advection_states
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm4gpu_courant_number import (
     compute_ppm4gpu_courant_number,
 )
@@ -376,7 +376,7 @@ class VerticalAdvection(abc.ABC):
     def run(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -457,7 +457,7 @@ class NoAdvection(VerticalAdvection):
     def run(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -489,7 +489,7 @@ class FiniteVolume(VerticalAdvection):
     def run(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -525,7 +525,7 @@ class FiniteVolume(VerticalAdvection):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
@@ -554,7 +554,7 @@ class FirstOrderUpwind(FiniteVolume):
         self,
         boundary_conditions: BoundaryConditions,
         grid: icon_grid.IconGrid,
-        metric_state: advection_states.AdvectionMetricState,
+        metric_state: tracer_advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
     ):
         log.debug("vertical tracer_advection class init - start")
@@ -631,7 +631,7 @@ class FirstOrderUpwind(FiniteVolume):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
@@ -704,7 +704,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         boundary_conditions: BoundaryConditions,
         vertical_limiter: VerticalLimiter,
         grid: icon_grid.IconGrid,
-        metric_state: advection_states.AdvectionMetricState,
+        metric_state: tracer_advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
     ):
         log.debug("vertical tracer_advection class init - start")
@@ -907,7 +907,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim

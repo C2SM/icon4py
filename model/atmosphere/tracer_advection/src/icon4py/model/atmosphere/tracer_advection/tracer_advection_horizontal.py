@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 import gt4py.next as gtx
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.tracer_advection import advection_states
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_positive_definite_horizontal_multiplicative_flux_factor import (
     apply_positive_definite_horizontal_multiplicative_flux_factor,
 )
@@ -86,7 +86,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
     def __init__(
         self,
         grid: icon_grid.IconGrid,
-        interpolation_state: advection_states.AdvectionInterpolationState,
+        interpolation_state: tracer_advection_states.AdvectionInterpolationState,
         backend: gtx.typing.Backend | None,
         exchange: decomposition.ExchangeRuntime,
     ):
@@ -200,7 +200,7 @@ class SemiLagrangianTracerFlux(ABC):
     def compute_tracer_flux(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
@@ -216,7 +216,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
     def __init__(
         self,
         grid: icon_grid.IconGrid,
-        least_squares_state: advection_states.AdvectionLeastSquaresState,
+        least_squares_state: tracer_advection_states.AdvectionLeastSquaresState,
         backend: gtx.typing.Backend | None,
         horizontal_limiter: HorizontalFluxLimiter | None = None,
     ):
@@ -284,7 +284,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
     def compute_tracer_flux(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
@@ -341,7 +341,7 @@ class HorizontalAdvection(ABC):
     def run(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -403,7 +403,7 @@ class NoAdvection(HorizontalAdvection):
     def run(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -428,7 +428,7 @@ class FiniteVolume(HorizontalAdvection):
     def run(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -460,7 +460,7 @@ class FiniteVolume(HorizontalAdvection):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
@@ -488,8 +488,8 @@ class SemiLagrangian(FiniteVolume):
         *,
         tracer_flux: SemiLagrangianTracerFlux,
         grid: icon_grid.IconGrid,
-        interpolation_state: advection_states.AdvectionInterpolationState,
-        metric_state: advection_states.AdvectionMetricState,
+        interpolation_state: tracer_advection_states.AdvectionInterpolationState,
+        metric_state: tracer_advection_states.AdvectionMetricState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: gtx.typing.Backend | None,
@@ -594,7 +594,7 @@ class SemiLagrangian(FiniteVolume):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: advection_states.AdvectionPrepAdvState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
