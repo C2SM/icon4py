@@ -53,7 +53,7 @@ log = logging.getLogger(__name__)
 
 class HorizontalAdvectionType(Enum):
     """
-    Horizontal operator scheme for tracer_advection (originally ihadv_tracer).
+    Horizontal operator scheme for tracer advection (originally ihadv_tracer).
     """
 
     #: no horizontal tracer_advection
