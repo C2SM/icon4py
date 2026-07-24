@@ -75,7 +75,7 @@ class HorizontalAdvectionLimiter(Enum):
 
 class VerticalAdvectionType(Enum):
     """
-    Vertical operator scheme for tracer_advection (originally ivadv_tracer).
+    Vertical operator scheme for tracer advection (originally ivadv_tracer).
     """
 
     #: no vertical tracer_advection
