@@ -100,7 +100,7 @@ class VerticalAdvectionLimiter(Enum):
 @dataclasses.dataclass(frozen=True)
 class AdvectionConfig:
     """
-    Contains necessary parameters to configure an tracer_advection run.
+    Contains necessary parameters to configure an tracer advection run.
     """
 
     horizontal_advection_type: HorizontalAdvectionType
