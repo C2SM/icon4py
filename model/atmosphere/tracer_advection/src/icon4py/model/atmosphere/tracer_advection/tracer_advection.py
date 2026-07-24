@@ -64,7 +64,7 @@ class HorizontalAdvectionType(Enum):
 
 class HorizontalAdvectionLimiter(Enum):
     """
-    Limiter for horizontal tracer_advection operator (originally itype_hlimit).
+    Limiter for horizontal tracer advection operator (originally itype_hlimit).
     """
 
     #: no horizontal limiter
