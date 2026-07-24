@@ -153,7 +153,7 @@ class Advection(ABC):
 
         Args:
             diagnostic_state: output argument, data class that contains diagnostic variables
-            prep_adv: input argument, data class that contains precalculated tracer_advection fields
+            prep_adv: input argument, data class that contains precalculated fields for tracer advection
             p_tracer_now: input argument, field that contains current tracer mass fraction
             p_tracer_new: output argument, field that contains new tracer mass fraction
             dtime: input argument, the time step
