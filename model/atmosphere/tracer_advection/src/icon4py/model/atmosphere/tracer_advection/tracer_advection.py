@@ -130,7 +130,7 @@ class AdvectionConfig:
 
 class Advection(ABC):
     """
-    Runs one three-dimensional tracer_advection step.
+    Runs one three-dimensional tracer advection step.
 
     Missing tracer_advection-specific features:
         -tracer loops: currently the `run` method only advects one type of tracer at once
