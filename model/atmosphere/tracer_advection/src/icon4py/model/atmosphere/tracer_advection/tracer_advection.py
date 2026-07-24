@@ -135,7 +135,7 @@ class Advection(ABC):
     Missing tracer advection-specific features:
         -tracer loops: currently the `run` method only advects one type of tracer at once
         -optional tendency output: depending on the physics package, opt_ddt_tracer_adv might be needed
-        -maximum tracer_advection height: tracer-specific control over which levels are used for tracer_advection
+        -maximum tracer advection height: tracer-specific control over which levels are used for tracer_advection
     """
 
     @abstractmethod
