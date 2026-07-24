@@ -23,6 +23,7 @@ from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
+    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -216,6 +217,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             )
         )
         self._register_computed_fields()
+
+        if backend is not None and model_options.is_eager_program_compilation_enabled():
+            factory.compile_providers(self._providers.values(), backend=backend, grid_provider=self)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} on (grid={self._grid!r}) providing fields f{self.metadata.keys()}"
