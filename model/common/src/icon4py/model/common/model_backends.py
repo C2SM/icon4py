@@ -5,12 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 from typing import Any, Final, TypeAlias, TypeGuard
 
 import gt4py.next as gtx
+import gt4py.next.custom_layout_allocators as gtx_allocators
 import gt4py.next.typing as gtx_typing
-from gt4py.next import backend as gtx_backend, custom_layout_allocators as gtx_allocators
+from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
+from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
@@ -23,6 +26,48 @@ type BackendLike = DeviceType | gtx_typing.Backend | BackendDescriptor | None
 
 
 DEFAULT_BACKEND: Final = "embedded"
+
+_WORKSPACE_SIZE: Final[int] = (
+    200 * 1024 * 1024
+)  # 200 MB, this is the default workspace size for ICON4Py programs
+
+
+def _get_workspace_memory(
+    size: int, device_type: gtx.DeviceType, *, backend_device: gtx.DeviceType
+) -> Any:
+    """
+    Returns a workspace memory allocation for the given device type.
+
+    Args:
+        size: The size of the workspace memory to allocate.
+        device_type: The device type for which the workspace memory is allocated.
+        backend_device: The device type of the backend to use for allocation.
+
+    Returns:
+        A workspace memory allocation for the given device type.
+
+    Raises:
+        ValueError: If the backend cannot allocate memory for the given device type.
+
+    Note that the workspace memory is allocated only once and reused for subsequent calls.
+    """
+    dim = gtx.Dimension("x")
+    allocator = get_allocator(backend_device)
+    if not gtx_allocators.is_field_allocation_tool_for(allocator, device_type):
+        raise ValueError(f"Backend cannot allocate memory for device type {device_type}")
+    if size > _WORKSPACE_SIZE:
+        raise ValueError(
+            f"Requested workspace size {size} exceeds the maximum allowed {_WORKSPACE_SIZE}"
+        )
+    if _get_workspace_memory.value is None:
+        _get_workspace_memory.value = gtx.constructors.zeros(
+            {dim: (0, (_WORKSPACE_SIZE + 7) // 8)}, dtype=gtx.uint64, allocator=allocator
+        )
+
+    return _get_workspace_memory.value
+
+
+_get_workspace_memory.value = None
 
 
 def is_backend_descriptor(
@@ -101,11 +146,23 @@ def make_custom_dace_backend(
     Returns:
         A dace backend with custom configuration for the target device.
     """
+    # Use external workspace memory for all programs
+    external_memory_allocator = functools.partial(_get_workspace_memory, backend_device=device)
+    if optimization_args is None:
+        optimization_args = {
+            "transient_memory_mode": gtx_transformations.TransientMemoryMode.EXTERNAL,
+        }
+    else:
+        optimization_args["transient_memory_mode"] = (
+            gtx_transformations.TransientMemoryMode.EXTERNAL
+        )
+
     on_gpu = device == GPU
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
         auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
+        external_memory_allocator=external_memory_allocator,
         optimization_args=optimization_args,
         unstructured_horizontal_has_unit_stride=True,
         use_metrics=use_metrics,
