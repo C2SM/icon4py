@@ -13,7 +13,10 @@ from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import (
+    PRECIP_DIAGNOSTICS,
+    SPECIES,
+)
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
@@ -38,24 +41,6 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.common.states import factory, prognostic_state as prognostics, tracer_state
-
-
-def _require(field: fa.CellKField[ta.wpfloat] | None, name: str) -> fa.CellKField[ta.wpfloat]:
-    """Return ``field``, or raise if it is inactive (``None``).
-
-    muphys needs all six moisture species; ``TracerState`` fields are optional
-    (a tracer may be inactive per ``TracerConfig``), so we fail loudly here rather
-    than feed ``None`` into the microphysics.
-    """
-    if field is None:
-        raise ValueError(f"muphys requires tracer '{name}' to be active in the TracerState")
-    return field
-
-
-# muphys precip diagnostic field names (pure diagnostics -- never applied to the
-# prognostic state): total precip flux, surface rain / snow / ice / graupel rates,
-# and surface precip energy flux.
-_PRECIP_DIAGNOSTICS: tuple[str, ...] = ("pflx", "pr", "ps", "pi", "pg", "pre")
 
 
 class State(PhysicsState):
@@ -169,16 +154,24 @@ class State(PhysicsState):
             - diagnosing the muphys input fields that aren't stored prognostically (te, p) from the prognostic state.
         """
         self.rho = prognostic.rho
+        # muphys needs all six moisture species; TracerState fields are optional (a
+        # tracer may be inactive per TracerConfig), so fail loudly once here rather
+        # than feed None into the microphysics.
+        missing = [f"q{s}" for s in SPECIES if getattr(tracers, f"q{s}") is None]
+        if missing:
+            raise ValueError(
+                f"muphys requires all moisture species active in the TracerState; missing: {missing}"
+            )
         self._tracers = tracers
 
         # Diagnose virtual temperature and temperature (te is not stored prognostically).
         self._diagnose_temperature(
-            qv=_require(tracers.qv, "qv"),
-            qc=_require(tracers.qc, "qc"),
-            qi=_require(tracers.qi, "qi"),
-            qr=_require(tracers.qr, "qr"),
-            qs=_require(tracers.qs, "qs"),
-            qg=_require(tracers.qg, "qg"),
+            qv=tracers.qv,
+            qc=tracers.qc,
+            qi=tracers.qi,
+            qr=tracers.qr,
+            qs=tracers.qs,
+            qg=tracers.qg,
             theta_v=prognostic.theta_v,
             exner=prognostic.exner,
             virtual_temperature=self.tv,
@@ -220,7 +213,7 @@ class State(PhysicsState):
         dt_seconds = dtime.total_seconds()
         # 1. Apply moisture tendencies to the tracers (in place; tracers were bound in gather).
         for s in SPECIES:
-            tracer = _require(getattr(self._tracers, f"q{s}"), f"q{s}")
+            tracer = getattr(self._tracers, f"q{s}")
             self._apply_tendency(
                 field_a=tracer,
                 coeff=dt_seconds,
@@ -239,12 +232,12 @@ class State(PhysicsState):
         # dTv/dt from the new temperature and the species just updated in step 1
         self._calculate_virtual_temperature_tendency(
             dtime=dt_seconds,
-            qv=_require(self._tracers.qv, "qv"),
-            qc=_require(self._tracers.qc, "qc"),
-            qi=_require(self._tracers.qi, "qi"),
-            qr=_require(self._tracers.qr, "qr"),
-            qs=_require(self._tracers.qs, "qs"),
-            qg=_require(self._tracers.qg, "qg"),
+            qv=self._tracers.qv,
+            qc=self._tracers.qc,
+            qi=self._tracers.qi,
+            qr=self._tracers.qr,
+            qs=self._tracers.qs,
+            qg=self._tracers.qg,
             temperature=self._new_te,
             virtual_temperature=self.tv,
             virtual_temperature_tendency=self._tv_tendency,
@@ -263,7 +256,7 @@ class State(PhysicsState):
         )
 
         # 3. Store precip diagnostics (references; never applied to prognostic state).
-        self._precip_diagnostics = {name: outputs[name] for name in _PRECIP_DIAGNOSTICS}
+        self._precip_diagnostics = {name: outputs[name] for name in PRECIP_DIAGNOSTICS}
 
     def as_component_input(self) -> dict[str, fa.CellKField[ta.wpfloat]]:
         """
@@ -272,7 +265,7 @@ class State(PhysicsState):
         if self.rho is None or self._tracers is None:
             raise RuntimeError("as_component_input called before gather_from_prognostic")
         inp = {"dz": self.dz, "te": self.te, "p": self.p, "rho": self.rho}
-        inp.update({f"q{s}": _require(getattr(self._tracers, f"q{s}"), f"q{s}") for s in SPECIES})
+        inp.update({f"q{s}": getattr(self._tracers, f"q{s}") for s in SPECIES})
         return inp
 
     @property

@@ -150,27 +150,6 @@ class MuphysComponent:
             g=gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
         )
 
-    def _to_tendency(
-        self,
-        old: fa.CellKField[ta.wpfloat],
-        new: fa.CellKField[ta.wpfloat],
-        out: fa.CellKField[ta.wpfloat],
-    ) -> None:
-        """``out = (new - old) / dt`` over the whole column."""
-        self._calculate_tendency(
-            dtime=self._dt_seconds,
-            old_field=old,
-            new_field=new,
-            tendency=out,
-        )
-
-    def _copy_into(self, src: fa.CellKField[ta.wpfloat], dst: fa.CellKField[ta.wpfloat]) -> None:
-        """Copy ``src`` into the component-owned buffer ``dst``."""
-        self._copy_field(
-            field=src,
-            output_field=dst,
-        )
-
     def __call__(
         self, state: dict[str, model.DataField], time_step: time.AbsoluteTime
     ) -> dict[str, model.DataField]:
@@ -182,9 +161,9 @@ class MuphysComponent:
         # cast from generic ``DataField`` to bare gt4py fields
         fields = cast("dict[str, fa.CellKField[ta.wpfloat]]", state)
 
-        self._copy_into(fields["te"], self._te_in)
+        self._copy_field(field=fields["te"], output_field=self._te_in)
         for s in SPECIES:
-            self._copy_into(fields[f"q{s}"], getattr(self._q_in, s))
+            self._copy_field(field=fields[f"q{s}"], output_field=getattr(self._q_in, s))
 
         self._step(
             dz=fields["dz"],
@@ -202,10 +181,18 @@ class MuphysComponent:
             pre=self._pre,
         )
 
-        self._to_tendency(fields["te"], self._t_out, self._tendencies["tend_temperature"])
+        self._calculate_tendency(
+            dtime=self._dt_seconds,
+            old_field=fields["te"],
+            new_field=self._t_out,
+            tendency=self._tendencies["tend_temperature"],
+        )
         for s in SPECIES:
-            self._to_tendency(
-                fields[f"q{s}"], getattr(self._q_out, s), self._tendencies[f"tend_q{s}"]
+            self._calculate_tendency(
+                dtime=self._dt_seconds,
+                old_field=fields[f"q{s}"],
+                new_field=getattr(self._q_out, s),
+                tendency=self._tendencies[f"tend_q{s}"],
             )
 
         return cast(
