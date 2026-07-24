@@ -61,7 +61,9 @@ def test_config_option_from_wrongly_annotated_type_hint_fails() -> None:
     class TesteeConfig:
         no_option: typing.Annotated[int, "Just for testing."]
         more_than_one_option: typing.Annotated[
-            bool, options.ConfigOption(description="foo"), options.ConfigOption(description="bar")
+            bool,
+            options.ConfigOption(description="foo"),
+            options.ConfigOption(description="bar"),
         ]
 
     with pytest.raises(options.MissingConfigOptionAnnotationError):
@@ -105,9 +107,87 @@ def test_iter_pairs_from_icon() -> None:
 def test_construct_config_from_icon() -> None:
     result = options.construct_config_from_icon(
         config_cls=ConfigClass,
-        icon_config={"nested_1": {"nested_2": {"isomchce": 42}}, "lsomflg": [False, False, False]},
+        icon_config={
+            "nested_1": {"nested_2": {"isomchce": 42}},
+            "lsomflg": [False, False, False],
+        },
         other=3,
     )
     assert result.choice == 42
     assert result.flag is False
     assert result.other == 3
+
+
+def test_default_conversion() -> None:
+    @dataclasses.dataclass
+    class TesteeConfig:
+        testee: typing.Annotated[
+            str,
+            options.ConfigOption(
+                description="Just for testing.",
+                icon_equivalent=options.IconOption(name="testee", path=()),
+            ),
+        ]
+
+    result = options.construct_config_from_icon(config_cls=TesteeConfig, icon_config={"testee": 42})
+    assert result.testee == "42"
+
+
+def test_custom_conversion() -> None:
+    @dataclasses.dataclass
+    class TesteeConfig:
+        testee: typing.Annotated[
+            str,
+            options.ConfigOption(
+                description="Just for testing.",
+                icon_equivalent=options.IconOption(
+                    name="testee",
+                    path=(),
+                    converter=lambda v: "is true" if v else "is false",
+                ),
+            ),
+        ]
+
+    assert (
+        options.construct_config_from_icon(
+            config_cls=TesteeConfig, icon_config={"testee": True}
+        ).testee
+        == "is true"
+    )
+    assert (
+        options.construct_config_from_icon(
+            config_cls=TesteeConfig, icon_config={"testee": False}
+        ).testee
+        == "is false"
+    )
+
+
+def test_multioption_conversion() -> None:
+    @dataclasses.dataclass
+    class TesteeConfig:
+        sum: typing.Annotated[
+            int,
+            options.ConfigOption(
+                description="Just for testing.",
+                icon_equivalent=options.IconMultiOption(
+                    options=[
+                        options.IconOption(
+                            name="a",
+                            path=(),
+                        ),
+                        options.IconOption(
+                            name="b",
+                            path=(),
+                        ),
+                    ],
+                    converter=lambda a, b: a + b,
+                ),
+            ),
+        ]
+
+    assert (
+        options.construct_config_from_icon(
+            config_cls=TesteeConfig, icon_config={"a": 23, "b": 19}
+        ).sum
+        == 42
+    )

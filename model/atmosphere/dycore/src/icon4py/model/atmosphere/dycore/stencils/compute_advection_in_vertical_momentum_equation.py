@@ -351,7 +351,7 @@ def compute_advection_in_corrector_vertical_momentum(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     This computes the vertical momentum advection in the vertical momentum equation
 

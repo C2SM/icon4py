@@ -43,19 +43,19 @@ if TYPE_CHECKING:
 
 RBF_TOLERANCES = {
     dims.CellDim: {
-        definitions.Experiments.EXCLAIM_APE.name: 3.1e-9,
-        definitions.Experiments.MCH_CH_R04B09.name: 4e-2,
-        definitions.Experiments.GAUSS3D.name: 1e-14,
+        definitions.Experiments.EXCLAIM_APE: 3.1e-9,
+        definitions.Experiments.MCH_CH_R04B09: 4e-2,
+        definitions.Experiments.GAUSS3D: 1e-14,
     },
     dims.EdgeDim: {
-        definitions.Experiments.EXCLAIM_APE.name: 8e-14,
-        definitions.Experiments.MCH_CH_R04B09.name: 2e-9,
-        definitions.Experiments.GAUSS3D.name: 0,
+        definitions.Experiments.EXCLAIM_APE: 8e-14,
+        definitions.Experiments.MCH_CH_R04B09: 2e-9,
+        definitions.Experiments.GAUSS3D: 0,
     },
     dims.VertexDim: {
-        definitions.Experiments.EXCLAIM_APE.name: 3e-10,
-        definitions.Experiments.MCH_CH_R04B09.name: 3e-3,
-        definitions.Experiments.GAUSS3D.name: 1e-15,
+        definitions.Experiments.EXCLAIM_APE: 3e-10,
+        definitions.Experiments.MCH_CH_R04B09: 3e-3,
+        definitions.Experiments.GAUSS3D: 1e-15,
     },
 }
 
@@ -164,7 +164,7 @@ def test_rbf_interpolation_coeffs_cell(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
 
@@ -222,12 +222,12 @@ def test_rbf_interpolation_coeffs_cell(
     assert test_helpers.dallclose(
         rbf_vec_coeff_c1[horizontal_start:],
         rbf_vec_coeff_c1_ref[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.description],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_c2[horizontal_start:],
         rbf_vec_coeff_c2_ref[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.description],
     )
 
 
@@ -239,7 +239,7 @@ def test_rbf_interpolation_coeffs_vertex(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
 
@@ -297,12 +297,12 @@ def test_rbf_interpolation_coeffs_vertex(
     assert test_helpers.dallclose(
         rbf_vec_coeff_v1[horizontal_start:],
         rbf_vec_coeff_v1_ref.asnumpy()[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.description],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_v2[horizontal_start:],
         rbf_vec_coeff_v2_ref.asnumpy()[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.description],
     )
 
 
@@ -314,7 +314,7 @@ def test_rbf_interpolation_coeffs_edge(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
 
@@ -368,5 +368,5 @@ def test_rbf_interpolation_coeffs_edge(
     assert test_helpers.dallclose(
         rbf_vec_coeff_e[horizontal_start:],
         rbf_vec_coeff_e_ref.asnumpy()[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.EdgeDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.EdgeDim][experiment.description],
     )

@@ -8,7 +8,7 @@ Always read the CODING_GUIDELINES.md document first and follow it.
 
 ## Monorepo structure
 
-uv workspace with 11 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
+uv workspace with 10 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
 
 ```
 model/
@@ -20,7 +20,6 @@ model/
       microphysics/     # icon4py.model.atmosphere.subgrid_scale_physics.microphysics
       muphys/           # icon4py.model.atmosphere.subgrid_scale_physics.muphys
   common/               # icon4py.model.common  ← shared code, all model packages depend on this
-  driver/               # icon4py.model.driver  ← depends on diffusion, dycore, common, testing
   standalone_driver/    # icon4py.model.standalone_driver
   testing/              # icon4py.model.testing ← pytest plugin, fixtures, serialbox helpers
 tools/                  # icon4py.tools ← Fortran integration (py2fgen CLI), independent of model
@@ -133,14 +132,15 @@ uv run --group test --frozen pytest -n0 <paths>
 
 Registered by `icon4py.model.testing.pytest_hooks` (auto-loaded via `addopts`):
 
-| Option                            | Description                                                                                                               |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `--datatest-only`                 | Run only `@pytest.mark.datatest` tests                                                                                    |
-| `--datatest-skip`                 | Skip all datatests                                                                                                        |
-| `--backend <name>`                | GT4Py backend (default: roundtrip; others: gtfn_cpu, gtfn_gpu, embedded)                                                  |
-| `--grid <name>`                   | Grid to use                                                                                                               |
-| `--level {any,unit,integration}`  | Run only tests matching the given level. Unmarked tests are implicitly treated as `unit`. `any` (default) runs all tests. |
-| `--skip-stenciltest-verification` | Skip verification of StencilTest against reference outputs                                                                |
+| Option                                      | Description                                                                       |
+| ------------------------------------------- | --------------------------------------------------------------------------------- |
+| `--datatest-only`                           | Run only `@pytest.mark.datatest` tests                                            |
+| `--datatest-skip`                           | Skip all datatests                                                                |
+| `--backend <name>`                          | GT4Py backend (default: roundtrip; others: gtfn_cpu, gtfn_gpu, embedded)          |
+| `--grid <name>`                             | Grid to use                                                                       |
+| `--enable-mixed-precision`                  | Switch from double to mixed-precision                                             |
+| `--level {any,unit,integration,validation}` | Filter by `@pytest.mark.level` marker. `any` (default) excludes validation tests. |
+| `--skip-stenciltest-verification`           | Skip verification of StencilTest against reference outputs                        |
 
 ### Test directory convention
 

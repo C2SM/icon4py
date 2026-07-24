@@ -7,6 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import hashlib
+import os
+import sys
+from collections.abc import Buffer
 from typing import Any
 
 import gt4py.next.typing as gtx_typing
@@ -14,9 +17,8 @@ import numpy as np
 import numpy.testing as np_testing
 import numpy.typing as npt
 import pytest
-from typing_extensions import Buffer
 
-from icon4py.model.common import model_options
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import DP_EPS, VP_EPS
 from icon4py.model.common.type_alias import precision, vpfloat
 from icon4py.model.testing import config
@@ -37,6 +39,48 @@ else:
 
         Maps 1->1, \\epsilon_d->\\epsilon_s"""
         return np.exp(_scale_const * np.log(x))
+
+
+def _max_diffs(actual: np.ndarray, desired: np.ndarray) -> tuple[float, float]:
+    """
+    Max absolute and max relative difference, for choosing 'atol' and 'rtol'.
+
+    The relative difference is 'abs(actual - desired) / abs(desired)', matching
+    the 'rtol' term of 'numpy.allclose'. It is 'inf' where 'desired' is zero and
+    'actual' is not, since no 'rtol' can cover that case, only 'atol'.
+    """
+    if actual.size == 0 or desired.size == 0:
+        return 0.0, 0.0
+    abs_diff = np.abs(actual.astype(np.float64) - desired.astype(np.float64))
+    denominator = np.abs(desired.astype(np.float64))
+    rel_diff = np.divide(
+        abs_diff,
+        denominator,
+        out=np.full(abs_diff.shape, np.inf),
+        where=denominator != 0.0,
+    )
+    rel_diff[abs_diff == 0.0] = 0.0
+    return float(np.max(abs_diff)), float(np.max(rel_diff))
+
+
+def get_mpi_comparison_tolerance(
+    backend: gtx_typing.Backend | None,
+    *,
+    atol: float,
+    rtol: float,
+) -> tuple[float, float]:
+    """Return (atol, rtol) for single-rank vs multi-rank field comparisons.
+
+    When ``ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE`` is set and the backend is a
+    known-good CPU backend (``gtfn`` or ``dace``), tolerances are overridden to
+    zero for bitwise-exact comparison. Otherwise the caller-supplied tolerances
+    are returned unchanged.
+    """
+    if os.environ.get("ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE") == "1" and (
+        model_backends.is_cpu_backend(backend) and (is_gtfn_backend(backend) or is_dace(backend))
+    ):
+        return 0.0, 0.0
+    return atol, rtol
 
 
 def dallclose(
@@ -66,16 +110,27 @@ def assert_dallclose(
     """
     'numpy.testing.assert_allclose', but with double precision default tolerances.
     """
+    actual_arr = np.asarray(actual)
+    desired_arr = np.asarray(desired)
     if config.DALLCLOSE_PRINT_INSTEAD_OF_FAIL:
-        # Non-blocking version: prints max diff instead of raising errors.
+        # Non-blocking version: prints max diffs instead of raising errors.
         # Prints red if delta > 0, green otherwise.
-        max_diff = np.max(np.abs(np.asarray(actual) - np.asarray(desired)))
-        color = "\033[1;31m" if max_diff > 0 else "\033[32m"
-        print(f"{color}{err_msg} max diff {max_diff}\033[0m")
+        # Goes to stderr: pytest-xdist discards worker stdout when capturing is
+        # off ('-s'), which is how the nox sessions run pytest.
+        max_abs_diff, max_rel_diff = _max_diffs(actual_arr, desired_arr)
+        color = "\033[1;31m" if max_abs_diff > 0 else "\033[32m"
+        # Prefix with the test id: under pytest-xdist these prints interleave
+        # with the terminal reporter, so they cannot be attributed to a test
+        # from their position in the output alone.
+        test_id = os.environ.get("PYTEST_CURRENT_TEST", "").partition(" (")[0]
+        print(
+            f"{color}{test_id} {err_msg} max abs diff {max_abs_diff} max rel diff {max_rel_diff}\033[0m",
+            file=sys.stderr,
+        )
     else:
         np_testing.assert_allclose(
-            actual,  # type: ignore[arg-type]
-            desired,  # type: ignore[arg-type]
+            actual_arr,
+            desired_arr,
             rtol=rtol,
             atol=atol,
             equal_nan=equal_nan,
@@ -89,7 +144,7 @@ def is_sorted(array: np.ndarray) -> bool:
 
 
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
-    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]
+    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
 
 def get_fixture_value(name: str, item: pytest.Item) -> Any:

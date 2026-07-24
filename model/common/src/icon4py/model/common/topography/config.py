@@ -48,8 +48,8 @@ class TopographyConfig:
         input_dict: dict[str, Any],
         data_path: pathlib.Path,
     ) -> TopographyConfig:
-        run_nml = atm_dict.get("run_nml", {})
-        if not run_nml.get("ltestcase", False):
+        run_nml = atm_dict["run_nml"]
+        if not run_nml["ltestcase"]:
             log.info("Reading topography from file")
             return cls(
                 config=from_file_topo.FromFileConfig(
@@ -58,13 +58,14 @@ class TopographyConfig:
             )
 
         testcase_nml = input_dict.get("nh_testcase_nml", {})
+        test_name = testcase_nml.get("nh_test_name")
         config: (
             flat_topo.FlatTopographyConfig
             | jw_topo.JablonowskiWilliamsonConfig
             | gausshill_topo.GaussianHillConfig
         )  # mypy does not automatically catch type
-        match testcase_nml.get("nh_test_name"):
-            case "APE_nwp" | "wk82":
+        match test_name:
+            case "APE_nwp" | "APE_aes" | "wk82":
                 log.info("Flat topography")
                 config = flat_topo.FlatTopographyConfig()
             case "jabw" | "jabw_s":

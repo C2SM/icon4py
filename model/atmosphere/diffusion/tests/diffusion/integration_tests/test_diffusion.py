@@ -52,7 +52,7 @@ def get_cell_geometry_for_experiment(
 
 def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.Backend, name: str):
     if not grid_functionality[experiment.name].get(name):
-        geometry_ = grid_utils.get_grid_geometry(backend, experiment)
+        geometry_ = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
         grid = geometry_.grid
 
         cell_params = grid_states.CellParams(

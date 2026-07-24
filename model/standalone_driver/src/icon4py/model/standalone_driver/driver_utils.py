@@ -13,7 +13,6 @@ import logging
 import os
 import pathlib
 import sys
-import time
 from typing import Any, Literal
 
 import gt4py.next as gtx
@@ -26,6 +25,7 @@ from icon4py.model.common import (
     constants,
     field_type_aliases as fa,
     model_backends,
+    time,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import (
@@ -35,6 +35,7 @@ from icon4py.model.common.decomposition import (
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
+    geometry_config as geometry_configuration,
     grid_manager as gm,
     gridfile,
     icon as icon_grid,
@@ -43,10 +44,10 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory as states_factory
+from icon4py.model.common.states import factory as states_factory, static_fields
 from icon4py.model.common.states.tracer_state import TracerConfig
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import config as driver_config, driver_states
+from icon4py.model.standalone_driver import config as driver_config, driver_constants, driver_states
 
 
 log = logging.getLogger(__name__)
@@ -162,11 +163,13 @@ def create_static_field_factories(
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
+    process_props: decomposition_defs.ProcessProperties,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
+    geometry_config: geometry_configuration.GeometryConfig,
     interpolation_config: interpolation_factory.InterpolationConfig,
     metrics_config: metrics_factory.MetricsConfig,
-) -> driver_states.StaticFieldFactories:
+) -> static_fields.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
@@ -174,6 +177,8 @@ def create_static_field_factories(
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
+        config=geometry_config,
+        process_props=process_props,
         exchange=exchange,
         global_reductions=global_reductions,
     )
@@ -202,7 +207,7 @@ def create_static_field_factories(
         global_reductions=global_reductions,
     )
 
-    return driver_states.StaticFieldFactories(
+    return static_fields.StaticFieldFactories(
         geometry_field_source, interpolation_field_source, metrics_field_source
     )
 
@@ -212,7 +217,7 @@ def initialize_granules(
     config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
-    static_field_factories: driver_states.StaticFieldFactories,
+    static_field_factories: static_fields.StaticFieldFactories,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
@@ -458,6 +463,33 @@ def initialize_granules(
     )
 
 
+def spinup_second_order_divdamp_factor(
+    *,
+    elapsed_time_in_seconds: ta.wpfloat,
+    fourth_order_divdamp_factor: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Second order divergence damping factor (divdamp_fac_o2) during the spin-up phase.
+
+    update_spinup_damping in mo_nh_stepping.f90: the damping is enhanced during
+    the first half hour of integration and then decreases linearly to zero.
+    """
+    initial_period = driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+    transition_end_period = driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+    enhanced_factor = (
+        driver_constants.ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP * fourth_order_divdamp_factor
+    )
+    if elapsed_time_in_seconds <= initial_period:
+        return enhanced_factor
+    if elapsed_time_in_seconds <= transition_end_period:
+        return (
+            enhanced_factor
+            * (transition_end_period - elapsed_time_in_seconds)
+            / (transition_end_period - initial_period)
+        )
+    return ta.wpfloat("0.0")
+
+
 def find_maximum_from_field(
     input_field: gtx.Field,
 ) -> tuple[tuple[int, ...], float]:
@@ -544,16 +576,18 @@ def display_driver_setup_in_log_file(
     log.info(f"End of simulation      : {model_time_variables.simulation_end_datetime}")
     log.info(f"Number of timesteps    : {model_time_variables.n_time_steps}")
     match config.end_of_simulation:
-        case driver_config.NumTimeSteps():
+        case time.NumTimeSteps():
             log.info("Running mode           : num_timesteps")
-        case driver_config.RelativeTime():
+        case time.RelativeTime():
             log.info("Running mode           : relative_time")
-        case driver_config.AbsoluteTime():
+        case time.AbsoluteTime():
             log.info("Running mode           : absolute_time")
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
-    log.info(f"Statistics enabled     : {config.enable_statistics_output}")
+    log.info(f"Prepare advection      : {config.do_prep_adv}")
+    log.info(f"Initial diffusion      : {config.diffuse_before_time_loop}")
+    log.info(f"Statistics enabled     : {config.enable_statistics_logging}")
     log.info(f"Active tracers         : {tracer_config}")
     log.info("")
 

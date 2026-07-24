@@ -14,12 +14,12 @@ from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
-DeviceType: TypeAlias = gtx.DeviceType
+DeviceType: TypeAlias = gtx.DeviceType  # noqa: UP040 used with isinstance()
 CPU = DeviceType.CPU
 GPU = gtx.CUPY_DEVICE_TYPE
 
-BackendDescriptor: TypeAlias = dict[str, Any]
-BackendLike: TypeAlias = DeviceType | gtx_typing.Backend | BackendDescriptor | None
+type BackendDescriptor = dict[str, Any]
+type BackendLike = DeviceType | gtx_typing.Backend | BackendDescriptor | None
 
 
 DEFAULT_BACKEND: Final = "embedded"
@@ -67,19 +67,14 @@ def get_allocator(
     raise ValueError(f"Cannot get allocator from {backend}")
 
 
-def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gtx_typing.Backend:
+def make_custom_gtfn_backend(device: DeviceType, **_) -> gtx_typing.Backend:
     on_gpu = device == GPU
-    return gtfn.GTFNBackendFactory(
-        gpu=on_gpu,
-        cached=cached,
-        otf_workflow__cached_translation=cached,
-    )
+    return gtfn.GTFNBackendFactory(gpu=on_gpu)
 
 
 def make_custom_dace_backend(
     *,
     device: DeviceType,
-    cached: bool = True,
     auto_optimize: bool = True,
     async_sdfg_call: bool = True,
     optimization_args: dict[str, Any] | None = None,
@@ -92,7 +87,6 @@ def make_custom_dace_backend(
 
     Args:
         device: The target device.
-        cached: Cache the lowered SDFG as a JSON file and the compiled programs.
         auto_optimize: Enable the SDFG auto-optimize pipeline.
         async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
             of GPU kernel execution with the Python driver code.
@@ -110,7 +104,6 @@ def make_custom_dace_backend(
     on_gpu = device == GPU
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
-        cached=cached,
         auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
         optimization_args=optimization_args,

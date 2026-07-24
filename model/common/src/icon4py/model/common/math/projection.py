@@ -13,9 +13,10 @@ def gnomonic_proj(
     lat_c: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     lat: data_alloc.NDArray,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    sphere_radius: float,
+) -> data_alloc.NDArray:
     """
-    Compute gnomonic projection.
+    Compute gnomonic projection onto a tangent plane with origin at (lon_c, lat_c).
 
     gnomonic_proj
     Args:
@@ -23,8 +24,9 @@ def gnomonic_proj(
         lat_c: lattitude center on tangent plane
         lon: longitude point to be projected
         lat: lattitude point to be projected
+        sphere_radius: radius of the sphere
     Returns:
-        x, y: coordinates of projected point
+        x and y coordinates of the projected point on the tangent plane
 
     Variables:
         zk: scale factor perpendicular to the radius from the center of the map
@@ -45,8 +47,7 @@ def gnomonic_proj(
         array_ns.cos(lat_c) * array_ns.sin(lat)
         - array_ns.sin(lat_c) * array_ns.cos(lat) * array_ns.cos(lon - lon_c)
     )
-
-    return x, y
+    return array_ns.column_stack((x, y)) * sphere_radius
 
 
 def diff_on_edges_torus_numpy(

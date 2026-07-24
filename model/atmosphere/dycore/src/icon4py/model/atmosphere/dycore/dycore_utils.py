@@ -19,7 +19,7 @@ def _scale_k(field: fa.KField[wpfloat], factor: wpfloat) -> fa.KField[wpfloat]:
 
 
 @gtx.program
-def scale_k(field: fa.KField[wpfloat], factor: wpfloat, scaled_field: fa.KField[wpfloat]):
+def scale_k(field: fa.KField[wpfloat], factor: wpfloat, scaled_field: fa.KField[wpfloat]) -> None:
     _scale_k(field, factor, out=scaled_field)
 
 
@@ -98,7 +98,7 @@ def calculate_divdamp_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     second_order_divdamp_factor: wpfloat,
     max_nudging_coefficient: wpfloat,
     wp_eps: wpfloat,
-):
+) -> None:
     _calculate_divdamp_fields(
         interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
         divdamp_order=divdamp_order,
