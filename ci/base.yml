@@ -139,8 +139,32 @@ variables:
     # so this can be used safely.
     UV_LINK_MODE: symlink
 
+.retry_on_transient_failure:
+  # Retry on transient runner/scheduler failures and signal-killed (e.g. slurm
+  # timeouts and cancellations due to filesystem/network hangs) jobs.
+  #
+  # GitLab failure types and exit codes are documented at:
+  # https://docs.gitlab.com/ee/ci/yaml/#retry
+  #
+  # 137 and 143 are SIGKILL and SIGTERM for slurm cancellations. These are 128 +
+  # signal according to https://man7.org/linux/man-pages/man7/signal.7.html and
+  # https://tldp.org/LDP/abs/html/exitcodes.html.
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - runner_interrupted
+      - runner_external_dependency_failure
+      - api_failure
+      - scheduler_failure
+      - server_timeout_running
+      - server_timeout_canceling
+    exit_codes:
+      - 137
+      - 143
+
 .test_model_aarch64:
-  extends: [.test_runner_serial, .test_template_aarch64]
+  extends: [.test_runner_serial, .test_template_aarch64, .retry_on_transient_failure]
   script:
     - |
       PYTEST_ARGS="--backend=$BACKEND"
@@ -163,12 +187,12 @@ variables:
         SLURM_TIMELIMIT: '00:30:00'
 
 .test_tools_aarch64:
-  extends: [.test_runner_serial, .test_template_aarch64]
+  extends: [.test_runner_serial, .test_template_aarch64, .retry_on_transient_failure]
   script:
     - nox -s "test_tools_and_bindings-${PYVERSION_SHORT}($SELECTION)"
 
 .test_model_mpi_aarch64:
-  extends: [.test_runner_mpi, .test_template_aarch64]
+  extends: [.test_runner_mpi, .test_template_aarch64, .retry_on_transient_failure]
   script:
     - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-${PYVERSION_SHORT}($SELECTION, $MODEL_MPI_SUBPACKAGE)" -- --backend=$BACKEND --level=$LEVEL
   rules:
