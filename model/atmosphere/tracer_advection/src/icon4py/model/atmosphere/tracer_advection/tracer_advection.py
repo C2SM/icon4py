@@ -78,7 +78,7 @@ class VerticalAdvectionType(Enum):
     Vertical operator scheme for tracer advection (originally ivadv_tracer).
     """
 
-    #: no vertical tracer_advection
+    #: no vertical tracer advection
     NO_ADVECTION = 0
     #: 1st order upwind
     UPWIND_1ST_ORDER = 1
