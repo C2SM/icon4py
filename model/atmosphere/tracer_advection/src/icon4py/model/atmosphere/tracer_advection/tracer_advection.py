@@ -446,7 +446,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 exchange=exchange,
             )
         case _:
-            raise NotImplementedError("Unknown horizontal tracer_advection limiter.")
+            raise NotImplementedError("Unknown horizontal tracer advection limiter.")
 
     horizontal_advection: tracer_advection_horizontal.HorizontalAdvection
     match config.horizontal_advection_type:
