@@ -149,7 +149,7 @@ class Advection(ABC):
         dtime: ta.wpfloat,
     ) -> None:
         """
-        Run an tracer_advection step.
+        Run an tracer advection step.
 
         Args:
             diagnostic_state: output argument, data class that contains diagnostic variables
