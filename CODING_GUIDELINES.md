@@ -142,7 +142,7 @@ Testing components is a critical part of a software development project. We foll
 Each software component project in the repository should place tests inside a folder named `tests`, which should be a proper Python package structured with the following content:
 
 - a `__init__.py` file at root level adding subfolders as members of a virtual `tests.` package
-- a `<component>` folder with a **unique name** in this repository for the package being tested (e.g. `atmosphere_advection` for the `icon4py.model.atmosphere.advection` component).
+- a `<component>` folder with a **unique name** in this repository for the package being tested (e.g. `atmosphere_tracer_advection` for the `icon4py.model.atmosphere.tracer_advection` component).
 
 The `<component>` folder should be a Python package and contain subfolders for every kind of test (e.g. `unit_tests`, `integration_tests`, ...). If needed, it may contain at any level of the file tree a `conftests.py` module for changing the pytest configuration, a `fixtures.py` module with shared fixture definitions and a `utils.py`python modules testing utilities used in the tests.
 

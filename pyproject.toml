@@ -88,7 +88,7 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
-  "icon4py-atmosphere-advection~=0.3.0",
+  "icon4py-atmosphere-tracer_advection~=0.3.0",
   "icon4py-atmosphere-diffusion~=0.3.0",
   "icon4py-atmosphere-dycore~=0.3.0",
   "icon4py-atmosphere-microphysics~=0.3.0",
@@ -147,8 +147,8 @@ disallow_untyped_defs = true
 explicit_package_bases = true
 files = [
   # TODO(egparedes): activate for all sources and tests
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/tracer_advection/src',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/tracer_advection/tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src',
@@ -185,7 +185,7 @@ files = [
 ignore_missing_imports = false
 implicit_reexport = true
 mypy_path = '''
-$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/tracer_advection/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
@@ -237,7 +237,7 @@ disable_error_code = [
   "valid-type"  # vfloat is not a valid type
 ]
 module = [
-  "icon4py.model.atmosphere.advection.stencils.*",
+  "icon4py.model.atmosphere.tracer_advection.stencils.*",
   "icon4py.model.atmosphere.diffusion.stencils.*",
   "icon4py.model.atmosphere.dycore.dycore_states",
   "icon4py.model.atmosphere.dycore.stencils.*"
@@ -264,7 +264,7 @@ markers = [
 # add all namespace packages to pythonpath to make them available for pytest
 pythonpath = [
   "bindings",
-  "model/atmosphere/advection",
+  "model/atmosphere/tracer_advection",
   "model/atmosphere/diffusion",
   "model/atmosphere/dycore",
   "model/atmosphere/subgrid_scale_physics/microphysics",
@@ -410,14 +410,14 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
-# dace = {index = "gridtools"}
-# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
-# gt4py = {index = "test.pypi"}
-icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
 icon4py-atmosphere-muphys = {workspace = true}
+# dace = {index = "gridtools"}
+# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
+# gt4py = {index = "test.pypi"}
+icon4py-atmosphere-tracer_advection = {workspace = true}
 icon4py-bindings = {workspace = true}
 icon4py-common = {workspace = true}
 icon4py-standalone_driver = {workspace = true}
@@ -427,7 +427,7 @@ icon4py-tools = {workspace = true}
 [tool.uv.workspace]
 members = [
   "bindings",
-  "model/atmosphere/advection",
+  "model/atmosphere/tracer_advection",
   "model/atmosphere/diffusion",
   "model/atmosphere/dycore",
   "model/atmosphere/subgrid_scale_physics/microphysics",

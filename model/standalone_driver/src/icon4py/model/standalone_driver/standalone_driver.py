@@ -19,9 +19,9 @@ from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import (
     dimension as dims,
     initial_condition,
@@ -241,10 +241,10 @@ class Icon4pyDriver:
         *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
         solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
-        tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState | None,
+        tracer_advection_diagnostic_state: tracer_advection_states.AdvectionDiagnosticState | None,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection | None,
-        tracer_prep_adv: advection_states.AdvectionPrepAdvState | None,
+        tracer_prep_adv: tracer_advection_states.AdvectionPrepAdvState | None,
     ) -> None:
         if self.config.nonhydrostatic is not None:
             assert solve_nonhydro_diagnostic_state is not None

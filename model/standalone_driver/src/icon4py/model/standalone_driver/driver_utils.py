@@ -18,9 +18,9 @@ from typing import Any, Literal
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
     constants,
     field_type_aliases as fa,
@@ -44,8 +44,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory as states_factory, static_fields
-from icon4py.model.common.states.tracer_state import TracerConfig
+from icon4py.model.common.states import factory as states_factory, static_fields, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_constants, driver_states
 
@@ -68,7 +67,7 @@ _LOGGING_LEVELS: dict[str, int] = {
 class Granules:
     diffusion: diffusion.Diffusion | None = None
     solve_nonhydro: solve_nh.SolveNonhydro | None = None
-    tracer_advection: advection.Advection | None = None
+    tracer_advection: tracer_advection.Advection | None = None
 
 
 def validate_granule_state_consistency(
@@ -402,13 +401,13 @@ def initialize_granules(
             exchange=exchange,
         )
 
-    tracer_advection_granule: advection.Advection | None = None
+    tracer_advection_granule: tracer_advection.Advection | None = None
     if config.tracer_advection is not None:
-        tracer_advection_granule = advection.convert_config_to_advection(
+        tracer_advection_granule = tracer_advection.convert_config_to_advection(
             grid=grid,
             backend=backend,
             config=config.tracer_advection,
-            interpolation_state=advection_states.AdvectionInterpolationState(
+            interpolation_state=tracer_advection_states.AdvectionInterpolationState(
                 geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
                 rbf_vec_coeff_e=interpolation_field_source.get(
                     interpolation_attributes.RBF_VEC_COEFF_E
@@ -420,7 +419,7 @@ def initialize_granules(
                     interpolation_attributes.POS_ON_TPLANE_E_Y
                 ),
             ),
-            least_squares_state=advection_states.AdvectionLeastSquaresState(
+            least_squares_state=tracer_advection_states.AdvectionLeastSquaresState(
                 lsq_pseudoinv_1=interpolation_field_source.get(
                     interpolation_attributes.LSQ_PSEUDOINV
                 )[:, 0, :],
@@ -428,7 +427,7 @@ def initialize_granules(
                     interpolation_attributes.LSQ_PSEUDOINV
                 )[:, 1, :],
             ),
-            metric_state=advection_states.AdvectionMetricState(
+            metric_state=tracer_advection_states.AdvectionMetricState(
                 deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
                 deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
                 deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
@@ -548,10 +547,10 @@ def display_driver_setup_in_log_file(
     config: driver_config.DriverConfig,
     model_time_variables: driver_states.ModelTimeVariables,
     vertical_params: v_grid.VerticalGrid,
-    tracer_config: TracerConfig | None = None,
+    tracer_config: tracer_states.TracerConfig | None = None,
 ) -> None:
     if tracer_config is None:
-        tracer_config = TracerConfig.none()
+        tracer_config = tracer_states.TracerConfig.none()
     log.info("===== ICON4Py Driver Configuration =====")
     log.info(f"Experiment name        : {config.experiment_name}")
     log.info(f"Time step              : {config.dtime.total_seconds()} s")
