@@ -228,145 +228,161 @@ def initialize_granules(
 
     log.info("creating cell geometry")
     cell_geometry = grid_states.CellParams(
-        cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
-        cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
-        area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        mean_cell_area=geometry_field_source.get(
-            geometry_meta.MEAN_CELL_AREA, states_factory.RetrievalType.SCALAR
+        cell_center_lat=geometry_field_source.export_field(geometry_meta.CELL_LAT),
+        cell_center_lon=geometry_field_source.export_field(geometry_meta.CELL_LON),
+        area=geometry_field_source.export_field(geometry_meta.CELL_AREA),
+        mean_cell_area=ta.wpfloat(
+            geometry_field_source.get(
+                geometry_meta.MEAN_CELL_AREA, states_factory.RetrievalType.SCALAR
+            )
         ),
     )
 
     log.info("creating edge geometry")
     edge_geometry = grid_states.EdgeParams(
-        tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
-        inverse_primal_edge_lengths=geometry_field_source.get(
+        tangent_orientation=geometry_field_source.export_field(geometry_meta.TANGENT_ORIENTATION),
+        inverse_primal_edge_lengths=geometry_field_source.export_field(
             f"inverse_of_{geometry_meta.EDGE_LENGTH}"
         ),
-        inverse_dual_edge_lengths=geometry_field_source.get(
+        inverse_dual_edge_lengths=geometry_field_source.export_field(
             f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
         ),
-        inverse_vertex_vertex_lengths=geometry_field_source.get(
+        inverse_vertex_vertex_lengths=geometry_field_source.export_field(
             f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
         ),
-        primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-        primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
-        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
-        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
-        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
-        edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
-        coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
-        edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
-        edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
-        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
-        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        primal_normal_vert_x=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_VERTEX_U),
+        primal_normal_vert_y=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        dual_normal_vert_x=geometry_field_source.export_field(geometry_meta.EDGE_TANGENT_VERTEX_U),
+        dual_normal_vert_y=geometry_field_source.export_field(geometry_meta.EDGE_TANGENT_VERTEX_V),
+        primal_normal_cell_x=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_CELL_U),
+        dual_normal_cell_x=geometry_field_source.export_field(geometry_meta.EDGE_TANGENT_CELL_U),
+        primal_normal_cell_y=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_CELL_V),
+        dual_normal_cell_y=geometry_field_source.export_field(geometry_meta.EDGE_TANGENT_CELL_V),
+        edge_areas=geometry_field_source.export_field(geometry_meta.EDGE_AREA),
+        coriolis_frequency=geometry_field_source.export_field(geometry_meta.CORIOLIS_PARAMETER),
+        edge_center_lat=geometry_field_source.export_field(geometry_meta.EDGE_LAT),
+        edge_center_lon=geometry_field_source.export_field(geometry_meta.EDGE_LON),
+        primal_normal_x=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_U),
+        primal_normal_y=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_V),
     )
 
     log.info("creating diffusion interpolation state")
     diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
-        rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
-        rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V2),
-        geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-        geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
-        geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
-        geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
-        nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
+        e_bln_c_s=interpolation_field_source.export_field(interpolation_attributes.E_BLN_C_S),
+        rbf_coeff_1=interpolation_field_source.export_field(
+            interpolation_attributes.RBF_VEC_COEFF_V1
+        ),
+        rbf_coeff_2=interpolation_field_source.export_field(
+            interpolation_attributes.RBF_VEC_COEFF_V2
+        ),
+        geofac_div=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_DIV),
+        geofac_n2s=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_N2S),
+        geofac_grg_x=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_GRG_X),
+        geofac_grg_y=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_GRG_Y),
+        nudgecoeff_e=interpolation_field_source.export_field(
+            interpolation_attributes.NUDGECOEFFS_E
+        ),
     )
 
     log.info("creating diffusion metric state")
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
-        theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
-        wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF),
-        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET),
-        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF),
+        theta_ref_mc=metrics_field_source.export_field(metrics_attributes.THETA_REF_MC),
+        wgtfac_c=metrics_field_source.export_field(metrics_attributes.WGTFAC_C),
+        zd_intcoef=metrics_field_source.export_field(metrics_attributes.ZD_INTCOEF),
+        zd_vertoffset=metrics_field_source.export_field(metrics_attributes.ZD_VERTOFFSET),
+        zd_diffcoef=metrics_field_source.export_field(metrics_attributes.ZD_DIFFCOEF),
     )
 
     log.info("creating solve nonhydro interpolation state")
     solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
-        c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
-        c_intp=interpolation_field_source.get(interpolation_attributes.CELL_AW_VERTS),
-        e_flx_avg=interpolation_field_source.get(interpolation_attributes.E_FLX_AVG),
-        geofac_grdiv=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRDIV),
-        geofac_rot=interpolation_field_source.get(interpolation_attributes.GEOFAC_ROT),
-        pos_on_tplane_e_1=interpolation_field_source.get(
+        c_lin_e=interpolation_field_source.export_field(interpolation_attributes.C_LIN_E),
+        c_intp=interpolation_field_source.export_field(interpolation_attributes.CELL_AW_VERTS),
+        e_flx_avg=interpolation_field_source.export_field(interpolation_attributes.E_FLX_AVG),
+        geofac_grdiv=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_GRDIV),
+        geofac_rot=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_ROT),
+        pos_on_tplane_e_1=interpolation_field_source.export_field(
             interpolation_attributes.POS_ON_TPLANE_E_X
         ),
-        pos_on_tplane_e_2=interpolation_field_source.get(
+        pos_on_tplane_e_2=interpolation_field_source.export_field(
             interpolation_attributes.POS_ON_TPLANE_E_Y
         ),
-        rbf_vec_coeff_e=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_E),
-        e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
-        rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
-        rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V2),
-        geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-        geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
-        geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
-        geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
-        nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
+        rbf_vec_coeff_e=interpolation_field_source.export_field(
+            interpolation_attributes.RBF_VEC_COEFF_E
+        ),
+        e_bln_c_s=interpolation_field_source.export_field(interpolation_attributes.E_BLN_C_S),
+        rbf_coeff_1=interpolation_field_source.export_field(
+            interpolation_attributes.RBF_VEC_COEFF_V1
+        ),
+        rbf_coeff_2=interpolation_field_source.export_field(
+            interpolation_attributes.RBF_VEC_COEFF_V2
+        ),
+        geofac_div=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_DIV),
+        geofac_n2s=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_N2S),
+        geofac_grg_x=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_GRG_X),
+        geofac_grg_y=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_GRG_Y),
+        nudgecoeff_e=interpolation_field_source.export_field(
+            interpolation_attributes.NUDGECOEFFS_E
+        ),
     )
 
     log.info("creating solve nonhydro metric state")
     solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
-        mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
-        rayleigh_w=metrics_field_source.get(metrics_attributes.RAYLEIGH_W),
-        time_extrapolation_parameter_for_exner=metrics_field_source.get(
+        mask_prog_halo_c=metrics_field_source.export_field(metrics_attributes.MASK_PROG_HALO_C),
+        rayleigh_w=metrics_field_source.export_field(metrics_attributes.RAYLEIGH_W),
+        time_extrapolation_parameter_for_exner=metrics_field_source.export_field(
             metrics_attributes.EXNER_EXFAC
         ),
-        reference_exner_at_cells_on_model_levels=metrics_field_source.get(
+        reference_exner_at_cells_on_model_levels=metrics_field_source.export_field(
             metrics_attributes.EXNER_REF_MC
         ),
-        wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-        wgtfacq_c=metrics_field_source.get(metrics_attributes.WGTFACQ_C),
-        inv_ddqz_z_full=metrics_field_source.get(metrics_attributes.INV_DDQZ_Z_FULL),
-        reference_rho_at_cells_on_model_levels=metrics_field_source.get(
+        wgtfac_c=metrics_field_source.export_field(metrics_attributes.WGTFAC_C),
+        wgtfacq_c=metrics_field_source.export_field(metrics_attributes.WGTFACQ_C),
+        inv_ddqz_z_full=metrics_field_source.export_field(metrics_attributes.INV_DDQZ_Z_FULL),
+        reference_rho_at_cells_on_model_levels=metrics_field_source.export_field(
             metrics_attributes.RHO_REF_MC
         ),
-        reference_theta_at_cells_on_model_levels=metrics_field_source.get(
+        reference_theta_at_cells_on_model_levels=metrics_field_source.export_field(
             metrics_attributes.THETA_REF_MC
         ),
-        exner_w_explicit_weight_parameter=metrics_field_source.get(
+        exner_w_explicit_weight_parameter=metrics_field_source.export_field(
             metrics_attributes.EXNER_W_EXPLICIT_WEIGHT_PARAMETER
         ),
-        ddz_of_reference_exner_at_cells_on_half_levels=metrics_field_source.get(
+        ddz_of_reference_exner_at_cells_on_half_levels=metrics_field_source.export_field(
             metrics_attributes.D_EXNER_DZ_REF_IC
         ),
-        ddqz_z_half=metrics_field_source.get(metrics_attributes.DDQZ_Z_HALF),
-        reference_theta_at_cells_on_half_levels=metrics_field_source.get(
+        ddqz_z_half=metrics_field_source.export_field(metrics_attributes.DDQZ_Z_HALF),
+        reference_theta_at_cells_on_half_levels=metrics_field_source.export_field(
             metrics_attributes.THETA_REF_IC
         ),
-        d2dexdz2_fac1_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
-        d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC2_MC),
-        reference_rho_at_edges_on_model_levels=metrics_field_source.get(
+        d2dexdz2_fac1_mc=metrics_field_source.export_field(metrics_attributes.D2DEXDZ2_FAC1_MC),
+        d2dexdz2_fac2_mc=metrics_field_source.export_field(metrics_attributes.D2DEXDZ2_FAC2_MC),
+        reference_rho_at_edges_on_model_levels=metrics_field_source.export_field(
             metrics_attributes.RHO_REF_ME
         ),
-        reference_theta_at_edges_on_model_levels=metrics_field_source.get(
+        reference_theta_at_edges_on_model_levels=metrics_field_source.export_field(
             metrics_attributes.THETA_REF_ME
         ),
-        ddxn_z_full=metrics_field_source.get(metrics_attributes.DDXN_Z_FULL),
-        zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
-        vertoffset_gradp=metrics_field_source.get(metrics_attributes.VERTOFFSET_GRADP),
+        ddxn_z_full=metrics_field_source.export_field(metrics_attributes.DDXN_Z_FULL),
+        zdiff_gradp=metrics_field_source.export_field(metrics_attributes.ZDIFF_GRADP),
+        vertoffset_gradp=metrics_field_source.export_field(metrics_attributes.VERTOFFSET_GRADP),
         nflat_gradp=metrics_field_source.get_int32(metrics_attributes.NFLAT_GRADP),
-        pg_exdist=metrics_field_source.get(metrics_attributes.PG_EXDIST_DSL),
-        ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),
-        ddxt_z_full=metrics_field_source.get(metrics_attributes.DDXT_Z_FULL),
-        wgtfac_e=metrics_field_source.get(metrics_attributes.WGTFAC_E),
-        wgtfacq_e=metrics_field_source.get(metrics_attributes.WGTFACQ_E),
-        exner_w_implicit_weight_parameter=metrics_field_source.get(
+        pg_exdist=metrics_field_source.export_field(metrics_attributes.PG_EXDIST_DSL),
+        ddqz_z_full_e=metrics_field_source.export_field(metrics_attributes.DDQZ_Z_FULL_E),
+        ddxt_z_full=metrics_field_source.export_field(metrics_attributes.DDXT_Z_FULL),
+        wgtfac_e=metrics_field_source.export_field(metrics_attributes.WGTFAC_E),
+        wgtfacq_e=metrics_field_source.export_field(metrics_attributes.WGTFACQ_E),
+        exner_w_implicit_weight_parameter=metrics_field_source.export_field(
             metrics_attributes.EXNER_W_IMPLICIT_WEIGHT_PARAMETER
         ),
-        horizontal_mask_for_3d_divdamp=metrics_field_source.get(
+        horizontal_mask_for_3d_divdamp=metrics_field_source.export_field(
             metrics_attributes.HORIZONTAL_MASK_FOR_3D_DIVDAMP
         ),
-        scaling_factor_for_3d_divdamp=metrics_field_source.get(
+        scaling_factor_for_3d_divdamp=metrics_field_source.export_field(
             metrics_attributes.SCALING_FACTOR_FOR_3D_DIVDAMP
         ),
-        coeff1_dwdz=metrics_field_source.get(metrics_attributes.COEFF1_DWDZ),
-        coeff2_dwdz=metrics_field_source.get(metrics_attributes.COEFF2_DWDZ),
-        coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
+        coeff1_dwdz=metrics_field_source.export_field(metrics_attributes.COEFF1_DWDZ),
+        coeff2_dwdz=metrics_field_source.export_field(metrics_attributes.COEFF2_DWDZ),
+        coeff_gradekin=metrics_field_source.export_field(metrics_attributes.COEFF_GRADEKIN),
     )
 
     solve_nonhydro_granule: solve_nh.SolveNonhydro | None = None
@@ -404,35 +420,36 @@ def initialize_granules(
 
     tracer_advection_granule: advection.Advection | None = None
     if config.tracer_advection is not None:
+        lsq_pseudoinv = interpolation_field_source.export_field(
+            interpolation_attributes.LSQ_PSEUDOINV
+        )
         tracer_advection_granule = advection.convert_config_to_advection(
             grid=grid,
             backend=backend,
             config=config.tracer_advection,
             interpolation_state=advection_states.AdvectionInterpolationState(
-                geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-                rbf_vec_coeff_e=interpolation_field_source.get(
+                geofac_div=interpolation_field_source.export_field(
+                    interpolation_attributes.GEOFAC_DIV
+                ),
+                rbf_vec_coeff_e=interpolation_field_source.export_field(
                     interpolation_attributes.RBF_VEC_COEFF_E
                 ),
-                pos_on_tplane_e_1=interpolation_field_source.get(
+                pos_on_tplane_e_1=interpolation_field_source.export_field(
                     interpolation_attributes.POS_ON_TPLANE_E_X
                 ),
-                pos_on_tplane_e_2=interpolation_field_source.get(
+                pos_on_tplane_e_2=interpolation_field_source.export_field(
                     interpolation_attributes.POS_ON_TPLANE_E_Y
                 ),
             ),
             least_squares_state=advection_states.AdvectionLeastSquaresState(
-                lsq_pseudoinv_1=interpolation_field_source.get(
-                    interpolation_attributes.LSQ_PSEUDOINV
-                )[:, 0, :],
-                lsq_pseudoinv_2=interpolation_field_source.get(
-                    interpolation_attributes.LSQ_PSEUDOINV
-                )[:, 1, :],
+                lsq_pseudoinv_1=lsq_pseudoinv[:, 0, :],
+                lsq_pseudoinv_2=lsq_pseudoinv[:, 1, :],
             ),
             metric_state=advection_states.AdvectionMetricState(
-                deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
-                deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
-                deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
-                ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
+                deepatmo_divh=metrics_field_source.export_field(metrics_attributes.DEEPATMO_DIVH),
+                deepatmo_divzl=metrics_field_source.export_field(metrics_attributes.DEEPATMO_DIVZL),
+                deepatmo_divzu=metrics_field_source.export_field(metrics_attributes.DEEPATMO_DIVZU),
+                ddqz_z_full=metrics_field_source.export_field(metrics_attributes.DDQZ_Z_FULL),
             ),
             edge_params=edge_geometry,
             cell_params=cell_geometry,

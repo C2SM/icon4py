@@ -70,6 +70,7 @@ If a `shell.nix` exists in the repo root, you can use it to provide these depend
 - `GT4PY_BUILD_CACHE_DIR`: GT4Py stencil compilation cache location
 - `GT4PY_BUILD_JOBS`: limit parallel stencil compilation jobs (unset by default)
 - `PYTEST_ADDOPTS`: default pytest options (xdist workers, verbosity)
+- `FLOAT_PRECISION`: choose precision setting from `double` (default), `single`, `mixed` (broken) 
 
 ### Clean rebuild
 

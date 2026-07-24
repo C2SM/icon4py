@@ -145,34 +145,34 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     num_levels = grid.num_levels
 
     eta_v = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=gtx.float64
     )
-    eta_v_at_edge = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator)
+    eta_v_at_edge_dp = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=gtx.float64
+    )
 
-    exner_ndarray = prognostic_state_now.exner.ndarray
-    rho_ndarray = prognostic_state_now.rho.ndarray
-    theta_v_ndarray = prognostic_state_now.theta_v.ndarray
+    exner_dp = array_ns.zeros((num_cells, num_levels), dtype=gtx.float64)
+    rho_dp = array_ns.zeros((num_cells, num_levels), dtype=gtx.float64)
+    theta_v_dp = array_ns.zeros((num_cells, num_levels), dtype=gtx.float64)
+
     eta_v_ndarray = eta_v.ndarray
 
     sin_lat = array_ns.sin(cell_lat)
     cos_lat = array_ns.cos(cell_lat)
-    fac1 = ta.wpfloat("1.0") / ta.wpfloat("6.3") - ta.wpfloat("2.0") * (sin_lat**6) * (
-        cos_lat**2 + ta.wpfloat("1.0") / ta.wpfloat("3.0")
-    )
+    fac1 = 1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0)
     fac2 = (
-        (
-            ta.wpfloat("8.0")
-            / ta.wpfloat("5.0")
-            * (cos_lat**3)
-            * (sin_lat**2 + ta.wpfloat("2.0") / ta.wpfloat("3.0"))
-            - ta.wpfloat("0.25") * math.pi
-        )
-        * phy_const.EARTH_RADIUS
-        * phy_const.EARTH_ANGULAR_VELOCITY
+        (8.0 / 5.0 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * math.pi)
+        * gtx.float64(phy_const.EARTH_RADIUS)
+        * gtx.float64(phy_const.EARTH_ANGULAR_VELOCITY)
     )
-    lapse_rate = phy_const.RD * gamma / phy_const.GRAV
+    lapse_rate = gtx.float64(phy_const.RD) * gamma / gtx.float64(phy_const.GRAV)
+    initial_guess = 1.0
+    epsilon = gtx.float64(phy_const.WP_EPS)  # error never smaller than this for double-precision
+    # TODO(pstark): Could be changed to epsilon = gtx.maximum(gtx.float64(phy_const.WP_EPS), 10 * phy_const.DP_EPS)
+    # if we would want to make double version faster too
+    # I expect the error compared to the Fortran version to be of similar magnitude with and without that
     for k_index in range(num_levels - 1, -1, -1):
-        eta_old = array_ns.full(num_cells, fill_value=ta.wpfloat("1.0e-7"), dtype=ta.wpfloat)
+        eta_old = array_ns.full(num_cells, fill_value=initial_guess, dtype=gtx.float64)
         log.info(f"In Newton iteration, k = {k_index}")
         for _ in range(100):
             eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
@@ -180,62 +180,81 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             sin_etav = array_ns.sin(eta_v_ndarray[:, k_index])
 
             temperature_avg = temp0 * (eta_old**lapse_rate)
-            geopot_avg = temp0 * phy_const.GRAV / gamma * (ta.wpfloat("1.0") - eta_old**lapse_rate)
+            geopot_avg = temp0 * gtx.float64(phy_const.GRAV) / gamma * (1.0 - eta_old**lapse_rate)
             temperature_avg = array_ns.where(
                 eta_old < eta_t, temperature_avg + dtemp * ((eta_t - eta_old) ** 5), temperature_avg
             )
             geopot_avg = array_ns.where(
                 eta_old < eta_t,
                 geopot_avg
-                - phy_const.RD
+                - gtx.float64(phy_const.RD)
                 * dtemp
                 * (
-                    (array_ns.log(eta_old / eta_t) + ta.wpfloat("137.0") / ta.wpfloat("60.0"))
-                    * (eta_t**5)
-                    - ta.wpfloat("5.0") * (eta_t**4) * eta_old
-                    + ta.wpfloat("5.0") * (eta_t**3) * (eta_old**2)
-                    - ta.wpfloat("10.0") / ta.wpfloat("3.0") * (eta_t**2) * (eta_old**3)
-                    + ta.wpfloat("1.25") * eta_t * (eta_old**4)
-                    - ta.wpfloat("0.2") * (eta_old**5)
+                    (array_ns.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t**5)
+                    - 5.0 * (eta_t**4) * eta_old
+                    + 5.0 * (eta_t**3) * (eta_old**2)
+                    - 10.0 / 3.0 * (eta_t**2) * (eta_old**3)
+                    + 1.25 * eta_t * (eta_old**4)
+                    - 0.2 * (eta_old**5)
                 ),
                 geopot_avg,
             )
 
             geopot_jw = geopot_avg + u0 * (cos_etav**1.5) * (fac1 * u0 * (cos_etav**1.5) + fac2)
-            temperature_jw = temperature_avg + ta.wpfloat(
-                "0.75"
-            ) * eta_old * math.pi * u0 / phy_const.RD * sin_etav * array_ns.sqrt(cos_etav) * (
-                ta.wpfloat("2.0") * u0 * fac1 * (cos_etav**1.5) + fac2
-            )
+            temperature_jw = temperature_avg + 0.75 * eta_old * math.pi * u0 / gtx.float64(
+                phy_const.RD
+            ) * sin_etav * array_ns.sqrt(cos_etav) * (2.0 * u0 * fac1 * (cos_etav**1.5) + fac2)
             newton_function = geopot_jw - geopot[:, k_index]
-            newton_function_prime = -phy_const.RD / eta_old * temperature_jw
-            eta_old = eta_old - newton_function / newton_function_prime
+            newton_function_prime = -gtx.float64(phy_const.RD) / eta_old * temperature_jw
+
+            delta = newton_function / newton_function_prime
+            eta_old = eta_old - delta
+
+            log.info(
+                f"eta_mean,std: {eta_old.mean()}, {eta_old.std()} <-> delta: {delta.mean()}, {delta.std()}"
+            )
+
+            if array_ns.abs(delta, out=delta).max() < eta_old.max() * epsilon:
+                log.info(f"delta_abs_max={delta.max()}, eta_max={eta_old.max()}, epsilon={epsilon}")
+                break
+
+        log.info(
+            f"potential eps-factor: {array_ns.abs(delta, out=delta).max() / (eta_old.max() * gtx.float64(phy_const.WP_EPS))} (that woudl have exited)"
+        )
+        initial_guess = eta_old.min()
 
         eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
-        exner_ndarray[:, k_index] = (eta_old * p_sfc / phy_const.P0REF) ** phy_const.RD_O_CPD
-        theta_v_ndarray[:, k_index] = temperature_jw / exner_ndarray[:, k_index]
-        rho_ndarray[:, k_index] = (
-            exner_ndarray[:, k_index] ** phy_const.CVD_O_RD
-            * phy_const.P0REF
-            / phy_const.RD
-            / theta_v_ndarray[:, k_index]
+        exner_dp[:, k_index] = (eta_old * p_sfc / gtx.float64(phy_const.P0REF)) ** gtx.float64(
+            phy_const.RD_O_CPD
+        )
+        theta_v_dp[:, k_index] = temperature_jw / exner_dp[:, k_index]
+        rho_dp[:, k_index] = (
+            exner_dp[:, k_index] ** gtx.float64(phy_const.CVD_O_RD)
+            * gtx.float64(phy_const.P0REF)
+            / gtx.float64(phy_const.RD)
+            / theta_v_dp[:, k_index]
         )
     log.info("Newton iteration completed.")
 
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
         in_field=eta_v,
         coeff=c_lin_e,
-        out_field=eta_v_at_edge,
+        out_field=eta_v_at_edge_dp,
         horizontal_start=zone_idx["end_edge_lateral_boundary_level_2"],
         horizontal_end=zone_idx["end_edge_end"],
         vertical_start=0,
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
+    eta_v_at_edge = gtx.astype(eta_v_at_edge_dp, ta.wpfloat)
     exchange.exchange(dims.EdgeDim, eta_v_at_edge)
     log.info("Cell-to-edge eta_v computation completed.")
 
-    prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
+    prognostic_state_now.exner.ndarray[:] = exner_dp.astype(ta.wpfloat)
+    prognostic_state_now.rho.ndarray[:] = rho_dp.astype(ta.wpfloat)
+    prognostic_state_now.theta_v.ndarray[:] = theta_v_dp.astype(ta.wpfloat)
+
+    vn_dp = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid=grid,
         u0=u0,
         baroclinic_amplitude=jw_baroclinic_amplitude,
@@ -244,8 +263,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         edge_lat=edge_lat,
         edge_lon=edge_lon,
         primal_normal_x=primal_normal_x,
-        eta_v_at_edge=eta_v_at_edge.ndarray,
+        eta_v_at_edge=eta_v_at_edge_dp.ndarray,
     )
+    prognostic_state_now.vn.ndarray[:, :] = vn_dp.astype(ta.wpfloat)
     log.info("U2vn computation completed.")
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
@@ -264,9 +284,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     exchange.exchange(dims.CellDim, prognostic_state_now.w)
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
-        rho=rho_ndarray,
-        exner=exner_ndarray,
-        theta_v=theta_v_ndarray,
+        rho=rho_dp,
+        exner=exner_dp,
+        theta_v=theta_v_dp,
         exner_ref_mc=exner_ref_mc,
         d_exner_dz_ref_ic=d_exner_dz_ref_ic,
         theta_ref_mc=theta_ref_mc,

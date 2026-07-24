@@ -255,8 +255,25 @@ class FieldSource(GridProvider, Protocol):
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
 
+    def dtype_for_factory(self, field_name: str):
+        try:
+            this_metadata = self.get(field_name, RetrievalType.METADATA)
+            dtype = this_metadata.get("dtype", gtx.float64)
+        except (ValueError, KeyError):
+            dtype = gtx.float64
+        return keep_floats_double(dtype)
+
+    def dtypes_for_factory(self, field_names: Iterator[str]):
+        dtypes = {field_name: self.dtype_for_factory(field_name) for field_name in field_names}
+        return dtypes
+
     def _provided_by_source(self, name) -> str:
         return name in self._sources._providers or name in self._sources.metadata
+
+    def export_field(self, field_name: str):
+        field = self.get(field_name, RetrievalType.FIELD)
+        dtype_metadata = self.metadata[field_name].get("dtype", ta.wpfloat)
+        return gtx.astype(field, dtype_metadata)  # field.astype(dtype_metadata)
 
     def register_provider(self, provider: FieldProvider) -> None:
         # dependencies must be provider by this field source or registered in sources
@@ -401,8 +418,10 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             f"{data_alloc.backend_name(factory.backend)}"
         )
         xp = data_alloc.import_array_ns(factory.backend)
-        metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields}
-        self._fields = self._allocate_fields(compute_backend, grid_provider, xp, metadata)
+
+        dtypes = factory.dtypes_for_factory(self.fields)
+
+        self._fields = self._allocate_fields(compute_backend, grid_provider, xp, dtypes)
         # call field operator
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
@@ -454,7 +473,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
         xp: ModuleType,
-        metadata: dict[str, model.FieldMetaData],
+        dtypes: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
         def _map_size(dim: gtx.Dimension, grids: GridProvider) -> int:
             match dim:
@@ -483,10 +502,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             buffer = array_ns.zeros(shape, dtype=dtype)
             return gtx.as_field(dims, data=buffer, allocator=backend, dtype=dtype)
 
-        return {
-            k: _allocate(grid_provider, backend, xp, dtype=dtype_or_default(k, metadata))
-            for k in self._fields
-        }
+        return {k: _allocate(grid_provider, backend, xp, dtype=dtypes[k]) for k in self._fields}
 
 
 class ProgramFieldProvider(FieldProvider, NeedsExchange):
@@ -534,7 +550,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         self,
         backend: gtx_typing.Backend | None,
         grid: base_grid.Grid,  # TODO @halungge: change to vertical grid
-        dtype: dict[str, state_utils.ScalarType],
+        dtypes: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
         def _map_size(dim: gtx.Dimension, grid: base_grid.Grid) -> int:
             if dim == dims.KHalfDim:
@@ -548,7 +564,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
         allocate = gtx.constructors.zeros.partial(allocator=backend)
         field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
-        return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
+        return {k: allocate(field_domain, dtype=dtypes[k]) for k in self._fields}
 
     # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
@@ -621,13 +637,9 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         grid: GridProvider,
         backend: gtx_typing.Backend | None,
     ) -> None:
-        try:
-            metadata = {v: field_src.get(v, RetrievalType.METADATA) for v in self._output.values()}
-            dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
-        except (ValueError, KeyError):
-            dtype = {v: ta.wpfloat for v in self._output.values()}
+        dtypes = field_src.dtypes_for_factory(self._output.values())
 
-        self._fields = self._allocate(backend, grid.grid, dtype=dtype)
+        self._fields = self._allocate(backend, grid.grid, dtypes=dtypes)
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
         deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
@@ -725,15 +737,17 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         results = self._func(**args)
         # convert to tuple
         results = (results,) if not isinstance(results, tuple) else results
+        # force double for floating-precision
+        dtypes = factory.dtypes_for_factory(self.fields.keys())
         self._fields = {
-            k: self._as_field(backend, results[i]) if self._dims else results[i]
+            k: self._as_field(backend, results[i], dtype=dtypes[k]) if self._dims else results[i]
             for i, k in enumerate(self.fields)
         }
 
     def _as_field(
-        self, backend: gtx_typing.Backend | None, value: data_alloc.NDArray
+        self, backend: gtx_typing.Backend | None, value: data_alloc.NDArray, dtype
     ) -> state_utils.GTXFieldType:
-        return gtx.as_field(tuple(self._dims), value, allocator=backend)
+        return gtx.as_field(tuple(self._dims), value, allocator=backend, dtype=dtype)
 
     def _validate_dependencies(self) -> None:
         # TODO(egparedes): dealing with type annotations at run-time is error prone
@@ -744,7 +758,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
             obj = inspect.unwrap(obj.func)
         annotations = typing.get_type_hints(obj)
         for dep_key in self._dependencies:
-            parameter_annotation = annotations.get(dep_key)
+            parameter_annotation = annotations.get(dep_key, gtx.float64)
             checked = _is_compatible_union(
                 parameter_annotation, expected=data_alloc.NDArray | np.float64
             )
@@ -755,7 +769,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
 
         supported_scalars = state_utils.IntegerType | state_utils.FloatType
         for param_key, param_value in self._params.items():
-            parameter_annotation = annotations.get(param_key)
+            parameter_annotation = annotations.get(param_key, gtx.float64)
             checked = _is_compatible_union(
                 parameter_annotation, expected=supported_scalars
             ) and _is_compatible_value(param_value, expected=supported_scalars)
@@ -812,10 +826,11 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.__name__
 
 
-def dtype_or_default(
-    field_name: str, metadata: dict[str, model.FieldMetaData]
-) -> state_utils.ScalarType:
-    return metadata[field_name].get("dtype", ta.wpfloat)
+def keep_floats_double(dtype_metadata):
+    if dtype_metadata in [gtx.int32, bool]:
+        return dtype_metadata
+    else:
+        return gtx.float64
 
 
 def replace_khalfdim(dim: gtx.Dimension) -> gtx.Dimension:

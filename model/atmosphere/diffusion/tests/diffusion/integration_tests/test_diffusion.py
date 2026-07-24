@@ -56,33 +56,37 @@ def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.B
         grid = geometry_.grid
 
         cell_params = grid_states.CellParams(
-            cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
-            cell_center_lon=geometry_.get(geometry_meta.CELL_LON),
-            area=geometry_.get(geometry_meta.CELL_AREA),
+            cell_center_lat=geometry_.export_field(geometry_meta.CELL_LAT),
+            cell_center_lon=geometry_.export_field(geometry_meta.CELL_LON),
+            area=geometry_.export_field(geometry_meta.CELL_AREA),
         )
         edge_params = grid_states.EdgeParams(
-            edge_center_lat=geometry_.get(geometry_meta.EDGE_LAT),
-            edge_center_lon=geometry_.get(geometry_meta.EDGE_LON),
-            tangent_orientation=geometry_.get(geometry_meta.TANGENT_ORIENTATION),
-            coriolis_frequency=geometry_.get(geometry_meta.CORIOLIS_PARAMETER),
-            edge_areas=geometry_.get(geometry_meta.EDGE_AREA),
-            primal_edge_lengths=geometry_.get(geometry_meta.EDGE_LENGTH),
-            inverse_primal_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
-            dual_edge_lengths=geometry_.get(geometry_meta.DUAL_EDGE_LENGTH),
-            inverse_dual_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
-            inverse_vertex_vertex_lengths=geometry_.get(
+            edge_center_lat=geometry_.export_field(geometry_meta.EDGE_LAT),
+            edge_center_lon=geometry_.export_field(geometry_meta.EDGE_LON),
+            tangent_orientation=geometry_.export_field(geometry_meta.TANGENT_ORIENTATION),
+            coriolis_frequency=geometry_.export_field(geometry_meta.CORIOLIS_PARAMETER),
+            edge_areas=geometry_.export_field(geometry_meta.EDGE_AREA),
+            primal_edge_lengths=geometry_.export_field(geometry_meta.EDGE_LENGTH),
+            inverse_primal_edge_lengths=geometry_.export_field(
+                f"inverse_of_{geometry_meta.EDGE_LENGTH}"
+            ),
+            dual_edge_lengths=geometry_.export_field(geometry_meta.DUAL_EDGE_LENGTH),
+            inverse_dual_edge_lengths=geometry_.export_field(
+                f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+            ),
+            inverse_vertex_vertex_lengths=geometry_.export_field(
                 f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
             ),
-            primal_normal_x=geometry_.get(geometry_meta.EDGE_NORMAL_U),
-            primal_normal_y=geometry_.get(geometry_meta.EDGE_NORMAL_V),
-            primal_normal_cell_x=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_U),
-            primal_normal_cell_y=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_V),
-            primal_normal_vert_x=geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-            primal_normal_vert_y=geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-            dual_normal_cell_x=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_U),
-            dual_normal_cell_y=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_V),
-            dual_normal_vert_x=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-            dual_normal_vert_y=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+            primal_normal_x=geometry_.export_field(geometry_meta.EDGE_NORMAL_U),
+            primal_normal_y=geometry_.export_field(geometry_meta.EDGE_NORMAL_V),
+            primal_normal_cell_x=geometry_.export_field(geometry_meta.EDGE_NORMAL_CELL_U),
+            primal_normal_cell_y=geometry_.export_field(geometry_meta.EDGE_NORMAL_CELL_V),
+            primal_normal_vert_x=geometry_.export_field(geometry_meta.EDGE_NORMAL_VERTEX_U),
+            primal_normal_vert_y=geometry_.export_field(geometry_meta.EDGE_NORMAL_VERTEX_V),
+            dual_normal_cell_x=geometry_.export_field(geometry_meta.EDGE_TANGENT_CELL_U),
+            dual_normal_cell_y=geometry_.export_field(geometry_meta.EDGE_TANGENT_CELL_V),
+            dual_normal_vert_x=geometry_.export_field(geometry_meta.EDGE_TANGENT_VERTEX_U),
+            dual_normal_vert_y=geometry_.export_field(geometry_meta.EDGE_TANGENT_VERTEX_V),
         )
         grid_functionality[experiment.name]["grid"] = grid
         grid_functionality[experiment.name]["edge_geometry"] = edge_params
@@ -140,6 +144,7 @@ def test_smagorinski_factor_diffusion_type_5():
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 # TODO(havogt): Remove custom `experiment` parametrization
 @pytest.mark.parametrize(
     "experiment_description,step_date_init",
@@ -229,7 +234,7 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 def _verify_init_values_against_savepoint(
     savepoint: sb.IconDiffusionInitSavepoint, diffusion_granule: diffusion.Diffusion, backend
 ):
-    dtime = savepoint.get_metadata("dtime")["dtime"]
+    dtime = savepoint.dtime()
 
     assert savepoint.nudgezone_diff() == diffusion_granule.nudgezone_diff
     assert savepoint.bdy_diff() == diffusion_granule.bdy_diff
@@ -309,6 +314,7 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
 
 
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
@@ -339,7 +345,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
 
-    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_diffusion_init.dtime()
 
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -382,6 +388,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
 
 
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
@@ -397,7 +404,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
-    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_diffusion_init.dtime()
 
     vertical_config = experiment.config.vertical_grid
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
@@ -447,6 +454,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
 
 
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("linit", [True])
 # TODO(havogt): Remove custom `experiment` parametrization
 @pytest.mark.parametrize(

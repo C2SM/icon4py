@@ -8,15 +8,15 @@
 import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2CDim
 
 
 @gtx.field_operator
 def _cell_2_edge_interpolation(
-    in_field: fa.CellKField[ta.wpfloat],
-    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-) -> fa.EdgeKField[ta.wpfloat]:
+    in_field: fa.CellKField[gtx.float64],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+) -> fa.EdgeKField[gtx.float64]:
     """
     Interpolate a Cell Field to Edges.
 
@@ -30,9 +30,9 @@ def _cell_2_edge_interpolation(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def cell_2_edge_interpolation(
-    in_field: fa.CellKField[ta.wpfloat],
-    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    out_field: fa.EdgeKField[ta.wpfloat],
+    in_field: fa.CellKField[gtx.float64],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+    out_field: fa.EdgeKField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

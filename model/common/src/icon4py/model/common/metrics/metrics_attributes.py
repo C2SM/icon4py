@@ -213,7 +213,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="d2dexdz2_fac1_mc",
-        dtype=ta.wpfloat,
+        dtype=ta.vpfloat,
     ),
     D2DEXDZ2_FAC2_MC: dict(
         standard_name=D2DEXDZ2_FAC2_MC,
@@ -221,7 +221,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="d2dexdz2_fac2_mc",
-        dtype=ta.wpfloat,
+        dtype=ta.vpfloat,
     ),
     DDXT_Z_HALF_E: dict(
         standard_name=DDXT_Z_HALF_E,
@@ -301,7 +301,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.EdgeDim,),
         icon_var_name="flat_idx_max",
-        dtype=ta.wpfloat,
+        dtype=gtx.int32,
     ),
     PG_EXDIST_DSL: dict(
         standard_name=PG_EXDIST_DSL,

@@ -9,7 +9,7 @@
 import pytest
 
 from icon4py.model.atmosphere.advection import advection
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
@@ -55,6 +55,7 @@ from ..utils import (
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
@@ -146,7 +147,9 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
         exchange=decomposition.single_node_exchange,
     )
 
-    least_squares_state = construct_least_squares_state(least_squares_coeffs, backend=backend)
+    least_squares_state = construct_least_squares_state(
+        least_squares_coeffs.astype(ta.wpfloat), backend=backend
+    )
 
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
     edge_geometry = grid_savepoint.construct_edge_geometry()
@@ -171,7 +174,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     prep_adv = construct_prep_adv(advection_init_savepoint)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
     p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
-    dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = advection_init_savepoint.dtime()
 
     log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
 

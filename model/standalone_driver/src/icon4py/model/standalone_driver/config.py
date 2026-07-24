@@ -294,6 +294,9 @@ class DriverConfig:
         kwargs["start_of_timestepping"] = kwargs["start_of_simulation"]
         return cls(**kwargs)
 
+    def __post_init__(self):
+        ta.dataclass_scalars_to_wp(self, attributes=["vertical_cfl_threshold"])
+
     @classmethod
     def from_fortran_dict(
         cls, *, atm_dict: dict[str, Any], master_dict: dict[str, Any], **overrides: Any

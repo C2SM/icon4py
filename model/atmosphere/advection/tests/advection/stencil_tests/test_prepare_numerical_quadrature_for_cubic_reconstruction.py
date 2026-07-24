@@ -43,7 +43,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
         wgt_zeta_2,
         wgt_eta_1,
         wgt_eta_2,
-        dbl_eps,
+        wp_eps,
         p_coords_dreg_v_1_x,
         p_coords_dreg_v_2_x,
         p_coords_dreg_v_3_x,
@@ -93,7 +93,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
             1.0 + zeta_4,
         )
 
-        wgt_t_detjac_1 = dbl_eps + z_wgt_1 * (
+        wgt_t_detjac_1 = wp_eps + z_wgt_1 * (
             (
                 z_eta_1_1 * (p_coords_dreg_v_2_x - p_coords_dreg_v_1_x)
                 + z_eta_1_2 * (p_coords_dreg_v_3_x - p_coords_dreg_v_4_x)
@@ -111,7 +111,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
                 - z_eta_1_4 * (p_coords_dreg_v_2_x - p_coords_dreg_v_3_x)
             )
         )
-        wgt_t_detjac_2 = dbl_eps + z_wgt_2 * (
+        wgt_t_detjac_2 = wp_eps + z_wgt_2 * (
             (
                 z_eta_2_1 * (p_coords_dreg_v_2_x - p_coords_dreg_v_1_x)
                 + z_eta_2_2 * (p_coords_dreg_v_3_x - p_coords_dreg_v_4_x)
@@ -129,7 +129,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
                 - z_eta_2_4 * (p_coords_dreg_v_2_x - p_coords_dreg_v_3_x)
             )
         )
-        wgt_t_detjac_3 = dbl_eps + z_wgt_3 * (
+        wgt_t_detjac_3 = wp_eps + z_wgt_3 * (
             (
                 z_eta_3_1 * (p_coords_dreg_v_2_x - p_coords_dreg_v_1_x)
                 + z_eta_3_2 * (p_coords_dreg_v_3_x - p_coords_dreg_v_4_x)
@@ -147,7 +147,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
                 - z_eta_3_4 * (p_coords_dreg_v_2_x - p_coords_dreg_v_3_x)
             )
         )
-        wgt_t_detjac_4 = dbl_eps + z_wgt_4 * (
+        wgt_t_detjac_4 = wp_eps + z_wgt_4 * (
             (
                 z_eta_4_1 * (p_coords_dreg_v_2_x - p_coords_dreg_v_1_x)
                 + z_eta_4_2 * (p_coords_dreg_v_3_x - p_coords_dreg_v_4_x)
@@ -379,7 +379,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
         wgt_zeta_2: float,
         wgt_eta_1: float,
         wgt_eta_2: float,
-        dbl_eps: float,
+        wp_eps: float,
         eps: float,
         **kwargs: Any,
     ) -> dict:
@@ -388,7 +388,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
             wgt_zeta_2=wgt_zeta_2,
             wgt_eta_1=wgt_eta_1,
             wgt_eta_2=wgt_eta_2,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             p_coords_dreg_v_1_x=p_coords_dreg_v_1_x,
             p_coords_dreg_v_2_x=p_coords_dreg_v_2_x,
             p_coords_dreg_v_3_x=p_coords_dreg_v_3_x,
@@ -538,7 +538,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
         wgt_zeta_2 = 0.003
         wgt_eta_1 = 0.002
         wgt_eta_2 = 0.007
-        dbl_eps = np.float64(0.1)
+        wp_eps = np.float64(0.1)
         eps = 0.1
         return dict(
             p_coords_dreg_v_1_x=p_coords_dreg_v_1_x,
@@ -588,7 +588,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
             wgt_zeta_2=wgt_zeta_2,
             wgt_eta_1=wgt_eta_1,
             wgt_eta_2=wgt_eta_2,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             eps=eps,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),

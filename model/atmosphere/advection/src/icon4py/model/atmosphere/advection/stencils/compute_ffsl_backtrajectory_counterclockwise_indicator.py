@@ -9,22 +9,23 @@
 import gt4py.next as gtx
 from gt4py.next import where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
 def _compute_ffsl_backtrajectory_counterclockwise_indicator(
-    p_vn: fa.EdgeKField[ta.wpfloat],
-    tangent_orientation: fa.EdgeField[ta.wpfloat],
+    p_vn: fa.EdgeKField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
     lcounterclock: bool,
 ) -> fa.EdgeKField[bool]:
-    return where(p_vn * tangent_orientation >= 0.0, lcounterclock, False)
+    return where(p_vn * tangent_orientation >= wpfloat(0.0), lcounterclock, False)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_ffsl_backtrajectory_counterclockwise_indicator(
-    p_vn: fa.EdgeKField[ta.wpfloat],
-    tangent_orientation: fa.EdgeField[ta.wpfloat],
+    p_vn: fa.EdgeKField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
     lvn_sys_pos: fa.EdgeKField[bool],
     lcounterclock: bool,
     horizontal_start: gtx.int32,

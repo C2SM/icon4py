@@ -12,7 +12,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
 from icon4py.model.testing import (
@@ -55,6 +55,7 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "experiment_description, istep_exit, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
     [

@@ -9,25 +9,26 @@
 import gt4py.next as gtx
 from gt4py.next import maximum
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
 def _apply_interpolated_tracer_time_tendency(
-    p_tracer_now: fa.CellKField[ta.wpfloat],
-    p_grf_tend_tracer: fa.CellKField[ta.wpfloat],
-    p_dtime: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
-    p_tracer_new = maximum(0.0, p_tracer_now + p_dtime * p_grf_tend_tracer)
+    p_tracer_now: fa.CellKField[wpfloat],
+    p_grf_tend_tracer: fa.CellKField[wpfloat],
+    p_dtime: wpfloat,
+) -> fa.CellKField[wpfloat]:
+    p_tracer_new = maximum(wpfloat(0.0), p_tracer_now + p_dtime * p_grf_tend_tracer)
     return p_tracer_new
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_interpolated_tracer_time_tendency(
-    p_tracer_now: fa.CellKField[ta.wpfloat],
-    p_grf_tend_tracer: fa.CellKField[ta.wpfloat],
-    p_tracer_new: fa.CellKField[ta.wpfloat],
-    p_dtime: ta.wpfloat,
+    p_tracer_now: fa.CellKField[wpfloat],
+    p_grf_tend_tracer: fa.CellKField[wpfloat],
+    p_tracer_new: fa.CellKField[wpfloat],
+    p_dtime: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

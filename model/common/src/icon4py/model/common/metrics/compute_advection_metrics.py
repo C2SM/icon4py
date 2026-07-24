@@ -9,15 +9,15 @@ from __future__ import annotations
 
 from gt4py import next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 
 
 @gtx.field_operator
 def _compute_advection_deepatmo_fields(
-    height_u: fa.KField[ta.wpfloat],
-    height_l: fa.KField[ta.wpfloat],
-    grid_sphere_radius: ta.wpfloat,
-) -> tuple[fa.KField[ta.wpfloat], fa.KField[ta.wpfloat], fa.KField[ta.wpfloat]]:
+    height_u: fa.KField[gtx.float64],
+    height_l: fa.KField[gtx.float64],
+    grid_sphere_radius: gtx.float64,
+) -> tuple[fa.KField[gtx.float64], fa.KField[gtx.float64], fa.KField[gtx.float64]]:
     """
     Compute 'deepatmo_divh', 'deepatmo_divzL', 'deepatmo_divzU' from 'vct_a' and 'grid_sphere_radius'.
 
@@ -55,12 +55,12 @@ def _compute_advection_deepatmo_fields(
 
 @gtx.program
 def compute_advection_deepatmo_fields(  # noqa: PLR0917 [too-many-positional-arguments]
-    height_u: fa.KField[ta.wpfloat],
-    height_l: fa.KField[ta.wpfloat],
-    deepatmo_divh: fa.KField[ta.wpfloat],
-    deepatmo_divzL: fa.KField[ta.wpfloat],
-    deepatmo_divzU: fa.KField[ta.wpfloat],
-    grid_sphere_radius: float,
+    height_u: fa.KField[gtx.float64],
+    height_l: fa.KField[gtx.float64],
+    deepatmo_divh: fa.KField[gtx.float64],
+    deepatmo_divzL: fa.KField[gtx.float64],
+    deepatmo_divzU: fa.KField[gtx.float64],
+    grid_sphere_radius: gtx.float64,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:

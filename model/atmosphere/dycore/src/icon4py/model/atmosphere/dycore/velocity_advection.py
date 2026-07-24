@@ -22,12 +22,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wind import (
     compute_diagnostics_from_normal_wind,
 )
-from icon4py.model.common import (
-    dimension as dims,
-    field_type_aliases as fa,
-    model_backends,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon as icon_grid,
@@ -36,6 +31,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -61,8 +57,8 @@ class VelocityAdvection:
         self._edge_params: grid_states.EdgeParams = edge_params
         self._c_owner_mask: fa.CellField[bool] = owner_mask
 
-        self._cfl_w_limit: float = 0.65
-        self._scalfac_exdiff: float = 0.05
+        self._cfl_w_limit: vpfloat = vpfloat(0.65)
+        self._scalfac_exdiff: wpfloat = wpfloat(0.05)
         self._allocate_local_fields(model_backends.get_allocator(backend))
         self._determine_local_domains()
 
@@ -182,21 +178,21 @@ class VelocityAdvection:
 
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
         self._horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=vpfloat
         )
         """
         Declared as z_v_grad_w in ICON. vn dw/dn + vt dw/dt. NOTE THAT IT ONLY HAS nlev LEVELS because w[nlevp1-1] is diagnostic.
         """
 
         self._contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=vpfloat
         )
         """
         Declared as z_w_con_c_full in ICON. w - (vn dz/dn + vt dz/dt), z is topography height
         """
 
         self._vertical_cfl = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=vpfloat
         )
 
     def _determine_local_domains(self) -> None:
@@ -238,11 +234,11 @@ class VelocityAdvection:
         skip_compute_predictor_vertical_advection: bool,
         diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
-        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
-        tangential_wind_on_half_levels: fa.EdgeKField[ta.anyfloat],
-        dtime: ta.wpfloat,
-        cell_areas: fa.CellField[ta.wpfloat],
+        contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+        tangential_wind_on_half_levels: fa.EdgeKField[vpfloat],
+        dtime: wpfloat,
+        cell_areas: fa.CellField[wpfloat],
     ) -> None:
         """
         Compute some diagnostic variables that are used in the predictor step
@@ -317,20 +313,22 @@ class VelocityAdvection:
             apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
         )
 
-    def _scale_factors_by_dtime(self, dtime: float) -> tuple[float, float]:
-        scaled_cfl_w_limit = self._cfl_w_limit / dtime
-        scalfac_exdiff = self._scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
-        return scaled_cfl_w_limit, scalfac_exdiff
+    def _scale_factors_by_dtime(self, dtime: wpfloat) -> tuple[vpfloat, wpfloat]:
+        scaled_cfl_w_limit = gtx.astype(self._cfl_w_limit, wpfloat) / dtime
+        scalfac_exdiff = self._scalfac_exdiff / (
+            dtime * (wpfloat(0.85) - scaled_cfl_w_limit * dtime)
+        )
+        return gtx.astype(scaled_cfl_w_limit, vpfloat), scalfac_exdiff
 
     def run_corrector_step(
         self,
         *,
         diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
-        tangential_wind_on_half_levels: fa.EdgeKField[ta.anyfloat],
-        dtime: ta.wpfloat,
-        cell_areas: fa.CellField[ta.wpfloat],
+        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+        tangential_wind_on_half_levels: fa.EdgeKField[vpfloat],
+        dtime: wpfloat,
+        cell_areas: fa.CellField[wpfloat],
     ) -> None:
         """
         Compute some diagnostic variables that are used in the corrector step

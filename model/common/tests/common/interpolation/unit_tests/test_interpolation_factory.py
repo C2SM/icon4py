@@ -252,7 +252,7 @@ def test_e_bln_c_s(
     grid = factory.grid
     field = factory.get(attrs.E_BLN_C_S).asnumpy()
     assert field.shape == (grid.num_cells, C2E_SIZE)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field, rtol=rtol)
+    test_helpers.assert_dallclose(field, field_ref.asnumpy(), rtol=rtol)
 
 
 @pytest.mark.level("integration")

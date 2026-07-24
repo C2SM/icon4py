@@ -123,7 +123,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
                 program=compute_positive_definite_horizontal_multiplicative_flux_factor,
                 constant_args={
                     "geofac_div": self._interpolation_state.geofac_div,
-                    "dbl_eps": constants.DBL_EPS,
+                    "wp_eps": constants.WP_EPS,
                 },
                 horizontal_sizes={
                     "horizontal_start": self._start_cell_lateral_boundary_level_2,

@@ -49,10 +49,10 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
         z_graddiv2_vn: np.ndarray,
         vn: np.ndarray,
         divdamp_order: gtx.int32,
-        mean_cell_area: float,
-        second_order_divdamp_factor: float,
-        max_nudging_coefficient: float,
-        dbl_eps: float,
+        mean_cell_area: wpfloat,
+        second_order_divdamp_factor: wpfloat,
+        max_nudging_coefficient: wpfloat,
+        wp_eps: wpfloat,
         **kwargs: Any,
     ) -> dict:
         scal_divdamp = test_dycore_utils.fourth_order_divdamp_scaling_coeff_numpy(
@@ -86,7 +86,7 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
         mean_cell_area = 1000.0
         second_order_divdamp_factor = 3.0
         max_nudging_coefficient = 0.3
-        dbl_eps = constants.DBL_EPS
+        wp_eps = constants.WP_EPS
 
         return dict(
             interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
@@ -97,7 +97,7 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
             mean_cell_area=mean_cell_area,
             second_order_divdamp_factor=second_order_divdamp_factor,
             max_nudging_coefficient=max_nudging_coefficient,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,

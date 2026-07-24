@@ -473,7 +473,7 @@ class Icon4pyDriver:
 
         # reset max_vertical_cfl to zero
         solve_nonhydro_diagnostic_state.max_vertical_cfl = data_alloc.scalar_like_array(
-            0.0, self._allocator
+            ta.wpfloat(0.0), self._allocator
         )
 
     def _diffuse_before_time_loop(
@@ -537,7 +537,7 @@ class Icon4pyDriver:
             not self.config.driver.apply_extra_second_order_divdamp
             or elapsed_time_in_seconds > spinup_cutoff
         ):
-            return ta.wpfloat("0.0")
+            return ta.wpfloat(0.0)
 
         return driver_utils.spinup_second_order_divdamp_factor(
             elapsed_time_in_seconds=elapsed_time_in_seconds,
