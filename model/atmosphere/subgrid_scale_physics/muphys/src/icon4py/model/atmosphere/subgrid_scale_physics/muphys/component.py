@@ -31,17 +31,19 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.diagnostic_calculations.stencils import calculate_tendency
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.math.stencils import generic_math_operations
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.common.grid import icon as icon_grid
     from icon4py.model.common.states import model
 
 
 class MuphysComponent:
-    """The muphys Granule: a per-process adapter wrapping the muphys microphysics program."""
+    """Per-process adapter wrapping the muphys microphysics program."""
 
     # TODO (Yilu): inherit the Component protocol once it is formalized (deferred to a separate PR).
 
@@ -50,8 +52,7 @@ class MuphysComponent:
 
     def __init__(
         self,
-        ncells: int,
-        nlev: int,
+        grid: icon_grid.IconGrid,
         dtime: time.RelativeTime,
         qnc: float,
         backend: gtx_typing.Backend | None = None,
@@ -59,28 +60,41 @@ class MuphysComponent:
         scheme: muphys_config.MuphysScheme = muphys_config.MuphysScheme.KOKKOS_MUPHYS,
         step: Callable[..., Any] | None = None,
     ) -> None:
-        self._ncells = ncells
-        self._nlev = nlev
+        self._ncells = grid.num_cells
+        self._nlev = grid.num_levels
         self._dt_seconds = dtime.total_seconds()
         self._qnc = qnc
         self._backend = model_options.customize_backend(program=None, backend=backend)
 
-        horizontal_sizes = {
+        cell_domain = h_grid.domain(dims.CellDim)
+        # ICON applies physics on the prognostic cells only:
+        # grf_bdywidth_c+1 .. min_rlcell_int (NUDGING start .. LOCAL end).
+        cell_start = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        cell_end = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+
+        # Inputs are copied over the full range: the muphys step reads whole fields.
+        full_horizontal_sizes = {
             "horizontal_start": gtx.int32(0),
             "horizontal_end": gtx.int32(self._ncells),
+        }
+        # Tendencies only on the prognostic subdomain -- the tendency buffers stay
+        # zero outside, so scattering is a no-op on boundary/halo rows, as in ICON.
+        prognostic_horizontal_sizes = {
+            "horizontal_start": cell_start,
+            "horizontal_end": cell_end,
         }
         vertical_sizes = {"vertical_start": gtx.int32(0), "vertical_end": gtx.int32(self._nlev)}
         self._calculate_tendency = model_options.setup_program(
             program=calculate_tendency.calculate_cell_kdim_field_tendency,
             backend=self._backend,
-            horizontal_sizes=horizontal_sizes,
+            horizontal_sizes=prognostic_horizontal_sizes,
             vertical_sizes=vertical_sizes,
             offset_provider={},
         )
         self._copy_field = model_options.setup_program(
             program=generic_math_operations.copy_field_on_cell_k,
             backend=self._backend,
-            horizontal_sizes=horizontal_sizes,
+            horizontal_sizes=full_horizontal_sizes,
             vertical_sizes=vertical_sizes,
             offset_provider={},
         )
@@ -88,7 +102,7 @@ class MuphysComponent:
         allocator = model_backends.get_allocator(backend)
 
         if step is None:
-            sizes = types.SimpleNamespace(ncells=ncells, nlev=nlev)
+            sizes = types.SimpleNamespace(ncells=self._ncells, nlev=self._nlev)
             step = setup_muphys(
                 inp=sizes,  # type: ignore[arg-type]  # only .ncells/.nlev are read
                 dt=self._dt_seconds,
@@ -99,7 +113,7 @@ class MuphysComponent:
             )
         self._step = step
 
-        cell_k_domain = gtx.domain({dims.CellDim: ncells, dims.KDim: nlev})
+        cell_k_domain = gtx.domain({dims.CellDim: self._ncells, dims.KDim: self._nlev})
         self._t_out = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
         self._q_out = Q(
             v=gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
@@ -151,7 +165,7 @@ class MuphysComponent:
         )
 
     def _copy_into(self, src: fa.CellKField[ta.wpfloat], dst: fa.CellKField[ta.wpfloat]) -> None:
-        """Copy ``src`` into the granule-owned buffer ``dst``."""
+        """Copy ``src`` into the component-owned buffer ``dst``."""
         self._copy_field(
             field=src,
             output_field=dst,

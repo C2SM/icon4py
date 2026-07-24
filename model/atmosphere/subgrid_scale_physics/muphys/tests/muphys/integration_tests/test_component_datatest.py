@@ -28,6 +28,20 @@ _T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
 _MINI = utils.MuphysExperiment(name="mini", type=utils.ExperimentType.FULL_MUPHYS)
 
 
+class _FullDomainGrid:
+    """Grid stand-in for the grid-less muphys netCDF data: prognostic bounds = full domain."""
+
+    def __init__(self, num_cells: int, num_levels: int) -> None:
+        self.num_cells = num_cells
+        self.num_levels = num_levels
+
+    def start_index(self, domain: object) -> gtx.int32:
+        return gtx.int32(0)
+
+    def end_index(self, domain: object) -> gtx.int32:
+        return gtx.int32(self.num_cells)
+
+
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.level("integration")
@@ -51,8 +65,7 @@ def test_granule_matches_direct_muphys(
     )
 
     granule = MuphysComponent(
-        ncells=inp.ncells,
-        nlev=inp.nlev,
+        grid=_FullDomainGrid(inp.ncells, inp.nlev),  # type: ignore[arg-type]  # mini data has no icon grid
         dtime=datetime.timedelta(seconds=experiment.dt),
         qnc=experiment.qnc,
         backend=backend_like,

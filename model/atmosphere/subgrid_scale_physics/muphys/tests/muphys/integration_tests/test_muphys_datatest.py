@@ -64,7 +64,7 @@ if TYPE_CHECKING:
 )
 @pytest.mark.parametrize(
     "date",
-    ["2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000", "2008-09-01T00:15:00.000"],
+    ["2008-09-01T00:00:00.000", "2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000"],
 )
 def test_muphys_granule(
     date: str,
@@ -84,8 +84,7 @@ def test_muphys_granule(
     # the default scheme is AES_GRAUPEL, matching the Fortran that generated the data
     muphys_configuration = muphys_config.MuphysConfig()
     component = muphys_component.MuphysComponent(
-        ncells=icon_grid.num_cells,
-        nlev=icon_grid.num_levels,
+        grid=icon_grid,
         dtime=datetime.timedelta(seconds=dtime),
         qnc=muphys_configuration.qnc,
         backend=backend,
