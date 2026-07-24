@@ -163,7 +163,7 @@ class Advection(ABC):
 
 
 class NoAdvection(Advection):
-    """Class that implements disabled three-dimensional tracer_advection."""
+    """Class that implements disabled three-dimensional tracer advection."""
 
     def __init__(
         self,
