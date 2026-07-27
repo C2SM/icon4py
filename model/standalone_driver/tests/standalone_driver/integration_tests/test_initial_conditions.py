@@ -51,15 +51,13 @@ _TOLERANCES: dict[definitions.ExperimentDescription, dict[str, tuple[float, floa
         "vn": (0.0, 0.0),
         "w": (0.0, 0.0),
     },
-    # TODO: blanket pre-merge values, not measured across the CI backends like
-    # the other entries. Re-measure on cscs-ci.
     definitions.Experiments.WEISMAN_KLEMP_TORUS: {
-        "rho": (0.0, 1e-12),
-        "exner": (1e-14, 1e-12),
-        "theta_v": (1e-11, 1e-12),
-        "vn": (1e-12, 1e-12),
-        "w": (1e-12, 1e-12),
-        "qv": (0.0, 1e-12),
+        "rho": (3.8e-15, 9.6e-15),
+        "exner": (1.4e-15, 2.8e-15),
+        "theta_v": (2.0e-12, 2.8e-15),
+        "vn": (4.3e-14, 6.6e-13),
+        "w": (0.0, 0.0),
+        "qv": (2.0e-16, 1.6e-14),
     },
     definitions.Experiments.MCH_CH_R04B09: {
         "rho": (0.0, 0.0),
