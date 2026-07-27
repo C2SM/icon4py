@@ -8,7 +8,7 @@ variables:
   # IDs. These are the defaults for the pipeline and don't include all possible
   # jobs. They are meant to be overridden with e.g.
   #
-  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver;MODEL_MPI_SUBPACKAGES=common;SESSIONS=model;MODEL_SUBSETS=datatest
+  # cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit;MODEL_SUBPACKAGES=common:standalone_driver;MODEL_MPI_SUBPACKAGES=common;SESSIONS=model;MODEL_SUBSETS=datatest;PRECISION_VARIANTS=double
   SESSIONS: "model:model_mpi:tools"
   MODEL_SUBPACKAGES: "tracer_advection:diffusion:dycore:microphysics:muphys:common:standalone_driver"
   MODEL_SUBSETS: "datatest"
@@ -18,10 +18,7 @@ variables:
   LEVELS: "unit"
   GRIDS: "icon_regional"
   TOOLS_SUBSETS: "unittest"
-  # Floating-point precision variants to test. Set to "double:single" to also run
-  # single-precision tests (only tests marked @pytest.mark.single_precision_ready
-  # will run in single precision). Default is double precision only.
-  PRECISION_VARIANTS: "double"
+  PRECISION_VARIANTS: "double:single"
 
 
 build_baseimage_aarch64:
