@@ -81,21 +81,21 @@ class IcePPV(FortranIndex):
     specfication for qipv"). 16 members == max_nmoments_ice (F2 §6a)."""
 
     imt_q = 1  # total mass of ice particle (line 342)
-    icon_q = 2  # number concentration (line 348)
-    ivcs_q = 3  # circumscribing volume (dry) (line 350)
-    iacr_q = 4  # a-axis length (line 350)
-    iccr_q = 5  # c-axis length (line 350)
-    idcr_q = 6  # dendritic length (line 350)
-    iag_q = 7  # center of gravity, a-axis (polycrystals) (line 352)
-    icg_q = 8  # center of gravity, c-axis (polycrystals) (line 352)
-    inex_q = 9  # extra crystalline structure (line 352)
-    imr_q = 10  # rime mass (line 344)
-    imc_q = 11  # crystal mass (line 344)
-    imw_q = 12  # melt water mass (line 344)
-    imat_q = 13  # total aerosol mass (line 346)
-    imas_q = 14  # soluble aerosol mass (line 346)
-    ima_q = 15  # aggregate mass (line 344)
-    imf_q = 16  # frozen water mass (nucleation) (line 344)
+    imr_q = 2  # rime mass (line 344)
+    ima_q = 3  # aggregate mass (line 344)
+    imc_q = 4  # crystal mass (line 344)
+    imw_q = 5  # melt water mass (line 344)
+    imf_q = 6  # frozen water mass (nucleation) (line 344)
+    imat_q = 7  # total aerosol mass (line 346)
+    imas_q = 8  # soluble aerosol mass (line 346)
+    icon_q = 9  # number concentration (line 348)
+    ivcs_q = 10  # circumscribing volume (dry) (line 350)
+    iacr_q = 11  # a-axis length (line 350)
+    iccr_q = 12  # c-axis length (line 350)
+    idcr_q = 13  # dendritic length (line 350)
+    iag_q = 14  # center of gravity, a-axis (polycrystals) (line 352)
+    icg_q = 15  # center of gravity, c-axis (polycrystals) (line 352)
+    inex_q = 16  # extra crystalline structure (line 352)
 
 
 class IceMassIndex(FortranIndex):
@@ -106,11 +106,11 @@ class IceMassIndex(FortranIndex):
     imr = 2
     ima = 3
     imc = 4
-    imat = 5
-    imas = 6
-    imai = 7
-    imw = 8
-    imf = 9
+    imw = 5
+    imf = 6
+    imat = 7
+    imas = 8
+    imai = 9
 
 
 class IceMassRatioIndex(FortranIndex):
@@ -119,11 +119,11 @@ class IceMassRatioIndex(FortranIndex):
     imr_m = 1
     ima_m = 2
     imc_m = 3
-    imat_m = 4
-    imas_m = 5
-    imai_m = 6
-    imw_m = 7
-    imf_m = 8
+    imw_m = 4
+    imf_m = 5
+    imat_m = 6
+    imas_m = 7
+    imai_m = 8
 
 
 class IceAxisIndex(FortranIndex):
@@ -149,9 +149,9 @@ class LiquidPPV(FortranIndex):
     specfication for qrpv"). 4 members == max_nmoments_liq (F2 §6a)."""
 
     rmt_q = 1  # total mass (line 365)
-    rcon_q = 2  # number concentration (line 367)
-    rmat_q = 3  # total aerosol mass (line 366)
-    rmas_q = 4  # soluble aerosol mass (line 366)
+    rmat_q = 2  # total aerosol mass (line 366)
+    rmas_q = 3  # soluble aerosol mass (line 366)
+    rcon_q = 4  # number concentration (line 367)
 
 
 class LiquidMassIndex(FortranIndex):

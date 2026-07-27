@@ -122,6 +122,8 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import json
+import pathlib
 
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import bin_grid
 
@@ -142,6 +144,35 @@ class ImmersionFreezingMode(enum.IntEnum):
     OFF = 0
     KC04 = 1
     STANDARD = 2
+
+
+#: `AmpsConfig` field name for each `micexfg` slot, in Fortran 1-based
+#: index order (tuple position i-1 <-> Fortran index i). Single source of
+#: truth shared by `AmpsConfig.micexfg_array` (fields -> array) and
+#: `AmpsConfig.from_ampstask_file` (array -> fields) so the two directions
+#: cannot drift out of sync.
+_MICEXFG_FIELDS: tuple[str, ...] = (
+    "print_flag",
+    "rain_rain_coalescence",
+    "ice_ice_aggregation",
+    "ice_rain_riming",
+    "update_surface_temperature",
+    "vapor_deposition_liquid",
+    "vapor_deposition_ice",
+    "melting_shedding",
+    "hydrodynamic_breakup_ice",
+    "ice_nucleation_master",
+    "hydrodynamic_breakup_rain",
+    "autoconversion_cloud_droplet",
+    "ice_nucleation_deposition",
+    "ice_nucleation_contact",
+    "ice_nucleation_hallett_mossop",
+    "ice_nucleation_immersion",
+    "ice_nucleation_homogeneous",
+    "rain_collisional_breakup",
+    "ice_nucleation_dhf",
+    "unused_20",
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -479,28 +510,7 @@ class AmpsConfig:
     def micexfg_array(self) -> tuple[int, ...]:
         """Reconstruct the Fortran 20-slot `micexfg` integer array (1-based
         Fortran index i -> tuple position i-1), F2 §5 lines 894-920."""
-        return (
-            int(self.print_flag),
-            int(self.rain_rain_coalescence),
-            int(self.ice_ice_aggregation),
-            int(self.ice_rain_riming),
-            int(self.update_surface_temperature),
-            int(self.vapor_deposition_liquid),
-            int(self.vapor_deposition_ice),
-            int(self.melting_shedding),
-            int(self.hydrodynamic_breakup_ice),
-            int(self.ice_nucleation_master),
-            int(self.hydrodynamic_breakup_rain),
-            int(self.autoconversion_cloud_droplet),
-            int(self.ice_nucleation_deposition),
-            int(self.ice_nucleation_contact),
-            int(self.ice_nucleation_hallett_mossop),
-            int(self.ice_nucleation_immersion),
-            int(self.ice_nucleation_homogeneous),
-            int(self.rain_collisional_breakup),
-            int(self.ice_nucleation_dhf),
-            int(self.unused_20),
-        )
+        return tuple(int(getattr(self, name)) for name in _MICEXFG_FIELDS)
 
     @classmethod
     def cloudlab(cls) -> AmpsConfig:
@@ -628,3 +638,32 @@ class AmpsConfig:
         fields and every `/AMPS_param/` (AMPSTASK.F) field are unchanged
         (`AMPSTASK.F` is read from the run CWD and shared by both runs)."""
         return dataclasses.replace(cls.cloudlab(), num_h_bins=(40, 40), l_restart=True)
+
+    @classmethod
+    def from_ampstask_file(cls, ampstask_path: pathlib.Path) -> AmpsConfig:
+        """Build an `AmpsConfig` from a JSON dump of an AMPSTASK.F
+        `/AMPS_param/` namelist. Only keys present in the JSON override the
+        `AmpsConfig` dataclass default for that field -- any field the file
+        omits (e.g. `debug`, which AMPSTASK.F never sets; see module
+        docstring) is left at its default rather than raising.
+
+        `micexfg`, if present, must be a 20-element sequence (Fortran
+        1-based index i at array position i-1) and is unpacked into the
+        corresponding named fields via `_MICEXFG_FIELDS`, taking precedence
+        over any same-named top-level key.
+        """
+        with ampstask_path.open() as f:
+            raw = json.load(f)
+
+        field_names = {field.name for field in dataclasses.fields(cls)}
+        kwargs = {name: raw[name] for name in field_names if name in raw}
+
+        micexfg = raw.get("micexfg")
+        if micexfg is not None:
+            if len(micexfg) != len(_MICEXFG_FIELDS):
+                raise ValueError(
+                    f"micexfg must have {len(_MICEXFG_FIELDS)} entries; got {len(micexfg)}"
+                )
+            kwargs.update(zip(_MICEXFG_FIELDS, micexfg))
+
+        return cls(**kwargs)

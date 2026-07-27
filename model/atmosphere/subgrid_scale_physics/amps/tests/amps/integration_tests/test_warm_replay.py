@@ -572,7 +572,10 @@ def _find_dump_source() -> Path | None:
     (`test_warm_replay_against_m0_dump`) skips with `_SKIP_MESSAGE` in
     that case.
     """
-    env_path = os.environ.get(_AMPS_DUMP_DIR_ENV)
+    env_path = os.environ.get(
+        _AMPS_DUMP_DIR_ENV,
+        "/capstor/store/cscs/userlab/cwd01/cong/amps_port_verification_data/warm/amps_dump",
+    )
     if env_path:
         candidate = Path(env_path)
         return candidate if candidate.exists() else None
