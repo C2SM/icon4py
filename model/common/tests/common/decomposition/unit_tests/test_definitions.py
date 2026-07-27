@@ -31,10 +31,10 @@ from ...grid import utils as grid_utils
 
 @pytest.mark.parametrize("process_props", [False], indirect=True)
 def test_create_single_node_runtime_without_mpi(process_props):  # fixture
-    decomposition_info = definitions.DecompositionInfo()
-    exchange = definitions.create_exchange(process_props, decomposition_info)
+    decomposition_info = test_defs.DecompositionInfo()
+    exchange = test_defs.create_exchange(process_props, decomposition_info)
 
-    assert isinstance(exchange, definitions.SingleNodeExchange)
+    assert isinstance(exchange, test_defs.SingleNodeExchange)
 
 
 def get_neighbor_tables_for_simple_grid() -> dict[str, data_alloc.NDArray]:
@@ -56,14 +56,14 @@ def test_decomposition_info_single_node_empty_halo(dim: gtx.Dimension) -> None:
 
     decomposition_info = manager.decomposition_info
     for level in (
-        definitions.DecompositionFlag.FIRST_HALO_LEVEL,
-        definitions.DecompositionFlag.SECOND_HALO_LEVEL,
-        definitions.DecompositionFlag.THIRD_HALO_LEVEL,
+        test_defs.DecompositionFlag.FIRST_HALO_LEVEL,
+        test_defs.DecompositionFlag.SECOND_HALO_LEVEL,
+        test_defs.DecompositionFlag.THIRD_HALO_LEVEL,
     ):
         assert decomposition_info.get_halo_size(dim, level) == 0
         assert np.count_nonzero(decomposition_info.halo_level_mask(dim, level)) == 0
     assert (
-        decomposition_info.get_halo_size(dim, definitions.DecompositionFlag.OWNED)
+        decomposition_info.get_halo_size(dim, test_defs.DecompositionFlag.OWNED)
         == manager.grid.size[dim]
     )
 
@@ -71,15 +71,15 @@ def test_decomposition_info_single_node_empty_halo(dim: gtx.Dimension) -> None:
 @pytest.mark.parametrize(
     "flag, expected",
     [
-        (definitions.DecompositionFlag.OWNED, False),
-        (definitions.DecompositionFlag.SECOND_HALO_LEVEL, True),
-        (definitions.DecompositionFlag.THIRD_HALO_LEVEL, True),
-        (definitions.DecompositionFlag.FIRST_HALO_LEVEL, True),
+        (test_defs.DecompositionFlag.OWNED, False),
+        (test_defs.DecompositionFlag.SECOND_HALO_LEVEL, True),
+        (test_defs.DecompositionFlag.THIRD_HALO_LEVEL, True),
+        (test_defs.DecompositionFlag.FIRST_HALO_LEVEL, True),
     ],
 )
 def test_decomposition_info_is_distributed(flag, expected) -> None:
     mesh = simple.simple_grid(allocator=None, num_levels=10)
-    decomp = definitions.DecompositionInfo()
+    decomp = test_defs.DecompositionInfo()
     decomp.set_dimension(
         dims.CellDim,
         np.arange(mesh.num_cells),

@@ -114,8 +114,8 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     advection_init_savepoint,
     advection_exit_savepoint,
     experiment: test_defs.Experiment,
-    process_props: definitions.ProcessProperties,
-    decomposition_info: definitions.DecompositionInfo,
+    process_props: test_defs.ProcessProperties,
+    decomposition_info: test_defs.DecompositionInfo,
     construct_advection_lsq_state,
 ):
     if test_utils.is_embedded(backend):
@@ -149,7 +149,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
-    exchange_runtime = definitions.create_exchange(process_props, decomposition_info)
+    exchange_runtime = test_defs.create_exchange(process_props, decomposition_info)
 
     advection_granule = tracer_advection.convert_config_to_advection(
         config=config,
