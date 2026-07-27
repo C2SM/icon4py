@@ -27,7 +27,7 @@ from icon4py.model.common.grid import simple, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_states as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -104,7 +104,7 @@ def test_update_exner_and_theta_v(backend: gtx_typing.Backend) -> None:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 def test_diagnose_temperature(
     data_provider: sb.IconSerialDataProvider, icon_grid: base_grid.Grid, backend: gtx_typing.Backend
 ) -> None:
@@ -159,7 +159,7 @@ def test_diagnose_temperature(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 def test_diagnose_meridional_and_zonal_winds(
     data_provider: sb.IconSerialDataProvider,
     interpolation_savepoint: sb.InterpolationSavepoint,
@@ -212,7 +212,7 @@ def test_diagnose_meridional_and_zonal_winds(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 def test_diagnose_surface_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
@@ -251,7 +251,7 @@ def test_diagnose_surface_pressure(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 def test_diagnose_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
@@ -301,7 +301,7 @@ def test_diagnose_pressure(
 
 @pytest.mark.parametrize(
     "experiment_description",
-    [definitions.Experiments.WEISMAN_KLEMP_TORUS],
+    [test_defs.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
@@ -311,7 +311,7 @@ def test_diagnose_pressure(
 def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-many-positional-arguments]
     location: str,
     date: str,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
