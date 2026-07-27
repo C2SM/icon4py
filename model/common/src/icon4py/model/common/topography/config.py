@@ -48,8 +48,8 @@ class TopographyConfig:
         input_dict: dict[str, Any],
         data_path: pathlib.Path,
     ) -> TopographyConfig:
-        run_nml = atm_dict.get("run_nml", {})
-        if not run_nml.get("ltestcase", False):
+        run_nml = atm_dict["run_nml"]
+        if not run_nml["ltestcase"]:
             log.info("Reading topography from file")
             return cls(
                 config=from_file_topo.FromFileConfig(

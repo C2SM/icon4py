@@ -321,12 +321,12 @@ def test_rbf_interpolation_coeffs_cell(
     assert test_helpers.dallclose(
         field_ref_c1.asnumpy()[horizontal_start:],
         field_c1[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.description],
     )
     assert test_helpers.dallclose(
         field_ref_c2.asnumpy()[horizontal_start:],
         field_c2[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.description],
     )
 
 
@@ -347,7 +347,7 @@ def test_rbf_interpolation_coeffs_edge(
     assert test_helpers.dallclose(
         field_ref_e.asnumpy()[horizontal_start:],
         field_e[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.EdgeDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.EdgeDim][experiment.description],
     )
 
 
@@ -371,12 +371,12 @@ def test_rbf_interpolation_coeffs_vertex(
     assert test_helpers.dallclose(
         field_ref_v1.asnumpy()[horizontal_start:],
         field_v1[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.description],
     )
     assert test_helpers.dallclose(
         field_ref_v2.asnumpy()[horizontal_start:],
         field_v2[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.description],
     )
 
 

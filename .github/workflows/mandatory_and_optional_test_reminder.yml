@@ -12,16 +12,12 @@ jobs:
           refresh-message-position: true
           message: |2
 
-            **Mandatory Tests**
-
-            **Before merging, run the `merge` pipeline with `cscs-ci run merge`. Merging is blocked unless this pipeline passes.**
-
             When developing, you can test your changes on CSCS CI before merge with the `default` pipeline: `cscs-ci run default`. This will run a default subset of tests.
 
             You can pass options to override pipeline variables, for example:
 
             * `cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit`
-            * `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSIONS=model`
+            * `cscs-ci run default;MODEL_SUBPACKAGES=common:standalone_driver;SESSIONS=model`
             **Avoid running the pipeline for all tests when you are developing.**
 
             Available options are:
@@ -38,6 +34,10 @@ jobs:
             See `scripts/python/generate_ci_pipeline.py` and `noxfile.py` for available values for each option.
 
             The `all` pipeline can be run with `cscs-ci run all`. This will run all icon4py tests in CSCS CI which can be expensive. This pipeline runs on a schedule on main, and can be run when extensive validation is needed (e.g. before releases).
+
+            **Merging**
+
+            Once your PR is approved and ready for merging, add it to the merge queue. The `merge` CSCS CI pipeline will run automatically on the merge-queue branch and must pass before the PR is merged. A dummy `merge` check will be triggered on the PR itself since it's required to add a PR to the merge queue.
 
             **Optional Tests**
 

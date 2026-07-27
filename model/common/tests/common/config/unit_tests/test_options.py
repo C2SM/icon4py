@@ -160,3 +160,34 @@ def test_custom_conversion() -> None:
         ).testee
         == "is false"
     )
+
+
+def test_multioption_conversion() -> None:
+    @dataclasses.dataclass
+    class TesteeConfig:
+        sum: typing.Annotated[
+            int,
+            options.ConfigOption(
+                description="Just for testing.",
+                icon_equivalent=options.IconMultiOption(
+                    options=[
+                        options.IconOption(
+                            name="a",
+                            path=(),
+                        ),
+                        options.IconOption(
+                            name="b",
+                            path=(),
+                        ),
+                    ],
+                    converter=lambda a, b: a + b,
+                ),
+            ),
+        ]
+
+    assert (
+        options.construct_config_from_icon(
+            config_cls=TesteeConfig, icon_config={"a": 23, "b": 19}
+        ).sum
+        == 42
+    )

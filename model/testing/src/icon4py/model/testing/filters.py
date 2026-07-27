@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable
-from typing import NamedTuple, TypeAlias, TypeVar
+from typing import NamedTuple
 
 import pytest
 
@@ -19,8 +19,7 @@ from icon4py.model.common.utils import device_utils
 from icon4py.model.testing import test_utils
 
 
-T = TypeVar("T")
-Predicate: TypeAlias = Callable[[T], bool]
+type Predicate[T] = Callable[[T], bool]
 
 
 class ItemFilter(NamedTuple):
