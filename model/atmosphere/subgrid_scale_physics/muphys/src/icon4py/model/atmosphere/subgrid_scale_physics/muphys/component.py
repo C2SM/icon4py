@@ -45,7 +45,6 @@ if TYPE_CHECKING:
 class MuphysComponent:
     """Per-process adapter wrapping the muphys microphysics program."""
 
-
     # TODO (Yilu): inherit the Component protocol once it is formalized (deferred to a separate PR).
     inputs_properties = muphys_data.INPUTS_PROPERTIES
     outputs_properties = muphys_data.OUTPUTS_PROPERTIES
