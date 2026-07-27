@@ -271,9 +271,10 @@ class FieldSource(GridProvider, Protocol):
         return name in self._sources._providers or name in self._sources.metadata
 
     def export_field(self, field_name: str):
+        """Export a field from the factory in the dtype provided by the metadata."""
         field = self.get(field_name, RetrievalType.FIELD)
         dtype_metadata = self.metadata[field_name].get("dtype", ta.wpfloat)
-        return gtx.astype(field, dtype_metadata)  # field.astype(dtype_metadata)
+        return gtx.astype(field, dtype_metadata)
 
     def register_provider(self, provider: FieldProvider) -> None:
         # dependencies must be provider by this field source or registered in sources

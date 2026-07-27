@@ -119,14 +119,14 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     primal_edge_length = geometry.get(geometry_meta.EDGE_LENGTH).ndarray
     cell_area = geometry.get(geometry_meta.CELL_AREA).ndarray
     geopot = phy_const.GRAV * metrics.get(metrics_attributes.Z_MC).ndarray
-    z_ifc = metrics.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
+    z_ifc = metrics.export_field(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
     exner_ref_mc = metrics.get(metrics_attributes.EXNER_REF_MC).ndarray
     d_exner_dz_ref_ic = metrics.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
     theta_ref_mc = metrics.get(metrics_attributes.THETA_REF_MC).ndarray
     theta_ref_ic = metrics.get(metrics_attributes.THETA_REF_IC).ndarray
     wgtfac_c = metrics.get(metrics_attributes.WGTFAC_C).ndarray
     ddqz_z_half = metrics.get(metrics_attributes.DDQZ_Z_HALF).ndarray
-    ddqz_z_full_field = metrics.get(metrics_attributes.DDQZ_Z_FULL)
+    ddqz_z_full_field = metrics.export_field(metrics_attributes.DDQZ_Z_FULL)
     c_lin_e = interpolation.get(interpolation_attributes.C_LIN_E)
     zone_idx = testcases_utils.zone_indices(grid)
 

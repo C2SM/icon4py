@@ -76,11 +76,11 @@ def difference_level_plus1_on_cells(
 
 @gtx.field_operator
 def with_boundaries_on_half_levels_on_cells(
-    top: fa.CellKField[wpfloat],
-    interior: fa.CellKField[wpfloat],
-    bottom: fa.CellKField[wpfloat],
+    top: fa.CellKField[gtx.float64],
+    interior: fa.CellKField[gtx.float64],
+    bottom: fa.CellKField[gtx.float64],
     nlev: gtx.int32,
-) -> fa.CellKField[wpfloat]:
+) -> fa.CellKField[gtx.float64]:
     """
     Assemble a half-level field: ``top`` at k==0, ``bottom`` at k==nlev, ``interior`` in between.
 
