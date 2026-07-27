@@ -1,7 +1,7 @@
 interfaces = []
 exclude = []
 source_roots = [
-    "model/atmosphere/advection/src",
+    "model/atmosphere/tracer_advection/src",
     "model/atmosphere/diffusion/src",
     "model/atmosphere/dycore/src",
     "model/atmosphere/subgrid_scale_physics/microphysics/src",
@@ -40,7 +40,7 @@ path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
-path = "icon4py.model.atmosphere.advection"
+path = "icon4py.model.atmosphere.tracer_advection"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]

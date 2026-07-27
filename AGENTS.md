@@ -13,7 +13,7 @@ uv workspace with 10 namespace packages. All share the `icon4py` namespace. Sour
 ```
 model/
   atmosphere/
-    advection/          # icon4py.model.atmosphere.advection
+    tracer_advection/          # icon4py.model.atmosphere.tracer_advection
     diffusion/          # icon4py.model.atmosphere.diffusion
     dycore/             # icon4py.model.atmosphere.dycore
     subgrid_scale_physics/
