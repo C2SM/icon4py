@@ -122,8 +122,9 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import json
 import pathlib
+
+import f90nml
 
 from icon4py.model.atmosphere.subgrid_scale_physics.amps.core import bin_grid
 
@@ -640,7 +641,7 @@ class AmpsConfig:
         return dataclasses.replace(cls.cloudlab(), num_h_bins=(40, 40), l_restart=True)
 
     @classmethod
-    def from_ampstask_file(cls, ampstask_path: pathlib.Path) -> AmpsConfig:
+    def from_ampstask_file(cls, ampstask_path: pathlib.Path, run_path: pathlib.Path) -> AmpsConfig:
         """Build an `AmpsConfig` from a JSON dump of an AMPSTASK.F
         `/AMPS_param/` namelist. Only keys present in the JSON override the
         `AmpsConfig` dataclass default for that field -- any field the file
@@ -652,18 +653,38 @@ class AmpsConfig:
         corresponding named fields via `_MICEXFG_FIELDS`, taking precedence
         over any same-named top-level key.
         """
-        with ampstask_path.open() as f:
-            raw = json.load(f)
+
+        def _convert(raw_data):
+            if isinstance(raw_data, list):
+                return tuple(raw_data)
+            return raw_data
+
+        try:
+            amps_param = f90nml.read(ampstask_path).todict()["amps_param"]
+        except KeyError as e:
+            raise KeyError(
+                f"Could not find 'amps_param' in {ampstask_path}; check that the file is a valid AMPSTASK.F namelist dump"
+            ) from e
 
         field_names = {field.name for field in dataclasses.fields(cls)}
-        kwargs = {name: raw[name] for name in field_names if name in raw}
+        kwargs = {name: _convert(amps_param[name]) for name in field_names if name in amps_param}
 
-        micexfg = raw.get("micexfg")
+        micexfg = amps_param.get("micexfg")
         if micexfg is not None:
+            micexfg = tuple(bool(x) for x in micexfg)
             if len(micexfg) != len(_MICEXFG_FIELDS):
                 raise ValueError(
                     f"micexfg must have {len(_MICEXFG_FIELDS)} entries; got {len(micexfg)}"
                 )
             kwargs.update(zip(_MICEXFG_FIELDS, micexfg))
+
+        try:
+            amps_nml = f90nml.read(run_path).todict()["param_atmos_phy_mp_amps_bin"]
+        except KeyError as e:
+            raise KeyError(
+                f"Could not find 'param_atmos_phy_mp_amps_bin' in {run_path}; check that the file is a valid run.conf namelist dump"
+            ) from e
+
+        kwargs.update({name: _convert(amps_nml[name]) for name in field_names if name in amps_nml})
 
         return cls(**kwargs)

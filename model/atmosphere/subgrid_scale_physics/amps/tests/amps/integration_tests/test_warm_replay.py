@@ -848,13 +848,39 @@ def test_warm_replay_against_m0_dump() -> None:
         AmpsConfig.cloudlab().num_h_bins[0], AmpsConfig.cloudlab().nbin_h
     )
 
+    # read config from the AMPS task file and run.conf
+    my_config = AmpsConfig.from_ampstask_file(
+        Path(
+            "/capstor/store/cscs/userlab/cwd01/cong/scale_amps_data/port_data/verify_port_warm/AMPSTASK.F"
+        ),
+        Path(
+            "/capstor/store/cscs/userlab/cwd01/cong/scale_amps_data/port_data/verify_port_warm/run.conf"
+        ),
+    )
+
+    def _compare_config(input_config) -> None:
+        print()
+        for field in dataclasses.fields(AmpsConfig):
+            if getattr(my_config, field.name) != getattr(input_config, field.name):
+                print(
+                    f"AMPSTASK.F config mismatch: {field.name} = {getattr(my_config, field.name)!r} "
+                    f"vs. {getattr(input_config, field.name)!r} in dump source"
+                )
+        my_micexfg_array = my_config.micexfg_array()
+        micexfg_array = input_config.micexfg_array()
+        for i in range(len(my_micexfg_array)):
+            print(
+                f"AMPSTASK.F config: micexfg_array[{i}] = {my_micexfg_array[i]!r} "
+                f"vs. {micexfg_array[i]!r} in dump source"
+            )
+
     worst_per_field: dict[str, _FieldMismatch] = {}
     n_compared = 0
     n_ice_skipped = 0
 
     for pre, post in dataset.micro_pairs():
         pair_key = (pre.rank, pre.TIME_AMPS, pre.i, pre.j)
-        case = box.case_from_micro_record(pre)
+        case = box.case_from_micro_record(pre, config=my_config)
         try:
             result = box.run_box(
                 case,
