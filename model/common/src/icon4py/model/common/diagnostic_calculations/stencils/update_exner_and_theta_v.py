@@ -24,7 +24,7 @@ def _update_exner_and_theta_v(
     """Update exner and theta_v from a physics virtual-temperature tendency.
 
     Mirrors ICON's physics-to-dynamics thermodynamic update in
-    ``mo_interface_iconam_aes.f90``: with the density held fixed by fast physics,
+    ``mo_interface_iconam_aes.f90``:
     recompute exner from the new virtual temperature via the exact equation of
     state and diagnose ``theta_v = Tv / exner``, so the exner/rho/theta_v trio
     stays EOS-consistent::

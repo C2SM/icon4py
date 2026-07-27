@@ -45,8 +45,8 @@ if TYPE_CHECKING:
 class MuphysComponent:
     """Per-process adapter wrapping the muphys microphysics program."""
 
-    # TODO (Yilu): inherit the Component protocol once it is formalized (deferred to a separate PR).
 
+    # TODO (Yilu): inherit the Component protocol once it is formalized (deferred to a separate PR).
     inputs_properties = muphys_data.INPUTS_PROPERTIES
     outputs_properties = muphys_data.OUTPUTS_PROPERTIES
 
@@ -84,6 +84,7 @@ class MuphysComponent:
             "horizontal_end": cell_end,
         }
         vertical_sizes = {"vertical_start": gtx.int32(0), "vertical_end": gtx.int32(self._nlev)}
+        # TODO (Yilu): check whether we can pass vertical_grid.kstart_moist?
         self._calculate_tendency = model_options.setup_program(
             program=calculate_tendency.calculate_cell_kdim_field_tendency,
             backend=self._backend,

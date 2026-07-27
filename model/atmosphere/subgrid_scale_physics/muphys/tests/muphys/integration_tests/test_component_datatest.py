@@ -52,6 +52,7 @@ def test_granule_matches_direct_muphys(
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)
     inp = common.GraupelInput.load(filename=experiment.input_file, allocator=allocator)
+    # TODO (Yilu): rename inp
 
     te0 = inp.t.asnumpy().copy()
     q0 = {s: getattr(inp, f"q{s}").asnumpy().copy() for s in SPECIES}

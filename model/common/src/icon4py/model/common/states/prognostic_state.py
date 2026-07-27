@@ -39,6 +39,7 @@ class PrognosticState:
     tracer: TracerState = dataclasses.field(
         default_factory=TracerState
     )  # tracer concentration, one CellKField per active tracer [kg/kg]
+    # TODO (Anyone): tracer should not inside the PrognosticState, since it cannot be swapped after every sub-timestep, it only swaps after 1 timestep
 
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:

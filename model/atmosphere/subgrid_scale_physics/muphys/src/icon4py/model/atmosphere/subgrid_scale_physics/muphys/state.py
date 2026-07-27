@@ -244,8 +244,7 @@ class State(PhysicsState):
         )
         # Recompute exner via the exact EOS from the updated virtual temperature and
         # diagnose theta_v = Tv/exner, mirroring ICON's phy2dyn coupling
-        # (mo_interface_iconam_aes.f90). rho is unchanged by the fast physics, so the
-        # exner/rho/theta_v trio stays EOS-consistent.
+        # (mo_interface_iconam_aes.f90). The exner/rho/theta_v trio stays EOS-consistent.
         self._update_exner_and_theta_v(
             rho=self.rho,
             virtual_temperature=self.tv,
