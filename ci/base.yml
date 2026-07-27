@@ -115,7 +115,7 @@ variables:
     # also scales with number of workers; 32 is a balance between these for jobs
     # that don't run many tests.
     NUM_PROCESSES: 32
-    GT4PY_BUILD_JOBS: 32
+    GT4PY_BUILD_JOBS: 16
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
