@@ -30,7 +30,7 @@ version = 1
 [manifest]
 members = [
   "icon4py",
-  "icon4py-atmosphere-advection",
+  "icon4py-atmosphere-tracer_advection",
   "icon4py-atmosphere-diffusion",
   "icon4py-atmosphere-dycore",
   "icon4py-atmosphere-microphysics",
@@ -1756,7 +1756,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "icon4py-atmosphere-advection"},
+  {name = "icon4py-atmosphere-tracer_advection"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
   {name = "icon4py-atmosphere-microphysics"},
@@ -1866,7 +1866,7 @@ typing-distributed = [
 provides-extras = ["all", "cuda12", "cuda13", "distributed", "fortran", "io", "profiling", "rocm7", "testing"]
 requires-dist = [
   {name = "icon4py", extras = ["distributed", "fortran", "io", "testing", "profiling"], marker = "extra == 'all'"},
-  {name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection"},
+  {name = "icon4py-atmosphere-tracer_advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
@@ -2015,8 +2015,8 @@ dependencies = [
   {name = "icon4py-common"},
   {name = "packaging"}
 ]
-name = "icon4py-atmosphere-advection"
-source = {editable = "model/atmosphere/advection"}
+name = "icon4py-atmosphere-tracer_advection"
+source = {editable = "model/atmosphere/tracer_advection"}
 version = "0.3.0"
 
 [package.metadata]

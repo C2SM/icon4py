@@ -22,7 +22,7 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
 )
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
-from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_state as tracers
+from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_states as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import (

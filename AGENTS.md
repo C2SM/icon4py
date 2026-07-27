@@ -13,7 +13,7 @@ uv workspace with 10 namespace packages. All share the `icon4py` namespace. Sour
 ```
 model/
   atmosphere/
-    advection/          # icon4py.model.atmosphere.advection
+    tracer_advection/          # icon4py.model.atmosphere.tracer_advection
     diffusion/          # icon4py.model.atmosphere.diffusion
     dycore/             # icon4py.model.atmosphere.dycore
     subgrid_scale_physics/
@@ -191,3 +191,17 @@ uv run --group test --frozen nox -s 'test_<component>' -- --single-precision
 ```
 
 Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks).
+
+## Triggering CSCS CI
+
+When a PR needs validation with CSCS CI, prefer the smallest useful subset.
+
+See `.github/workflows/mandatory_and_optional_test_reminder.yml` for the authoritative guidance. Key points:
+
+- Default development pipeline: `cscs-ci run default`.
+- Narrow it with variables when testing a fix, e.g.:
+  - `cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit`
+  - `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSIONS=model`
+- The `cscs/merge` pipeline runs automatically on the merge queue; do not trigger it manually. It runs as a dummy pipeline on PR pushes and runs no tests.
+- Some pipelines, especially those running on the normal slrum partition, can in the worst case take hours to schedule (when cluster is busy) and run (see SLURM_TIMELIMIT in the CSCS CI configs). Keep this in mind when waiting for jobs to finish. Test jobs may also need to populate GT4Py caches which can take long.
+- CSCS CI configs are in the ci/ subdirectory. The CI runs using GitLab runners and the configuration is the same as for regular GitLab pipelines.
