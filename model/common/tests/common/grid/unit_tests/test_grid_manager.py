@@ -31,7 +31,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
-    definitions,
     definitions as test_defs,
     grid_utils,
     test_utils,
