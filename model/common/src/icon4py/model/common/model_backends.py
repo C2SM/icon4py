@@ -28,8 +28,8 @@ type BackendLike = DeviceType | gtx_typing.Backend | BackendDescriptor | None
 DEFAULT_BACKEND: Final = "embedded"
 
 _WORKSPACE_SIZE: Final[int] = (
-    200 * 1024 * 1024
-)  # 200 MB, this is the default workspace size for ICON4Py programs
+    400 * 1024 * 1024
+)  # The default workspace size for ICON4Py programs
 
 
 def _get_workspace_memory(
