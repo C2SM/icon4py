@@ -20,7 +20,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import gridfile, icon as icon_grid
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
-from icon4py.model.common.math import projection
+from icon4py.model.common.math import distance_array_ns, projection
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -1315,7 +1315,7 @@ def compute_lsq_coeffs(
                 cc_cv = array_ns.asarray((cell_center_x[jc], cell_center_y[jc]))
                 for js in range(lsq_dim_c):
                     cc_cell[js, :] = array_ns.asarray(
-                        projection.diff_on_edges_torus_numpy(
+                        distance_array_ns.diff_on_edges_torus_numpy(
                             cc_cv_x=cell_center_x[jc],
                             cc_cv_y=cell_center_y[jc],
                             cc_cell_x=cell_center_x[ilc_s][js],

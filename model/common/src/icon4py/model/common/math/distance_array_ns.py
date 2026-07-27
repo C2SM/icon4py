@@ -49,3 +49,28 @@ def horizontal_distance_to_point(
         dx = dx - domain_length * array_ns.round(dx / domain_length)
         dy = dy - domain_height * array_ns.round(dy / domain_height)
     return array_ns.sqrt(dx * dx + dy * dy)
+
+
+def diff_on_edges_torus_numpy(
+    *,
+    cc_cv_x: float,
+    cc_cv_y: float,
+    cc_cell_x: float,
+    cc_cell_y: float,
+    domain_length: float,
+    domain_height: float,
+) -> tuple[float, float]:
+    if abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length:
+        x1 = cc_cell_x
+    elif cc_cv_x > cc_cell_x:
+        x1 = cc_cell_x + domain_length
+    else:
+        x1 = cc_cell_x - domain_length
+
+    if abs(cc_cell_y - cc_cv_y) <= 0.5 * domain_height:
+        y1 = cc_cell_y
+    elif cc_cv_y > cc_cell_y:
+        y1 = cc_cell_y + domain_height
+    else:
+        y1 = cc_cell_y - domain_height
+    return x1, y1
