@@ -32,7 +32,7 @@ from ...grid import utils as grid_utils
 @pytest.mark.parametrize("process_props", [False], indirect=True)
 def test_create_single_node_runtime_without_mpi(process_props):  # fixture
     decomposition_info = definitions.DecompositionInfo()
-    exchange = test_defs.create_exchange(process_props, decomposition_info)
+    exchange = definitions.create_exchange(process_props, decomposition_info)
 
     assert isinstance(exchange, definitions.SingleNodeExchange)
 

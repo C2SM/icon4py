@@ -149,7 +149,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
-    exchange_runtime = test_defs.create_exchange(process_props, decomposition_info)
+    exchange_runtime = definitions.create_exchange(process_props, decomposition_info)
 
     advection_granule = tracer_advection.convert_config_to_advection(
         config=config,
