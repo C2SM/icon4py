@@ -18,6 +18,10 @@ variables:
   LEVELS: "unit"
   GRIDS: "icon_regional"
   TOOLS_SUBSETS: "unittest"
+  # Floating-point precision variants to test. Set to "double:single" to also run
+  # single-precision tests (only tests marked @pytest.mark.single_precision_ready
+  # will run in single precision). Default is double precision only.
+  PRECISION_VARIANTS: "double"
 
 
 build_baseimage_aarch64:
