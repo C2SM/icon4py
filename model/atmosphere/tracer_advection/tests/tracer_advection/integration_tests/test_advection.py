@@ -14,7 +14,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, grid_utils as gridtest_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
@@ -56,7 +56,7 @@ from ..utils import (
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.single_precision_ready
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [
@@ -115,7 +115,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     backend,
     advection_init_savepoint,
     advection_exit_savepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
 ):
     config = tracer_advection.AdvectionConfig(
         horizontal_advection_type=horizontal_advection_type,

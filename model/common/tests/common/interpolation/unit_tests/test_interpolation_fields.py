@@ -34,7 +34,7 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_pos_on_tplane_e_x_y_torus,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, serialbox as sb
+from icon4py.model.testing import definitions as test_defs, serialbox as sb
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -90,7 +90,7 @@ def test_compute_c_lin_e(
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 def test_compute_geofac_div(
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
@@ -115,7 +115,7 @@ def test_compute_geofac_div(
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 def test_compute_geofac_rot(
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
@@ -448,7 +448,7 @@ def test_compute_pos_on_tplane_e(
 @pytest.mark.datatest
 def test_compute_lsq_coeffs(
     interpolation_savepoint: sb.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,

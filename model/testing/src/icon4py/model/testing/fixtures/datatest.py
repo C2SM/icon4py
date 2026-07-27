@@ -16,7 +16,7 @@ import pytest
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends, model_options, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.testing import datatest_utils as dt_utils, definitions
+from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs
 
 
 if TYPE_CHECKING:
@@ -80,26 +80,26 @@ def cpu_allocator() -> gtx_typing.Allocator:
 
 @pytest.fixture(
     params=[
-        definitions.Grids.R02B04_GLOBAL,
-        definitions.Grids.MCH_CH_R04B09_DSL,
-        definitions.Grids.TORUS_50000x5000,
+        test_defs.Grids.R02B04_GLOBAL,
+        test_defs.Grids.MCH_CH_R04B09_DSL,
+        test_defs.Grids.TORUS_50000x5000,
     ],
     ids=lambda r: r.name,
 )
-def grid_description(request: pytest.FixtureRequest) -> definitions.GridDescription:
+def grid_description(request: pytest.FixtureRequest) -> test_defs.GridDescription:
     """Default parametrization for grid."""
     return request.param
 
 
 @pytest.fixture(
     params=[
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.GAUSS3D,
+        test_defs.Experiments.MCH_CH_R04B09,
+        test_defs.Experiments.EXCLAIM_APE,
+        test_defs.Experiments.GAUSS3D,
     ],
     ids=lambda r: r.name,
 )
-def experiment_description(request: pytest.FixtureRequest) -> definitions.ExperimentDescription:
+def experiment_description(request: pytest.FixtureRequest) -> test_defs.ExperimentDescription:
     """Default parametrization for experiments.
 
     The default parametrization is often overwritten for specific tests."""
@@ -108,11 +108,11 @@ def experiment_description(request: pytest.FixtureRequest) -> definitions.Experi
 
 @pytest.fixture
 def experiment(
-    experiment_description: definitions.ExperimentDescription,
+    experiment_description: test_defs.ExperimentDescription,
     process_props: decomposition.ProcessProperties,
     download_ser_data: None,  # downloads data as side-effect
-) -> definitions.Experiment:
-    return definitions.Experiment(
+) -> test_defs.Experiment:
+    return test_defs.Experiment(
         experiment_description=experiment_description,
         experiment_config=dt_utils.create_experiment_configuration(
             experiment_description, process_props
@@ -131,7 +131,7 @@ def process_props(request: pytest.FixtureRequest) -> decomposition.ProcessProper
 def download_ser_data(
     request: pytest.FixtureRequest,
     process_props: decomposition.ProcessProperties,
-    experiment_description: definitions.ExperimentDescription,
+    experiment_description: test_defs.ExperimentDescription,
     pytestconfig: pytest.Config,
 ) -> None:
     """
@@ -149,7 +149,7 @@ def download_ser_data(
 @pytest.fixture
 def data_provider(
     download_ser_data: None,  # downloads data as side-effect
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     process_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
@@ -159,7 +159,7 @@ def data_provider(
 
 @pytest.fixture
 def grid_savepoint(
-    data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
+    data_provider: serialbox.IconSerialDataProvider, experiment: test_defs.Experiment
 ) -> serialbox.IconGridSavepoint:
     return data_provider.from_savepoint_grid(experiment.name, experiment.grid.params)
 
@@ -178,7 +178,7 @@ def icon_grid(
 
 @pytest.fixture
 def decomposition_info(
-    data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
+    data_provider: serialbox.IconSerialDataProvider, experiment: test_defs.Experiment
 ) -> decomposition.DecompositionInfo:
     return data_provider.from_savepoint_grid(
         grid_id=experiment.name, grid_params=experiment.grid.params

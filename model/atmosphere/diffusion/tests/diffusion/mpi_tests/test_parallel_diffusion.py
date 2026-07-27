@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusio
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import icon, vertical as v_grid
-from icon4py.model.testing import definitions, parallel_helpers, serialbox
+from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -32,17 +32,17 @@ _log = logging.getLogger(__file__)
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
-        (definitions.Experiments.JW, "2008-09-01T00:05:00.000", "2008-09-01T00:05:00.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.JW, "2008-09-01T00:05:00.000", "2008-09-01T00:05:00.000"),
     ],
 )
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     step_date_exit: str,
     linit: bool,
@@ -60,7 +60,7 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(process_props)
     _log.info(
-        f"rank={process_props.rank}/{process_props.comm_size}: initializing diffusion for experiment '{definitions.Experiments.MCH_CH_R04B09}'"
+        f"rank={process_props.rank}/{process_props.comm_size}: initializing diffusion for experiment '{test_defs.Experiments.MCH_CH_R04B09}'"
     )
     _log.info(
         f"local cells = {decomposition_info.global_index(dims.CellDim, decomp_defs.DecompositionInfo.EntryType.ALL).shape} "

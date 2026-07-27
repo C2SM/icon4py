@@ -15,13 +15,18 @@ import pathlib
 import pytest
 
 from icon4py.model.common import type_alias as ta
-from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
+from icon4py.model.testing import (
+    config,
+    data_handling,
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+)
 
 
 def _path_to_experiment_testdata(experiment: MuphysExperiment) -> pathlib.Path:
     return (
         config.TEST_DATA_PATH
-        / definitions.MUPHYS_DATA_DIR
+        / test_defs.MUPHYS_DATA_DIR
         / experiment.type.name.lower()
         / experiment.name
     )
@@ -60,7 +65,7 @@ def download_test_data(experiment: MuphysExperiment) -> None:
     data_handling.download_test_data(
         _path_to_experiment_testdata(experiment),
         uri=dt_utils.get_muphys_archive_url(
-            definitions.TESTDATA_ROOT_URL,
+            test_defs.TESTDATA_ROOT_URL,
             experiment.type.name.lower(),
             experiment.name,
         ),
