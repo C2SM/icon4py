@@ -53,7 +53,7 @@ class WeismanKlempConfig:
     exponent_theta: float = 1.25
     #: exponent of the relative-humidity profile below the tropopause (expo_relhum_wk)
     exponent_relative_humidity: float = 1.25
-    #: temperature of the (isothermal) tropopause [K] (t_tropo_wk)
+    #: temperature of the tropopause [K] (t_tropo_wk)
     t_tropopause: float = 213.0
     #: relative humidity above the tropopause (rh_min_wk)
     rh_min: float = 0.10
