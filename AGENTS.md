@@ -118,6 +118,9 @@ uv run --group test --frozen pytest --datatest-skip model/<component>/
 # Only datatests (requires test data):
 uv run --group test --frozen pytest --datatest-only model/<component>/
 
+# Single-precision mode (only runs tests with the pytest marker `single_precision_ready`):
+FLOAT_PRECISION=single uv run --group test --frozen pytest model/<component>/
+
 # MPI tests (requires mpi4py, distributed extra; always use -n0 for sequential):
 mpirun -np 4 ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pytest -v -s --with-mpi -n0 -k mpi_tests model/<component>/
 #   --with-mpi: enables MPI test mode (from pytest-mpi plugin)
@@ -138,7 +141,6 @@ Registered by `icon4py.model.testing.pytest_hooks` (auto-loaded via `addopts`):
 | `--datatest-skip`                           | Skip all datatests                                                                |
 | `--backend <name>`                          | GT4Py backend (default: roundtrip; others: gtfn_cpu, gtfn_gpu, embedded)          |
 | `--grid <name>`                             | Grid to use                                                                       |
-| `--enable-mixed-precision`                  | Switch from double to mixed-precision                                             |
 | `--level {any,unit,integration,validation}` | Filter by `@pytest.mark.level` marker. `any` (default) excludes validation tests. |
 | `--skip-stenciltest-verification`           | Skip verification of StencilTest against reference outputs                        |
 
@@ -183,6 +185,9 @@ uv run --group test --frozen nox -l
 # Run all tests for a specific component and subset:
 uv run --group test --frozen nox -s 'test_common(datatest=True)'
 uv run --group test --frozen nox -s 'test_common(datatest=False)'
+
+# Run tests in single-precision mode:
+uv run --group test --frozen nox -s 'test_<component>' -- --single-precision
 ```
 
 Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks).
