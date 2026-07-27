@@ -492,17 +492,12 @@ def _compute_rbf_interpolation_coeffs_dispatch(
     domain_height: ta.wpfloat,
 ) -> tuple[data_alloc.NDArray, ...]:
     array_ns = data_alloc.array_namespace(element_center_lat)
-    # array_namespace returns array_api_compat wrapper modules, so detect the
-    # device by name rather than by module identity.
     on_gpu = "cupy" in getattr(array_ns, "__name__", "")
     if on_gpu and _DETERMINISTIC_RBF_COEFFS:
-        # cupy's batched kernels (matmul in the matrix assembly, linalg.solve,
-        # axis reductions in the normalization) are not bitwise
-        # batch-size-independent, and the batch extent is the rank-local
-        # element count: on GPU the coefficients depend on the domain
-        # decomposition. Compute them entirely on the host instead; input and
-        # output copies are bit-exact, so the result is decomposition
-        # independent at the cost of a device round trip at initialization.
+        # cupy's kernels used in the RBF interpolation are not fully
+        # deterministic likely due to different batch sizes, alignment etc. when
+        # a grid is decomposed. Fall back to numpy to get deterministic results
+        # between single- and multi-rank runs.
         host_coeffs = _compute_rbf_interpolation_coeffs(
             element_center_lat=data_alloc.as_numpy(element_center_lat),
             element_center_lon=data_alloc.as_numpy(element_center_lon),
