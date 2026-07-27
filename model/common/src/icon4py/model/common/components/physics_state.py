@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 if TYPE_CHECKING:
     import datetime
 
-    from icon4py.model.common.states import prognostic_state, tracer_state
+    from icon4py.model.common.states import prognostic_state, tracer_states
 
 
 class PhysicsState(Protocol):
@@ -30,7 +30,7 @@ class PhysicsState(Protocol):
     def gather_from_prognostic(
         self,
         prognostic: prognostic_state.PrognosticState,
-        tracers: tracer_state.TracerState,
+        tracers: tracer_states.TracerState,
     ) -> None: ...
     def as_component_input(self) -> dict[str, Any]: ...
     def scatter_to_prognostic(

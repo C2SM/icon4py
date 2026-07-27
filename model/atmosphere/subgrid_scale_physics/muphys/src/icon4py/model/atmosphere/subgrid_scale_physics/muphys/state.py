@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import factory, prognostic_state as prognostics, tracer_state
+    from icon4py.model.common.states import factory, prognostic_state as prognostics, tracer_states
 
 
 class State(PhysicsState):
@@ -132,7 +132,7 @@ class State(PhysicsState):
 
         self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
         self.rho: fa.CellKField[ta.wpfloat] | None = None
-        self._tracers: tracer_state.TracerState | None = None
+        self._tracers: tracer_states.TracerState | None = None
         self.te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self.p = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self.tv = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
@@ -146,7 +146,7 @@ class State(PhysicsState):
         self._precip_diagnostics: dict[str, fa.CellKField[ta.wpfloat]] | None = None
 
     def gather_from_prognostic(
-        self, prognostic: prognostics.PrognosticState, tracers: tracer_state.TracerState
+        self, prognostic: prognostics.PrognosticState, tracers: tracer_states.TracerState
     ) -> None:
         """
         prepare the input fields for muphys from the prognostic state. This includes:

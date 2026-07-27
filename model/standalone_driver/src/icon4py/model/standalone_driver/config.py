@@ -19,13 +19,13 @@ from typing import Any
 
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
-from icon4py.model.atmosphere.advection import advection as tracer_advection
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
     initial_condition,
     prescribed_tendencies,
@@ -39,7 +39,7 @@ from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states import tracer_state
+from icon4py.model.common.states import tracer_states
 from icon4py.model.common.utils import fortran_config
 
 
@@ -322,7 +322,7 @@ class ExperimentConfig:
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
-    tracer_config: tracer_state.TracerConfig | None = None
+    tracer_config: tracer_states.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     muphys: muphys_config.MuphysConfig | None = None
@@ -425,9 +425,9 @@ def read_experiment_config_from_fortran(
     # dt_mig>0 check needs the raw namelist (see docs/2026-07-22-muphys-namelist-dt-mig-gate.md).
     aes_physics_on = "aes_phy_nml" in atm_dict
     tracer_cfg = (
-        tracer_state.TracerConfig.all()
+        tracer_states.TracerConfig.all()
         if aes_physics_on
-        else tracer_state.TracerConfig.from_ntracer(ntracer)
+        else tracer_states.TracerConfig.from_ntracer(ntracer)
     )
 
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict

@@ -23,7 +23,7 @@ from icon4py.model.common.components.physics_state import PhysicsState
 
 
 if TYPE_CHECKING:
-    from icon4py.model.common.states import prognostic_state, tracer_state
+    from icon4py.model.common.states import prognostic_state, tracer_states
 
 
 class ForcingMode(enum.IntEnum):
@@ -80,7 +80,7 @@ class PhysicsDriver:
     def run(
         self,
         prognostic: prognostic_state.PrognosticState,
-        tracers: tracer_state.TracerState,
+        tracers: tracer_states.TracerState,
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
     ) -> None:
