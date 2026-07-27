@@ -114,8 +114,8 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     advection_init_savepoint,
     advection_exit_savepoint,
     experiment: test_defs.Experiment,
-    process_props: test_defs.ProcessProperties,
-    decomposition_info: test_defs.DecompositionInfo,
+    process_props: definitions.ProcessProperties,
+    decomposition_info: definitions.DecompositionInfo,
     construct_advection_lsq_state,
 ):
     if test_utils.is_embedded(backend):
