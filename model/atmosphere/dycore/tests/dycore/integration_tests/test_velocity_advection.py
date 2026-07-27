@@ -32,7 +32,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, serialbox, test_utils
+from icon4py.model.testing import definitions as test_defs, serialbox, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -73,8 +73,8 @@ def create_vertical_params(
 @pytest.mark.parametrize(
     "experiment_description, step_date_init",
     [
-        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917 [too-many-positional-arguments]
@@ -83,7 +83,7 @@ def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917 [too-many-posi
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
     metrics_savepoint: serialbox.MetricSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
@@ -110,14 +110,14 @@ def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917 [too-many-posi
 @pytest.mark.parametrize(
     "experiment_description, step_date_init",
     [
-        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
 def test_scale_factors_by_dtime(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     savepoint_velocity_init: serialbox.IconVelocityInitSavepoint,
     icon_grid: icon.IconGrid,
@@ -150,20 +150,20 @@ def test_scale_factors_by_dtime(  # noqa: PLR0917 [too-many-positional-arguments
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     step_date_exit: str,
     icon_grid: icon.IconGrid,
@@ -317,22 +317,22 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init: int,
     istep_exit: int,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     step_date_exit: str,
     icon_grid: icon.IconGrid,
@@ -462,15 +462,15 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_compute_diagnostics_from_normal_wind(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     step_date_exit: str,
     icon_grid: icon.IconGrid,
@@ -591,21 +591,21 @@ def test_compute_diagnostics_from_normal_wind(  # noqa: PLR0917 [too-many-positi
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     step_date_exit: str,
     istep_init: int,
@@ -739,21 +739,21 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     step_date_exit: str,
     istep_init: int,
@@ -882,16 +882,16 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_horizontal_momentum(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     step_date_exit: str,
     istep_init: int,

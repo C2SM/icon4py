@@ -30,14 +30,13 @@ version = 1
 [manifest]
 members = [
   "icon4py",
-  "icon4py-atmosphere-advection",
+  "icon4py-atmosphere-tracer_advection",
   "icon4py-atmosphere-diffusion",
   "icon4py-atmosphere-dycore",
   "icon4py-atmosphere-microphysics",
   "icon4py-atmosphere-muphys",
   "icon4py-bindings",
   "icon4py-common",
-  "icon4py-driver",
   "icon4py-standalone-driver",
   "icon4py-testing",
   "icon4py-tools"
@@ -1757,18 +1756,17 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "icon4py-atmosphere-advection"},
+  {name = "icon4py-atmosphere-tracer_advection"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
   {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-common"},
-  {name = "icon4py-driver"},
   {name = "icon4py-standalone-driver"}
 ]
 name = "icon4py"
 source = {editable = "."}
-version = "0.2.0"
+version = "0.3.0"
 
 [package.dev-dependencies]
 build = [
@@ -1868,7 +1866,7 @@ typing-distributed = [
 provides-extras = ["all", "cuda12", "cuda13", "distributed", "fortran", "io", "profiling", "rocm7", "testing"]
 requires-dist = [
   {name = "icon4py", extras = ["distributed", "fortran", "io", "testing", "profiling"], marker = "extra == 'all'"},
-  {name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection"},
+  {name = "icon4py-atmosphere-tracer_advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
@@ -1880,7 +1878,6 @@ requires-dist = [
   {name = "icon4py-common", extras = ["distributed"], marker = "extra == 'distributed'", editable = "model/common"},
   {name = "icon4py-common", extras = ["io"], marker = "extra == 'io'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
-  {name = "icon4py-driver", editable = "model/driver"},
   {name = "icon4py-standalone-driver", editable = "model/standalone_driver"},
   {name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing"},
   {name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0"}
@@ -2018,9 +2015,9 @@ dependencies = [
   {name = "icon4py-common"},
   {name = "packaging"}
 ]
-name = "icon4py-atmosphere-advection"
-source = {editable = "model/atmosphere/advection"}
-version = "0.2.0"
+name = "icon4py-atmosphere-tracer_advection"
+source = {editable = "model/atmosphere/tracer_advection"}
+version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
@@ -2037,7 +2034,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-diffusion"
 source = {editable = "model/atmosphere/diffusion"}
-version = "0.2.0"
+version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
@@ -2054,7 +2051,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-dycore"
 source = {editable = "model/atmosphere/dycore"}
-version = "0.2.0"
+version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
@@ -2071,7 +2068,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-microphysics"
 source = {editable = "model/atmosphere/subgrid_scale_physics/microphysics"}
-version = "0.2.0"
+version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
@@ -2089,7 +2086,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-muphys"
 source = {editable = "model/atmosphere/subgrid_scale_physics/muphys"}
-version = "0.2.0"
+version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
@@ -2114,7 +2111,7 @@ dependencies = [
 ]
 name = "icon4py-bindings"
 source = {editable = "bindings"}
-version = "0.2.0"
+version = "0.3.0"
 
 [package.metadata]
 provides-extras = ["cuda12", "cuda13", "profiling"]
@@ -2159,7 +2156,7 @@ dependencies = [
 ]
 name = "icon4py-common"
 source = {editable = "model/common"}
-version = "0.2.0"
+version = "0.3.0"
 
 [package.metadata]
 provides-extras = ["all", "cuda12", "cuda13", "distributed", "io", "rocm7"]
@@ -2234,35 +2231,6 @@ rocm7 = [
 
 [[package]]
 dependencies = [
-  {name = "click"},
-  {name = "devtools"},
-  {name = "gt4py"},
-  {name = "icon4py-atmosphere-diffusion"},
-  {name = "icon4py-atmosphere-dycore"},
-  {name = "icon4py-common"},
-  {name = "icon4py-testing"},
-  {name = "numpy"},
-  {name = "packaging"}
-]
-name = "icon4py-driver"
-source = {editable = "model/driver"}
-version = "0.2.0"
-
-[package.metadata]
-requires-dist = [
-  {name = "click", specifier = ">=8.0.1"},
-  {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", specifier = "==1.1.12"},
-  {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
-  {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
-  {name = "icon4py-common", editable = "model/common"},
-  {name = "icon4py-testing", editable = "model/testing"},
-  {name = "numpy", specifier = ">=1.23.3"},
-  {name = "packaging", specifier = ">=20.0"}
-]
-
-[[package]]
-dependencies = [
   {name = "devtools"},
   {name = "gt4py"},
   {name = "icon4py-atmosphere-diffusion"},
@@ -2273,7 +2241,7 @@ dependencies = [
 ]
 name = "icon4py-standalone-driver"
 source = {editable = "model/standalone_driver"}
-version = "0.2.0"
+version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
@@ -2299,7 +2267,7 @@ dependencies = [
 ]
 name = "icon4py-testing"
 source = {editable = "model/testing"}
-version = "0.2.0"
+version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
@@ -2326,7 +2294,7 @@ dependencies = [
 ]
 name = "icon4py-tools"
 source = {editable = "tools"}
-version = "0.2.0"
+version = "0.3.0"
 
 [package.metadata]
 provides-extras = ["cuda12", "cuda13", "profiling", "rocm7"]

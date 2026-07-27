@@ -21,7 +21,7 @@ from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    definitions,
+    definitions as test_defs,
     grid_utils,
     reference_funcs as ref_funcs,
     serialbox as sb,
@@ -35,24 +35,24 @@ from ..utils import diff_multfac_vn_numpy, smag_limit_numpy, verify_diffusion_fi
 grid_functionality: collections.defaultdict[str, dict[str, Any]] = collections.defaultdict(dict)
 
 
-def get_grid_for_experiment(experiment: definitions.Experiment, backend: gtx_typing.Backend) -> Any:
+def get_grid_for_experiment(experiment: test_defs.Experiment, backend: gtx_typing.Backend) -> Any:
     return _get_or_initialize(experiment, backend, "grid")
 
 
 def get_edge_geometry_for_experiment(
-    experiment: definitions.Experiment, backend: gtx_typing.Backend
+    experiment: test_defs.Experiment, backend: gtx_typing.Backend
 ) -> Any:
     return _get_or_initialize(experiment, backend, "edge_geometry")
 
 
 def get_cell_geometry_for_experiment(
-    experiment: definitions.Experiment, backend: gtx_typing.Backend
+    experiment: test_defs.Experiment, backend: gtx_typing.Backend
 ) -> Any:
     return _get_or_initialize(experiment, backend, "cell_geometry")
 
 
 def _get_or_initialize(
-    experiment: definitions.Experiment, backend: gtx_typing.Backend, name: str
+    experiment: test_defs.Experiment, backend: gtx_typing.Backend, name: str
 ) -> Any:
     if not grid_functionality[experiment.name].get(name):
         geometry_ = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
@@ -147,15 +147,15 @@ def test_smagorinski_factor_diffusion_type_5() -> None:
 @pytest.mark.parametrize(
     "experiment_description,step_date_init",
     [
-        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
-        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
+        (test_defs.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (test_defs.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
     ],
 )
 def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -271,14 +271,14 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.parametrize(
     "experiment_description,step_date_init",
     [
-        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
-        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
+        (test_defs.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (test_defs.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
     ],
 )
 def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
     metric_state: diffusion_states.DiffusionMetricState,
@@ -321,19 +321,19 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
     ],
 )
 def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     step_date_init: str,
     step_date_exit: str,
     savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
@@ -391,10 +391,10 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
 def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     linit: bool,
     savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
     savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
@@ -461,12 +461,12 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
 @pytest.mark.parametrize(
     "experiment_description,step_date_init",
     [
-        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (test_defs.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
     ],
 )
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     savepoint_diffusion_init: sb.IconDiffusionInitSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     icon_grid: icon.IconGrid,
     linit: bool,
     backend: gtx_typing.Backend,

@@ -12,7 +12,7 @@ import dataclasses
 from typing import TYPE_CHECKING
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.states.tracer_state import TracerConfig, TracerState
+from icon4py.model.common.states.tracer_states import TracerConfig, TracerState
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 

@@ -31,7 +31,7 @@ from icon4py.model.common.io.io import (
     generate_name,
 )
 from icon4py.model.common.states import data
-from icon4py.model.testing import datatest_utils, definitions, grid_utils
+from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils
 
 from ...fixtures import test_path
 from .. import utils as test_io_utils
@@ -127,7 +127,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(
 ) -> None:
     path_name = test_path.absolute().as_posix() + "/output"
     grid = grid_utils.get_grid_manager_from_identifier(
-        definitions.Experiments.EXCLAIM_APE.grid,
+        test_defs.Experiments.EXCLAIM_APE.grid,
         num_levels=60,
         keep_skip_values=True,
         allocator=backend,  # type: ignore[arg-type]  # None selects the embedded backend
@@ -177,7 +177,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(
-        definitions.Experiments.EXCLAIM_APE.grid,
+        test_defs.Experiments.EXCLAIM_APE.grid,
         num_levels=60,
         keep_skip_values=True,
         allocator=backend,  # type: ignore[arg-type]  # None selects the embedded backend

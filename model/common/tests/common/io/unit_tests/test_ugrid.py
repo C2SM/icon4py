@@ -20,15 +20,15 @@ from icon4py.model.common.io.ugrid import (
     extract_horizontal_coordinates,
     load_data_file,
 )
-from icon4py.model.testing import datatest_utils, definitions, grid_utils
+from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils
 
 from ...fixtures import test_path
 
 
 def grid_files() -> Generator[pathlib.Path, None, None]:
     grids = [
-        definitions.Grids.R02B04_GLOBAL,
-        definitions.Grids.MCH_CH_R04B09_DSL,
+        test_defs.Grids.R02B04_GLOBAL,
+        test_defs.Grids.MCH_CH_R04B09_DSL,
     ]
 
     for grid in grids:

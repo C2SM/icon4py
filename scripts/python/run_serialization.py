@@ -33,9 +33,9 @@ from icon4py.model.common.utils import fortran_config
 
 
 if TYPE_CHECKING:
-    from icon4py.model.testing import definitions
+    from icon4py.model.testing import definitions as test_defs
 else:
-    definitions = None
+    test_defs = None
     dt_utils = None
 
 
@@ -45,7 +45,7 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 @dataclasses.dataclass(frozen=True)
 class SerializationSettings:
     comm_sizes: list[int]
-    experiment_descriptions: list[definitions.ExperimentDescription]
+    experiment_descriptions: list[test_defs.ExperimentDescription]
     sbatch_partition: str
     sbatch_time: str
     sbatch_account: str
@@ -72,12 +72,12 @@ class SerializationSettings:
         COMM_SIZES: list[int] = [1, 2, 4]
 
         EXPERIMENTS = [
-            definitions.Experiments.MCH_CH_R04B09,
-            definitions.Experiments.JW,
-            definitions.Experiments.EXCLAIM_APE,
-            definitions.Experiments.EXCLAIM_APE_AES,
-            definitions.Experiments.GAUSS3D,
-            definitions.Experiments.WEISMAN_KLEMP_TORUS,
+            test_defs.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.JW,
+            test_defs.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE_AES,
+            test_defs.Experiments.GAUSS3D,
+            test_defs.Experiments.WEISMAN_KLEMP_TORUS,
         ]
 
         # Slurm settings
@@ -101,7 +101,7 @@ class SerializationSettings:
         EXPERIMENTS_DIR = BUILD_DIR / "experiments"
 
         # Output location for copied ser_data and tarballs
-        OUTPUT_ROOT = EXPERIMENTS_DIR / definitions.SERIALIZED_DATA_DIR
+        OUTPUT_ROOT = EXPERIMENTS_DIR / test_defs.SERIALIZED_DATA_DIR
 
         # Maximum concurrent threads for running experiments
         MAX_THREADS: int = 5
@@ -129,30 +129,30 @@ class SerializationSettings:
         # ======================================
 
 
-def get_f90exp_name(experiment_description: definitions.ExperimentDescription) -> str:
+def get_f90exp_name(experiment_description: test_defs.ExperimentDescription) -> str:
     return f"{experiment_description.name}_sb"
 
 
 def get_f90exp_dir(
-    experiment_description: definitions.ExperimentDescription, *, settings: SerializationSettings
+    experiment_description: test_defs.ExperimentDescription, *, settings: SerializationSettings
 ) -> pathlib.Path:
     return settings.experiments_dir / get_f90exp_name(experiment_description)
 
 
-def get_nmlfile_name(experiment_description: definitions.ExperimentDescription) -> str:
+def get_nmlfile_name(experiment_description: test_defs.ExperimentDescription) -> str:
     return f"exp.{get_f90exp_name(experiment_description)}"
 
 
-def get_dumped_nmlfile_name(experiment_description: definitions.ExperimentDescription) -> str:
+def get_dumped_nmlfile_name(experiment_description: test_defs.ExperimentDescription) -> str:
     return f"NAMELIST_{get_f90exp_name(experiment_description)}"
 
 
-def get_slurmscript_name(experiment_description: definitions.ExperimentDescription) -> str:
+def get_slurmscript_name(experiment_description: test_defs.ExperimentDescription) -> str:
     return f"{get_nmlfile_name(experiment_description)}.run"
 
 
 def get_serdata_dst_dir(
-    experiment_description: definitions.ExperimentDescription,
+    experiment_description: test_defs.ExperimentDescription,
     comm_size: int,
     *,
     settings: SerializationSettings,
@@ -164,7 +164,7 @@ def get_serdata_dst_dir(
 
 
 def get_tar_path(
-    experiment_description: definitions.ExperimentDescription,
+    experiment_description: test_defs.ExperimentDescription,
     comm_size: int,
     *,
     settings: SerializationSettings,
@@ -176,7 +176,7 @@ def get_tar_path(
 
 
 def cleanup_exp_output(
-    experiment_description: definitions.ExperimentDescription,
+    experiment_description: test_defs.ExperimentDescription,
     comm_size: int,
     *,
     settings: SerializationSettings,
@@ -421,7 +421,7 @@ def wait_for_success(job_id: str, *, settings: SerializationSettings) -> None:
 
 
 def copy_ser_data(
-    experiment_description: definitions.ExperimentDescription,
+    experiment_description: test_defs.ExperimentDescription,
     comm_size: int,
     job_id: str | None = None,
     *,
@@ -441,7 +441,7 @@ def copy_ser_data(
 
     dest_dir.mkdir(parents=True, exist_ok=True)
     # Copy ser_data folder
-    shutil.copytree(src_dir, dest_dir / definitions.SERIALIZED_DATA_SUBDIR)
+    shutil.copytree(src_dir, dest_dir / test_defs.SERIALIZED_DATA_SUBDIR)
 
     # Translate to json and copy NAMELIST_ICON_output_atm
     nml = f90nml.read(exp_dir / fortran_config.NAMELIST_ATM_FNAME)
@@ -476,7 +476,7 @@ def copy_ser_data(
 
 def tar_folder(
     folder: pathlib.Path,
-    experiment_description: definitions.ExperimentDescription,
+    experiment_description: test_defs.ExperimentDescription,
     comm_size: int,
     *,
     settings: SerializationSettings,
@@ -492,7 +492,7 @@ def tar_folder(
 
 
 def generate_update_script(
-    experiment_description: definitions.ExperimentDescription, *, settings: SerializationSettings
+    experiment_description: test_defs.ExperimentDescription, *, settings: SerializationSettings
 ) -> None:
     # copy namelist file from repo to build_dir
     shutil.copy2(
@@ -506,7 +506,7 @@ def generate_update_script(
 
 
 def run_experiment(
-    experiment_description: definitions.ExperimentDescription,
+    experiment_description: test_defs.ExperimentDescription,
     comm_size: int,
     *,
     settings: SerializationSettings,
@@ -557,9 +557,11 @@ def run_serialization() -> None:
     """Run the serialization experiment series."""
 
     # Import here to reduce startup time for the CLI
-    global dt_utils, definitions  # noqa: PLW0603 [global-statement]
+    global dt_utils, test_defs  # noqa: PLW0603 [global-statement]
     import icon4py.model.testing.datatest_utils as dt_utils  # noqa: PLC0415 [import-outside-top-level]
-    from icon4py.model.testing import definitions  # noqa: PLC0415 [import-outside-top-level]
+    from icon4py.model.testing import (  # noqa: PLC0415 [import-outside-top-level]
+        definitions as test_defs,
+    )
 
     settings = SerializationSettings.defaults()
     settings.output_root.mkdir(parents=True, exist_ok=True)
