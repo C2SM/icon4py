@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -37,9 +38,7 @@ def gnomonic_proj(
         replace this with a suitable library call
     """
     array_ns = data_alloc.array_namespace(lon_c)
-    cosc = array_ns.sin(lat_c) * array_ns.sin(lat) + array_ns.cos(lat_c) * array_ns.cos(
-        lat
-    ) * array_ns.cos(lon - lon_c)
+    cosc = distance_array_ns.cos_central_angle(lon_center=lon_c, lat_center=lat_c, lon=lon, lat=lat)
     zk = 1.0 / cosc
 
     x = zk * array_ns.cos(lat) * array_ns.sin(lon - lon_c)

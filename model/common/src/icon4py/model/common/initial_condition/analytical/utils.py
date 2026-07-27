@@ -167,11 +167,11 @@ def zonalwind_2_normalwind_ndarray(
                 -(
                     (
                         10.0
-                        * array_ns.arccos(
-                            array_ns.sin(lat_perturbation_center) * array_ns.sin(edge_lat)
-                            + array_ns.cos(lat_perturbation_center)
-                            * array_ns.cos(edge_lat)
-                            * array_ns.cos(edge_lon - lon_perturbation_center)
+                        * distance_array_ns.central_angle(
+                            lon_center=lon_perturbation_center,
+                            lat_center=lat_perturbation_center,
+                            lon=edge_lon,
+                            lat=edge_lat,
                         )
                     )
                     ** 2
@@ -351,17 +351,12 @@ def init_bubble(
                 wrap=False,
             )
         case icon_grid.GeometryType.ICOSAHEDRON:
-            cell_lat = geometry.get(geometry_meta.CELL_LAT).ndarray
-            cell_lon = geometry.get(geometry_meta.CELL_LON).ndarray
-            center_lon = math.radians(center_x)
-            center_lat = math.radians(center_y)
-            central_angle = array_ns.arccos(
-                array_ns.sin(center_lat) * array_ns.sin(cell_lat)
-                + array_ns.cos(center_lat)
-                * array_ns.cos(cell_lat)
-                * array_ns.cos(cell_lon - center_lon)
+            horizontal_distance = phy_const.EARTH_RADIUS * distance_array_ns.central_angle(
+                lon_center=math.radians(center_x),
+                lat_center=math.radians(center_y),
+                lon=geometry.get(geometry_meta.CELL_LON).ndarray,
+                lat=geometry.get(geometry_meta.CELL_LAT).ndarray,
             )
-            horizontal_distance = phy_const.EARTH_RADIUS * central_angle
         case _:
             raise NotImplementedError(
                 f"Bubble initialization is not implemented for geometry '{grid.geometry_type}'."

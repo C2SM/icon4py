@@ -51,6 +51,43 @@ def horizontal_distance_to_point(
     return array_ns.sqrt(dx * dx + dy * dy)
 
 
+def cos_central_angle(
+    *,
+    lon_center: float | data_alloc.NDArray,
+    lat_center: float | data_alloc.NDArray,
+    lon: data_alloc.NDArray,
+    lat: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    """Cosine of the central angle between ``(lon, lat)`` and ``(lon_center, lat_center)``.
+
+    Angles are in radians. Exposed separately from ``central_angle`` so that callers
+    needing the cosine itself, such as map projections, avoid a ``cos(arccos(...))``
+    round trip, which loses precision for nearby points.
+    """
+    array_ns = data_alloc.array_namespace(lat)
+    return array_ns.sin(lat_center) * array_ns.sin(lat) + array_ns.cos(lat_center) * array_ns.cos(
+        lat
+    ) * array_ns.cos(lon - lon_center)
+
+
+def central_angle(
+    *,
+    lon_center: float | data_alloc.NDArray,
+    lat_center: float | data_alloc.NDArray,
+    lon: data_alloc.NDArray,
+    lat: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    """Central angle [rad] between ``(lon, lat)`` and ``(lon_center, lat_center)``.
+
+    Multiply by the sphere radius to obtain the great-circle distance. The cosine is
+    clipped to ``[-1, 1]`` because round-off can push it marginally outside, which
+    would turn ``arccos`` into NaN.
+    """
+    array_ns = data_alloc.array_namespace(lat)
+    cosine = cos_central_angle(lon_center=lon_center, lat_center=lat_center, lon=lon, lat=lat)
+    return array_ns.arccos(array_ns.clip(cosine, -1.0, 1.0))
+
+
 def diff_on_edges_torus_numpy(
     *,
     cc_cv_x: float,
