@@ -61,7 +61,7 @@ io = [
   # (pydata/xarray#11139), which is used internally by uxarray==2024.3.0.
   "xarray[complete]>=2024.3.0,<2026.4"
 ]
-rocm7 = ['gt4py[rocm7]']
+rocm7 = ['cupy-rocm-7-0>=14.1.1', 'gt4py[rocm7]']  # include fix for cupy issue https://github.com/cupy/cupy/issues/9742
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"

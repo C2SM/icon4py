@@ -1024,11 +1024,12 @@ dependencies = [
 ]
 name = "cupy-rocm-7-0"
 source = {registry = "https://pypi.org/simple"}
-version = "14.0.1"
+version = "14.1.1"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/e0/e3/8d5a6d93391ebbc0d9f169516c7c207c91136ed6bc9ee0e7b2ece16d33f0/cupy_rocm_7_0-14.0.1-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:a05bb1792ac144ac8e6e8457a3ecf1cae7e50627c273b3789c24012316378193", size = 74424366, upload-time = "2026-02-20T10:25:15.502Z"},
-  {url = "https://files.pythonhosted.org/packages/ed/00/6fa63cead848e16122521d7e64cf76edc3be60f1d1382bc8885f8cf71e95/cupy_rocm_7_0-14.0.1-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:ebe78b4cc37e619ae42555e09d6c18d06552472abcd12a7dcc4401d1b6bd0bb0", size = 73929980, upload-time = "2026-02-20T10:25:20.308Z"},
-  {url = "https://files.pythonhosted.org/packages/25/b2/8437671ac54c4ae02e771b50a894472c67094801bf38e92f992ef4028294/cupy_rocm_7_0-14.0.1-cp314-cp314-manylinux2014_x86_64.whl", hash = "sha256:a4ec04e6039c34f4916cbeab72fa7f1ab38be04c9116364c43b3e8d8cbaffbc4", size = 73278385, upload-time = "2026-02-20T10:25:24.745Z"}
+  {url = "https://files.pythonhosted.org/packages/cc/04/98dad22f8dd9f0a486f016c4efa24bc10b41205823b1faee6170174a3870/cupy_rocm_7_0-14.1.1-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:bfd9cb126035f43748733c9de38732741ea0dabe38cb1212ba747f8293abce0f", size = 73602416, upload-time = "2026-06-01T04:55:08.908Z"},
+  {url = "https://files.pythonhosted.org/packages/c9/e3/592a93d2154cf38e82b3970e2321f5cfe03eb4b6f04939413df2c398f687/cupy_rocm_7_0-14.1.1-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:1e1a7bba0233718f43afe1f65e5804e256de2e3c86d125f9615b9e89ebd7e04d", size = 73141354, upload-time = "2026-06-01T04:55:13.211Z"},
+  {url = "https://files.pythonhosted.org/packages/08/fb/8c232a4b4812a4e474e32022fb2ee5f334468dd2aad37ada9bd9274e1bc4/cupy_rocm_7_0-14.1.1-cp314-cp314-manylinux2014_x86_64.whl", hash = "sha256:3168563dd8e74600247926aa455be15d04ac1b1c4a6cb248d0e4fc437b4cde62", size = 72538313, upload-time = "2026-06-01T04:55:17.126Z"},
+  {url = "https://files.pythonhosted.org/packages/c4/16/a34bd7c9fc28cd76e7d5f041e34d8d7539530c5ef81a69139dde279f6261/cupy_rocm_7_0-14.1.1-cp314-cp314t-manylinux2014_x86_64.whl", hash = "sha256:8bef82c1c3f6480eb836d64a6dc8b603f74edb2a9a66f0f1854162e20483f95c", size = 72849212, upload-time = "2026-06-01T04:55:27.424Z"}
 ]
 
 [[package]]
@@ -2166,6 +2167,7 @@ requires-dist = [
   {name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
+  {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.7.0"},
   {name = "gt4py", specifier = "==1.1.12"},
@@ -2226,6 +2228,7 @@ io = [
   {name = "xarray", extra = ["complete"]}
 ]
 rocm7 = [
+  {name = "cupy-rocm-7-0"},
   {name = "gt4py", extra = ["rocm7"]}
 ]
 
