@@ -186,7 +186,7 @@ class VerticalGrid:
         object.__setattr__(
             self,
             "_vct_b",
-            gtx.astype(vct_b, wpfloat),
+            gtx.astype(vct_b, wpfloat) if vct_b is not None else None,
         )
         vct_a_array = self._vct_a.asnumpy()
         object.__setattr__(
