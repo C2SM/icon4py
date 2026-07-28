@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, TypeVar
 
 import array_api_compat
 import gt4py.next as gtx
@@ -30,17 +30,17 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 try:
-    import cupy as xp
+    import cupy as xp  # type: ignore[import-not-found]
 except ImportError:
     import numpy as xp
 
 ScalarT = TypeVar("ScalarT", bound=gtx_typing.Scalar)
-type NDArray[ScalarT: gtx_typing.Scalar] = (
+NDArray: TypeAlias = (  # noqa: UP040
     np.ndarray[tuple[int, ...], np.dtype[ScalarT]] | xp.ndarray[tuple[int, ...], np.dtype[ScalarT]]
 )
 type NDArrayInterface = np.ndarray | xp.ndarray | gtx.Field
 
-type ScalarLikeArray[ScalarT: gtx_typing.Scalar] = (
+ScalarLikeArray: TypeAlias = (  # noqa: UP040
     np.ndarray[tuple[()], np.dtype[ScalarT]] | xp.ndarray[tuple[()], np.dtype[ScalarT]]
 )
 

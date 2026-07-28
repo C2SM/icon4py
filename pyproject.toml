@@ -240,7 +240,9 @@ module = [
   "icon4py.model.atmosphere.*",
   "icon4py.model.common.*",
   "icon4py.model.testing.*",
-  "icon4py.bindings.*"
+  "icon4py.model.standalone_driver.*",
+  "icon4py.bindings.*",
+  "tests.*"
 ]
 
 # -- pytest --
