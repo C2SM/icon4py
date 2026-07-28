@@ -113,7 +113,6 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     backend,
     advection_init_savepoint,
     advection_exit_savepoint,
-    experiment: test_defs.Experiment,
     process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
     construct_advection_lsq_state,

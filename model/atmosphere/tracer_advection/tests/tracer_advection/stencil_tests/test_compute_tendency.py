@@ -24,7 +24,6 @@ class TestComputeTendency(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         p_tracer_now: np.ndarray,
         p_tracer_new: np.ndarray,
