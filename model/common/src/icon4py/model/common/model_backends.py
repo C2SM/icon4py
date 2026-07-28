@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
+from __future__ import annotations
+
 from typing import Any, Final, TypeAlias, TypeGuard
 
 import gt4py.next as gtx
@@ -14,6 +15,8 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
+
+from icon4py.model.common import dace_workspace
 
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
@@ -26,48 +29,6 @@ type BackendLike = DeviceType | gtx_typing.Backend | BackendDescriptor | None
 
 
 DEFAULT_BACKEND: Final = "embedded"
-
-_WORKSPACE_SIZE: Final[int] = (
-    400 * 1024 * 1024
-)  # The default workspace size for ICON4Py programs
-
-
-def _get_workspace_memory(
-    size: int, device_type: gtx.DeviceType, *, backend_device: gtx.DeviceType
-) -> Any:
-    """
-    Returns a workspace memory allocation for the given device type.
-
-    Args:
-        size: The size of the workspace memory to allocate.
-        device_type: The device type for which the workspace memory is allocated.
-        backend_device: The device type of the backend to use for allocation.
-
-    Returns:
-        A workspace memory allocation for the given device type.
-
-    Raises:
-        ValueError: If the backend cannot allocate memory for the given device type.
-
-    Note that the workspace memory is allocated only once and reused for subsequent calls.
-    """
-    dim = gtx.Dimension("x")
-    allocator = get_allocator(backend_device)
-    if not gtx_allocators.is_field_allocation_tool_for(allocator, device_type):
-        raise ValueError(f"Backend cannot allocate memory for device type {device_type}")
-    if size > _WORKSPACE_SIZE:
-        raise ValueError(
-            f"Requested workspace size {size} exceeds the maximum allowed {_WORKSPACE_SIZE}"
-        )
-    if _get_workspace_memory.value is None:
-        _get_workspace_memory.value = gtx.constructors.zeros(
-            {dim: (0, (_WORKSPACE_SIZE + 7) // 8)}, dtype=gtx.uint64, allocator=allocator
-        )
-
-    return _get_workspace_memory.value
-
-
-_get_workspace_memory.value = None
 
 
 def is_backend_descriptor(
@@ -126,6 +87,7 @@ def make_custom_dace_backend(
     use_metrics: bool = True,
     use_zero_origin: bool = False,
     use_max_domain_range_on_unstructured_shift: bool | None = None,
+    external_memory_allocator: gtx_transformations.ExternalMemoryAllocator | None = None,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
@@ -137,6 +99,10 @@ def make_custom_dace_backend(
             of GPU kernel execution with the Python driver code.
         optimization_args: A `dict` containing configuration parameters for
             the SDFG auto-optimize pipeline.
+        external_memory_allocator: Allocator used to provide workspace memory
+            when `transient_memory_mode` is `EXTERNAL`. When `None`, a shared
+            `IconWorkspaceAllocator` is used. See
+            `gtx_transformations.ExternalMemoryAllocator` for the contract.
         use_metrics: Add SDFG instrumentation to collect the metric for stencil
             compute time.
         use_max_domain_range_on_unstructured_shift: When True, compute `as_fieldop`
@@ -146,8 +112,12 @@ def make_custom_dace_backend(
     Returns:
         A dace backend with custom configuration for the target device.
     """
-    # Use external workspace memory for all programs
-    external_memory_allocator = functools.partial(_get_workspace_memory, backend_device=device)
+    # Use the shared singleton workspace for all programs when no allocator is given.
+    if external_memory_allocator is None:
+        external_memory_allocator = dace_workspace.ICON_WORKSPACE_ALLOCATOR
+
+    # Use external workspace memory for all programs.
+    # TODO(edopao): remove this config before merge, external allocator is useful only for AMD platform.
     if optimization_args is None:
         optimization_args = {
             "transient_memory_mode": gtx_transformations.TransientMemoryMode.EXTERNAL,
