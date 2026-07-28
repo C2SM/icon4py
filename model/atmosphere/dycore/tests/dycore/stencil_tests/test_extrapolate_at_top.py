@@ -44,6 +44,7 @@ class TestExtrapolateAtTop(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         wgtfacq_e: np.ndarray,
         vn: np.ndarray,
         **kwargs: Any,

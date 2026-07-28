@@ -40,6 +40,7 @@ class TestUpdateThetaAndExner(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         z_temp: np.ndarray,
         area: np.ndarray,
         theta_v: np.ndarray,

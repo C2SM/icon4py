@@ -15,28 +15,30 @@ from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from icon4py.tools.py2fgen import _definitions, _utils
 
 
-CFFI_DECORATOR = "@ffi.def_extern()"
+# rc convention (chosen so init-fail is distinguishable from success — cffi
+# forces the result slot to 0 on init-fail, see _cffi_start_and_call_python
+# in _embedding.h of cffi):
+#   0 -> embedding init failed
+#   1 -> success
+#   2 -> Python wrapper raised an exception
+CFFI_DECORATOR = "@ffi.def_extern(error=2)"
 
 BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "real(c_double)",
     _definitions.FLOAT32: "real(c_float)",
-    _definitions.BOOL: "logical(c_int)",
+    _definitions.BOOL: "logical(c_bool)",
     _definitions.INT32: "integer(c_int)",
     _definitions.INT64: "integer(c_long)",
 }
 BUILTIN_TO_CPP_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "double",
     _definitions.FLOAT32: "float",
-    _definitions.BOOL: "int",
+    # NVHPC writes Fortran `.TRUE.` as `-1` (byte 0xFF), which cffi's `_Bool` validator
+    # rejects ("got a _Bool of value 255, expected 0 or 1"). Use `unsigned char` on the
+    # C side (same 1-byte ABI as `_Bool` and `logical(c_bool)`) to bypass that check.
+    _definitions.BOOL: "unsigned char",
     _definitions.INT32: "int",
     _definitions.INT64: "long",
-}
-BUILTIN_TO_NUMPY_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
-    _definitions.FLOAT64: "xp.float64",
-    _definitions.FLOAT32: "xp.float32",
-    _definitions.BOOL: "xp.int32",
-    _definitions.INT32: "xp.int32",
-    _definitions.INT64: "xp.int64",
 }
 
 
@@ -46,11 +48,11 @@ def is_array(param: _definitions.ParamDescriptor) -> TypeGuard[_definitions.Arra
 
 class Func(Node):
     name: str
+    module_name: str
     args: dict[str, _definitions.ArrayParamDescriptor | _definitions.ScalarParamDescriptor]
 
 
 class BindingsLibrary(Node):
-    module_name: str
     library_name: str
     functions: list[Func]
 
@@ -58,11 +60,6 @@ class BindingsLibrary(Node):
 def to_c_type(scalar_type: _definitions.ScalarKind) -> str:
     """Convert a scalar type to its corresponding C++ type."""
     return BUILTIN_TO_CPP_TYPE[scalar_type]
-
-
-def to_np_type(scalar_type: _definitions.ScalarKind) -> str:
-    """Convert a scalar type to its corresponding numpy type."""
-    return BUILTIN_TO_NUMPY_TYPE[scalar_type]
 
 
 def to_iso_c_type(scalar_type: _definitions.ScalarKind) -> str:
@@ -128,6 +125,7 @@ class PythonWrapperGenerator(codegen.TemplatedGenerator):
         return self.generic_visit(
             node,
             ScalarKind=_definitions.ScalarKind,
+            MemorySpace=_definitions.MemorySpace,
             is_array=is_array,
             render_size_args_tuple=render_size_args_tuple,
             render_params=render_params,
@@ -144,7 +142,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from {{ library_name }} import ffi
-from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -157,7 +155,7 @@ logging.basicConfig(
 
 # embedded function imports
 {% for func in _this_node.functions -%}
-from {{ module_name }} import {{ func.name }}
+from {{ func.module_name }} import {{ func.name }}
 {% endfor %}
 
 {% for func in _this_node.functions %}
@@ -178,7 +176,7 @@ def {{ func.name }}_wrapper(
             # ArrayInfos
             {% for name, arg in func.args.items() %}
             {% if is_array(arg) %}
-            {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
+            {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == MemorySpace.HOST %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
             {% endif %}
             {% endfor %}
 
@@ -213,7 +211,7 @@ def {{ func.name }}_wrapper(
                 if logger.isEnabledFor(logging.DEBUG):
                     {% for name, arg in func.args.items() %}
                     {% if is_array(arg) %}
-                    {{name}}_arr = _conversion.as_array(ffi, {{ name }}, _definitions.{{ arg.dtype.name }}) if {{ name }} is not None else None
+                    {{name}}_arr = _conversion.as_array(ffi, {{ name }}) if {{ name }} is not None else None
                     msg = 'shape of {{ name }} after computation = %s' % str({{ name}}_arr.shape if {{name}} is not None else "None")
                     logger.debug(msg)
                     msg = '{{ name }} after computation: %s' % str({{name}}_arr) if {{ name }} is not None else "None"
@@ -227,9 +225,9 @@ def {{ func.name }}_wrapper(
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
-            return 1
+            return 2
 
-    return 0
+    return 1
 {% endfor %}
 """
     )
@@ -244,7 +242,7 @@ class CHeaderGenerator(codegen.TemplatedGenerator):
             params.append(self.visit_Parameter(name, param))
             if is_array(param):
                 params.extend(f"int {_size_arg_name(name, i)}" for i in range(param.rank))
-        params.append("int on_gpu")
+        params.append(f"{to_c_type(_definitions.BOOL)} on_gpu")
 
         rendered_params = ", ".join(params)
         return self.generic_visit(func, rendered_params=rendered_params)
@@ -290,7 +288,7 @@ class FortranISOCBindingsGenerator(codegen.TemplatedGenerator):
                     param_declarations.append(_size_param_declaration(size_name))
 
         # on_gpu flag
-        param_declarations.append("logical(c_int), value :: on_gpu")
+        param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)}, value :: on_gpu")
         param_names.append("on_gpu")
 
         param_names_str = ", &\n ".join(param_names)
@@ -305,7 +303,7 @@ class FortranISOCBindingsGenerator(codegen.TemplatedGenerator):
     Func = as_jinja(
         """
 function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
-   import :: c_int, c_double, c_bool, c_ptr
+   import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
    integer(c_int) :: rc  ! Stores the return code
    {% for param in param_declarations %}
    {{ param }}
@@ -346,6 +344,9 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
                     to_iso_c_type(param.dtype),
                     render_fortran_array_dimensions(param, False),
                     as_f90_value(param),
+                    # arrays are passed to C via `c_loc`, which requires contiguity
+                    "contiguous" if is_array(param) else None,
+                    "intent(inout)" if is_array(param) else None,
                     "pointer" if is_array(param) and param.is_optional else "target",
                 ],
             )
@@ -353,7 +354,7 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
         ]
 
         # on_gpu flag
-        param_declarations.append("logical(c_int) :: on_gpu")
+        param_declarations.append(f"{to_iso_c_type(_definitions.BOOL)} :: on_gpu")
 
         def get_sizes_maker(name: str, param: _definitions.ArrayParamDescriptor) -> str:
             return "\n".join(
@@ -490,6 +491,14 @@ def generate_c_header(bindings_library: BindingsLibrary) -> str:
     """
     generated_code = CHeaderGenerator.apply(bindings_library)
     return codegen.format_source("cpp", generated_code, style="LLVM")
+
+
+def add_include_guard(c_header: str, library_name: str) -> str:
+    """Wrap generated C header code in an ``#ifndef`` include guard."""
+    # No sanitization needed: `library_name` is also emitted as a Fortran module
+    # name and a Python import, so it is already a valid identifier.
+    guard = f"{library_name.upper()}_H"
+    return f"#ifndef {guard}\n#define {guard}\n\n{c_header}\n\n#endif\n"
 
 
 def generate_python_wrapper(bindings_library: BindingsLibrary) -> str:

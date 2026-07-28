@@ -53,7 +53,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
     _vapor_x_snow,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -81,7 +81,7 @@ class IntegrationState(NamedTuple):
 
 
 @gtx.field_operator
-def precip_qx_level_update(
+def precip_qx_level_update(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level_q: PrecipStateQx,
     previous_level_rho: ta.wpfloat,
     prefactor: ta.wpfloat,  # param[0] of fall_speed
@@ -122,7 +122,7 @@ def precip_qx_level_update(
 
 
 @gtx.field_operator
-def _temperature_update(
+def _temperature_update(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level: TempState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
@@ -185,7 +185,7 @@ def _temperature_update(
         pflx_tot=0.0,
     ),
 )
-def _precip_and_t(
+def _precip_and_t(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level: IntegrationState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
@@ -339,7 +339,7 @@ def sink_saturation(
 
 
 @gtx.field_operator
-def _q_t_update(
+def _q_t_update(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
@@ -484,7 +484,7 @@ def _q_t_update(
 
 
 @gtx.field_operator
-def _precipitation_effects(
+def _precipitation_effects(  # noqa: PLR0917 [too-many-positional-arguments]
     last_lev: gtx.int32,
     kmin_r: fa.CellKField[bool],  # rain minimum level
     kmin_i: fa.CellKField[bool],  # ice minimum level
@@ -508,7 +508,7 @@ def _precipitation_effects(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    t_kp1 = concat_where(dims.KDim < last_lev, t(Koff[1]), t)
+    t_kp1 = concat_where(dims.KDim < last_lev, t(KDim + 1), t)
 
     precip_state = _precip_and_t(
         t,
@@ -540,7 +540,7 @@ def _precipitation_effects(
 
 
 @gtx.field_operator
-def graupel(
+def graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     last_level: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
@@ -578,7 +578,7 @@ def graupel(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def graupel_run(
+def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure

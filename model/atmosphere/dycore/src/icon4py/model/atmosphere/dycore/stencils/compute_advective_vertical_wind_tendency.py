@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -25,8 +25,8 @@ def _compute_advective_vertical_wind_tendency(
     coeff1_dwdz_wp, coeff2_dwdz_wp = astype((coeff1_dwdz, coeff2_dwdz), wpfloat)
 
     ddt_w_adv_wp = -z_w_con_c_wp * (
-        w(Koff[-1]) * coeff1_dwdz_wp
-        - w(Koff[1]) * coeff2_dwdz_wp
+        w(KDim - 1) * coeff1_dwdz_wp
+        - w(KDim + 1) * coeff2_dwdz_wp
         + w * astype(coeff2_dwdz - coeff1_dwdz, wpfloat)
     )
     return astype(ddt_w_adv_wp, vpfloat)
@@ -45,10 +45,10 @@ def compute_advective_vertical_wind_tendency(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_advective_vertical_wind_tendency(
-        z_w_con_c,
-        w,
-        coeff1_dwdz,
-        coeff2_dwdz,
+        z_w_con_c=z_w_con_c,
+        w=w,
+        coeff1_dwdz=coeff1_dwdz,
+        coeff2_dwdz=coeff2_dwdz,
         out=ddt_w_adv,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -28,6 +28,7 @@ class TestUpdateDensityExnerWind(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         rho_now: np.ndarray,
         grf_tend_rho: np.ndarray,
         theta_v_now: np.ndarray,

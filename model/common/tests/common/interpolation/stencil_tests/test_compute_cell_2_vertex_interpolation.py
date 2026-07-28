@@ -29,6 +29,7 @@ class TestComputeCells2VertsInterpolation(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         cell_in: np.ndarray,
         c_int: np.ndarray,
         **kwargs: Any,

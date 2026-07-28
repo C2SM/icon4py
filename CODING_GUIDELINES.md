@@ -34,7 +34,7 @@ We deviate from the [Google Python Style Guide][google-style-guide] only in the 
 Further guidance and repository- or package specific guidelines can be found in the respective `docs` folders and `README.md` files.
 In particular
 
-- [naming conventions for stencils](model/docs/stencil_naming_convention.md)
+- [naming conventions for stencils](docs/stencil_naming_convention.md)
 - [liskov integration style guide ](tools/docs/ICON_Liskov_integration_style_guide.md)
 
 ### Common questions
@@ -120,7 +120,7 @@ Consider configuration files as another type of source code and apply the same c
 
 ### Ignoring QA errors
 
-You may occasionally need to disable checks from _quality assurance_ (QA) tools (e.g. linters, type checkers, etc.) on specific lines as some tool might not be able to fully understand why a certain piece of code is needed. This is usually done with special comments, e.g. `# noqa: F401`, `# type: ignore`. However, you should **only** ignore QA errors when you fully understand their source and rewriting your code to pass QA checks would make it less readable. Additionally, you should add a short descriptive code if possible (check [ruff rules][ruff-rules] and [mypy error codes][mypy-error-codes] for reference):
+You may occasionally need to disable checks from _quality assurance_ (QA) tools (e.g. linters, type checkers, etc.) on specific lines as some tool might not be able to fully understand why a certain piece of code is needed. This is usually done with special comments, e.g. `# noqa: F401`, `# type: ignore`. However, you should **only** ignore QA errors when you fully understand their source and rewriting your code to pass QA checks would make it less readable. Additionally, you should add a short descriptive code if possible (check [ruff rules][ruff-rules] and [mypy error codes][mypy-error-codes] for reference; use `ruff rule <CODE>` to look up the name for a specific code):
 
 ```python
 f = lambda: "empty"  # noqa: E731 [lambda-assignment]
@@ -142,7 +142,7 @@ Testing components is a critical part of a software development project. We foll
 Each software component project in the repository should place tests inside a folder named `tests`, which should be a proper Python package structured with the following content:
 
 - a `__init__.py` file at root level adding subfolders as members of a virtual `tests.` package
-- a `<component>` folder with a **unique name** in this repository for the package being tested (e.g. `atmosphere_advection` for the `icon4py.model.atmosphere.advection` component).
+- a `<component>` folder with a **unique name** in this repository for the package being tested (e.g. `atmosphere_tracer_advection` for the `icon4py.model.atmosphere.tracer_advection` component).
 
 The `<component>` folder should be a Python package and contain subfolders for every kind of test (e.g. `unit_tests`, `integration_tests`, ...). If needed, it may contain at any level of the file tree a `conftests.py` module for changing the pytest configuration, a `fixtures.py` module with shared fixture definitions and a `utils.py`python modules testing utilities used in the tests.
 

@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.microphysics_co
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.microphysics_options import (
     LiquidAutoConversionType,
-    SnowInterceptParametererization,
+    SnowInterceptParameterization,
 )
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
@@ -63,7 +63,7 @@ def compute_snow_interception_and_collision_parameters(
         cbsdep: deposition parameter
     """
     if snow_exists:
-        if snow_intercept_option == SnowInterceptParametererization.FIELD_BEST_FIT_ESTIMATION:
+        if snow_intercept_option == SnowInterceptParameterization.FIELD_BEST_FIT_ESTIMATION:
             # Calculate n0s using the temperature-dependent
             # formula of Field et al. (2005)
             local_tc = temperature - PhysicsConstants.tmelt
@@ -75,9 +75,7 @@ def compute_snow_interception_and_collision_parameters(
             n0s = minimum(n0s, wpfloat("1.0e9"))
             n0s = maximum(n0s, wpfloat("1.0e6"))
 
-        elif (
-            snow_intercept_option == SnowInterceptParametererization.FIELD_GENERAL_MOMENT_ESTIMATION
-        ):
+        elif snow_intercept_option == SnowInterceptParameterization.FIELD_GENERAL_MOMENT_ESTIMATION:
             # Calculate n0s using the temperature-dependent moment
             # relations of Field et al. (2005)
             local_tc = temperature - PhysicsConstants.tmelt

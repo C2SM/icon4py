@@ -42,6 +42,9 @@ def download_and_extract(
     completion_marker = dst / ".extraction_complete"
     lockfile = "filelock.lock"
 
+    if completion_marker.exists():
+        return
+
     with locking.lock(dst, lockfile=lockfile):
         if completion_marker.exists():
             return

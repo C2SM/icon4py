@@ -5,11 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 from __future__ import annotations
 
 import dataclasses
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 
@@ -28,7 +29,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
 if TYPE_CHECKING:
@@ -60,16 +61,16 @@ class SingleMomentSixClassIconGraupelConfig:
 
     #: liquid auto conversion mode. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
     liquid_autoconversion_option: mphys_options.LiquidAutoConversionType = (
-        mphys_options.LiquidAutoConversionType.KESSLER
+        mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG
     )
     #: snow size distribution interception parameter. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
-    snow_intercept_option: mphys_options.SnowInterceptParametererization = (
-        mphys_options.SnowInterceptParametererization.FIELD_GENERAL_MOMENT_ESTIMATION
+    snow_intercept_option: mphys_options.SnowInterceptParameterization = (
+        mphys_options.SnowInterceptParameterization.FIELD_GENERAL_MOMENT_ESTIMATION
     )
     #: Do latent heat nudging. Originally defined as dass_lhn in mo_run_config.f90 in ICON.
-    do_latent_heat_nudging = False
+    do_latent_heat_nudging: bool = False
     #: Whether a fixed latent heat capacities are used for water. Originally defined as ithermo_water in mo_nwp_tuning_config.f90 in ICON (0 means True).
-    use_constant_latent_heat = True
+    use_constant_latent_heat: bool = True
     #: First parameter in RHS of eq. 5.163 in the COSMO microphysics documentation for the sticking efficiency when lstickeff = True (repricated in icon4py because it is always True in ICON). Originally defined as tune_zceff_min in mo_tuning_nwp_config.f90 in ICON.
     ice_stickeff_min: ta.wpfloat = 0.075
     #: Power law coefficient in v-qi ice terminal velocity-mixing ratio relationship, see eq. 5.169 in the COSMO microphysics documentation. Originally defined as tune_zvz0i in mo_tuning_nwp_config.f90 in ICON.
@@ -85,6 +86,28 @@ class SingleMomentSixClassIconGraupelConfig:
     #: coefficient for snow-graupel conversion by riming. Originally defined as csg in mo_nwp_tuning_config.f90 in ICON.
     snow2graupel_riming_coeff: ta.wpfloat = 0.5
 
+    @classmethod
+    def from_fortran_dict(
+        cls, atmo_dict: dict[str, Any], **overrides: Any
+    ) -> SingleMomentSixClassIconGraupelConfig:
+        run_nml = atmo_dict["run_nml"]
+
+        nwp_phy_nml = atmo_dict["nwp_phy_nml"]
+        nwp_tuning_nml = atmo_dict["nwp_tuning_nml"]
+        return cls(
+            do_latent_heat_nudging=run_nml["ldass_lhn"],
+            use_constant_latent_heat=fortran_config.list_to_value(nwp_phy_nml["ithermo_water"])
+            == 0,
+            ice_stickeff_min=nwp_tuning_nml["tune_zceff_min"],
+            power_law_coeff_for_ice_mean_fall_speed=nwp_tuning_nml["tune_zvz0i"],
+            exponent_for_density_factor_in_ice_sedimentation=nwp_tuning_nml["tune_icesedi_exp"],
+            power_law_coeff_for_snow_fall_speed=nwp_tuning_nml["tune_v0snow"],
+            rain_mu=nwp_phy_nml["mu_rain"],
+            rain_n0=nwp_phy_nml["rain_n0_factor"],
+            snow2graupel_riming_coeff=nwp_tuning_nml["tune_zcsg"],
+            **overrides,
+        )
+
 
 @dataclasses.dataclass
 class MetricStateIconGraupel:
@@ -94,6 +117,7 @@ class MetricStateIconGraupel:
 class SingleMomentSixClassIconGraupel:
     def __init__(
         self,
+        *,
         graupel_config: SingleMomentSixClassIconGraupelConfig,
         grid: icon_grid.IconGrid,
         metric_state: MetricStateIconGraupel,
@@ -184,7 +208,7 @@ class SingleMomentSixClassIconGraupel:
             * math.sqrt(
                 MicrophysicsConstants.REF_AIR_DENSITY
                 * 130.0
-                / MicrophysicsConstants.AIR_KINEMETIC_VISCOSITY
+                / MicrophysicsConstants.AIR_KINEMATIC_VISCOSITY
             )
             * _ar ** (-precomputed_evaporation_beta_exp_coeff)
             * math.gamma((2.0 * self.config.rain_mu + 5.5) / 2.0)
@@ -340,6 +364,7 @@ class SingleMomentSixClassIconGraupel:
 
     def run(
         self,
+        *,
         dtime: ta.wpfloat,
         rho: fa.CellKField[ta.wpfloat],
         temperature: fa.CellKField[ta.wpfloat],

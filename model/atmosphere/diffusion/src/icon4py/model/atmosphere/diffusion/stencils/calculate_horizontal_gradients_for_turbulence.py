@@ -37,9 +37,9 @@ def calculate_horizontal_gradients_for_turbulence(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_horizontal_gradients_for_turbulence(
-        w,
-        geofac_grg_x,
-        geofac_grg_y,
+        w=w,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
         out=(dwdx, dwdy),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -67,12 +67,12 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
-        inv_dual_edge_length,
-        z_exner_ex_pr,
-        zdiff_gradp,
-        ikoffset,
-        z_dexner_dz_c_1,
-        z_dexner_dz_c_2,
+        inv_dual_edge_length=inv_dual_edge_length,
+        z_exner_ex_pr=z_exner_ex_pr,
+        zdiff_gradp=zdiff_gradp,
+        ikoffset=ikoffset,
+        z_dexner_dz_c_1=z_dexner_dz_c_1,
+        z_dexner_dz_c_2=z_dexner_dz_c_2,
         out=z_gradh_exner,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

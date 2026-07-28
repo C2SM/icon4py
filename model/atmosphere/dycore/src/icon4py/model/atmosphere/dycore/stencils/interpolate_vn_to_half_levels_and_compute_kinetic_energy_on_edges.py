@@ -12,7 +12,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy 
     _compute_horizontal_kinetic_energy,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -28,7 +28,7 @@ def _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
     # vn_ie and vt_ie which are thrown away.
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
 
-    vn_ie_wp = wgtfac_e_wp * vn + (wpfloat("1.0") - wgtfac_e_wp) * vn(Koff[-1])
+    vn_ie_wp = wgtfac_e_wp * vn + (wpfloat("1.0") - wgtfac_e_wp) * vn(KDim - 1)
     _, _, z_kin_hor_e = _compute_horizontal_kinetic_energy(vn=vn, vt=vt)
 
     return astype(vn_ie_wp, vpfloat), z_kin_hor_e
@@ -47,9 +47,9 @@ def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
     vertical_end: gtx.int32,
 ) -> None:
     _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
-        wgtfac_e,
-        vn,
-        vt,
+        wgtfac_e=wgtfac_e,
+        vn=vn,
+        vt=vt,
         out=(vn_ie, z_kin_hor_e),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

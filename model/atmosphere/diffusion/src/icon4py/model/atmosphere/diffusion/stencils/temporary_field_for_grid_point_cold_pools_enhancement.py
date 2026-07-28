@@ -48,10 +48,10 @@ def temporary_field_for_grid_point_cold_pools_enhancement(
     vertical_end: gtx.int32,
 ) -> None:
     _temporary_field_for_grid_point_cold_pools_enhancement(
-        theta_v,
-        theta_ref_mc,
-        thresh_tdiff,
-        smallest_vpfloat,
+        theta_v=theta_v,
+        theta_ref_mc=theta_ref_mc,
+        thresh_tdiff=thresh_tdiff,
+        smallest_vpfloat=smallest_vpfloat,
         out=enh_diffu_3d,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

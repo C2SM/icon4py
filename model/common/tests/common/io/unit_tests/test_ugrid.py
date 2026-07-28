@@ -17,15 +17,15 @@ from icon4py.model.common.io.ugrid import (
     extract_horizontal_coordinates,
     load_data_file,
 )
-from icon4py.model.testing import datatest_utils, definitions, grid_utils
+from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils
 
 from ...fixtures import test_path
 
 
 def grid_files():
     grids = [
-        definitions.Grids.R02B04_GLOBAL,
-        definitions.Grids.MCH_CH_R04B09_DSL,
+        test_defs.Grids.R02B04_GLOBAL,
+        test_defs.Grids.MCH_CH_R04B09_DSL,
     ]
 
     for grid in grids:
@@ -94,7 +94,7 @@ def test_icon_ugrid_patch_fill_value(file):
 
 def assert_start_index(uxds: xa.Dataset, name: str):
     assert uxds[name].attrs["start_index"] == 0
-    assert np.min(np.where(uxds[name].data > FILL_VALUE)) == 0
+    assert np.min(np.nonzero(uxds[name].data > FILL_VALUE)) == 0
 
 
 @pytest.mark.parametrize("file", grid_files())

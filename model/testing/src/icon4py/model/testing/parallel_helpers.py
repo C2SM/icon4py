@@ -75,6 +75,7 @@ def gather_field(field: np.ndarray, process_props: decomp_defs.ProcessProperties
 
 
 def check_local_global_field(
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     process_props: decomp_defs.ProcessProperties,  # F811 # fixture
     dim: gtx.Dimension,
@@ -138,9 +139,9 @@ def check_local_global_field(
     if process_props.rank == 0:
         _log.info(f"rank = {process_props.rank}: asserting gathered fields: ")
 
-        assert np.all(
-            gathered_sizes == global_index_sizes
-        ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        assert np.all(gathered_sizes == global_index_sizes), (
+            f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        )
         _log.info(
             f"rank = {process_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
@@ -155,5 +156,5 @@ def check_local_global_field(
 
         # abuse err_msg to print the domain region
         test_utils.assert_dallclose(
-            actual=sorted_, desired=global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
+            sorted_, global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
         )

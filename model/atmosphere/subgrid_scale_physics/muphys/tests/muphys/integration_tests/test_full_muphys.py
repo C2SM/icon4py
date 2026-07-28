@@ -68,7 +68,7 @@ def test_full_muphys(
     )
 
     muphys_program = run_full_muphys.setup_muphys(
-        inp,
+        inp=inp,
         dt=experiment.dt,
         qnc=experiment.qnc,
         backend=backend_like,

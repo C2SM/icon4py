@@ -38,9 +38,9 @@ def compute_divergence_of_fluxes_of_rho_and_theta(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_divergence_of_fluxes_of_rho_and_theta(
-        geofac_div,
-        mass_fl_e,
-        z_theta_v_fl_e,
+        geofac_div=geofac_div,
+        mass_fl_e=mass_fl_e,
+        z_theta_v_fl_e=z_theta_v_fl_e,
         out=(z_flxdiv_mass, z_flxdiv_theta),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

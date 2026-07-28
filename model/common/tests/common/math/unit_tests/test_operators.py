@@ -30,6 +30,7 @@ class TestNabla2OnCell(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         psi_c: np.ndarray,
         geofac_n2s: np.ndarray,
         **kwargs: Any,
@@ -59,6 +60,7 @@ class TestNabla2OnCellK(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         psi_c: np.ndarray,
         geofac_n2s: np.ndarray,
         **kwargs: Any,

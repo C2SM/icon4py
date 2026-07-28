@@ -130,7 +130,7 @@ def compute_horizontal_velocity_quantities_and_fluxes(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     This program computes a variety of diagnostic quantities and fluxes
     related to horizontal wind including
@@ -176,18 +176,18 @@ def compute_horizontal_velocity_quantities_and_fluxes(
     """
 
     _compute_horizontal_velocity_quantities_and_fluxes(
-        contravariant_correction_at_edges_on_model_levels,
-        vn,
-        e_flx_avg,
-        geofac_grdiv,
-        rbf_vec_coeff_e,
-        rho_at_edges_on_model_levels,
-        theta_v_at_edges_on_model_levels,
-        ddqz_z_full_e,
-        ddxn_z_full,
-        ddxt_z_full,
-        wgtfac_e,
-        nflatlev,
+        contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
+        vn=vn,
+        e_flx_avg=e_flx_avg,
+        geofac_grdiv=geofac_grdiv,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
+        theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
+        ddqz_z_full_e=ddqz_z_full_e,
+        ddxn_z_full=ddxn_z_full,
+        ddxt_z_full=ddxt_z_full,
+        wgtfac_e=wgtfac_e,
+        nflatlev=nflatlev,
         out=(
             spatially_averaged_vn,
             horizontal_gradient_of_normal_wind_divergence,
@@ -322,16 +322,16 @@ def compute_averaged_vn_and_fluxes(
     """
 
     _compute_averaged_vn_and_fluxes(
-        substep_and_spatially_averaged_vn,
-        substep_averaged_mass_flux,
-        e_flx_avg,
-        vn,
-        rho_at_edges_on_model_levels,
-        ddqz_z_full_e,
-        theta_v_at_edges_on_model_levels,
-        prepare_advection,
-        at_first_substep,
-        r_nsubsteps,
+        substep_and_spatially_averaged_vn=substep_and_spatially_averaged_vn,
+        substep_averaged_mass_flux=substep_averaged_mass_flux,
+        e_flx_avg=e_flx_avg,
+        vn=vn,
+        rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
+        ddqz_z_full_e=ddqz_z_full_e,
+        theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
+        prepare_advection=prepare_advection,
+        at_first_substep=at_first_substep,
+        r_nsubsteps=r_nsubsteps,
         out=(
             spatially_averaged_vn,
             mass_flux_at_edges_on_model_levels,

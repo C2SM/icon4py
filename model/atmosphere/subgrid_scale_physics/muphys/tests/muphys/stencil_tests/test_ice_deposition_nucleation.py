@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -23,7 +24,8 @@ class TestIceDepositionNucleation(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         t: np.ndarray,
         qc: np.ndarray,
         qi: np.ndarray,

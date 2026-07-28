@@ -33,8 +33,8 @@ def apply_rayleigh_damping_mechanism(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_rayleigh_damping_mechanism(
-        z_raylfac,
-        w,
+        z_raylfac=z_raylfac,
+        w=w,
         out=w,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

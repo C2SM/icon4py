@@ -51,14 +51,14 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
-        w_nnow,
-        ddt_w_adv_ntl1,
-        z_th_ddz_exner_c,
-        rho_ic,
-        w_concorr_c,
-        vwind_expl_wgt,
-        dtime,
-        cpd,
+        w_nnow=w_nnow,
+        ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+        z_th_ddz_exner_c=z_th_ddz_exner_c,
+        rho_ic=rho_ic,
+        w_concorr_c=w_concorr_c,
+        vwind_expl_wgt=vwind_expl_wgt,
+        dtime=dtime,
+        cpd=cpd,
         out=(z_w_expl, z_contr_w_fl_l),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

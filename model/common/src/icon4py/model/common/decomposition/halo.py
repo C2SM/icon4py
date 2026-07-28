@@ -108,9 +108,9 @@ class IconLikeHaloConstructor(HaloConstructor):
             dims.V2E,
         ]
         for d in relevant_dimension:
-            assert (
-                d.value in self._connectivities
-            ), f"Table for {d} is missing from the neighbor table array."
+            assert d.value in self._connectivities, (
+                f"Table for {d} is missing from the neighbor table array."
+            )
 
     def _connectivity(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:
         try:
@@ -169,6 +169,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def _update_owner_mask_by_max_rank_convention(
         self,
+        *,
         cell_to_rank: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
         all_indices: data_alloc.NDArray,
@@ -197,18 +198,19 @@ class IconLikeHaloConstructor(HaloConstructor):
             # avoid including cells that may not be neighbors.
             neighbors = neighbors[neighbors >= 0]
             owning_ranks = cell_to_rank[neighbors]
-            assert (
-                self._xp.unique(owning_ranks).size > 1
-            ), f"rank {self._process_props.rank}: all neighboring cells {target_connectivity[index]} of index {index} are owned by the same rank {owning_ranks}"
-            assert (
-                self._process_props.rank in owning_ranks
-            ), f"rank {self._process_props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
+            assert self._xp.unique(owning_ranks).size > 1, (
+                f"rank {self._process_props.rank}: all neighboring cells {target_connectivity[index]} of index {index} are owned by the same rank {owning_ranks}"
+            )
+            assert self._process_props.rank in owning_ranks, (
+                f"rank {self._process_props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
+            )
             # assign the index to the rank with the higher rank
             updated_owner_mask[local_index] = max(owning_ranks) <= self._process_props.rank
         return updated_owner_mask
 
     def _set_decomposition_info_dimension(
         self,
+        *,
         decomp_info: defs.DecompositionInfo,
         dim: gtx.Dimension,
         all_indices: data_alloc.NDArray,
@@ -360,7 +362,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         all_cells = self._xp.hstack((owned_cells, first_halo_cells, second_halo_cells))
 
         self._set_decomposition_info_dimension(
-            decomp_info,
+            decomp_info=decomp_info,
             dim=dims.CellDim,
             all_indices=all_cells,
             owner_mask=self._xp.isin(all_cells, owned_cells),
@@ -374,11 +376,11 @@ class IconLikeHaloConstructor(HaloConstructor):
         all_vertices = self._xp.hstack((vertex_on_owned_cells, vertex_second_halo))
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
         vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
-            cell_to_rank,
-            vertex_owner_mask,
-            all_vertices,
-            vertex_on_cutting_line,
-            self._connectivity(dims.V2C),
+            cell_to_rank=cell_to_rank,
+            owner_mask=vertex_owner_mask,
+            all_indices=all_vertices,
+            indices_on_cutting_line=vertex_on_cutting_line,
+            target_connectivity=self._connectivity(dims.V2C),
         )
 
         # Once mask has been updated, some owned cells may now belong to the
@@ -396,10 +398,10 @@ class IconLikeHaloConstructor(HaloConstructor):
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_owner_list)
 
         self._set_decomposition_info_dimension(
-            decomp_info,
-            dims.VertexDim,
-            all_vertices,
-            vertex_owner_mask,
+            decomp_info=decomp_info,
+            dim=dims.VertexDim,
+            all_indices=all_vertices,
+            owner_mask=vertex_owner_mask,
             first_halo_level_mask=(
                 self._xp.logical_not(vertex_owner_mask)
                 & self._xp.isin(all_vertices, vertex_on_cutting_line)
@@ -426,11 +428,11 @@ class IconLikeHaloConstructor(HaloConstructor):
         all_edges = self._xp.hstack((edge_on_owned_cells, edge_second_level, edge_third_level))
         edge_owner_mask = self._xp.isin(all_edges, edge_on_owned_cells)
         edge_owner_mask = self._update_owner_mask_by_max_rank_convention(
-            cell_to_rank,
-            edge_owner_mask,
-            all_edges,
-            edge_on_cutting_line,
-            self._connectivity(dims.E2C),
+            cell_to_rank=cell_to_rank,
+            owner_mask=edge_owner_mask,
+            all_indices=all_edges,
+            indices_on_cutting_line=edge_on_cutting_line,
+            target_connectivity=self._connectivity(dims.E2C),
         )
 
         # Once mask has been updated, some owned cells may now belong to the
@@ -449,7 +451,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         edge_owner_mask = self._xp.isin(all_edges, edge_owner_list)
 
         self._set_decomposition_info_dimension(
-            decomp_info,
+            decomp_info=decomp_info,
             dim=dims.EdgeDim,
             all_indices=all_edges,
             owner_mask=edge_owner_mask,
@@ -501,7 +503,6 @@ def get_halo_constructor(
 def global_to_local(
     global_indices: data_alloc.NDArray,
     indices_to_translate: data_alloc.NDArray,
-    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """Translate an array of global indices into rank-local ones.
 
@@ -510,6 +511,7 @@ def global_to_local(
         indices_to_translate: the array to map to local indices
 
     """
+    array_ns = data_alloc.array_namespace(global_indices)
     sorter = array_ns.argsort(global_indices)
 
     mask = array_ns.isin(indices_to_translate, global_indices)

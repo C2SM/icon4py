@@ -99,7 +99,7 @@ class GraupelInput:
         filename: pathlib.Path | str,
         allocator: gtx_typing.Allocator,
         dtype=np.float64,
-    ) -> None:
+    ) -> GraupelInput:
         with netCDF4.Dataset(filename, mode="r") as ncfile:
             try:
                 ncells = len(ncfile.dimensions["cell"])

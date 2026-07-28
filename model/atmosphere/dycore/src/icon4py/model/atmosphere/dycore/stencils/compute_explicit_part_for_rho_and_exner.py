@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -32,7 +32,7 @@ def _compute_explicit_part_for_rho_and_exner(
     )
 
     z_rho_expl_wp = rho_nnow - dtime * inv_ddqz_z_full_wp * (
-        z_flxdiv_mass_wp + z_contr_w_fl_l - z_contr_w_fl_l(Koff[1])
+        z_flxdiv_mass_wp + z_contr_w_fl_l - z_contr_w_fl_l(KDim + 1)
     )
 
     z_exner_expl_wp = (
@@ -41,7 +41,7 @@ def _compute_explicit_part_for_rho_and_exner(
         * (
             z_flxdiv_theta_wp
             + theta_v_ic * z_contr_w_fl_l
-            - theta_v_ic(Koff[1]) * z_contr_w_fl_l(Koff[1])
+            - theta_v_ic(KDim + 1) * z_contr_w_fl_l(KDim + 1)
         )
         + dtime * ddt_exner_phy_wp
     )
@@ -68,16 +68,16 @@ def compute_explicit_part_for_rho_and_exner(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_explicit_part_for_rho_and_exner(
-        rho_nnow,
-        inv_ddqz_z_full,
-        z_flxdiv_mass,
-        z_contr_w_fl_l,
-        exner_pr,
-        z_beta,
-        z_flxdiv_theta,
-        theta_v_ic,
-        ddt_exner_phy,
-        dtime,
+        rho_nnow=rho_nnow,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        z_flxdiv_mass=z_flxdiv_mass,
+        z_contr_w_fl_l=z_contr_w_fl_l,
+        exner_pr=exner_pr,
+        z_beta=z_beta,
+        z_flxdiv_theta=z_flxdiv_theta,
+        theta_v_ic=theta_v_ic,
+        ddt_exner_phy=ddt_exner_phy,
+        dtime=dtime,
         out=(z_rho_expl, z_exner_expl),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

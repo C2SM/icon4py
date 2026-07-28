@@ -32,6 +32,7 @@ from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_
 
 
 def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     vn: np.ndarray,
     tangential_wind: np.ndarray,
@@ -116,6 +117,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         spatially_averaged_vn: np.ndarray,
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         tangential_wind: np.ndarray,
@@ -167,11 +169,11 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
             horizontal_gradient_of_normal_wind_divergence,
             tangential_wind,
         ) = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
-            connectivities,
-            e_flx_avg,
-            vn,
-            geofac_grdiv,
-            rbf_vec_coeff_e,
+            connectivities=connectivities,
+            e_flx_avg=e_flx_avg,
+            vn=vn,
+            geofac_grdiv=geofac_grdiv,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
         )
 
         (
@@ -195,15 +197,15 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
             tangential_wind_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels,
         ) = compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
-            connectivities,
-            vn,
-            tangential_wind,
-            vn_on_half_levels,
-            tangential_wind_on_half_levels,
-            horizontal_kinetic_energy_at_edges_on_model_levels,
-            wgtfac_e,
-            wgtfacq_e,
-            vertical_end,
+            connectivities=connectivities,
+            vn=vn,
+            tangential_wind=tangential_wind,
+            vn_on_half_levels=vn_on_half_levels,
+            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+            wgtfac_e=wgtfac_e,
+            wgtfacq_e=wgtfacq_e,
+            nlevp1=vertical_end,
         )
 
         spatially_averaged_vn[:horizontal_start, :] = initial_spatially_averaged_vn[

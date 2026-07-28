@@ -39,7 +39,11 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid: base_grid.Grid, wgtfac_e: np.ndarray, interpolant: np.ndarray, **kwargs: Any
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
+        wgtfac_e: np.ndarray,
+        interpolant: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         interpolation_to_half_levels_vp = interpolate_edge_field_to_half_levels_vp_numpy(
             wgtfac_e=wgtfac_e, interpolant=interpolant

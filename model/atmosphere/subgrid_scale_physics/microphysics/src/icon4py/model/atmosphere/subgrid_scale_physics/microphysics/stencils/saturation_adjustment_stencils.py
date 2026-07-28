@@ -61,7 +61,13 @@ def _update_temperature_by_newton_iteration(
 ) -> fa.CellKField[ta.wpfloat]:
     current_temperature = where(
         newton_iteration_mask,
-        _new_temperature_in_newton_iteration(temperature, qv, rho, lwdocvd, next_temperature),
+        _new_temperature_in_newton_iteration(
+            temperature=temperature,
+            qv=qv,
+            rho=rho,
+            lwdocvd=lwdocvd,
+            next_temperature=next_temperature,
+        ),
         next_temperature,
     )
     return current_temperature
@@ -82,12 +88,12 @@ def update_temperature_by_newton_iteration(
     vertical_end: gtx.int32,
 ):
     _update_temperature_by_newton_iteration(
-        temperature,
-        qv,
-        rho,
-        newton_iteration_mask,
-        lwdocvd,
-        next_temperature,
+        temperature=temperature,
+        qv=qv,
+        rho=rho,
+        newton_iteration_mask=newton_iteration_mask,
+        lwdocvd=lwdocvd,
+        next_temperature=next_temperature,
         out=current_temperature,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -156,13 +162,13 @@ def update_temperature_qv_qc_tendencies(
     vertical_end: gtx.int32,
 ):
     _update_temperature_qv_qc_tendencies(
-        dtime,
-        temperature,
-        current_temperature,
-        qv,
-        qc,
-        rho,
-        subsaturated_mask,
+        dtime=dtime,
+        temperature=temperature,
+        current_temperature=current_temperature,
+        qv=qv,
+        qc=qc,
+        rho=rho,
+        subsaturated_mask=subsaturated_mask,
         out=(temperature_tendency, qv_tendency, qc_tendency),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -246,11 +252,11 @@ def compute_subsaturated_case_and_initialize_newton_iterations(
     vertical_end: gtx.int32,
 ):
     _compute_subsaturated_case_and_initialize_newton_iterations(
-        tolerance,
-        temperature,
-        qv,
-        qc,
-        rho,
+        tolerance=tolerance,
+        temperature=temperature,
+        qv=qv,
+        qc=qc,
+        rho=rho,
         out=(
             subsaturated_mask,
             lwdocvd,
@@ -303,9 +309,9 @@ def compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
-        tolerance,
-        current_temperature,
-        next_temperature,
+        tolerance=tolerance,
+        current_temperature=current_temperature,
+        next_temperature=next_temperature,
         out=(newton_iteration_mask, next_temperature),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

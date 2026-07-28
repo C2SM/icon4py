@@ -14,7 +14,8 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import constants
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import base as base_grid, icon
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_lin_e,
     compute_cells_aw_verts,
@@ -26,18 +27,20 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_geofac_grg,
     compute_geofac_n2s,
     compute_geofac_rot,
+    compute_lsq_coeffs,
     compute_mass_conserving_bilinear_cell_average_weight,
     compute_mass_conserving_bilinear_cell_average_weight_torus,
     compute_pos_on_tplane_e_x_y,
     compute_pos_on_tplane_e_x_y_torus,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, exchange_utils, serialbox as sb
+from icon4py.model.testing import definitions as test_defs, serialbox as sb
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -58,10 +61,7 @@ def test_compute_c_lin_e(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
-    func = functools.partial(
-        compute_c_lin_e, array_ns=xp, exchange=exchange_utils.dummy_exchange_with_bound_dim
-    )
+    func = compute_c_lin_e
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
     edge_owner_mask = grid_savepoint.e_owner_mask()
@@ -74,8 +74,6 @@ def test_compute_c_lin_e(
         inv_dual_edge_length.asnumpy(),
         edge_owner_mask.asnumpy(),
         horizontal_start,
-        exchange=exchange_utils.dummy_exchange_with_bound_dim,
-        array_ns=xp,
     )
     assert test_helpers.dallclose(c_lin_e, c_lin_e_ref.asnumpy())
 
@@ -92,7 +90,7 @@ def test_compute_c_lin_e(
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 def test_compute_geofac_div(
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
@@ -117,7 +115,7 @@ def test_compute_geofac_div(
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 def test_compute_geofac_rot(
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
@@ -154,7 +152,6 @@ def test_compute_geofac_n2s(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     dual_edge_length = grid_savepoint.dual_edge_length()
     geofac_div = interpolation_savepoint.geofac_div()
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
@@ -162,15 +159,13 @@ def test_compute_geofac_n2s(
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).ndarray
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    geofac_n2s = functools.partial(
-        compute_geofac_n2s, array_ns=xp, exchange=exchange_utils.dummy_exchange_with_bound_dim
-    )(
-        dual_edge_length.ndarray,
-        geofac_div.ndarray,
-        c2e,
-        e2c,
-        c2e2c,
-        horizontal_start,
+    geofac_n2s = compute_geofac_n2s(
+        dual_edge_length=dual_edge_length.ndarray,
+        geofac_div=geofac_div.ndarray,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        horizontal_start=horizontal_start,
     )
     assert test_helpers.dallclose(data_alloc.as_numpy(geofac_n2s), geofac_n2s_ref.asnumpy())
 
@@ -183,7 +178,6 @@ def test_compute_geofac_grg(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     primal_normal_cell_x = grid_savepoint.primal_normal_cell_x().ndarray
     primal_normal_cell_y = grid_savepoint.primal_normal_cell_y().ndarray
     geofac_div = interpolation_savepoint.geofac_div().ndarray
@@ -196,17 +190,17 @@ def test_compute_geofac_grg(
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     geofac_grg_0, geofac_grg_1 = functools.partial(
-        compute_geofac_grg, array_ns=xp, exchange=exchange_utils.dummy_exchange_with_bound_dim
+        compute_geofac_grg, exchange=decomposition.single_node_exchange
     )(
-        primal_normal_cell_x,
-        primal_normal_cell_y,
-        owner_mask,
-        geofac_div,
-        c_lin_e,
-        c2e,
-        e2c,
-        c2e2c,
-        horizontal_start,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        owner_mask=owner_mask,
+        geofac_div=geofac_div,
+        c_lin_e=c_lin_e,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        horizontal_start=horizontal_start,
     )
     assert test_helpers.dallclose(
         data_alloc.as_numpy(geofac_grg_0),
@@ -230,7 +224,6 @@ def test_compute_geofac_grdiv(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     geofac_div = interpolation_savepoint.geofac_div()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     geofac_grdiv_ref = interpolation_savepoint.geofac_grdiv()
@@ -239,16 +232,14 @@ def test_compute_geofac_grdiv(
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
     e2c2e = icon_grid.get_connectivity(dims.E2C2E).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    geofac_grdiv = functools.partial(
-        compute_geofac_grdiv, array_ns=xp, exchange=exchange_utils.dummy_exchange_with_bound_dim
-    )(
-        geofac_div.ndarray,
-        inv_dual_edge_length.ndarray,
-        owner_mask.ndarray,
-        c2e,
-        e2c,
-        e2c2e,
-        horizontal_start,
+    geofac_grdiv = compute_geofac_grdiv(
+        geofac_div=geofac_div.ndarray,
+        inv_dual_edge_length=inv_dual_edge_length.ndarray,
+        owner_mask=owner_mask.ndarray,
+        c2e=c2e,
+        e2c=e2c,
+        e2c2e=e2c2e,
+        horizontal_start=horizontal_start,
     )
     assert test_helpers.dallclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
 
@@ -261,7 +252,6 @@ def test_compute_c_bln_avg(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     cell_areas = grid_savepoint.cell_areas().ndarray
     # both experiment use the default value
     divergence_averaging_central_cell_weight = 0.5
@@ -275,30 +265,28 @@ def test_compute_c_bln_avg(
 
     c2e2c0 = icon_grid.get_connectivity(dims.C2E2CO).ndarray
 
-    match icon_grid.global_properties.geometry_type:
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.grid_params.geometry_type:
+        case icon.GeometryType.ICOSAHEDRON:
             c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight(
-                c2e2c0,
-                lat,
-                lon,
-                cell_areas,
-                cell_owner_mask,
-                divergence_averaging_central_cell_weight,
-                horizontal_start,
-                horizontal_start_p2,
-                exchange=exchange_utils.dummy_exchange_with_bound_dim,
-                array_ns=xp,
+                c2e2c0=c2e2c0,
+                lat=lat,
+                lon=lon,
+                cell_areas=cell_areas,
+                cell_owner_mask=cell_owner_mask,
+                divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
+                horizontal_start=horizontal_start,
+                horizontal_start_level_3=horizontal_start_p2,
+                exchange=decomposition.single_node_exchange,
             )
-        case base_grid.GeometryType.TORUS:
+        case icon.GeometryType.TORUS:
             c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight_torus(
-                c2e2c0,
-                cell_areas,
-                cell_owner_mask,
-                divergence_averaging_central_cell_weight,
-                horizontal_start,
-                horizontal_start_p2,
-                exchange=exchange_utils.dummy_exchange_with_bound_dim,
-                array_ns=xp,
+                c2e2c0=c2e2c0,
+                cell_areas=cell_areas,
+                cell_owner_mask=cell_owner_mask,
+                divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
+                horizontal_start=horizontal_start,
+                horizontal_start_level_3=horizontal_start_p2,
+                exchange=decomposition.single_node_exchange,
             )
 
     assert test_helpers.dallclose(data_alloc.as_numpy(c_bln_avg), c_bln_avg_ref, rtol=1e-11)
@@ -312,7 +300,6 @@ def test_compute_e_flx_avg(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg().ndarray
     geofac_div = interpolation_savepoint.geofac_div().ndarray
@@ -327,21 +314,19 @@ def test_compute_e_flx_avg(
     horizontal_start_1 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
-    e_flx_avg = functools.partial(
-        compute_e_flx_avg, array_ns=xp, exchange=exchange_utils.dummy_exchange_with_bound_dim
-    )(
-        c_bln_avg,
-        geofac_div,
-        owner_mask,
-        primal_cart_normal_x,
-        primal_cart_normal_y,
-        primal_cart_normal_z,
-        e2c,
-        c2e,
-        c2e2c,
-        e2c2e,
-        horizontal_start_1,
-        horizontal_start_2,
+    e_flx_avg = functools.partial(compute_e_flx_avg, exchange=decomposition.single_node_exchange)(
+        c_bln_avg=c_bln_avg,
+        geofac_div=geofac_div,
+        owner_mask=owner_mask,
+        primal_cart_normal_x=primal_cart_normal_x,
+        primal_cart_normal_y=primal_cart_normal_y,
+        primal_cart_normal_z=primal_cart_normal_z,
+        e2c=e2c,
+        c2e=c2e,
+        c2e2c=c2e2c,
+        e2c2e=e2c2e,
+        horizontal_start_p3=horizontal_start_1,
+        horizontal_start_p4=horizontal_start_2,
     )
     assert test_helpers.dallclose(data_alloc.as_numpy(e_flx_avg), e_flx_avg_ref)
 
@@ -354,7 +339,6 @@ def test_compute_cells_aw_verts(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
     dual_area = grid_savepoint.vertex_dual_area().ndarray
     edge_vert_length = grid_savepoint.edge_vert_length().ndarray
@@ -367,9 +351,7 @@ def test_compute_cells_aw_verts(
         vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
-    cells_aw_verts = functools.partial(
-        compute_cells_aw_verts, array_ns=xp, exchange=exchange_utils.dummy_exchange_with_bound_dim
-    )(
+    cells_aw_verts = compute_cells_aw_verts(
         dual_area=dual_area,
         edge_vert_length=edge_vert_length,
         edge_cell_length=edge_cell_length,
@@ -396,15 +378,18 @@ def test_compute_e_bln_c_s(
     cells_lon = grid_savepoint.cell_center_lon().ndarray
     edges_lat = grid_savepoint.edges_center_lat().ndarray
     edges_lon = grid_savepoint.edges_center_lon().ndarray
-    xp = data_alloc.import_array_ns(backend)
 
-    match icon_grid.global_properties.geometry_type:
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.grid_params.geometry_type:
+        case icon.GeometryType.ICOSAHEDRON:
             e_bln_c_s = compute_e_bln_c_s(
-                c2e, cells_lat, cells_lon, edges_lat, edges_lon, 0.0, array_ns=xp
+                c2e=c2e,
+                cells_lat=cells_lat,
+                cells_lon=cells_lon,
+                edges_lat=edges_lat,
+                edges_lon=edges_lon,
             )
-        case base_grid.GeometryType.TORUS:
-            e_bln_c_s = compute_e_bln_c_s_torus(c2e, array_ns=xp)
+        case icon.GeometryType.TORUS:
+            e_bln_c_s = compute_e_bln_c_s_torus(c2e)
     assert test_helpers.dallclose(
         data_alloc.as_numpy(e_bln_c_s), e_bln_c_s_ref.asnumpy(), rtol=1e-10
     )
@@ -418,7 +403,6 @@ def test_compute_pos_on_tplane_e(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     pos_on_tplane_e_x_ref = interpolation_savepoint.pos_on_tplane_e_x().asnumpy()
     pos_on_tplane_e_y_ref = interpolation_savepoint.pos_on_tplane_e_y().asnumpy()
     sphere_radius = constants.EARTH_RADIUS
@@ -435,30 +419,70 @@ def test_compute_pos_on_tplane_e(
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
-    match icon_grid.global_properties.geometry_type:
-        case base_grid.GeometryType.ICOSAHEDRON:
+    match icon_grid.grid_params.geometry_type:
+        case icon.GeometryType.ICOSAHEDRON:
             pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
-                sphere_radius,
-                primal_normal_v1,
-                primal_normal_v2,
-                dual_normal_v1,
-                dual_normal_v2,
-                cells_lon,
-                cells_lat,
-                edges_lon,
-                edges_lat,
-                owner_mask,
-                e2c,
-                horizontal_start,
-                exchange=exchange_utils.dummy_exchange_with_bound_dim,
-                array_ns=xp,
+                grid_sphere_radius=sphere_radius,
+                primal_normal_v1=primal_normal_v1,
+                primal_normal_v2=primal_normal_v2,
+                dual_normal_v1=dual_normal_v1,
+                dual_normal_v2=dual_normal_v2,
+                cells_lon=cells_lon,
+                cells_lat=cells_lat,
+                edges_lon=edges_lon,
+                edges_lat=edges_lat,
+                owner_mask=owner_mask,
+                e2c=e2c,
+                horizontal_start=horizontal_start,
             )
-        case base_grid.GeometryType.TORUS:
+        case icon.GeometryType.TORUS:
             pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y_torus(
                 dual_edge_length,
                 e2c,
-                exchange=exchange_utils.dummy_exchange_with_bound_dim,
-                array_ns=xp,
             )
     assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-8, rtol=1e-9)
     assert test_helpers.dallclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref, atol=1e-8, rtol=1e-9)
+
+
+@pytest.mark.level("unit")
+@pytest.mark.datatest
+def test_compute_lsq_coeffs(
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    experiment: test_defs.Experiment,
+    grid_savepoint: sb.IconGridSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
+    lsq_pseudoinv = compute_lsq_coeffs(
+        cell_center_x=grid_savepoint.cell_center_cart_x().ndarray,
+        cell_center_y=grid_savepoint.cell_center_cart_y().ndarray,
+        cell_lat=grid_savepoint.cell_center_lat().ndarray,
+        cell_lon=grid_savepoint.cell_center_lon().ndarray,
+        c2e2c=icon_grid.get_connectivity(dims.C2E2C).ndarray,
+        cell_owner_mask=grid_savepoint.c_owner_mask().ndarray,
+        domain_length=0.0
+        if experiment.grid.params.domain_length is None
+        else experiment.grid.params.domain_length,
+        domain_height=0.0
+        if experiment.grid.params.domain_height is None
+        else experiment.grid.params.domain_height,
+        grid_sphere_radius=constants.EARTH_RADIUS,
+        lsq_dim_unk=experiment.config.interpolation.lsq_dim_unk,
+        lsq_dim_c=experiment.config.interpolation.lsq_dim_c,
+        lsq_wgt_exp=experiment.config.interpolation.lsq_wgt_exp,
+        start_idx=icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
+        min_rlcell_int=icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
+        geometry_type=icon_grid.grid_params.geometry_type,
+        exchange=decomposition.single_node_exchange,
+    )
+
+    assert test_helpers.dallclose(
+        data_alloc.as_numpy(lsq_pseudoinv[:, 0, :]),
+        interpolation_savepoint.lsq_pseudoinv_1().asnumpy(),
+        atol=1e-15,
+    )
+    assert test_helpers.dallclose(
+        data_alloc.as_numpy(lsq_pseudoinv[:, 1, :]),
+        interpolation_savepoint.lsq_pseudoinv_2().asnumpy(),
+        atol=1e-15,
+    )

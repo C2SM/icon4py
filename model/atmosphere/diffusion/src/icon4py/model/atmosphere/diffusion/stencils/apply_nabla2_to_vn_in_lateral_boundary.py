@@ -34,10 +34,10 @@ def apply_nabla2_to_vn_in_lateral_boundary(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_nabla2_to_vn_in_lateral_boundary(
-        z_nabla2_e,
-        area_edge,
-        vn,
-        fac_bdydiff_v,
+        z_nabla2_e=z_nabla2_e,
+        area_edge=area_edge,
+        vn=vn,
+        fac_bdydiff_v=fac_bdydiff_v,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

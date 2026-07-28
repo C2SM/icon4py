@@ -40,9 +40,7 @@ def test_create_single_node_runtime_without_mpi(process_props):  # fixture
 def get_neighbor_tables_for_simple_grid() -> dict[str, data_alloc.NDArray]:
     grid = simple.simple_grid()
     neighbor_tables = {
-        k: v.ndarray
-        for k, v in grid.connectivities.items()
-        if gtx_common.is_neighbor_connectivity(v)
+        k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
     return neighbor_tables
 
@@ -50,7 +48,7 @@ def get_neighbor_tables_for_simple_grid() -> dict[str, data_alloc.NDArray]:
 offsets = [dims.E2C, dims.E2V, dims.C2E, dims.C2E2C, dims.V2C, dims.V2E, dims.C2V, dims.E2C2V]
 
 
-@pytest.mark.parametrize("dim", grid_utils.main_horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_decomposition_info_single_node_empty_halo(dim: gtx.Dimension) -> None:
     manager = grid_utils.run_grid_manager(
         test_defs.Grids.MCH_CH_R04B09_DSL, keep_skip_values=True, backend=None

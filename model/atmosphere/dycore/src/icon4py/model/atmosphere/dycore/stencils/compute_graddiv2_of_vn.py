@@ -36,8 +36,8 @@ def compute_graddiv2_of_vn(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_graddiv2_of_vn(
-        geofac_grdiv,
-        z_graddiv_vn,
+        geofac_grdiv=geofac_grdiv,
+        z_graddiv_vn=z_graddiv_vn,
         out=z_graddiv2_vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

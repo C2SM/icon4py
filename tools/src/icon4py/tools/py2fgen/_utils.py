@@ -37,15 +37,7 @@ def format_fortran_code(source: str) -> str:
     return p1.communicate(source.encode("UTF-8"))[0].decode("UTF-8").rstrip()
 
 
-def write_file(string: str, outdir: pathlib.Path, fname: str) -> None:
-    path = outdir / fname
-    with path.open("w") as f:
-        f.write(string)
-
-
-def write_file_if_changed(
-    content: str, outdir: pathlib.Path, fname: str, *, force: bool = False
-) -> bool:
+def write_if_changed(content: str, path: pathlib.Path, *, force: bool = False) -> bool:
     """Write file only if its content differs from what is already on disk.
 
     Args:
@@ -54,10 +46,10 @@ def write_file_if_changed(
     Returns True if the file was written (content changed, file was new, or force=True),
     False if the existing file already has the same content.
     """
-    path = outdir / fname
-    if not force and path.exists() and path.read_text() == content:
+    if not force and path.exists() and path.read_text(encoding="utf-8") == content:
         return False
-    write_file(content, outdir, fname)
+    path.parent.mkdir(exist_ok=True, parents=True)
+    path.write_text(content, encoding="utf-8")
     return True
 
 

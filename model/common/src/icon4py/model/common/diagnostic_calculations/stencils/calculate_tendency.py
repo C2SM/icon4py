@@ -68,15 +68,15 @@ def calculate_virtual_temperature_tendency(
     vertical_end: gtx.int32,
 ):
     _calculate_virtual_temperature_tendency(
-        dtime,
-        qv,
-        qc,
-        qi,
-        qr,
-        qs,
-        qg,
-        temperature,
-        virtual_temperature,
+        dtime=dtime,
+        qv=qv,
+        qc=qc,
+        qi=qi,
+        qr=qr,
+        qs=qs,
+        qg=qg,
+        temperature=temperature,
+        virtual_temperature=virtual_temperature,
         out=virtual_temperature_tendency,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -125,10 +125,10 @@ def calculate_exner_tendency(
     vertical_end: gtx.int32,
 ):
     _calculate_exner_tendency(
-        dtime,
-        virtual_temperature,
-        virtual_temperature_tendency,
-        exner,
+        dtime=dtime,
+        virtual_temperature=virtual_temperature,
+        virtual_temperature_tendency=virtual_temperature_tendency,
+        exner=exner,
         out=exner_tendency,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -169,9 +169,9 @@ def calculate_cell_kdim_field_tendency(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_cell_kdim_field_tendency(
-        dtime,
-        old_field,
-        new_field,
+        dtime=dtime,
+        old_field=old_field,
+        new_field=new_field,
         out=tendency,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

@@ -46,6 +46,7 @@ class TestComputeContravariantCorrectionOfW(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         e_bln_c_s: np.ndarray,
         z_w_concorr_me: np.ndarray,
         wgtfac_c: np.ndarray,

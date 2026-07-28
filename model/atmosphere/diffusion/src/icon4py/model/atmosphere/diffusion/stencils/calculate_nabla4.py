@@ -69,13 +69,13 @@ def calculate_nabla4(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_nabla4(
-        u_vert,
-        v_vert,
-        primal_normal_vert_v1,
-        primal_normal_vert_v2,
-        z_nabla2_e,
-        inv_vert_vert_length,
-        inv_primal_edge_length,
+        u_vert=u_vert,
+        v_vert=v_vert,
+        primal_normal_vert_v1=primal_normal_vert_v1,
+        primal_normal_vert_v2=primal_normal_vert_v2,
+        z_nabla2_e=z_nabla2_e,
+        inv_vert_vert_length=inv_vert_vert_length,
+        inv_primal_edge_length=inv_primal_edge_length,
         out=z_nabla4_e2,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

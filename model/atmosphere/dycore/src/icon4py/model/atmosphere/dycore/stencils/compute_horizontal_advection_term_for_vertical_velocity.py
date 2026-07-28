@@ -50,13 +50,13 @@ def compute_horizontal_advection_term_for_vertical_velocity(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_horizontal_advection_term_for_vertical_velocity(
-        vn_ie,
-        inv_dual_edge_length,
-        w,
-        z_vt_ie,
-        inv_primal_edge_length,
-        tangent_orientation,
-        z_w_v,
+        vn_ie=vn_ie,
+        inv_dual_edge_length=inv_dual_edge_length,
+        w=w,
+        z_vt_ie=z_vt_ie,
+        inv_primal_edge_length=inv_primal_edge_length,
+        tangent_orientation=tangent_orientation,
+        z_w_v=z_w_v,
         out=z_v_grad_w,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

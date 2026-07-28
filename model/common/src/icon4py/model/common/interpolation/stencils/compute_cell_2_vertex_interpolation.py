@@ -45,8 +45,8 @@ def compute_cell_2_vertex_interpolation(
         vertical_end: vertical end index
     """
     _compute_cell_2_vertex_interpolation(
-        cell_in,
-        c_int,
+        cell_in=cell_in,
+        c_int=c_int,
         out=vert_out,
         domain={
             dims.VertexDim: (horizontal_start, horizontal_end),

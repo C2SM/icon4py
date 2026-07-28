@@ -14,12 +14,12 @@ from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
-DeviceType: TypeAlias = gtx.DeviceType
+DeviceType: TypeAlias = gtx.DeviceType  # noqa: UP040 used with isinstance()
 CPU = DeviceType.CPU
 GPU = gtx.CUPY_DEVICE_TYPE
 
-BackendDescriptor: TypeAlias = dict[str, Any]
-BackendLike: TypeAlias = DeviceType | gtx_typing.Backend | BackendDescriptor | None
+type BackendDescriptor = dict[str, Any]
+type BackendLike = DeviceType | gtx_typing.Backend | BackendDescriptor | None
 
 
 DEFAULT_BACKEND: Final = "embedded"
@@ -62,36 +62,31 @@ def get_allocator(
 
     if is_backend_descriptor(backend):
         backend = backend["device"]
-    if isinstance(backend, DeviceType):
+    if isinstance(backend, gtx.DeviceType):
         return gtx_allocators.device_allocators[backend]
     raise ValueError(f"Cannot get allocator from {backend}")
 
 
-def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gtx_typing.Backend:
+def make_custom_gtfn_backend(device: DeviceType, **_) -> gtx_typing.Backend:
     on_gpu = device == GPU
-    return gtfn.GTFNBackendFactory(
-        gpu=on_gpu,
-        cached=cached,
-        otf_workflow__cached_translation=cached,
-    )
+    return gtfn.GTFNBackendFactory(gpu=on_gpu)
 
 
 def make_custom_dace_backend(
+    *,
     device: DeviceType,
-    cached: bool = True,
     auto_optimize: bool = True,
     async_sdfg_call: bool = True,
     optimization_args: dict[str, Any] | None = None,
     use_metrics: bool = True,
     use_zero_origin: bool = False,
-    use_max_domain_range_on_unstructured_shift: bool | None = True,
+    use_max_domain_range_on_unstructured_shift: bool | None = None,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
 
     Args:
         device: The target device.
-        cached: Cache the lowered SDFG as a JSON file and the compiled programs.
         auto_optimize: Enable the SDFG auto-optimize pipeline.
         async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
             of GPU kernel execution with the Python driver code.
@@ -103,19 +98,16 @@ def make_custom_dace_backend(
             expressions everywhere. Otherwise, when all connectivities are given
             at compile time, infer the minimal domain of all `as_fieldop` statically.
 
-    TODO(edopao): We should use the default `use_max_domain_range_on_unstructured_shift=None`
-        once the minimal static domain produces the correct result.
-
     Returns:
         A dace backend with custom configuration for the target device.
     """
     on_gpu = device == GPU
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
-        cached=cached,
         auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
         optimization_args=optimization_args,
+        unstructured_horizontal_has_unit_stride=True,
         use_metrics=use_metrics,
         use_zero_origin=use_zero_origin,
         use_max_domain_range_on_unstructured_shift=use_max_domain_range_on_unstructured_shift,

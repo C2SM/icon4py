@@ -13,8 +13,8 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss_method import (
-    cell_horizontal_gradients_by_green_gauss_method,
+from icon4py.model.common.math.stencils import (
+    cell_horizontal_gradients_by_green_gauss_method as green_gauss,
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -45,12 +45,13 @@ def cell_horizontal_gradients_by_green_gauss_method_numpy(
 
 @pytest.mark.embedded_remap_error
 class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
-    PROGRAM = cell_horizontal_gradients_by_green_gauss_method
+    PROGRAM = green_gauss.cell_horizontal_gradients_by_green_gauss_method
     OUTPUTS = ("out",)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         scalar_field: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,

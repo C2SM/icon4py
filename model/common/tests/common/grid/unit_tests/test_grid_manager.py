@@ -31,7 +31,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
-    definitions,
     definitions as test_defs,
     grid_utils,
     test_utils,
@@ -56,15 +55,14 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
+    experiment_description,
+    grid_description,
     grid_savepoint,
     process_props,
 )
 
 from ...decomposition import utils as decomp_utils
 from .. import utils
-
-
-MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -76,7 +74,7 @@ MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_v2e(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -88,10 +86,9 @@ def test_grid_manager_eval_v2e(
     v2e_table = grid.get_connectivity("V2E").asnumpy()
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
-    assert experiment.grid.params.grid_shape is not None
     assert (
         not has_invalid_index(v2e_table)
-        if experiment.grid.params.grid_shape.geometry_type == base_grid.GeometryType.TORUS
+        if experiment.grid.params.geometry_type == icon.GeometryType.TORUS
         else has_invalid_index(v2e_table)
     )
     _reset_invalid_index(seralized_v2e)
@@ -100,10 +97,10 @@ def test_grid_manager_eval_v2e(
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_grid_manager_refin_ctrl(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -122,7 +119,7 @@ def test_grid_manager_refin_ctrl(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_v2c(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -135,10 +132,9 @@ def test_grid_manager_eval_v2c(
     assert not has_invalid_index(serialized_v2c)
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
-    assert experiment.grid.params.grid_shape is not None
     assert (
         not has_invalid_index(v2c_table)
-        if experiment.grid.params.grid_shape.geometry_type == base_grid.GeometryType.TORUS
+        if experiment.grid.params.geometry_type == icon.GeometryType.TORUS
         else has_invalid_index(v2c_table)
     )
     _reset_invalid_index(serialized_v2c)
@@ -177,7 +173,7 @@ def _reset_invalid_index(index_array: np.ndarray) -> None:
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_e2v(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -200,7 +196,7 @@ def has_invalid_index(ar: np.ndarray) -> np.bool_:
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_e2c(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -217,7 +213,7 @@ def test_grid_manager_eval_e2c(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_c2e(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -237,7 +233,7 @@ def test_grid_manager_eval_c2e(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_c2e2c(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -251,7 +247,7 @@ def test_grid_manager_eval_c2e2c(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_c2e2cO(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -267,7 +263,7 @@ def test_grid_manager_eval_c2e2cO(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_e2c2e(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -284,15 +280,15 @@ def test_grid_manager_eval_e2c2e(
     start_index = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    np.allclose(e2c2e_table[start_index:, :], serialized_e2c2e[start_index:, :])
-    np.allclose(e2c2eO_table[start_index:, :], serialized_e2c2eO[start_index:, :])
+    assert np.allclose(e2c2e_table[start_index:, :], serialized_e2c2e[start_index:, :])
+    assert np.allclose(e2c2eO_table[start_index:, :], serialized_e2c2eO[start_index:, :])
 
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_e2c2v(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -312,7 +308,7 @@ def test_grid_manager_eval_e2c2v(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_c2v(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -320,17 +316,15 @@ def test_grid_manager_eval_c2v(
     assert np.allclose(c2v, data_alloc.as_numpy(grid_savepoint.c2v()))
 
 
-@pytest.mark.parametrize(
-    "grid_descriptor", [definitions.Grids.R02B04_GLOBAL, definitions.Grids.MCH_CH_R04B09_DSL]
-)
 @pytest.mark.with_netcdf
 def test_grid_manager_grid_size(
-    backend: gtx_typing.Backend, grid_descriptor: definitions.GridDescription
+    backend: gtx_typing.Backend, grid_description: test_defs.GridDescription
 ) -> None:
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    assert grid_descriptor.params.num_cells == grid.size[dims.CellDim]
-    assert grid_descriptor.params.num_edges == grid.size[dims.EdgeDim]
-    assert grid_descriptor.params.num_vertices == grid.size[dims.VertexDim]
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
+    ref = utils.GRID_REFERENCE_VALUES[grid_description.name]
+    assert ref["num_cells"] == grid.size[dims.CellDim]
+    assert ref["num_edges"] == grid.size[dims.EdgeDim]
+    assert ref["num_vertices"] == grid.size[dims.VertexDim]
 
 
 def assert_up_to_order(
@@ -342,9 +336,9 @@ def assert_up_to_order(
     reduced_table = table[start_index:, :]
     reduced_reference = reference_table[start_index:, :]
     for n in range(reduced_table.shape[0]):
-        assert np.all(
-            np.isin(reduced_table[n, :], reduced_reference[n, :])
-        ), f"values in row {n + start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
+        assert np.all(np.isin(reduced_table[n, :], reduced_reference[n, :])), (
+            f"values in row {n + start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
+        )
 
 
 @pytest.mark.with_netcdf
@@ -352,14 +346,13 @@ def test_gridmanager_given_file_not_found_then_abort(
     cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     fname = "./unknown_grid.nc"
-    with pytest.raises(FileNotFoundError) as error:
+    with pytest.raises(FileNotFoundError):
         manager = gm.GridManager(
             grid_file=fname,
             config=v_grid.VerticalGridConfig(num_levels=80),
             offset_transformation=icon4py.model.common.grid.gridfile.NoTransformation(),
         )
         manager(allocator=cpu_allocator, keep_skip_values=True)
-        assert error.value == 1
 
 
 @pytest.mark.parametrize("size", [100, 1500, 20000])
@@ -374,32 +367,36 @@ def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor, global_num_cells",
+    "grid_description, expected_subdivision",
     [
-        (definitions.Grids.R02B04_GLOBAL, definitions.Grids.R02B04_GLOBAL.params.num_cells),
-        (definitions.Grids.MCH_CH_R04B09_DSL, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+        (
+            test_defs.Grids.R02B04_GLOBAL,
+            icon.GridSubdivision(root=2, level=4),
+        ),
+        (
+            test_defs.Grids.MCH_CH_R04B09_DSL,
+            icon.GridSubdivision(root=4, level=9),
+        ),
     ],
 )
 def test_grid_manager_grid_level_and_root(
-    grid_descriptor: definitions.GridDescription, global_num_cells: int, backend: gtx_typing.Backend
+    grid_description: test_defs.GridDescription,
+    expected_subdivision: icon.GridSubdivision,
+    backend: gtx_typing.Backend,
 ) -> None:
-    assert (
-        global_num_cells
-        == utils.run_grid_manager(
-            grid_descriptor, keep_skip_values=True, backend=backend
-        ).grid.global_properties.global_num_cells
-    )
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=backend).grid
+    assert expected_subdivision == grid.grid_params.subdivision
 
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
-    "experiment",
-    [definitions.Experiments.JW],
+    "experiment_description",
+    [test_defs.Experiments.JW],
 )
 def test_grid_manager_eval_c2e2c2e(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -414,10 +411,10 @@ def test_grid_manager_eval_c2e2c2e(
 # TODO (halungge): check EXCOAIM APE with new serialized data ( standard grid, start_idx/end_idx arrays
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -425,23 +422,26 @@ def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
     for domain in h_grid.get_domains_for_dim(dim):
-        if not (experiment == definitions.Experiments.EXCLAIM_APE and domain.dim == dims.EdgeDim):
+        if not (
+            experiment.description == test_defs.Experiments.EXCLAIM_APE
+            and domain.dim == dims.EdgeDim
+        ):
             # serialized start indices for EdgeDim are all zero
-            assert grid.start_index(domain) == serialized_grid.start_index(
-                domain
-            ), f"start index wrong for domain {domain}"
+            assert grid.start_index(domain) == serialized_grid.start_index(domain), (
+                f"start index wrong for domain {domain}"
+            )
         if not grid.limited_area and domain.zone in [h_grid.Zone.END, h_grid.Zone.INTERIOR]:
             assert grid.end_index(domain) == grid.size[domain.dim]
         else:
-            assert grid.end_index(domain) == serialized_grid.end_index(
-                domain
-            ), f"end index wrong for domain {domain}"
+            assert grid.end_index(domain) == serialized_grid.end_index(domain), (
+                f"end index wrong for domain {domain}"
+            )
 
 
 @pytest.mark.datatest
 def test_read_geometry_fields(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
@@ -455,10 +455,10 @@ def test_read_geometry_fields(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_coordinates(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -472,7 +472,7 @@ def test_coordinates(
 @pytest.mark.datatest
 def test_tangent_orientation(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = data_alloc.as_numpy(grid_savepoint.tangent_orientation())
@@ -486,7 +486,7 @@ def test_tangent_orientation(
 @pytest.mark.datatest
 def test_edge_orientation_on_vertex(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = data_alloc.as_numpy(grid_savepoint.vertex_edge_orientation())
@@ -500,7 +500,7 @@ def test_edge_orientation_on_vertex(
 @pytest.mark.datatest
 def test_dual_area(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = grid_savepoint.vertex_dual_area()
@@ -513,7 +513,7 @@ def test_dual_area(
 @pytest.mark.datatest
 def test_edge_cell_distance(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = grid_savepoint.edge_cell_length()
@@ -529,7 +529,7 @@ def test_edge_cell_distance(
 @pytest.mark.datatest
 def test_cell_normal_orientation(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = data_alloc.as_numpy(grid_savepoint.edge_orientation())
@@ -543,7 +543,7 @@ def test_cell_normal_orientation(
 @pytest.mark.datatest
 def test_edge_vertex_distance(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = data_alloc.as_numpy(grid_savepoint.edge_vert_length())
@@ -557,22 +557,22 @@ def test_edge_vertex_distance(
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor, expected",
+    "grid_description, expected",
     [
-        (definitions.Grids.MCH_CH_R04B09_DSL, True),
-        (definitions.Grids.R02B04_GLOBAL, False),
+        (test_defs.Grids.MCH_CH_R04B09_DSL, True),
+        (test_defs.Grids.R02B04_GLOBAL, False),
     ],
 )
-def test_limited_area_on_grid(grid_descriptor: definitions.GridDescription, expected: bool) -> None:
-    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=None).grid
+def test_limited_area_on_grid(grid_description: test_defs.GridDescription, expected: bool) -> None:
+    grid = utils.run_grid_manager(grid_description, keep_skip_values=True, backend=None).grid
     assert expected == grid.limited_area
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("dim", utils.horizontal_dims())
+@pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_decomposition_info_single_rank(
     dim: gtx.Dimension,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -614,7 +614,7 @@ def test_local_connectivity(
     backend_like: model_backends.BackendLike,
 ) -> None:
     process_props = decomp_utils.DummyProps(rank=rank)
-    caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
+    caplog.set_level(logging.INFO)
     partitioner = decomp.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
     file = dt_utils.get_grid_filepath(test_defs.Grids.R02B04_GLOBAL)
@@ -643,9 +643,9 @@ def test_local_connectivity(
             field_offset.source, decomp_defs.DecompositionInfo.EntryType.ALL
         )
     )
-    assert (
-        np.max(connectivity) == max_local_index
-    ), f"max value in the connectivity is {np.max(connectivity)} is larger than the local patch size {max_local_index}"
+    assert np.max(connectivity) == max_local_index, (
+        f"max value in the connectivity is {np.max(connectivity)} is larger than the local patch size {max_local_index}"
+    )
     # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
     neighbor_dim = field_offset.target[1]  # type: ignore [misc]
     dim = field_offset.target[0]
@@ -654,7 +654,7 @@ def test_local_connectivity(
         if dim == dims.EdgeDim
         else decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL
     )
-    level_index = np.where(
+    level_index = np.nonzero(
         data_alloc.as_numpy(decomposition_info.halo_levels(dim)) == last_halo_level.value
     )
     if (
@@ -673,13 +673,13 @@ def test_local_connectivity(
 @pytest.mark.parametrize("ranks", (2, 3, 4))
 def test_decomposition_size(
     ranks: int,
-    experiment: test_defs.Experiment,
+    grid_description: test_defs.GridDescription,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if grid_description.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     decomposer = decomp.MetisDecomposer()
-    file = dt_utils.get_grid_filepath(experiment.grid)
+    file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
         sizes = [np.count_nonzero(partitions == r) for r in range(ranks)]

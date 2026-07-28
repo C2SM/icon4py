@@ -28,13 +28,14 @@ from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
-    definitions,
+    definitions as test_defs,
     grid_utils as gridtest_utils,
     test_utils as test_helpers,
 )
 from icon4py.model.testing.fixtures import backend, data_provider, decomposition_info, experiment
 from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
+    experiment_description,
     interpolation_savepoint,
     process_props,
 )
@@ -64,19 +65,21 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 def _get_interpolation_factory(
     backend: gtx_typing.Backend | None,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
 ) -> interpolation_factory.InterpolationFieldsFactory:
     registry_key = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+        geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
 
         factory = interpolation_factory.InterpolationFieldsFactory(
             grid=geometry.grid,
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
+            config=experiment.config.interpolation,
             backend=backend,
             metadata=attrs.attrs,
+            exchange=single_node_exchange,
         )
         interpolation_factories[registry_key] = factory
     return factory
@@ -84,28 +87,29 @@ def _get_interpolation_factory(
 
 @pytest.mark.datatest
 def test_factory_raises_error_on_unknown_field(
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
     decomposition_info: decomposition.DecompositionInfo,
 ) -> None:
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry,
+        config=experiment.config.interpolation,
         backend=backend,
         metadata=attrs.attrs,
+        exchange=single_node_exchange,
     )
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError, match="Field 'foo' not provided by the source"):
         interpolation_source.get("foo", factory.RetrievalType.METADATA)
-        assert "unknown field" in str(error.value)
 
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest
 def test_get_c_lin_e(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.c_lin_e()
@@ -120,7 +124,7 @@ def test_get_c_lin_e(
 @pytest.mark.datatest
 def test_get_geofac_div(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_div()
@@ -134,7 +138,7 @@ def test_get_geofac_div(
 @pytest.mark.datatest
 def test_get_geofac_grdiv(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_grdiv()
@@ -148,7 +152,7 @@ def test_get_geofac_grdiv(
 @pytest.mark.datatest
 def test_get_geofac_rot(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_rot()
@@ -166,7 +170,7 @@ def test_get_geofac_rot(
 @pytest.mark.datatest
 def test_get_geofac_n2s(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_n2s()
@@ -181,7 +185,7 @@ def test_get_geofac_n2s(
 @pytest.mark.datatest
 def test_get_geofac_grg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_grg()
@@ -200,7 +204,7 @@ def test_get_geofac_grg(
 @pytest.mark.datatest
 def test_get_mass_conserving_cell_average_weight(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.c_bln_avg()
@@ -216,7 +220,7 @@ def test_get_mass_conserving_cell_average_weight(
 @pytest.mark.datatest
 def test_e_flx_avg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.e_flx_avg()
@@ -229,17 +233,17 @@ def test_e_flx_avg(
 
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment_description, rtol",
     [
-        (definitions.Experiments.MCH_CH_R04B09, 1e-10),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.GAUSS3D, 0),
+        (test_defs.Experiments.MCH_CH_R04B09, 1e-10),
+        (test_defs.Experiments.EXCLAIM_APE, 1e-11),
+        (test_defs.Experiments.GAUSS3D, 0),
     ],
 )
 @pytest.mark.datatest
 def test_e_bln_c_s(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
 ) -> None:
@@ -255,7 +259,7 @@ def test_e_bln_c_s(
 @pytest.mark.datatest
 def test_pos_on_tplane_e_x_y(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_1 = interpolation_savepoint.pos_on_tplane_e_x()
@@ -271,7 +275,7 @@ def test_pos_on_tplane_e_x_y(
 @pytest.mark.datatest
 def test_cells_aw_verts(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.c_intp()
@@ -287,7 +291,7 @@ def test_cells_aw_verts(
 @pytest.mark.datatest
 def test_nudgecoeffs(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.nudgecoeff_e()
@@ -301,7 +305,7 @@ def test_nudgecoeffs(
 @pytest.mark.datatest
 def test_rbf_interpolation_coeffs_cell(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
@@ -317,12 +321,12 @@ def test_rbf_interpolation_coeffs_cell(
     assert test_helpers.dallclose(
         field_ref_c1.asnumpy()[horizontal_start:],
         field_c1[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.description],
     )
     assert test_helpers.dallclose(
         field_ref_c2.asnumpy()[horizontal_start:],
         field_c2[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.description],
     )
 
 
@@ -330,7 +334,7 @@ def test_rbf_interpolation_coeffs_cell(
 @pytest.mark.datatest
 def test_rbf_interpolation_coeffs_edge(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_e = interpolation_savepoint.rbf_vec_coeff_e()
@@ -343,7 +347,7 @@ def test_rbf_interpolation_coeffs_edge(
     assert test_helpers.dallclose(
         field_ref_e.asnumpy()[horizontal_start:],
         field_e[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.EdgeDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.EdgeDim][experiment.description],
     )
 
 
@@ -351,7 +355,7 @@ def test_rbf_interpolation_coeffs_edge(
 @pytest.mark.datatest
 def test_rbf_interpolation_coeffs_vertex(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_v1 = interpolation_savepoint.rbf_vec_coeff_v1()
@@ -367,12 +371,12 @@ def test_rbf_interpolation_coeffs_vertex(
     assert test_helpers.dallclose(
         field_ref_v1.asnumpy()[horizontal_start:],
         field_v1[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.description],
     )
     assert test_helpers.dallclose(
         field_ref_v2.asnumpy()[horizontal_start:],
         field_v2[horizontal_start:],
-        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.description],
     )
 
 
@@ -380,7 +384,7 @@ def test_rbf_interpolation_coeffs_vertex(
 @pytest.mark.datatest
 def test_lsq_pseudoinv(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref_1 = interpolation_savepoint.lsq_pseudoinv_1().asnumpy()

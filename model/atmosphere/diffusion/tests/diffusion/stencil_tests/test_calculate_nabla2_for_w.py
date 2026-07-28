@@ -37,6 +37,7 @@ class TestCalculateNabla2ForW(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         w: np.ndarray,
         geofac_n2s: np.ndarray,
         **kwargs,

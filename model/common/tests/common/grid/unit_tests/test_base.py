@@ -25,5 +25,5 @@ def test_replace_skip_values(backend: gtx_typing.Backend) -> None:
     neighbor_table[0, 1:] = gridfile.GridFile.INVALID_INDEX  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
     assert xp.any(neighbor_table == gridfile.GridFile.INVALID_INDEX)
-    testee = base._replace_skip_values(domain, neighbor_table, array_ns=xp)
+    testee = base._replace_skip_values(domain, neighbor_table)
     assert not xp.any(testee == gridfile.GridFile.INVALID_INDEX)

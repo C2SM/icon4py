@@ -37,6 +37,7 @@ class TestAddAnalysisIncrementsToVn(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         vn_incr: np.ndarray,
         vn: np.ndarray,
         iau_wgt_dyn: ta.wpfloat,
