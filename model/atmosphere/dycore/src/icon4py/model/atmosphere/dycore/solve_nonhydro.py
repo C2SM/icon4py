@@ -1127,7 +1127,7 @@ class SolveNonhydro:
         at_first_substep: bool,
         at_last_substep: bool,
         is_iau_active: bool = False,
-        iau_wgt_dyn: wpfloat = wpfloat(0.0),
+        iau_wgt_dyn: wpfloat = 0.0,
     ) -> None:
         """
         Update prognostic variables (prognostic_states.next) after the dynamical process over one substep.
@@ -1156,6 +1156,8 @@ class SolveNonhydro:
                 self.intermediate_fields.dwdz_at_cells_on_model_levels,
                 self.intermediate_fields.horizontal_gradient_of_normal_wind_divergence,
             )
+
+        iau_wgt_dyn = wpfloat(iau_wgt_dyn)
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,

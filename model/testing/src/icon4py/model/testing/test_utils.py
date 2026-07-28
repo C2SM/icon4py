@@ -20,7 +20,7 @@ import pytest
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import DP_EPS, VP_EPS
-from icon4py.model.common.type_alias import precision, vpfloat
+from icon4py.model.common.type_alias import anyfloat, precision, vpfloat
 from icon4py.model.testing import config
 
 
@@ -28,13 +28,13 @@ wp_is_dp = precision == "double"
 
 if wp_is_dp:
 
-    def scale_tol(x):
+    def scale_tol(x: anyfloat) -> anyfloat:
         """identity for double-precision"""
         return x
 else:
     _scale_const = np.log2(VP_EPS) / np.log2(DP_EPS)
 
-    def scale_tol(x):
+    def scale_tol(x: anyfloat) -> anyfloat:
         """scale relative factors according to the reduced range
 
         Maps 1->1, \\epsilon_d->\\epsilon_s"""

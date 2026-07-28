@@ -8,9 +8,9 @@
 
 from __future__ import annotations
 
-import logging as log
+import logging
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, TypeVar
+from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar
 
 import array_api_compat
 import gt4py.next as gtx
@@ -27,18 +27,20 @@ if TYPE_CHECKING:
     from icon4py.model.common.states import utils as state_utils
 
 
+log = logging.getLogger(__name__)
+
 try:
-    import cupy as xp  # type: ignore[import-not-found]
+    import cupy as xp
 except ImportError:
     import numpy as xp
 
 ScalarT = TypeVar("ScalarT", bound=gtx_typing.Scalar)
-NDArray: TypeAlias = (  # noqa: UP040
+type NDArray[ScalarT: gtx_typing.Scalar] = (
     np.ndarray[tuple[int, ...], np.dtype[ScalarT]] | xp.ndarray[tuple[int, ...], np.dtype[ScalarT]]
 )
 type NDArrayInterface = np.ndarray | xp.ndarray | gtx.Field
 
-ScalarLikeArray: TypeAlias = (  # noqa: UP040
+type ScalarLikeArray[ScalarT: gtx_typing.Scalar] = (
     np.ndarray[tuple[()], np.dtype[ScalarT]] | xp.ndarray[tuple[()], np.dtype[ScalarT]]
 )
 
@@ -98,7 +100,7 @@ def as_field(
     field: gtx.Field,
     allocator: gtx_typing.Allocator | None = None,
     embedded_on_host: bool = False,
-    dtype=None,
+    dtype: npt.DTypeLike | None = None,
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
     data = field.asnumpy() if embedded_on_host else field.ndarray
@@ -175,7 +177,11 @@ def constant_field(
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
-        np.full(shape=tuple(map(lambda x: grid.size[x], dims)), fill_value=value, dtype=dtype),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+        np.full(
+            shape=tuple(grid.size[x] for x in dims),
+            fill_value=value,
+            dtype=dtype,
+        ),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
         allocator=allocator,
     )
 
