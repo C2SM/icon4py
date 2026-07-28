@@ -41,6 +41,10 @@ else:
         return np.exp(_scale_const * np.log(x))
 
 
+# standard tolerance for dallclose
+STD_RTOL = scale_tol(5e3) * VP_EPS  # for double ≈ 1.11e-12
+
+
 def _max_diffs(actual: np.ndarray, desired: np.ndarray) -> tuple[float, float]:
     """
     Max absolute and max relative difference, for choosing 'atol' and 'rtol'.
@@ -87,7 +91,7 @@ def dallclose(
     a: npt.ArrayLike,
     b: npt.ArrayLike,
     *,
-    rtol: vpfloat = scale_tol(5e3) * VP_EPS,  # for double ≈ 1.11e-12
+    rtol: vpfloat = STD_RTOL,  # for double ≈ 1.11e-12
     atol: vpfloat = 0.0,
     equal_nan: bool = False,
 ) -> bool:
@@ -101,7 +105,7 @@ def assert_dallclose(
     actual: npt.ArrayLike,
     desired: npt.ArrayLike,
     *,
-    rtol: vpfloat = scale_tol(5e3) * VP_EPS,  # for double ≈ 1.11e-12
+    rtol: vpfloat = STD_RTOL,  # for double ≈ 1.11e-12
     atol: vpfloat = 0.0,
     equal_nan: bool = False,
     err_msg: str = "",

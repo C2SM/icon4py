@@ -9,7 +9,7 @@
 import gt4py.next as gtx
 from gt4py.next import sqrt, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2CDim
 from icon4py.model.common.type_alias import wpfloat
 
@@ -22,7 +22,9 @@ def _compute_ffsl_backtrajectory_length_indicator(
     p_dt: wpfloat,
 ) -> fa.EdgeKField[gtx.int32]:
     traj_length = sqrt(p_vn * p_vn + p_vt * p_vt) * p_dt
-    e2c_length = where(p_vn >= wpfloat(0.0), edge_cell_length[E2CDim(0)], edge_cell_length[E2CDim(1)])
+    e2c_length = where(
+        p_vn >= wpfloat(0.0), edge_cell_length[E2CDim(0)], edge_cell_length[E2CDim(1)]
+    )
     opt_famask_dsl = where(traj_length > wpfloat(1.25) * e2c_length, 1, 0)
     return opt_famask_dsl
 

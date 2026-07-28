@@ -615,7 +615,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     test_utils.assert_dallclose(
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
-        atol=1.0e-12 if test_utils.wp_is_dp else 1.0e-12,
+        atol=1.0e-12,
     )
 
     # stencil 23,26, 27, 4th_order_divdamp
@@ -682,7 +682,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     test_utils.assert_dallclose(
         diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
-        atol=1e-14 if test_utils.wp_is_dp else 1e-14,
+        atol=1e-14,
     )
 
 
@@ -817,7 +817,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     test_utils.assert_dallclose(
         diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
-        atol=1e-14 if test_utils.wp_is_dp else 1e-14,
+        atol=1e-14,
     )
 
 
