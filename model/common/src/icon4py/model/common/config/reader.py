@@ -93,3 +93,19 @@ def unstructure_endtime(endtime: time.EndOfSimulation) -> dict:
         case _:
             raise TypeError(f"Unsupported time type: '{type(endtime)}'.")
     return {"type": timetype, "value": CONV.unstructure(endtime)}
+
+
+def register_config_union[T](union_type: type[T], mapping: typing.Mapping[str, type[T]]) -> None:
+    def structure(config_dict: dict, _: typing.Any) -> T:
+        topotype = config_dict.pop("type")
+        if topotype not in mapping:
+            raise TypeError(f"Unsupported type spec for {union_type}: {topotype}")
+        return CONV.structure(config_dict, mapping[topotype])
+
+    inverse_mapping: dict[type[T], str] = {v: k for k, v in mapping.items()}
+
+    def unstructure(instance: T) -> dict:
+        return {"type": inverse_mapping[type(instance)], **CONV.unstructure(instance)}
+
+    CONV.register_structure_hook(union_type, structure)
+    CONV.register_unstructure_hook(union_type, unstructure)

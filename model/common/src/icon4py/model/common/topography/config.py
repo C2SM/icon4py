@@ -32,59 +32,27 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-@confreader.CONV.register_unstructure_hook
-def unstructure_topoconfig_union(
-    topoconfig: flat_topo.FlatTopographyConfig
-    | jw_topo.JablonowskiWilliamsonConfig
-    | gausshill_topo.GaussianHillConfig
-    | from_file_topo.FromFileConfig,
-) -> dict:
-    topotype = "unknown"
-    match topoconfig:
-        case flat_topo.FlatTopographyConfig():
-            topotype = "flat"
-        case jw_topo.JablonowskiWilliamsonConfig():
-            topotype = "jablonowski_williamson"
-        case gausshill_topo.GaussianHillConfig():
-            topotype = "gaussian_hill"
-        case from_file_topo.FromFileConfig():
-            topotype = "from_file"
-    return {"type": topotype, **confreader.CONV.unstructure(topoconfig)}
-
-
-@confreader.CONV.register_structure_hook
-def structure_topoconfig_union(
-    config_dict: dict, _: Any
-) -> (
+type TOPOCONFIG = (
     flat_topo.FlatTopographyConfig
     | jw_topo.JablonowskiWilliamsonConfig
     | gausshill_topo.GaussianHillConfig
     | from_file_topo.FromFileConfig
-):
-    topoclass: type | None
-    match topotype := config_dict.pop("type"):
-        case "flat":
-            topoclass = flat_topo.FlatTopographyConfig
-        case "jablonowski_williamson":
-            topoclass = jw_topo.JablonowskiWilliamsonConfig
-        case "gaussian_hill":
-            topoclass = gausshill_topo.GaussianHillConfig
-        case "from_file":
-            topoclass = from_file_topo.FromFileConfig
-        case _:
-            raise TypeError(f"Unsupported topography type: '{topotype}'.")
+)
 
-    return confreader.CONV.structure(config_dict, topoclass)  # type: ignore[return-value]
+confreader.register_config_union(
+    TOPOCONFIG.__value__,
+    {
+        "flat": flat_topo.FlatTopographyConfig,
+        "jablonowski_williamson": jw_topo.JablonowskiWilliamsonConfig,
+        "gaussian_hill": gausshill_topo.GaussianHillConfig,
+        "from_file": from_file_topo.FromFileConfig,
+    },
+)
 
 
 @dataclasses.dataclass
 class TopographyConfig:
-    config: (
-        flat_topo.FlatTopographyConfig
-        | jw_topo.JablonowskiWilliamsonConfig
-        | gausshill_topo.GaussianHillConfig
-        | from_file_topo.FromFileConfig
-    )
+    config: TOPOCONFIG
 
     @classmethod
     def from_fortran_dict(
