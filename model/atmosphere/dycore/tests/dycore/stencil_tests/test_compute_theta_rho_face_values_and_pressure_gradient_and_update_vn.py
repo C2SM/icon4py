@@ -209,6 +209,9 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
         default_shape = perturbed_rho_at_cells_on_model_levels.shape
 
+        # Outside its output domain the pressure gradient is not written by the program.
+        horizontal_pressure_gradient_in = horizontal_pressure_gradient
+
         ddx_perturbed_rho = np.zeros(default_shape)
         ddy_perturbed_rho = np.zeros(default_shape)
         ddx_perturbed_theta_v = np.zeros(default_shape)
@@ -393,17 +396,14 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             horizontal_pressure_gradient + hydrostatic_correction * pg_exdist
         )
 
-        # The stencil only computes the pressure gradient on
-        # [start_edge_nudging_level_2, end_edge_local) and writes 0.0 outside; mask before
-        # next_vn so the reference reads the same masked field.
         horizontal_pressure_gradient = np.where(
             (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
             horizontal_pressure_gradient,
-            0.0,
+            horizontal_pressure_gradient_in,
         )
 
         next_vn = np.where(
-            start_edge_nudging_level_2 <= horz_idx,
+            (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
             current_vn
             + dtime
             * (
@@ -416,7 +416,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
 
         if is_iau_active:
             next_vn = np.where(
-                start_edge_nudging_level_2 <= horz_idx,
+                (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                 next_vn + (iau_wgt_dyn * normal_wind_iau_increment),
                 next_vn,
             )
