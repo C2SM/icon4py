@@ -24,7 +24,7 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13", "3.14"]
         backend: ["embedded", "dace_cpu", "gtfn_cpu"]
-        component: ["advection", "diffusion", "dycore", "microphysics", "muphys", "common", "standalone_driver"]
+        component: ["tracer_advection", "diffusion", "dycore", "microphysics", "muphys", "common", "standalone_driver"]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
