@@ -1,4 +1,4 @@
-diffusion: null
+diffusion:
 driver:
   apply_extra_second_order_divdamp: false
   diffuse_before_time_loop: false
@@ -12,13 +12,13 @@ driver:
   experiment_name: foo
   ndyn_substeps: 5
   output_path: output
-  profiling_options: null
+  profiling_options:
   start_of_simulation: '2020-01-01T00:00:00'
   start_of_timestepping: '2020-01-01T00:00:00'
   vertical_cfl_threshold: 0.85
 geometry:
   use_analytical_means: true
-graupel: null
+graupel:
 initial_condition:
   config:
     baroclinic_amplitude: 1.0
@@ -38,7 +38,7 @@ initial_condition:
     type: jablonowski_williamson
     u0: 35.0
 interpolation:
-  _nudge_max_coeff: null
+  _nudge_max_coeff:
   divergence_averaging_central_cell_weight: 0.5
   lsq_dim_c: 3
   lsq_dim_unk: 2
@@ -61,16 +61,16 @@ metrics:
   thhgtd_zdiffu: 200.0
   thslp_zdiffu: 0.025
   vwind_offctr: 0.15
-nonhydrostatic: null
+nonhydrostatic:
 prescribed_tendencies:
-  data_path: null
+  data_path:
 topography:
   config:
     eta_0: 0.252
     type: jablonowski_williamson
     u0: 35.0
-tracer_advection: null
-tracer_config: null
+tracer_advection:
+tracer_config:
 vertical_grid:
   SLEVE_decay_exponent: 1.2
   SLEVE_decay_scale_1: 4000.0
@@ -79,7 +79,7 @@ vertical_grid:
   _SLEVE_minimum_layer_thickness_2: 500.0
   _SLEVE_minimum_relative_layer_thickness_1: 0.3333333333333333
   _SLEVE_minimum_relative_layer_thickness_2: 0.5
-  file_path: null
+  file_path:
   flat_height: 16000.0
   htop_moist_proc: 22500.0
   lowest_layer_thickness: 50.0
@@ -89,4 +89,4 @@ vertical_grid:
   rayleigh_damping_height: 45000.0
   stretch_factor: 1.0
   top_height_limit_for_maximal_layer_thickness: 15000.0
-muphys: null
+muphys:

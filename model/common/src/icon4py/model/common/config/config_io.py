@@ -11,7 +11,7 @@ from __future__ import annotations
 import enum
 import typing
 
-import cattrs
+import cattrs.preconf.pyyaml
 import yaml
 
 from icon4py.model.common import time, type_alias as ta
@@ -20,14 +20,16 @@ from icon4py.model.common import time, type_alias as ta
 T = typing.TypeVar("T", bound=enum.Enum)
 
 
-CONV = cattrs.Converter(forbid_extra_keys=True)
+CONV = cattrs.preconf.pyyaml.PyyamlConverter(forbid_extra_keys=True)
 
 
 CONV.register_unstructure_hook(ta.wpfloat, lambda v: CONV.unstructure(float(v)))
+yaml.add_representer(type(None), lambda d, _: d.represent_scalar("tag:yaml.org,2002:null", ""))
 
 
 def read[T](yaml_str: str, config_cls: type[T]) -> T:
     return CONV.structure(yaml.safe_load(yaml_str), config_cls)
+
 
 def write[T](config_inst: T) -> str:
     return yaml.dump(CONV.unstructure(config_inst))
