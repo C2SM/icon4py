@@ -26,7 +26,6 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         p_cc: np.ndarray,
         z_slope: np.ndarray,
