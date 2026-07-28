@@ -799,7 +799,7 @@ def _cloud_to_rain_aes_graupel(
 
     Same autoconversion as _cloud_to_rain, but the SB2001 accretion kernel is a
     degree-4 polynomial in log(clamped rho*qr) instead of a constant
-    (icon-mpim mo_aes_graupel.f90 cloud_to_rain).
+    (ICON mo_aes_graupel.f90 cloud_to_rain).
 
     Args:
         t:                  Temperature
@@ -869,7 +869,7 @@ def _cloud_to_snow_aes_graupel(
     Compute the conversion rate from cloud to snow, AES_GRAUPEL scheme.
 
     Same as _cloud_to_snow with the additional riming tuning factor 3.0
-    (icon-mpim mo_aes_graupel.f90 cloud_to_snow).
+    (ICON mo_aes_graupel.f90 cloud_to_snow).
 
     Args:
         t:                  Temperature
@@ -883,7 +883,7 @@ def _cloud_to_snow_aes_graupel(
     ECS = wpfloat(0.9)
     B_RIM = -(wpfloat(GraupelConsts.v1s) + wpfloat(3.0))
     # ICON hardcodes the rounded 2.61 (pi*gam(v1s+3)/4 = 2.6102); keep literal for bit-exactness.
-    # The extra 3.0 is the AES riming tuning factor (icon-mpim).
+    # The extra 3.0 is the AES riming tuning factor (ICON).
     C_RIM = wpfloat(2.61) * ECS * GraupelConsts.v0s * wpfloat(3.0)
     return where(
         (minimum(qc, qs) > GraupelConsts.qmin) & (t > GraupelConsts.tfrz_hom),
@@ -918,7 +918,7 @@ def _rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
 
     Same trigger and evaporation cap as _rain_to_vapor, but the evaporation rate
     is the exponential of a degree-4 polynomial in log(clamped rho*qr) instead of
-    a power law (icon-mpim mo_aes_graupel.f90 rain_to_vapor).
+    a power law (ICON mo_aes_graupel.f90 rain_to_vapor).
 
     Args:
         t:                  Temperature

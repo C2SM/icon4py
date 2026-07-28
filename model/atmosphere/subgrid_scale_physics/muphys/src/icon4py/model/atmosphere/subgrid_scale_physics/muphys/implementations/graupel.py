@@ -500,7 +500,7 @@ def _q_t_update(  # noqa: PLR0917, PLR0915 [too-many-positional-arguments, too-m
         t_below_tmelt & is_sig_present, _vapor_x_ice(q.i, m_ice, eta, dvsi, rho, dt)
     )
     if use_aes_graupel:
-        # icon-nwp computes ice_dep from the vapor_x_ice deposition alone, BEFORE
+        # ICON computes ice_dep from the vapor_x_ice deposition alone, BEFORE
         # the nucleation contribution is added (and only where is_sig_present)
         ice_dep = where(t_below_tmelt & is_sig_present, minimum(v2i, dvsi / dt), wpfloat(0.0))
         v2i = where(

@@ -33,7 +33,7 @@ class TestCloudToRainAesGraupel(StencilTest):
         nc: np.ndarray,
         **kwargs,
     ) -> dict:
-        # independent numpy reference mirroring icon-mpim mo_aes_graupel.f90 cloud_to_rain;
+        # independent numpy reference mirroring ICON mo_aes_graupel.f90 cloud_to_rain;
         # the magic constants are hardcoded PARAMETERs there in the same way
         au_kernel = 9.44e9 / (20.0 * 2.6e-10) * 4.0 * 6.0 / 9.0
         a_ac = [-2.155543e00, -1.148491e00, -1.882563e-02, 2.941391e-03, 5.575598e-05]

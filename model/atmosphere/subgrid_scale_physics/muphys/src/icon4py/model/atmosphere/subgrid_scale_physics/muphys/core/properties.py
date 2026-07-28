@@ -567,7 +567,7 @@ def _snow_number_aes_graupel(
 
     Same fit as _snow_number, but operates on the snow mass density rho*qs with a
     lower clamp MAX(rho_s, rho_s_mn) instead of the additive (qs + 2e-6)*rho offset,
-    and branches on rho_s > qmin (icon-nwp mo_aes_graupel.f90 snow_number).
+    and branches on rho_s > qmin (ICON mo_aes_graupel.f90 snow_number).
 
     Args:
         t:            Temperature
@@ -675,7 +675,7 @@ def _snow_lambda_aes_graupel(
     Compute the snow slope parameter, AES_GRAUPEL scheme.
 
     Same formula as _snow_lambda but operating on the snow mass density rho*qs
-    and branching on rho_s > qmin (icon-nwp mo_aes_graupel.f90 snow_lambda).
+    and branching on rho_s > qmin (ICON mo_aes_graupel.f90 snow_lambda).
 
     Args:
         rho_s:        Snow mass density rho*qs

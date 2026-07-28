@@ -84,7 +84,7 @@ class PhysicsDriver:
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
     ) -> None:
-        for proc in self._processes:
+        for proc in self._processes: # TODO (Yilu): rename to component
             tc = proc.time_control
             tc.validate_interval(dtime)
             state = proc.state
@@ -113,4 +113,5 @@ class PhysicsDriver:
                     "DIAGNOSTIC requires splitting scatter_to_prognostic into "
                     "apply-tendencies vs store-diagnostics"
                 )
+
             state.scatter_to_prognostic(prognostic, outputs, dtime)

@@ -17,8 +17,8 @@ class MuphysScheme(enum.Enum):
 
     KOKKOS_MUPHYS follows the muphys C++/Kokkos reference implementation (the
     original source of this port, validated by the netCDF-based muphys tests).
-    AES_GRAUPEL follows the newer MPIM rain-microphysics revisions carried by
-    icon-nwp (mo_aes_graupel.f90), validated against the aes-graupel serialbox
+    AES_GRAUPEL follows the newer MPIM rain-microphysics revisions in
+    ICON (mo_aes_graupel.f90), validated against the aes-graupel serialbox
     savepoints.
     """
 

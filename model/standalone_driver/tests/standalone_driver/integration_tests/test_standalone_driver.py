@@ -49,10 +49,6 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "theta_v": (1.2e-3, 3.6e-6),
         "rho": (3.5e-6, 3.7e-6),
     },
-    # EXCLAIM_APE_AES runs muphys and is validated against the end-of-time-step
-    # savepoint (see the test docstring). Fields graupel does not touch (vn/w/rho) use
-    # the dynamics tolerances; exner/theta_v are the measured coupling tolerances; qv
-    # carries a small transport-off residual while qc/qr/qs/qi/qg match bit-for-bit.
     test_defs.Experiments.EXCLAIM_APE_AES: {
         "vn": (6e-7, 0.0),
         "w": (1e-8, 0.0),
@@ -69,61 +65,59 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
 }
 
 
+# Metadata selecting the MCH mid-time-step dynamics savepoints (see the MCH branch in
+# the test body): solve-nonhydro exit at the corrector (istep=2) of the last substep
+# (2 for MCH), and the non-initial diffusion savepoint. Only instantiated for MCH.
+@pytest.fixture  # type: ignore[no-redef]  # deliberately shadows the fixtures.py import
+def istep_exit() -> int:
+    return 2
+
+
+@pytest.fixture
+def substep_exit() -> int:
+    return 2
+
+
+@pytest.fixture
+def timeloop_diffusion_linit_exit() -> bool:
+    return False
+
+
 @pytest.mark.datatest
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_description, istep_exit, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
+    "experiment_description, timeloop_date_init, timeloop_date_exit, step_date_exit",
     [
         (
             test_defs.Experiments.JW,
-            2,
-            5,
             "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
-            False,
-            False,
         ),
         (
             test_defs.Experiments.GAUSS3D,
-            2,
-            5,
             "2001-01-01T00:00:00.000",
             "2001-01-01T00:00:04.000",
             "2001-01-01T00:00:04.000",
-            False,
-            False,
         ),
         (
             test_defs.Experiments.EXCLAIM_APE_AES,
-            2,
-            5,
             "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
-            False,
-            False,
         ),
         (
             test_defs.Experiments.MCH_CH_R04B09,
-            2,
-            2,
             "2021-06-20T12:00:00.000",
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
-            True,
-            False,
         ),
         (
             test_defs.Experiments.MCH_CH_R04B09,
-            2,
-            2,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
-            False,
-            False,
         ),
     ],
 )
@@ -131,26 +125,24 @@ def test_standalone_driver(
     experiment_description: test_defs.ExperimentDescription,
     timeloop_date_init: str,
     timeloop_date_exit: str,
-    timeloop_diffusion_linit_init: bool,
     *,
     request: pytest.FixtureRequest,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
-    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
-    substep_exit: int,
-    savepoint_diffusion_exit: sb.IconDiffusionExitSavepoint,
+    savepoint_time_step_exit: sb.IconTimeStepExitSavepoint,
 ) -> None:
-    """End-to-end standalone-driver validation over one large time step.
+    """End-to-end standalone-driver validation over one time step.
 
-    Dynamics-only experiments (JW, GAUSS3D, MCH_CH_R04B09) validate the final prognostic
-    state against the mid-time-step dynamics savepoints. EXCLAIM_APE_AES additionally runs
-    muphys and validates the full prognostic state (incl. tracers) against the
-    end-of-time-step (``time-step-exit``) savepoint. Per-field tolerances live in
-    ``_TOLERANCES``.
+    Experiments validate the final prognostic state against the end-of-time-step
+    (``time-step-exit``) savepoint. EXCLAIM_APE_AES additionally runs muphys and also
+    validates the tracers. Exception: MCH_CH_R04B09 compares against the mid-time-step
+    dynamics savepoints, because its reference runs NWP physics + limited-area nudging
+    after the dynamics, which the driver does not (see the comment in the body).
+    Per-field tolerances live in ``_TOLERANCES``.
 
     muphys (EXCLAIM_APE_AES): runs ``MuphysScheme.AES_GRAUPEL`` -- the port of the exact
-    icon-nwp formulation that generated the reference. Graupel is the only *physics*
+    ICON formulation that generated the reference. Graupel is the only *physics*
     parameterization active, so vn/w/rho/exner/theta_v compare tightly; the tracer
     comparison carries residuals from gaps not yet ported:
 
@@ -205,46 +197,42 @@ def test_standalone_driver(
 
     prognostics = ds.prognostics.current
 
-    if config.muphys is None:
-        # Dynamics-only experiments: validate against the mid-time-step dynamics savepoints.
-        computed = {
-            "vn": prognostics.vn,
-            "w": prognostics.w,
-            "exner": prognostics.exner,
-            "theta_v": prognostics.theta_v,
-            "rho": prognostics.rho,
-        }
+    computed = {
+        "vn": prognostics.vn,
+        "w": prognostics.w,
+        "rho": prognostics.rho,
+        "exner": prognostics.exner,
+        "theta_v": prognostics.theta_v,
+    }
+    if experiment_description is test_defs.Experiments.MCH_CH_R04B09:
+        # The MCH reference runs the full NWP physics suite (nwp_phy_nml: convection,
+        # radiation, SSO, graupel, satad) plus limited-area boundary nudging AFTER the
+        # dynamics -- none of which the driver runs -- so its end-of-step state is not
+        # comparable (vn differs by O(10) m/s). Validate against the mid-time-step
+        # dynamics savepoints instead until NWP physics is ported.
+        diffusion_exit = request.getfixturevalue("savepoint_diffusion_exit")
+        nonhydro_exit = request.getfixturevalue("savepoint_nonhydro_exit")
         references = {
-            "vn": savepoint_diffusion_exit.vn(),
-            "w": savepoint_diffusion_exit.w(),
-            "exner": savepoint_diffusion_exit.exner(),
-            "theta_v": savepoint_diffusion_exit.theta_v(),
-            "rho": savepoint_nonhydro_exit.rho_new(),
+            "vn": diffusion_exit.vn(),
+            "w": diffusion_exit.w(),
+            "rho": nonhydro_exit.rho_new(),
+            "exner": diffusion_exit.exner(),
+            "theta_v": diffusion_exit.theta_v(),
         }
     else:
-        # Physics enabled (EXCLAIM_APE_AES): validate the full prognostic state, including
-        # tracers, against the end-of-time-step savepoint. Fetched lazily so the dynamics-only
-        # experiments (which may lack a time-step-exit savepoint) are unaffected.
-        time_step_exit = request.getfixturevalue("savepoint_time_step_exit")
-        computed = {
-            "vn": prognostics.vn,
-            "w": prognostics.w,
-            "rho": prognostics.rho,
-            "exner": prognostics.exner,
-            "theta_v": prognostics.theta_v,
-        }
+        # Nothing runs after diffusion for JW/GAUSS3D, and for EXCLAIM_APE_AES muphys
+        # is the only active physics: validate against the end-of-time-step savepoint.
         references = {
-            "vn": time_step_exit.vn(),
-            "w": time_step_exit.w(),
-            "rho": time_step_exit.rho(),
-            "exner": time_step_exit.exner(),
-            "theta_v": time_step_exit.theta_v(),
+            "vn": savepoint_time_step_exit.vn(),
+            "w": savepoint_time_step_exit.w(),
+            "rho": savepoint_time_step_exit.rho(),
+            "exner": savepoint_time_step_exit.exner(),
+            "theta_v": savepoint_time_step_exit.theta_v(),
         }
-        for tracer in ("qv", "qc", "qr", "qs", "qi", "qg"):
-            field = getattr(prognostics.tracer, tracer)
-            assert field is not None, f"tracer {tracer} must be active for the APE_aes experiment"
-            computed[tracer] = field
-            references[tracer] = getattr(time_step_exit, tracer)()
+
+    for tracer in prognostics.tracers.active_fields():
+        computed[tracer] = tracer.field
+        references[tracer] = getattr(savepoint_time_step_exit, tracer.name)
 
     tolerances = _TOLERANCES[experiment_description]
 

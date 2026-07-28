@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 # accumulators isolates the mig contribution even if other AES processes ever
 # run before mig in this experiment (today they contribute exactly zero).
 #
-# The granule runs with MuphysScheme.AES_GRAUPEL, the port of the icon-nwp
+# The granule runs with MuphysScheme.AES_GRAUPEL, the port of the ICON
 # formulation (mo_aes_graupel.f90) that generates the reference data, so
 # near-roundoff agreement is expected. Remaining known deviations:
 #   - Fortran clamps tendencies to full depletion (MAX(-q/dt), mo_cloud_mig.f90)
