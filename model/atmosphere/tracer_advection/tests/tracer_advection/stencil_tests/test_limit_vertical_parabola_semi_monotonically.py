@@ -26,7 +26,6 @@ class TestLimitVerticalParabolaSemiMonotonically(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         l_limit: np.ndarray,
         p_face: np.ndarray,
