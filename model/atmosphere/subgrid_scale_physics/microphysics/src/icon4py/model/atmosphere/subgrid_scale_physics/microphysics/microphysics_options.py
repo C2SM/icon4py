@@ -9,7 +9,7 @@ import enum
 
 import gt4py.next as gtx
 
-from icon4py.common.config import reader as confreader
+from icon4py.model.common.config import reader as confreader
 
 
 @confreader.register_enum

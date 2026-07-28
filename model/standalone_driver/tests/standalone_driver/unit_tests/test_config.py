@@ -10,6 +10,7 @@
 
 import dataclasses
 import datetime
+import pathlib
 import textwrap
 
 import pytest
@@ -145,7 +146,7 @@ def test_restart_starts_the_time_loop_at_start_of_timestepping() -> None:
     assert model_time.n_time_steps == 15
 
 
-def test_minimal_expcfg_from_yaml() -> None:
+def test_io_roundtrip_cls_cls() -> None:
     conf = confreader.read(
         textwrap.dedent(
             """
@@ -168,10 +169,17 @@ def test_minimal_expcfg_from_yaml() -> None:
                 start_of_simulation: 2020-01-01T00:00:00
                 start_of_timestepping: 2020-01-01T00:00:00
                 end_of_simulation:
-                    type: numstep
+                    type: numsteps
                     value: 5
             """
         ),
         driver_config.ExperimentConfig,
     )
     assert conf.driver.experiment_name == "foo"
+    assert confreader.read(confreader.write(conf), driver_config.ExperimentConfig) == conf
+
+
+def test_io_roundtrip_str_str() -> None:
+    config_str = (pathlib.Path(__file__).parent / "data" / "test_config.yml").read_text()
+    roundtrip_str = confreader.write(confreader.read(config_str, driver_config.ExperimentConfig))
+    assert config_str == roundtrip_str

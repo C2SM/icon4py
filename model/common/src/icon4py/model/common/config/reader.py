@@ -14,7 +14,7 @@ import typing
 import cattrs
 import yaml
 
-from icon4py.model.common import time
+from icon4py.model.common import time, type_alias as ta
 
 
 T = typing.TypeVar("T", bound=enum.Enum)
@@ -23,8 +23,14 @@ T = typing.TypeVar("T", bound=enum.Enum)
 CONV = cattrs.Converter(forbid_extra_keys=True)
 
 
+CONV.register_unstructure_hook(ta.wpfloat, lambda v: CONV.unstructure(float(v)))
+
+
 def read[T](yaml_str: str, config_cls: type[T]) -> T:
     return CONV.structure(yaml.safe_load(yaml_str), config_cls)
+
+def write[T](config_inst: T) -> str:
+    return yaml.dump(CONV.unstructure(config_inst))
 
 
 def structure_enum(val: str, enum_type: type[enum.Enum]) -> enum.Enum:
@@ -73,7 +79,7 @@ def structure_endtime(endtime_dict: dict, _: typing.Any) -> time.EndOfSimulation
             timeclass = time.AbsoluteTime
         case "relative":
             timeclass = time.RelativeTime
-        case "numstep":
+        case "numsteps":
             timeclass = time.NumTimeSteps
     if not timeclass:
         raise TypeError(f"unsupported end of simulation time type: '{timetype}'")
@@ -88,7 +94,7 @@ def unstructure_endtime(endtime: time.EndOfSimulation) -> dict:
             timetype = "absolute"
         case time.RelativeTime():
             timetype = "relative"
-        case time.NumTimeSteps:
+        case time.NumTimeSteps():
             timetype = "numsteps"
         case _:
             raise TypeError(f"Unsupported time type: '{type(endtime)}'.")
