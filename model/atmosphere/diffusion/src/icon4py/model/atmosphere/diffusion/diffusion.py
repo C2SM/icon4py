@@ -745,15 +745,15 @@ class Diffusion:
             constant_args={
                 "physical_heights": self._vertical_grid.interface_physical_height,
                 "nshift": 0,
+                "heights_1": self._vertical_grid.interface_physical_height[1].as_scalar(),
+                "heights_nrd_shift": self._vertical_grid.interface_physical_height[
+                    self._vertical_grid.end_index_of_damping_layer + 1
+                ].as_scalar(),
             },
             vertical_sizes={
                 "vertical_start": 1,
                 "vertical_end": gtx.int32(self._vertical_grid.end_index_of_damping_layer + 1),
                 "end_index_of_damping_layer": self._vertical_grid.end_index_of_damping_layer,
-                "heights_1": self._vertical_grid.interface_physical_height[1].as_scalar(),
-                "heights_nrd_shift": self._vertical_grid.interface_physical_height[
-                    self._vertical_grid.end_index_of_damping_layer + 1
-                ].as_scalar(),
             },
         )(diff_multfac_n2w=self.diff_multfac_n2w)
 
