@@ -27,7 +27,6 @@ class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         z_face_up: np.ndarray,
         z_face_low: np.ndarray,

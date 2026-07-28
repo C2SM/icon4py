@@ -189,15 +189,6 @@ class NoLimiter(VerticalLimiter):
     def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
-        self._backend = backend
-
-        # fields
-        self._l_limit = data_alloc.zero_field(
-            self._grid,
-            dims.CellDim,
-            KDim,
-            allocator=model_backends.get_allocator(self._backend),
-        )
 
         # stencils
         self._copy_cell_kdim_field = model_options.setup_program(
@@ -421,7 +412,6 @@ class NoAdvection(VerticalAdvection):
 
         # input arguments
         self._grid = grid
-        self._backend = backend
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -596,9 +586,6 @@ class FirstOrderUpwind(FiniteVolume):
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
             offset_provider=self._grid.connectivities,
-        )
-        self._init_constant_cell_kdim_field = init_constant_cell_kdim_field.with_backend(
-            self._backend
         )
         self._integrate_tracer_vertically = model_options.setup_program(
             backend=backend,
