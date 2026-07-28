@@ -21,11 +21,13 @@ from gt4py.next.instrumentation import metrics as gtx_metrics
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.atmosphere.dycore.stencils import compute_airmass
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import (
     dimension as dims,
     initial_condition,
     model_backends,
+    model_options,
     prescribed_tendencies,
     time,
     topography,
@@ -121,6 +123,32 @@ class Icon4pyDriver:
     def _diagnostics_computer(self) -> driver_io.DiagnosticsComputer:
         """Reuses its scratch/output buffers across output steps (allocated once)."""
         return driver_io.DiagnosticsComputer(grid=self.grid, backend=self.backend)
+
+    @functools.cached_property
+    def _compute_airmass(self) -> Callable[..., None]:
+        """Airmass program (``rho * ddqz_z_full``) with its static inputs bound.
+
+        The deep-atmosphere metric factor is identically 1 (shallow atmosphere).
+        """
+        return model_options.setup_program(
+            program=compute_airmass.compute_airmass,
+            backend=self.backend,
+            constant_args={
+                "ddqz_z_full_in": self.static_field_factories.metrics.get(metrics_attr.DDQZ_Z_FULL),
+                "deepatmo_t1mc_in": data_alloc.constant_field(
+                    self.grid, 1.0, dims.KDim, allocator=self._allocator
+                ),
+            },
+            horizontal_sizes={
+                "horizontal_start": gtx.int32(0),
+                "horizontal_end": gtx.int32(self.grid.num_cells),
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self.grid.num_levels),
+            },
+            offset_provider={},
+        )
 
     def _store_output(
         self,
@@ -254,6 +282,7 @@ class Icon4pyDriver:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
+                tracer_advection_diagnostic_state=tracer_advection_diagnostic_state,
             )
 
         if self.granules.diffusion is not None:
@@ -338,8 +367,17 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
+        tracer_advection_diagnostic_state: tracer_advection_states.AdvectionDiagnosticState
+        | None = None,
     ) -> None:
-        # TODO(OngChia): compute airmass for prognostic_state here
+        # Airmass (rho * dz) is tracer advection's density<->mixing-ratio conversion
+        # factor: compute it from the current state before the dynamics substeps and
+        # from the updated state after them, as ICON does.
+        if tracer_advection_diagnostic_state is not None:
+            self._compute_airmass(
+                rho_in=prognostic_states.current.rho,
+                airmass_out=tracer_advection_diagnostic_state.airmass_now,
+            )
 
         # updated once per time step, and not cached: it decreases with the elapsed time
         second_order_divdamp_factor = self._second_order_divdamp_factor()
@@ -377,7 +415,11 @@ class Icon4pyDriver:
                 prognostic_states.swap()
         self._compute_total_mass_and_energy(prognostic_states.next)
 
-        # TODO(OngChia): compute airmass for prognostic_state here
+        if tracer_advection_diagnostic_state is not None:
+            self._compute_airmass(
+                rho_in=prognostic_states.next.rho,
+                airmass_out=tracer_advection_diagnostic_state.airmass_new,
+            )
 
     # watch_mode is true if step is <= 1 or cfl already near or exceeding threshold.
     # omit spinup feature and the option that if the model starts from IFS or COSMO data

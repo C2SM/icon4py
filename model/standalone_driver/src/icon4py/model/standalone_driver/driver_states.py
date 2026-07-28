@@ -287,15 +287,24 @@ def assemble_driver_states(
         if tracer_advection_enabled
         else None
     )
-    prep_tracer_adv = (
-        tracer_advection_states.AdvectionPrepAdvState(
+    # Tracer advection reads the velocities/mass fluxes that the dycore accumulates
+    # over the dynamics substeps (lprep_adv): share the dycore's PrepAdvection buffers
+    # (ICON's mass_flx_ic is the vertical mass flux at cell half levels). Without a
+    # dycore there is nothing accumulating them, so fall back to zero fields.
+    if not tracer_advection_enabled:
+        prep_tracer_adv = None
+    elif prep_adv is not None:
+        prep_tracer_adv = tracer_advection_states.AdvectionPrepAdvState(
+            vn_traj=prep_adv.vn_traj,
+            mass_flx_me=prep_adv.mass_flx_me,
+            mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+        )
+    else:
+        prep_tracer_adv = tracer_advection_states.AdvectionPrepAdvState(
             vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
             mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
             mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
         )
-        if tracer_advection_enabled
-        else None
-    )
 
     return DriverStates(
         prep_advection_prognostic=prep_adv,
