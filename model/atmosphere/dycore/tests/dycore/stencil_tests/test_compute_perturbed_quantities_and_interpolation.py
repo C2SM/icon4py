@@ -72,6 +72,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             "nflatlev",
             "nflat_gradp",
             "start_cell_lateral_boundary_level_3",
+            "end_cell_local",
             "end_cell_halo",
             "end_cell_halo_level_2",
             "model_top",
@@ -120,6 +121,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         nflatlev: gtx.int32,
         nflat_gradp: gtx.int32,
         start_cell_lateral_boundary_level_3: gtx.int32,
+        end_cell_local: gtx.int32,
         end_cell_halo: gtx.int32,
         end_cell_halo_level_2: gtx.int32,
         **kwargs: Any,
@@ -222,65 +224,102 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             ),
         )
 
+        below_model_top = (start_cell_lateral_boundary_level_3 <= horz_idx) & (
+            vert_idx[: surface_level - 1] >= gtx.int32(1)
+        )
+
         (
+            rho_at_cells_on_half_levels_ref,
+            perturbed_rho_at_cells_on_model_levels_ref,
+            perturbed_theta_v_at_cells_on_model_levels_ref,
+        ) = compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
+            wgtfac_c=wgtfac_c[:, : surface_level - 1],
+            rho=current_rho,
+            rho_ref_mc=reference_rho_at_cells_on_model_levels,
+            theta_v=current_theta_v,
+            theta_ref_mc=reference_theta_at_cells_on_model_levels,
+        )
+
+        rho_at_cells_on_half_levels = np.where(
+            below_model_top & (horz_idx < end_cell_local),
+            rho_at_cells_on_half_levels_ref,
             rho_at_cells_on_half_levels,
+        )
+
+        (
             perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
         ) = np.where(
-            (start_cell_lateral_boundary_level_3 <= horz_idx)
-            & (horz_idx < end_cell_halo)
-            & (vert_idx[: surface_level - 1] >= gtx.int32(1)),
-            compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
-                wgtfac_c=wgtfac_c[:, : surface_level - 1],
-                rho=current_rho,
-                rho_ref_mc=reference_rho_at_cells_on_model_levels,
-                theta_v=current_theta_v,
-                theta_ref_mc=reference_theta_at_cells_on_model_levels,
+            below_model_top & (horz_idx < end_cell_halo),
+            (
+                perturbed_rho_at_cells_on_model_levels_ref,
+                perturbed_theta_v_at_cells_on_model_levels_ref,
             ),
             (
-                rho_at_cells_on_half_levels,
                 perturbed_rho_at_cells_on_model_levels,
                 perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
             ),
         )
 
         (
+            perturbed_theta_v_at_cells_on_half_levels_ref,
+            theta_v_at_cells_on_half_levels_ref,
+            nonhydro_buoy_at_cells_on_half_levels_ref,
+        ) = compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
+            connectivities=connectivities,
+            wgtfac_c=wgtfac_c[:, : surface_level - 1],
+            z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
+            theta_v=current_theta_v,
+            vwind_expl_wgt=exner_w_explicit_weight_parameter,
+            exner_pr=perturbed_exner_at_cells_on_model_levels,
+            d_exner_dz_ref_ic=ddz_of_reference_exner_at_cells_on_half_levels,
+            ddqz_z_half=ddqz_z_half,
+        )
+
+        (
             perturbed_theta_v_at_cells_on_half_levels[:, : surface_level - 1],
-            theta_v_at_cells_on_half_levels[:, : surface_level - 1],
             nonhydro_buoy_at_cells_on_half_levels,
         ) = np.where(
-            (start_cell_lateral_boundary_level_3 <= horz_idx)
-            & (horz_idx < end_cell_halo)
-            & (vert_idx[: surface_level - 1] >= gtx.int32(1)),
-            compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
-                connectivities=connectivities,
-                wgtfac_c=wgtfac_c[:, : surface_level - 1],
-                z_rth_pr_2=perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
-                theta_v=current_theta_v,
-                vwind_expl_wgt=exner_w_explicit_weight_parameter,
-                exner_pr=perturbed_exner_at_cells_on_model_levels,
-                d_exner_dz_ref_ic=ddz_of_reference_exner_at_cells_on_half_levels,
-                ddqz_z_half=ddqz_z_half,
+            below_model_top & (horz_idx < end_cell_local),
+            (
+                perturbed_theta_v_at_cells_on_half_levels_ref,
+                nonhydro_buoy_at_cells_on_half_levels_ref,
             ),
             (
                 perturbed_theta_v_at_cells_on_half_levels[:, : surface_level - 1],
-                theta_v_at_cells_on_half_levels[:, : surface_level - 1],
                 nonhydro_buoy_at_cells_on_half_levels,
             ),
         )
 
-        (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels) = np.where(
-            (vert_idx == surface_level - 1)
-            & (start_cell_lateral_boundary_level_3 <= horz_idx)
-            & (horz_idx < end_cell_halo),
-            set_theta_v_prime_ic_at_lower_boundary_numpy(
-                wgtfacq_c=wgtfacq_c,
-                z_rth_pr=perturbed_theta_v_at_cells_on_model_levels,
-                theta_ref_ic=reference_theta_at_cells_on_half_levels,
-                z_theta_v_pr_ic=np.zeros_like(perturbed_theta_v_at_cells_on_half_levels),
-                theta_v_ic=np.zeros_like(theta_v_at_cells_on_half_levels),
-            ),
-            (perturbed_theta_v_at_cells_on_half_levels, theta_v_at_cells_on_half_levels),
+        theta_v_at_cells_on_half_levels[:, : surface_level - 1] = np.where(
+            below_model_top & (horz_idx < end_cell_halo),
+            theta_v_at_cells_on_half_levels_ref,
+            theta_v_at_cells_on_half_levels[:, : surface_level - 1],
+        )
+
+        (
+            perturbed_theta_v_at_cells_on_half_levels_surface,
+            theta_v_at_cells_on_half_levels_surface,
+        ) = set_theta_v_prime_ic_at_lower_boundary_numpy(
+            wgtfacq_c=wgtfacq_c,
+            z_rth_pr=perturbed_theta_v_at_cells_on_model_levels,
+            theta_ref_ic=reference_theta_at_cells_on_half_levels,
+            z_theta_v_pr_ic=np.zeros_like(perturbed_theta_v_at_cells_on_half_levels),
+            theta_v_ic=np.zeros_like(theta_v_at_cells_on_half_levels),
+        )
+        at_surface = (vert_idx == surface_level - 1) & (
+            start_cell_lateral_boundary_level_3 <= horz_idx
+        )
+
+        perturbed_theta_v_at_cells_on_half_levels = np.where(
+            at_surface & (horz_idx < end_cell_local),
+            perturbed_theta_v_at_cells_on_half_levels_surface,
+            perturbed_theta_v_at_cells_on_half_levels,
+        )
+        theta_v_at_cells_on_half_levels = np.where(
+            at_surface & (horz_idx < end_cell_halo),
+            theta_v_at_cells_on_half_levels_surface,
+            theta_v_at_cells_on_half_levels,
         )
         if igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = np.where(
@@ -389,6 +428,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         start_cell_lateral_boundary_level_3 = grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
+        end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         end_cell_halo = grid.end_index(cell_domain(h_grid.Zone.HALO))
         end_cell_halo_level_2 = grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
@@ -426,6 +466,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
             start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
+            end_cell_local=end_cell_local,
             end_cell_halo=end_cell_halo,
             end_cell_halo_level_2=end_cell_halo_level_2,
             model_top=0,

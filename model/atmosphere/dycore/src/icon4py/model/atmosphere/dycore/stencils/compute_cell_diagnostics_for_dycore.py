@@ -204,6 +204,7 @@ def compute_perturbed_quantities_and_interpolation(
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
+    end_cell_local: gtx.int32,
     end_cell_halo: gtx.int32,
     end_cell_halo_level_2: gtx.int32,
     model_top: gtx.int32,
@@ -307,24 +308,28 @@ def compute_perturbed_quantities_and_interpolation(
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo_level_2),
                 dims.KDim: (model_top, surface_level - 1),
             },
+            # `perturbed_exner_at_cells_on_model_levels` is read back at the next time step to
+            # compute `temporal_extrapolation_of_perturbed_exner`, which is needed on the halo.
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
                 dims.KDim: (model_top, surface_level - 1),
             },
             {
-                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_local),
                 dims.KDim: (model_top + 1, surface_level - 1),
             },
             {
-                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_local),
                 dims.KDim: (model_top + 1, surface_level),
             },
+            # `theta_v_at_cells_on_half_levels` is read through E2C by the hydrostatic correction
+            # term, which reaches halo cells from local edges.
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
                 dims.KDim: (model_top + 1, surface_level),
             },
             {
-                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_local),
                 dims.KDim: (model_top + 1, surface_level - 1),
             },
             {

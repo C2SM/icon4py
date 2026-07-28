@@ -1022,11 +1022,9 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
     start_cell_lateral_boundary_level_3 = icon_grid.start_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
+    end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     end_cell_halo_level_2 = icon_grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
-    print("start_cell_lateral_boundary_level_3", start_cell_lateral_boundary_level_3)
-    print("end_cell_halo", end_cell_halo)
-    print("end_cell_halo_level_2", end_cell_halo_level_2)
 
     reference_rho_at_cells_on_model_levels = metrics_savepoint.rho_ref_mc()
     reference_theta_at_cells_on_model_levels = metrics_savepoint.theta_ref_mc()
@@ -1085,6 +1083,7 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
         start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
+        end_cell_local=end_cell_local,
         end_cell_halo=end_cell_halo,
         end_cell_halo_level_2=end_cell_halo_level_2,
         model_top=0,
@@ -1110,11 +1109,16 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
         perturbed_exner_at_cells_on_model_levels.asnumpy(), exner_pr_ref.asnumpy()
     )
 
-    assert test_utils.dallclose(rho_at_cells_on_half_levels.asnumpy(), rho_ic_ref.asnumpy())
+    # `rho_ic` and `z_theta_v_pr_ic` are only computed on locally owned cells, the reference
+    # contains ICON's values on the halo.
+    assert test_utils.dallclose(
+        rho_at_cells_on_half_levels.asnumpy()[lb:end_cell_local, :],
+        rho_ic_ref.asnumpy()[lb:end_cell_local, :],
+    )
 
     assert test_utils.dallclose(
-        perturbed_theta_v_at_cells_on_half_levels.asnumpy()[lb:, :],
-        z_theta_v_pr_ic_ref.asnumpy()[lb:, :],
+        perturbed_theta_v_at_cells_on_half_levels.asnumpy()[lb:end_cell_local, :],
+        z_theta_v_pr_ic_ref.asnumpy()[lb:end_cell_local, :],
     )
     assert test_utils.dallclose(
         theta_v_at_cells_on_half_levels.asnumpy()[lb:, :], theta_v_ic_ref.asnumpy()[lb:, :]

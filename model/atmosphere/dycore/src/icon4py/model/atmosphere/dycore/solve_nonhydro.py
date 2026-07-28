@@ -820,6 +820,7 @@ class SolveNonhydro:
             },
             horizontal_sizes={
                 "start_cell_lateral_boundary_level_3": self._start_cell_lateral_boundary_level_3,
+                "end_cell_local": self._end_cell_local,
                 "end_cell_halo": self._end_cell_halo,
                 "end_cell_halo_level_2": self._end_cell_halo_level_2,
             },
