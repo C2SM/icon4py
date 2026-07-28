@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.config import reader as confreader
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+@confreader.register_enum
 class TimeSteppingScheme(enum.IntEnum):
     """Parameter called `itime_scheme` in ICON namelist."""
 
@@ -38,6 +40,7 @@ class TimeSteppingScheme(enum.IntEnum):
     EXPENSIVE = 6
 
 
+@confreader.register_enum
 class DivergenceDampingType(enum.IntEnum):
     #: divergence damping acting on 2D divergence
     TWO_DIMENSIONAL = 2
@@ -47,6 +50,7 @@ class DivergenceDampingType(enum.IntEnum):
     COMBINED = 32
 
 
+@confreader.register_enum
 class DivergenceDampingOrder(gtx.int32, enum.Enum):
     #: 2nd order divergence damping
     SECOND_ORDER = 2
@@ -56,6 +60,7 @@ class DivergenceDampingOrder(gtx.int32, enum.Enum):
     COMBINED = 24
 
 
+@confreader.register_enum
 class HorizontalPressureDiscretizationType(gtx.int32, enum.Enum):
     """Parameter called igradp_method in ICON namelist."""
 
@@ -71,6 +76,7 @@ class HorizontalPressureDiscretizationType(gtx.int32, enum.Enum):
     POLYNOMIAL_HYDRO = 5
 
 
+@confreader.register_enum
 class RhoThetaAdvectionType(gtx.int32, enum.Enum):
     """Parameter called iadv_rhotheta in ICON namelist."""
 

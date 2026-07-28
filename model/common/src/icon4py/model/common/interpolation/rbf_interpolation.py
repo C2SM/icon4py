@@ -13,6 +13,7 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.config import reader as confreader
 from icon4py.model.common.grid import base as base_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, env
 
@@ -35,6 +36,7 @@ RBF_STENCIL_SIZE: dict[RBFDimension, int] = {
 }
 
 
+@confreader.register_enum
 class InterpolationKernel(enum.IntEnum):
     GAUSSIAN = 1
     INVERSE_MULTIQUADRATIC = 3
