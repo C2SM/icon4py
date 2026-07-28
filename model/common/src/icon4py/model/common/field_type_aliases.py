@@ -11,6 +11,7 @@ import gt4py.next as gtx
 from gt4py.next import Dims, Field
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -19,9 +20,9 @@ T = TypeVar("T", wpfloat, vpfloat, float, bool, gtx.int32, gtx.int64)
 CellField: TypeAlias = Field[Dims[dims.CellDim], T]  # noqa: UP040
 EdgeField: TypeAlias = Field[Dims[dims.EdgeDim], T]  # noqa: UP040
 VertexField: TypeAlias = Field[Dims[dims.VertexDim], T]  # noqa: UP040
-KField: TypeAlias = Field[Dims[dims.KDim], T]  # noqa: UP040
+KField: TypeAlias = Field[Dims[KDim], T]  # noqa: UP040
 KHalfField: TypeAlias = Field[Dims[dims.KHalfDim], T]  # noqa: UP040
 
-CellKField: TypeAlias = Field[Dims[dims.CellDim, dims.KDim], T]  # noqa: UP040
-EdgeKField: TypeAlias = Field[Dims[dims.EdgeDim, dims.KDim], T]  # noqa: UP040
-VertexKField: TypeAlias = Field[Dims[dims.VertexDim, dims.KDim], T]  # noqa: UP040
+CellKField: TypeAlias = Field[Dims[dims.CellDim, KDim], T]  # noqa: UP040
+EdgeKField: TypeAlias = Field[Dims[dims.EdgeDim, KDim], T]  # noqa: UP040
+VertexKField: TypeAlias = Field[Dims[dims.VertexDim, KDim], T]  # noqa: UP040

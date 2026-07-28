@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.postprocess_antidiffusiv
     postprocess_antidiffusive_cell_fluxes_and_min_max,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
@@ -59,14 +60,14 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
     def input_data(self, grid: base.Grid) -> dict:
         hi_bound, lo_bound = 3, 1
         refin_ctrl = data_alloc.constant_field(grid, 2, dims.CellDim, dtype=gtx.int32)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_new_low_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_max_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_min_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, KDim)
+        z_tracer_new_low_in = data_alloc.random_field(grid, dims.CellDim, KDim)
+        z_tracer_max_in = data_alloc.random_field(grid, dims.CellDim, KDim)
+        z_tracer_min_in = data_alloc.random_field(grid, dims.CellDim, KDim)
 
-        z_tracer_new_low_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_max_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_min_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_new_low_out = data_alloc.zero_field(grid, dims.CellDim, KDim)
+        z_tracer_max_out = data_alloc.zero_field(grid, dims.CellDim, KDim)
+        z_tracer_min_out = data_alloc.zero_field(grid, dims.CellDim, KDim)
 
         return dict(
             refin_ctrl=refin_ctrl,

@@ -14,6 +14,7 @@ import pytest
 
 import icon4py.model.testing.test_utils
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.math import (
     vector_operations as vector_ops,
@@ -72,8 +73,8 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        input_field = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        result = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        input_field = data_alloc.zero_field(grid, dims.EdgeDim, KDim, extend={KDim: 1})
+        result = data_alloc.random_field(grid, dims.EdgeDim, KDim, extend={KDim: 1})
         return dict(
             input_field=input_field,
             average=result,
@@ -107,8 +108,8 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        input_field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        result = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        input_field = data_alloc.random_field(grid, dims.CellDim, KDim, extend={KDim: 1})
+        result = data_alloc.zero_field(grid, dims.CellDim, KDim)
         return dict(
             input_field=input_field,
             average=result,

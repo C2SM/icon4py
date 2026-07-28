@@ -11,6 +11,7 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -170,7 +171,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
     prep_adv = construct_prep_adv(advection_init_savepoint)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
-    p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
     dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
 
     log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)

@@ -11,6 +11,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import ice_to_snow
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
@@ -35,11 +36,11 @@ class TestIceToSnowDefault(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            qi=data_alloc.constant_field(grid, 7.95122e-25, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ns=data_alloc.constant_field(grid, 2.23336e07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            lam=data_alloc.constant_field(grid, 61911.1, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi=data_alloc.constant_field(grid, 7.95122e-25, dims.CellDim, KDim, dtype=wpfloat),
+            ns=data_alloc.constant_field(grid, 2.23336e07, dims.CellDim, KDim, dtype=wpfloat),
+            lam=data_alloc.constant_field(grid, 61911.1, dims.CellDim, KDim, dtype=wpfloat),
             sticking_eff=data_alloc.constant_field(
-                grid, 0.241568, dims.CellDim, dims.KDim, dtype=wpfloat
+                grid, 0.241568, dims.CellDim, KDim, dtype=wpfloat
             ),
-            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
         )

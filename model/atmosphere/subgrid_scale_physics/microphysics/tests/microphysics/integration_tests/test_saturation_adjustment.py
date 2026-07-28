@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     saturation_adjustment as satad,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils
@@ -63,11 +64,9 @@ def test_saturation_adjustement(
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
     )
-    temperature_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
-    )
-    qv_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
-    qc_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    temperature_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
+    qv_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
+    qc_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
 
     metric_state = satad.MetricStateSaturationAdjustment(
         ddqz_z_full=metrics_savepoint.ddqz_z_full()

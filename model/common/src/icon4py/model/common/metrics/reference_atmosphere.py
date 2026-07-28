@@ -9,6 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, exp, log
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
@@ -73,7 +74,7 @@ def compute_reference_atmosphere_edge_fields(  # noqa: PLR0917 [too-many-positio
         out=(rho_ref_me, theta_ref_me),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -196,7 +197,7 @@ def compute_reference_atmosphere_cell_fields(  # noqa: PLR0917 [too-many-positio
         out=(theta_ref_mc, exner_ref_mc, rho_ref_mc),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -313,7 +314,7 @@ def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-argum
         out=(theta_ref_ic, d_exner_dz_ref_ic),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -347,6 +348,6 @@ def compute_d2dexdz2_fac_mc(  # noqa: PLR0917 [too-many-positional-arguments]
         out=(d2dexdz2_fac1_mc, d2dexdz2_fac2_mc),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

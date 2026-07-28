@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definit
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.testing import stencil_tests
 
 
@@ -57,10 +58,10 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
     @pytest.fixture
     def input_data(self, grid) -> dict:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        r_m = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, KDim)
+        p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, KDim)
+        p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        r_m = data_alloc.zero_field(grid, dims.CellDim, KDim)
         p_dtime = np.float64(5)
         dbl_eps = np.float64(1e-9)
         return dict(

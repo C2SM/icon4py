@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
     compute_horizontal_velocity_quantities_and_fluxes,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
@@ -277,35 +278,33 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
         horizontal_gradient_of_normal_wind_divergence = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
+            grid, dims.EdgeDim, KDim
         )
-        tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        mass_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        vn_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
-        )
+        tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        mass_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        vn_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, KDim, extend={KDim: 1})
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
+            grid, dims.EdgeDim, KDim
         )
         contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
+            grid, dims.EdgeDim, KDim
         )
 
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
         e_flx_avg = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
         geofac_grdiv = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
-        rho_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        rho_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, KDim)
 
         nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 

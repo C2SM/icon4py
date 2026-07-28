@@ -23,6 +23,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends, utils as common_utils
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -233,90 +234,80 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     second_order_divdamp_factor = 0.02
 
     prep_adv = dycore_states.PrepAdvection(
-        vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        mass_flx_me=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
+        vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, KDim, allocator=allocator),
+        mass_flx_me=data_alloc.zero_field(mesh, dims.EdgeDim, KDim, allocator=allocator),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator
         ),
     )
 
     diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, allocator),
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator
         ),
         perturbed_exner_at_cells_on_model_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=allocator
+            mesh, dims.CellDim, KDim, allocator=allocator
         ),
         rho_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator
         ),
         exner_tendency_due_to_slow_physics=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=allocator
+            mesh, dims.CellDim, KDim, allocator=allocator
         ),
-        grf_tend_rho=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        grf_tend_thv=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        grf_tend_rho=data_alloc.zero_field(mesh, dims.CellDim, KDim, allocator=allocator),
+        grf_tend_thv=data_alloc.zero_field(mesh, dims.CellDim, KDim, allocator=allocator),
         grf_tend_w=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator
         ),
         mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, allocator=allocator
+            mesh, dims.EdgeDim, KDim, allocator=allocator
         ),
         normal_wind_tendency_due_to_slow_physics_process=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, allocator=allocator
+            mesh, dims.EdgeDim, KDim, allocator=allocator
         ),
-        grf_tend_vn=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
+        grf_tend_vn=data_alloc.zero_field(mesh, dims.EdgeDim, KDim, allocator=allocator),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-            data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
+            data_alloc.zero_field(mesh, dims.EdgeDim, KDim, allocator=allocator),
+            data_alloc.zero_field(mesh, dims.EdgeDim, KDim, allocator=allocator),
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            data_alloc.zero_field(
-                mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-            ),
-            data_alloc.zero_field(
-                mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-            ),
+            data_alloc.zero_field(mesh, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator),
+            data_alloc.zero_field(mesh, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator),
         ),
-        tangential_wind=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
+        tangential_wind=data_alloc.zero_field(mesh, dims.EdgeDim, KDim, allocator=allocator),
         vn_on_half_levels=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.EdgeDim, KDim, extend={KDim: 1}, allocator=allocator
         ),
         contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator
         ),
-        rho_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        rho_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, KDim, allocator=allocator),
         normal_wind_iau_increment=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, allocator=allocator
+            mesh, dims.EdgeDim, KDim, allocator=allocator
         ),
-        exner_iau_increment=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=allocator
-        ),
+        exner_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, KDim, allocator=allocator),
         exner_dynamical_increment=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=allocator
+            mesh, dims.CellDim, KDim, allocator=allocator
         ),
     )
 
     prognostic_state_nnow = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        w=data_alloc.random_field(mesh, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, KDim, allocator=allocator),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
+        rho=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
+        exner=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
     )
     prognostic_state_nnew = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        w=data_alloc.random_field(mesh, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, KDim, allocator=allocator),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
+        rho=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
+        exner=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
     )
 
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)

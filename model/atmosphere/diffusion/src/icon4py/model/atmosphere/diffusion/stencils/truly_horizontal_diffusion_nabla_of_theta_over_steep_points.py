@@ -10,17 +10,17 @@ from gt4py.next import astype
 from gt4py.next.experimental import as_offset
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2C, Koff
+from icon4py.model.common.dimension import C2E2C, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
 def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], wpfloat],
-    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], wpfloat],
     theta_v: fa.CellKField[wpfloat],
     z_temp: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
@@ -62,11 +62,11 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], wpfloat],
-    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], wpfloat],
     theta_v: fa.CellKField[wpfloat],
     z_temp: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
@@ -85,6 +85,6 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         out=z_temp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

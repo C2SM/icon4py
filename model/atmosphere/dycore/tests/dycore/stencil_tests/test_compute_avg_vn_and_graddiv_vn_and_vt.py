@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -71,10 +72,10 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_vn_avg = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_graddiv_vn = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vt = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        z_vn_avg = zero_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        z_graddiv_vn = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        vt = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             e_flx_avg=e_flx_avg,

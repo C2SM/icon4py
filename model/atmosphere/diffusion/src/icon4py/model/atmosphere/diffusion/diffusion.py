@@ -48,6 +48,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
@@ -730,29 +731,19 @@ class Diffusion:
         )(diff_multfac_n2w=self.diff_multfac_n2w)
 
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
-        self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
-        self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
-        self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
-        self.enh_smag_fac = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
-        self.u_vert = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, allocator=allocator
-        )
-        self.v_vert = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, allocator=allocator
-        )
-        self.kh_smag_e = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
-        )
-        self.kh_smag_ec = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
-        )
-        self.z_nabla2_e = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
-        )
-        self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
+        self.diff_multfac_vn = data_alloc.zero_field(self._grid, KDim, allocator=allocator)
+        self.diff_multfac_n2w = data_alloc.zero_field(self._grid, KDim, allocator=allocator)
+        self.smag_limit = data_alloc.zero_field(self._grid, KDim, allocator=allocator)
+        self.enh_smag_fac = data_alloc.zero_field(self._grid, KDim, allocator=allocator)
+        self.u_vert = data_alloc.zero_field(self._grid, dims.VertexDim, KDim, allocator=allocator)
+        self.v_vert = data_alloc.zero_field(self._grid, dims.VertexDim, KDim, allocator=allocator)
+        self.kh_smag_e = data_alloc.zero_field(self._grid, dims.EdgeDim, KDim, allocator=allocator)
+        self.kh_smag_ec = data_alloc.zero_field(self._grid, dims.EdgeDim, KDim, allocator=allocator)
+        self.z_nabla2_e = data_alloc.zero_field(self._grid, dims.EdgeDim, KDim, allocator=allocator)
+        self.diff_multfac_smag = data_alloc.zero_field(self._grid, KDim, allocator=allocator)
         # TODO(halungge): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            self._grid, KDim, extend={KDim: 1}, allocator=allocator
         )
         self.horizontal_cell_index = data_alloc.index_field(
             self._grid, dims.CellDim, allocator=allocator
@@ -761,10 +752,10 @@ class Diffusion:
             self._grid, dims.EdgeDim, allocator=allocator
         )
         self.w_tmp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            self._grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator
         )
         self.theta_v_tmp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+            self._grid, dims.CellDim, KDim, allocator=allocator
         )
 
     def _determine_horizontal_domains(self) -> None:
@@ -820,10 +811,8 @@ class Diffusion:
         The initial run uses special values for diff_multfac_vn, smag_limit and smag_offset.
         """
         if initial_run:
-            diff_multfac_vn = data_alloc.zero_field(
-                self._grid, dims.KDim, allocator=self._allocator
-            )
-            smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=self._allocator)
+            diff_multfac_vn = data_alloc.zero_field(self._grid, KDim, allocator=self._allocator)
+            smag_limit = data_alloc.zero_field(self._grid, KDim, allocator=self._allocator)
             self.setup_fields_for_initial_step(
                 self._params.K4,
                 self.config.hdiff_efdt_ratio,

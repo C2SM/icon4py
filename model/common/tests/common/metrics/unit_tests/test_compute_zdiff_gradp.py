@@ -15,6 +15,7 @@ import pytest
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.metrics.compute_zdiff_gradp import compute_zdiff_gradp
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -56,7 +57,7 @@ def test_compute_zdiff_gradp(
     z_ifc_ground_level = z_ifc.ndarray[:, icon_grid.num_levels]
     z_mc = metrics_savepoint.z_mc()
     k_lev = data_alloc.index_field(
-        icon_grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=backend
+        icon_grid, KDim, extend={KDim: 1}, dtype=gtx.int32, allocator=backend
     )
     edge_domain = h_grid.domain(dims.EdgeDim)
     horizontal_start_edge = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))

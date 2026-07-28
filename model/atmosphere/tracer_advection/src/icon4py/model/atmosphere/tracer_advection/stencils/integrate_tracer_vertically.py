@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 
 
 # TODO(dastrm): k/iadv_slev_jt and vertical_start/end are redundant
@@ -27,8 +28,7 @@ def _integrate_tracer_vertically_a(
 ) -> fa.CellKField[ta.wpfloat]:
     tracer_new = (
         tracer_now * rhodz_now
-        + p_dtime
-        * (p_mflx_tracer_v(dims.KDim + 1) * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)
+        + p_dtime * (p_mflx_tracer_v(KDim + 1) * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)
     ) / rhodz_new
 
     return tracer_new
@@ -100,6 +100,6 @@ def integrate_tracer_vertically(
         out=tracer_new,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

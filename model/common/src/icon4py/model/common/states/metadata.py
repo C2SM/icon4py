@@ -10,6 +10,7 @@ from typing import Final
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.states import model
 
 
@@ -22,7 +23,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         standard_name="z_ifv",
         long_name="z_ifv",
         units="",
-        dims=(dims.VertexDim, dims.KDim),
+        dims=(dims.VertexDim, KDim),
         icon_var_name="z_ifv",
         dtype=ta.wpfloat,
     ),
@@ -46,7 +47,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         standard_name="model_level_number",
         long_name="model level number",
         units="",
-        dims=(dims.KDim,),
+        dims=(KDim,),
         icon_var_name="k_index",
         dtype=gtx.int32,
     ),
@@ -61,7 +62,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
     "weighting_factor_for_quadratic_interpolation_to_cell_surface": dict(
         standard_name="weighting_factor_for_quadratic_interpolation_to_cell_surface",
         units="",
-        dims=(dims.CellDim, dims.KDim),
+        dims=(dims.CellDim, KDim),
         dtype=ta.wpfloat,
         icon_var_name="wgtfacq_c_dsl",
         long_name="weighting factor for quadratic interpolation to cell surface",
@@ -69,7 +70,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
     "weighting_factor_for_quadratic_interpolation_to_edge_center": dict(
         standard_name="weighting_factor_for_quadratic_interpolation_to_edge_center",
         units="",
-        dims=(dims.EdgeDim, dims.KDim),
+        dims=(dims.EdgeDim, KDim),
         dtype=ta.wpfloat,
         icon_var_name="wgtfacq_e_dsl",
         long_name="weighting factor for quadratic interpolation to edge centers",

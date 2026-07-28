@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity
     spatially_average_flux_or_velocity,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
@@ -57,10 +58,8 @@ class TestSpatiallyAverageFluxOrVelocity(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        flux_or_velocity = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        spatially_averaged_flux_or_velocity = zero_field(
-            grid, dims.EdgeDim, dims.KDim, dtype=wpfloat
-        )
+        flux_or_velocity = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        spatially_averaged_flux_or_velocity = zero_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             e_flx_avg=e_flx_avg,

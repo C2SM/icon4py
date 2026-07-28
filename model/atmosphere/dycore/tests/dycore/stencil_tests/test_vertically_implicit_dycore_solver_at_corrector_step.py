@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
     vertically_implicit_solver_at_corrector_step,
 )
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -418,57 +419,51 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         self, request: pytest.FixtureRequest, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
-        )
-        current_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        current_w = data_alloc.random_field(grid, dims.CellDim, KDim)
         predictor_vertical_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid, dims.CellDim, KDim, extend={KDim: 1}
         )
         corrector_vertical_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid, dims.CellDim, KDim, extend={KDim: 1}
         )
-        nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
-        )
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(grid, dims.CellDim, KDim)
         rho_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
+            grid, dims.CellDim, KDim, extend={KDim: 1}, low=1.0e-5
         )
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid, dims.CellDim, KDim, extend={KDim: 1}
         )
         exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
-        current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
+        current_exner = data_alloc.random_field(grid, dims.CellDim, KDim, low=1.0e-5)
+        current_rho = data_alloc.random_field(grid, dims.CellDim, KDim, low=1.0e-5)
+        current_theta_v = data_alloc.random_field(grid, dims.CellDim, KDim, low=1.0e-5)
+        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, KDim, low=1.0e-5)
         exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
+            grid, dims.CellDim, KDim, extend={KDim: 1}, low=1.0e-5
         )
-        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
-        )
-        exner_tendency_due_to_slow_physics = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        rayleigh_damping_factor = data_alloc.random_field(grid, dims.KDim)
+        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, KDim)
+        exner_tendency_due_to_slow_physics = data_alloc.random_field(grid, dims.CellDim, KDim)
+        rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, KDim)
+        exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, KDim)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, KDim, low=1.0e-5)
+        rayleigh_damping_factor = data_alloc.random_field(grid, KDim)
         reference_exner_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-5
+            grid, dims.CellDim, KDim, low=1.0e-5
         )
 
-        next_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        next_rho = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
-        next_exner = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
-        next_theta_v = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
-        exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_w = data_alloc.zero_field(grid, dims.CellDim, KDim, extend={KDim: 1})
+        next_rho = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, KDim)
+        next_exner = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, KDim)
+        next_theta_v = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, KDim)
+        exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, KDim)
         dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid, dims.CellDim, KDim, extend={KDim: 1}
         )
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid, dims.CellDim, KDim, extend={KDim: 1}
         )
 
         lprep_adv = request.param["lprep_adv"]

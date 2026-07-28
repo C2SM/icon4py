@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E
+from icon4py.model.common.dimension import C2E, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -20,7 +20,7 @@ def _compute_contravariant_correction_of_w(
     wgtfac_c: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_39."""
-    z_w_concorr_me_offset_1 = z_w_concorr_me(dims.KDim - 1)
+    z_w_concorr_me_offset_1 = z_w_concorr_me(KDim - 1)
 
     z_w_concorr_me_wp, z_w_concorr_me_offset_1_wp = astype(
         (z_w_concorr_me, z_w_concorr_me_offset_1), wpfloat
@@ -58,6 +58,6 @@ def compute_contravariant_correction_of_w(
         out=w_concorr_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

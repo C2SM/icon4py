@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_trace
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
@@ -40,9 +41,9 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_grf_tend_tracer = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_tracer_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_tracer_now = data_alloc.random_field(grid, dims.CellDim, KDim)
+        p_grf_tend_tracer = data_alloc.random_field(grid, dims.CellDim, KDim)
+        p_tracer_new = data_alloc.random_field(grid, dims.CellDim, KDim)
         p_dtime = np.float64(5.0)
         return dict(
             p_tracer_now=p_tracer_now,

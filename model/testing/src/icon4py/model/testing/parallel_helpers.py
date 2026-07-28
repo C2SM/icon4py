@@ -15,6 +15,7 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
 
@@ -85,7 +86,7 @@ def check_local_global_field(
     atol: float,
     rtol: float = 0.0,
 ) -> None:
-    if dim == dims.KDim:
+    if dim == KDim:
         test_utils.assert_dallclose(global_reference_field, local_field)
         return
 

@@ -17,6 +17,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import constants, model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -140,20 +141,20 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
+        div_ic=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
+        dwdx=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
+        dwdy=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
     )
 
     prognostic_state = prognostics.PrognosticState(
         w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, allocator=allocator
+            mesh, dims.CellDim, KDim, extend={KDim: 1}, low=0.0, allocator=allocator
         ),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, KDim, allocator=allocator),
+        exner=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
+        rho=data_alloc.random_field(mesh, dims.CellDim, KDim, allocator=allocator),
     )
 
     diffusion_granule = diffusion.Diffusion(

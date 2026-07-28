@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperat
     compute_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -96,16 +97,16 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        z_rth_pr_2 = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        theta_v = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
         vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        exner_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        d_exner_dz_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_theta_v_pr_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_th_ddz_exner_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner_pr = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        d_exner_dz_ref_ic = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        ddqz_z_half = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        z_theta_v_pr_ic = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        theta_v_ic = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        z_th_ddz_exner_c = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,

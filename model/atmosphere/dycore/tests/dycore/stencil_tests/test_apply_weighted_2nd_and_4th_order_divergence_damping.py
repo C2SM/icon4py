@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.apply_weighted_2nd_and_4th_order_d
     apply_weighted_2nd_and_4th_order_divergence_damping,
 )
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -77,10 +78,10 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim)
+        interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, KDim)
         nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        z_graddiv2_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_graddiv2_vn = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
 
         divdamp_order = 24
         mean_cell_area = 1000.0

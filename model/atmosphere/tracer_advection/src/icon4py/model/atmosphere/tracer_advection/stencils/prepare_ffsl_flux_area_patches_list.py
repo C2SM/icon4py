@@ -12,6 +12,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -215,7 +216,7 @@ def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
         line2_p2_lat=tri_line2_p2_lat,
     )
 
-    lvn_sys_pos = (p_vn * broadcast(tangent_orientation_dsl, (dims.EdgeDim, dims.KDim))) >= 0.0
+    lvn_sys_pos = (p_vn * broadcast(tangent_orientation_dsl, (dims.EdgeDim, KDim))) >= 0.0
     famask_bool = famask_int == 1
     # ------------------------------------------------- Case 1
     mask_case1 = lintersect_line1 & lintersect_line2 & famask_bool
@@ -684,6 +685,6 @@ def prepare_ffsl_flux_area_patches_list(
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

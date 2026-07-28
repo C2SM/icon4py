@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -86,14 +87,14 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn_ie = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_vt_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        z_vt_ie = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
         inv_primal_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         tangent_orientation = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        z_w_v = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
-        z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_w_v = random_field(grid, dims.VertexDim, KDim, dtype=vpfloat)
+        z_v_grad_w = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))

@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
     _temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -23,7 +24,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
     vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
+    diff_multfac_smag: gtx.Field[gtx.Dims[KDim], vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     kh_c, div = _temporary_fields_for_turbulence_diagnostics(
@@ -39,7 +40,7 @@ def calculate_diagnostic_quantities_for_turbulence(
     vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
+    diff_multfac_smag: gtx.Field[gtx.Dims[KDim], vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     div_ic: fa.CellKField[vpfloat],
     hdef_ic: fa.CellKField[vpfloat],
@@ -58,6 +59,6 @@ def calculate_diagnostic_quantities_for_turbulence(
         out=(div_ic, hdef_ic),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

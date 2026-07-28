@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.set_lower_boundary_condition_for_w
     set_lower_boundary_condition_for_w_and_contravariant_correction,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -54,9 +55,9 @@ class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_nnew = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        z_contr_w_fl_l = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        w_nnew = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
 
         return dict(
             w_nnew=w_nnew,

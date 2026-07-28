@@ -50,6 +50,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary imp
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -62,9 +63,9 @@ def apply_on_vertical_level(
     below_flatgradp: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
     return concat_where(
-        dims.KDim < nflatlev,
+        KDim < nflatlev,
         on_flatlevels,
-        concat_where(nflat_gradp + 1 <= dims.KDim, below_flatgradp, between_flat_and_flatgradp),
+        concat_where(nflat_gradp + 1 <= KDim, below_flatgradp, between_flat_and_flatgradp),
     )
 
 
@@ -90,8 +91,8 @@ def _compute_horizontal_pressure_gradient(
     hydrostatic_correction_on_lowest_level: fa.EdgeField[ta.wpfloat],
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
-    zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
+    ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, KDim], ta.vpfloat],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     nflatlev: gtx.int32,
@@ -156,8 +157,8 @@ def _compute_rho_theta_pgrad_and_update_vn(
     dual_normal_cell_y: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
-    zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
+    ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, KDim], ta.vpfloat],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
@@ -202,8 +203,8 @@ def _compute_rho_theta_pgrad_and_update_vn(
             geofac_grg_y=geofac_grg_y,
         ),
         (
-            broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-            broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+            broadcast(wpfloat("0.0"), (dims.EdgeDim, KDim)),
+            broadcast(wpfloat("0.0"), (dims.EdgeDim, KDim)),
         ),
     )
 
@@ -228,7 +229,7 @@ def _compute_rho_theta_pgrad_and_update_vn(
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
         ),
-        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+        broadcast(wpfloat("0.0"), (dims.EdgeDim, KDim)),
     )
 
     # Note: we overcompute `next_vn`, which is only needed
@@ -405,8 +406,8 @@ def compute_rho_theta_pgrad_and_update_vn(
     dual_normal_cell_y: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
-    zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
+    ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, KDim], ta.vpfloat],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
@@ -533,7 +534,7 @@ def compute_rho_theta_pgrad_and_update_vn(
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -652,6 +653,6 @@ def apply_divergence_damping_and_update_vn(
         out=next_vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

@@ -13,6 +13,7 @@ import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     interpolate_to_cell_center,
@@ -54,9 +55,9 @@ class TestInterpolateToCellCenter(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        interpolant = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        interpolant = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
-        interpolation = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        interpolation = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
 
         return dict(
             interpolant=interpolant,

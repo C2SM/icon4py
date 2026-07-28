@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_o
     compute_contravariant_correction_of_w,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -60,9 +61,9 @@ class TestComputeContravariantCorrectionOfW(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
-        z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        w_concorr_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_w_concorr_me = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        w_concorr_c = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
 
         return dict(
             e_bln_c_s=e_bln_c_s,

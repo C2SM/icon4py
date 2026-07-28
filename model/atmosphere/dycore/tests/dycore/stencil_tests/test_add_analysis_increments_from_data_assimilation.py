@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_
     add_analysis_increments_from_data_assimilation,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -62,10 +63,10 @@ class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_incr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        exner_incr = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
+        z_rho_expl = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        rho_incr = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
         iau_wgt_dyn = ta.wpfloat("8.0")
 
         return dict(

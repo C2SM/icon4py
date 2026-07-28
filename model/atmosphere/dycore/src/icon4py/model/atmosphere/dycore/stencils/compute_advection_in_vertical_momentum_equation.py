@@ -22,6 +22,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
 )
@@ -36,15 +37,15 @@ def _interpolate_contravariant_vertical_velocity_to_full_levels(
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
     nlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
-    # TODO(havogt): Note that `concat_where(dims.KDim == nlev-1, ...)` is currently broken
+    # TODO(havogt): Note that `concat_where(KDim == nlev-1, ...)` is currently broken
     # because of insufficiency in the domain inference of GT4Py,
     # see https://github.com/GridTools/gt4py/issues/2205.
     return concat_where(
-        dims.KDim < nlev - 1,
+        KDim < nlev - 1,
         vpfloat("0.5")
         * (
             contravariant_corrected_w_at_cells_on_half_levels
-            + contravariant_corrected_w_at_cells_on_half_levels(dims.KDim + 1)
+            + contravariant_corrected_w_at_cells_on_half_levels(KDim + 1)
         ),
         vpfloat("0.5") * contravariant_corrected_w_at_cells_on_half_levels,
     )
@@ -90,8 +91,8 @@ def _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
     coeff1_dwdz_wp, coeff2_dwdz_wp = astype((coeff1_dwdz, coeff2_dwdz), wpfloat)
 
     vertical_wind_advective_tendency_wp = -contravariant_corrected_w_at_cells_on_half_levels_wp * (
-        w(dims.KDim - 1) * coeff1_dwdz_wp
-        - w(dims.KDim + 1) * coeff2_dwdz_wp
+        w(KDim - 1) * coeff1_dwdz_wp
+        - w(KDim + 1) * coeff2_dwdz_wp
         + w * astype(coeff2_dwdz - coeff1_dwdz, wpfloat)
     )
     return astype(vertical_wind_advective_tendency_wp, vpfloat)
@@ -114,14 +115,14 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 
     cfl_clipping = where(
         abs(contravariant_corrected_w_at_cells_on_half_levels) > cfl_w_limit * ddqz_z_half,
-        broadcast(True, (dims.CellDim, dims.KDim)),
+        broadcast(True, (dims.CellDim, KDim)),
         False,
     )
 
     vertical_cfl = where(
         cfl_clipping,
         contravariant_corrected_w_at_cells_on_half_levels_wp * dtime / ddqz_z_half_wp,
-        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        broadcast(wpfloat("0.0"), (dims.CellDim, KDim)),
     )
     vertical_cfl_vp = astype(vertical_cfl, vpfloat)
 
@@ -172,7 +173,7 @@ def _compute_contravariant_corrected_w_and_cfl(
     )
 
     (contravariant_corrected_w_at_cells_on_half_levels, cfl_clipping, vertical_cfl) = concat_where(
-        (dims.KDim >= maximum(2, end_index_of_damping_layer - 2)) & (dims.KDim < nlev - 3),
+        (KDim >= maximum(2, end_index_of_damping_layer - 2)) & (KDim < nlev - 3),
         _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half=ddqz_z_half,
             contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
@@ -181,8 +182,8 @@ def _compute_contravariant_corrected_w_and_cfl(
         ),
         (
             contravariant_corrected_w_at_cells_on_half_levels,
-            broadcast(False, (dims.CellDim, dims.KDim)),
-            broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            broadcast(False, (dims.CellDim, KDim)),
+            broadcast(vpfloat("0.0"), (dims.CellDim, KDim)),
         ),
     )
 
@@ -208,7 +209,7 @@ def _compute_advective_vertical_wind_tendency(
     dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.vpfloat]:
     vertical_wind_advective_tendency = concat_where(
-        1 <= dims.KDim,
+        1 <= KDim,
         _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
             contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
         ),
@@ -216,7 +217,7 @@ def _compute_advective_vertical_wind_tendency(
     )
 
     vertical_wind_advective_tendency = concat_where(
-        1 <= dims.KDim,
+        1 <= KDim,
         _add_interpolated_horizontal_advection_of_w(
             e_bln_c_s,
             horizontal_advection_of_w_at_edges_on_half_levels,
@@ -418,7 +419,7 @@ def compute_advection_in_corrector_vertical_momentum(
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -438,11 +439,11 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
     )
 
     contravariant_correction_at_cells_on_half_levels = concat_where(
-        dims.KDim >= nflatlev + 1,
+        KDim >= nflatlev + 1,
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
         ),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        broadcast(vpfloat("0.0"), (dims.CellDim, KDim)),
     )
 
     return contravariant_correction_at_cells_on_half_levels
@@ -622,6 +623,6 @@ def compute_advection_in_predictor_vertical_momentum(
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

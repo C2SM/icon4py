@@ -8,6 +8,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -38,6 +39,6 @@ def compute_airmass(
         out=airmass_out,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

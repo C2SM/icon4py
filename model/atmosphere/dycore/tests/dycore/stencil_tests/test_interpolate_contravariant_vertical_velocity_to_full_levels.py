@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_vertical
     interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
@@ -45,11 +46,9 @@ class TestInterpolateContravariantVerticalVelocityToFullLevels(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_w_con_c = random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
-        )
+        z_w_con_c = random_field(grid, dims.CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
 
-        z_w_con_c_full = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_w_con_c_full = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
 
         return dict(
             z_w_con_c=z_w_con_c,

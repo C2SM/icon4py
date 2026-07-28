@@ -13,6 +13,7 @@ import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import compute_mass_flux
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -57,12 +58,12 @@ class TestComputeMassFlux(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_rho_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_vn_avg = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ddqz_z_full_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        mass_fl_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_theta_v_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_theta_v_fl_e = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_rho_e = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        z_vn_avg = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        ddqz_z_full_e = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        mass_fl_e = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        z_theta_v_e = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        z_theta_v_fl_e = zero_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             z_rho_e=z_rho_e,

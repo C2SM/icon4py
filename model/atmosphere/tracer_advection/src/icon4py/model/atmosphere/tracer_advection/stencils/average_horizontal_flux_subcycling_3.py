@@ -9,6 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -39,6 +40,6 @@ def average_horizontal_flux_subcycling_3(
         out=p_out_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

@@ -17,6 +17,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon, simple, vertical as v_grid
 from icon4py.model.common.math import (
     coordinate_transformations as coord_trans,
@@ -45,7 +46,7 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 cell_domain = h_grid.domain(dims.CellDim)
-k_domain = v_grid.domain(dims.KDim)
+k_domain = v_grid.domain(KDim)
 
 
 class SimpleFieldSource(factory.FieldSource):
@@ -115,15 +116,15 @@ def cell_coordinate_source(
         "lat": (lat, {"standard_name": "lat", "units": ""}),
         "lon": (lon, {"standard_name": "lon", "units": ""}),
         "x": (
-            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+            data_alloc.random_field(grid, dims.CellDim, KDim),
             {"standard_name": "x", "units": ""},
         ),
         "y": (
-            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+            data_alloc.random_field(grid, dims.CellDim, KDim),
             {"standard_name": "y", "units": ""},
         ),
         "z": (
-            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+            data_alloc.random_field(grid, dims.CellDim, KDim),
             {"standard_name": "z", "units": ""},
         ),
     }
@@ -187,7 +188,7 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     program = vertical_ops.average_two_vertical_levels_downwards_on_cells
     domain = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
-        dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
+        KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }
     deps = {
         "input_field": "height_coordinate",
@@ -213,7 +214,7 @@ def test_field_source_raise_error_on_register(cell_coordinate_source: SimpleFiel
     program = vertical_ops.average_two_vertical_levels_downwards_on_cells
     domain = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
-        dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
+        KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }
     deps = {
         "input_field": "height_coordinate",
@@ -232,8 +233,8 @@ def test_composite_field_source_contains_all_metadata(
 ) -> None:
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, KDim)
+    bar = data_alloc.random_field(grid, dims.EdgeDim, KDim)
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
         "foo": (foo, {"standard_name": "foo", "units": ""}),
         "bar": (bar, {"standard_name": "bar", "units": ""}),
@@ -257,8 +258,8 @@ def test_composite_field_source_get_all_fields(
 ) -> None:
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, KDim)
+    bar = data_alloc.random_field(grid, dims.EdgeDim, KDim)
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
         "foo": (foo, {"standard_name": "foo", "units": ""}),
         "bar": (bar, {"standard_name": "bar", "units": ""}),
@@ -270,12 +271,12 @@ def test_composite_field_source_get_all_fields(
     )
     foo = composite.get("foo")
     assert isinstance(foo, gtx.Field)
-    assert {dims.CellDim, dims.KDim}.issubset(foo.domain.dims)
+    assert {dims.CellDim, KDim}.issubset(foo.domain.dims)
 
     bar = composite.get("bar")
     assert len(bar.domain.dims) == 2
     assert isinstance(bar, gtx.Field)
-    assert {dims.EdgeDim, dims.KDim}.issubset(bar.domain.dims)
+    assert {dims.EdgeDim, KDim}.issubset(bar.domain.dims)
 
     lon = composite.get("lon")
     assert isinstance(lon, gtx.Field)
@@ -284,7 +285,7 @@ def test_composite_field_source_get_all_fields(
 
     lat = composite.get("height_coordinate")
     assert isinstance(lat, gtx.Field)
-    assert dims.KDim in lat.domain.dims
+    assert KDim in lat.domain.dims
     assert len(lat.domain.dims) == 2
 
 
@@ -294,8 +295,8 @@ def test_composite_field_source_raises_upon_get_unknown_field(
 ) -> None:
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, KDim)
+    bar = data_alloc.random_field(grid, dims.EdgeDim, KDim)
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
         "foo": (foo, {"standard_name": "foo", "units": ""}),
         "bar": (bar, {"standard_name": "bar", "units": ""}),

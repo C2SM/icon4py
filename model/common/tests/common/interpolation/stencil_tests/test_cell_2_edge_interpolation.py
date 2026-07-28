@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
@@ -43,9 +44,9 @@ class TestCell2EdgeInterpolation(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        in_field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        in_field = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
         coeff = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
-        out_field = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        out_field = data_alloc.zero_field(grid, dims.EdgeDim, KDim, dtype=ta.wpfloat)
 
         return dict(
             in_field=in_field,

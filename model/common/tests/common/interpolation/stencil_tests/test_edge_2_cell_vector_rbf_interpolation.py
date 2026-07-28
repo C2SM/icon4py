@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
@@ -44,11 +45,11 @@ class TestEdge2CellVectorRBFInterpolation(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        p_e_in = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.wpfloat)
         ptr_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
         ptr_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
-        p_v_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        p_u_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        p_v_out = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        p_u_out = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
 
         return dict(
             p_e_in=p_e_in,

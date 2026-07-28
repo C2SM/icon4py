@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.update_theta_and_exner_in_halo imp
     update_theta_and_exner_in_halo,
 )
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
@@ -64,12 +65,12 @@ class TestUpdateThetaV(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         mask_prog_halo_c = data_alloc.random_mask(grid, dims.CellDim)
-        rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_v_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_v_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_now = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        rho_new = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        theta_v_now = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        theta_v_new = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        exner_now = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        exner_new = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
 
         return dict(
             mask_prog_halo_c=mask_prog_halo_c,

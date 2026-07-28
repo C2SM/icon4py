@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rh
     _compute_horizontal_advection_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
@@ -259,8 +260,8 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
     def input_data(
         self, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        p_vn = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.wpfloat)
+        p_vt = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
         pos_on_tplane_e_1 = data_alloc.random_field(
             grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
         )
@@ -281,18 +282,18 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         )
         p_dthalf = 2.0
 
-        rho_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        theta_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        rho_ref_me = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
+        theta_ref_me = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
         perturbed_rho_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+            grid, dims.CellDim, KDim, dtype=ta.vpfloat
         )
         perturbed_theta_v_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+            grid, dims.CellDim, KDim, dtype=ta.vpfloat
         )
         geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
         geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
-        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.wpfloat)
+        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.wpfloat)
 
         return dict(
             p_vn=p_vn,
@@ -314,7 +315,7 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
             domain=gtx.domain(
                 {
                     dims.EdgeDim: (0, gtx.int32(grid.num_edges)),
-                    dims.KDim: (0, gtx.int32(grid.num_levels)),
+                    KDim: (0, gtx.int32(grid.num_levels)),
                 }
             ),
         )

@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -104,25 +105,25 @@ def test_graupel(
     qnc = entry_savepoint.qnc()
 
     temperature_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
     )
     qv_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
     )
     qc_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
     )
     qr_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
     )
     qi_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
     )
     qs_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
     )
     qg_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
     )
 
     graupel_microphysics.run(

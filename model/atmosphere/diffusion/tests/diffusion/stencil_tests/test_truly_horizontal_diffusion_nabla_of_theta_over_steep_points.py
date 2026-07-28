@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest
@@ -88,7 +89,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        zd_vertoffset = zero_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
+        zd_vertoffset = zero_field(grid, dims.CellDim, dims.C2E2CDim, KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
@@ -98,12 +99,12 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
                 size=(zd_vertoffset.ndarray.shape[0], zd_vertoffset.ndarray.shape[1]),
             )
 
-        zd_diffcoef = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        zd_diffcoef = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
         geofac_n2s_c = random_field(grid, dims.CellDim, dtype=wpfloat)
         geofac_n2s_nbh = random_field(grid, dims.CellDim, dims.C2E2CDim, dtype=wpfloat)
-        vcoef = random_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=wpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        vcoef = random_field(grid, dims.CellDim, dims.C2E2CDim, KDim, dtype=wpfloat)
+        theta_v = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        z_temp = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
 
         return dict(
             zd_vertoffset=zd_vertoffset,

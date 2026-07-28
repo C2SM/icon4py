@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.update_dynamical_exner_time_increm
     update_dynamical_exner_time_increment,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -63,9 +64,9 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ndyn_substeps_var, dtime = wpfloat("10.0"), wpfloat("12.0")
-        exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_exner_phy = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        exner_dyn_incr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        ddt_exner_phy = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        exner_dyn_incr = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
 
         return dict(
             exner=exner,

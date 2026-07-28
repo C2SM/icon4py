@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E2C2E
+from icon4py.model.common.dimension import C2E2C2E, KDim
 
 
 @gtx.field_operator
@@ -57,6 +57,6 @@ def edge_2_cell_vector_rbf_interpolation(
         out=(p_u_out, p_v_out),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

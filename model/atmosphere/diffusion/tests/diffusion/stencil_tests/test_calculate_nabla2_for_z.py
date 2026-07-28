@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
@@ -58,10 +59,10 @@ class TestCalculateNabla2ForZ(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        kh_smag_e = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        theta_v = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        z_nabla2_e = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             kh_smag_e=kh_smag_e,

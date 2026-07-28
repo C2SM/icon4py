@@ -49,6 +49,7 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants, RayleighType
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -61,7 +62,7 @@ def _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on
     nlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
     contravariant_correction_at_cells_on_half_levels = concat_where(
-        dims.KDim < nlev,
+        KDim < nlev,
         _compute_contravariant_correction_of_w(
             e_bln_c_s, contravariant_correction_at_edges_on_model_levels, wgtfac_c
         ),
@@ -181,7 +182,7 @@ def solve_w(
         tridiagonal_intermediate_result,
         next_w_intermediate_result,
     ) = concat_where(
-        dims.KDim > 0,
+        KDim > 0,
         _solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=vwind_impl_wgt,
             theta_v_ic=theta_v_ic,
@@ -196,7 +197,7 @@ def solve_w(
         (broadcast(vpfloat("0.0"), (dims.CellDim,)), broadcast(wpfloat("0.0"), (dims.CellDim,))),
     )
     next_w = concat_where(
-        dims.KDim < last_inner_level,
+        KDim < last_inner_level,
         _solve_tridiagonal_matrix_for_w_back_substitution_scan(
             z_q=tridiagonal_intermediate_result,
             w=next_w_intermediate_result,
@@ -259,18 +260,18 @@ def _vertically_implicit_solver_at_predictor_step(
     )
 
     w_explicit_term = concat_where(
-        1 <= dims.KDim,
+        1 <= KDim,
         _compute_w_explicit_term_with_predictor_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
             nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             dtime=dtime,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        broadcast(wpfloat("0.0"), (dims.CellDim, KDim)),
     )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
-        (1 <= dims.KDim) & (dims.KDim < n_lev),
+        (1 <= KDim) & (KDim < n_lev),
         rho_at_cells_on_half_levels
         * (
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
@@ -293,7 +294,7 @@ def _vertically_implicit_solver_at_predictor_step(
         dtime=dtime,
     )
     tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
-        dims.KDim < n_lev,
+        KDim < n_lev,
         tridiagonal_alpha_coeff_at_cells_on_half_levels,
         broadcast(vpfloat("0.0"), (dims.CellDim,)),
     )
@@ -336,7 +337,7 @@ def _vertically_implicit_solver_at_predictor_step(
 
     if rayleigh_type == RayleighType.KLEMP:
         next_w = concat_where(
-            (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
+            (KDim > 0) & (KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w=next_w,
@@ -372,7 +373,7 @@ def _vertically_implicit_solver_at_predictor_step(
 
     exner_dynamical_increment = (
         concat_where(
-            kstart_moist <= dims.KDim,
+            kstart_moist <= KDim,
             astype(current_exner, vpfloat),
             exner_dynamical_increment,
         )
@@ -452,7 +453,7 @@ def vertically_implicit_solver_at_predictor_step(
                 start_cell_index_lateral_lvl3,
                 end_cell_index_halo_lvl1,
             ),
-            dims.KDim: (flat_level_index_plus1, vertical_end_index_model_surface),
+            KDim: (flat_level_index_plus1, vertical_end_index_model_surface),
         },
     )
     _set_surface_boundary_condition_for_computation_of_w(
@@ -460,7 +461,7 @@ def vertically_implicit_solver_at_predictor_step(
         out=next_w,
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            dims.KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
+            KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
         },
     )
     _vertically_implicit_solver_at_predictor_step(
@@ -508,7 +509,7 @@ def vertically_implicit_solver_at_predictor_step(
         ),
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
         },
     )
 
@@ -573,7 +574,7 @@ def _vertically_implicit_solver_at_corrector_step(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
     w_explicit_term = concat_where(
-        1 <= dims.KDim,
+        1 <= KDim,
         _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
@@ -583,10 +584,10 @@ def _vertically_implicit_solver_at_corrector_step(
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        broadcast(wpfloat("0.0"), (dims.CellDim, KDim)),
     )
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
-        (1 <= dims.KDim) & (dims.KDim < n_lev),
+        (1 <= KDim) & (KDim < n_lev),
         rho_at_cells_on_half_levels
         * (
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
@@ -608,7 +609,7 @@ def _vertically_implicit_solver_at_corrector_step(
         dtime=dtime,
     )
     tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
-        dims.KDim < n_lev,
+        KDim < n_lev,
         tridiagonal_alpha_coeff_at_cells_on_half_levels,
         broadcast(vpfloat("0.0"), (dims.CellDim,)),
     )
@@ -649,7 +650,7 @@ def _vertically_implicit_solver_at_corrector_step(
 
     if rayleigh_type == RayleighType.KLEMP:
         next_w = concat_where(
-            (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
+            (KDim > 0) & (KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
                 w=next_w,
@@ -679,15 +680,15 @@ def _vertically_implicit_solver_at_corrector_step(
                 dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             ) = (
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+                broadcast(wpfloat("0.0"), (dims.CellDim, KDim)),
+                broadcast(wpfloat("0.0"), (dims.CellDim, KDim)),
             )
 
         (
             dynamical_vertical_mass_flux_at_cells_on_half_levels,
             dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
         ) = concat_where(
-            1 <= dims.KDim,
+            1 <= KDim,
             _update_mass_volume_flux(
                 z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels,
@@ -705,7 +706,7 @@ def _vertically_implicit_solver_at_corrector_step(
 
     if at_last_substep:
         exner_dynamical_increment = concat_where(
-            dims.KDim >= kstart_moist,
+            KDim >= kstart_moist,
             _update_dynamical_exner_time_increment(
                 exner=next_exner,
                 ddt_exner_phy=exner_tendency_due_to_slow_physics,
@@ -782,7 +783,7 @@ def vertically_implicit_solver_at_corrector_step(
         out=next_w,
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            dims.KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
+            KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
         },
     )
     _vertically_implicit_solver_at_corrector_step(
@@ -838,6 +839,6 @@ def vertically_implicit_solver_at_corrector_step(
         ),
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
         },
     )

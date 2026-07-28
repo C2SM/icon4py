@@ -13,6 +13,7 @@ import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_graddiv2_of_vn import compute_graddiv2_of_vn
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -52,9 +53,9 @@ class TestComputeGraddiv2OfVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_graddiv_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_graddiv_vn = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
         geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        z_graddiv2_vn = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_graddiv2_vn = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             geofac_grdiv=geofac_grdiv,

@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advect
     add_interpolated_horizontal_advection_of_w,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
@@ -58,9 +59,9 @@ class TestAddInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_v_grad_w = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_v_grad_w = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
-        ddt_w_adv = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddt_w_adv = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
 
         return dict(
             e_bln_c_s=e_bln_c_s,

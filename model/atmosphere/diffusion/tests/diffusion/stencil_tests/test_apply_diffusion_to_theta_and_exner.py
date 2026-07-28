@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
     apply_diffusion_to_theta_and_exner,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -83,12 +84,12 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid):
-        kh_smag_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        kh_smag_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        theta_v_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        theta_v_in = data_alloc.random_field(grid, dims.CellDim, KDim)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         zd_vertoffset = data_alloc.zero_field(
-            grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32
+            grid, dims.CellDim, dims.C2E2CDim, KDim, dtype=gtx.int32
         )
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
@@ -98,13 +99,13 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
                 high=grid.num_levels - k - 1,
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
             )
-        zd_diffcoef = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        zd_diffcoef = data_alloc.random_field(grid, dims.CellDim, KDim)
         geofac_n2s_c = data_alloc.random_field(grid, dims.CellDim)
         geofac_n2s_nbh = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CDim)
-        vcoef = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim)
+        vcoef = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CDim, KDim)
         area = data_alloc.random_field(grid, dims.CellDim)
-        theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        theta_v = data_alloc.random_field(grid, dims.CellDim, KDim)
+        exner = data_alloc.random_field(grid, dims.CellDim, KDim)
         rd_o_cvd = vpfloat("5.0")
         apply_zdiffusion_t = True
 

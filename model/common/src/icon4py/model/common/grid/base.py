@@ -15,6 +15,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, exceptions
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -90,7 +91,7 @@ class Grid:
     @functools.cached_property
     def size(self) -> dict[gtx.Dimension, int]:
         sizes = {
-            dims.KDim: self.config.num_levels,
+            KDim: self.config.num_levels,
             dims.CellDim: self.config.num_cells,
             dims.EdgeDim: self.config.num_edges,
             dims.VertexDim: self.config.num_vertices,

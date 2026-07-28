@@ -16,6 +16,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils
@@ -51,7 +52,7 @@ def test_damping_layer_calculation(
     max_h: float, damping_height: float, delta: float, flat_height: float
 ) -> None:
     vct_a = np.arange(0, max_h, delta)
-    vct_a_field = gtx.as_field((dims.KDim,), data=vct_a[::-1])  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+    vct_a_field = gtx.as_field((KDim,), data=vct_a[::-1])  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=1000,
         flat_height=flat_height,
@@ -86,19 +87,19 @@ def test_damping_layer_calculation_from_icon_input(
     damping_height = min(vertical_config.rayleigh_damping_height, a_array[0])
     assert a_array[nrdmax] >= damping_height
     assert a_array[nrdmax + 1] < damping_height
-    assert vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.DAMPING)) == nrdmax
+    assert vertical_grid.index(v_grid.Domain(KDim, v_grid.Zone.DAMPING)) == nrdmax
 
 
 @pytest.mark.datatest
 def test_grid_size(experiment: test_defs.Experiment, grid_savepoint: sb.IconGridSavepoint) -> None:
-    config = v_grid.VerticalGridConfig(num_levels=grid_savepoint.num(dims.KDim))
+    config = v_grid.VerticalGridConfig(num_levels=grid_savepoint.num(KDim))
     vertical_grid = v_grid.VerticalGrid(
         config=config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
     )
 
-    assert experiment.config.vertical_grid.num_levels == vertical_grid.size(dims.KDim)
+    assert experiment.config.vertical_grid.num_levels == vertical_grid.size(KDim)
     assert experiment.config.vertical_grid.num_levels + 1 == vertical_grid.size(dims.KHalfDim)
 
 
@@ -126,7 +127,7 @@ def configure_vertical_grid(
     grid_savepoint: sb.IconGridSavepoint, top_moist_threshold: float = 22500.0
 ) -> v_grid.VerticalGrid:
     config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(dims.KDim), htop_moist_proc=top_moist_threshold
+        num_levels=grid_savepoint.num(KDim), htop_moist_proc=top_moist_threshold
     )
     vertical_grid = v_grid.VerticalGrid(
         config=config,
@@ -148,7 +149,7 @@ def test_moist_level_calculation(
     threshold = 22500.0
     vertical_grid = configure_vertical_grid(grid_savepoint, top_moist_threshold=threshold)
     assert expected_moist_level == vertical_grid.kstart_moist
-    assert expected_moist_level == vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.MOIST))
+    assert expected_moist_level == vertical_grid.index(v_grid.Domain(KDim, v_grid.Zone.MOIST))
 
 
 @pytest.mark.datatest
@@ -164,9 +165,7 @@ def test_flat_level_calculation(grid_savepoint: sb.IconGridSavepoint) -> None:
     vertical_grid = configure_vertical_grid(grid_savepoint)
 
     assert grid_savepoint.nflatlev() == vertical_grid.nflatlev
-    assert grid_savepoint.nflatlev() == vertical_grid.index(
-        v_grid.Domain(dims.KDim, v_grid.Zone.FLAT)
-    )
+    assert grid_savepoint.nflatlev() == vertical_grid.index(v_grid.Domain(KDim, v_grid.Zone.FLAT))
 
 
 def offsets() -> Iterator[int]:
@@ -263,7 +262,7 @@ def test_grid_index_bottom(
     vertical_grid = configure_vertical_grid(grid_savepoint)
     num_levels = (
         experiment.config.vertical_grid.num_levels
-        if dim == dims.KDim
+        if dim == KDim
         else experiment.config.vertical_grid.num_levels + 1
     )
     domain = v_grid.Domain(dim, v_grid.Zone.BOTTOM, valid_offset)
@@ -284,7 +283,7 @@ def test_grid_index_raises_if_index_above_num_levels(
 ) -> None:
     vertical_size = (
         experiment.config.vertical_grid.num_levels
-        if dim == dims.KDim
+        if dim == KDim
         else experiment.config.vertical_grid.num_levels + 1
     )
     invalid_offset = vertical_size + 1 + offset
@@ -308,7 +307,7 @@ def test_grid_index_raises_if_index_below_zero(
 ) -> None:
     vertical_size = (
         experiment.config.vertical_grid.num_levels
-        if dim == dims.KDim
+        if dim == KDim
         else experiment.config.vertical_grid.num_levels + 1
     )
     invalid_offset = -(vertical_size + 1 + offset)

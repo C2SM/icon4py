@@ -13,6 +13,7 @@ import pytest
 
 import icon4py.model.testing.stencil_tests as test_helpers
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_vp import (
     interpolate_edge_field_to_half_levels_vp,
@@ -52,9 +53,9 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base_grid.Grid) -> dict:
-        interpolant = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        interpolation_to_half_levels_vp = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        interpolant = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        wgtfac_e = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        interpolation_to_half_levels_vp = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

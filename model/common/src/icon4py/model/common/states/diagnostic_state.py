@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -65,43 +66,43 @@ def initialize_diagnostic_state(
     pressure = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
+        KDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     pressure_ifc = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     temperature = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
+        KDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     virtual_temperature = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
+        KDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     u = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
+        KDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     v = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
+        KDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )

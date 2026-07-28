@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2V
+from icon4py.model.common.dimension import E2C, E2V, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -60,6 +60,6 @@ def compute_horizontal_advection_term_for_vertical_velocity(
         out=z_v_grad_w,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import
     _compute_exner_from_rhotheta,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
@@ -43,9 +44,9 @@ class TestComputeExnerFromRhotheta(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, Any]:
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")
-        rho = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
-        exner = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
-        theta_v = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho = random_field(grid, dims.CellDim, KDim, low=1, high=2, dtype=wpfloat)
+        exner = random_field(grid, dims.CellDim, KDim, low=1, high=2, dtype=wpfloat)
+        theta_v = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
 
         return dict(
             rho=rho,
@@ -54,7 +55,7 @@ class TestComputeExnerFromRhotheta(StencilTest):
             rd_o_p0ref=rd_o_p0ref,
             domain={
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
-                dims.KDim: (0, gtx.int32(grid.num_levels)),
+                KDim: (0, gtx.int32(grid.num_levels)),
             },
             out=(theta_v, exner),
         )

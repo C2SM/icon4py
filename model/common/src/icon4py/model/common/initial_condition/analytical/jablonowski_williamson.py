@@ -23,6 +23,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.diagnostic_calculations import pressure as pressure_diagnostics
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
@@ -144,10 +145,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     num_cells = grid.num_cells
     num_levels = grid.num_levels
 
-    eta_v = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-    )
-    eta_v_at_edge = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator)
+    eta_v = data_alloc.zero_field(grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.wpfloat)
+    eta_v_at_edge = data_alloc.zero_field(grid, dims.EdgeDim, KDim, allocator=allocator)
 
     exner_ndarray = prognostic_state_now.exner.ndarray
     rho_ndarray = prognostic_state_now.rho.ndarray
@@ -294,7 +293,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         # hydrostatic pressure diagnosis and the moist-iteration first guess, so the
         # iteration converges to the same fixed point as Fortran.
         virtual_temperature = gtx.as_field(
-            (dims.CellDim, dims.KDim), theta_v_ndarray * exner_ndarray, allocator=allocator
+            (dims.CellDim, KDim), theta_v_ndarray * exner_ndarray, allocator=allocator
         )
         pressure_ndarray = pressure_diagnostics.diagnose_pressure_surface_to_top_ndarray(
             grid=grid,

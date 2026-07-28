@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2CO
+from icon4py.model.common.dimension import C2E2CO, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -39,6 +39,6 @@ def calculate_nabla2_for_w(
         out=z_nabla2_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -21,15 +22,15 @@ def _limit_vertical_parabola_semi_monotonically(
     q_face_up, q_face_low = where(
         l_limit != 0,
         where(
-            (p_cc < minimum(p_face, p_face(dims.KDim + 1))),
+            (p_cc < minimum(p_face, p_face(KDim + 1))),
             (p_cc, p_cc),
             where(
-                p_face > p_face(dims.KDim + 1),
-                (3.0 * p_cc - 2.0 * p_face(dims.KDim + 1), p_face(dims.KDim + 1)),
+                p_face > p_face(KDim + 1),
+                (3.0 * p_cc - 2.0 * p_face(KDim + 1), p_face(KDim + 1)),
                 (p_face, 3.0 * p_cc - 2.0 * p_face),
             ),
         ),
-        (p_face, p_face(dims.KDim + 1)),
+        (p_face, p_face(KDim + 1)),
     )
 
     return q_face_up, q_face_low
@@ -54,6 +55,6 @@ def limit_vertical_parabola_semi_monotonically(
         out=(p_face_up, p_face_low),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

@@ -10,9 +10,10 @@ from gt4py.next import exp, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
+from icon4py.model.common.dimension import KDim
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
+@gtx.scan_operator(axis=KDim, forward=False, init=(0.0, 0.0, True))
 def _scan_pressure(
     state: tuple[ta.wpfloat, ta.wpfloat, bool],
     ddqz_z_full: ta.wpfloat,
@@ -72,6 +73,6 @@ def diagnose_pressure(
         out=(pressure, pressure_ifc),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

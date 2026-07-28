@@ -35,6 +35,7 @@ from icon4py.bindings import (
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.states import nonhydro_states
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
@@ -71,37 +72,37 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     nudgecoeff_e: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
     mask_prog_halo_c: gtx.Field[gtx.Dims[dims.CellDim], bool],
-    rayleigh_w: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
-    exner_exfac: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    exner_ref_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    wgtfacq_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    inv_ddqz_z_full: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    rho_ref_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    theta_ref_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    rayleigh_w: gtx.Field[gtx.Dims[KDim], gtx.float64],
+    exner_exfac: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    exner_ref_mc: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    wgtfacq_c: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    inv_ddqz_z_full: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    rho_ref_mc: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    theta_ref_mc: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
     vwind_expl_wgt: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    d_exner_dz_ref_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    ddqz_z_half: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    theta_ref_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    d2dexdz2_fac1_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    d2dexdz2_fac2_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    rho_ref_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    theta_ref_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.float64],
-    vertidx_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
+    d_exner_dz_ref_ic: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    ddqz_z_half: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    theta_ref_ic: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    d2dexdz2_fac1_mc: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    d2dexdz2_fac2_mc: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    rho_ref_me: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    theta_ref_me: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], gtx.float64],
+    vertidx_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32],
     pg_edgeidx: wrapper_common.OptionalInt32Array1D,
     pg_vertidx: wrapper_common.OptionalInt32Array1D,
     pg_exdist: wrapper_common.OptionalFloat64Array1D,
-    ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    ddxt_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    wgtfac_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    wgtfacq_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    ddxt_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    wgtfac_e: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    wgtfacq_e: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
     vwind_impl_wgt: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
     hmask_dd3d: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    scalfac_dd3d: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
-    coeff1_dwdz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    coeff2_dwdz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    scalfac_dd3d: gtx.Field[gtx.Dims[KDim], gtx.float64],
+    coeff1_dwdz: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    coeff2_dwdz: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_owner_mask: gtx.Field[gtx.Dims[dims.CellDim], bool],
     itime_scheme: gtx.int32,
@@ -213,26 +214,26 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
         nudgecoeff_e=nudgecoeff_e,
     )
 
-    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
-    if len(wgtfacq_c.domain[dims.KDim].unit_range) != 3:
+    nlev = wgtfac_c.domain[KDim].unit_range.stop - 1
+    if len(wgtfacq_c.domain[KDim].unit_range) != 3:
         raise ValueError(
-            f"Expected wgtfacq_c to have a vertical dimension of size 3, but got {len(wgtfacq_c.domain[dims.KDim].unit_range)}."
+            f"Expected wgtfacq_c to have a vertical dimension of size 3, but got {len(wgtfacq_c.domain[KDim].unit_range)}."
         )
     # uses GT4Py's embedded shift to move the domain to surface levels
-    wgtfacq_c = field_utils.flip(wgtfacq_c(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)
+    wgtfacq_c = field_utils.flip(wgtfacq_c(KDim - (nlev - 3)), KDim, allocator=allocator)
 
-    if len(wgtfacq_e.domain[dims.KDim].unit_range) != 3:
+    if len(wgtfacq_e.domain[KDim].unit_range) != 3:
         raise ValueError(
-            f"Expected wgtfacq_e to have a vertical dimension of size 3, but got {len(wgtfacq_e.domain[dims.KDim].unit_range)}."
+            f"Expected wgtfacq_e to have a vertical dimension of size 3, but got {len(wgtfacq_e.domain[KDim].unit_range)}."
         )
     # uses GT4Py's embedded shift to move the domain to surface levels
-    wgtfacq_e = field_utils.flip(wgtfacq_e(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)
+    wgtfacq_e = field_utils.flip(wgtfacq_e(KDim - (nlev - 3)), KDim, allocator=allocator)
 
     # In Fortran `vertidx_gradp` contains `0`s in areas where the array is not used.
     # When we translate to offsets we just subtract the current index, therefore these values will be negative.
     # Since in Fortran accessing index `0` would be out-of-bounds, we should be safe.
     vertoffset_gradp = field_utils.index2offset(
-        data_alloc.adjust_fortran_indices(vertidx_gradp), dims.KDim, allocator
+        data_alloc.adjust_fortran_indices(vertidx_gradp), KDim, allocator
     )
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
@@ -304,41 +305,41 @@ type NumpyFloatArray1D = Annotated[
 
 @icon4py_export.export
 def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
-    rho_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    rho_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    exner_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    exner_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    w_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    w_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    theta_v_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    theta_v_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    vn_now: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    vn_new: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    w_concorr_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    ddt_vn_apc_ntl1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    ddt_vn_apc_ntl2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    ddt_w_adv_ntl1: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    ddt_w_adv_ntl2: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    theta_v_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    rho_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    exner_pr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    exner_dyn_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    ddt_exner_phy: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    grf_tend_rho: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    grf_tend_thv: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    grf_tend_w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    mass_fl_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    ddt_vn_phy: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    grf_tend_vn: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64] | None,
-    rho_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
-    exner_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
-    mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    rho_now: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    rho_new: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    exner_now: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    exner_new: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    w_now: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    w_new: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    theta_v_now: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    theta_v_new: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    vn_now: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    vn_new: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    w_concorr_c: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    ddt_vn_apc_ntl1: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    ddt_vn_apc_ntl2: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    ddt_w_adv_ntl1: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    ddt_w_adv_ntl2: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    theta_v_ic: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    rho_ic: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    exner_pr: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    exner_dyn_incr: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    ddt_exner_phy: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    grf_tend_rho: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    grf_tend_thv: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    grf_tend_w: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    mass_fl_e: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    ddt_vn_phy: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    grf_tend_vn: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    vt: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64] | None,
+    rho_incr: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64] | None,
+    exner_incr: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64] | None,
+    mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
+    mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, KDim], gtx.float64],
+    vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], gtx.float64],
     dtime: gtx.float64,
     max_vcfl_size1_array: NumpyFloatArray1D,  # receive from Fortran as a single-element array
     lprep_adv: bool,

@@ -15,6 +15,7 @@ import pytest
 
 from icon4py.model.atmosphere.tracer_advection.stencils import apply_horizontal_density_increment
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
@@ -46,13 +47,11 @@ class TestApplyHorizontalDensityIncrement(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_contra_v = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
-        )
-        deepatmo_divzl = data_alloc.random_field(grid, dims.KDim)
-        deepatmo_divzu = data_alloc.random_field(grid, dims.KDim)
-        rhodz_ast2 = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        p_rhodz_new = data_alloc.random_field(grid, dims.CellDim, KDim)
+        p_mflx_contra_v = data_alloc.random_field(grid, dims.CellDim, KDim, extend={KDim: 1})
+        deepatmo_divzl = data_alloc.random_field(grid, KDim)
+        deepatmo_divzu = data_alloc.random_field(grid, KDim)
+        rhodz_ast2 = data_alloc.zero_field(grid, dims.CellDim, KDim)
         p_dtime = 0.1
         return dict(
             p_rhodz_new=p_rhodz_new,

@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges 
     interpolate_vt_to_interface_edges,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -54,10 +55,10 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
+        vt = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
 
-        z_vt_ie = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_vt_ie = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

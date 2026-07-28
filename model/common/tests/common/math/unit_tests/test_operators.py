@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, base as base_grid
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell_k import compute_nabla2_on_cell_k
@@ -70,9 +71,9 @@ class TestNabla2OnCellK(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        psi_c = constant_field(grid, 1.0, dims.CellDim, dims.KDim)
+        psi_c = constant_field(grid, 1.0, dims.CellDim, KDim)
         geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
-        nabla2_psi_c = zero_field(grid, dims.CellDim, dims.KDim)
+        nabla2_psi_c = zero_field(grid, dims.CellDim, KDim)
         return dict(
             psi_c=psi_c,
             geofac_n2s=geofac_n2s,

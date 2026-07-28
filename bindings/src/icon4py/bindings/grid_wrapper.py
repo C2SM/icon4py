@@ -22,6 +22,7 @@ from icon4py.bindings import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import icon as icon_grid, vertical
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.tools import py2fgen
@@ -106,7 +107,7 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     edge_center_lon: fa.EdgeField[wpfloat],
     primal_normal_x: fa.EdgeField[wpfloat],
     primal_normal_y: fa.EdgeField[wpfloat],
-    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
+    vct_a: gtx.Field[gtx.Dims[KDim], gtx.float64],
     lowest_layer_thickness: gtx.float64,
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,

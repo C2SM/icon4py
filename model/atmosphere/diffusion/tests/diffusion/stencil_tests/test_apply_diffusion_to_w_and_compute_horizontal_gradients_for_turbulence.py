@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
@@ -145,15 +146,15 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
         geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim)
         geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim)
-        diff_multfac_n2w = random_field(grid, dims.KDim)
+        diff_multfac_n2w = random_field(grid, KDim)
         area = random_field(grid, dims.CellDim)
         geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim)
-        w_old = random_field(grid, dims.CellDim, dims.KDim)
+        w_old = random_field(grid, dims.CellDim, KDim)
         diff_multfac_w = 5.0
 
-        w = zero_field(grid, dims.CellDim, dims.KDim)
-        dwdx = random_field(grid, dims.CellDim, dims.KDim)
-        dwdy = random_field(grid, dims.CellDim, dims.KDim)
+        w = zero_field(grid, dims.CellDim, KDim)
+        dwdx = random_field(grid, dims.CellDim, KDim)
+        dwdy = random_field(grid, dims.CellDim, KDim)
 
         return dict(
             area=area,

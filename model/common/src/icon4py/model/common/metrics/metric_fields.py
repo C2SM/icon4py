@@ -30,7 +30,7 @@ from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C
+from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, KDim
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
@@ -56,8 +56,8 @@ def _compute_ddqz_z_half(
 ) -> fa.CellKField[wpfloat]:
     return with_boundaries_on_half_levels_on_cells(
         top=2.0 * (z_ifc - z_mc),
-        interior=z_mc(dims.KDim - 1) - z_mc,
-        bottom=2.0 * (z_mc(dims.KDim - 1) - z_ifc),
+        interior=z_mc(KDim - 1) - z_mc,
+        bottom=2.0 * (z_mc(KDim - 1) - z_ifc),
         nlev=nlev,
     )
 
@@ -96,7 +96,7 @@ def compute_ddqz_z_half(  # noqa: PLR0917 [too-many-positional-arguments]
         out=ddqz_z_half,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -141,7 +141,7 @@ def compute_ddqz_z_full_and_inverse(  # noqa: PLR0917 [too-many-positional-argum
         out=(ddqz_z_full, inv_ddqz_z_full),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -153,9 +153,9 @@ def _compute_scaling_factor_for_3d_divdamp(
     divdamp_trans_end: wpfloat,
     divdamp_type: gtx.int32,
 ) -> fa.KField[wpfloat]:
-    scaling_factor_for_3d_divdamp = broadcast(1.0, (dims.KDim,))
+    scaling_factor_for_3d_divdamp = broadcast(1.0, (KDim,))
     if divdamp_type == 32:
-        zf = 0.5 * (vct_a + vct_a(dims.KDim + 1))  # depends on nshift_total, assumed to be always 0
+        zf = 0.5 * (vct_a + vct_a(KDim + 1))  # depends on nshift_total, assumed to be always 0
         scaling_factor_for_3d_divdamp = where(
             zf >= divdamp_trans_end, 0.0, scaling_factor_for_3d_divdamp
         )
@@ -183,7 +183,7 @@ def compute_scaling_factor_for_3d_divdamp(  # noqa: PLR0917 [too-many-positional
     See mo_vertical_grid.f90
 
     Args:
-        vct_a: Field[Dims[dims.KDim], float],
+        vct_a: Field[Dims[KDim], float],
         scaling_factor_for_3d_divdamp: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
         divdamp_trans_start: lower bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_trans_end: upper bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
@@ -197,7 +197,7 @@ def compute_scaling_factor_for_3d_divdamp(  # noqa: PLR0917 [too-many-positional
         divdamp_trans_end,
         divdamp_type,
         out=scaling_factor_for_3d_divdamp,
-        domain={dims.KDim: (vertical_start, vertical_end)},
+        domain={KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -210,7 +210,7 @@ def _compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
     vct_a_1: wpfloat,
     pi_const: wpfloat,
 ) -> fa.KField[wpfloat]:
-    rayleigh_w = broadcast(0.0, (dims.KDim,))
+    rayleigh_w = broadcast(0.0, (KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
     if rayleigh_type == 1:  # RayleighType.CLASSIC
@@ -245,7 +245,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
 
     Args:
         rayleigh_w: (output) Rayleigh damping
-        vct_a: Field[Dims[dims.KDim], float]
+        vct_a: Field[Dims[KDim], float]
         vct_a_1: 1D of vct_a
         damping_height: height at which w-damping and sponge layer start
         rayleigh_type: type of Rayleigh damping (1: CLASSIC, 2: Klemp (2008))
@@ -264,7 +264,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
         vct_a_1,
         pi_const,
         out=rayleigh_w,
-        domain={dims.KDim: (vertical_start, vertical_end)},
+        domain={KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -272,12 +272,8 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
 def _compute_coeff_dwdz(
     ddqz_z_full: fa.CellKField[wpfloat], z_ifc: fa.CellKField[wpfloat]
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
-    coeff1_dwdz = (
-        ddqz_z_full / ddqz_z_full(dims.KDim - 1) / (z_ifc(dims.KDim - 1) - z_ifc(dims.KDim + 1))
-    )
-    coeff2_dwdz = (
-        ddqz_z_full(dims.KDim - 1) / ddqz_z_full / (z_ifc(dims.KDim - 1) - z_ifc(dims.KDim + 1))
-    )
+    coeff1_dwdz = ddqz_z_full / ddqz_z_full(KDim - 1) / (z_ifc(KDim - 1) - z_ifc(KDim + 1))
+    coeff2_dwdz = ddqz_z_full(KDim - 1) / ddqz_z_full / (z_ifc(KDim - 1) - z_ifc(KDim + 1))
 
     return coeff1_dwdz, coeff2_dwdz
 
@@ -315,7 +311,7 @@ def compute_coeff_dwdz(  # noqa: PLR0917 [too-many-positional-arguments]
         out=(coeff1_dwdz, coeff2_dwdz),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -336,7 +332,7 @@ def compute_ddxn_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
         out=ddxn_z_half_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -377,7 +373,7 @@ def compute_ddxt_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
         out=ddxt_z_half_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -431,10 +427,10 @@ def _compute_maxslp_maxhgtd(
 
 @gtx.program
 def compute_maxslp_maxhgtd(  # noqa: PLR0917 [too-many-positional-arguments]
-    ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], wpfloat],
+    ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], wpfloat],
     dual_edge_length: gtx.Field[gtx.Dims[dims.EdgeDim], wpfloat],
-    maxslp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
-    maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxslp: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
+    maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -461,7 +457,7 @@ def compute_maxslp_maxhgtd(  # noqa: PLR0917 [too-many-positional-arguments]
         out=(maxslp, maxhgtd),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -520,7 +516,7 @@ def compute_exner_exfac(  # noqa: PLR0917 [too-many-positional-arguments]
         out=exner_exfac,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -556,7 +552,7 @@ def compute_wgtfac_e(  # noqa: PLR0917 [too-many-positional-arguments]
         out=wgtfac_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -654,8 +650,8 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(  # noqa: PL
 
     """
 
-    e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
-    k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
+    e_lev = broadcast(e_lev, (dims.EdgeDim, KDim))
+    k_lev = broadcast(k_lev, (dims.EdgeDim, KDim))
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     downward_distance = _compute_downward_extrapolation_distance(topography)
     extrapolation_distance = concat_where(
@@ -703,7 +699,7 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(  # noqa: PLR
         out=pg_exdist_dsl,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -808,11 +804,11 @@ def _compute_weighted_cell_neighbor_sum(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_weighted_cell_neighbor_sum(  # noqa: PLR0917 [too-many-positional-arguments]
-    maxslp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
-    maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxslp: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
+    maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
     c_bln_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
-    maxslp_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
-    maxhgtd_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxslp_avg: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
+    maxhgtd_avg: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -841,7 +837,7 @@ def compute_weighted_cell_neighbor_sum(  # noqa: PLR0917 [too-many-positional-ar
         out=maxslp_avg,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -851,7 +847,7 @@ def compute_weighted_cell_neighbor_sum(  # noqa: PLR0917 [too-many-positional-ar
         out=maxhgtd_avg,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -889,7 +885,7 @@ def compute_max_nbhgt(
     )
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0, False))
+@gtx.scan_operator(axis=KDim, forward=True, init=(0, False))
 def _compute_param(  # noqa: PLR0917 [too-many-positional-arguments]
     param: tuple[gtx.int32, bool],
     z_me_jk: float,
@@ -909,7 +905,7 @@ def _compute_param(  # noqa: PLR0917 [too-many-positional-arguments]
 def _compute_z_ifc_off_koff(
     z_ifc_off: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
-    n = z_ifc_off(dims.KDim + 1)
+    n = z_ifc_off(KDim + 1)
     return n
 
 

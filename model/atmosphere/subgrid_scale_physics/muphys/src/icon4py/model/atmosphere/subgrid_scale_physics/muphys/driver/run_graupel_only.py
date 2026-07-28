@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations impor
     graupel_dace_hooks,
 )
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import device_utils
 
 
@@ -129,7 +130,7 @@ def main():
 
     out = common.GraupelOutput.allocate(
         allocator=allocator,
-        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+        domain=gtx.domain({dims.CellDim: inp.ncells, KDim: inp.nlev}),
         dtype=dtype,
         references=references,
     )

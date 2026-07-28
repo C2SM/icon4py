@@ -14,6 +14,7 @@ from icon4py.bindings import icon4py_export
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_graupel_only
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
 from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
+from icon4py.model.common.dimension import KDim
 
 
 graupel_program = None
@@ -26,23 +27,23 @@ def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
     ivend: gtx.int32,
     kstart: gtx.int32,
     dt: ta.wpfloat,
-    dz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    t: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    rho: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    p: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    qv: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    qc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    qi: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    qr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    qs: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    qg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    dz: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    t: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    rho: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    p: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    qv: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    qc: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    qi: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    qr: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    qs: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    qg: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
     qnc: ta.wpfloat,
-    prr_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    pri_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    prs_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    prg_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
-    pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    prr_gsp: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    pri_gsp: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    prs_gsp: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    prg_gsp: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    pflx: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
+    pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, KDim], ta.wpfloat],
     enable_masking: bool,
     enable_dace_hooks: bool,
     wait_for_completion: bool,
@@ -82,11 +83,11 @@ def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
         t_out=t,
         q_out=q,
         pflx=pflx,
-        pr=prr_gsp(dims.KDim - (ke - 1)),
-        ps=prs_gsp(dims.KDim - (ke - 1)),
-        pi=pri_gsp(dims.KDim - (ke - 1)),
-        pg=prg_gsp(dims.KDim - (ke - 1)),
-        pre=pre_gsp(dims.KDim - (ke - 1)),
+        pr=prr_gsp(KDim - (ke - 1)),
+        ps=prs_gsp(KDim - (ke - 1)),
+        pi=pri_gsp(KDim - (ke - 1)),
+        pg=prg_gsp(KDim - (ke - 1)),
+        pre=pre_gsp(KDim - (ke - 1)),
     )
 
 

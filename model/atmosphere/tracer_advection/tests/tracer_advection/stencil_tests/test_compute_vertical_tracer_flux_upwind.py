@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_tracer_
     compute_vertical_tracer_flux_upwind,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
@@ -44,12 +45,12 @@ class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, KDim)
         p_mflx_contra_v = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+            grid, dims.CellDim, KDim
         )  # TODO(dastrm): should be KHalfDim
         p_upflux = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim
+            grid, dims.CellDim, KDim
         )  # TODO(dastrm): should be KHalfDim
         return dict(
             p_cc=p_cc,

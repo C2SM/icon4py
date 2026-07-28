@@ -8,6 +8,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -19,7 +20,7 @@ def _compute_first_vertical_derivative_at_cells(
     """
     This stencil computes the first vertical at cells
     """
-    first_vertical_derivative = (cell_kdim_field - cell_kdim_field(dims.KDim + 1)) * inv_ddqz_z_full
+    first_vertical_derivative = (cell_kdim_field - cell_kdim_field(KDim + 1)) * inv_ddqz_z_full
     return first_vertical_derivative
 
 
@@ -39,6 +40,6 @@ def compute_first_vertical_derivative_at_cells(  # noqa: PLR0917 [too-many-posit
         out=first_vertical_derivative,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

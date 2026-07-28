@@ -9,6 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, broadcast, maximum  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -29,9 +30,9 @@ def _broadcast_zero_to_three_edge_kdim_fields_wp() -> tuple[
     fa.EdgeKField[wpfloat],
 ]:
     return (
-        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+        broadcast(wpfloat("0.0"), (dims.EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (dims.EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (dims.EdgeDim, KDim)),
     )
 
 

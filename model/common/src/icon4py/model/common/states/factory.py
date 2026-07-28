@@ -61,6 +61,7 @@ from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import (
     base as base_grid,
     horizontal as h_grid,
@@ -460,7 +461,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             match dim:
                 case dims.KHalfDim:
                     return grids.vertical_grid.num_levels + 1
-                case dims.KDim:
+                case _ if dim is KDim:
                     return grids.vertical_grid.num_levels
                 case _:
                     return grids.grid.size[dim]
@@ -468,7 +469,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         def _map_dim(dim: gtx.Dimension) -> gtx.Dimension:
             match dim:
                 case dims.KHalfDim:
-                    return dims.KDim
+                    return KDim
                 case _:
                     return dim
 
@@ -543,7 +544,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
         def _map_dim(dim: gtx.Dimension) -> gtx.Dimension:
             if dim == dims.KHalfDim:
-                return dims.KDim
+                return KDim
             return dim
 
         allocate = gtx.constructors.zeros.partial(allocator=backend)
@@ -820,4 +821,4 @@ def dtype_or_default(
 
 def replace_khalfdim(dim: gtx.Dimension) -> gtx.Dimension:
     """workaround to have consistent definitions. Remove once gt4py supports vertically staggered dimension"""
-    return dims.KDim if dim == dims.KHalfDim else dim
+    return KDim if dim == dims.KHalfDim else dim

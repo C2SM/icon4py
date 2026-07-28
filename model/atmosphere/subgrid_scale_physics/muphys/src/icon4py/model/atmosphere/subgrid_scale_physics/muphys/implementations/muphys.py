@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.saturation_adjus
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel import graupel
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -99,64 +100,64 @@ def muphys_run(  # noqa: PLR0917 [too-many-positional-arguments]
             # t_out
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                dims.KDim: (vertical_start, vertical_end),
+                KDim: (vertical_start, vertical_end),
             },
             # q_out
             (
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    dims.KDim: (vertical_start, vertical_end),
+                    KDim: (vertical_start, vertical_end),
                 },
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    dims.KDim: (vertical_start, vertical_end),
+                    KDim: (vertical_start, vertical_end),
                 },
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    dims.KDim: (vertical_start, vertical_end),
+                    KDim: (vertical_start, vertical_end),
                 },
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    dims.KDim: (vertical_start, vertical_end),
+                    KDim: (vertical_start, vertical_end),
                 },
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    dims.KDim: (vertical_start, vertical_end),
+                    KDim: (vertical_start, vertical_end),
                 },
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    dims.KDim: (vertical_start, vertical_end),
+                    KDim: (vertical_start, vertical_end),
                 },
             ),
             # pflx
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                dims.KDim: (vertical_start, vertical_end),
+                KDim: (vertical_start, vertical_end),
             },
             # pr
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                dims.KDim: (vertical_end - 1, vertical_end),
+                KDim: (vertical_end - 1, vertical_end),
             },
             # ps
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                dims.KDim: (vertical_end - 1, vertical_end),
+                KDim: (vertical_end - 1, vertical_end),
             },
             # pi
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                dims.KDim: (vertical_end - 1, vertical_end),
+                KDim: (vertical_end - 1, vertical_end),
             },
             # pg
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                dims.KDim: (vertical_end - 1, vertical_end),
+                KDim: (vertical_end - 1, vertical_end),
             },
             # pre
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                dims.KDim: (vertical_end - 1, vertical_end),
+                KDim: (vertical_end - 1, vertical_end),
             },
         ),
     )

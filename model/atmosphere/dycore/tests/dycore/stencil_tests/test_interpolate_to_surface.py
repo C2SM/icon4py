@@ -13,6 +13,7 @@ import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import interpolate_to_surface
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
@@ -54,9 +55,9 @@ class TestInterpolateToSurface(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        interpolant = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        interpolation_to_surface = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        interpolant = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        wgtfacq_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        interpolation_to_surface = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
 
         return dict(
             interpolant=interpolant,

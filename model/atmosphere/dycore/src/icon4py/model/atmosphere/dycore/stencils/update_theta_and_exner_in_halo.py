@@ -11,6 +11,7 @@ from gt4py.next import exp, log, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -76,6 +77,6 @@ def update_theta_and_exner_in_halo(
         out=(theta_v_new, exner_new),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

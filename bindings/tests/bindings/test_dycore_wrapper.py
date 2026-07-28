@@ -17,6 +17,7 @@ import pytest
 from icon4py.bindings import common as wrapper_common, dycore_wrapper
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
@@ -54,7 +55,7 @@ def solve_nh_init(
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
     # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     wgtfacq_c = test_utils.array_to_array_info(
-        metrics_savepoint._get_field("wgtfacq_c", dims.CellDim, dims.KDim).ndarray
+        metrics_savepoint._get_field("wgtfacq_c", dims.CellDim, KDim).ndarray
     )
     inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
     rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
@@ -75,7 +76,7 @@ def solve_nh_init(
     # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     vertidx_gradp = test_utils.array_to_array_info(
         metrics_savepoint._get_field(
-            "vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+            "vertidx_gradp", dims.EdgeDim, dims.E2CDim, KDim, dtype=gtx.int32
         ).ndarray
     )
 
@@ -87,7 +88,7 @@ def solve_nh_init(
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
     # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     wgtfacq_e = test_utils.array_to_array_info(
-        metrics_savepoint._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim).ndarray
+        metrics_savepoint._get_field("wgtfacq_e", dims.EdgeDim, KDim).ndarray
     )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
@@ -279,7 +280,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
     # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     wgtfacq_c = test_utils.array_to_array_info(
-        metrics_savepoint._get_field("wgtfacq_c", dims.CellDim, dims.KDim).ndarray
+        metrics_savepoint._get_field("wgtfacq_c", dims.CellDim, KDim).ndarray
     )
     inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
     rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
@@ -300,7 +301,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     vertidx_gradp = test_utils.array_to_array_info(
         metrics_savepoint._get_field(
-            "vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+            "vertidx_gradp", dims.EdgeDim, dims.E2CDim, KDim, dtype=gtx.int32
         ).ndarray
     )
 
@@ -312,7 +313,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
     # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     wgtfacq_e = test_utils.array_to_array_info(
-        metrics_savepoint._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim).ndarray
+        metrics_savepoint._get_field("wgtfacq_e", dims.EdgeDim, KDim).ndarray
     )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
@@ -370,7 +371,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, KDim).ndarray
     )  # TODO(): p.vol_flx_ic()
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
@@ -396,11 +397,11 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     ddt_w_adv_ntl2 = test_utils.array_to_array_info(sp.ddt_w_adv_pc(1).ndarray)
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
-    vn_incr_field = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    vn_incr_field = data_alloc.zero_field(icon_grid, dims.EdgeDim, KDim)
     vn_incr = test_utils.array_to_array_info(vn_incr_field.ndarray)
-    rho_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    rho_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, KDim)
     rho_incr = test_utils.array_to_array_info(rho_incr_field.ndarray)
-    exner_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    exner_incr_field = data_alloc.zero_field(icon_grid, dims.CellDim, KDim)
     exner_incr = test_utils.array_to_array_info(exner_incr_field.ndarray)
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
@@ -530,7 +531,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim
+            icon_grid, dims.CellDim, KDim
         ),  # TODO(): sp.vol_flx_ic(),
     )
     expected_second_order_divdamp_factor = sp.divdamp_fac_o2()
@@ -818,7 +819,7 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, KDim).ndarray
     )
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
@@ -845,13 +846,13 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
     vn_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.EdgeDim, KDim).ndarray
     )
     rho_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, KDim).ndarray
     )
     exner_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, KDim).ndarray
     )
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)
@@ -1001,7 +1002,7 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
     # PrepAdvection
     vn_traj = test_utils.array_to_array_info(sp.vn_traj().ndarray)
     vol_flx_ic = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, KDim).ndarray
     )
     mass_flx_me = test_utils.array_to_array_info(sp.mass_flx_me().ndarray)
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
@@ -1032,13 +1033,13 @@ def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-
     vt = test_utils.array_to_array_info(sp.vt().ndarray)
     vn_ie = test_utils.array_to_array_info(sp.vn_ie().ndarray)
     vn_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.EdgeDim, KDim).ndarray
     )
     rho_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, KDim).ndarray
     )
     exner_incr = test_utils.array_to_array_info(
-        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).ndarray
+        data_alloc.zero_field(icon_grid, dims.CellDim, KDim).ndarray
     )
     w_concorr_c = test_utils.array_to_array_info(sp.w_concorr_c().ndarray)
     exner_dyn_incr = test_utils.array_to_array_info(sp.exner_dyn_incr().ndarray)

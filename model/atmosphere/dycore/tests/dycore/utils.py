@@ -12,6 +12,7 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -120,11 +121,11 @@ def construct_diagnostics(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
+        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, KDim, allocator=backend),
         normal_wind_iau_increment=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, allocator=backend
+            grid, dims.EdgeDim, KDim, allocator=backend
         ),
-        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
+        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, KDim, allocator=backend),
         exner_dynamical_increment=init_savepoint.exner_dyn_incr(),
     )
 

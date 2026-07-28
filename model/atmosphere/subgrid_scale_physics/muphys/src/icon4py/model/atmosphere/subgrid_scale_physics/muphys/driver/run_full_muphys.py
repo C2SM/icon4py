@@ -31,6 +31,7 @@ from icon4py.model.common import (
     model_options,
     type_alias as ta,
 )
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import device_utils
 
 
@@ -196,7 +197,7 @@ def main():
         references = None
 
     out = common.GraupelOutput.allocate(
-        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+        domain=gtx.domain({dims.CellDim: inp.ncells, KDim: inp.nlev}),
         allocator=allocator,
         dtype=dtype,
         references=references,

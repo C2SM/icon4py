@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_th
     compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -69,14 +70,14 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        rho = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        rho_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_rth_pr_1 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        rho = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        rho_ref_mc = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        theta_v = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        theta_ref_mc = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        rho_ic = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        z_rth_pr_1 = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        z_rth_pr_2 = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,

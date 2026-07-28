@@ -10,6 +10,7 @@ from gt4py.next import astype
 
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -44,6 +45,6 @@ def set_theta_v_prime_ic_at_lower_boundary(
         out=(z_theta_v_pr_ic, theta_v_ic),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

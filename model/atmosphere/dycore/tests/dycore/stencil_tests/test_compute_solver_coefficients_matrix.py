@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_solver_coefficients_matrix
     compute_solver_coefficients_matrix,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -78,15 +79,15 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        exner_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        theta_v_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        exner_nnow = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        rho_nnow = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        theta_v_nnow = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_alpha = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_beta = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        rho_ic = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        z_alpha = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
+        z_beta = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
         dtime = ta.wpfloat("10.0")
         rd = ta.wpfloat("5.0")
         cvd = ta.wpfloat("3.0")

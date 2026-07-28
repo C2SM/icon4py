@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
 from icon4py.model.common.io import cf_utils, utils, writers
 from icon4py.model.common.states import data, metadata
@@ -47,7 +48,7 @@ def initialized_writer(
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
     vertical_params = v_grid.VerticalGrid(
         vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), heights),
+        vct_a=gtx.as_field((KDim,), heights),
         vct_b=None,
     )
     horizontal = grid.config.horizontal_config
@@ -163,7 +164,7 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
     assert len(dataset.variables[writers.TIME]) == 1
     assert "air_density" in dataset.variables
 
-    new_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
+    new_rho = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=np.float32)
     state["air_density"] = utils.to_data_array(
         new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
     )

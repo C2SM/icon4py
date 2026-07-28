@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import maximum, minimum, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E
+from icon4py.model.common.dimension import C2E, KDim
 
 
 @gtx.field_operator
@@ -51,6 +51,6 @@ def compute_positive_definite_horizontal_multiplicative_flux_factor(
         out=r_m,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

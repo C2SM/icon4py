@@ -19,7 +19,8 @@ import pytest
 import uxarray as ux  # type: ignore[import-untyped]  # uxarray has no type hints
 
 import icon4py.model.common.exceptions as errors
-from icon4py.model.common import dimension as dims, time
+from icon4py.model.common import time
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import ugrid
 from icon4py.model.common.io.io import (
@@ -71,7 +72,7 @@ def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,),
+            (KDim,),
             np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1),  # type: ignore[arg-type]
         ),
         vct_b=None,
@@ -95,7 +96,7 @@ def test_io_monitor_write_ugrid_file(test_path: pathlib.Path) -> None:
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,),
+            (KDim,),
             np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1),  # type: ignore[arg-type]
         ),
         vct_b=None,
@@ -135,7 +136,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
+        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
         vct_b=None,
     )
 
@@ -185,7 +186,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
+        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
         vct_b=None,
     )
 
@@ -293,7 +294,7 @@ def create_field_group_monitor(
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,),
+            (KDim,),
             np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1),  # type: ignore[arg-type]
         ),
         vct_b=None,

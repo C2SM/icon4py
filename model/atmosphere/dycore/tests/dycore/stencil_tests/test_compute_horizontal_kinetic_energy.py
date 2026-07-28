@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy 
     compute_horizontal_kinetic_energy,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -46,12 +47,12 @@ class TestComputeHorizontalKineticEnergy(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        vt = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
 
-        vn_ie = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_vt_ie = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_kin_hor_e = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn_ie = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        z_vt_ie = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        z_kin_hor_e = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

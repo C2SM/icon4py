@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C2EO
+from icon4py.model.common.dimension import E2C2EO, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -41,6 +41,6 @@ def compute_graddiv2_of_vn(
         out=z_graddiv2_vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

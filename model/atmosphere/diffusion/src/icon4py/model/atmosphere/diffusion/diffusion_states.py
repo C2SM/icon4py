@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -46,9 +47,9 @@ class DiffusionMetricState:
     wgtfac_c: fa.CellKField[
         float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32]
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], gtx.int32]
     zd_diffcoef: fa.CellKField[float]
-    zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], float]
+    zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], float]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -94,32 +95,32 @@ def initialize_diffusion_diagnostic_state(
     hdef_ic = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
     )
     div_ic = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
     )
     dwdx = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
     )
     dwdy = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
     )

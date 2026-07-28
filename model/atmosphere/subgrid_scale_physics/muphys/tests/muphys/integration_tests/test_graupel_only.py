@@ -16,6 +16,7 @@ from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_graupel_only
 from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.dimension import KDim
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
 
@@ -82,7 +83,7 @@ def test_graupel_only(
     # but save in this case as we are not reading the input with an offset.
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
-        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+        domain=gtx.domain({dims.CellDim: inp.ncells, KDim: inp.nlev}),
         references={
             "qv": inp.qv,
             "qc": inp.qc,

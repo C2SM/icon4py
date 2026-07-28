@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.apply_2nd_order_divergence_damping
     apply_2nd_order_divergence_damping,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -48,8 +49,8 @@ class TestApply2ndOrderDivergenceDamping(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_graddiv_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_graddiv_vn = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
         scal_divdamp_o2 = wpfloat("5.0")
 
         return dict(

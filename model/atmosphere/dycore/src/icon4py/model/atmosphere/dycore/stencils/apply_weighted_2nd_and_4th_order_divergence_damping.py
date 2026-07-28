@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.dycore.dycore_utils import (
     _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -72,6 +73,6 @@ def apply_weighted_2nd_and_4th_order_divergence_damping(
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

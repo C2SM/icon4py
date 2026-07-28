@@ -10,7 +10,7 @@ from gt4py.next import astype
 from gt4py.next.experimental import as_offset
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, Koff
+from icon4py.model.common.dimension import E2C, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -18,8 +18,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
-    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], vpfloat],
+    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
     z_dexner_dz_c_2: fa.CellKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
@@ -56,8 +56,8 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
-    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], vpfloat],
+    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
     z_dexner_dz_c_2: fa.CellKField[vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
@@ -76,6 +76,6 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
         out=z_gradh_exner,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

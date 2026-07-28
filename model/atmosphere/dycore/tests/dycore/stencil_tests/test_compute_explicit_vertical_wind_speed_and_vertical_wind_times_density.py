@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_spe
     compute_explicit_vertical_wind_speed_and_vertical_wind_times_density,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -76,14 +77,14 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        w_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_th_ddz_exner_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_w_expl = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        w_nnow = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        z_th_ddz_exner_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        z_w_expl = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        rho_ic = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
         vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_contr_w_fl_l = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
         dtime = wpfloat("5.0")
         cpd = wpfloat("10.0")
 

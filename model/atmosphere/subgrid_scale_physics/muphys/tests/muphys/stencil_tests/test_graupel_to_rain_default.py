@@ -11,6 +11,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import graupel_to_rain
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
@@ -36,12 +37,10 @@ class TestGraupelToRainDefault(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t=data_alloc.constant_field(grid, 280.156, dims.CellDim, dims.KDim, dtype=wpfloat),
-            p=data_alloc.constant_field(grid, 98889.4, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 1.22804, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw0=data_alloc.constant_field(
-                grid, -0.00167867, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
-            qg=data_alloc.constant_field(grid, 1.53968e-17, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rain_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(grid, 280.156, dims.CellDim, KDim, dtype=wpfloat),
+            p=data_alloc.constant_field(grid, 98889.4, dims.CellDim, KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 1.22804, dims.CellDim, KDim, dtype=wpfloat),
+            dvsw0=data_alloc.constant_field(grid, -0.00167867, dims.CellDim, KDim, dtype=wpfloat),
+            qg=data_alloc.constant_field(grid, 1.53968e-17, dims.CellDim, KDim, dtype=wpfloat),
+            rain_rate=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
         )

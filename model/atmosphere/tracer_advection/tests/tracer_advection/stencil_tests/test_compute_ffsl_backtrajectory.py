@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ffsl_backtraject
     compute_ffsl_backtrajectory,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.testing import stencil_tests
 
 
@@ -148,8 +149,8 @@ class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vn = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_vt = data_alloc.random_field(grid, dims.EdgeDim, KDim)
         cell_idx = grid.get_connectivity("E2C")
         cell_blk = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
 
@@ -165,21 +166,19 @@ class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
         dual_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         primal_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         dual_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        lvn_sys_pos = data_alloc.constant_field(grid, True, dims.EdgeDim, dims.KDim, dtype=bool)
+        lvn_sys_pos = data_alloc.constant_field(grid, True, dims.EdgeDim, KDim, dtype=bool)
         p_dt = 2.0
-        p_cell_idx = data_alloc.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_cell_rel_idx_dsl = data_alloc.constant_field(
-            grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32
-        )
-        p_cell_blk = data_alloc.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_coords_dreg_v_1_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_1_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_cell_idx = data_alloc.constant_field(grid, 0, dims.EdgeDim, KDim, dtype=gtx.int32)
+        p_cell_rel_idx_dsl = data_alloc.constant_field(grid, 0, dims.EdgeDim, KDim, dtype=gtx.int32)
+        p_cell_blk = data_alloc.constant_field(grid, 0, dims.EdgeDim, KDim, dtype=gtx.int32)
+        p_coords_dreg_v_1_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_2_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_3_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_4_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_1_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_2_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_3_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_4_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
 
         return dict(
             p_vn=p_vn,

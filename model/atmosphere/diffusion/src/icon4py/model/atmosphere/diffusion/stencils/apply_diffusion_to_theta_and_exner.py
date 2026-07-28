@@ -22,6 +22,7 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     _update_theta_and_exner,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -31,11 +32,11 @@ def _apply_diffusion_to_theta_and_exner(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], wpfloat],
-    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], wpfloat],
     area: fa.CellField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
@@ -72,11 +73,11 @@ def apply_diffusion_to_theta_and_exner(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v_in: fa.CellKField[wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], wpfloat],
-    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], wpfloat],
     area: fa.CellField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
@@ -104,6 +105,6 @@ def apply_diffusion_to_theta_and_exner(
         out=(theta_v, exner),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

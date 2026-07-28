@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E
+from icon4py.model.common.dimension import C2E, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -85,6 +85,6 @@ def integrate_tracer_density_horizontally(
         out=(z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

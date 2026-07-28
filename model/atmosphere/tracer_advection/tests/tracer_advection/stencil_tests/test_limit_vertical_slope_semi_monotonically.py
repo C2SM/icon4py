@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.limit_vertical_slope_sem
     limit_vertical_slope_semi_monotonically,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
@@ -42,9 +43,9 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        z_slope = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        k = data_alloc.index_field(grid, dims.KDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, KDim)
+        z_slope = data_alloc.random_field(grid, dims.CellDim, KDim)
+        k = data_alloc.index_field(grid, KDim)
 
         elev = k[-2].as_scalar()
         return dict(

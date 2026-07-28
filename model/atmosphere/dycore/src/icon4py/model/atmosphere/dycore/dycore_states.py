@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -169,8 +170,8 @@ class MetricStateNonHydro:
     ddxt_z_full: fa.EdgeKField[ta.vpfloat]
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat]
 
-    vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32]
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat]
+    vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32]
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], ta.vpfloat]
     nflat_gradp: gtx.int32
     """
     The minimum height index at which the height of the center of an edge lies within two neighboring cells so that
@@ -230,25 +231,23 @@ class PrepAdvection:
 def initialize_prep_advection(
     grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator
 ) -> PrepAdvection:
-    vn_traj = data_alloc.zero_field(
-        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-    )
+    vn_traj = data_alloc.zero_field(grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.wpfloat)
     mass_flx_me = data_alloc.zero_field(
-        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.wpfloat
     )
     dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
     )

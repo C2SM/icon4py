@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.prepare_numerical_quadra
     prepare_numerical_quadrature_for_cubic_reconstruction,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
@@ -491,25 +492,25 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_coords_dreg_v_1_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_1_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_1 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_2 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_3 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_4 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_5 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_6 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_7 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_8 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_9 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_10 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_dreg_area_out = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_1_x = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_2_x = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_3_x = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_4_x = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_1_y = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_2_y = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_3_y = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_coords_dreg_v_4_y = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_quad_vector_sum_1 = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_quad_vector_sum_2 = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_quad_vector_sum_3 = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_quad_vector_sum_4 = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_quad_vector_sum_5 = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_quad_vector_sum_6 = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_quad_vector_sum_7 = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_quad_vector_sum_8 = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_quad_vector_sum_9 = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_quad_vector_sum_10 = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_dreg_area_out = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
         shape_func_1_1 = 0.001
         shape_func_2_1 = 0.001
         shape_func_3_1 = 0.001

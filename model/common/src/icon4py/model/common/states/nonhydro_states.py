@@ -24,6 +24,7 @@ from icon4py.model.common import (
     type_alias as ta,
     utils as common_utils,
 )
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -141,26 +142,26 @@ def initialize_solve_nonhydro_diagnostic_state(
     and, when restarting, the advective tendencies of the previous time step.
     """
     perturbed_exner_at_cells_on_model_levels = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, allocator=allocator
+        grid, dims.CellDim, KDim, allocator=allocator
     )
     normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
-        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat),
-        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat),
+        data_alloc.zero_field(grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.vpfloat),
+        data_alloc.zero_field(grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.vpfloat),
     )
     vertical_wind_advective_tendency = common_utils.PredictorCorrectorPair(
         data_alloc.zero_field(
             grid,
             dims.CellDim,
-            dims.KDim,
-            extend={dims.KDim: 1},
+            KDim,
+            extend={KDim: 1},
             allocator=allocator,
             dtype=ta.vpfloat,
         ),
         data_alloc.zero_field(
             grid,
             dims.CellDim,
-            dims.KDim,
-            extend={dims.KDim: 1},
+            KDim,
+            extend={KDim: 1},
             allocator=allocator,
             dtype=ta.vpfloat,
         ),
@@ -169,75 +170,75 @@ def initialize_solve_nonhydro_diagnostic_state(
     theta_v_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     rho_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     exner_tendency_due_to_slow_physics = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+        grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.vpfloat
     )
     grf_tend_rho = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.wpfloat
     )
     grf_tend_thv = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.wpfloat
     )
     grf_tend_w = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     mass_flux_at_edges_on_model_levels = data_alloc.zero_field(
-        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.wpfloat
     )
     normal_wind_tendency_due_to_slow_physics_process = data_alloc.zero_field(
-        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+        grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.vpfloat
     )
     grf_tend_vn = data_alloc.zero_field(
-        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.wpfloat
     )
     tangential_wind = data_alloc.zero_field(
-        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+        grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.vpfloat
     )
     vn_on_half_levels = data_alloc.zero_field(
         grid,
         dims.EdgeDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
     )
     contravariant_correction_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        KDim,
+        extend={KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
     )
     rho_iau_increment = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+        grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.vpfloat
     )
     normal_wind_iau_increment = data_alloc.zero_field(
-        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+        grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.vpfloat
     )
     exner_iau_increment = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+        grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.vpfloat
     )
     exner_dynamical_increment = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+        grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.vpfloat
     )
 
     return DiagnosticStateNonHydro(

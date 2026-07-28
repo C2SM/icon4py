@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_
     _temporary_field_for_grid_point_cold_pools_enhancement,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -56,6 +57,6 @@ def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
         out=kh_smag_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

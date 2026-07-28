@@ -9,6 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -17,8 +18,8 @@ def _init_two_edge_kdim_fields_with_zero_wp() -> tuple[
     fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]
 ]:
     """Formerly know as _mo_solve_nonhydro_stencil_14, _mo_solve_nonhydro_stencil_15, or _mo_solve_nonhydro_stencil_33."""
-    return broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)), broadcast(
-        wpfloat("0.0"), (dims.EdgeDim, dims.KDim)
+    return broadcast(wpfloat("0.0"), (dims.EdgeDim, KDim)), broadcast(
+        wpfloat("0.0"), (dims.EdgeDim, KDim)
     )
 
 
@@ -35,6 +36,6 @@ def init_two_edge_kdim_fields_with_zero_wp(
         out=(edge_kdim_field_with_zero_wp_1, edge_kdim_field_with_zero_wp_2),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

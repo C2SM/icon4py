@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -17,7 +18,7 @@ def _compute_vertical_tracer_flux_upwind(
     p_cc: fa.CellKField[ta.wpfloat],
     p_mflx_contra_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
 ) -> fa.CellKField[ta.wpfloat]:
-    p_upflux = where(p_mflx_contra_v >= 0.0, p_cc, p_cc(dims.KDim - 1)) * p_mflx_contra_v
+    p_upflux = where(p_mflx_contra_v >= 0.0, p_cc, p_cc(KDim - 1)) * p_mflx_contra_v
     return p_upflux
 
 
@@ -37,6 +38,6 @@ def compute_vertical_tracer_flux_upwind(
         out=p_upflux,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

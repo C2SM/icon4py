@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_press
     extrapolate_temporally_exner_pressure,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -60,11 +61,11 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        exner_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_exfac = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_exner_ex_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        exner_ref_mc = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        exner_pr = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        exner_exfac = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        z_exner_ex_pr = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
 
         return dict(
             exner_exfac=exner_exfac,

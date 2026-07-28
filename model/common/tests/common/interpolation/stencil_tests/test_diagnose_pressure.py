@@ -15,6 +15,7 @@ from icon4py.model.common import constants as phy_const, dimension as dims, type
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
     diagnose_pressure,
 )
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
@@ -55,15 +56,13 @@ class TestDiagnosePressure(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        ddqz_z_full = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0, dtype=ta.wpfloat
-        )
+        ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, KDim, low=1.0, dtype=ta.wpfloat)
         virtual_temperature = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-2, dtype=ta.wpfloat
+            grid, dims.CellDim, KDim, low=1.0e-2, dtype=ta.wpfloat
         )
         surface_pressure = data_alloc.random_field(grid, dims.CellDim, low=1.0, dtype=ta.wpfloat)
-        pressure = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        pressure_ifc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        pressure = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        pressure_ifc = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
 
         return dict(
             ddqz_z_full=ddqz_z_full,

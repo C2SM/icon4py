@@ -26,6 +26,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -54,7 +55,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc, fortran_co
 cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
-vertical_domain = v_grid.domain(dims.KDim)
+vertical_domain = v_grid.domain(KDim)
 vertical_half_domain = v_grid.domain(dims.KHalfDim)
 log = logging.getLogger(__name__)
 
@@ -179,7 +180,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._damping_height = vertical_grid.config.rayleigh_damping_height
 
         k_index = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=self._allocator
+            self._grid, KDim, extend={KDim: 1}, allocator=self._allocator
         )
         e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._allocator)
         e_owner_mask = gtx.as_field(
@@ -260,7 +261,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             ),
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -301,7 +302,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LOCAL),
                     cell_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -319,7 +320,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LOCAL),
                     edge_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -332,7 +333,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_scaling_factor_for_3d_divdamp = factory.ProgramFieldProvider(
             func=mf.compute_scaling_factor_for_3d_divdamp.with_backend(self._backend),
             domain={
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 )
@@ -380,8 +381,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LOCAL),
                     cell_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
-                    v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1),
+                KDim: (
+                    v_grid.Domain(KDim, v_grid.Zone.TOP, 1),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
@@ -400,7 +401,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LOCAL),
                     cell_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -432,7 +433,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     edge_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -502,7 +503,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LOCAL),
                     cell_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -578,7 +579,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LOCAL),
                     edge_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -600,7 +601,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     edge_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -659,7 +660,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LOCAL),
                     cell_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -778,7 +779,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
                     edge_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -839,7 +840,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "topography": "topography",
             },
             connectivities={"e2c": dims.E2CDim},
-            domain=(dims.EdgeDim, dims.E2CDim, dims.KDim),
+            domain=(dims.EdgeDim, dims.E2CDim, KDim),
             fields=(
                 attrs.ZDIFF_GRADP,
                 attrs.VERTOFFSET_GRADP,
@@ -878,7 +879,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             domain=gtx.domain(
                 {
                     dims.CellDim: (0, self._grid.num_cells),
-                    dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
+                    KDim: (self._grid.num_levels - 3, self._grid.num_levels),
                 }
             ),
             fields=(attrs.WGTFACQ_C,),
@@ -902,7 +903,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             domain=gtx.domain(
                 {
                     dims.EdgeDim: (0, self._grid.num_edges),
-                    dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
+                    KDim: (self._grid.num_levels - 3, self._grid.num_levels),
                 }
             ),
             fields=(attrs.WGTFACQ_E,),
@@ -922,7 +923,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LOCAL),
                     cell_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -944,7 +945,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     cell_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
@@ -979,7 +980,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "maxhgtd_avg": attrs.MAXHGTD_AVG,
             },
             connectivities={"c2e2c": dims.C2E2CDim},
-            domain=(dims.CellDim, dims.KDim),
+            domain=(dims.CellDim, KDim),
             fields=(attrs.ZD_DIFFCOEF,),
             params={
                 "thslp_zdiffu": self._config.thslp_zdiffu,
@@ -1003,7 +1004,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "maxhgtd_avg": attrs.MAXHGTD_AVG,
             },
             connectivities={"c2e2c": dims.C2E2CDim},
-            domain=(dims.CellDim, dims.C2E2CDim, dims.KDim),
+            domain=(dims.CellDim, dims.C2E2CDim, KDim),
             fields=(
                 attrs.ZD_INTCOEF,
                 attrs.ZD_VERTOFFSET,
@@ -1025,7 +1026,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 self._backend
             ),
             domain={
-                dims.KDim: (
+                KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),

@@ -28,6 +28,7 @@ from icon4py.model.common import (
     topography as topo,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
@@ -258,17 +259,17 @@ class VerticalGrid:
     @functools.cached_property
     def kstart_moist(self) -> gtx.int32:
         """Vertical index for start level of moist physics."""
-        return self.index(Domain(dims.KDim, Zone.MOIST))
+        return self.index(Domain(KDim, Zone.MOIST))
 
     @functools.cached_property
     def nflatlev(self) -> gtx.int32:
         """Vertical index for bottom most level at which coordinate surfaces are flat."""
-        return gtx.int32(self.index(Domain(dims.KDim, Zone.FLAT)))
+        return gtx.int32(self.index(Domain(KDim, Zone.FLAT)))
 
     @functools.cached_property
     def end_index_of_damping_layer(self) -> gtx.int32:
         """Vertical index where damping ends."""
-        return self.index(Domain(dims.KDim, Zone.DAMPING))
+        return self.index(Domain(KDim, Zone.DAMPING))
 
     @property
     def vct_a(self) -> fa.KField:
@@ -281,7 +282,7 @@ class VerticalGrid:
     def size(self, dim: gtx.Dimension) -> int:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported."
         match dim:
-            case dims.KDim:
+            case _ if dim is KDim:
                 return self.config.num_levels
             case dims.KHalfDim:
                 return self.config.num_levels + 1
@@ -360,8 +361,8 @@ def _read_vct_a_and_vct_b_from_file(
         ) from err
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
-    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator), gtx.as_field(
-        (dims.KDim,), vct_b, allocator=allocator
+    return gtx.as_field((KDim,), vct_a, allocator=allocator), gtx.as_field(
+        (KDim,), vct_b, allocator=allocator
     )
 
 
@@ -406,7 +407,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
     Args:
         vertical_config: Vertical grid configuration
         backend: GT4Py backend
-    Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
+    Returns:  one dimensional (KDim) vct_a and vct_b gt4py fields.
     """
     num_levels_plus_one = vertical_config.num_levels + 1
     if vertical_config.lowest_layer_thickness > 0.01:
@@ -549,8 +550,8 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
             f" Warning. vct_a[0], {vct_a[0]}, is not equal to model top height, {vertical_config.model_top_height}, of vertical configuration. Please consider changing the vertical setting."
         )
 
-    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator), gtx.as_field(
-        (dims.KDim,), vct_b, allocator=allocator
+    return gtx.as_field((KDim,), vct_a, allocator=allocator), gtx.as_field(
+        (KDim,), vct_b, allocator=allocator
     )
 
 
@@ -570,7 +571,7 @@ def get_vct_a_and_vct_b(
     Args:
         vertical_config: Vertical grid configuration
         backend: GT4Py backend
-    Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
+    Returns:  one dimensional (KDim) vct_a and vct_b gt4py fields.
     """
 
     return (

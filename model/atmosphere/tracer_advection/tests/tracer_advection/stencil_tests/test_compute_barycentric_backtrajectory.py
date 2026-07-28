@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_back
     compute_barycentric_backtrajectory,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.testing import stencil_tests
 
 
@@ -82,8 +83,8 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vn = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_vt = data_alloc.random_field(grid, dims.EdgeDim, KDim)
         cell_idx = grid.get_connectivity("E2C")
         pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
@@ -94,10 +95,10 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
 
         dual_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
 
-        p_cell_idx = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_cell_rel_idx_dsl = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_cell_idx = data_alloc.zero_field(grid, dims.EdgeDim, KDim, dtype=gtx.int32)
+        p_cell_rel_idx_dsl = data_alloc.zero_field(grid, dims.EdgeDim, KDim, dtype=gtx.int32)
+        p_distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, KDim)
         p_dthalf = 2.0
 
         return dict(

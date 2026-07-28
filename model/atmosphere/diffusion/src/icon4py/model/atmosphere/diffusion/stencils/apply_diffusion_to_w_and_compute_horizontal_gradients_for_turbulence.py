@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     _calculate_nabla2_for_w,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -44,7 +45,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 ]:
     dwdx, dwdy = (
         concat_where(
-            0 < dims.KDim,
+            0 < KDim,
             _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
             (dwdx, dwdy),
         )
@@ -61,10 +62,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     )
 
     w = concat_where(
-        (0 < dims.KDim)
-        & (dims.KDim < nrdmax)
-        & (interior_idx <= dims.CellDim)
-        & (dims.CellDim < halo_idx),
+        (0 < KDim) & (KDim < nrdmax) & (interior_idx <= dims.CellDim) & (dims.CellDim < halo_idx),
         _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
@@ -110,6 +108,6 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         out=(w, dwdx, dwdy),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

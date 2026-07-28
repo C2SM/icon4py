@@ -16,6 +16,7 @@ from gt4py.next import typing as gtx_typing
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import icon, states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox, test_utils
@@ -103,7 +104,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         mass_flx_me=savepoint_nonhydro_init.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=savepoint_nonhydro_init.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, KDim, allocator=backend
         ),
     )
 

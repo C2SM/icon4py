@@ -24,6 +24,7 @@ from icon4py.model.atmosphere.dycore.stencils import (
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -53,17 +54,17 @@ def test_validate_divdamp_fields_against_savepoint_values(
     mean_cell_area = grid_savepoint.mean_cell_area()
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
         icon_grid,
-        dims.KDim,
+        KDim,
         allocator=backend,
     )
     fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
         icon_grid,
-        dims.KDim,
+        KDim,
         allocator=backend,
     )
     reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
         icon_grid,
-        dims.KDim,
+        KDim,
         allocator=backend,
     )
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
@@ -511,7 +512,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         mass_flx_me=init_savepoint.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=init_savepoint.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, KDim, allocator=backend
         ),
     )
 
@@ -704,7 +705,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, KDim, allocator=backend
         ),
     )
 
@@ -825,7 +826,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, KDim, allocator=backend
         ),
     )
 
@@ -1012,28 +1013,28 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
 
     # local fields
     perturbed_rho_at_cells_on_model_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, KDim, allocator=backend
     )
     perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, KDim, allocator=backend
     )
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=backend
     )
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, KDim, allocator=backend
     )
     exner_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=backend
     )
     temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=backend
     )
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, KDim, allocator=backend
     )
     d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, KDim, allocator=backend
     )
 
     config = experiment.config.nonhydrostatic
@@ -1224,10 +1225,10 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     rhotheta_implicit_weight_parameter = sp_init.wgt_nnew_rth()
 
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=backend
     )
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, KDim, allocator=backend
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -1368,9 +1369,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
     horizontal_pressure_gradient = sp_stencil_init.z_gradh_exner()
     perturbed_rho_at_cells_on_model_levels = sp_stencil_init.z_rth_pr(0)
     perturbed_theta_v_at_cells_on_model_levels = sp_stencil_init.z_rth_pr(1)
-    hydrostatic_correction = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
-    )
+    hydrostatic_correction = data_alloc.zero_field(icon_grid, dims.EdgeDim, KDim, allocator=backend)
     temporal_extrapolation_of_perturbed_exner = sp_stencil_init.z_exner_ex_pr()
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
         sp_stencil_init.z_dexner_dz_c(0)
@@ -1566,7 +1565,7 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
     # TODO: Use serialized data ('enh_divdamp_fac' in icon) instead of computing 'interpolated_fourth_order_divdamp_factor'
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
         icon_grid,
-        dims.KDim,
+        KDim,
         allocator=backend,
     )
 

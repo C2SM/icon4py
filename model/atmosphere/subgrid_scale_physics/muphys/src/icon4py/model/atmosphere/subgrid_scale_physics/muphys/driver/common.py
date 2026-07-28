@@ -20,6 +20,7 @@ from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 
 
 def _calc_dz(z: np.ndarray) -> np.ndarray:
@@ -39,7 +40,7 @@ def _as_field_from_nc(
     varname: str,
     optional: bool = False,
     dtype: np.dtype | None = None,
-) -> gtx.Field[dims.CellDim, dims.KDim] | None:
+) -> gtx.Field[dims.CellDim, KDim] | None:
     if optional and varname not in dataset.variables:
         return None
 
@@ -50,7 +51,7 @@ def _as_field_from_nc(
     if dtype is not None:
         data = data.astype(dtype)
     return gtx.as_field(
-        (dims.CellDim, dims.KDim),
+        (dims.CellDim, KDim),
         data,
         allocator=allocator,
     )
@@ -60,7 +61,7 @@ def _field_to_nc(
     dataset: netCDF4.Dataset,
     dims: tuple[str, str],
     varname: str,
-    field: gtx.Field[dims.CellDim, dims.KDim],
+    field: gtx.Field[dims.CellDim, KDim],
     dtype: np.dtype = np.float64,
 ) -> None:
     var = dataset.createVariable(varname, dtype, dims)
@@ -71,16 +72,16 @@ def _field_to_nc(
 class GraupelInput:
     ncells: int
     nlev: int
-    dz: gtx.Field[dims.CellDim, dims.KDim]
-    p: gtx.Field[dims.CellDim, dims.KDim]
-    rho: gtx.Field[dims.CellDim, dims.KDim]
-    t: gtx.Field[dims.CellDim, dims.KDim]
-    qv: gtx.Field[dims.CellDim, dims.KDim]
-    qc: gtx.Field[dims.CellDim, dims.KDim]
-    qi: gtx.Field[dims.CellDim, dims.KDim]
-    qr: gtx.Field[dims.CellDim, dims.KDim]
-    qs: gtx.Field[dims.CellDim, dims.KDim]
-    qg: gtx.Field[dims.CellDim, dims.KDim]
+    dz: gtx.Field[dims.CellDim, KDim]
+    p: gtx.Field[dims.CellDim, KDim]
+    rho: gtx.Field[dims.CellDim, KDim]
+    t: gtx.Field[dims.CellDim, KDim]
+    qv: gtx.Field[dims.CellDim, KDim]
+    qc: gtx.Field[dims.CellDim, KDim]
+    qi: gtx.Field[dims.CellDim, KDim]
+    qr: gtx.Field[dims.CellDim, KDim]
+    qs: gtx.Field[dims.CellDim, KDim]
+    qg: gtx.Field[dims.CellDim, KDim]
 
     @property
     def q(self) -> Q:
@@ -115,7 +116,7 @@ class GraupelInput:
                 ncells=ncells,
                 nlev=nlev,
                 dz=gtx.as_field(
-                    (dims.CellDim, dims.KDim), np.transpose(dz), allocator=allocator, dtype=dtype
+                    (dims.CellDim, KDim), np.transpose(dz), allocator=allocator, dtype=dtype
                 ),
                 t=field_from_nc("ta"),
                 p=field_from_nc("pfull"),
@@ -131,20 +132,20 @@ class GraupelInput:
 
 @dataclasses.dataclass
 class GraupelOutput:
-    t: gtx.Field[dims.CellDim, dims.KDim]
-    qv: gtx.Field[dims.CellDim, dims.KDim]
-    qc: gtx.Field[dims.CellDim, dims.KDim]
-    qi: gtx.Field[dims.CellDim, dims.KDim]
-    qr: gtx.Field[dims.CellDim, dims.KDim]
-    qs: gtx.Field[dims.CellDim, dims.KDim]
-    qg: gtx.Field[dims.CellDim, dims.KDim]
+    t: gtx.Field[dims.CellDim, KDim]
+    qv: gtx.Field[dims.CellDim, KDim]
+    qc: gtx.Field[dims.CellDim, KDim]
+    qi: gtx.Field[dims.CellDim, KDim]
+    qr: gtx.Field[dims.CellDim, KDim]
+    qs: gtx.Field[dims.CellDim, KDim]
+    qg: gtx.Field[dims.CellDim, KDim]
 
-    pflx: gtx.Field[dims.CellDim, dims.KDim] | None
-    pr: gtx.Field[dims.CellDim, dims.KDim] | None
-    ps: gtx.Field[dims.CellDim, dims.KDim] | None
-    pi: gtx.Field[dims.CellDim, dims.KDim] | None
-    pg: gtx.Field[dims.CellDim, dims.KDim] | None
-    pre: gtx.Field[dims.CellDim, dims.KDim] | None
+    pflx: gtx.Field[dims.CellDim, KDim] | None
+    pr: gtx.Field[dims.CellDim, KDim] | None
+    ps: gtx.Field[dims.CellDim, KDim] | None
+    pi: gtx.Field[dims.CellDim, KDim] | None
+    pg: gtx.Field[dims.CellDim, KDim] | None
+    pre: gtx.Field[dims.CellDim, KDim] | None
 
     _surface_fields: ClassVar[list[str]] = ["pr", "ps", "pi", "pg", "pre"]
 

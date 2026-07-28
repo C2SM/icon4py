@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rh
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
@@ -61,10 +62,10 @@ class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(stencil_tests.Stenc
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
-        z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_flxdiv_theta = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_flxdiv_mass = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.wpfloat)
+        z_flxdiv_theta = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
+        mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.wpfloat)
+        z_flxdiv_mass = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
 
         return dict(
             geofac_div=geofac_div,

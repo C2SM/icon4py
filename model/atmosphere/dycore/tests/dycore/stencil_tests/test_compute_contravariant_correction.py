@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction i
     compute_contravariant_correction,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -48,11 +49,11 @@ class TestComputeContravariantCorrection(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        ddxt_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat, low=0.1)
-        vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_w_concorr_me = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        ddxn_z_full = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        ddxt_z_full = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat, low=0.1)
+        vt = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        z_w_concorr_me = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

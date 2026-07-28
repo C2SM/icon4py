@@ -17,6 +17,7 @@ from gt4py import next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -30,12 +31,12 @@ def average_level_plus1_on_cells(
     Computes the average of two adjacent interface levels upwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[Dims[CellDim, dims.KDim], wpfloat]
+        half_level_field: Field[Dims[CellDim, KDim], wpfloat]
 
-    Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
+    Returns: Field[Dims[CellDim, KDim], wpfloat] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(dims.KDim + 1))
+    return 0.5 * (half_level_field + half_level_field(KDim + 1))
 
 
 @gtx.field_operator
@@ -53,7 +54,7 @@ def average_level_plus1_on_edges(
     Returns: fa.EdgeKField[wpfloat] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(dims.KDim + 1))
+    return 0.5 * (half_level_field + half_level_field(KDim + 1))
 
 
 @gtx.field_operator
@@ -66,12 +67,12 @@ def difference_level_plus1_on_cells(
     Computes the difference of two adjacent interface levels upwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[Dims[CellDim, dims.KDim], wpfloat]
+        half_level_field: Field[Dims[CellDim, KDim], wpfloat]
 
-    Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
+    Returns: Field[Dims[CellDim, KDim], wpfloat] full level field
 
     """
-    return half_level_field - half_level_field(dims.KDim + 1)
+    return half_level_field - half_level_field(KDim + 1)
 
 
 @gtx.field_operator
@@ -88,12 +89,12 @@ def with_boundaries_on_half_levels_on_cells(
     arguments need to be in bounds only within that region.
     """
     result = concat_where(
-        (dims.KDim > 0) & (dims.KDim < nlev),
+        (KDim > 0) & (KDim < nlev),
         interior,
         0.0,
     )
-    result = concat_where(dims.KDim == 0, top, result)
-    return concat_where(dims.KDim == nlev, bottom, result)
+    result = concat_where(KDim == 0, top, result)
+    return concat_where(KDim == nlev, bottom, result)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -110,7 +111,7 @@ def average_two_vertical_levels_downwards_on_edges(  # noqa: PLR0917 [too-many-p
         out=average,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -129,6 +130,6 @@ def average_two_vertical_levels_downwards_on_cells(  # noqa: PLR0917 [too-many-p
         out=average,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

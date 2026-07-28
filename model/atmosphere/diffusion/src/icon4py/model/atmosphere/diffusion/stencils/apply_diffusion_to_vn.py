@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_b
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import _calculate_nabla4
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -128,6 +129,6 @@ def apply_diffusion_to_vn(
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -40,6 +41,6 @@ def apply_interpolated_tracer_time_tendency(
         out=p_tracer_new,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

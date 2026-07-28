@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp 
     init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
@@ -52,7 +53,7 @@ class TestInitCellKdimFieldWithZeroWp(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        field_with_zero_wp = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        field_with_zero_wp = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
 
         return dict(
             field_with_zero_wp=field_with_zero_wp,

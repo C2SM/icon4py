@@ -11,6 +11,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import snow_to_graupel
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
@@ -35,9 +36,9 @@ class TestSnowToGraupelDefault(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t=data_alloc.constant_field(grid, 281.157, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 0.93171, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(grid, 4.34854e-5, dims.CellDim, dims.KDim, dtype=wpfloat),
-            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(grid, 281.157, dims.CellDim, KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 0.93171, dims.CellDim, KDim, dtype=wpfloat),
+            qc=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(grid, 4.34854e-5, dims.CellDim, KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
         )
