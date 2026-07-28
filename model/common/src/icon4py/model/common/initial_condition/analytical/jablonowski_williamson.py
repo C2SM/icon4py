@@ -177,7 +177,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             temperature_avg = temp0 * (eta_old**lapse_rate)
             geopot_avg = temp0 * gtx.float64(phy_const.GRAV) / gamma * (1.0 - eta_old**lapse_rate)
             temperature_avg = array_ns.where(
-                eta_old < eta_t, temperature_avg + dtemp * ((eta_t - eta_old) ** 5), temperature_avg
+                eta_old < eta_t,
+                temperature_avg + dtemp * ((eta_t - eta_old) ** 5),
+                temperature_avg,
             )
             geopot_avg = array_ns.where(
                 eta_old < eta_t,
@@ -295,7 +297,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         # hydrostatic pressure diagnosis and the moist-iteration first guess, so the
         # iteration converges to the same fixed point as Fortran.
         virtual_temperature = gtx.as_field(
-            (dims.CellDim, dims.KDim), theta_v_ndarray * exner_ndarray, allocator=allocator
+            (dims.CellDim, dims.KDim), theta_v_dp * exner_dp, allocator=allocator
         )
         pressure_ndarray = pressure_diagnostics.diagnose_pressure_surface_to_top_ndarray(
             grid=grid,
@@ -306,7 +308,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             ddqz_z_full=ddqz_z_full_field,
         )
         testcases_utils.init_inwp_tracers(
-            rho=rho_ndarray,
+            rho=rho_dp.astype(ta.wpfloat),
             virtual_temperature=virtual_temperature.ndarray,
             pressure=pressure_ndarray,
             cell_area=cell_area,
