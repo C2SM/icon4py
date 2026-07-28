@@ -15,7 +15,7 @@ import textwrap
 
 import pytest
 
-from icon4py.model.common.config import reader as confreader
+from icon4py.model.common.config import config_io
 from icon4py.model.standalone_driver import config as driver_config, driver_states
 
 
@@ -147,7 +147,7 @@ def test_restart_starts_the_time_loop_at_start_of_timestepping() -> None:
 
 
 def test_io_roundtrip_cls_cls() -> None:
-    conf = confreader.read(
+    conf = config_io.read(
         textwrap.dedent(
             """
             geometry: {}
@@ -176,10 +176,10 @@ def test_io_roundtrip_cls_cls() -> None:
         driver_config.ExperimentConfig,
     )
     assert conf.driver.experiment_name == "foo"
-    assert confreader.read(confreader.write(conf), driver_config.ExperimentConfig) == conf
+    assert config_io.read(config_io.write(conf), driver_config.ExperimentConfig) == conf
 
 
 def test_io_roundtrip_str_str() -> None:
     config_str = (pathlib.Path(__file__).parent / "data" / "test_config.yml").read_text()
-    roundtrip_str = confreader.write(confreader.read(config_str, driver_config.ExperimentConfig))
+    roundtrip_str = config_io.write(config_io.read(config_str, driver_config.ExperimentConfig))
     assert config_str == roundtrip_str

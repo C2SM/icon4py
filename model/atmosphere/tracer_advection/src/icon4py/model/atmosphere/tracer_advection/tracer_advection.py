@@ -38,7 +38,7 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
-from icon4py.model.common.config import reader as confreader
+from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
@@ -52,7 +52,7 @@ Advection module ported from ICON mo_advection_stepping.f90.
 log = logging.getLogger(__name__)
 
 
-@confreader.register_enum
+@config_io.register_enum
 class HorizontalAdvectionType(Enum):
     """
     Horizontal operator scheme for tracer advection (originally ihadv_tracer).
@@ -64,7 +64,7 @@ class HorizontalAdvectionType(Enum):
     LINEAR_2ND_ORDER = 2
 
 
-@confreader.register_enum
+@config_io.register_enum
 class HorizontalAdvectionLimiter(Enum):
     """
     Limiter for horizontal tracer advection operator (originally itype_hlimit).
@@ -76,7 +76,7 @@ class HorizontalAdvectionLimiter(Enum):
     POSITIVE_DEFINITE = 4
 
 
-@confreader.register_enum
+@config_io.register_enum
 class VerticalAdvectionType(Enum):
     """
     Vertical operator scheme for tracer advection (originally ivadv_tracer).
@@ -90,7 +90,7 @@ class VerticalAdvectionType(Enum):
     PPM_3RD_ORDER = 3
 
 
-@confreader.register_enum
+@config_io.register_enum
 class VerticalAdvectionLimiter(Enum):
     """
     Limiter for vertical tracer advection operator (originally itype_vlimit).

@@ -13,7 +13,7 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
 
-from icon4py.model.common.config import reader as confreader
+from icon4py.model.common.config import config_io
 from icon4py.model.common.topography import from_file as from_file_topo
 from icon4py.model.common.topography.analytical import (
     flat_topography as flat_topo,
@@ -39,7 +39,7 @@ type TOPOCONFIG = (
     | from_file_topo.FromFileConfig
 )
 
-confreader.register_config_union(
+config_io.register_config_union(
     TOPOCONFIG.__value__,
     {
         "flat": flat_topo.FlatTopographyConfig,

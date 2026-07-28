@@ -14,7 +14,7 @@ import pathlib
 from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common import time
-from icon4py.model.common.config import reader as confreader
+from icon4py.model.common.config import config_io
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
@@ -46,7 +46,7 @@ type ICCONFIG = (
 )
 
 
-confreader.register_config_union(
+config_io.register_config_union(
     ICCONFIG.__value__,
     {
         "jablonowski_williamson": jw_ic.JablonowskiWilliamsonConfig,

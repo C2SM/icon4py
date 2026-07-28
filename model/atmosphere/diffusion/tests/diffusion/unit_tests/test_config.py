@@ -9,11 +9,11 @@
 import pathlib
 
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.common.config import reader
+from icon4py.model.common.config import config_io
 
 
-def test_read():
-    config = reader.read(
+def test_read() -> None:
+    config = config_io.read(
         (pathlib.Path(__file__).parent / "data" / "test_config.yml").read_text(),
         diffusion.DiffusionConfig,
     )
@@ -23,3 +23,8 @@ def test_read():
     )
     assert config.ndyn_substeps == 4
     assert not config.apply_zdiffusion_t
+
+
+def test_roundtrip() -> None:
+    conf = diffusion.DiffusionConfig()
+    assert conf == config_io.read(config_io.write(conf), diffusion.DiffusionConfig)
