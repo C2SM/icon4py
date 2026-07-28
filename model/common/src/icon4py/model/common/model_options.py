@@ -16,9 +16,14 @@ from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.utils import env
 
 
 log = logging.getLogger(__name__)
+
+
+def is_eager_program_compilation_enabled() -> bool:
+    return env.flag_to_bool("ICON4PY_EAGER_PROGRAM_COMPILATION", default=False)
 
 
 def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:

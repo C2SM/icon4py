@@ -17,7 +17,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, model_options
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
@@ -176,6 +176,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
 
         self._register_computed_fields()
+
+        if backend is not None and model_options.is_eager_program_compilation_enabled():
+            factory.compile_providers(self._providers.values(), backend=backend, grid_provider=self)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} on (grid={self._grid!r}) providing fields f{self.metadata.keys()}"

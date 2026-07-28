@@ -95,6 +95,7 @@ variables:
     ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR: /gt4py_cache
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
+    ICON4PY_EAGER_PROGRAM_COMPILATION: "false"
     PYTEST_ADDOPTS: "--durations=0"
 
 .test_template_aarch64:
@@ -114,7 +115,7 @@ variables:
     # also scales with number of workers; 32 is a balance between these for jobs
     # that don't run many tests.
     NUM_PROCESSES: 32
-    GT4PY_BUILD_JOBS: 8
+    GT4PY_BUILD_JOBS: 12
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
@@ -209,6 +210,7 @@ variables:
         # TODO(msimberg): Use shared partition when time limit can be set to at
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
+        GT4PY_BUILD_JOBS: 32
     - if: $MODEL_MPI_SUBPACKAGE == 'standalone_driver' || ($MODEL_MPI_SUBPACKAGE == 'common' && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'))
       variables:
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
@@ -216,6 +218,7 @@ variables:
         # TODO(msimberg): Use shared partition when time limit can be set to at
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
+        GT4PY_BUILD_JOBS: 32
     - if: $MODEL_MPI_SUBPACKAGE == 'common'
       variables:
         SLURM_TIMELIMIT: '00:55:00'

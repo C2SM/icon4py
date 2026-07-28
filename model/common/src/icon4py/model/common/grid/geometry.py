@@ -19,6 +19,7 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
+    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -199,6 +200,9 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(input_fields_provider)
         self._register_computed_fields()
+
+        if backend is not None and model_options.is_eager_program_compilation_enabled():
+            factory.compile_providers(self._providers.values(), backend=backend, grid_provider=self)
 
     def _compute_analytical_means(self) -> dict[str, float]:
         """Compute mean geometry values analytically from grid parameters.
@@ -929,6 +933,12 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
 
     def needs_exchange(self) -> bool:
         return self._do_exchange
+
+    def compile(
+        self, *, backend: gtx_typing.Backend | None, grid_provider: factory.GridProvider
+    ) -> None:
+        if hasattr(self._wrapped_provider, "compile"):
+            self._wrapped_provider.compile(backend=backend, grid_provider=grid_provider)
 
 
 def as_sparse_field(

@@ -8,16 +8,23 @@
 from __future__ import annotations
 
 import functools
+import unittest.mock
 from types import ModuleType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims, model_options, utils as common_utils
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import horizontal as h_grid, icon, simple, vertical as v_grid
+from icon4py.model.common.grid import (
+    geometry,
+    horizontal as h_grid,
+    icon,
+    simple,
+    vertical as v_grid,
+)
 from icon4py.model.common.math import (
     coordinate_transformations as coord_trans,
     vertical_operations as vertical_ops,
@@ -328,3 +335,122 @@ def test_compute_scalar_value_from_numpy_provider(
     value = height_coordinate_source.get("minimal_height", factory.RetrievalType.FIELD)
     assert np.isscalar(value)
     assert value_ref == value
+
+
+def test_is_eager_program_compilation_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ICON4PY_EAGER_PROGRAM_COMPILATION", raising=False)
+    assert not model_options.is_eager_program_compilation_enabled()
+
+    for truthy in ("1", "true", "on"):
+        monkeypatch.setenv("ICON4PY_EAGER_PROGRAM_COMPILATION", truthy)
+        assert model_options.is_eager_program_compilation_enabled()
+
+    for falsy in ("0", "false", "off"):
+        monkeypatch.setenv("ICON4PY_EAGER_PROGRAM_COMPILATION", falsy)
+        assert not model_options.is_eager_program_compilation_enabled()
+
+    monkeypatch.setenv("ICON4PY_EAGER_PROGRAM_COMPILATION", "invalid")
+    with pytest.raises(ValueError, match="Invalid value"):
+        model_options.is_eager_program_compilation_enabled()
+
+
+def _make_mock_grid_provider() -> factory.GridProvider:
+    grid = unittest.mock.MagicMock()
+    grid.connectivities = {}
+    vertical_grid = unittest.mock.MagicMock()
+    return unittest.mock.MagicMock(grid=grid, vertical_grid=vertical_grid)
+
+
+def test_program_provider_compile_with_backend_none_is_noop() -> None:
+    program = unittest.mock.MagicMock()
+    provider = factory.ProgramFieldProvider(
+        func=program,
+        domain={dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))},
+        fields={"output": "output_f"},
+        deps={},
+        do_exchange=False,
+    )
+    grid_provider = _make_mock_grid_provider()
+    provider.compile(backend=None, grid_provider=grid_provider)
+    assert provider._compiled_program is None
+    program.with_backend.assert_not_called()
+
+
+def test_program_provider_compile_stores_compiled_program() -> None:
+    compiled = unittest.mock.MagicMock()
+    program = unittest.mock.MagicMock()
+    program.with_backend.return_value.with_compilation_options.return_value.compile.return_value = (
+        compiled
+    )
+    provider = factory.ProgramFieldProvider(
+        func=program,
+        domain={dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))},
+        fields={"output": "output_f"},
+        deps={},
+        do_exchange=False,
+    )
+    backend = unittest.mock.MagicMock()
+    grid_provider = _make_mock_grid_provider()
+    provider.compile(backend=backend, grid_provider=grid_provider)
+    assert provider._compiled_program is compiled
+    program.with_backend.assert_called_once_with(backend)
+    program.with_backend.return_value.with_compilation_options.assert_called_once_with(
+        enable_jit=False
+    )
+
+
+def test_program_provider_compute_uses_compiled_program() -> None:
+    compiled = unittest.mock.MagicMock()
+    program = unittest.mock.MagicMock()
+    provider = factory.ProgramFieldProvider(
+        func=program,
+        domain={dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))},
+        fields={"output": "output_f"},
+        deps={},
+        do_exchange=False,
+    )
+    provider._compiled_program = compiled
+
+    field_src = unittest.mock.MagicMock()
+    field_src.get.side_effect = lambda name, type_=None: {"output_f": {"dtype": float}}[name]
+    grid_provider = _make_mock_grid_provider()
+    backend = unittest.mock.MagicMock()
+    allocated_field = unittest.mock.MagicMock()
+    with unittest.mock.patch.object(
+        provider, "_allocate", return_value={"output_f": allocated_field}
+    ):
+        provider._compute(field_src=field_src, grid=grid_provider, backend=backend)
+    compiled.assert_called_once()
+    program.with_backend.assert_not_called()
+
+
+def test_sparse_field_provider_wrapper_compile_delegates() -> None:
+    wrapped = unittest.mock.MagicMock()
+    wrapped.compile = unittest.mock.MagicMock()
+    wrapper = geometry.SparseFieldProviderWrapper(
+        field_provider=wrapped,
+        target_dims=(dims.CellDim, dims.C2EDim),
+        fields=("sparse_f",),
+        pairs=(("a", "b"),),
+        do_exchange=False,
+    )
+    backend = unittest.mock.MagicMock()
+    grid_provider = unittest.mock.MagicMock()
+    wrapper.compile(backend=backend, grid_provider=grid_provider)
+    wrapped.compile.assert_called_once_with(backend=backend, grid_provider=grid_provider)
+
+
+def test_compile_providers_skips_and_deduplicates() -> None:
+    compilable_mock = unittest.mock.MagicMock(spec=factory.FieldProvider)
+    compilable_mock.compile = unittest.mock.MagicMock()
+    compilable = cast(factory.FieldProvider, compilable_mock)
+
+    no_compile = cast(factory.FieldProvider, unittest.mock.MagicMock(spec=factory.FieldProvider))
+
+    backend = unittest.mock.MagicMock()
+    grid_provider = unittest.mock.MagicMock()
+
+    factory.compile_providers([compilable, no_compile, compilable], backend, grid_provider)
+
+    compilable_mock.compile.assert_called_once_with(backend=backend, grid_provider=grid_provider)
+    assert not hasattr(no_compile, "compile")
