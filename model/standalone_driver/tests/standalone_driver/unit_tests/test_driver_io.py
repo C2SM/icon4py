@@ -174,13 +174,33 @@ def test_data_is_host_numpy(
     grid: base.Grid,
     backend: gtx.typing.Backend | None,
 ) -> None:
-    """The buffer handed to netCDF4 must be a host numpy array, not a device array.
+    """The buffer handed to the writers must be a host numpy array, not a device array.
 
     Parameterized on the backend (``--backend``) so that with a GPU backend the inputs
     really are device buffers and the host transfer is exercised.
     """
     prognostic_state = _make_prognostic_state(grid, allocator=backend)
     state = driver_io.prognostic_state_to_dataarrays(prognostic_state)
+    for da in state.values():
+        assert isinstance(da.data, np.ndarray)
+
+
+def test_diagnostic_data_is_host_numpy(
+    grid: base.Grid,
+    backend: gtx.typing.Backend | None,
+) -> None:
+    """Same host-transfer guarantee for the diagnostic assembly path.
+
+    The diagnostic fields come from the (device-resident, on GPU backends) buffers of
+    the ``DiagnosticsComputer``; assembling them must also land host numpy arrays.
+    """
+    diagnostic_fields = {
+        name: data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
+        )
+        for name in driver_io.DIAGNOSTIC_VARIABLES
+    }
+    state = driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields)
     for da in state.values():
         assert isinstance(da.data, np.ndarray)
 
@@ -204,6 +224,8 @@ def test_create_io_monitor_builds_single_field_group(
             grid_file_name: pathlib.Path,
             grid_id: uuid.UUID,
             dtime: datetime.timedelta,
+            process_props: object,
+            decomposition_info: object,
         ) -> None:
             recorded["config"] = config
             recorded["grid_file_name"] = grid_file_name
@@ -225,6 +247,9 @@ def test_create_io_monitor_builds_single_field_group(
     field_group = config.field_groups[0]
     # default cadence: capture on every model step
     assert field_group.output_interval == 1
+    # default output setup: netCDF files, gathered to the root rank under MPI
+    assert field_group.backend == common_io.OutputBackend.NETCDF
+    assert field_group.mode == common_io.OutputMode.GATHER
     # a single group holding all fields, prognostic + diagnostic, in one file
     assert list(field_group.variables) == driver_io.DEFAULT_OUTPUT_VARIABLES
     assert list(field_group.variables) == [

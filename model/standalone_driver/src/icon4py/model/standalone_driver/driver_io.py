@@ -37,7 +37,8 @@ from icon4py.model.common.states import data as state_data, prognostic_state as 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-#: File-name stub for the output file (a counter + ``.nc`` is appended).
+#: File-name stub for the output file (a counter + the backend's suffix, ``.nc`` or
+#: ``.zarr``, is appended).
 DEFAULT_OUTPUT_FILENAME: Final[str] = "icon4py_output"
 
 
@@ -259,18 +260,18 @@ def create_io_monitor(
     dtime: datetime.timedelta,
     variables: list[str] | None = None,
     output_interval: common_io.OutputInterval = time.NumTimeSteps(1),
+    output_backend: common_io.OutputBackend = common_io.OutputBackend.NETCDF,
+    output_mode: common_io.OutputMode = common_io.OutputMode.GATHER,
     process_props: decomposition_defs.ProcessProperties | None = None,
+    decomposition_info: decomposition_defs.DecompositionInfo | None = None,
 ) -> common_io.IOMonitor:
-    """Build a single-node ``IOMonitor`` with one field group holding all output fields.
+    """Build an ``IOMonitor`` with one field group holding all output fields.
 
     ``output_interval`` is either a number of model steps or a simulation-time delta
-    (normalized to steps using ``dtime``); it defaults to every step.
-
-    ``process_props`` is currently unused: IO is single-node only. It is kept on the
-    signature so the distributed path (per-rank IO setup) can be wired in without a
-    signature change.
+    (normalized to steps using ``dtime``); it defaults to every step. In a distributed
+    run (multi-rank ``process_props``) ``decomposition_info`` is required and
+    ``output_mode`` selects how the ranks write (see ``common_io.OutputMode``).
     """
-    del process_props  # reserved for the distributed IO path; unused while single-node
     output_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
 
     field_groups = [
@@ -278,6 +279,8 @@ def create_io_monitor(
             output_interval=output_interval,
             filename=DEFAULT_OUTPUT_FILENAME,
             variables=output_variables,
+            backend=output_backend,
+            mode=output_mode,
             nc_title="ICON4Py output",
             nc_comment="Fields computed by ICON4Py.",
         )
@@ -292,4 +295,6 @@ def create_io_monitor(
         # Grid.id holds the file's `uuidOfHGrid` as a string; the IO layer wants a UUID.
         grid_id=uuid.UUID(grid.id),
         dtime=dtime,
+        process_props=process_props,
+        decomposition_info=decomposition_info,
     )

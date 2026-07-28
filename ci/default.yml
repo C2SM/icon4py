@@ -13,7 +13,7 @@ variables:
   MODEL_SUBPACKAGES: "all"
   MODEL_SUBSETS: "datatest"
   MODEL_MPI_SUBPACKAGES: "all"
-  MODEL_MPI_SUBSETS: "datatest"
+  MODEL_MPI_SUBSETS: "all"
   BACKENDS: "gtfn_gpu"
   LEVELS: "unit"
   GRIDS: "icon_regional"

@@ -8,7 +8,7 @@ variables:
   MODEL_SUBPACKAGES: "all"
   MODEL_SUBSETS: "stencils:datatest"
   MODEL_MPI_SUBPACKAGES: "all"
-  MODEL_MPI_SUBSETS: "datatest"
+  MODEL_MPI_SUBSETS: "all"
   BACKENDS: "all"
   LEVELS: "unit:integration"
   GRIDS: "simple:icon_regional"

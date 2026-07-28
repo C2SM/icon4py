@@ -21,13 +21,17 @@ import uxarray as ux  # type: ignore[import-untyped]  # uxarray has no type hint
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time
 from icon4py.model.common.grid import base, vertical as v_grid
-from icon4py.model.common.io import ugrid
+from icon4py.model.common.io import distributed, ugrid
 from icon4py.model.common.io.io import (
+    PHASE_DISTRIBUTE,
+    PHASE_WRITE,
     FieldGroupIOConfig,
     FieldGroupMonitor,
     IOConfig,
     IOMonitor,
+    OutputBackend,
     OutputInterval,
+    OutputMode,
     generate_name,
 )
 from icon4py.model.common.states import data
@@ -200,7 +204,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
     monitor = FieldGroupMonitor(
         config=config,
         vertical=vertical_params,
-        horizontal=grid.config.horizontal_config,
+        distribution=distributed.SingleNodeDistribution(grid.config.horizontal_config),
         grid_id=uuid.UUID(grid.id),
         output_path=test_path,
         dtime=time.RelativeTime(hours=1),
@@ -278,6 +282,20 @@ def test_fieldgroup_monitor_no_output_between_step_intervals(test_path: pathlib.
     assert len([f for f in group_monitor.output_path.iterdir() if f.is_file()]) == 0
 
 
+def test_fieldgroup_monitor_records_phase_timings_per_capture(test_path: pathlib.Path) -> None:
+    # one (distribute, write) sample pair per capture step, none for skipped steps
+    _, group_monitor = create_field_group_monitor(
+        test_path, test_io_utils.simple_grid, output_interval=time.NumTimeSteps(2)
+    )
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
+    for step in range(4):
+        group_monitor.store(state, step_time + step * dt.timedelta(hours=1))
+    group_monitor.close()
+    assert len(group_monitor.phase_seconds[PHASE_DISTRIBUTE]) == 2
+    assert len(group_monitor.phase_seconds[PHASE_WRITE]) == 2
+
+
 def create_field_group_monitor(
     test_path: pathlib.Path,
     grid: base.Grid,
@@ -302,7 +320,7 @@ def create_field_group_monitor(
     group_monitor = FieldGroupMonitor(
         config=config,
         vertical=vertical_params,
-        horizontal=grid.config.horizontal_config,
+        distribution=distributed.SingleNodeDistribution(grid.config.horizontal_config),
         grid_id=uuid.UUID(grid.id),
         output_path=test_path,
         dtime=dtime,
@@ -362,7 +380,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path: pa
     group_monitor = FieldGroupMonitor(
         config=config,
         vertical=vertical_size,  # type: ignore[arg-type]  # vertical is unused in this test
-        horizontal=horizontal_size,
+        distribution=distributed.SingleNodeDistribution(horizontal_size),
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
         output_path=test_path,
         dtime=time.RelativeTime(hours=1),
@@ -384,7 +402,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path: pathlib.
     group_monitor = FieldGroupMonitor(
         config=config,
         vertical=vertical_size,  # type: ignore[arg-type]  # vertical is unused in this test
-        horizontal=horizontal_size,
+        distribution=distributed.SingleNodeDistribution(horizontal_size),
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
         output_path=test_path,
         dtime=time.RelativeTime(hours=1),
@@ -433,4 +451,34 @@ def test_fieldgroup_monitor_interval_shorter_than_dtime_raises(test_path: pathli
             test_io_utils.simple_grid,
             output_interval=time.RelativeTime(minutes=30),
             dtime=time.RelativeTime(hours=1),
+        )
+
+
+def test_fieldgroup_config_accepts_backend_and_mode_value_strings() -> None:
+    config = FieldGroupIOConfig(
+        filename="a.nc",
+        variables=["air_density"],
+        backend="zarr",  # type: ignore[arg-type]  # value strings are coerced on purpose
+        mode="distributed",  # type: ignore[arg-type]  # value strings are coerced on purpose
+    )
+    assert config.backend == OutputBackend.ZARR
+    assert config.mode == OutputMode.DISTRIBUTED
+
+
+def test_fieldgroup_config_rejects_unknown_backend() -> None:
+    with pytest.raises(errors.InvalidConfigError, match="hdf5"):
+        FieldGroupIOConfig(
+            filename="a.nc",
+            variables=["air_density"],
+            backend="hdf5",  # type: ignore[arg-type]  # invalid on purpose
+        )
+
+
+def test_fieldgroup_config_rejects_distributed_netcdf() -> None:
+    with pytest.raises(errors.InvalidConfigError, match="parallel netCDF4"):
+        FieldGroupIOConfig(
+            filename="a.nc",
+            variables=["air_density"],
+            backend=OutputBackend.NETCDF,
+            mode=OutputMode.DISTRIBUTED,
         )

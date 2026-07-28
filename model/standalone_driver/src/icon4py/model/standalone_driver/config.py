@@ -37,6 +37,7 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file
 from icon4py.model.common.interpolation import interpolation_factory
+from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_states
 from icon4py.model.common.utils import fortran_config
@@ -281,6 +282,23 @@ class DriverConfig:
             icon_equivalent=None,
         ),
     ] = False
+    output_backend: typing.Annotated[
+        common_io.OutputBackend,
+        common_conf_opt.ConfigOption(
+            description="File format of the output field groups ('netcdf' or 'zarr').",
+            icon_equivalent=None,
+        ),
+    ] = common_io.OutputBackend.NETCDF
+    output_mode: typing.Annotated[
+        common_io.OutputMode,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Write strategy of distributed runs ('gather' or 'distributed'), no effect "
+                "on single-rank runs (see 'icon4py.model.common.io.OutputMode')."
+            ),
+            icon_equivalent=None,
+        ),
+    ] = common_io.OutputMode.GATHER
 
     def __post_init__(self) -> None:
         if self.start_of_timestepping < self.start_of_simulation:
@@ -288,6 +306,8 @@ class DriverConfig:
                 f"the time loop cannot start at {self.start_of_timestepping}, before the "
                 f"beginning of the simulation ({self.start_of_simulation})."
             )
+        # fail at config construction, not after minutes of driver initialization
+        common_io.validate_backend_mode_combination(self.output_backend, self.output_mode)
 
     @classmethod
     def make_initial(cls, **kwargs: Any) -> DriverConfig:

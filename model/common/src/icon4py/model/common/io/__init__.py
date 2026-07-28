@@ -15,7 +15,8 @@ The module provides an `IOMonitor` that captures fields from the model state and
 if called at the configured output time of the field. Upon each call the monitor decides on its own
 what fields it needs to write.
 
-The Datafiles produced are NETCDF4 files and conform to
+The Datafiles produced are NETCDF4 files or zarr stores (per field group, see `backend`
+below) and conform to
 [CF conventions](https://cfconventions.org/cf-conventions/cf-conventions.html).
 In addition, upon start-up the monitor writes a copy of the original ICON grid file enhanced with a
 [UGRID](https://ugrid-conventions.github.io/ugrid-conventions/) conforming mesh, which is referenced
@@ -47,8 +48,10 @@ Field groups are stored in the same file and share a common setting of
 - `filename`: File name to be used for the datafile, it may contain a _relative_ path which is appended to the `output_path` . Files will be appended with a counter for roll over (see `timesteps_per_file`).
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
 - `variables`: List of variables names to be output. Variable names are the CF names used as keys in the model state (see [data.py](../states/data.py)).
-- `nc_title` (optional): Title field of the generated netcdf file.
-- `nc_comment` (optional): Comment to be put to generated netcdf file.
+- `backend` (default="netcdf"): File format of the group, `"netcdf"` or `"zarr"`.
+- `mode` (default="gather"): Write strategy of distributed (MPI) runs: `"gather"` collects all fields on the root rank which writes them in global order; `"distributed"` lets every rank write its owned entries into a rank-contiguous block of a shared zarr store (see `io.distributed`). No effect on single-rank runs.
+- `nc_title` (optional): Title attribute of the generated files (netcdf and zarr).
+- `nc_comment` (optional): Comment attribute of the generated files (netcdf and zarr).
 
 As we have no general handling of configuration files in `ICON4Py` yet, the configuration needs to
 be instantiated as Python dataclasses for now. A valid configuration could look like this:
@@ -90,11 +93,12 @@ monitor.store(model_state, time)
 
 ### Restrictions
 
-- We only support NETCDF4 files.
+- We support NETCDF4 files and zarr stores (zarr format 3).
 - No transformation are applied to any output data: Fields are written with the same unstructured grid resolutions as they are computed.
 - Horizontal coordinates the latitude and longitude in radians as provided by the ICON grid file.
 - Vertical coordinates are the model levels, there is no transformation to pressure levels.
-- Parallel writing is not yet implemented.
+- Writing is synchronous: `store` returns once the data is written.
+- Distributed (MPI) runs write either gathered on the root rank (any backend) or with every rank writing its own block of a shared store (zarr only; parallel netCDF requires an MPI-enabled netCDF4 build and is not supported yet).
 - Global attributes of the datafiles and field metadata is only scarcely available and needs to be augmented.
 
 """

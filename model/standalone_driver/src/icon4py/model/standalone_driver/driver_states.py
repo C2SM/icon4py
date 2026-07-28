@@ -165,6 +165,11 @@ class DriverTimers(enum.Enum):
     SOLVE_NH = "solve_nh"
     DIFFUSION_FIRST_STEP = "diffusion_first_step"
     DIFFUSION = "diffusion"
+    #: assembly of the output state: diagnostics computation + host transfer (every step)
+    OUTPUT_ASSEMBLE = "output_assemble"
+    #: handover to the IO monitor: gather/halo stripping + file writing (writes only at
+    #: capture steps; a near-zero sample otherwise)
+    OUTPUT_STORE = "output_store"
 
 
 @dataclasses.dataclass
@@ -183,8 +188,17 @@ class TimerCollection:
 
     def show_timer_report(
         self,
+        total_wall_time: float | None = None,
     ) -> None:
+        """Log the per-timer statistics.
+
+        If ``total_wall_time`` (the wall-clock duration of the whole simulation, in
+        seconds) is given, an extra column reports each timer's cumulative time as a
+        percentage of it. The percentages need not sum to 100: the difference is time
+        spent outside any timer.
+        """
         log.info("===== ICON4Py timer report =====")
+        wall_time = total_wall_time if total_wall_time is not None and total_wall_time > 0 else None
         table_titles = (
             f"|{'timer name':^30}|"
             f"{'no. of times called':^23}|"
@@ -192,9 +206,11 @@ class TimerCollection:
             f"{'std. deviation (s)':^23}|"
             f"{'min time (s)':^23}|"
             f"{'max time (s)':^23}|"
+            f"{'% of wall time':^23}|"
         )
         log.info(table_titles)
         log.info("-" * len(table_titles))
+        timed_total = 0.0
         for timer_name, timer in self.timers.items():
             times = []
             for r in timer.results:
@@ -202,6 +218,8 @@ class TimerCollection:
                     r.capture()
                 times.append(r.elapsed())
             if len(times) > 0:
+                timed_total += sum(times)
+                share = f"{100 * sum(times) / wall_time:.2f}" if wall_time is not None else "n/a"
                 log.info(
                     f"|{timer_name:^30}|"
                     f"{len(times):^23}|"
@@ -209,11 +227,20 @@ class TimerCollection:
                     f"{statistics.stdev(times) if len(times) > 1 else 0:^23.8f}|"
                     f"{min(times):^23.8f}|"
                     f"{max(times):^23.8f}|"
+                    f"{share:^23}|"
                 )
             else:
                 log.info(
-                    f"|{timer_name:^30}|{'not started':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|"
+                    f"|{timer_name:^30}|{'not started':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|"
                 )
+        if wall_time is not None:
+            log.info("-" * len(table_titles))
+            log.info(f"total wall-clock time of the simulation: {wall_time:.8f} s")
+            timed_share = 100 * timed_total / wall_time
+            log.info(
+                f"timed regions total: {timed_total:.8f} s  "
+                f"({timed_share:.2f}% of wall time; {100 - timed_share:.2f}% untimed)"
+            )
 
 
 def assemble_driver_states(

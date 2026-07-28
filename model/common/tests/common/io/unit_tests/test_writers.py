@@ -5,15 +5,18 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import pathlib
 from datetime import datetime, timedelta
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
+import xarray as xr
+import zarr
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
-from icon4py.model.common.io import cf_utils, utils, writers
+from icon4py.model.common.io import cf_utils, distributed, utils, writers
 from icon4py.model.common.states import data, metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -39,22 +42,25 @@ def test_filter_by_standard_name_non_existing_name():
     assert writers.filter_by_standard_name(state, "does_not_exist") == {}
 
 
-def initialized_writer(
-    test_path, random_name, grid=test_io_utils.simple_grid
-) -> tuple[writers.NETCDFWriter, grid_def.Grid]:
+def _vertical_params(grid: grid_def.Grid) -> v_grid.VerticalGrid:
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
-    vertical_params = v_grid.VerticalGrid(
+    return v_grid.VerticalGrid(
         vertical_config,
         vct_a=gtx.as_field((dims.KDim,), heights),
         vct_b=None,
     )
+
+
+def initialized_writer(
+    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid = test_io_utils.simple_grid
+) -> tuple[writers.NETCDFWriter, grid_def.Grid]:
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
     writer = writers.NETCDFWriter(
         file_name=fname,
-        vertical=vertical_params,
+        vertical=_vertical_params(grid),
         horizontal=horizontal,
         time_properties=writers.TimeProperties(
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
@@ -178,6 +184,206 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
         grid.num_cells,
     )
     assert np.allclose(dataset.variables["air_density"][1], new_rho.ndarray.T)
+
+
+def initialized_zarr_writer(
+    test_path: pathlib.Path,
+    random_name: str,
+    grid: grid_def.Grid = test_io_utils.simple_grid,
+    rank_blocks: dict[str, distributed.RankBlock] | None = None,
+    horizontal: grid_def.HorizontalGridSize | None = None,
+) -> tuple[writers.ZarrWriter, pathlib.Path]:
+    store_path = test_path.absolute() / f"{random_name}.zarr"
+    writer = writers.ZarrWriter(
+        file_name=store_path,
+        vertical=_vertical_params(grid),
+        horizontal=horizontal if horizontal is not None else grid.config.horizontal_config,
+        time_properties=writers.TimeProperties(
+            cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+        ),
+        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        rank_blocks=rank_blocks,
+    )
+    writer.initialize_dataset()
+    return writer, store_path
+
+
+def test_zarr_writer_initialize_coordinates(test_path: pathlib.Path, random_name: str) -> None:
+    writer, store_path = initialized_zarr_writer(test_path, random_name)
+    writer.close()
+    grid = test_io_utils.simple_grid
+    assert zarr.open_group(store_path, mode="r").metadata.zarr_format == 3
+    with xr.open_zarr(store_path) as ds:
+        assert ds.attrs["title"] == "test"
+        assert ds.sizes[writers.TIME] == 0
+        assert np.all(ds[writers.MODEL_LEVEL].values == np.arange(grid.num_levels))
+        assert np.all(ds[writers.MODEL_HALF_LEVEL].values == np.arange(grid.num_levels + 1))
+        assert ds["height"].values[0] == 12000.0
+        assert ds["height"].values[-1] == 0.0
+        assert ds["height"].attrs["units"] == "m"
+
+
+def test_zarr_writer_append_timeslice_create_new_var(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    writer, store_path = initialized_zarr_writer(test_path, random_name)
+    grid = test_io_utils.simple_grid
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    writer.append(state, datetime.now())
+    writer.close()
+    with xr.open_zarr(store_path) as ds:
+        assert ds["air_density"].dims == (writers.TIME, writers.MODEL_LEVEL, writers.CELL)
+        assert ds["air_density"].shape == (1, grid.num_levels, grid.num_cells)
+        assert np.allclose(ds["air_density"].values[0], state["air_density"].data.T)
+        assert ds["air_density"].attrs["standard_name"] == "air_density"
+
+
+def test_zarr_writer_append_timeslice_to_existing_var(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    writer, store_path = initialized_zarr_writer(test_path, random_name)
+    grid = test_io_utils.simple_grid
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    first_time = datetime.now()
+    writer.append(state, first_time)
+
+    new_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
+    state["air_density"] = utils.to_data_array(
+        new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
+    )
+    writer.append(state, first_time + timedelta(hours=1))
+    writer.close()
+    with xr.open_zarr(store_path) as ds:
+        assert ds["air_density"].shape == (2, grid.num_levels, grid.num_cells)
+        assert np.allclose(ds["air_density"].values[1], new_rho.ndarray.T)
+        assert ds.sizes[writers.TIME] == 2
+    # the raw time values must be the CF-encoded model times, in append order
+    with xr.open_zarr(store_path, decode_times=False) as ds:
+        expected_times = [
+            cf_utils.date2num(t) for t in (first_time, first_time + timedelta(hours=1))
+        ]
+        assert np.allclose(ds[writers.TIME].values, expected_times)
+
+
+def test_zarr_writer_refuses_to_overwrite(test_path: pathlib.Path, random_name: str) -> None:
+    writer, store_path = initialized_zarr_writer(test_path, random_name)
+    writer.close()
+    duplicate = writers.ZarrWriter(
+        file_name=store_path,
+        vertical=_vertical_params(test_io_utils.simple_grid),
+        horizontal=test_io_utils.simple_grid.config.horizontal_config,
+        time_properties=writers.TimeProperties(
+            cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+        ),
+        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+    )
+    with pytest.raises(FileExistsError):
+        duplicate.initialize_dataset()
+
+
+def test_zarr_writer_rank_block_writes_padded_block(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # single-rank rank-block layout with padding: the store's horizontal axes are the
+    # padded sizes, data lands in the rank's block, padding stays NaN and the
+    # global-index coordinates mark it with -1
+    grid = test_io_utils.simple_grid
+    padding = 3
+    rank_blocks = {
+        dim_name: distributed.RankBlock(
+            start=0,
+            count=size,
+            chunk=size + padding,
+            padded_size=size + padding,
+            global_size=size,
+            global_index=np.arange(size, dtype=np.int64),
+        )
+        for dim_name, size in (
+            (writers.CELL, grid.num_cells),
+            (writers.EDGE, grid.num_edges),
+            (writers.VERTEX, grid.num_vertices),
+        )
+    }
+    padded_horizontal = grid_def.HorizontalGridSize(
+        num_cells=grid.num_cells + padding,
+        num_edges=grid.num_edges + padding,
+        num_vertices=grid.num_vertices + padding,
+    )
+    writer, store_path = initialized_zarr_writer(
+        test_path, random_name, grid, rank_blocks=rank_blocks, horizontal=padded_horizontal
+    )
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    writer.append(state, datetime.now())
+    writer.close()
+    with xr.open_zarr(store_path) as ds:
+        assert ds["air_density"].shape == (1, grid.num_levels, grid.num_cells + padding)
+        values = ds["air_density"].values[0]
+        assert np.allclose(values[:, : grid.num_cells], state["air_density"].data.T)
+        assert np.all(np.isnan(values[:, grid.num_cells :]))
+    # the -1 padding marker doubles as the store's fill value (which xarray does not
+    # decode as a missing value for format 3); read undecoded to pin the on-disk
+    # contract independent of the reader's decoding defaults
+    with xr.open_zarr(store_path, mask_and_scale=False) as ds:
+        global_index = ds[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].values
+        assert np.all(global_index[: grid.num_cells] == np.arange(grid.num_cells))
+        assert np.all(global_index[grid.num_cells :] == -1)
+    # exactly one horizontal chunk per rank block: the invariant that keeps concurrent
+    # writes of different ranks out of each other's chunk files
+    group = zarr.open_group(store_path, mode="r")
+    cell_chunk = rank_blocks[writers.CELL].chunk
+    air_density = group["air_density"]
+    global_index_cell = group[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"]
+    assert isinstance(air_density, zarr.Array)
+    assert isinstance(global_index_cell, zarr.Array)
+    assert air_density.chunks == (1, grid.num_levels, cell_chunk)
+    assert global_index_cell.chunks == (cell_chunk,)
+
+
+def test_zarr_writer_rank_block_writes_at_nonzero_start(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # store view of a non-root rank: its block starts at rank * chunk; data and global
+    # indices must land inside the block only, everything before and after stays padding
+    grid = test_io_utils.simple_grid
+    rank = 1
+    rank_blocks = {}
+    for dim_name, size in (
+        (writers.CELL, grid.num_cells),
+        (writers.EDGE, grid.num_edges),
+        (writers.VERTEX, grid.num_vertices),
+    ):
+        chunk = size + 1  # uneven layout: one padding entry per block
+        rank_blocks[dim_name] = distributed.RankBlock(
+            start=rank * chunk,
+            count=size,
+            chunk=chunk,
+            padded_size=2 * chunk,
+            global_size=2 * size,
+            global_index=np.arange(size, 2 * size, dtype=np.int64),
+        )
+    padded_horizontal = grid_def.HorizontalGridSize(
+        num_cells=rank_blocks[writers.CELL].padded_size,
+        num_edges=rank_blocks[writers.EDGE].padded_size,
+        num_vertices=rank_blocks[writers.VERTEX].padded_size,
+    )
+    writer, store_path = initialized_zarr_writer(
+        test_path, random_name, grid, rank_blocks=rank_blocks, horizontal=padded_horizontal
+    )
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    writer.append(state, datetime.now())
+    writer.close()
+    cell_block = rank_blocks[writers.CELL]
+    block = slice(cell_block.start, cell_block.start + cell_block.count)
+    with xr.open_zarr(store_path, mask_and_scale=False) as ds:
+        values = ds["air_density"].values[0]
+        assert np.allclose(values[:, block], state["air_density"].data.T)
+        global_index = ds[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].values
+        assert np.all(global_index[block] == cell_block.global_index)
+        assert np.all(global_index[: cell_block.start] == -1)
+    with xr.open_zarr(store_path) as ds:
+        values = ds["air_density"].values[0]
+        assert np.all(np.isnan(values[:, : cell_block.start]))
+        assert np.all(np.isnan(values[:, cell_block.start + cell_block.count :]))
 
 
 def test_initialize_writer_create_dimensions(
