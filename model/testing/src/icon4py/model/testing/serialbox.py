@@ -822,8 +822,8 @@ class MetricSavepoint(IconSavepoint):
     def wgtfacq_c(self):
         # The Fortran array stores the surface levels in reversed order.
         wgtfacq_c_fortran = self._get_field("wgtfacq_c", dims.CellDim, KDim)
-        assert len(wgtfacq_c_fortran.domain[KDim].unit_range) == 3
-        nlev = self.sizes[KDim]
+        assert len(wgtfacq_c_fortran.domain[dims.KDim].unit_range) == 3
+        nlev = self.sizes[dims.KDim]
         return field_utils.flip(
             wgtfacq_c_fortran(KDim - (nlev - 3)),  # GT4Py embedded shift
             KDim,
@@ -875,8 +875,8 @@ class MetricSavepoint(IconSavepoint):
     def wgtfacq_e(self):
         # The Fortran array stores the surface levels in reversed order.
         wgtfacq_e_fortran = self._get_field("wgtfacq_e", dims.EdgeDim, KDim)
-        assert len(wgtfacq_e_fortran.domain[KDim].unit_range) == 3
-        nlev = self.sizes[KDim]
+        assert len(wgtfacq_e_fortran.domain[dims.KDim].unit_range) == 3
+        nlev = self.sizes[dims.KDim]
         return field_utils.flip(
             wgtfacq_e_fortran(KDim - (nlev - 3)),  # GT4Py embedded shift
             KDim,
@@ -907,7 +907,7 @@ class MetricSavepoint(IconSavepoint):
             {
                 dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
                 dims.C2E2CDim: 3,
-                KDim: self.theta_ref_mc().domain[KDim].unit_range,
+                KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
             }
         )
         return data_alloc.list2field(
@@ -931,7 +931,7 @@ class MetricSavepoint(IconSavepoint):
             {
                 dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
                 dims.C2E2CDim: 3,
-                KDim: self.theta_ref_mc().domain[KDim].unit_range,
+                KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
             }
         )
         return data_alloc.list2field(

@@ -18,8 +18,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], vpfloat],
-    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
+    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
     z_dexner_dz_c_2: fa.CellKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
@@ -56,8 +56,8 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], vpfloat],
-    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
+    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
     z_dexner_dz_c_2: fa.CellKField[vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],

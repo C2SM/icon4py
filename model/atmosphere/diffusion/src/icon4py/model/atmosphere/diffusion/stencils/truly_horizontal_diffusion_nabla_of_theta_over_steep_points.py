@@ -16,11 +16,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], gtx.int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], wpfloat],
-    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], wpfloat],
     theta_v: fa.CellKField[wpfloat],
     z_temp: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
@@ -62,11 +62,11 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], gtx.int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], wpfloat],
-    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, KDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], wpfloat],
     theta_v: fa.CellKField[wpfloat],
     z_temp: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,

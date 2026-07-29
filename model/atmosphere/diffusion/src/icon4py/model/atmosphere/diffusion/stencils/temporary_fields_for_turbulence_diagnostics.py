@@ -19,7 +19,7 @@ def _temporary_fields_for_turbulence_diagnostics(
     vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    diff_multfac_smag: gtx.Field[gtx.Dims[KDim], vpfloat],
+    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     kh_smag_ec_wp, diff_multfac_smag_wp = astype((kh_smag_ec, diff_multfac_smag), wpfloat)
 
@@ -34,7 +34,7 @@ def temporary_fields_for_turbulence_diagnostics(
     vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    diff_multfac_smag: gtx.Field[gtx.Dims[KDim], vpfloat],
+    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     kh_c: fa.CellKField[vpfloat],
     div: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,

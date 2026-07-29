@@ -61,7 +61,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-    levelmask: gtx.Field[gtx.Dims[KDim], bool],
+    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     z_w_con_c_full: fa.CellKField[ta.vpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],

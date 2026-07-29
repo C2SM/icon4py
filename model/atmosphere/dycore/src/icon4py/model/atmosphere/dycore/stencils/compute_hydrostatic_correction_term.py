@@ -17,8 +17,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator
 def _compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
-    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32],
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], vpfloat],
+    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
@@ -65,8 +65,8 @@ def _compute_hydrostatic_correction_term(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
-    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32],
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], vpfloat],
+    ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],

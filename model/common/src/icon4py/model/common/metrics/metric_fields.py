@@ -183,7 +183,7 @@ def compute_scaling_factor_for_3d_divdamp(  # noqa: PLR0917 [too-many-positional
     See mo_vertical_grid.f90
 
     Args:
-        vct_a: Field[Dims[KDim], float],
+        vct_a: Field[Dims[dims.KDim], float],
         scaling_factor_for_3d_divdamp: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
         divdamp_trans_start: lower bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_trans_end: upper bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
@@ -245,7 +245,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
 
     Args:
         rayleigh_w: (output) Rayleigh damping
-        vct_a: Field[Dims[KDim], float]
+        vct_a: Field[Dims[dims.KDim], float]
         vct_a_1: 1D of vct_a
         damping_height: height at which w-damping and sponge layer start
         rayleigh_type: type of Rayleigh damping (1: CLASSIC, 2: Klemp (2008))
@@ -427,10 +427,10 @@ def _compute_maxslp_maxhgtd(
 
 @gtx.program
 def compute_maxslp_maxhgtd(  # noqa: PLR0917 [too-many-positional-arguments]
-    ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, KDim], wpfloat],
+    ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], wpfloat],
     dual_edge_length: gtx.Field[gtx.Dims[dims.EdgeDim], wpfloat],
-    maxslp: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
-    maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
+    maxslp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -804,11 +804,11 @@ def _compute_weighted_cell_neighbor_sum(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_weighted_cell_neighbor_sum(  # noqa: PLR0917 [too-many-positional-arguments]
-    maxslp: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
-    maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
+    maxslp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     c_bln_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
-    maxslp_avg: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
-    maxhgtd_avg: gtx.Field[gtx.Dims[dims.CellDim, KDim], wpfloat],
+    maxslp_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxhgtd_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

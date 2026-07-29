@@ -40,7 +40,7 @@ def _as_field_from_nc(
     varname: str,
     optional: bool = False,
     dtype: np.dtype | None = None,
-) -> gtx.Field[dims.CellDim, KDim] | None:
+) -> gtx.Field[dims.CellDim, dims.KDim] | None:
     if optional and varname not in dataset.variables:
         return None
 
@@ -61,7 +61,7 @@ def _field_to_nc(
     dataset: netCDF4.Dataset,
     dims: tuple[str, str],
     varname: str,
-    field: gtx.Field[dims.CellDim, KDim],
+    field: gtx.Field[dims.CellDim, dims.KDim],
     dtype: np.dtype = np.float64,
 ) -> None:
     var = dataset.createVariable(varname, dtype, dims)
@@ -72,16 +72,16 @@ def _field_to_nc(
 class GraupelInput:
     ncells: int
     nlev: int
-    dz: gtx.Field[dims.CellDim, KDim]
-    p: gtx.Field[dims.CellDim, KDim]
-    rho: gtx.Field[dims.CellDim, KDim]
-    t: gtx.Field[dims.CellDim, KDim]
-    qv: gtx.Field[dims.CellDim, KDim]
-    qc: gtx.Field[dims.CellDim, KDim]
-    qi: gtx.Field[dims.CellDim, KDim]
-    qr: gtx.Field[dims.CellDim, KDim]
-    qs: gtx.Field[dims.CellDim, KDim]
-    qg: gtx.Field[dims.CellDim, KDim]
+    dz: gtx.Field[dims.CellDim, dims.KDim]
+    p: gtx.Field[dims.CellDim, dims.KDim]
+    rho: gtx.Field[dims.CellDim, dims.KDim]
+    t: gtx.Field[dims.CellDim, dims.KDim]
+    qv: gtx.Field[dims.CellDim, dims.KDim]
+    qc: gtx.Field[dims.CellDim, dims.KDim]
+    qi: gtx.Field[dims.CellDim, dims.KDim]
+    qr: gtx.Field[dims.CellDim, dims.KDim]
+    qs: gtx.Field[dims.CellDim, dims.KDim]
+    qg: gtx.Field[dims.CellDim, dims.KDim]
 
     @property
     def q(self) -> Q:
@@ -132,20 +132,20 @@ class GraupelInput:
 
 @dataclasses.dataclass
 class GraupelOutput:
-    t: gtx.Field[dims.CellDim, KDim]
-    qv: gtx.Field[dims.CellDim, KDim]
-    qc: gtx.Field[dims.CellDim, KDim]
-    qi: gtx.Field[dims.CellDim, KDim]
-    qr: gtx.Field[dims.CellDim, KDim]
-    qs: gtx.Field[dims.CellDim, KDim]
-    qg: gtx.Field[dims.CellDim, KDim]
+    t: gtx.Field[dims.CellDim, dims.KDim]
+    qv: gtx.Field[dims.CellDim, dims.KDim]
+    qc: gtx.Field[dims.CellDim, dims.KDim]
+    qi: gtx.Field[dims.CellDim, dims.KDim]
+    qr: gtx.Field[dims.CellDim, dims.KDim]
+    qs: gtx.Field[dims.CellDim, dims.KDim]
+    qg: gtx.Field[dims.CellDim, dims.KDim]
 
-    pflx: gtx.Field[dims.CellDim, KDim] | None
-    pr: gtx.Field[dims.CellDim, KDim] | None
-    ps: gtx.Field[dims.CellDim, KDim] | None
-    pi: gtx.Field[dims.CellDim, KDim] | None
-    pg: gtx.Field[dims.CellDim, KDim] | None
-    pre: gtx.Field[dims.CellDim, KDim] | None
+    pflx: gtx.Field[dims.CellDim, dims.KDim] | None
+    pr: gtx.Field[dims.CellDim, dims.KDim] | None
+    ps: gtx.Field[dims.CellDim, dims.KDim] | None
+    pi: gtx.Field[dims.CellDim, dims.KDim] | None
+    pg: gtx.Field[dims.CellDim, dims.KDim] | None
+    pre: gtx.Field[dims.CellDim, dims.KDim] | None
 
     _surface_fields: ClassVar[list[str]] = ["pr", "ps", "pi", "pg", "pre"]
 

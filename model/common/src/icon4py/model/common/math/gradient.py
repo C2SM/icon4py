@@ -16,7 +16,7 @@ finite difference approximations.
 from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2V, KDim
+from icon4py.model.common.dimension import E2C, E2V
 
 
 @gtx.field_operator
@@ -41,7 +41,7 @@ def grad_fd_norm(
 
 @gtx.field_operator
 def _grad_fd_tang(
-    psi_v: gtx.Field[gtx.Dims[dims.VertexDim, KDim], float],
+    psi_v: gtx.Field[gtx.Dims[dims.VertexDim, dims.KDim], float],
     inv_primal_edge_length: fa.EdgeField[float],
     tangent_orientation: fa.EdgeField[float],
 ) -> fa.EdgeKField[float]:

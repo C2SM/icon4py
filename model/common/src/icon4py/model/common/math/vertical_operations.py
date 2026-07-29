@@ -31,9 +31,9 @@ def average_level_plus1_on_cells(
     Computes the average of two adjacent interface levels upwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[Dims[CellDim, KDim], wpfloat]
+        half_level_field: Field[Dims[CellDim, dims.KDim], wpfloat]
 
-    Returns: Field[Dims[CellDim, KDim], wpfloat] full level field
+    Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
 
     """
     return 0.5 * (half_level_field + half_level_field(KDim + 1))
@@ -67,9 +67,9 @@ def difference_level_plus1_on_cells(
     Computes the difference of two adjacent interface levels upwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[Dims[CellDim, KDim], wpfloat]
+        half_level_field: Field[Dims[CellDim, dims.KDim], wpfloat]
 
-    Returns: Field[Dims[CellDim, KDim], wpfloat] full level field
+    Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
 
     """
     return half_level_field - half_level_field(KDim + 1)

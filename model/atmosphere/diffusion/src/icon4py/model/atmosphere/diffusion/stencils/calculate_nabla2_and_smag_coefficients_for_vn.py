@@ -15,7 +15,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _calculate_nabla2_and_smag_coefficients_for_vn(
-    diff_multfac_smag: gtx.Field[gtx.Dims[KDim], vpfloat],
+    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     inv_vert_vert_length: fa.EdgeField[wpfloat],
@@ -26,7 +26,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
-    smag_limit: gtx.Field[gtx.Dims[KDim], vpfloat],
+    smag_limit: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     smag_offset: vpfloat,
 ) -> tuple[
     fa.EdgeKField[vpfloat],
@@ -71,7 +71,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def calculate_nabla2_and_smag_coefficients_for_vn(
-    diff_multfac_smag: gtx.Field[gtx.Dims[KDim], vpfloat],
+    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     inv_vert_vert_length: fa.EdgeField[wpfloat],
@@ -82,7 +82,7 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
     dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
-    smag_limit: gtx.Field[gtx.Dims[KDim], vpfloat],
+    smag_limit: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     kh_smag_ec: fa.EdgeKField[vpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],

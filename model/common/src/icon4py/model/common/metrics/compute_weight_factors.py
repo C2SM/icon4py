@@ -68,10 +68,10 @@ def compute_wgtfacq_c_dsl(
     Compute weighting factor for quadratic interpolation to surface.
 
     Args:
-        z_ifc: Field[CellDim, KDim] (half levels), geometric height at the vertical interface of cells.
+        z_ifc: Field[CellDim, dims.KDim] (half levels), geometric height at the vertical interface of cells.
         nlev: int, last k level
     Returns:
-    Field[CellDim, KDim] (full levels)
+    Field[CellDim, dims.KDim] (full levels)
     """
     array_ns = data_alloc.array_namespace(z_ifc)
     wgtfacq_c = array_ns.zeros((z_ifc.shape[0], nlev + 1))
@@ -110,7 +110,7 @@ def compute_wgtfacq_e_dsl(
         n_edges: number of edges
         nlev: int, last k level
     Returns:
-    Field[EdgeDim, KDim] (full levels)
+    Field[EdgeDim, dims.KDim] (full levels)
     """
     array_ns = data_alloc.array_namespace(e2c)
     wgtfacq_e_dsl = array_ns.zeros(shape=(n_edges, nlev + 1))

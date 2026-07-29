@@ -170,8 +170,8 @@ class MetricStateNonHydro:
     ddxt_z_full: fa.EdgeKField[ta.vpfloat]
     inv_ddqz_z_full: fa.CellKField[ta.vpfloat]
 
-    vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], gtx.int32]
-    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, KDim], ta.vpfloat]
+    vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32]
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat]
     nflat_gradp: gtx.int32
     """
     The minimum height index at which the height of the center of an edge lies within two neighboring cells so that
