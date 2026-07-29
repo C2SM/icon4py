@@ -230,9 +230,9 @@ def test_standalone_driver(
             "theta_v": savepoint_time_step_exit.theta_v(),
         }
 
-    for tracer in prognostics.tracers.active_fields():
-        computed[tracer] = tracer.field
-        references[tracer] = getattr(savepoint_time_step_exit, tracer.name)
+    for tracer in prognostics.tracer.active_fields():
+        computed[tracer.name] = tracer.field
+        references[tracer.name] = getattr(savepoint_time_step_exit, tracer.name)()
 
     tolerances = _TOLERANCES[experiment_description]
 
