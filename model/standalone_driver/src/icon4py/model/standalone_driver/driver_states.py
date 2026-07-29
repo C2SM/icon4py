@@ -54,7 +54,9 @@ class DriverStates(NamedTuple):
         diffusion_diagnostic: Initial state for diffusion diagnostic variables.
         tracer_advection_diagnostic: Initial state for tracer advection diagnostic variables.
         prep_tracer_advection_prognostic: Precalculated fields for tracer advection.
-        prognostics: Initial state for prognostic variables (double buffered).
+        prognostics: Initial state for prognostic variables (double buffered, swapped
+            once per dynamics substep).
+        tracers: Initial tracer state (double buffered, swapped once per time step).
         diagnostic: Initial state for global diagnostic variables.
     """
 
@@ -64,6 +66,7 @@ class DriverStates(NamedTuple):
     tracer_advection_diagnostic: tracer_advection_states.AdvectionDiagnosticState | None
     prep_tracer_advection_prognostic: tracer_advection_states.AdvectionPrepAdvState | None
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
+    tracers: common_utils.TimeStepPair[tracer_states.TracerState]
     diagnostic: diagnostics.DiagnosticState
 
 
@@ -254,6 +257,7 @@ def assemble_driver_states(
     exchange: decomposition_defs.ExchangeRuntime,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
+    tracer_state_now: tracer_states.TracerState,
     diagnostic_state: diagnostics.DiagnosticState,
     experiment_config: driver_config.ExperimentConfig,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
@@ -264,14 +268,11 @@ def assemble_driver_states(
         exner=data_alloc.as_field(prognostic_state_now.exner, allocator=allocator),
         rho=data_alloc.as_field(prognostic_state_now.rho, allocator=allocator),
         theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
-        tracer=tracer_states.TracerState(
-            **{
-                tracer.name: data_alloc.as_field(tracer.field, allocator=allocator)
-                for tracer in prognostic_state_now.tracer.active_fields()
-            }
-        ),
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+    tracer_states = common_utils.TimeStepPair(
+        tracer_state_now, tracer_state_now.copy(allocator=allocator)
+    )
 
     cell_domain = h_grid.domain(dims.CellDim)
     end_cell_lateral_boundary_level_2 = grid.end_index(
@@ -331,5 +332,6 @@ def assemble_driver_states(
         tracer_advection_diagnostic=tracer_advection_diagnostic_state,
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,
+        tracers=tracer_states,
         diagnostic=diagnostic_state,
     )
