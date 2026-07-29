@@ -18,7 +18,7 @@ import numpy.testing as np_testing
 import numpy.typing as npt
 import pytest
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import model_options
 from icon4py.model.testing import config
 
 
@@ -53,12 +53,12 @@ def get_mpi_comparison_tolerance(
     """Return (atol, rtol) for single-rank vs multi-rank field comparisons.
 
     When ``ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE`` is set and the backend is a
-    known-good CPU backend (``gtfn`` or ``dace``), tolerances are overridden to
-    zero for bitwise-exact comparison. Otherwise the caller-supplied tolerances
-    are returned unchanged.
+    reproducible ``gtfn`` or ``dace`` backend (CPU or GPU), tolerances are
+    overridden to zero for bitwise-exact comparison. Otherwise the
+    caller-supplied tolerances are returned unchanged.
     """
     if os.environ.get("ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE") == "1" and (
-        model_backends.is_cpu_backend(backend) and (is_gtfn_backend(backend) or is_dace(backend))
+        is_gtfn_backend(backend) or is_dace(backend)
     ):
         return 0.0, 0.0
     return atol, rtol
