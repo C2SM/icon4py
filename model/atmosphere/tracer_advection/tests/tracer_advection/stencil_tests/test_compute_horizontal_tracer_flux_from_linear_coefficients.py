@@ -61,16 +61,16 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(stencil_tests.Stenci
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        z_lsq_coeff_1 = data_alloc.random_field(grid, dims.CellDim, KDim)
-        z_lsq_coeff_2 = data_alloc.random_field(grid, dims.CellDim, KDim)
-        z_lsq_coeff_3 = data_alloc.random_field(grid, dims.CellDim, KDim)
-        distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        z_lsq_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_lsq_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_lsq_coeff_3 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         cell_rel_idx_dsl = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim, low=0.0, high=2.0, dtype=gtx.int32
+            grid, dims.EdgeDim, dims.KDim, low=0.0, high=2.0, dtype=gtx.int32
         )
-        p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))

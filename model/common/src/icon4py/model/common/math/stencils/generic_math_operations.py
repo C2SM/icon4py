@@ -9,7 +9,6 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.math.operators import _compute_difference_on_cell_k
 
 
@@ -29,6 +28,6 @@ def compute_difference_on_cell_k(
         out=output_field,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

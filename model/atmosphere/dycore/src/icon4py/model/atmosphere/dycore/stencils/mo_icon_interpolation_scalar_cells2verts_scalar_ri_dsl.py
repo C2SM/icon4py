@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import V2C, KDim
+from icon4py.model.common.dimension import V2C
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -38,6 +38,6 @@ def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
         out=p_vert_out,
         domain={
             dims.VertexDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

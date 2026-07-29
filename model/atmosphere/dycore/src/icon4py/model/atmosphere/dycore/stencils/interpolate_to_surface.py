@@ -42,6 +42,6 @@ def interpolate_to_surface(
         out=interpolation_to_surface,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

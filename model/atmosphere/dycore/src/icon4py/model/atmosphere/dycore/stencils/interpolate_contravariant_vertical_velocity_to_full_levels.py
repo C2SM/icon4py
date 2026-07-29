@@ -36,6 +36,6 @@ def interpolate_contravariant_vertical_velocity_to_full_levels(
         out=z_w_con_c_full,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

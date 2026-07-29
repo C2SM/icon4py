@@ -23,7 +23,6 @@ from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import dimension as dims, time, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
@@ -290,9 +289,9 @@ def assemble_driver_states(
     )
     prep_tracer_adv = (
         tracer_advection_states.AdvectionPrepAdvState(
-            vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, KDim, allocator=allocator),
-            mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, KDim, allocator=allocator),
-            mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, KDim, allocator=allocator),
+            vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+            mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+            mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
         )
         if tracer_advection_enabled
         else None

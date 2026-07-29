@@ -40,6 +40,6 @@ def compute_first_vertical_derivative_at_cells(  # noqa: PLR0917 [too-many-posit
         out=first_vertical_derivative,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

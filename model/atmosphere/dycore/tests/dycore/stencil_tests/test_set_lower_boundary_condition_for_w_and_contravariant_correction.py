@@ -55,9 +55,9 @@ class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        w_concorr_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        z_contr_w_fl_l = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        w_nnew = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_nnew = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             w_nnew=w_nnew,

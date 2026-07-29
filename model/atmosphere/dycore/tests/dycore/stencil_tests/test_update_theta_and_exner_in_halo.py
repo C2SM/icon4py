@@ -65,12 +65,12 @@ class TestUpdateThetaV(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         mask_prog_halo_c = data_alloc.random_mask(grid, dims.CellDim)
-        rho_now = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        rho_new = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        theta_v_now = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        theta_v_new = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        exner_now = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        exner_new = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_v_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_v_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             mask_prog_halo_c=mask_prog_halo_c,

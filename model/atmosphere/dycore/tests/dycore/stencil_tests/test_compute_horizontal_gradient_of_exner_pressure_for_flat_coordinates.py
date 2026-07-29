@@ -58,8 +58,8 @@ class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        z_exner_ex_pr = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        z_gradh_exner = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_gradh_exner = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,

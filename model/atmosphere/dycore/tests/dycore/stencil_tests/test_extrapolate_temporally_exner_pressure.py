@@ -61,11 +61,11 @@ class TestExtrapolateTemporallyExnerPressure(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        exner = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        exner_ref_mc = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        exner_pr = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        exner_exfac = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        z_exner_ex_pr = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner_exfac = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_exner_ex_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             exner_exfac=exner_exfac,

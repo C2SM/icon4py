@@ -47,6 +47,6 @@ def compute_approx_of_2nd_vertical_derivative_of_exner(
         out=z_dexner_dz_c_2,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -39,12 +39,16 @@ class TestTFromInternalEnergy(StencilTest):
     def input_data(self, grid):
         return dict(
             u=data_alloc.constant_field(
-                grid, 38265357.270336017, dims.CellDim, KDim, dtype=wpfloat
+                grid, 38265357.270336017, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            qv=data_alloc.constant_field(grid, 0.00122576, dims.CellDim, KDim, dtype=wpfloat),
-            qliq=data_alloc.constant_field(grid, 1.63837e-20, dims.CellDim, KDim, dtype=wpfloat),
-            qice=data_alloc.constant_field(grid, 1.09462e-08, dims.CellDim, KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 0.83444, dims.CellDim, KDim, dtype=wpfloat),
-            dz=data_alloc.constant_field(grid, 249.569, dims.CellDim, KDim, dtype=wpfloat),
-            temperature=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            qv=data_alloc.constant_field(grid, 0.00122576, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qliq=data_alloc.constant_field(
+                grid, 1.63837e-20, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            qice=data_alloc.constant_field(
+                grid, 1.09462e-08, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            rho=data_alloc.constant_field(grid, 0.83444, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dz=data_alloc.constant_field(grid, 249.569, dims.CellDim, dims.KDim, dtype=wpfloat),
+            temperature=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast, maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -27,7 +26,7 @@ def _apply_nabla2_and_nabla4_to_vn(
     kh_smag_e_wp, z_nabla4_e2_wp, nudgezone_diff_wp = astype(
         (kh_smag_e, z_nabla4_e2, nudgezone_diff), wpfloat
     )
-    area_edge_broadcast = broadcast(area_edge, (dims.EdgeDim, KDim))
+    area_edge_broadcast = broadcast(area_edge, (dims.EdgeDim, dims.KDim))
 
     vn_wp = vn + area_edge * (
         maximum(nudgezone_diff_wp * nudgecoeff_e, kh_smag_e_wp) * z_nabla2_e
@@ -63,6 +62,6 @@ def apply_nabla2_and_nabla4_to_vn(
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

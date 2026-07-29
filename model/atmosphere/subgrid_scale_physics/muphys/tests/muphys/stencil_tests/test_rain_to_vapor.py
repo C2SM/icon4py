@@ -38,11 +38,11 @@ class TestRainToVapor(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t=data_alloc.constant_field(grid, 258.542, dims.CellDim, KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 0.956089, dims.CellDim, KDim, dtype=wpfloat),
-            qc=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
-            qr=data_alloc.constant_field(grid, 3.01332e-11, dims.CellDim, KDim, dtype=wpfloat),
-            dvsw=data_alloc.constant_field(grid, -1.0e-10, dims.CellDim, KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(grid, 258.542, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qr=data_alloc.constant_field(grid, 3.01332e-11, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw=data_alloc.constant_field(grid, -1.0e-10, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt=30.0,
-            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

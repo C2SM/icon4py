@@ -46,6 +46,6 @@ def extrapolate_at_top(
         out=vn_ie,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

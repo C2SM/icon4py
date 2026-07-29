@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -21,7 +20,7 @@ def _apply_nabla2_to_w_in_upper_damping_layer(
     z_nabla2_c: fa.CellKField[vpfloat],
 ) -> fa.CellKField[wpfloat]:
     z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
-    cell_area_tmp = broadcast(cell_area, (dims.CellDim, KDim))
+    cell_area_tmp = broadcast(cell_area, (dims.CellDim, dims.KDim))
 
     w_wp = w + diff_multfac_n2w * cell_area_tmp * z_nabla2_c_wp
     return w_wp
@@ -46,6 +45,6 @@ def apply_nabla2_to_w_in_upper_damping_layer(
         out=w,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

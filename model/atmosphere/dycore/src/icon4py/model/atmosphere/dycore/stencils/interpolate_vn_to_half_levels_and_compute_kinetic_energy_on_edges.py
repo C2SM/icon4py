@@ -53,6 +53,6 @@ def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges(
         out=(vn_ie, z_kin_hor_e),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

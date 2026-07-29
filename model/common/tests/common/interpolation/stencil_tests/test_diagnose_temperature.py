@@ -50,19 +50,31 @@ class TestDiagnoseTemperature(stencil_tests.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         theta_v = data_alloc.random_field(
-            grid, dims.CellDim, KDim, low=1.0e-4, high=1.0, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=1.0e-4, high=1.0, dtype=ta.wpfloat
         )
         exner = data_alloc.random_field(
-            grid, dims.CellDim, KDim, low=1.0e-4, high=1.0, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=1.0e-4, high=1.0, dtype=ta.wpfloat
         )
-        qv = data_alloc.random_field(grid, dims.CellDim, KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        qc = data_alloc.random_field(grid, dims.CellDim, KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        qi = data_alloc.random_field(grid, dims.CellDim, KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        qr = data_alloc.random_field(grid, dims.CellDim, KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        qs = data_alloc.random_field(grid, dims.CellDim, KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        qg = data_alloc.random_field(grid, dims.CellDim, KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        virtual_temperature = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
-        temperature = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        qv = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
+        )
+        qc = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
+        )
+        qi = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
+        )
+        qr = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
+        )
+        qs = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
+        )
+        qg = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
+        )
+        virtual_temperature = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        temperature = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             qv=qv,

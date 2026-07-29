@@ -33,6 +33,6 @@ class TestSatPresWater(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t=data_alloc.constant_field(grid, 281.787, dims.CellDim, KDim, dtype=wpfloat),
-            pressure=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
+            pressure=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -58,10 +58,10 @@ def test_compute_diffusion_mask_and_coeff(  # noqa: PLR0917 [too-many-positional
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
+    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, allocator=backend)
 
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
@@ -140,10 +140,10 @@ def test_compute_diffusion_intcoef_and_vertoffset(  # noqa: PLR0917 [too-many-po
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
+    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, allocator=backend)
 
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()

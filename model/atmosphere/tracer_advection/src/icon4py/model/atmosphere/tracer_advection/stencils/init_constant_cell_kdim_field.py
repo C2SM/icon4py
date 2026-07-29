@@ -10,7 +10,6 @@ import gt4py.next as gtx
 from gt4py.next import broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 
 
 # TODO(dastrm): move this highly generic stencil to common
@@ -19,7 +18,7 @@ from icon4py.model.common.dimension import KDim
 
 @gtx.field_operator
 def _init_constant_cell_kdim_field(value: ta.wpfloat) -> fa.CellKField[ta.wpfloat]:
-    return broadcast(value, (dims.CellDim, KDim))
+    return broadcast(value, (dims.CellDim, dims.KDim))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -36,6 +35,6 @@ def init_constant_cell_kdim_field(
         out=field,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

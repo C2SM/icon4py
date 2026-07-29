@@ -62,6 +62,6 @@ def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
         out=(rho_ic, z_rth_pr_1, z_rth_pr_2),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

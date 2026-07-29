@@ -55,10 +55,10 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
-        vt = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
+        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
-        z_vt_ie = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
+        z_vt_ie = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

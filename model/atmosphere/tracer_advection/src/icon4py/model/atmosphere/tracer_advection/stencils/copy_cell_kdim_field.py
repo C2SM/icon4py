@@ -9,7 +9,6 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 
 
 # TODO(dastrm): move this highly generic stencil to common
@@ -35,6 +34,6 @@ def copy_cell_kdim_field(
         out=field_out,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

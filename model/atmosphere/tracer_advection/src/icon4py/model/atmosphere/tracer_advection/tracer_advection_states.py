@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -106,18 +105,18 @@ def initialize_advection_diagnostic_state(
 ) -> AdvectionDiagnosticState:
     return AdvectionDiagnosticState(
         airmass_now=data_alloc.zero_field(
-            grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
         airmass_new=data_alloc.zero_field(
-            grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
         grf_tend_tracer=data_alloc.zero_field(
-            grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
         hfl_tracer=data_alloc.zero_field(
-            grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.wpfloat
+            grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
         vfl_tracer=data_alloc.zero_field(
-            grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
     )

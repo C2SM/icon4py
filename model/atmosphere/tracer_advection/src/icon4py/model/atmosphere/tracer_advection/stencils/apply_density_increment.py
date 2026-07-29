@@ -25,7 +25,7 @@ def _apply_density_increment(
     p_dtime: ta.wpfloat,
     even_timestep: bool,
 ) -> fa.CellKField[ta.wpfloat]:
-    even = broadcast(even_timestep, (dims.CellDim, KDim))
+    even = broadcast(even_timestep, (dims.CellDim, dims.KDim))
     rhodz_incr = p_dtime * (
         p_mflx_contra_v(KDim + 1) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
     )
@@ -57,6 +57,6 @@ def apply_density_increment(
         out=rhodz_out,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

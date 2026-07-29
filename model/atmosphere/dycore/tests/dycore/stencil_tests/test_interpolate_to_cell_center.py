@@ -55,9 +55,9 @@ class TestInterpolateToCellCenter(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        interpolant = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
+        interpolant = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
-        interpolation = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
+        interpolation = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             interpolant=interpolant,

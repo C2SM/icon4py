@@ -35,8 +35,8 @@ class TestSnowNumberDefault(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t=data_alloc.constant_field(grid, 276.302, dims.CellDim, KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 1.17797, dims.CellDim, KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(grid, 8.28451e-24, dims.CellDim, KDim, dtype=wpfloat),
-            number=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(grid, 276.302, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 1.17797, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(grid, 8.28451e-24, dims.CellDim, dims.KDim, dtype=wpfloat),
+            number=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

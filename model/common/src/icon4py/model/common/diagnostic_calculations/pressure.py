@@ -29,7 +29,6 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_pressure as diagnose_pressure_stencil,
     diagnose_surface_pressure as diagnose_surface_pressure_stencil,
 )
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -113,10 +112,10 @@ def diagnose_pressure_surface_to_top_ndarray(
         grid, dims.CellDim, allocator=allocator, dtype=ta.wpfloat
     )
     pressure = data_alloc.zero_field(
-        grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
     pressure_on_cells_half_levels = data_alloc.zero_field(
-        grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator, dtype=ta.wpfloat
     )
     diagnose_pressure_surface_to_top(
         grid=grid,

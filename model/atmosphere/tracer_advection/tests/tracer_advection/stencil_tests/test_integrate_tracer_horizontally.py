@@ -49,14 +49,14 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        deepatmo_divh = data_alloc.random_field(grid, KDim)
-        tracer_now = data_alloc.random_field(grid, dims.CellDim, KDim)
-        rhodz_now = data_alloc.random_field(grid, dims.CellDim, KDim)
-        rhodz_new = data_alloc.random_field(grid, dims.CellDim, KDim)
+        p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        deepatmo_divh = data_alloc.random_field(grid, dims.KDim)
+        tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         p_dtime = np.float64(5.0)
-        tracer_new_hor = data_alloc.zero_field(grid, dims.CellDim, KDim)
+        tracer_new_hor = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             p_mflx_tracer_h=p_mflx_tracer_h,
             deepatmo_divh=deepatmo_divh,

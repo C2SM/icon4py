@@ -81,6 +81,6 @@ def compute_explicit_part_for_rho_and_exner(
         out=(z_rho_expl, z_exner_expl),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

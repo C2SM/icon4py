@@ -10,7 +10,6 @@ import gt4py.next as gtx
 from gt4py.next import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -40,6 +39,6 @@ def compute_ffsl_backtrajectory_counterclockwise_indicator(
         out=lvn_sys_pos,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

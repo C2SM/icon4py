@@ -39,11 +39,11 @@ class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        z_face_up = data_alloc.random_field(grid, dims.CellDim, KDim)
-        z_face_low = data_alloc.random_field(grid, dims.CellDim, KDim)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, KDim)
-        z_delta_q = data_alloc.zero_field(grid, dims.CellDim, KDim)
-        z_a1 = data_alloc.zero_field(grid, dims.CellDim, KDim)
+        z_face_up = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_face_low = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_delta_q = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_a1 = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             z_face_up=z_face_up,
             z_face_low=z_face_low,

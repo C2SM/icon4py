@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
 )
 from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -36,11 +35,11 @@ def init_test_fields(  # noqa: PLR0917 [too-many-positional-arguments]
 ) -> None:
     _broadcast_zero_to_three_edge_kdim_fields_wp(
         out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
-        domain={dims.EdgeDim: (edges_start, edges_end), KDim: (vertical_start, vertical_end)},
+        domain={dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
     )
     _init_cell_kdim_field_with_zero_wp(
         out=z_dwdz_dd,
-        domain={dims.CellDim: (cells_start, cells_end), KDim: (vertical_start, vertical_end)},
+        domain={dims.CellDim: (cells_start, cells_end), dims.KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -72,7 +71,7 @@ def stencils_61_62(  # noqa: PLR0917 [too-many-positional-arguments]
         out=(rho_new, exner_new, w_new),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
     _update_wind(
@@ -82,6 +81,6 @@ def stencils_61_62(  # noqa: PLR0917 [too-many-positional-arguments]
         out=w_new,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )

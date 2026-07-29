@@ -461,7 +461,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             match dim:
                 case dims.KHalfDim:
                     return grids.vertical_grid.num_levels + 1
-                case _ if dim is KDim:
+                case _ if dim is dims.KDim:
                     return grids.vertical_grid.num_levels
                 case _:
                     return grids.grid.size[dim]

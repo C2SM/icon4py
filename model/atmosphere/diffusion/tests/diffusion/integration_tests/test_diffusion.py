@@ -15,8 +15,8 @@ import pytest
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
@@ -462,8 +462,8 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     expected_smag_limit = savepoint.smag_limit()
     exptected_smag_offset = savepoint.smag_offset()
 
-    diff_multfac_vn = data_alloc.zero_field(icon_grid, KDim, allocator=backend)
-    smag_limit = data_alloc.zero_field(icon_grid, KDim, allocator=backend)
+    diff_multfac_vn = data_alloc.zero_field(icon_grid, dims.KDim, allocator=backend)
+    smag_limit = data_alloc.zero_field(icon_grid, dims.KDim, allocator=backend)
     diffusion_utils.setup_fields_for_initial_step.with_backend(backend)(
         params.K4,
         config.hdiff_efdt_ratio,

@@ -20,7 +20,6 @@ from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 
 
 def _calc_dz(z: np.ndarray) -> np.ndarray:
@@ -51,7 +50,7 @@ def _as_field_from_nc(
     if dtype is not None:
         data = data.astype(dtype)
     return gtx.as_field(
-        (dims.CellDim, KDim),
+        (dims.CellDim, dims.KDim),
         data,
         allocator=allocator,
     )
@@ -116,7 +115,7 @@ class GraupelInput:
                 ncells=ncells,
                 nlev=nlev,
                 dz=gtx.as_field(
-                    (dims.CellDim, KDim), np.transpose(dz), allocator=allocator, dtype=dtype
+                    (dims.CellDim, dims.KDim), np.transpose(dz), allocator=allocator, dtype=dtype
                 ),
                 t=field_from_nc("ta"),
                 p=field_from_nc("pfull"),

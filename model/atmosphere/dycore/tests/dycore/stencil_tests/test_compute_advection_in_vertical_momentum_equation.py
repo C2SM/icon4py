@@ -421,18 +421,20 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, KDim
         )
-        vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, KDim, extend={KDim: 1})
+        vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         tangential_wind_on_half_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim, extend={KDim: 1}
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
-        vn_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, KDim, extend={KDim: 1})
+        vn_on_half_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+        )
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, KDim, extend={KDim: 1}
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
 
-        coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, KDim)
-        coeff2_dwdz = data_alloc.random_field(grid, dims.CellDim, KDim)
+        coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        coeff2_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
@@ -440,9 +442,9 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
 
-        vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, KDim)
+        vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         owner_mask = data_alloc.random_mask(grid, dims.CellDim)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, KDim)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         area = data_alloc.random_field(grid, dims.CellDim)
         geofac_n2s = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
 
@@ -655,27 +657,27 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, KDim
         )
-        vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, KDim, extend={KDim: 1})
+        vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim, extend={KDim: 1}
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
         contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, KDim
         )
         contravariant_correction_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, KDim, extend={KDim: 1}
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
 
-        coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, KDim)
-        coeff2_dwdz = data_alloc.random_field(grid, dims.CellDim, KDim)
+        coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        coeff2_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, KDim)
+        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
-        vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, KDim)
+        vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         owner_mask = data_alloc.random_mask(grid, dims.CellDim)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, KDim)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         area = data_alloc.random_field(grid, dims.CellDim)
         geofac_n2s = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
 

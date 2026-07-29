@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import broadcast, minimum
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 
@@ -199,5 +199,5 @@ def init_nabla2_factor_in_upper_damping_zone(  # noqa: PLR0917 [too-many-positio
         heights_nrd_shift=heights_nrd_shift,
         heights_1=heights_1,
         out=diff_multfac_n2w,
-        domain={KDim: (vertical_start, vertical_end)},
+        domain={dims.KDim: (vertical_start, vertical_end)},
     )

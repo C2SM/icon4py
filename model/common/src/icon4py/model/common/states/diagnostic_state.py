@@ -74,7 +74,7 @@ def initialize_diagnostic_state(
         grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
     )

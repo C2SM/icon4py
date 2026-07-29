@@ -115,14 +115,14 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 
     cfl_clipping = where(
         abs(contravariant_corrected_w_at_cells_on_half_levels) > cfl_w_limit * ddqz_z_half,
-        broadcast(True, (dims.CellDim, KDim)),
+        broadcast(True, (dims.CellDim, dims.KDim)),
         False,
     )
 
     vertical_cfl = where(
         cfl_clipping,
         contravariant_corrected_w_at_cells_on_half_levels_wp * dtime / ddqz_z_half_wp,
-        broadcast(wpfloat("0.0"), (dims.CellDim, KDim)),
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
     vertical_cfl_vp = astype(vertical_cfl, vpfloat)
 
@@ -182,8 +182,8 @@ def _compute_contravariant_corrected_w_and_cfl(
         ),
         (
             contravariant_corrected_w_at_cells_on_half_levels,
-            broadcast(False, (dims.CellDim, KDim)),
-            broadcast(vpfloat("0.0"), (dims.CellDim, KDim)),
+            broadcast(False, (dims.CellDim, dims.KDim)),
+            broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
         ),
     )
 
@@ -419,7 +419,7 @@ def compute_advection_in_corrector_vertical_momentum(
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -443,7 +443,7 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
         ),
-        broadcast(vpfloat("0.0"), (dims.CellDim, KDim)),
+        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
 
     return contravariant_correction_at_cells_on_half_levels
@@ -623,6 +623,6 @@ def compute_advection_in_predictor_vertical_momentum(
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -49,8 +49,8 @@ class TestApply2ndOrderDivergenceDamping(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_graddiv_vn = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        vn = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        z_graddiv_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         scal_divdamp_o2 = wpfloat("5.0")
 
         return dict(

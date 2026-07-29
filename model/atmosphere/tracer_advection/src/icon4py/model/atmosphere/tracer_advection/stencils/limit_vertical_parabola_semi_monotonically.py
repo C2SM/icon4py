@@ -55,6 +55,6 @@ def limit_vertical_parabola_semi_monotonically(
         out=(p_face_up, p_face_low),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

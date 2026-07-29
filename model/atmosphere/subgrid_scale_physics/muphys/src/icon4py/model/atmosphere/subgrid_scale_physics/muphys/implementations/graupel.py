@@ -173,7 +173,7 @@ def _temperature_update(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.scan_operator(
-    axis=KDim,
+    axis=dims.KDim,
     forward=True,
     init=IntegrationState(
         r=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
@@ -354,7 +354,7 @@ def _q_t_update(  # noqa: PLR0917 [too-many-positional-arguments]
     if enable_masking:
         is_sig_present = maximum(q.g, maximum(q.i, q.s)) > GraupelConsts.qmin
     else:
-        is_sig_present = broadcast(True, (dims.CellDim, KDim))
+        is_sig_present = broadcast(True, (dims.CellDim, dims.KDim))
 
     dvsw = q.v - _qsat_rho(t, rho)
     qvsi = _qsat_ice_rho(t, rho)
@@ -427,8 +427,8 @@ def _q_t_update(  # noqa: PLR0917 [too-many-positional-arguments]
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
     # SINK calculation
 
-    UNUSED = broadcast(wpfloat(0.0), (dims.CellDim, KDim))
-    EVERYWHERE = broadcast(True, (dims.CellDim, KDim))
+    UNUSED = broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
+    EVERYWHERE = broadcast(True, (dims.CellDim, dims.KDim))
     sink_v, v2s, v2i, v2g, _ = sink_saturation((v2s, v2i, v2g, UNUSED), q.v, dt, where_=EVERYWHERE)
     sink_c, c2r, c2s, c2i, c2g = sink_saturation((c2r, c2s, c2i, c2g), q.c, dt, where_=EVERYWHERE)
     sink_r, r2v, r2g, _, __ = sink_saturation(
@@ -615,64 +615,64 @@ def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
             # t_out
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                KDim: (vertical_start, vertical_end),
+                dims.KDim: (vertical_start, vertical_end),
             },
             # q_out
             (
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    KDim: (vertical_start, vertical_end),
+                    dims.KDim: (vertical_start, vertical_end),
                 },
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    KDim: (vertical_start, vertical_end),
+                    dims.KDim: (vertical_start, vertical_end),
                 },
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    KDim: (vertical_start, vertical_end),
+                    dims.KDim: (vertical_start, vertical_end),
                 },
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    KDim: (vertical_start, vertical_end),
+                    dims.KDim: (vertical_start, vertical_end),
                 },
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    KDim: (vertical_start, vertical_end),
+                    dims.KDim: (vertical_start, vertical_end),
                 },
                 {
                     dims.CellDim: (horizontal_start, horizontal_end),
-                    KDim: (vertical_start, vertical_end),
+                    dims.KDim: (vertical_start, vertical_end),
                 },
             ),
             # pflx
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                KDim: (vertical_start, vertical_end),
+                dims.KDim: (vertical_start, vertical_end),
             },
             # pr
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                KDim: (vertical_end - 1, vertical_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
             },
             # ps
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                KDim: (vertical_end - 1, vertical_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
             },
             # pi
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                KDim: (vertical_end - 1, vertical_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
             },
             # pg
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                KDim: (vertical_end - 1, vertical_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
             },
             # pre
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                KDim: (vertical_end - 1, vertical_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
             },
         ),
     )

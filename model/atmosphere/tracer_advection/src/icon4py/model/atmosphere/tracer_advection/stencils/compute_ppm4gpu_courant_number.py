@@ -183,6 +183,6 @@ def compute_ppm4gpu_courant_number(
         out=z_cfl,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

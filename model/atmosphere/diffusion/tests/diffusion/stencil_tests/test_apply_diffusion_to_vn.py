@@ -124,8 +124,8 @@ class TestApplyDiffusionToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        u_vert = data_alloc.random_field(grid, dims.VertexDim, KDim)
-        v_vert = data_alloc.random_field(grid, dims.VertexDim, KDim)
+        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
+        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
 
         primal_normal_vert_v1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim)
         primal_normal_vert_v2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim)
@@ -134,10 +134,10 @@ class TestApplyDiffusionToVn(StencilTest):
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
 
         area_edge = data_alloc.random_field(grid, dims.EdgeDim)
-        kh_smag_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        diff_multfac_vn = data_alloc.random_field(grid, KDim)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        kh_smag_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        diff_multfac_vn = data_alloc.random_field(grid, dims.KDim)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim)
 
         limited_area = grid.limited_area if hasattr(grid, "limited_area") else True

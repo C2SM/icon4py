@@ -102,8 +102,8 @@ class TestCalculateNabla4(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        u_vert = data_alloc.random_field(grid, dims.VertexDim, KDim, dtype=ta.vpfloat)
-        v_vert = data_alloc.random_field(grid, dims.VertexDim, KDim, dtype=ta.vpfloat)
+        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
 
         primal_normal_vert_v1 = data_alloc.random_field(
             grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
@@ -112,11 +112,11 @@ class TestCalculateNabla4(StencilTest):
             grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
 
-        z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.wpfloat)
+        z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
 
-        z_nabla4_e2 = data_alloc.zero_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
+        z_nabla4_e2 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             u_vert=u_vert,

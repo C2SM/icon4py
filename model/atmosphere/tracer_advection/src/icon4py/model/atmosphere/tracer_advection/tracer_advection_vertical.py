@@ -265,10 +265,10 @@ class SemiMonotonicLimiter(VerticalLimiter):
         # fields
         allocator = model_backends.get_allocator(self._backend)
         self._k_field = data_alloc.index_field(
-            self._grid, KDim, extend={KDim: 1}, dtype=gtx.int32, allocator=allocator
+            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=allocator
         )  # TODO(dastrm): should be KHalfDim
         self._l_limit = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=gtx.int32, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=gtx.int32, allocator=allocator
         )
 
         # stencils
@@ -572,7 +572,7 @@ class FirstOrderUpwind(FiniteVolume):
         self._k_field = data_alloc.index_field(
             self._grid,
             KDim,
-            extend={KDim: 1},
+            extend={dims.KDim: 1},
             dtype=gtx.int32,
             allocator=model_backends.get_allocator(self._backend),
         )  # TODO(dastrm): should be KHalfDim
@@ -716,21 +716,27 @@ class PiecewiseParabolicMethod(FiniteVolume):
         # fields
         allocator = model_backends.get_allocator(self._backend)
         self._k_field = data_alloc.index_field(
-            self._grid, KDim, extend={KDim: 1}, dtype=gtx.int32, allocator=allocator
+            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=allocator
         )  # TODO(dastrm): should be KHalfDim
         self._z_cfl = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         )  # TODO(dastrm): should be KHalfDim
-        self._z_slope = data_alloc.zero_field(self._grid, dims.CellDim, KDim, allocator=allocator)
-        self._z_face = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=allocator
-        )  # TODO(dastrm): should be KHalfDim
-        self._z_face_up = data_alloc.zero_field(self._grid, dims.CellDim, KDim, allocator=allocator)
-        self._z_face_low = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, allocator=allocator
+        self._z_slope = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
-        self._z_delta_q = data_alloc.zero_field(self._grid, dims.CellDim, KDim, allocator=allocator)
-        self._z_a1 = data_alloc.zero_field(self._grid, dims.CellDim, KDim, allocator=allocator)
+        self._z_face = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+        )  # TODO(dastrm): should be KHalfDim
+        self._z_face_up = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
+        self._z_face_low = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
+        self._z_delta_q = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
+        self._z_a1 = data_alloc.zero_field(self._grid, dims.CellDim, dims.KDim, allocator=allocator)
 
         # misc
         self._slev = 0

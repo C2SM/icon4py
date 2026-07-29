@@ -37,9 +37,9 @@ class TestFallSpeed(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            density=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            density=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
             prefactor=IndexConsts.prefactor_r,
             offset=IndexConsts.offset_r,
             exponent=IndexConsts.exponent_r,
-            speed=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            speed=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

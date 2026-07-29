@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, maximum, minimum, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C2V, KDim
+from icon4py.model.common.dimension import E2C2V
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -109,6 +109,6 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
         out=(kh_smag_e, kh_smag_ec, z_nabla2_e),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

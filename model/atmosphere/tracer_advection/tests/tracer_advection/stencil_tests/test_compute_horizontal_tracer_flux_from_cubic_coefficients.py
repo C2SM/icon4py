@@ -37,9 +37,9 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(stencil_tests.Stencil
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_out_e_hybrid_2 = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        z_dreg_area = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_out_e_hybrid_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_dreg_area = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             p_mass_flx_e=p_mass_flx_e,
             z_dreg_area=z_dreg_area,

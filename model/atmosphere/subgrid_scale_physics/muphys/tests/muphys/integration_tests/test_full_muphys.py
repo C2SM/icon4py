@@ -80,7 +80,7 @@ def test_full_muphys(
     # but save in this case as we are not reading the input with an offset.
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
-        domain=gtx.domain({dims.CellDim: inp.ncells, KDim: inp.nlev}),
+        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
         references={
             "qv": inp.qv,
             "qc": inp.qc,

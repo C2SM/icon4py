@@ -112,14 +112,14 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        cfl_clipping = random_mask(grid, dims.CellDim, KDim)
+        cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim)
         owner_mask = random_mask(grid, dims.CellDim)
-        z_w_con_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        ddqz_z_half = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         area = random_field(grid, dims.CellDim, dtype=wpfloat)
         geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        ddt_w_adv = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddt_w_adv = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         scalfac_exdiff = wpfloat("10.0")
         cfl_w_limit = vpfloat("3.0")
         dtime = wpfloat("2.0")

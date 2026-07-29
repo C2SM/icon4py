@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C2E, KDim
+from icon4py.model.common.dimension import E2C2E
 
 
 # TODO(dastrm): this stencil is a duplicate of compute_tangential_wind
@@ -42,6 +42,6 @@ def compute_edge_tangential(
         out=p_vt_out,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -46,7 +46,7 @@ def compute_wgtfac_c(  # noqa: PLR0917 [too-many-positional-arguments]
         out=wgtfac_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 

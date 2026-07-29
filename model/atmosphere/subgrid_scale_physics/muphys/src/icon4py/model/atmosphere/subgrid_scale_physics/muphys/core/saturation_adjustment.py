@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
     _qsat_rho,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -95,6 +94,6 @@ def saturation_adjustment(  # noqa: PLR0917 [too-many-positional-arguments]
         out=(te_out, qve_out, qce_out),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

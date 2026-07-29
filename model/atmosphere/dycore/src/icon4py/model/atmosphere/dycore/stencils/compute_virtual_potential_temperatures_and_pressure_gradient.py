@@ -76,7 +76,7 @@ def compute_virtual_potential_temperatures_and_pressure_gradient(
         out=(z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 

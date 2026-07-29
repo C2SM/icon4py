@@ -217,7 +217,7 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
 ) -> None:
     if dim == dims.V2E2VDim:
         pytest.skip("V2E2VDim is not supported in the current grid configuration.")
-    if dim == dims.LsqUnkDim:
+    if dim == dims.LsqUndims.KDim:
         pytest.skip("LsqUnkDim is not an offset dimension.")
     grid = utils.run_grid_manager(grid_description, keep_skip_values=False, backend=backend).grid
     connectivity = grid.get_connectivity(dim.value)

@@ -72,11 +72,11 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
     def input_data(
         self, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:
-        scalar_field = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        scalar_field = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
         geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        p_grad_1_u = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        p_grad_1_v = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        p_grad_1_u = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        p_grad_1_v = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             scalar_field=scalar_field,
@@ -84,6 +84,9 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
             geofac_grg_y=geofac_grg_y,
             out=(p_grad_1_u, p_grad_1_v),
             domain=gtx.domain(
-                {dims.CellDim: gtx.int32(grid.num_cells), KDim: gtx.int32(grid.num_levels)}
+                {
+                    dims.CellDim: gtx.int32(grid.num_cells),
+                    dims.KDim: gtx.int32(grid.num_levels),
+                }
             ),
         )

@@ -39,9 +39,9 @@ class TestComputeVerticalParabolaLimiterCondition(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_cc = data_alloc.random_field(grid, dims.CellDim, KDim)
-        p_face = data_alloc.random_field(grid, dims.CellDim, KDim, extend={KDim: 1})
-        l_limit = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=gtx.int32)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        l_limit = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
         return dict(
             p_face=p_face,
             p_cc=p_cc,

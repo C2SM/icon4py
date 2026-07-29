@@ -40,9 +40,9 @@ class TestUpdateWind(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = wpfloat("10.0")
-        w_now = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        grf_tend_w = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        w_new = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        w_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        grf_tend_w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_new = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             w_now=w_now,

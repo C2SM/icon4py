@@ -64,10 +64,10 @@ class TestAccumulatePrepAdvFields(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        mass_fl_e = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
-        mass_flx_me = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
-        z_vn_avg = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
-        vn_traj = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        mass_fl_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        mass_flx_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_vn_avg = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        vn_traj = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         r_nsubsteps = wpfloat("9.0")
 
         return dict(

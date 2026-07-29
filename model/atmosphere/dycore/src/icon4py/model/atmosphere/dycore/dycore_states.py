@@ -231,15 +231,17 @@ class PrepAdvection:
 def initialize_prep_advection(
     grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator
 ) -> PrepAdvection:
-    vn_traj = data_alloc.zero_field(grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.wpfloat)
+    vn_traj = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+    )
     mass_flx_me = data_alloc.zero_field(
-        grid, dims.EdgeDim, KDim, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
     dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
     )
@@ -247,7 +249,7 @@ def initialize_prep_advection(
         grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
     )

@@ -64,9 +64,9 @@ class TestMoApplyNabla2ToW(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         area = random_field(grid, dims.CellDim, dtype=wpfloat)
-        z_nabla2_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        z_nabla2_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         return dict(
             area=area,
             z_nabla2_c=z_nabla2_c,

@@ -52,9 +52,9 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        wgtfac_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        div = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        kh_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        div_ic = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        hdef_ic = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        div = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        kh_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        div_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        hdef_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         return dict(wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic)

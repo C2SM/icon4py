@@ -49,10 +49,10 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        p_vt = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         edge_cell_length = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        opt_famask_dsl = data_alloc.zero_field(grid, dims.EdgeDim, KDim, dtype=gtx.int32)
+        opt_famask_dsl = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_dt = 1.0
 
         return dict(

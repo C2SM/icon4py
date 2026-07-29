@@ -201,7 +201,7 @@ def compute_horizontal_velocity_quantities_and_fluxes(
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
 
@@ -211,7 +211,7 @@ def compute_horizontal_velocity_quantities_and_fluxes(
         out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
 
@@ -341,6 +341,6 @@ def compute_averaged_vn_and_fluxes(
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

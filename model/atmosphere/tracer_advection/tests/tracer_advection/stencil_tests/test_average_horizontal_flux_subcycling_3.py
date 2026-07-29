@@ -38,10 +38,10 @@ class TestAverageHorizontalFluxSubcycling3(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        z_tracer_mflx_1_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        z_tracer_mflx_2_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        z_tracer_mflx_3_dsl = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        z_tracer_mflx_1_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_tracer_mflx_2_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_tracer_mflx_3_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             z_tracer_mflx_1_dsl=z_tracer_mflx_1_dsl,
             z_tracer_mflx_2_dsl=z_tracer_mflx_2_dsl,

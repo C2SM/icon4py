@@ -40,11 +40,13 @@ class TestIceDepositionNucleation(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t=data_alloc.constant_field(grid, 160.9, dims.CellDim, KDim, dtype=wpfloat),
-            qc=data_alloc.constant_field(grid, 1.0e-2, dims.CellDim, KDim, dtype=wpfloat),
-            qi=data_alloc.constant_field(grid, 2.02422e-23, dims.CellDim, KDim, dtype=wpfloat),
-            ni=data_alloc.constant_field(grid, 5.05089, dims.CellDim, KDim, dtype=wpfloat),
-            dvsi=data_alloc.constant_field(grid, 0.0001, dims.CellDim, KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(grid, 160.9, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.constant_field(grid, 1.0e-2, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi=data_alloc.constant_field(grid, 2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ni=data_alloc.constant_field(grid, 5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsi=data_alloc.constant_field(grid, 0.0001, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt=30.0,
-            vapor_deposition_rate=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            vapor_deposition_rate=data_alloc.zero_field(
+                grid, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
         )

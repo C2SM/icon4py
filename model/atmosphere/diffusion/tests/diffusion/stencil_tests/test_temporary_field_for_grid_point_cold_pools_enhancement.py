@@ -56,9 +56,9 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        theta_v = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        theta_ref_mc = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        enh_diffu_3d = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        enh_diffu_3d = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         thresh_tdiff = wpfloat("5.0")
         smallest_vpfloat = -np.finfo(vpfloat).max
 

@@ -58,6 +58,6 @@ def compute_contravariant_correction_of_w(
         out=w_concorr_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

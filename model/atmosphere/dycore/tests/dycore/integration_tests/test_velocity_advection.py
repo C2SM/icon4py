@@ -443,7 +443,7 @@ def test_compute_diagnostics_from_normal_wind(  # noqa: PLR0917 [too-many-positi
     vn_on_half_levels = savepoint_velocity_init.vn_ie()
     horizontal_kinetic_energy_at_edges_on_model_levels = savepoint_velocity_init.z_kin_hor_e()
     horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, KDim, allocator=backend
+        icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
     )
     vn = savepoint_velocity_init.vn()
     w = savepoint_velocity_init.w()
@@ -583,7 +583,7 @@ def test_compute_advection_in_predictor_vertical_momentum(  # noqa: PLR0917 [too
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
     vertical_cfl = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, dtype=ta.vpfloat, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=backend
     )
     skip_compute_predictor_vertical_advection = savepoint_velocity_init.lvn_only()
 
@@ -731,7 +731,7 @@ def test_compute_advection_in_corrector_vertical_momentum(  # noqa: PLR0917 [too
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
     vertical_cfl = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, dtype=ta.vpfloat, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=backend
     )
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()

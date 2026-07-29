@@ -131,7 +131,7 @@ class DiagnosticsComputer:
 
         def _zero_full() -> gtx.Field:
             return data_alloc.zero_field(
-                grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
+                grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
             )
 
         def _zero_interface() -> gtx.Field:
@@ -140,7 +140,7 @@ class DiagnosticsComputer:
                 dims.CellDim,
                 KDim,
                 dtype=ta.wpfloat,
-                extend={KDim: 1},
+                extend={dims.KDim: 1},
                 allocator=backend,
             )
 

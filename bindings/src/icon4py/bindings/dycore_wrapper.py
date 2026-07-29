@@ -220,20 +220,20 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
             f"Expected wgtfacq_c to have a vertical dimension of size 3, but got {len(wgtfacq_c.domain[dims.KDim].unit_range)}."
         )
     # uses GT4Py's embedded shift to move the domain to surface levels
-    wgtfacq_c = field_utils.flip(wgtfacq_c(KDim - (nlev - 3)), KDim, allocator=allocator)
+    wgtfacq_c = field_utils.flip(wgtfacq_c(KDim - (nlev - 3)), dims.KDim, allocator=allocator)
 
     if len(wgtfacq_e.domain[dims.KDim].unit_range) != 3:
         raise ValueError(
             f"Expected wgtfacq_e to have a vertical dimension of size 3, but got {len(wgtfacq_e.domain[dims.KDim].unit_range)}."
         )
     # uses GT4Py's embedded shift to move the domain to surface levels
-    wgtfacq_e = field_utils.flip(wgtfacq_e(KDim - (nlev - 3)), KDim, allocator=allocator)
+    wgtfacq_e = field_utils.flip(wgtfacq_e(KDim - (nlev - 3)), dims.KDim, allocator=allocator)
 
     # In Fortran `vertidx_gradp` contains `0`s in areas where the array is not used.
     # When we translate to offsets we just subtract the current index, therefore these values will be negative.
     # Since in Fortran accessing index `0` would be out-of-bounds, we should be safe.
     vertoffset_gradp = field_utils.index2offset(
-        data_alloc.adjust_fortran_indices(vertidx_gradp), KDim, allocator
+        data_alloc.adjust_fortran_indices(vertidx_gradp), dims.KDim, allocator
     )
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(

@@ -48,13 +48,15 @@ def _make_prognostic_state(
     # the generic `simple_grid`.
     def _cell_k(extend: dict[gtx.Dimension, int] | None = None) -> gtx.Field:
         return data_alloc.zero_field(
-            grid, dims.CellDim, KDim, dtype=ta.wpfloat, extend=extend, allocator=allocator
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend=extend, allocator=allocator
         )
 
     return prognostics.PrognosticState(
         rho=_cell_k(),
-        w=_cell_k(extend={KDim: 1}),
-        vn=data_alloc.zero_field(grid, dims.EdgeDim, KDim, dtype=ta.wpfloat, allocator=allocator),
+        w=_cell_k(extend={dims.KDim: 1}),
+        vn=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+        ),
         exner=_cell_k(),
         theta_v=_cell_k(),
     )
@@ -74,7 +76,7 @@ def _expected(
     production code so the assertions stay a genuine check."""
     return {
         **state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_key],
-        "dims": (horizontal_dim, KDim),
+        "dims": (horizontal_dim, dims.KDim),
         "is_on_half_levels": is_on_half_levels,
     }
 
@@ -270,7 +272,7 @@ def test_diagnostic_fields_to_dataarrays(grid: base.Grid) -> None:
 
     # cell/full-level fields, like what compute_diagnostics returns
     def _zero_cell_k() -> gtx.Field:
-        return data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
     fields = {name: _zero_cell_k() for name in driver_io.DIAGNOSTIC_VARIABLES}
     state = driver_io.diagnostic_fields_to_dataarrays(fields)

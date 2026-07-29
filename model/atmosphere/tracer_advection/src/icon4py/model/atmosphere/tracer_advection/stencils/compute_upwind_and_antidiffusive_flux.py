@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import abs  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, KDim
+from icon4py.model.common.dimension import E2C
 
 
 # TODO(dastrm): this stencil has no test
@@ -51,6 +51,6 @@ def compute_upwind_and_antidiffusive_flux(
         out=(z_mflx_low, z_anti),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

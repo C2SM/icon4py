@@ -50,6 +50,6 @@ def interpolate_cell_field_to_half_levels_vp(
         out=interpolation_to_half_levels_vp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

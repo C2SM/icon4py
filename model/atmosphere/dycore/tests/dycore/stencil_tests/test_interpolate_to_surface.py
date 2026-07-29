@@ -55,9 +55,9 @@ class TestInterpolateToSurface(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        interpolant = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        wgtfacq_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        interpolation_to_surface = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        interpolant = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        interpolation_to_surface = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             interpolant=interpolant,

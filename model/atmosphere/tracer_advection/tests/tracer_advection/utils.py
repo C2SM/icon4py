@@ -14,7 +14,6 @@ import numpy as np
 
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb, test_utils
@@ -54,13 +53,13 @@ def construct_least_squares_state(
 def construct_metric_state(
     icon_grid, savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend | None
 ) -> tracer_advection_states.AdvectionMetricState:
-    constant_f = data_alloc.constant_field(icon_grid, 1.0, KDim, allocator=backend)
+    constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim, allocator=backend)
     ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
     return tracer_advection_states.AdvectionMetricState(
         deepatmo_divh=constant_f,
         deepatmo_divzl=constant_f,
         deepatmo_divzu=constant_f,
-        ddqz_z_full=gtx.as_field((dims.CellDim, KDim), ddqz_z_full_np, allocator=backend),
+        ddqz_z_full=gtx.as_field((dims.CellDim, dims.KDim), ddqz_z_full_np, allocator=backend),
     )
 
 
@@ -74,9 +73,9 @@ def construct_diagnostic_init_state(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
-        hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, KDim, allocator=backend),
+        hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend),
         vfl_tracer=data_alloc.zero_field(
-            icon_grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=backend
+            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         ),
     )
 
@@ -88,9 +87,9 @@ def construct_diagnostic_exit_state(
     backend: gtx_typing.Backend | None,
 ) -> tracer_advection_states.AdvectionDiagnosticState:
     return tracer_advection_states.AdvectionDiagnosticState(
-        airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend),
-        airmass_new=data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend),
-        grf_tend_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, KDim),
+        airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        airmass_new=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
+        grf_tend_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
         hfl_tracer=savepoint.hfl_tracer(ntracer),
         vfl_tracer=savepoint.vfl_tracer(ntracer),
     )

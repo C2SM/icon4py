@@ -282,7 +282,7 @@ class VerticalGrid:
     def size(self, dim: gtx.Dimension) -> int:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported."
         match dim:
-            case _ if dim is KDim:
+            case _ if dim is dims.KDim:
                 return self.config.num_levels
             case dims.KHalfDim:
                 return self.config.num_levels + 1

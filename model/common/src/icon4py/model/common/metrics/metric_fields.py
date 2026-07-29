@@ -96,7 +96,7 @@ def compute_ddqz_z_half(  # noqa: PLR0917 [too-many-positional-arguments]
         out=ddqz_z_half,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -141,7 +141,7 @@ def compute_ddqz_z_full_and_inverse(  # noqa: PLR0917 [too-many-positional-argum
         out=(ddqz_z_full, inv_ddqz_z_full),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -197,7 +197,7 @@ def compute_scaling_factor_for_3d_divdamp(  # noqa: PLR0917 [too-many-positional
         divdamp_trans_end,
         divdamp_type,
         out=scaling_factor_for_3d_divdamp,
-        domain={KDim: (vertical_start, vertical_end)},
+        domain={dims.KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -264,7 +264,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
         vct_a_1,
         pi_const,
         out=rayleigh_w,
-        domain={KDim: (vertical_start, vertical_end)},
+        domain={dims.KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -311,7 +311,7 @@ def compute_coeff_dwdz(  # noqa: PLR0917 [too-many-positional-arguments]
         out=(coeff1_dwdz, coeff2_dwdz),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -332,7 +332,7 @@ def compute_ddxn_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
         out=ddxn_z_half_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -373,7 +373,7 @@ def compute_ddxt_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
         out=ddxt_z_half_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -457,7 +457,7 @@ def compute_maxslp_maxhgtd(  # noqa: PLR0917 [too-many-positional-arguments]
         out=(maxslp, maxhgtd),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -516,7 +516,7 @@ def compute_exner_exfac(  # noqa: PLR0917 [too-many-positional-arguments]
         out=exner_exfac,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -552,7 +552,7 @@ def compute_wgtfac_e(  # noqa: PLR0917 [too-many-positional-arguments]
         out=wgtfac_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -650,8 +650,8 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(  # noqa: PL
 
     """
 
-    e_lev = broadcast(e_lev, (dims.EdgeDim, KDim))
-    k_lev = broadcast(k_lev, (dims.EdgeDim, KDim))
+    e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
+    k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     downward_distance = _compute_downward_extrapolation_distance(topography)
     extrapolation_distance = concat_where(
@@ -699,7 +699,7 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(  # noqa: PLR
         out=pg_exdist_dsl,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -837,7 +837,7 @@ def compute_weighted_cell_neighbor_sum(  # noqa: PLR0917 [too-many-positional-ar
         out=maxslp_avg,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -847,7 +847,7 @@ def compute_weighted_cell_neighbor_sum(  # noqa: PLR0917 [too-many-positional-ar
         out=maxhgtd_avg,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -885,7 +885,7 @@ def compute_max_nbhgt(
     )
 
 
-@gtx.scan_operator(axis=KDim, forward=True, init=(0, False))
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0, False))
 def _compute_param(  # noqa: PLR0917 [too-many-positional-arguments]
     param: tuple[gtx.int32, bool],
     z_me_jk: float,

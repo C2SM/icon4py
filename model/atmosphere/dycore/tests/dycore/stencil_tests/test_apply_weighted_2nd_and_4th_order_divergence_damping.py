@@ -78,10 +78,10 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, KDim)
+        interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim)
         nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        z_graddiv2_vn = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        z_graddiv2_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         divdamp_order = 24
         mean_cell_area = 1000.0

@@ -37,6 +37,6 @@ def copy_cell_kdim_field_koff_plus1(
         out=field_out,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

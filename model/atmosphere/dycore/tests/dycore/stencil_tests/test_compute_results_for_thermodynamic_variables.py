@@ -101,25 +101,27 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_rho_expl = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
+        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         rho_ic = data_alloc.random_field(
-            grid, dims.CellDim, KDim, extend={KDim: 1}, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        w = data_alloc.random_field(grid, dims.CellDim, KDim, extend={KDim: 1}, dtype=ta.wpfloat)
-        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
-        exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
+        w = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+        )
+        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         z_alpha = data_alloc.random_field(
-            grid, dims.CellDim, KDim, extend={KDim: 1}, dtype=ta.vpfloat
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
         )
-        z_beta = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
-        rho_now = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
-        theta_v_now = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
-        exner_now = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
-        rho_new = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
-        exner_new = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
-        theta_v_new = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        z_beta = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_v_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_v_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
 
         return dict(

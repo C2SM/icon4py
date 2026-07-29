@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -19,7 +18,7 @@ def _apply_rayleigh_damping_mechanism(
     w: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_54."""
-    z_raylfac = broadcast(z_raylfac, (dims.CellDim, KDim))
+    z_raylfac = broadcast(z_raylfac, (dims.CellDim, dims.KDim))
     w_wp = z_raylfac * w
     return w_wp
 
@@ -39,6 +38,6 @@ def apply_rayleigh_damping_mechanism(
         out=w,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

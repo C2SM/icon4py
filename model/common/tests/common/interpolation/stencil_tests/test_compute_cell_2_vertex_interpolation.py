@@ -45,9 +45,9 @@ class TestComputeCells2VertsInterpolation(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        cell_in = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=types.wpfloat)
+        cell_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=types.wpfloat)
         c_int = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim, dtype=types.wpfloat)
-        vert_out = data_alloc.zero_field(grid, dims.VertexDim, KDim, dtype=types.wpfloat)
+        vert_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=types.wpfloat)
 
         return dict(
             cell_in=cell_in,

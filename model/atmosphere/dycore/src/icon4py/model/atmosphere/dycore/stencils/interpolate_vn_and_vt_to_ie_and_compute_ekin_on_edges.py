@@ -14,7 +14,6 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges 
     _interpolate_vt_to_interface_edges,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -55,6 +54,6 @@ def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

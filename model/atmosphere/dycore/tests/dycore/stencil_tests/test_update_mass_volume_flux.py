@@ -72,12 +72,12 @@ class TestUpdateMassVolumeFlux(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_contr_w_fl_l = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
-        rho_ic = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        z_contr_w_fl_l = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        w = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
-        mass_flx_ic = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
-        vol_flx_ic = data_alloc.random_field(grid, dims.CellDim, KDim, dtype=ta.wpfloat)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        mass_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        vol_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         r_nsubsteps = 7.0
 
         return dict(

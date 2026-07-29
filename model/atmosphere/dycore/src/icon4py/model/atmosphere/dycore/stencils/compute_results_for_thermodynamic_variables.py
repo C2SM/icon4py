@@ -97,6 +97,6 @@ def compute_results_for_thermodynamic_variables(
         out=(rho_new, exner_new, theta_v_new),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

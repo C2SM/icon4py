@@ -52,6 +52,6 @@ def compute_advective_vertical_wind_tendency(
         out=ddt_w_adv,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

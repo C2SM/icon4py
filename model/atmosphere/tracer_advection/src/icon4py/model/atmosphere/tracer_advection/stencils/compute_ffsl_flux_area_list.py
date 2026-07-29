@@ -12,7 +12,6 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -121,14 +120,14 @@ def _compute_ffsl_flux_area_list(
 
     # Store global index of the underlying grid cell
     # Adapt dimensions to fit ofr multiple levels
-    butterfly_idx_patch1_vnpos_3d = broadcast(butterfly_idx_patch1_vnpos, (dims.EdgeDim, KDim))
-    butterfly_idx_patch1_vnneg_3d = broadcast(butterfly_idx_patch1_vnneg, (dims.EdgeDim, KDim))
-    butterfly_idx_patch2_vnpos_3d = broadcast(butterfly_idx_patch2_vnpos, (dims.EdgeDim, KDim))
-    butterfly_idx_patch2_vnneg_3d = broadcast(butterfly_idx_patch2_vnneg, (dims.EdgeDim, KDim))
-    butterfly_blk_patch1_vnpos_3d = broadcast(butterfly_blk_patch1_vnpos, (dims.EdgeDim, KDim))
-    butterfly_blk_patch1_vnneg_3d = broadcast(butterfly_blk_patch1_vnneg, (dims.EdgeDim, KDim))
-    butterfly_blk_patch2_vnpos_3d = broadcast(butterfly_blk_patch2_vnpos, (dims.EdgeDim, KDim))
-    butterfly_blk_patch2_vnneg_3d = broadcast(butterfly_blk_patch2_vnneg, (dims.EdgeDim, KDim))
+    butterfly_idx_patch1_vnpos_3d = broadcast(butterfly_idx_patch1_vnpos, (dims.EdgeDim, dims.KDim))
+    butterfly_idx_patch1_vnneg_3d = broadcast(butterfly_idx_patch1_vnneg, (dims.EdgeDim, dims.KDim))
+    butterfly_idx_patch2_vnpos_3d = broadcast(butterfly_idx_patch2_vnpos, (dims.EdgeDim, dims.KDim))
+    butterfly_idx_patch2_vnneg_3d = broadcast(butterfly_idx_patch2_vnneg, (dims.EdgeDim, dims.KDim))
+    butterfly_blk_patch1_vnpos_3d = broadcast(butterfly_blk_patch1_vnpos, (dims.EdgeDim, dims.KDim))
+    butterfly_blk_patch1_vnneg_3d = broadcast(butterfly_blk_patch1_vnneg, (dims.EdgeDim, dims.KDim))
+    butterfly_blk_patch2_vnpos_3d = broadcast(butterfly_blk_patch2_vnpos, (dims.EdgeDim, dims.KDim))
+    butterfly_blk_patch2_vnneg_3d = broadcast(butterfly_blk_patch2_vnneg, (dims.EdgeDim, dims.KDim))
     patch1_cell_idx_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_idx_patch1_vnpos_3d, butterfly_idx_patch1_vnneg_3d),
@@ -270,6 +269,6 @@ def compute_ffsl_flux_area_list(
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

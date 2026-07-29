@@ -23,7 +23,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         standard_name="z_ifv",
         long_name="z_ifv",
         units="",
-        dims=(dims.VertexDim, KDim),
+        dims=(dims.VertexDim, dims.KDim),
         icon_var_name="z_ifv",
         dtype=ta.wpfloat,
     ),
@@ -62,7 +62,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
     "weighting_factor_for_quadratic_interpolation_to_cell_surface": dict(
         standard_name="weighting_factor_for_quadratic_interpolation_to_cell_surface",
         units="",
-        dims=(dims.CellDim, KDim),
+        dims=(dims.CellDim, dims.KDim),
         dtype=ta.wpfloat,
         icon_var_name="wgtfacq_c_dsl",
         long_name="weighting factor for quadratic interpolation to cell surface",
@@ -70,7 +70,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
     "weighting_factor_for_quadratic_interpolation_to_edge_center": dict(
         standard_name="weighting_factor_for_quadratic_interpolation_to_edge_center",
         units="",
-        dims=(dims.EdgeDim, KDim),
+        dims=(dims.EdgeDim, dims.KDim),
         dtype=ta.wpfloat,
         icon_var_name="wgtfacq_e_dsl",
         long_name="weighting factor for quadratic interpolation to edge centers",

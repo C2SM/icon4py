@@ -67,11 +67,11 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfacq_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        z_rth_pr = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        theta_ref_ic = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        z_theta_v_pr_ic = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_theta_v_pr_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             wgtfacq_c=wgtfacq_c,

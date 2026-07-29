@@ -38,9 +38,9 @@ class TestVelScaleFactorSnow(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            xrho=data_alloc.constant_field(grid, 1.17787, dims.CellDim, KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 0.882961, dims.CellDim, KDim, dtype=wpfloat),
-            t=data_alloc.constant_field(grid, 257.101, dims.CellDim, KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(grid, 5.78761e-06, dims.CellDim, KDim, dtype=wpfloat),
-            scale_factor=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            xrho=data_alloc.constant_field(grid, 1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 0.882961, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(grid, 257.101, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(grid, 5.78761e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
+            scale_factor=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

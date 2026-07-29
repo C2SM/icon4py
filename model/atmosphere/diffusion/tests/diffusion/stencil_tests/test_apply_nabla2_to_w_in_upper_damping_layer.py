@@ -37,10 +37,10 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid):
-        w = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        diff_multfac_n2w = random_field(grid, KDim, dtype=wpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        diff_multfac_n2w = random_field(grid, dims.KDim, dtype=wpfloat)
         cell_area = random_field(grid, dims.CellDim, dtype=wpfloat)
-        z_nabla2_c = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        z_nabla2_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             w=w,

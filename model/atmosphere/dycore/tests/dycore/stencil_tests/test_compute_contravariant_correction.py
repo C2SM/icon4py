@@ -49,11 +49,11 @@ class TestComputeContravariantCorrection(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
-        ddxn_z_full = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        ddxt_z_full = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat, low=0.1)
-        vt = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        z_w_concorr_me = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        ddxt_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat, low=0.1)
+        vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_w_concorr_me = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

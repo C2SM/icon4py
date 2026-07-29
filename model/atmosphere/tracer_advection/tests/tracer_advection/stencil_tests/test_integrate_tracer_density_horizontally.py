@@ -65,16 +65,16 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        z_rhofluxdiv_c = data_alloc.random_field(grid, dims.CellDim, KDim)
-        z_tracer_mflx = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        z_rho_now = data_alloc.random_field(grid, dims.CellDim, KDim)
-        z_tracer_now = data_alloc.random_field(grid, dims.CellDim, KDim)
-        z_rhofluxdiv_c_out = data_alloc.zero_field(grid, dims.CellDim, KDim)
-        z_fluxdiv_c_dsl = data_alloc.zero_field(grid, dims.CellDim, KDim)
-        z_rho_new_dsl = data_alloc.zero_field(grid, dims.CellDim, KDim)
-        z_tracer_new_dsl = data_alloc.zero_field(grid, dims.CellDim, KDim)
+        z_rhofluxdiv_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_mflx = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_rhofluxdiv_c_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_fluxdiv_c_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_rho_new_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_new_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         z_dtsub = 0.5
         nsub = 1
         return dict(

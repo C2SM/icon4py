@@ -37,10 +37,12 @@ class TestGraupelToRain(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t=data_alloc.constant_field(grid, 280.156, dims.CellDim, KDim, dtype=wpfloat),
-            p=data_alloc.constant_field(grid, 98889.4, dims.CellDim, KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 1.22804, dims.CellDim, KDim, dtype=wpfloat),
-            dvsw0=data_alloc.constant_field(grid, -0.00167867, dims.CellDim, KDim, dtype=wpfloat),
-            qg=data_alloc.constant_field(grid, 1.53968e-15, dims.CellDim, KDim, dtype=wpfloat),
-            rain_rate=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(grid, 280.156, dims.CellDim, dims.KDim, dtype=wpfloat),
+            p=data_alloc.constant_field(grid, 98889.4, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 1.22804, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw0=data_alloc.constant_field(
+                grid, -0.00167867, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            qg=data_alloc.constant_field(grid, 1.53968e-15, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rain_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

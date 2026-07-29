@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity
     _spatially_average_flux_or_velocity,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C2EO, KDim
+from icon4py.model.common.dimension import E2C2EO
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -59,6 +59,6 @@ def compute_avg_vn_and_graddiv_vn_and_vt(
         out=(z_vn_avg, z_graddiv_vn, vt),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

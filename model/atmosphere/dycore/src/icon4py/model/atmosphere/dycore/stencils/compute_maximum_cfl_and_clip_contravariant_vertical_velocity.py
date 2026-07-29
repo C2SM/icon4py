@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import abs, astype, broadcast, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -29,7 +28,7 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 
     cfl_clipping = where(
         abs(z_w_con_c) > cfl_w_limit * ddqz_z_half,
-        broadcast(True, (dims.CellDim, KDim)),
+        broadcast(True, (dims.CellDim, dims.KDim)),
         False,
     )
 
@@ -72,6 +71,6 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
         out=(cfl_clipping, vcfl, z_w_con_c),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

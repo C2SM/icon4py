@@ -108,6 +108,6 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         out=(w, dwdx, dwdy),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

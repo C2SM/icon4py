@@ -309,25 +309,27 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
             grid, dims.EdgeDim, KDim
         )
-        tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        tangential_wind_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        vn_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, KDim, extend={KDim: 1})
+        tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        tangential_wind_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        vn_on_half_levels = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+        )
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, KDim
         )
         contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, KDim
         )
-        vn = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, KDim)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
-        wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
         nlev = grid.num_levels

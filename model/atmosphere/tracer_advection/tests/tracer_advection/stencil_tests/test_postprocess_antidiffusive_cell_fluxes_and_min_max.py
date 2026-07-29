@@ -59,14 +59,14 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
     def input_data(self, grid: base.Grid) -> dict:
         hi_bound, lo_bound = 3, 1
         refin_ctrl = data_alloc.constant_field(grid, 2, dims.CellDim, dtype=gtx.int32)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, KDim)
-        z_tracer_new_low_in = data_alloc.random_field(grid, dims.CellDim, KDim)
-        z_tracer_max_in = data_alloc.random_field(grid, dims.CellDim, KDim)
-        z_tracer_min_in = data_alloc.random_field(grid, dims.CellDim, KDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_new_low_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_max_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_min_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
-        z_tracer_new_low_out = data_alloc.zero_field(grid, dims.CellDim, KDim)
-        z_tracer_max_out = data_alloc.zero_field(grid, dims.CellDim, KDim)
-        z_tracer_min_out = data_alloc.zero_field(grid, dims.CellDim, KDim)
+        z_tracer_new_low_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_max_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_min_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
         return dict(
             refin_ctrl=refin_ctrl,

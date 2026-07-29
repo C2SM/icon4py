@@ -13,8 +13,7 @@ import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.atmosphere.dycore import dycore_utils
-from icon4py.model.common import constants
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
@@ -49,9 +48,9 @@ def test_calculate_fourth_order_divdamp_scaling_coeff_order_24(
     mean_cell_area = 1000.0
     grid = simple_grid.simple_grid(allocator=backend)
     interpolated_fourth_order_divdamp_factor = data_alloc.random_field(
-        grid, KDim, allocator=backend
+        grid, dims.KDim, allocator=backend
     )
-    out = data_alloc.random_field(grid, KDim, allocator=backend)
+    out = data_alloc.random_field(grid, dims.KDim, allocator=backend)
 
     dycore_utils._calculate_fourth_order_divdamp_scaling_coeff.with_backend(backend)(
         interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
@@ -79,9 +78,9 @@ def test_calculate_fourth_order_divdamp_scaling_coeff_any_order(
     mean_cell_area = 1000.0
     grid = simple_grid.simple_grid(allocator=backend)
     interpolated_fourth_order_divdamp_factor = data_alloc.random_field(
-        grid, KDim, allocator=backend
+        grid, dims.KDim, allocator=backend
     )
-    out = data_alloc.random_field(grid, KDim, allocator=backend)
+    out = data_alloc.random_field(grid, dims.KDim, allocator=backend)
 
     dycore_utils._calculate_fourth_order_divdamp_scaling_coeff.with_backend(backend)(
         interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
@@ -99,8 +98,8 @@ def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
     backend: gtx_typing.Backend,
 ) -> None:
     grid = simple_grid.simple_grid(allocator=backend)
-    fourth_order_divdamp_scaling_coeff = data_alloc.random_field(grid, KDim, allocator=backend)
-    out = data_alloc.zero_field(grid, KDim, allocator=backend)
+    fourth_order_divdamp_scaling_coeff = data_alloc.random_field(grid, dims.KDim, allocator=backend)
+    out = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     coeff = 0.3
     dycore_utils._calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary.with_backend(
         backend
@@ -115,10 +114,10 @@ def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
 
 def test_calculate_divdamp_fields(backend: gtx_typing.Backend) -> None:
     grid = simple_grid.simple_grid(allocator=backend)
-    divdamp_field = data_alloc.random_field(grid, KDim, allocator=backend)
-    fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(grid, KDim, allocator=backend)
+    divdamp_field = data_alloc.random_field(grid, dims.KDim, allocator=backend)
+    fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
-        grid, KDim, allocator=backend
+        grid, dims.KDim, allocator=backend
     )
     divdamp_order = gtx.int32(24)
     mean_cell_area = 1000.0

@@ -98,6 +98,6 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         out=ddt_vn_apc,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

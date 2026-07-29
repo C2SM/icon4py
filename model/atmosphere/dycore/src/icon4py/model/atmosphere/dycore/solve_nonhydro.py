@@ -120,25 +120,25 @@ class IntermediateFields:
     ) -> IntermediateFields:
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
-                grid, dims.EdgeDim, KDim, allocator=allocator
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             rho_at_edges_on_model_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, KDim, allocator=allocator
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             theta_v_at_edges_on_model_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, KDim, allocator=allocator
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             horizontal_gradient_of_normal_wind_divergence=data_alloc.zero_field(
-                grid, dims.EdgeDim, KDim, allocator=allocator
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             dwdz_at_cells_on_model_levels=data_alloc.zero_field(
-                grid, dims.CellDim, KDim, allocator=allocator
+                grid, dims.CellDim, dims.KDim, allocator=allocator
             ),
             horizontal_kinetic_energy_at_edges_on_model_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, KDim, allocator=allocator
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             tangential_wind_on_half_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, KDim, allocator=allocator
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
         )
 
@@ -929,7 +929,7 @@ class SolveNonhydro:
             dims.CellDim,
             KDim,
             dtype=ta.vpfloat,
-            extend={KDim: 1},
+            extend={dims.KDim: 1},
             allocator=allocator,
         )
         """
@@ -940,7 +940,7 @@ class SolveNonhydro:
             dims.CellDim,
             KDim,
             dtype=ta.vpfloat,
-            extend={KDim: 1},
+            extend={dims.KDim: 1},
             allocator=allocator,
         )
         """
@@ -948,7 +948,7 @@ class SolveNonhydro:
         """
         self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
-                self._grid, dims.CellDim, KDim, dtype=ta.vpfloat, allocator=allocator
+                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
             )
         )
         """
@@ -959,7 +959,7 @@ class SolveNonhydro:
             dims.CellDim,
             KDim,
             dtype=ta.vpfloat,
-            extend={KDim: 1},
+            extend={dims.KDim: 1},
             allocator=allocator,
         )
 
@@ -967,7 +967,7 @@ class SolveNonhydro:
         Declared as z_theta_v_pr_ic in ICON.
         """
         self.nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_th_ddz_exner_c in ICON. theta' dpi0/dz + theta (1 - eta_impl) dpi'/dz.
@@ -976,45 +976,45 @@ class SolveNonhydro:
         term for updating w, and w at model top/bottom is diagnosed.
         """
         self.perturbed_rho_at_cells_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_rth_pr_1 in ICON.
         """
         self.perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_rth_pr_2 in ICON.
         """
         self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
-                self._grid, dims.CellDim, KDim, dtype=ta.vpfloat, allocator=allocator
+                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
             )
         )
         """
         Declared as z_dexner_dz_c_2 in ICON.
         """
         self.z_vn_avg = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as z_theta_v_fl_e in ICON.
         """
         self.z_rho_v = data_alloc.zero_field(
-            self._grid, dims.VertexDim, KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.z_theta_v_v = data_alloc.zero_field(
-            self._grid, dims.VertexDim, KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.k_field = data_alloc.index_field(
-            self._grid, KDim, extend={KDim: 1}, allocator=allocator
+            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         )
         self._contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, KDim, dtype=ta.vpfloat, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
@@ -1022,7 +1022,7 @@ class SolveNonhydro:
         self.hydrostatic_correction_on_lowest_level = gtx.constructors.zeros(
             domain={
                 dims.EdgeDim: (0, self._grid.num_edges),
-                KDim: (self._grid.num_levels - 1, self._grid.num_levels),
+                dims.KDim: (self._grid.num_levels - 1, self._grid.num_levels),
             },
             allocator=allocator,
             dtype=ta.vpfloat,
@@ -1036,13 +1036,13 @@ class SolveNonhydro:
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
         self.rayleigh_damping_factor = data_alloc.zero_field(
-            self._grid, KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as z_raylfac in ICON.
         """
         self.interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
-            self._grid, KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as enh_divdamp_fac in ICON.

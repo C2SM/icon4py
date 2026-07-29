@@ -61,14 +61,16 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        tracer_now = data_alloc.random_field(grid, dims.CellDim, KDim)
-        rhodz_now = data_alloc.random_field(grid, dims.CellDim, KDim)
-        p_mflx_tracer_v = data_alloc.random_field(grid, dims.CellDim, KDim, extend={KDim: 1})
-        deepatmo_divzl = data_alloc.random_field(grid, KDim)
-        deepatmo_divzu = data_alloc.random_field(grid, KDim)
-        rhodz_new = data_alloc.random_field(grid, dims.CellDim, KDim)
-        tracer_new = data_alloc.zero_field(grid, dims.CellDim, KDim)
-        k = data_alloc.index_field(grid, KDim)
+        tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_mflx_tracer_v = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        deepatmo_divzl = data_alloc.random_field(grid, dims.KDim)
+        deepatmo_divzu = data_alloc.random_field(grid, dims.KDim)
+        rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        tracer_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        k = data_alloc.index_field(grid, dims.KDim)
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4

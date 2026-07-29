@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.scan_operator(
-    axis=KDim,
+    axis=dims.KDim,
     forward=True,
     init=(  # type: ignore[call-overload] # GT4Py misses type hint for tuples here
         vpfloat("0.0"),
@@ -100,6 +100,6 @@ def solve_tridiagonal_matrix_for_w_forward_sweep(
         out=(z_q, w),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

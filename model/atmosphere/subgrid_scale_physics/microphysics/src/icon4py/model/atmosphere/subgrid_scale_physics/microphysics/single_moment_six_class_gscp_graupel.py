@@ -28,7 +28,6 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.constants import PhysicsConstants
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
@@ -248,43 +247,43 @@ class SingleMomentSixClassIconGraupel:
 
     def _initialize_local_fields(self):
         self.rhoqrv_old_kup = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.rhoqsv_old_kup = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.rhoqgv_old_kup = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.rhoqiv_old_kup = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.vnew_r = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.vnew_s = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.vnew_g = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.vnew_i = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.rain_precipitation_flux = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.snow_precipitation_flux = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.graupel_precipitation_flux = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.ice_precipitation_flux = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
         self.total_precipitation_flux = data_alloc.zero_field(
-            self._grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._backend
         )
 
     def _determine_horizontal_domains(self):

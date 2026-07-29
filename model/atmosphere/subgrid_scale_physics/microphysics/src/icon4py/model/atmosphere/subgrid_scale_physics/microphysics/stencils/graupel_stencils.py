@@ -30,7 +30,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microp
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -39,7 +38,7 @@ sys.setrecursionlimit(350000)
 
 
 @gtx.scan_operator(
-    axis=KDim,
+    axis=dims.KDim,
     forward=True,
     init=(
         wpfloat("0.0"),  # temperature tendency
@@ -1103,7 +1102,7 @@ def icon_graupel(
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1140,7 +1139,7 @@ def _icon_graupel_flux_at_ground(
     snow_flux = wpfloat("0.5") * ((qs + qs_tendency * dtime) * rho * vnew_s + rhoqsv_old_kup)
     graupel_flux = wpfloat("0.5") * ((qg + qg_tendency * dtime) * rho * vnew_g + rhoqgv_old_kup)
     ice_flux = wpfloat("0.5") * ((qi + qi_tendency * dtime) * rho * vnew_i + rhoqiv_old_kup)
-    zero = broadcast(wpfloat("0.0"), (dims.CellDim, KDim))
+    zero = broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
     # for the latent heat nudging
     total_flux = rain_flux + snow_flux + graupel_flux if do_latent_heat_nudging else zero
     return rain_flux, snow_flux, graupel_flux, ice_flux, total_flux
@@ -1206,7 +1205,7 @@ def icon_graupel_flux_at_ground(
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (ground_level, model_num_levels),
+            dims.KDim: (ground_level, model_num_levels),
         },
     )
 
@@ -1239,7 +1238,7 @@ def _icon_graupel_flux_above_ground(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    zero = broadcast(wpfloat("0.0"), (dims.CellDim, KDim))
+    zero = broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
 
     rain_flux_ = (qr + qr_tendency * dtime) * rho * vnew_r
     snow_flux_ = (qs + qs_tendency * dtime) * rho * vnew_s
@@ -1320,6 +1319,6 @@ def icon_graupel_flux_above_ground(
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (model_top, ground_level),
+            dims.KDim: (model_top, ground_level),
         },
     )

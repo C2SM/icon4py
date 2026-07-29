@@ -242,9 +242,15 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
 
         # reconstruction fields
         allocator = model_backends.get_allocator(self._backend)
-        self._p_coeff_1 = data_alloc.zero_field(self._grid, dims.CellDim, KDim, allocator=allocator)
-        self._p_coeff_2 = data_alloc.zero_field(self._grid, dims.CellDim, KDim, allocator=allocator)
-        self._p_coeff_3 = data_alloc.zero_field(self._grid, dims.CellDim, KDim, allocator=allocator)
+        self._p_coeff_1 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
+        self._p_coeff_2 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
+        self._p_coeff_3 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
 
         # stencils
         self._reconstruct_linear_coefficients_svd = model_options.setup_program(
@@ -516,12 +522,14 @@ class SemiLagrangian(FiniteVolume):
 
         # backtrajectory fields
         allocator = model_backends.get_allocator(self._backend)
-        self._z_real_vt = data_alloc.zero_field(self._grid, dims.EdgeDim, KDim, allocator=allocator)
+        self._z_real_vt = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
+        )
         self._p_distv_bary_1 = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, KDim, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
         self._p_distv_bary_2 = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, KDim, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
 
         # stencils

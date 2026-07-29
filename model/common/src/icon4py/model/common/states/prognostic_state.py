@@ -65,7 +65,7 @@ def initialize_prognostic_state(
         grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
     )
@@ -93,7 +93,7 @@ def initialize_prognostic_state(
     tracer = TracerState(
         **{
             name: data_alloc.zero_field(
-                grid, dims.CellDim, KDim, allocator=allocator, dtype=ta.wpfloat
+                grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
             )
             for name in tracer_config.active_names
         }

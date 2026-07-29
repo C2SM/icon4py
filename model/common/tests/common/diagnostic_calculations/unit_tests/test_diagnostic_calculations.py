@@ -60,18 +60,18 @@ def test_diagnose_temperature(
     theta_v = initial_prognostic_savepoint.theta_v_now()
 
     temperature = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
     )
     virtual_temperature = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
     )
 
-    qv = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend)
-    qc = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend)
-    qr = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend)
-    qi = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend)
-    qs = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend)
-    qg = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend)
+    qv = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
+    qc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
+    qr = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
+    qi = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
+    qs = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
+    qg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
 
     diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(backend)(
         qv=qv,
@@ -119,8 +119,8 @@ def test_diagnose_meridional_and_zonal_winds(
     u_ref = diagnostics_reference_savepoint.zonal_wind().asnumpy()
     v_ref = diagnostics_reference_savepoint.meridional_wind().asnumpy()
 
-    u = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend)
-    v = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend)
+    u = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
+    v = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
 
     cell_domain = h_grid.domain(dims.CellDim)
     cell_end_lateral_boundary_level_2 = icon_grid.end_index(
@@ -171,7 +171,7 @@ def test_diagnose_surface_pressure(
     ddqz_z_full = metrics_savepoint.ddqz_z_full()
 
     surface_pressure = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, dtype=float, extend={KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, allocator=backend
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -211,11 +211,13 @@ def test_diagnose_pressure(
     pressure_ifc_ref = diagnostics_reference_savepoint.pressure_ifc().asnumpy()
     pressure_ref = diagnostics_reference_savepoint.pressure().asnumpy()
 
-    pressure = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, dtype=float, allocator=backend)
+    pressure = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
+    )
     cell_domain = h_grid.domain(dims.CellDim)
 
     pressure_ifc = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, dtype=float, extend={KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, allocator=backend
     )
 
     pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
@@ -272,9 +274,9 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         vct_b=grid_savepoint.vct_b(),
     )
     virtual_temperature_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
-    exner_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
+    exner_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
 
     tracer_state = tracers.TracerState(
         qv=satad_exit.qv(),
@@ -337,8 +339,8 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     updated_exner = exner.asnumpy() + exner_tendency.asnumpy() * dtime
 
     diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
-        gtx.as_field((dims.CellDim, KDim), updated_exner, allocator=backend),
-        gtx.as_field((dims.CellDim, KDim), updated_virtual_temperature, allocator=backend),
+        gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
+        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         metrics_savepoint.ddqz_z_full(),
         diagnostic_state.pressure_ifc,
         horizontal_start=start_cell_nudging,
@@ -350,7 +352,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
 
     diagnose_pressure.diagnose_pressure.with_backend(backend)(
         metrics_savepoint.ddqz_z_full(),
-        gtx.as_field((dims.CellDim, KDim), updated_virtual_temperature, allocator=backend),
+        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         diagnostic_state.surface_pressure,
         diagnostic_state.pressure,
         diagnostic_state.pressure_ifc,

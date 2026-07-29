@@ -74,11 +74,11 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_e_in = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ptr_coeff_1 = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
         ptr_coeff_2 = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
-        p_v_out = data_alloc.zero_field(grid, dims.VertexDim, KDim, dtype=wpfloat)
-        p_u_out = data_alloc.zero_field(grid, dims.VertexDim, KDim, dtype=wpfloat)
+        p_v_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
+        p_u_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
 
         vertex_domain = h_grid.domain(dims.VertexDim)
         horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))

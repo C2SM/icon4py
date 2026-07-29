@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, KDim
+from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -61,6 +61,6 @@ def compute_horizontal_tracer_flux_from_linear_coefficients(
         out=p_out_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

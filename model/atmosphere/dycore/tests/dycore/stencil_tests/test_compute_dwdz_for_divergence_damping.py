@@ -54,10 +54,12 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        inv_ddqz_z_full = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        w = random_field(grid, dims.CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
-        w_concorr_c = random_field(grid, dims.CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
-        z_dwdz_dd = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
+        w_concorr_c = random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
+        )
+        z_dwdz_dd = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             inv_ddqz_z_full=inv_ddqz_z_full,
@@ -66,6 +68,6 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
             out=z_dwdz_dd,
             domain={
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
-                KDim: (0, gtx.int32(grid.num_levels)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
             },
         )

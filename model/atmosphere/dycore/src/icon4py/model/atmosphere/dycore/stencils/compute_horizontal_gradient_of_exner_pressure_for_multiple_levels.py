@@ -10,7 +10,7 @@ from gt4py.next import astype
 from gt4py.next.experimental import as_offset
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, KDim, Koff
+from icon4py.model.common.dimension import E2C, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -76,6 +76,6 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
         out=z_gradh_exner,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

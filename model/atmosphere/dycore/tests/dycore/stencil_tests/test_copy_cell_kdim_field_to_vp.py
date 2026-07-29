@@ -44,8 +44,8 @@ class TestCopyCellKdimFieldToVp(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        field = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
-        field_copy = zero_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        field = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        field_copy = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         return dict(
             field=field,
             field_copy=field_copy,

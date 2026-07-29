@@ -46,8 +46,8 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        kh_smag_e = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        enh_diffu_3d = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
+        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        enh_diffu_3d = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             kh_smag_e=kh_smag_e,

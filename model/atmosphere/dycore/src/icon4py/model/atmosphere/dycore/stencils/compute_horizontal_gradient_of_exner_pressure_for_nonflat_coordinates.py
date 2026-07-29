@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, KDim
+from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -52,6 +52,6 @@ def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
         out=z_gradh_exner,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

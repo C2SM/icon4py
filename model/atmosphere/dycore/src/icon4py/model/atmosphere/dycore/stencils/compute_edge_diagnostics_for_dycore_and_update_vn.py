@@ -203,8 +203,8 @@ def _compute_rho_theta_pgrad_and_update_vn(
             geofac_grg_y=geofac_grg_y,
         ),
         (
-            broadcast(wpfloat("0.0"), (dims.EdgeDim, KDim)),
-            broadcast(wpfloat("0.0"), (dims.EdgeDim, KDim)),
+            broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+            broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
         ),
     )
 
@@ -229,7 +229,7 @@ def _compute_rho_theta_pgrad_and_update_vn(
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
         ),
-        broadcast(wpfloat("0.0"), (dims.EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
     )
 
     # Note: we overcompute `next_vn`, which is only needed
@@ -534,7 +534,7 @@ def compute_rho_theta_pgrad_and_update_vn(
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -653,6 +653,6 @@ def apply_divergence_damping_and_update_vn(
         out=next_vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -116,15 +116,15 @@ def cell_coordinate_source(
         "lat": (lat, {"standard_name": "lat", "units": ""}),
         "lon": (lon, {"standard_name": "lon", "units": ""}),
         "x": (
-            data_alloc.random_field(grid, dims.CellDim, KDim),
+            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
             {"standard_name": "x", "units": ""},
         ),
         "y": (
-            data_alloc.random_field(grid, dims.CellDim, KDim),
+            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
             {"standard_name": "y", "units": ""},
         ),
         "z": (
-            data_alloc.random_field(grid, dims.CellDim, KDim),
+            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
             {"standard_name": "z", "units": ""},
         ),
     }
@@ -188,7 +188,7 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     program = vertical_ops.average_two_vertical_levels_downwards_on_cells
     domain = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
-        KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
+        dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }
     deps = {
         "input_field": "height_coordinate",
@@ -214,7 +214,7 @@ def test_field_source_raise_error_on_register(cell_coordinate_source: SimpleFiel
     program = vertical_ops.average_two_vertical_levels_downwards_on_cells
     domain = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
-        KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
+        dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }
     deps = {
         "input_field": "height_coordinate",
@@ -233,8 +233,8 @@ def test_composite_field_source_contains_all_metadata(
 ) -> None:
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = data_alloc.random_field(grid, dims.CellDim, KDim)
-    bar = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
         "foo": (foo, {"standard_name": "foo", "units": ""}),
         "bar": (bar, {"standard_name": "bar", "units": ""}),
@@ -258,8 +258,8 @@ def test_composite_field_source_get_all_fields(
 ) -> None:
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = data_alloc.random_field(grid, dims.CellDim, KDim)
-    bar = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
         "foo": (foo, {"standard_name": "foo", "units": ""}),
         "bar": (bar, {"standard_name": "bar", "units": ""}),
@@ -295,8 +295,8 @@ def test_composite_field_source_raises_upon_get_unknown_field(
 ) -> None:
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = data_alloc.random_field(grid, dims.CellDim, KDim)
-    bar = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
         "foo": (foo, {"standard_name": "foo", "units": ""}),
         "bar": (bar, {"standard_name": "bar", "units": ""}),

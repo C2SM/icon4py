@@ -56,8 +56,8 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_q = random_field(grid, dims.CellDim, KDim, dtype=vpfloat)
-        w = random_field(grid, dims.CellDim, KDim, dtype=wpfloat)
+        z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         h_start = 0
         h_end = gtx.int32(grid.num_cells)
         v_start = 1

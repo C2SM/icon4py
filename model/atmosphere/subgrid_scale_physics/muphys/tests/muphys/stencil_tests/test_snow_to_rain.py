@@ -37,10 +37,12 @@ class TestSnowToRainDefault(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            t=data_alloc.constant_field(grid, 275.83, dims.CellDim, KDim, dtype=wpfloat),
-            p=data_alloc.constant_field(grid, 80134.5, dims.CellDim, KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 1.04892, dims.CellDim, KDim, dtype=wpfloat),
-            dvsw0=data_alloc.constant_field(grid, 0.00258631, dims.CellDim, KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(grid, 1.47687e-6, dims.CellDim, KDim, dtype=wpfloat),
-            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(grid, 275.83, dims.CellDim, dims.KDim, dtype=wpfloat),
+            p=data_alloc.constant_field(grid, 80134.5, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(grid, 1.04892, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw0=data_alloc.constant_field(
+                grid, 0.00258631, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            qs=data_alloc.constant_field(grid, 1.47687e-6, dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

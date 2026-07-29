@@ -10,7 +10,7 @@ from gt4py.next import astype
 from gt4py.next.experimental import as_offset
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2C, KDim, Koff
+from icon4py.model.common.dimension import C2E2C, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -85,6 +85,6 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         out=z_temp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

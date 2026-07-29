@@ -258,22 +258,24 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        normal_wind_advective_tendency = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        normal_wind_advective_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, KDim
         )
-        tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         coriolis_frequency = data_alloc.random_field(grid, dims.EdgeDim)
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, KDim
         )
-        vn_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, KDim, extend={KDim: 1})
+        vn_on_half_levels = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+        )
         coeff_gradekin = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         ddqz_z_full_e = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim, low=0.0
+            grid, dims.EdgeDim, dims.KDim, low=0.0
         )  # this makes sure that the simplified stencil produces the same result as the numpy version
         area_edge = data_alloc.random_field(grid, dims.EdgeDim)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)

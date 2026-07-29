@@ -171,17 +171,17 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
-        mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
-        z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, KDim)
+        spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
 
-        substep_and_spatially_averaged_vn = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        substep_averaged_mass_flux = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        substep_and_spatially_averaged_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        substep_averaged_mass_flux = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         e_flx_avg = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
-        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, KDim)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         prepare_advection = request.param["prepare_advection"]
         at_first_substep = request.param["at_first_substep"]
         r_nsubsteps = 0.5

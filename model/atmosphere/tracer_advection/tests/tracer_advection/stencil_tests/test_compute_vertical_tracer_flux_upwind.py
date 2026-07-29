@@ -44,7 +44,7 @@ class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_cc = data_alloc.random_field(grid, dims.CellDim, KDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(
             grid, dims.CellDim, KDim
         )  # TODO(dastrm): should be KHalfDim

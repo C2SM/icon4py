@@ -10,7 +10,7 @@ from gt4py.next import neighbor_sum
 
 import icon4py.model.common.type_alias as types
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import V2C, KDim
+from icon4py.model.common.dimension import V2C
 
 
 @gtx.field_operator
@@ -50,6 +50,6 @@ def compute_cell_2_vertex_interpolation(
         out=vert_out,
         domain={
             dims.VertexDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

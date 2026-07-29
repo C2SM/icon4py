@@ -208,7 +208,7 @@ def compute_diagnostics_from_normal_wind(
         ),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
     _extrapolate_at_top(
@@ -217,6 +217,6 @@ def compute_diagnostics_from_normal_wind(
         out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )

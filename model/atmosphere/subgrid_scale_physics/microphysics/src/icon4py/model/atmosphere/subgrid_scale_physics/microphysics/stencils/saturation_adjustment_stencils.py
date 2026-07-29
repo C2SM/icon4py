@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microp
 )
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
-from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -98,7 +97,7 @@ def update_temperature_by_newton_iteration(
         out=current_temperature,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -173,7 +172,7 @@ def update_temperature_qv_qc_tendencies(
         out=(temperature_tendency, qv_tendency, qc_tendency),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -267,7 +266,7 @@ def compute_subsaturated_case_and_initialize_newton_iterations(
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -316,6 +315,6 @@ def compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
         out=(newton_iteration_mask, next_temperature),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

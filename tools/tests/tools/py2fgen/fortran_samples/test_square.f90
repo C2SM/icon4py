@@ -11,7 +11,7 @@ program call_square_wrapper_cffi_plugin
    use square_plugin
    implicit none
    character(len=100) :: str_buffer
-   integer(c_int) :: cdim, kdim, i, j, rc, n
+   integer(c_int) :: cdim, dims.KDim, i, j, rc, n
    logical :: computation_correct
    real(c_double), dimension(:, :), allocatable :: input, result
 
@@ -22,8 +22,8 @@ program call_square_wrapper_cffi_plugin
    !$ACC enter data create(input, result)
 
    ! allocate arrays (allocate in column-major order)
-   allocate (input(cdim, kdim))
-   allocate (result(cdim, kdim))
+   allocate (input(cdim, dims.KDim))
+   allocate (result(cdim, dims.KDim))
 
    ! initialise arrays
    input = 5.0d0

@@ -61,13 +61,13 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     z_mc = metrics_savepoint.z_mc()
 
     exner_ref_mc = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     rho_ref_mc = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     theta_ref_mc = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     compute_reference_atmosphere_cell_fields.with_backend(backend)(
         z_height=z_mc,
@@ -107,7 +107,7 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
         icon_grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         dtype=ta.wpfloat,
         allocator=backend,
     )
@@ -115,7 +115,7 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
         icon_grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         dtype=ta.wpfloat,
         allocator=backend,
     )
@@ -123,7 +123,7 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
         icon_grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         dtype=ta.wpfloat,
         allocator=backend,
     )
@@ -158,10 +158,10 @@ def test_compute_d_exner_dz_ref_ic(
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()
     theta_ref_ic = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     d_exner_dz_ref_ic = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     compute_theta_d_exner_dz_ref_ic.with_backend(backend)(
         z_ifc=z_ifc,
@@ -205,10 +205,10 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     )
 
     rho_ref_me = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     theta_ref_me = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, KDim, dtype=ta.wpfloat, allocator=backend
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
 
     compute_reference_atmosphere_edge_fields.with_backend(backend)(
@@ -245,8 +245,8 @@ def test_compute_d2dexdz2_fac_mc(
     d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()
     d2dexdz2_fac2_mc_ref = metrics_savepoint.d2dexdz2_fac2_mc()
 
-    d2dexdz2_fac1_mc = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    d2dexdz2_fac2_mc = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
+    d2dexdz2_fac1_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    d2dexdz2_fac2_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
 
     compute_d2dexdz2_fac_mc.with_backend(backend=backend)(
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),

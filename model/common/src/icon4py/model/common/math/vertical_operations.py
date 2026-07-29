@@ -111,7 +111,7 @@ def average_two_vertical_levels_downwards_on_edges(  # noqa: PLR0917 [too-many-p
         out=average,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -130,6 +130,6 @@ def average_two_vertical_levels_downwards_on_cells(  # noqa: PLR0917 [too-many-p
         out=average,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

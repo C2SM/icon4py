@@ -125,7 +125,7 @@ def _compute_perturbed_quantities_and_interpolation(
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
         ),
-        broadcast(0.0, (dims.CellDim, KDim)),
+        broadcast(0.0, (dims.CellDim, dims.KDim)),
     )
 
     theta_v_at_cells_on_half_levels = concat_where(
@@ -366,7 +366,7 @@ def compute_perturbed_quantities_and_interpolation(
         out=(temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            KDim: (model_top, surface_level - 1),
+            dims.KDim: (model_top, surface_level - 1),
         },
     )
 
@@ -378,7 +378,7 @@ def compute_perturbed_quantities_and_interpolation(
         out=exner_at_cells_on_half_levels,
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            KDim: (surface_level - 1, surface_level),
+            dims.KDim: (surface_level - 1, surface_level),
         },
     )
 
@@ -411,7 +411,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            KDim: (model_top, surface_level - 1),
+            dims.KDim: (model_top, surface_level - 1),
         },
     )
 
@@ -427,7 +427,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            KDim: (surface_level - 1, surface_level),
+            dims.KDim: (surface_level - 1, surface_level),
         },
     )
 
@@ -449,7 +449,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            KDim: (model_top, surface_level - 1),
+            dims.KDim: (model_top, surface_level - 1),
         },
     )
 
@@ -464,7 +464,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (start_cell_halo_level_2, end_cell_halo_level_2),
-            KDim: (model_top, surface_level - 1),
+            dims.KDim: (model_top, surface_level - 1),
         },
     )
 
@@ -666,6 +666,6 @@ def compute_interpolation_and_nonhydro_buoy(
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

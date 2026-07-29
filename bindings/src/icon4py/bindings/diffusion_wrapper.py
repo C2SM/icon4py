@@ -46,7 +46,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 
@@ -151,13 +150,15 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     diffusion_params = DiffusionParams(config)
 
     nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
-    cell_k_domain = gtx.domain({dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, KDim: nlev})
+    cell_k_domain = gtx.domain(
+        {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
+    )
     c2e2c_size = geofac_grg_x.domain[dims.C2E2CODim].unit_range.stop - 1
     cell_c2e2c_k_domain = gtx.domain(
         {
             dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
             dims.C2E2CDim: c2e2c_size,
-            KDim: nlev,
+            dims.KDim: nlev,
         }
     )
 

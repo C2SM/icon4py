@@ -46,6 +46,6 @@ def compute_dwdz_for_divergence_damping(
         out=z_dwdz_dd,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

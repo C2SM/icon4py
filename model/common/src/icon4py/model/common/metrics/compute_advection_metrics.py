@@ -9,8 +9,7 @@ from __future__ import annotations
 
 from gt4py import next as gtx
 
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
 @gtx.field_operator
@@ -82,5 +81,5 @@ def compute_advection_deepatmo_fields(  # noqa: PLR0917 [too-many-positional-arg
         height_l=height_l,
         grid_sphere_radius=grid_sphere_radius,
         out=(deepatmo_divh, deepatmo_divzL, deepatmo_divzU),
-        domain={KDim: (vertical_start, vertical_end)},
+        domain={dims.KDim: (vertical_start, vertical_end)},
     )

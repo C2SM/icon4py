@@ -72,10 +72,10 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
         rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
-        vn = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
-        z_vn_avg = zero_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
-        z_graddiv_vn = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        vt = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_vn_avg = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_graddiv_vn = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vt = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             e_flx_avg=e_flx_avg,

@@ -45,9 +45,9 @@ class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        p_face = data_alloc.random_field(grid, dims.CellDim, KDim)
-        p_cc = data_alloc.random_field(grid, dims.CellDim, KDim)
-        p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, KDim)
+        p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         return dict(
             p_cc=p_cc,
             p_cellhgt_mc_now=p_cellhgt_mc_now,

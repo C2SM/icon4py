@@ -58,8 +58,10 @@ class TestSpatiallyAverageFluxOrVelocity(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        flux_or_velocity = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
-        spatially_averaged_flux_or_velocity = zero_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        flux_or_velocity = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        spatially_averaged_flux_or_velocity = zero_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=wpfloat
+        )
 
         return dict(
             e_flx_avg=e_flx_avg,

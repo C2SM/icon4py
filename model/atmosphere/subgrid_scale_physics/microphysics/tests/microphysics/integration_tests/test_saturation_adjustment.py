@@ -64,9 +64,11 @@ def test_saturation_adjustement(
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
     )
-    temperature_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    qv_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    qc_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
+    temperature_tendency = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+    )
+    qv_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    qc_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
 
     metric_state = satad.MetricStateSaturationAdjustment(
         ddqz_z_full=metrics_savepoint.ddqz_z_full()

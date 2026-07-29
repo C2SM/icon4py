@@ -53,9 +53,9 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base_grid.Grid) -> dict:
-        interpolant = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        wgtfac_e = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        interpolation_to_half_levels_vp = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        interpolant = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        interpolation_to_half_levels_vp = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

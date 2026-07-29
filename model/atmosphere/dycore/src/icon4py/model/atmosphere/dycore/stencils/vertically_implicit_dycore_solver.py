@@ -267,7 +267,7 @@ def _vertically_implicit_solver_at_predictor_step(
             nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             dtime=dtime,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim, KDim)),
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
@@ -453,7 +453,7 @@ def vertically_implicit_solver_at_predictor_step(
                 start_cell_index_lateral_lvl3,
                 end_cell_index_halo_lvl1,
             ),
-            KDim: (flat_level_index_plus1, vertical_end_index_model_surface),
+            dims.KDim: (flat_level_index_plus1, vertical_end_index_model_surface),
         },
     )
     _set_surface_boundary_condition_for_computation_of_w(
@@ -461,7 +461,7 @@ def vertically_implicit_solver_at_predictor_step(
         out=next_w,
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
+            dims.KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
         },
     )
     _vertically_implicit_solver_at_predictor_step(
@@ -509,7 +509,7 @@ def vertically_implicit_solver_at_predictor_step(
         ),
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
         },
     )
 
@@ -584,7 +584,7 @@ def _vertically_implicit_solver_at_corrector_step(
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim, KDim)),
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         (1 <= KDim) & (KDim < n_lev),
@@ -680,8 +680,8 @@ def _vertically_implicit_solver_at_corrector_step(
                 dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             ) = (
-                broadcast(wpfloat("0.0"), (dims.CellDim, KDim)),
-                broadcast(wpfloat("0.0"), (dims.CellDim, KDim)),
+                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
             )
 
         (
@@ -783,7 +783,7 @@ def vertically_implicit_solver_at_corrector_step(
         out=next_w,
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
+            dims.KDim: (vertical_end_index_model_surface - 1, vertical_end_index_model_surface),
         },
     )
     _vertically_implicit_solver_at_corrector_step(
@@ -839,6 +839,6 @@ def vertically_implicit_solver_at_corrector_step(
         ),
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
-            KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
+            dims.KDim: (vertical_start_index_model_top, vertical_end_index_model_surface - 1),
         },
     )

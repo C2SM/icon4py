@@ -49,12 +49,12 @@ class TestInterpolateVnAndVtToIeAndComputeEkinOnEdges(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_e = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        vn = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
-        vt = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        vn_ie = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        z_vt_ie = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        z_kin_hor_e = zero_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
+        wgtfac_e = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn_ie = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_vt_ie = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_kin_hor_e = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

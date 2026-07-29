@@ -59,7 +59,7 @@ def test_compute_ddq_z_half(
     nlevp1 = icon_grid.num_levels + 1
     z_mc = metrics_savepoint.z_mc()
     ddqz_z_half = data_alloc.zero_field(
-        icon_grid, dims.CellDim, KDim, extend={KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
 
     mf.compute_ddqz_z_half.with_backend(backend=backend)(
@@ -86,8 +86,8 @@ def test_compute_ddqz_z_full_and_inverse(
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
-    ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    inv_ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
+    ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    inv_ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
 
     mf.compute_ddqz_z_full_and_inverse.with_backend(backend)(
         z_ifc=z_ifc,
@@ -112,7 +112,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
     backend: gtx_typing.Backend,
 ) -> None:
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
-    scaling_factor_for_3d_divdamp = data_alloc.zero_field(icon_grid, KDim, allocator=backend)
+    scaling_factor_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.KDim, allocator=backend)
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     divdamp_type = 3
@@ -144,7 +144,9 @@ def test_compute_rayleigh_w(
 ) -> None:
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
-    rayleigh_w_full = data_alloc.zero_field(icon_grid, KDim, extend={KDim: 1}, allocator=backend)
+    rayleigh_w_full = data_alloc.zero_field(
+        icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+    )
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
@@ -169,10 +171,10 @@ def test_compute_coeff_dwdz(
     coeff1_dwdz_ref = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz_ref = metrics_savepoint.coeff2_dwdz()
 
-    coeff1_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
+    coeff1_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     ddqz_z_full = gtx.as_field(
-        (dims.CellDim, KDim),
+        (dims.CellDim, dims.KDim),
         1 / metrics_savepoint.inv_ddqz_z_full().ndarray,
         allocator=backend,
     )
@@ -229,9 +231,9 @@ def test_compute_exner_exfac(
 ) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
-    exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    max_slp = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
-    max_hgtd = data_alloc.zero_field(icon_grid, dims.CellDim, KDim, allocator=backend)
+    exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_slp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_hgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     mf._compute_maxslp_maxhgtd.with_backend(backend)(
         metrics_savepoint.ddxn_z_full(),
         grid_savepoint.dual_edge_length(),
@@ -239,7 +241,7 @@ def test_compute_exner_exfac(
         offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
         domain={
             dims.CellDim: (horizontal_start, icon_grid.num_cells),
-            KDim: (0, icon_grid.num_levels),
+            dims.KDim: (0, icon_grid.num_levels),
         },
     )
 
@@ -275,10 +277,10 @@ def test_compute_exner_w_implicit_weight_parameter(  # noqa: PLR0917 [too-many-p
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     z_ddxn_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, KDim, extend={KDim: 1}, allocator=backend
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     z_ddxt_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, KDim, extend={KDim: 1}, allocator=backend
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
@@ -350,7 +352,7 @@ def test_compute_wgtfac_e(
     backend: gtx_typing.Backend,
 ) -> None:
     wgtfac_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, KDim, extend={KDim: 1}, allocator=backend
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     wgtfac_e_ref = metrics_savepoint.wgtfac_e()
     mf.compute_wgtfac_e.with_backend(backend)(
@@ -384,10 +386,10 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     c_lin_e = interpolation_savepoint.c_lin_e()
     topography = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
 
-    k = data_alloc.index_field(icon_grid, dim=KDim, extend={KDim: 1}, allocator=backend)
+    k = data_alloc.index_field(icon_grid, dim=KDim, extend={dims.KDim: 1}, allocator=backend)
     edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, allocator=backend)
 
-    ex_distance = data_alloc.zero_field(icon_grid, dims.EdgeDim, KDim, allocator=backend)
+    ex_distance = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))

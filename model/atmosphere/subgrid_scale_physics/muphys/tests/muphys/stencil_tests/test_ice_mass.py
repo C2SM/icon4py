@@ -34,7 +34,7 @@ class TestIceNumber(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            qi=data_alloc.constant_field(grid, 2.02422e-23, dims.CellDim, KDim, dtype=wpfloat),
-            ni=data_alloc.constant_field(grid, 5.05089, dims.CellDim, KDim, dtype=wpfloat),
-            mass=data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=wpfloat),
+            qi=data_alloc.constant_field(grid, 2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ni=data_alloc.constant_field(grid, 5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
+            mass=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

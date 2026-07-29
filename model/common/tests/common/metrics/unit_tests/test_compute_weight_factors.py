@@ -50,7 +50,7 @@ def test_compute_wgtfac_c(
         dims.CellDim,
         KDim,
         dtype=ta.wpfloat,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         allocator=backend,
     )
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()

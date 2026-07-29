@@ -50,16 +50,16 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid):
-        vn = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.wpfloat)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
 
-        kh_smag_ec = data_alloc.random_field(grid, dims.EdgeDim, KDim, dtype=ta.vpfloat)
+        kh_smag_ec = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
 
-        diff_multfac_smag = data_alloc.random_field(grid, KDim, dtype=ta.vpfloat)
+        diff_multfac_smag = data_alloc.random_field(grid, dims.KDim, dtype=ta.vpfloat)
 
-        kh_c = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
-        div = data_alloc.zero_field(grid, dims.CellDim, KDim, dtype=ta.vpfloat)
+        kh_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        div = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             kh_smag_ec=kh_smag_ec,

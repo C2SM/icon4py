@@ -47,12 +47,12 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         area_edge = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        kh_smag_e = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        z_nabla2_e = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
-        z_nabla4_e2 = random_field(grid, dims.EdgeDim, KDim, dtype=vpfloat)
-        diff_multfac_vn = random_field(grid, KDim, dtype=wpfloat)
+        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_nabla4_e2 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        diff_multfac_vn = random_field(grid, dims.KDim, dtype=wpfloat)
         nudgecoeff_e = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        vn = random_field(grid, dims.EdgeDim, KDim, dtype=wpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         nudgezone_diff = vpfloat("9.0")
 
         return dict(

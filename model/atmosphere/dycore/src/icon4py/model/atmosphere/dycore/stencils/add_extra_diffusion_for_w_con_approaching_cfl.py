@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, astype, minimum, neighbor_sum, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E2CO, KDim
+from icon4py.model.common.dimension import C2E2CO
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -84,6 +84,6 @@ def add_extra_diffusion_for_w_con_approaching_cfl(
         out=ddt_w_adv,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

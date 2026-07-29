@@ -96,7 +96,7 @@ def initialize_diffusion_diagnostic_state(
         grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
     )
@@ -104,7 +104,7 @@ def initialize_diffusion_diagnostic_state(
         grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
     )
@@ -112,7 +112,7 @@ def initialize_diffusion_diagnostic_state(
         grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
     )
@@ -120,7 +120,7 @@ def initialize_diffusion_diagnostic_state(
         grid,
         dims.CellDim,
         KDim,
-        extend={KDim: 1},
+        extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
     )
