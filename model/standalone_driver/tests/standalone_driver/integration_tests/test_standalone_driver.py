@@ -55,7 +55,7 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "rho": (9e-10, 0.0),
         "exner": (1e-8, 0.0),
         "theta_v": (0.0, 3e-8),
-        "qv": (2e-6, 0.0),
+        "qv": (1e-8, 0.0),
         "qc": (1e-10, 0.0),
         "qr": (1e-10, 0.0),
         "qs": (1e-10, 0.0),
@@ -149,13 +149,11 @@ def test_standalone_driver(
     - exner / theta_v: recomputed via the exact EOS in ``scatter_to_prognostic``, mirroring
       ICON's phy2dyn coupling (mo_interface_iconam_aes.f90). Measured on v6: exner ~3e-9
       (atol=1e-8), theta_v ~7e-9 relative (rtol=3e-8) -- essentially exact.
-    - tracer transport (KNOWN MISMATCH): the reference ran with tracer advection ON
-      (ltransport=.TRUE., MIURA/PPM), but the driver disables it here -- it can't yet
-      compute airmass (rho*ddqz) or wire live mass fluxes (TODO(OngChia)), so advection
-      would divide by a zero airmass. So this validates muphys in isolation, not
-      transport+muphys. Over one 300 s step the advective change is small: qv still passes
-      at atol=2e-6, qc/qr/qs/qi/qg match bit-for-bit (atol=1e-10).
-      TODO (Yilu): revisit once the driver computes airmass + wires the mass fluxes.
+    - tracer transport: the driver runs MIURA/PPM advection on the dycore-accumulated
+      mass fluxes and airmass, matching the reference configuration (ltransport=.TRUE.),
+      so this validates transport+muphys. Measured on v6 (gtfn_cpu): qc/qr/qs/qi/qg are
+      bit-exact and qv's residual is ~9e-10 (atol=1e-8) -- the remaining gap stems from
+      the clipping / vertical-extent items below.
     - negative tracers: ICON clips them (iqneg_d2p/iqneg_p2d); the driver does not.
     - vertical extent: ICON runs graupel on jks_cloudy..nlev; muphys runs the full column.
 

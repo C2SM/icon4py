@@ -397,19 +397,13 @@ def read_experiment_config_from_fortran(
     do_tracer_advection = not (
         "exclaim_ch_r04b09_dsl" in config_file_path.name
         or "exclaim_ape_R02B04" in config_file_path.name
-        or "exclaim_ape_aesPhys" in config_file_path.name
     )
-    # These experiments' references run with tracer transport ON, but the standalone
-    # driver can't run tracer advection yet: it never computes airmass (rho*ddqz) or
-    # supplies live mass fluxes for the advection inputs (open TODO(OngChia) "compute
-    # airmass" in the driver's dynamics substepping), so advection divides tracer
-    # density by a zero airmass -> 0/0 -> NaN. The MIURA/PPM scheme itself IS ported +
-    # tested; the gap is the driver's advection setup. We therefore disable it here.
-    # For exclaim_ape_aesPhys this makes the muphys datatest validate muphys in
-    # isolation -- a known transport-off mismatch vs the reference (see the
-    # test_standalone_driver docstring). Its moisture comes from the analytical JW IC
-    # (normalize_global_moisture), independent of ntracer/advection, so disabling
-    # advection leaves muphys' tracers intact.
+    # The driver supplies advection's inputs (airmass and the mass fluxes the dycore
+    # accumulates over the substeps), and exclaim_ape_aesPhys runs tracer advection:
+    # the driver test validates transport+muphys against the end-of-time-step
+    # reference (hydrometeors bit-exact, see the test_standalone_driver docstring).
+    # The two experiments above stay disabled until their runs are validated the same
+    # way (their datatests do not compare tracers yet).
     # TODO (jcanton): this isn't the right place to keep a special case
     # handling. Either fix these experiments or move the special case handling.
     tracer_advection_cfg = (
