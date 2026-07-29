@@ -312,7 +312,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         horizontal_pressure_gradient = np.where(
             (vert_idx < nflatlev),
             inv_dual_edge_length * weighted_temporal_extrapolation_of_perturbed_exner_at_edges,
-            horizontal_pressure_gradient,
+            horizontal_pressure_gradient_in,
         )
 
         def _apply_index_field_for_multi_level_pressure_gradient(
@@ -396,12 +396,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             horizontal_pressure_gradient + hydrostatic_correction * pg_exdist
         )
 
-        horizontal_pressure_gradient = np.where(
-            (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
-            horizontal_pressure_gradient,
-            horizontal_pressure_gradient_in,
-        )
-
         next_vn = np.where(
             (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
             current_vn
@@ -427,6 +421,12 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
                 current_vn + dtime * grf_tend_vn,
                 next_vn,
             )
+
+        horizontal_pressure_gradient = np.where(
+            (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
+            horizontal_pressure_gradient,
+            horizontal_pressure_gradient_in,
+        )
 
         return dict(
             rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
