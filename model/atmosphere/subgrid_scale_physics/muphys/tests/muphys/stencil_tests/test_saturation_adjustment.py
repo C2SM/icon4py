@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.saturation_adjus
     saturation_adjustment,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest

@@ -23,7 +23,6 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -33,8 +32,8 @@ def _interpolate_to_half_levels(
     x: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.vpfloat]:
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
-    x_ie_wp = wgtfac_e_wp * x + (wpfloat("1.0") - wgtfac_e_wp) * x(KDim - 1)
-    return concat_where(KDim > 0, astype(x_ie_wp, vpfloat), astype(x, vpfloat))
+    x_ie_wp = wgtfac_e_wp * x + (wpfloat("1.0") - wgtfac_e_wp) * x(dims.KDim - 1)
+    return concat_where(dims.KDim > 0, astype(x_ie_wp, vpfloat), astype(x, vpfloat))
 
 
 @gtx.field_operator
@@ -84,7 +83,7 @@ def _compute_diagnostics_from_normal_wind(
     )
 
     contravariant_correction_at_edges_on_model_levels = concat_where(
-        nflatlev <= KDim,
+        nflatlev <= dims.KDim,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
         contravariant_correction_at_edges_on_model_levels,
     )

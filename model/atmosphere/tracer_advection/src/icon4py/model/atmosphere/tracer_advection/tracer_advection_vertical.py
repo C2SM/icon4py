@@ -67,7 +67,6 @@ from icon4py.model.common import (
     model_options,
     type_alias as ta,
 )
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -571,7 +570,7 @@ class FirstOrderUpwind(FiniteVolume):
         # fields
         self._k_field = data_alloc.index_field(
             self._grid,
-            KDim,
+            dims.KDim,
             extend={dims.KDim: 1},
             dtype=gtx.int32,
             allocator=model_backends.get_allocator(self._backend),

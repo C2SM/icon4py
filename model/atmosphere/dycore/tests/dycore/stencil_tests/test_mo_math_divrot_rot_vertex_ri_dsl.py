@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl i
     mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat

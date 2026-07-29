@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contr
     compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, random_mask, zero_field

@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -240,7 +239,7 @@ def initialize_prep_advection(
     dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
@@ -248,7 +247,7 @@ def initialize_prep_advection(
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,

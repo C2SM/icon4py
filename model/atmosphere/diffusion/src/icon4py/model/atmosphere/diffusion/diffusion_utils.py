@@ -11,7 +11,6 @@ from gt4py.next import broadcast, minimum
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 
 
@@ -49,12 +48,12 @@ def _setup_smag_limit(diff_multfac_vn: fa.KField[float]) -> fa.KField[float]:
 def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float) -> fa.KField[float]:
     con = 1.0 / 128.0
     dyn = k4 * dyn_substeps / 3.0
-    return broadcast(minimum(con, dyn), (KDim,))
+    return broadcast(minimum(con, dyn), (dims.KDim,))
 
 
 @gtx.field_operator
 def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> fa.KField[float]:
-    return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
+    return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (dims.KDim,))
 
 
 @gtx.field_operator
@@ -156,7 +155,7 @@ def _init_nabla2_factor_in_upper_damping_zone(
     heights_1: float,
 ) -> fa.KField[float]:
     height_sliced = concat_where(
-        ((1 + nshift) <= KDim) & (KDim < (nshift + end_index_of_damping_layer + 1)),
+        ((1 + nshift) <= dims.KDim) & (dims.KDim < (nshift + end_index_of_damping_layer + 1)),
         physical_heights,
         0.0,
     )

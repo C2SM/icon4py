@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_trace
     compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests

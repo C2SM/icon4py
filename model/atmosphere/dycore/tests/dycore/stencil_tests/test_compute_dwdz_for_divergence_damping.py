@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_dampin
     _compute_dwdz_for_divergence_damping,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field

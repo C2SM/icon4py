@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import
     _compute_exner_from_rhotheta,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field

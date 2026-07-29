@@ -35,7 +35,6 @@ from icon4py.bindings import (
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.states import nonhydro_states
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
@@ -220,14 +219,14 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
             f"Expected wgtfacq_c to have a vertical dimension of size 3, but got {len(wgtfacq_c.domain[dims.KDim].unit_range)}."
         )
     # uses GT4Py's embedded shift to move the domain to surface levels
-    wgtfacq_c = field_utils.flip(wgtfacq_c(KDim - (nlev - 3)), dims.KDim, allocator=allocator)
+    wgtfacq_c = field_utils.flip(wgtfacq_c(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)
 
     if len(wgtfacq_e.domain[dims.KDim].unit_range) != 3:
         raise ValueError(
             f"Expected wgtfacq_e to have a vertical dimension of size 3, but got {len(wgtfacq_e.domain[dims.KDim].unit_range)}."
         )
     # uses GT4Py's embedded shift to move the domain to surface levels
-    wgtfacq_e = field_utils.flip(wgtfacq_e(KDim - (nlev - 3)), dims.KDim, allocator=allocator)
+    wgtfacq_e = field_utils.flip(wgtfacq_e(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)
 
     # In Fortran `vertidx_gradp` contains `0`s in areas where the array is not used.
     # When we translate to offsets we just subtract the current index, therefore these values will be negative.

@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.add_temporal_tendencies_to_vn impo
     add_temporal_tendencies_to_vn,
 )
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat

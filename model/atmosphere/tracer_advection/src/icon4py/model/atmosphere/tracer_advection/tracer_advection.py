@@ -39,7 +39,6 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
@@ -255,7 +254,7 @@ class GodunovSplittingAdvection(Advection):
         self._rhodz_ast2 = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
-            KDim,
+            dims.KDim,
             allocator=model_backends.get_allocator(self._backend),
         )
         self._determine_local_domains()

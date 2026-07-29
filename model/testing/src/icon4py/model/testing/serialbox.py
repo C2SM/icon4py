@@ -18,7 +18,6 @@ import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, model_backends, type_alias
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
@@ -544,7 +543,7 @@ class IconGridSavepoint(IconSavepoint):
                 num_cells=self.num(dims.CellDim),
                 num_edges=self.num(dims.EdgeDim),
             ),
-            vertical_size=self.num(KDim),
+            vertical_size=self.num(dims.KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
             distributed=self.construct_decomposition_info().is_distributed(),
             keep_skip_values=keep_skip_values,
@@ -825,8 +824,8 @@ class MetricSavepoint(IconSavepoint):
         assert len(wgtfacq_c_fortran.domain[dims.KDim].unit_range) == 3
         nlev = self.sizes[dims.KDim]
         return field_utils.flip(
-            wgtfacq_c_fortran(KDim - (nlev - 3)),  # GT4Py embedded shift
-            KDim,
+            wgtfacq_c_fortran(dims.KDim - (nlev - 3)),  # GT4Py embedded shift
+            dims.KDim,
             allocator=model_backends.get_allocator(self.backend),
         )
 
@@ -878,8 +877,8 @@ class MetricSavepoint(IconSavepoint):
         assert len(wgtfacq_e_fortran.domain[dims.KDim].unit_range) == 3
         nlev = self.sizes[dims.KDim]
         return field_utils.flip(
-            wgtfacq_e_fortran(KDim - (nlev - 3)),  # GT4Py embedded shift
-            KDim,
+            wgtfacq_e_fortran(dims.KDim - (nlev - 3)),  # GT4Py embedded shift
+            dims.KDim,
             allocator=model_backends.get_allocator(self.backend),
         )
 

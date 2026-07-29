@@ -13,7 +13,6 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest
@@ -53,7 +52,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
         axis=1,
     )
 
-    geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)  # add KDim
+    geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)  # add dims.KDim
     z_temp = z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over)
     return z_temp
 

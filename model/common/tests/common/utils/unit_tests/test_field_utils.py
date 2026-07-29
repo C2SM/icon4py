@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import field_utils
 
 
@@ -110,8 +109,8 @@ class TestIndex2Offset:
         assert np.array_equal(result.ndarray, [0, 0, 0, 0])
 
     def test_2d_along_second_dim(self, allocator):
-        # shape (3, 4), apply along KDim (axis=1)
-        # positions for KDim with range(0, 4): [0, 1, 2, 3]
+        # shape (3, 4), apply along dims.KDim (axis=1)
+        # positions for dims.KDim with range(0, 4): [0, 1, 2, 3]
         data = np.array([[0, 3, 1, 2], [1, 0, 2, 3], [2, 1, 3, 0]], dtype=np.int32)
         index_field = gtx.as_field({dims.CellDim: range(0, 3), dims.KDim: range(0, 4)}, data)
         result = field_utils.index2offset(index_field, dims.KDim, allocator=allocator)
@@ -121,8 +120,8 @@ class TestIndex2Offset:
         assert result.domain == index_field.domain
 
     def test_2d_nonzero_start_along_second_dim(self, allocator):
-        # shape (2, 3), KDim starts at 5
-        # positions for KDim with range(5, 8): [5, 6, 7]
+        # shape (2, 3), dims.KDim starts at 5
+        # positions for dims.KDim with range(5, 8): [5, 6, 7]
         data = np.array([[7, 5, 6], [6, 7, 5]], dtype=np.int32)
         index_field = gtx.as_field({dims.CellDim: range(2, 4), dims.KDim: range(5, 8)}, data)
         result = field_utils.index2offset(index_field, dims.KDim, allocator=allocator)

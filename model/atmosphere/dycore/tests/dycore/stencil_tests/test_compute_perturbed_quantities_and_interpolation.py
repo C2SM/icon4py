@@ -29,7 +29,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_dycor
     compute_perturbed_quantities_and_interpolation,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -375,7 +374,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim
         )
         ddz_of_reference_exner_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, KDim
+            grid, dims.CellDim, dims.KDim
         )
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
@@ -394,10 +393,10 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, KDim
+            grid, dims.CellDim, dims.KDim
         )
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, KDim
+            grid, dims.CellDim, dims.KDim
         )
         theta_v_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}

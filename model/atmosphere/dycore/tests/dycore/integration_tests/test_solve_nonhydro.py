@@ -24,7 +24,6 @@ from icon4py.model.atmosphere.dycore.stencils import (
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -54,17 +53,17 @@ def test_validate_divdamp_fields_against_savepoint_values(
     mean_cell_area = grid_savepoint.mean_cell_area()
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
         icon_grid,
-        KDim,
+        dims.KDim,
         allocator=backend,
     )
     fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
         icon_grid,
-        KDim,
+        dims.KDim,
         allocator=backend,
     )
     reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
         icon_grid,
-        KDim,
+        dims.KDim,
         allocator=backend,
     )
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
@@ -1567,7 +1566,7 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
     # TODO: Use serialized data ('enh_divdamp_fac' in icon) instead of computing 'interpolated_fourth_order_divdamp_factor'
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
         icon_grid,
-        KDim,
+        dims.KDim,
         allocator=backend,
     )
 

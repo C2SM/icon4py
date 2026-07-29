@@ -17,7 +17,6 @@ import pytest
 from icon4py.bindings import common as wrapper_common, dycore_wrapper
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
@@ -531,7 +530,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, KDim
+            icon_grid, dims.CellDim, dims.KDim
         ),  # TODO(): sp.vol_flx_ic(),
     )
     expected_second_order_divdamp_factor = sp.divdamp_fac_o2()

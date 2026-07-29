@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.dycore.stencils.apply_2nd_order_divergence_damping
     apply_2nd_order_divergence_damping,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat

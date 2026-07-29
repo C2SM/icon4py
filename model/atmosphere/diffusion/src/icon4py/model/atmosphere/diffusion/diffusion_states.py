@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -95,7 +94,7 @@ def initialize_diffusion_diagnostic_state(
     hdef_ic = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
@@ -103,7 +102,7 @@ def initialize_diffusion_diagnostic_state(
     div_ic = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
@@ -111,7 +110,7 @@ def initialize_diffusion_diagnostic_state(
     dwdx = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
@@ -119,7 +118,7 @@ def initialize_diffusion_diagnostic_state(
     dwdy = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,

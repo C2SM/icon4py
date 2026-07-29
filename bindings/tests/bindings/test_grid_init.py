@@ -18,7 +18,6 @@ from icon4py.bindings import (
     grid_wrapper,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.tools.py2fgen import test_utils
 
 
@@ -27,7 +26,7 @@ def _grid_init_kwargs(grid_savepoint, experiment, *, parallel_arrays, comm_id):
     num_vertices = grid_savepoint.num(dims.VertexDim)
     num_cells = grid_savepoint.num(dims.CellDim)
     num_edges = grid_savepoint.num(dims.EdgeDim)
-    vertical_size = grid_savepoint.num(KDim)
+    vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
     cfg = experiment.config.vertical_grid
 

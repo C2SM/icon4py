@@ -16,7 +16,6 @@ from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_full_muphys
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.common.dimension import KDim
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
 

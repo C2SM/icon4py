@@ -13,7 +13,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_quadratic_fa
     _compute_ppm_quadratic_face_values,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 
 
 # TODO(dastrm): this stencil is imported but never called
@@ -31,14 +30,14 @@ def _compute_ppm_all_face_values(
     elevp1: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
     p_face = concat_where(
-        (KDim == slevp1) | (KDim == elev),
+        (dims.KDim == slevp1) | (dims.KDim == elev),
         _compute_ppm_quadratic_face_values(p_cc, p_cellhgt_mc_now),
         p_face_in,
     )
 
-    p_face = concat_where(KDim == slev, p_cc, p_face)
+    p_face = concat_where(dims.KDim == slev, p_cc, p_face)
 
-    p_face = concat_where(KDim == elevp1, p_cc(KDim - 1), p_face)
+    p_face = concat_where(dims.KDim == elevp1, p_cc(dims.KDim - 1), p_face)
 
     return p_face
 

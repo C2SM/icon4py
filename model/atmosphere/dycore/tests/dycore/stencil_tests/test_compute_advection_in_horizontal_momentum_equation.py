@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_mo
     compute_advection_in_horizontal_momentum,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
@@ -261,12 +260,12 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         normal_wind_advective_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         coriolis_frequency = data_alloc.random_field(grid, dims.EdgeDim)
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, KDim
+            grid, dims.CellDim, dims.KDim
         )
         vn_on_half_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}

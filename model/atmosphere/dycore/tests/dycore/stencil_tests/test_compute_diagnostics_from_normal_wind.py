@@ -14,7 +14,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wi
     compute_diagnostics_from_normal_wind,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -307,7 +306,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         self, grid: base.Grid, request: pytest.FixtureRequest
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         tangential_wind_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -315,10 +314,10 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

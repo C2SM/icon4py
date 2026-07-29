@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.math import derivative
 from icon4py.model.common.states import utils as state_utils

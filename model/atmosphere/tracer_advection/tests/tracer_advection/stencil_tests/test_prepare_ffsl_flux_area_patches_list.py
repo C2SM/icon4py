@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.prepare_ffsl_flux_area_p
     prepare_ffsl_flux_area_patches_list,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.testing import stencil_tests
 
 

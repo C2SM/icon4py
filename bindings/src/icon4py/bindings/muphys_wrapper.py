@@ -14,7 +14,6 @@ from icon4py.bindings import icon4py_export
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_graupel_only
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
 from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
-from icon4py.model.common.dimension import KDim
 
 
 graupel_program = None
@@ -83,11 +82,11 @@ def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
         t_out=t,
         q_out=q,
         pflx=pflx,
-        pr=prr_gsp(KDim - (ke - 1)),
-        ps=prs_gsp(KDim - (ke - 1)),
-        pi=pri_gsp(KDim - (ke - 1)),
-        pg=prg_gsp(KDim - (ke - 1)),
-        pre=pre_gsp(KDim - (ke - 1)),
+        pr=prr_gsp(dims.KDim - (ke - 1)),
+        ps=prs_gsp(dims.KDim - (ke - 1)),
+        pi=pri_gsp(dims.KDim - (ke - 1)),
+        pg=prg_gsp(dims.KDim - (ke - 1)),
+        pre=pre_gsp(dims.KDim - (ke - 1)),
     )
 
 

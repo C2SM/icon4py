@@ -63,13 +63,13 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
         for jk in range(int(flat_idx[je]) + 1, nlev):
             """
             Second part for loop implementation with gt4py code
-            >>> param_2 = as_field((KDim,), array_ns.asarray([False] * nlev))
-            >>> param_3 = as_field((KDim,), array_ns.arange(nlev))
-            >>> z_ifc_off_e = as_field((KDim,), z_ifc[e2c[je, 0], :])
+            >>> param_2 = as_field((dims.KDim,), array_ns.asarray([False] * nlev))
+            >>> param_3 = as_field((dims.KDim,), array_ns.arange(nlev))
+            >>> z_ifc_off_e = as_field((dims.KDim,), z_ifc[e2c[je, 0], :])
             >>> _compute_param.with_backend(backend)(
             >>>     z_me_jk=z_me[je, jk],
             >>>     z_ifc_off=z_ifc_off_e,
-            >>>     z_ifc_off_koff=as_field((KDim,), z_ifc_off_koff.ndarray[je, :]),
+            >>>     z_ifc_off_koff=as_field((dims.KDim,), z_ifc_off_koff.ndarray[je, :]),
             >>>     lower=int(flat_idx[je]),
             >>>     nlev=nlev - 1,
             >>>     out=(param_3, param_2),

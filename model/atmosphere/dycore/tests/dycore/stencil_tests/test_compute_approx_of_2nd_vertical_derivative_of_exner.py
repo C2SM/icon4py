@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_der
     compute_approx_of_2nd_vertical_derivative_of_exner,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat

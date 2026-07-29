@@ -17,7 +17,6 @@ import pytest
 
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon, simple, vertical as v_grid
 from icon4py.model.common.math import (
     coordinate_transformations as coord_trans,
@@ -46,7 +45,7 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 cell_domain = h_grid.domain(dims.CellDim)
-k_domain = v_grid.domain(KDim)
+k_domain = v_grid.domain(dims.KDim)
 
 
 class SimpleFieldSource(factory.FieldSource):
@@ -271,12 +270,12 @@ def test_composite_field_source_get_all_fields(
     )
     foo = composite.get("foo")
     assert isinstance(foo, gtx.Field)
-    assert {dims.CellDim, KDim}.issubset(foo.domain.dims)
+    assert {dims.CellDim, dims.KDim}.issubset(foo.domain.dims)
 
     bar = composite.get("bar")
     assert len(bar.domain.dims) == 2
     assert isinstance(bar, gtx.Field)
-    assert {dims.EdgeDim, KDim}.issubset(bar.domain.dims)
+    assert {dims.EdgeDim, dims.KDim}.issubset(bar.domain.dims)
 
     lon = composite.get("lon")
     assert isinstance(lon, gtx.Field)
@@ -285,7 +284,7 @@ def test_composite_field_source_get_all_fields(
 
     lat = composite.get("height_coordinate")
     assert isinstance(lat, gtx.Field)
-    assert KDim in lat.domain.dims
+    assert dims.KDim in lat.domain.dims
     assert len(lat.domain.dims) == 2
 
 

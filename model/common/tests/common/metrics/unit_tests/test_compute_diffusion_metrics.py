@@ -14,7 +14,6 @@ import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.metrics.compute_diffusion_metrics import (
     compute_diffusion_intcoef_and_vertoffset,
     compute_diffusion_mask_and_coef,

@@ -19,7 +19,6 @@ from icon4py.model.common.decomposition import (
     definitions as decomp_defs,
     mpi_decomposition,
 )
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import (
     base,
     geometry,
@@ -445,12 +444,12 @@ def _compare_metrics_fields_single_multi_rank(
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (KDim,),
+            (dims.KDim,),
             xp.linspace(12000.0, 0.0, experiment.config.vertical_grid.num_levels + 1),
             allocator=allocator,
         ),
         vct_b=gtx.as_field(
-            (KDim,),
+            (dims.KDim,),
             xp.linspace(12000.0, 0.0, experiment.config.vertical_grid.num_levels + 1),
             allocator=allocator,
         ),
@@ -679,12 +678,12 @@ def test_metrics_mask_prog_halo_c(
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (KDim,),
+            (dims.KDim,),
             xp.linspace(12000.0, 0.0, experiment.config.vertical_grid.num_levels + 1),
             allocator=allocator,
         ),
         vct_b=gtx.as_field(
-            (KDim,),
+            (dims.KDim,),
             xp.linspace(12000.0, 0.0, experiment.config.vertical_grid.num_levels + 1),
             allocator=allocator,
         ),

@@ -23,7 +23,6 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends, utils as common_utils
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,

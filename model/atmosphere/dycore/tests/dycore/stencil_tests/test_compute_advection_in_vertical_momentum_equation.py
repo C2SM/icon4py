@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
     compute_advection_in_predictor_vertical_momentum,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -419,7 +418,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, KDim
+            grid, dims.CellDim, dims.KDim
         )
         vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
@@ -655,7 +654,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         self, grid: base.Grid, request: pytest.FixtureRequest
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, KDim
+            grid, dims.CellDim, dims.KDim
         )
         vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
@@ -663,7 +662,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
         contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         contravariant_correction_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}

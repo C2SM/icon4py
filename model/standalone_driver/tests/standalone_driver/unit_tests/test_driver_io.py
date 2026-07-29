@@ -23,7 +23,6 @@ import pytest
 import xarray as xr
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.states import (

@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
     compute_horizontal_velocity_quantities_and_fluxes,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
@@ -280,7 +279,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_gradient_of_normal_wind_divergence = data_alloc.zero_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
@@ -290,10 +289,10 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
 
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

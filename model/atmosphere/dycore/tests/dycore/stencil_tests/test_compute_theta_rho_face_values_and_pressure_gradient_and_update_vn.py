@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
     compute_rho_theta_pgrad_and_update_vn,
 )
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
@@ -464,15 +463,15 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim
         )
         perturbed_theta_v_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, KDim
+            grid, dims.CellDim, dims.KDim
         )
         ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         temporal_extrapolation_of_perturbed_exner = data_alloc.random_field(
-            grid, dims.CellDim, KDim
+            grid, dims.CellDim, dims.KDim
         )
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, KDim
+            grid, dims.CellDim, dims.KDim
         )
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -480,14 +479,14 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         hydrostatic_correction_on_lowest_level = data_alloc.random_field(grid, dims.EdgeDim)
         zdiff_gradp = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim)
         pg_exdist = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )  # TODO(havogt): should be allocated with a sparse pattern
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
         predictor_normal_wind_advective_tendency = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
         normal_wind_tendency_due_to_slow_physics_process = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         normal_wind_iau_increment = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         grf_tend_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

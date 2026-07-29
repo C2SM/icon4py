@@ -13,7 +13,6 @@ import pytest
 
 import icon4py.model.testing.stencil_tests as test_helpers
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_vp import (
     interpolate_edge_field_to_half_levels_vp,

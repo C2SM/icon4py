@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat

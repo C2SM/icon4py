@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
 from icon4py.model.common.io import cf_utils, utils, writers
 from icon4py.model.common.states import data, metadata
@@ -48,7 +47,7 @@ def initialized_writer(
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
     vertical_params = v_grid.VerticalGrid(
         vertical_config,
-        vct_a=gtx.as_field((KDim,), heights),
+        vct_a=gtx.as_field((dims.KDim,), heights),
         vct_b=None,
     )
     horizontal = grid.config.horizontal_config

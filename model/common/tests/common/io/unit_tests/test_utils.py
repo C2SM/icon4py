@@ -10,7 +10,6 @@ import xarray as xa
 
 import icon4py.model.common.grid.simple as simple_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.io import ugrid, utils
 from icon4py.model.common.states import data, model
 from icon4py.model.common.utils import data_allocation as data_alloc

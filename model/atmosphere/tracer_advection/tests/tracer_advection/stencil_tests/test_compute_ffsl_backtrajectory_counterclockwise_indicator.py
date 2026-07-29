@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ffsl_backtraject
     compute_ffsl_backtrajectory_counterclockwise_indicator,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests

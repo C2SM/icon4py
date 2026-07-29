@@ -13,7 +13,6 @@ import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.metrics import compute_weight_factors as weight_factors
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
@@ -48,7 +47,7 @@ def test_compute_wgtfac_c(
     wgtfac_c = data_alloc.zero_field(
         icon_grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         dtype=ta.wpfloat,
         extend={dims.KDim: 1},
         allocator=backend,

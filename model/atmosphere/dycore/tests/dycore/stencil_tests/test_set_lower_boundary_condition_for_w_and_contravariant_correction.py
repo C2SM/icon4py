@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.set_lower_boundary_condition_for_w
     set_lower_boundary_condition_for_w_and_contravariant_correction,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat

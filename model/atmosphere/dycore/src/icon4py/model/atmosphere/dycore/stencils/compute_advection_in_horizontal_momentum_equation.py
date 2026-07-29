@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl i
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2C2EO, E2V, KDim
+from icon4py.model.common.dimension import E2C, E2C2EO, E2V
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
 )
@@ -70,7 +70,7 @@ def _compute_advective_normal_wind_tendency(
         neighbor_sum(
             c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=dims.E2CDim
         )
-        * astype((vn_on_half_levels - vn_on_half_levels(KDim + 1)), wpfloat)
+        * astype((vn_on_half_levels - vn_on_half_levels(dims.KDim + 1)), wpfloat)
         / ddqz_z_full_e_wp
     )
 
@@ -218,7 +218,7 @@ def _compute_advection_in_horizontal_momentum(
 
     if apply_extra_diffusion_on_vn:
         normal_wind_advective_tendency = concat_where(
-            ((maximum(2, end_index_of_damping_layer - 2)) <= KDim) & (KDim < (nlev - 4)),
+            ((maximum(2, end_index_of_damping_layer - 2)) <= dims.KDim) & (dims.KDim < (nlev - 4)),
             _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask(
                 c_lin_e=c_lin_e,
                 contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,

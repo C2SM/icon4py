@@ -11,7 +11,6 @@ from typing import Final
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.states import model
 
 
@@ -124,7 +123,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=SCALING_FACTOR_FOR_3D_DIVDAMP,
         long_name="Scaling factor for 3D divergence damping",
         units="",
-        dims=(KDim,),
+        dims=(dims.KDim,),
         icon_var_name="scalfac_dd3d",
         dtype=ta.wpfloat,
     ),
@@ -444,7 +443,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=DEEPATMO_DIVH,
         long_name="",
         units="",
-        dims=(KDim,),
+        dims=(dims.KDim,),
         icon_var_name="deepatmo_divh_mc",
         dtype=ta.wpfloat,
     ),
@@ -452,7 +451,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=DEEPATMO_DIVZL,
         long_name="",
         units="",
-        dims=(KDim,),
+        dims=(dims.KDim,),
         icon_var_name="deepatmo_divzL_mc",
         dtype=ta.wpfloat,
     ),
@@ -460,7 +459,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=DEEPATMO_DIVZU,
         long_name="",
         units="",
-        dims=(KDim,),
+        dims=(dims.KDim,),
         icon_var_name="deepatmo_divzU_mc",
         dtype=ta.wpfloat,
     ),

@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
     apply_divergence_damping_and_update_vn,
 )
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -219,10 +218,10 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             grid, dims.EdgeDim, dims.KDim
         )
         normal_wind_tendency_due_to_slow_physics_process = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         horizontal_gradient_of_normal_wind_divergence = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         normal_wind_iau_increment = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         next_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

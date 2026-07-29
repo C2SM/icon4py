@@ -15,7 +15,6 @@ import pytest
 
 from icon4py.model.atmosphere.tracer_advection.stencils import apply_horizontal_density_increment
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 

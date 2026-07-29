@@ -30,7 +30,7 @@ from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity
     _spatially_average_flux_or_velocity,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C2EO, KDim
+from icon4py.model.common.dimension import E2C2EO
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -85,7 +85,7 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
     tangential_wind_on_half_levels = _interpolate_to_half_levels(wgtfac_e, tangential_wind)
 
     contravariant_correction_at_edges_on_model_levels = concat_where(
-        nflatlev <= KDim,
+        nflatlev <= dims.KDim,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
         contravariant_correction_at_edges_on_model_levels,
     )

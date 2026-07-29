@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges 
     interpolate_vt_to_interface_edges,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc

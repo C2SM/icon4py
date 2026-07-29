@@ -24,7 +24,6 @@ from icon4py.model.common import (
     type_alias as ta,
     utils as common_utils,
 )
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -152,7 +151,7 @@ def initialize_solve_nonhydro_diagnostic_state(
         data_alloc.zero_field(
             grid,
             dims.CellDim,
-            KDim,
+            dims.KDim,
             extend={dims.KDim: 1},
             allocator=allocator,
             dtype=ta.vpfloat,
@@ -160,7 +159,7 @@ def initialize_solve_nonhydro_diagnostic_state(
         data_alloc.zero_field(
             grid,
             dims.CellDim,
-            KDim,
+            dims.KDim,
             extend={dims.KDim: 1},
             allocator=allocator,
             dtype=ta.vpfloat,
@@ -170,7 +169,7 @@ def initialize_solve_nonhydro_diagnostic_state(
     theta_v_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
@@ -178,7 +177,7 @@ def initialize_solve_nonhydro_diagnostic_state(
     rho_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
@@ -195,7 +194,7 @@ def initialize_solve_nonhydro_diagnostic_state(
     grf_tend_w = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
@@ -215,7 +214,7 @@ def initialize_solve_nonhydro_diagnostic_state(
     vn_on_half_levels = data_alloc.zero_field(
         grid,
         dims.EdgeDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,
@@ -223,7 +222,7 @@ def initialize_solve_nonhydro_diagnostic_state(
     contravariant_correction_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.vpfloat,

@@ -13,9 +13,8 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -386,7 +385,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     c_lin_e = interpolation_savepoint.c_lin_e()
     topography = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
 
-    k = data_alloc.index_field(icon_grid, dim=KDim, extend={dims.KDim: 1}, allocator=backend)
+    k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, allocator=backend)
     edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, allocator=backend)
 
     ex_distance = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend)

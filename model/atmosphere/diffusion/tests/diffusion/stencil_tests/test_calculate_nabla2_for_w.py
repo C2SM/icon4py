@@ -13,7 +13,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     calculate_nabla2_for_w,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils.data_allocation import constant_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest

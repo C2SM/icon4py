@@ -12,7 +12,6 @@ import dataclasses
 from typing import TYPE_CHECKING
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.states.tracer_states import TracerConfig, TracerState
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -43,7 +42,7 @@ class PrognosticState:
 
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:
-        return self.w[KDim(0)]
+        return self.w[dims.KDim(0)]
 
 
 def initialize_prognostic_state(
@@ -57,14 +56,14 @@ def initialize_prognostic_state(
     rho = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     w = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         extend={dims.KDim: 1},
         allocator=allocator,
         dtype=ta.wpfloat,
@@ -72,21 +71,21 @@ def initialize_prognostic_state(
     vn = data_alloc.zero_field(
         grid,
         dims.EdgeDim,
-        KDim,
+        dims.KDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     exner = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     theta_v = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        KDim,
+        dims.KDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )

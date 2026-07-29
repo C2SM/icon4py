@@ -20,7 +20,6 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_surface_pressure,
     diagnose_temperature,
 )
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_states as tracers

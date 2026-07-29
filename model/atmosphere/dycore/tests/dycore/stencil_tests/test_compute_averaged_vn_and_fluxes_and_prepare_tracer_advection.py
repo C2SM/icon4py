@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
     compute_averaged_vn_and_fluxes,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests

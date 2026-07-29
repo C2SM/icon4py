@@ -13,7 +13,6 @@ import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,

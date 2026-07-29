@@ -13,7 +13,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta impor
     calculate_nabla2_of_theta,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests

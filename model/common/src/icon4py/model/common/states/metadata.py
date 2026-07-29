@@ -10,7 +10,6 @@ from typing import Final
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.states import model
 
 
@@ -47,7 +46,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         standard_name="model_level_number",
         long_name="model level number",
         units="",
-        dims=(KDim,),
+        dims=(dims.KDim,),
         icon_var_name="k_index",
         dtype=gtx.int32,
     ),

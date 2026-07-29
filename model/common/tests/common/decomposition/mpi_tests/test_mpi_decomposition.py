@@ -17,7 +17,6 @@ import pytest
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon
 from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -280,7 +279,7 @@ def test_exchange_on_dummy_data(
         grid,
         number,
         dimension,
-        KDim,
+        dims.KDim,
         allocator=backend,
     )
 

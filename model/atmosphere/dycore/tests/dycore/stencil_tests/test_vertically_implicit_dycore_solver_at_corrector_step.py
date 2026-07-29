@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
     vertically_implicit_solver_at_corrector_step,
 )
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc

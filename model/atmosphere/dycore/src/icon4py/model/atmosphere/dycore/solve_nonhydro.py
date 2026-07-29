@@ -58,7 +58,6 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import (
     base as grid_def,
     horizontal as h_grid,
@@ -927,7 +926,7 @@ class SolveNonhydro:
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
-            KDim,
+            dims.KDim,
             dtype=ta.vpfloat,
             extend={dims.KDim: 1},
             allocator=allocator,
@@ -938,7 +937,7 @@ class SolveNonhydro:
         self.exner_at_cells_on_half_levels = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
-            KDim,
+            dims.KDim,
             dtype=ta.vpfloat,
             extend={dims.KDim: 1},
             allocator=allocator,
@@ -957,7 +956,7 @@ class SolveNonhydro:
         self.perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
-            KDim,
+            dims.KDim,
             dtype=ta.vpfloat,
             extend={dims.KDim: 1},
             allocator=allocator,

@@ -26,7 +26,6 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -55,7 +54,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc, fortran_co
 cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
-vertical_domain = v_grid.domain(KDim)
+vertical_domain = v_grid.domain(dims.KDim)
 vertical_half_domain = v_grid.domain(dims.KHalfDim)
 log = logging.getLogger(__name__)
 
@@ -382,7 +381,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
-                    v_grid.Domain(KDim, v_grid.Zone.TOP, 1),
+                    v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },

@@ -13,7 +13,6 @@ import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import update_mass_volume_flux
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc

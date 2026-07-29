@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
     vertically_implicit_solver_at_predictor_step,
 )
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -430,7 +429,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, KDim
+            grid, dims.EdgeDim, dims.KDim
         )
         exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
         current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)

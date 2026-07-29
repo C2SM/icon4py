@@ -30,7 +30,6 @@ from icon4py.model.common import dimension as dims, time, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.diagnostic_calculations import pressure as pressure_diagnostics
 from icon4py.model.common.diagnostic_calculations.stencils import diagnose_temperature
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
@@ -138,7 +137,7 @@ class DiagnosticsComputer:
             return data_alloc.zero_field(
                 grid,
                 dims.CellDim,
-                KDim,
+                dims.KDim,
                 dtype=ta.wpfloat,
                 extend={dims.KDim: 1},
                 allocator=backend,
