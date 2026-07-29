@@ -1309,22 +1309,22 @@ def compute_lsq_coeffs(
                 )
 
         case icon_grid.GeometryType.TORUS:
-            for jc in range(start_idx, min_rlcell_int):
-                ilc_s = c2e2c[jc, :lsq_dim_c]
-                cc_cell = array_ns.zeros((lsq_dim_c, 2))
-                cc_cv = array_ns.asarray((cell_center_x[jc], cell_center_y[jc]))
-                for js in range(lsq_dim_c):
-                    cc_cell[js, :] = array_ns.asarray(
-                        distance_array_ns.diff_on_edges_torus_numpy(
-                            cc_cv_x=cell_center_x[jc],
-                            cc_cv_y=cell_center_y[jc],
-                            cc_cell_x=cell_center_x[ilc_s][js],
-                            cc_cell_y=cell_center_y[ilc_s][js],
-                            domain_length=domain_length,
-                            domain_height=domain_height,
-                        )
-                    )
-                z_dist_g[jc, :, :] = cc_cell - cc_cv
+            # On the torus a neighbour may sit across a periodic boundary, so take the
+            # periodic image of each neighbour closest to the cell centre.
+            cells = slice(start_idx, min_rlcell_int)
+            neighbors = c2e2c[cells, :lsq_dim_c]
+            center_x = cell_center_x[cells, array_ns.newaxis]
+            center_y = cell_center_y[cells, array_ns.newaxis]
+            image_x, image_y = distance_array_ns.nearest_periodic_image(
+                x=cell_center_x[neighbors],
+                y=cell_center_y[neighbors],
+                reference_x=center_x,
+                reference_y=center_y,
+                domain_length=domain_length,
+                domain_height=domain_height,
+            )
+            z_dist_g[cells, :, 0] = image_x - center_x
+            z_dist_g[cells, :, 1] = image_y - center_y
 
     lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_wgt_exp)
 

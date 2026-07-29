@@ -46,8 +46,10 @@ def gaussian_hill(
 
     array_ns = data_alloc.array_namespace(cell_x)
 
+    # ICON's plane_torus_distance does not actually wrap the hill (its periodic threshold
+    # is never met), so the distance is non-periodic here.
     dist = distance_array_ns.horizontal_distance_to_point(
-        x=cell_x, y=cell_y, point_x=mount_x, point_y=mount_y
+        x=cell_x, y=cell_y, point_x=mount_x, point_y=mount_y, wrap=False
     )
 
     return mount_height * array_ns.exp(-1.0 * (dist / mount_width) ** 2)

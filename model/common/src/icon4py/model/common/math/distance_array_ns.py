@@ -17,28 +17,64 @@ from __future__ import annotations
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
+def minimum_image_offset(
+    *,
+    delta: data_alloc.NDArray,
+    extent: float,
+) -> data_alloc.NDArray:
+    """Periodic offset mapping ``delta`` onto its minimum image in ``[-extent/2, extent/2]``.
+
+    Subtracting the result from ``delta`` gives the shortest signed separation along a
+    periodic direction of size ``extent``; subtracting it from a coordinate gives the
+    periodic image of that coordinate closest to the point ``delta`` is measured from.
+    """
+    array_ns = data_alloc.array_namespace(delta)
+    return extent * array_ns.round(delta / extent)
+
+
+def nearest_periodic_image(
+    *,
+    x: data_alloc.NDArray,
+    y: data_alloc.NDArray,
+    reference_x: data_alloc.NDArray | float,
+    reference_y: data_alloc.NDArray | float,
+    domain_length: float,
+    domain_height: float,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """Coordinates of the periodic image of ``(x, y)`` closest to ``(reference_x, reference_y)``.
+
+    ``domain_length`` and ``domain_height`` are the periodic extents of the torus in the
+    x and y directions.
+    """
+    return (
+        x - minimum_image_offset(delta=x - reference_x, extent=domain_length),
+        y - minimum_image_offset(delta=y - reference_y, extent=domain_height),
+    )
+
+
 def horizontal_distance_to_point(
     *,
     x: data_alloc.NDArray,
     y: data_alloc.NDArray,
     point_x: float,
     point_y: float,
+    wrap: bool,
     domain_length: float | None = None,
     domain_height: float | None = None,
-    wrap: bool = False,
 ) -> data_alloc.NDArray:
     """Horizontal distance from each point ``(x, y)`` to a fixed ``(point_x, point_y)``.
 
-    With ``wrap=False`` (the default) this is the plain Euclidean distance on the
-    plane. With ``wrap=True`` the distance is computed on a doubly-periodic torus
-    using the minimum-image convention, where ``domain_length`` and ``domain_height``
-    are the periodic extents in the x and y directions (both required in that case).
+    With ``wrap=False`` this is the plain Euclidean distance on the plane. With
+    ``wrap=True`` the distance is computed on a doubly-periodic torus using the
+    minimum-image convention, where ``domain_length`` and ``domain_height`` are the
+    periodic extents in the x and y directions (both required in that case).
 
-    The default reproduces ICON: its ``plane_torus_distance`` (``mo_grid_utilities.f90``)
-    is fed coordinates normalized by the feature width while the wrap threshold uses the
+    ``wrap`` has no default on purpose: the choice is not obvious for a doubly-periodic
+    torus. ICON's own ``plane_torus_distance`` (``mo_grid_utilities.f90``) is fed
+    coordinates normalized by the feature width while its wrap threshold uses the
     dimensional domain size, so the periodic branch is never taken and the effective
     distance is non-periodic. Idealized torus test cases (e.g. the Weisman-Klemp warm
-    bubble and the Gaussian-hill topography) rely on this non-wrapping behaviour.
+    bubble and the Gaussian-hill topography) reproduce ICON and hence pass ``wrap=False``.
     """
     array_ns = data_alloc.array_namespace(x)
     dx = x - point_x
@@ -46,8 +82,8 @@ def horizontal_distance_to_point(
     if wrap:
         if domain_length is None or domain_height is None:
             raise ValueError("Periodic wrapping requires both 'domain_length' and 'domain_height'.")
-        dx = dx - domain_length * array_ns.round(dx / domain_length)
-        dy = dy - domain_height * array_ns.round(dy / domain_height)
+        dx = dx - minimum_image_offset(delta=dx, extent=domain_length)
+        dy = dy - minimum_image_offset(delta=dy, extent=domain_height)
     return array_ns.sqrt(dx * dx + dy * dy)
 
 
@@ -86,28 +122,3 @@ def central_angle(
     array_ns = data_alloc.array_namespace(lat)
     cosine = cos_central_angle(lon_center=lon_center, lat_center=lat_center, lon=lon, lat=lat)
     return array_ns.arccos(array_ns.clip(cosine, -1.0, 1.0))
-
-
-def diff_on_edges_torus_numpy(
-    *,
-    cc_cv_x: float,
-    cc_cv_y: float,
-    cc_cell_x: float,
-    cc_cell_y: float,
-    domain_length: float,
-    domain_height: float,
-) -> tuple[float, float]:
-    if abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length:
-        x1 = cc_cell_x
-    elif cc_cv_x > cc_cell_x:
-        x1 = cc_cell_x + domain_length
-    else:
-        x1 = cc_cell_x - domain_length
-
-    if abs(cc_cell_y - cc_cv_y) <= 0.5 * domain_height:
-        y1 = cc_cell_y
-    elif cc_cv_y > cc_cell_y:
-        y1 = cc_cell_y + domain_height
-    else:
-        y1 = cc_cell_y - domain_height
-    return x1, y1
