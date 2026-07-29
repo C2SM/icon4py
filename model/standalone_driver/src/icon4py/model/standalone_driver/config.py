@@ -288,7 +288,7 @@ class DriverConfig:
             description="File format of the output field groups ('netcdf' or 'zarr').",
             icon_equivalent=None,
         ),
-    ] = common_io.OutputBackend.NETCDF
+    ] = common_io.OutputBackend.ZARR
     output_mode: typing.Annotated[
         common_io.OutputMode,
         common_conf_opt.ConfigOption(
@@ -298,7 +298,7 @@ class DriverConfig:
             ),
             icon_equivalent=None,
         ),
-    ] = common_io.OutputMode.GATHER
+    ] = common_io.OutputMode.DISTRIBUTED
 
     def __post_init__(self) -> None:
         if self.start_of_timestepping < self.start_of_simulation:

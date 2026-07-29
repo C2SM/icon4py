@@ -24,7 +24,7 @@ import zarr
 
 from icon4py.model.common.io import writers
 from icon4py.model.standalone_driver import gridlook
-from icon4py.model.testing import definitions, grid_utils
+from icon4py.model.testing import definitions, grid_utils, test_utils
 
 
 @pytest.mark.datatest
@@ -57,7 +57,7 @@ def test_read_grid_geometry_from_real_grid_file(
         x, y, z = (
             geometry.vertex_coordinates[name] for name in gridlook.VERTEX_COORDINATE_VARIABLES
         )
-        np.testing.assert_allclose(np.sqrt(x**2 + y**2 + z**2), 1.0, rtol=1e-6)
+        test_utils.assert_dallclose(np.sqrt(x**2 + y**2 + z**2), 1.0, rtol=1e-6)
 
 
 @pytest.mark.datatest

@@ -124,6 +124,23 @@ class RankBlock:
     global_index: np.ndarray
 
 
+def _host_owner_data(
+    decomposition_info: decomposition.DecompositionInfo, dim: gtx.Dimension
+) -> tuple[np.ndarray, np.ndarray]:
+    """Owner mask and owned global indices of a dimension, as host (numpy) arrays.
+
+    The decomposition info may hold device (cupy) buffers on GPU backends, but
+    everything downstream of here -- halo stripping, the MPI collectives and the
+    writers -- operates on host arrays. The host copies are made once here, at
+    distribution construction, instead of at every capture step.
+    """
+    mask = data_alloc.as_numpy(decomposition_info.owner_mask(dim))
+    owned_global_index = data_alloc.as_numpy(
+        decomposition_info.global_index(dim, decomposition.DecompositionInfo.EntryType.OWNED)
+    ).astype(np.int64)
+    return mask, owned_global_index
+
+
 def _owned_entries(
     dim_name: str, owner_masks: dict[str, np.ndarray], field: xr.DataArray
 ) -> np.ndarray:
@@ -176,12 +193,7 @@ class GatherDistribution:
         self._global_size: dict[str, int] = {}
 
         for dim, dim_name in HORIZONTAL_DIM_NAMES.items():
-            mask = data_alloc.as_numpy(decomposition_info.owner_mask(dim))
-            owned_global_index = data_alloc.as_numpy(
-                decomposition_info.global_index(
-                    dim, decomposition.DecompositionInfo.EntryType.OWNED
-                )
-            ).astype(np.int64)
+            mask, owned_global_index = _host_owner_data(decomposition_info, dim)
             row_counts = self._allgather_counts(owned_global_index.shape[0])
             global_size = int(row_counts.sum())
             insert_index = self._gather_rows(owned_global_index, row_counts=row_counts)
@@ -280,12 +292,7 @@ class RankBlockDistribution:
         self._rank_blocks: dict[str, RankBlock] = {}
 
         for dim, dim_name in HORIZONTAL_DIM_NAMES.items():
-            mask = data_alloc.as_numpy(decomposition_info.owner_mask(dim))
-            owned_global_index = data_alloc.as_numpy(
-                decomposition_info.global_index(
-                    dim, decomposition.DecompositionInfo.EntryType.OWNED
-                )
-            ).astype(np.int64)
+            mask, owned_global_index = _host_owner_data(decomposition_info, dim)
             count = owned_global_index.shape[0]
             counts = (
                 [count] if process_props.is_single_rank() else process_props.comm.allgather(count)

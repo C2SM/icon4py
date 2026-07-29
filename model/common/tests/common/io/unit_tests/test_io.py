@@ -149,6 +149,9 @@ def test_io_monitor_write_and_read_ugrid_dataset(
             output_interval=time.NumTimeSteps(1),
             filename="icon4py_dummy_output",
             variables=variables,
+            # uxarray reads the data back together with the ugrid file: netCDF only
+            backend=OutputBackend.NETCDF,
+            mode=OutputMode.GATHER,
             nc_comment="Writing dummy data from icon4py for testing.",
         )
     ]
@@ -200,6 +203,9 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
         filename=filename_stub,
         variables=["air_density", "exner_function", "upward_air_velocity"],
         timesteps_per_file=1,
+        # the test pins the netCDF file-roll naming (``..._000N.nc``)
+        backend=OutputBackend.NETCDF,
+        mode=OutputMode.GATHER,
     )
     monitor = FieldGroupMonitor(
         config=config,
@@ -306,6 +312,10 @@ def create_field_group_monitor(
         filename="test_empty.nc",
         output_interval=output_interval,
         variables=["exner_function", "air_density"],
+        # the tests built on this helper count plain files: netCDF (zarr stores are
+        # directories)
+        backend=OutputBackend.NETCDF,
+        mode=OutputMode.GATHER,
     )
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
@@ -458,11 +468,11 @@ def test_fieldgroup_config_accepts_backend_and_mode_value_strings() -> None:
     config = FieldGroupIOConfig(
         filename="a.nc",
         variables=["air_density"],
-        backend="zarr",  # type: ignore[arg-type]  # value strings are coerced on purpose
-        mode="distributed",  # type: ignore[arg-type]  # value strings are coerced on purpose
+        backend="netcdf",  # type: ignore[arg-type]
+        mode="gather",  # type: ignore[arg-type]
     )
-    assert config.backend == OutputBackend.ZARR
-    assert config.mode == OutputMode.DISTRIBUTED
+    assert config.backend is OutputBackend.NETCDF
+    assert config.mode is OutputMode.GATHER
 
 
 def test_fieldgroup_config_rejects_unknown_backend() -> None:

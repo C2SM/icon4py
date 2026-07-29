@@ -188,17 +188,17 @@ class TimerCollection:
 
     def show_timer_report(
         self,
-        total_wall_time: float | None = None,
+        total_wall_time: float,
     ) -> None:
         """Log the per-timer statistics.
 
-        If ``total_wall_time`` (the wall-clock duration of the whole simulation, in
-        seconds) is given, an extra column reports each timer's cumulative time as a
-        percentage of it. The percentages need not sum to 100: the difference is time
-        spent outside any timer.
+        ``total_wall_time`` is the wall-clock duration of the whole simulation, in
+        seconds; an extra column reports each timer's cumulative time as a percentage
+        of it. The percentages need not sum to 100: the difference is time spent
+        outside any timer.
         """
         log.info("===== ICON4Py timer report =====")
-        wall_time = total_wall_time if total_wall_time is not None and total_wall_time > 0 else None
+        wall_time = total_wall_time if total_wall_time > 0 else None
         table_titles = (
             f"|{'timer name':^30}|"
             f"{'no. of times called':^23}|"

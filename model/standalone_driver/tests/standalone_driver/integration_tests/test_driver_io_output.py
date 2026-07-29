@@ -42,9 +42,11 @@ def _find_one(directory: pathlib.Path, pattern: str) -> pathlib.Path:
 
 
 def _open_output(path: pathlib.Path, output_backend: common_io.OutputBackend) -> xr.Dataset:
-    if output_backend == common_io.OutputBackend.NETCDF:
-        return xr.open_dataset(path, decode_times=False)
-    return xr.open_zarr(path, decode_times=False)
+    match output_backend:
+        case common_io.OutputBackend.NETCDF:
+            return xr.open_dataset(path, decode_times=False)
+        case common_io.OutputBackend.ZARR:
+            return xr.open_zarr(path, decode_times=False)
 
 
 @pytest.mark.datatest
@@ -72,6 +74,9 @@ def test_standalone_driver_writes_output(
             "output_path": tmp_path / "io_driver_output",
             "enable_output": True,
             "output_backend": output_backend,
+            # gather is valid for both backends (mode has no effect on this
+            # single-rank run; the default distributed mode would reject netCDF)
+            "output_mode": common_io.OutputMode.GATHER,
             "end_of_simulation": time.NumTimeSteps(1),
         }
     )

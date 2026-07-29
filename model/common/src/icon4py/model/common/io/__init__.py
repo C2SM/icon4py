@@ -48,8 +48,8 @@ Field groups are stored in the same file and share a common setting of
 - `filename`: File name to be used for the datafile, it may contain a _relative_ path which is appended to the `output_path` . Files will be appended with a counter for roll over (see `timesteps_per_file`).
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
 - `variables`: List of variables names to be output. Variable names are the CF names used as keys in the model state (see [data.py](../states/data.py)).
-- `backend` (default="netcdf"): File format of the group, `"netcdf"` or `"zarr"`.
-- `mode` (default="gather"): Write strategy of distributed (MPI) runs: `"gather"` collects all fields on the root rank which writes them in global order; `"distributed"` lets every rank write its owned entries into a rank-contiguous block of a shared zarr store (see `io.distributed`). No effect on single-rank runs.
+- `backend` (default="zarr"): File format of the group, `"netcdf"` or `"zarr"`.
+- `mode` (default="distributed"): Write strategy of distributed (MPI) runs: `"gather"` collects all fields on the root rank which writes them in global order; `"distributed"` lets every rank write its owned entries into a rank-contiguous block of a shared zarr store (see `io.distributed`). No effect on single-rank runs.
 - `nc_title` (optional): Title attribute of the generated files (netcdf and zarr).
 - `nc_comment` (optional): Comment attribute of the generated files (netcdf and zarr).
 

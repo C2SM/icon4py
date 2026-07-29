@@ -67,11 +67,11 @@ def main(
     output_backend: Annotated[
         common_io.OutputBackend,
         typer.Option(help="Output file format."),
-    ] = common_io.OutputBackend.NETCDF,
+    ] = common_io.OutputBackend.ZARR,
     output_mode: Annotated[
         common_io.OutputMode,
         typer.Option(help="How ranks write output in distributed runs."),
-    ] = common_io.OutputMode.GATHER,
+    ] = common_io.OutputMode.DISTRIBUTED,
 ) -> None:
     """
     CLI entry point that runs the icon4py driver.

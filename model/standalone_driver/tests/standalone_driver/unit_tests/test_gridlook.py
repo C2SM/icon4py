@@ -22,6 +22,7 @@ import zarr
 
 from icon4py.model.common.io import cf_utils, writers
 from icon4py.model.standalone_driver import gridlook
+from icon4py.model.testing import test_utils
 
 
 GRID_UUID = "6717c462-6f36-11f0-8dfd-c9f61e2d6a2e"
@@ -439,9 +440,11 @@ def test_read_grid_geometry_derives_cartesian_from_spherical(tmp_path: pathlib.P
     # vertices at (lon, lat): (0, 0), (pi/2, pi/4), (pi, -pi/4), (-pi/2, pi/2)
     x_name, y_name, z_name = gridlook.VERTEX_COORDINATE_VARIABLES
     s = np.sqrt(0.5)
-    np.testing.assert_allclose(geometry.vertex_coordinates[x_name], [1.0, 0.0, -s, 0.0], atol=1e-15)
-    np.testing.assert_allclose(geometry.vertex_coordinates[y_name], [0.0, s, 0.0, 0.0], atol=1e-15)
-    np.testing.assert_allclose(geometry.vertex_coordinates[z_name], [0.0, s, -s, 1.0], atol=1e-15)
+    test_utils.assert_dallclose(
+        geometry.vertex_coordinates[x_name], [1.0, 0.0, -s, 0.0], atol=1e-15
+    )
+    test_utils.assert_dallclose(geometry.vertex_coordinates[y_name], [0.0, s, 0.0, 0.0], atol=1e-15)
+    test_utils.assert_dallclose(geometry.vertex_coordinates[z_name], [0.0, s, -s, 1.0], atol=1e-15)
 
 
 def test_read_grid_geometry_rejects_zero_based_indices(tmp_path: pathlib.Path) -> None:

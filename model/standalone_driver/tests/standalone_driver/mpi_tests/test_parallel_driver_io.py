@@ -97,9 +97,11 @@ def _open_single_output(
     suffix = common_io.FILE_SUFFIXES[output_backend]
     matches = sorted(output_path.rglob(f"{driver_io.DEFAULT_OUTPUT_FILENAME}_*{suffix}"))
     assert len(matches) == 1, f"expected exactly one output under {output_path}, got {matches}"
-    if output_backend == common_io.OutputBackend.NETCDF:
-        return xr.open_dataset(matches[0], decode_times=False)
-    return xr.open_zarr(matches[0], decode_times=False, mask_and_scale=False)
+    match output_backend:
+        case common_io.OutputBackend.NETCDF:
+            return xr.open_dataset(matches[0], decode_times=False)
+        case common_io.OutputBackend.ZARR:
+            return xr.open_zarr(matches[0], decode_times=False, mask_and_scale=False)
 
 
 def _assert_dataset_matches_reference(
@@ -107,7 +109,7 @@ def _assert_dataset_matches_reference(
 ) -> None:
     assert dataset.sizes["time"] == reference.sizes["time"]
     for name in driver_io.DEFAULT_OUTPUT_VARIABLES:
-        np.testing.assert_allclose(
+        test_utils.assert_dallclose(
             dataset[name].values, reference[name].values, atol=atol, rtol=rtol, err_msg=name
         )
 

@@ -23,7 +23,14 @@ from icon4py.model.common.components import monitor
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGrid
-from icon4py.model.common.io import cf_utils, distributed, ugrid, writers
+from icon4py.model.common.io import (
+    cf_utils,
+    distributed,
+    netcdf_writers,
+    ugrid,
+    writers,
+    zarr_writers,
+)
 from icon4py.model.common.io.writers import GlobalFileAttributes
 
 
@@ -132,17 +139,16 @@ class FieldGroupIOConfig(Config):
     output_interval: OutputInterval = time.NumTimeSteps(1)
     timesteps_per_file: int = 10
     #: File format of the group's files; the matching value string is also accepted.
-    backend: OutputBackend = OutputBackend.NETCDF
+    backend: OutputBackend = OutputBackend.ZARR
     #: Write strategy of distributed runs (no effect on single-rank runs); the matching
     #: value string is also accepted. Distributed netCDF is rejected: it requires a
     #: parallel netCDF4 build.
     #: TODO (kotsaloscv): allow it once a parallel netCDF writer exists.
-    mode: OutputMode = OutputMode.GATHER
+    mode: OutputMode = OutputMode.DISTRIBUTED
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
 
     def __post_init__(self) -> None:
-        # normalize once: value strings ("zarr") are accepted and coerced to the enums
         try:
             object.__setattr__(self, "backend", OutputBackend(self.backend))
         except ValueError as err:
@@ -473,7 +479,7 @@ class FieldGroupMonitor(monitor.Monitor):
         filename_path = self._next_file_path()
         df: writers.FieldWriter
         if self.config.backend == OutputBackend.NETCDF:
-            df = writers.NETCDFWriter(
+            df = netcdf_writers.NETCDFWriter(
                 file_name=filename_path,
                 vertical=vertical_params,
                 horizontal=self._distribution.file_horizontal_size,
@@ -481,7 +487,7 @@ class FieldGroupMonitor(monitor.Monitor):
                 global_attrs=self._global_attrs,
             )
         else:
-            df = writers.ZarrWriter(
+            df = zarr_writers.ZarrWriter(
                 file_name=filename_path,
                 vertical=vertical_params,
                 horizontal=self._distribution.file_horizontal_size,

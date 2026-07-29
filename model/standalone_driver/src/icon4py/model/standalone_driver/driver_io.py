@@ -260,8 +260,8 @@ def create_io_monitor(
     dtime: datetime.timedelta,
     variables: list[str] | None = None,
     output_interval: common_io.OutputInterval = time.NumTimeSteps(1),
-    output_backend: common_io.OutputBackend = common_io.OutputBackend.NETCDF,
-    output_mode: common_io.OutputMode = common_io.OutputMode.GATHER,
+    output_backend: common_io.OutputBackend = common_io.OutputBackend.ZARR,
+    output_mode: common_io.OutputMode = common_io.OutputMode.DISTRIBUTED,
     process_props: decomposition_defs.ProcessProperties | None = None,
     decomposition_info: decomposition_defs.DecompositionInfo | None = None,
 ) -> common_io.IOMonitor:

@@ -16,9 +16,17 @@ import zarr
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
-from icon4py.model.common.io import cf_utils, distributed, utils, writers
+from icon4py.model.common.io import (
+    cf_utils,
+    distributed,
+    netcdf_writers,
+    utils,
+    writers,
+    zarr_writers,
+)
 from icon4py.model.common.states import data, metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import test_utils
 
 from ...fixtures import random_name, test_path
 from .. import utils as test_io_utils
@@ -55,10 +63,10 @@ def _vertical_params(grid: grid_def.Grid) -> v_grid.VerticalGrid:
 
 def initialized_writer(
     test_path: pathlib.Path, random_name: str, grid: grid_def.Grid = test_io_utils.simple_grid
-) -> tuple[writers.NETCDFWriter, grid_def.Grid]:
+) -> tuple[netcdf_writers.NETCDFWriter, grid_def.Grid]:
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
-    writer = writers.NETCDFWriter(
+    writer = netcdf_writers.NETCDFWriter(
         file_name=fname,
         vertical=_vertical_params(grid),
         horizontal=horizontal,
@@ -158,7 +166,7 @@ def test_writer_append_timeslice_create_new_var(test_path, random_name):
         grid.num_levels,
         grid.num_cells,
     )
-    assert np.allclose(dataset.variables["air_density"][0], state["air_density"].data.T)
+    test_utils.assert_dallclose(dataset.variables["air_density"][0], state["air_density"].data.T)
 
 
 def test_writer_append_timeslice_to_existing_var(test_path, random_name):
@@ -183,7 +191,7 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
         grid.num_levels,
         grid.num_cells,
     )
-    assert np.allclose(dataset.variables["air_density"][1], new_rho.ndarray.T)
+    test_utils.assert_dallclose(dataset.variables["air_density"][1], new_rho.ndarray.T)
 
 
 def initialized_zarr_writer(
@@ -192,9 +200,9 @@ def initialized_zarr_writer(
     grid: grid_def.Grid = test_io_utils.simple_grid,
     rank_blocks: dict[str, distributed.RankBlock] | None = None,
     horizontal: grid_def.HorizontalGridSize | None = None,
-) -> tuple[writers.ZarrWriter, pathlib.Path]:
+) -> tuple[zarr_writers.ZarrWriter, pathlib.Path]:
     store_path = test_path.absolute() / f"{random_name}.zarr"
-    writer = writers.ZarrWriter(
+    writer = zarr_writers.ZarrWriter(
         file_name=store_path,
         vertical=_vertical_params(grid),
         horizontal=horizontal if horizontal is not None else grid.config.horizontal_config,
@@ -234,7 +242,7 @@ def test_zarr_writer_append_timeslice_create_new_var(
     with xr.open_zarr(store_path) as ds:
         assert ds["air_density"].dims == (writers.TIME, writers.MODEL_LEVEL, writers.CELL)
         assert ds["air_density"].shape == (1, grid.num_levels, grid.num_cells)
-        assert np.allclose(ds["air_density"].values[0], state["air_density"].data.T)
+        test_utils.assert_dallclose(ds["air_density"].values[0], state["air_density"].data.T)
         assert ds["air_density"].attrs["standard_name"] == "air_density"
 
 
@@ -255,20 +263,20 @@ def test_zarr_writer_append_timeslice_to_existing_var(
     writer.close()
     with xr.open_zarr(store_path) as ds:
         assert ds["air_density"].shape == (2, grid.num_levels, grid.num_cells)
-        assert np.allclose(ds["air_density"].values[1], new_rho.ndarray.T)
+        test_utils.assert_dallclose(ds["air_density"].values[1], new_rho.ndarray.T)
         assert ds.sizes[writers.TIME] == 2
     # the raw time values must be the CF-encoded model times, in append order
     with xr.open_zarr(store_path, decode_times=False) as ds:
         expected_times = [
             cf_utils.date2num(t) for t in (first_time, first_time + timedelta(hours=1))
         ]
-        assert np.allclose(ds[writers.TIME].values, expected_times)
+        test_utils.assert_dallclose(ds[writers.TIME].values, expected_times)
 
 
 def test_zarr_writer_refuses_to_overwrite(test_path: pathlib.Path, random_name: str) -> None:
     writer, store_path = initialized_zarr_writer(test_path, random_name)
     writer.close()
-    duplicate = writers.ZarrWriter(
+    duplicate = zarr_writers.ZarrWriter(
         file_name=store_path,
         vertical=_vertical_params(test_io_utils.simple_grid),
         horizontal=test_io_utils.simple_grid.config.horizontal_config,
@@ -318,7 +326,7 @@ def test_zarr_writer_rank_block_writes_padded_block(
     with xr.open_zarr(store_path) as ds:
         assert ds["air_density"].shape == (1, grid.num_levels, grid.num_cells + padding)
         values = ds["air_density"].values[0]
-        assert np.allclose(values[:, : grid.num_cells], state["air_density"].data.T)
+        test_utils.assert_dallclose(values[:, : grid.num_cells], state["air_density"].data.T)
         assert np.all(np.isnan(values[:, grid.num_cells :]))
     # the -1 padding marker doubles as the store's fill value (which xarray does not
     # decode as a missing value for format 3); read undecoded to pin the on-disk
@@ -376,7 +384,7 @@ def test_zarr_writer_rank_block_writes_at_nonzero_start(
     block = slice(cell_block.start, cell_block.start + cell_block.count)
     with xr.open_zarr(store_path, mask_and_scale=False) as ds:
         values = ds["air_density"].values[0]
-        assert np.allclose(values[:, block], state["air_density"].data.T)
+        test_utils.assert_dallclose(values[:, block], state["air_density"].data.T)
         global_index = ds[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].values
         assert np.all(global_index[block] == cell_block.global_index)
         assert np.all(global_index[: cell_block.start] == -1)
