@@ -251,7 +251,7 @@ def test_distributed_interpolation_lsq_pseudoinv(  # noqa: PLR0917 [too-many-pos
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, compute_scale",
+    "attrs_name, compute_rbf_scale",
     [
         (attrs.RBF_SCALE_CELL, rbf.compute_default_rbf_scale_cell),
         (attrs.RBF_SCALE_EDGE, rbf.compute_default_rbf_scale_edge),
@@ -263,7 +263,7 @@ def test_distributed_interpolation_rbf_scales(  # noqa: PLR0917 [too-many-positi
     geometry_from_savepoint: geometry.GridGeometry,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
-    compute_scale: Callable[..., float],
+    compute_rbf_scale: Callable,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
 ) -> None:
@@ -276,7 +276,7 @@ def test_distributed_interpolation_rbf_scales(  # noqa: PLR0917 [too-many-positi
         if grid.grid_params.geometry_type
         else pytest.fail("geometry_type cannot be None")
     )
-    expected = compute_scale(
+    expected = compute_rbf_scale(
         geometry_type=geometry_type.value,
         mean_characteristic_length=geometry_from_savepoint.get(
             geometry_attributes.CHARACTERISTIC_LENGTH
