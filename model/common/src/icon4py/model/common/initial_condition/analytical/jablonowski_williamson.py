@@ -233,10 +233,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     exchange.exchange(dims.EdgeDim, eta_v_at_edge)
     log.info("Cell-to-edge eta_v computation completed.")
 
-    prognostic_state_now.exner.ndarray[:] = exner_dp.astype(ta.wpfloat)
-    prognostic_state_now.rho.ndarray[:] = rho_dp.astype(ta.wpfloat)
-    prognostic_state_now.theta_v.ndarray[:] = theta_v_dp.astype(ta.wpfloat)
-
     vn_dp = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid=grid,
         u0=u0,
@@ -279,6 +275,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
+
+    prognostic_state_now.exner.ndarray[:] = exner_dp.astype(ta.wpfloat)
+    prognostic_state_now.rho.ndarray[:] = rho_dp.astype(ta.wpfloat)
+    prognostic_state_now.theta_v.ndarray[:] = theta_v_dp.astype(ta.wpfloat)
 
     # Moist initialization only runs when transport is active. The only tracer we
     # need to set is qv; the hydrometeors (qc, qi, ...) keep their zero-initialized

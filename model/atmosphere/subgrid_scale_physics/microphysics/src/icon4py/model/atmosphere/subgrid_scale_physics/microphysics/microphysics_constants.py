@@ -51,9 +51,7 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
     #: threshold temperature for mixed-phase cloud freezing of cloud drops (Forbes 2012, Forbes & Ahlgrimm 2014), see eq. 5.166 in the COSMO microphysics documentation. Originally expressed as tmix in ICON.
     THRESHOLD_FREEZE_TEMPERATURE_MIXEDPHASE = ta.wpfloat(250.15)
     #: threshold for lowest detectable mixing ratios.
-    QMIN = (
-        5 * PhysicsConstants.eps
-    )  # (1.11e-15 for wpfloat==gtx.float64, originally 1.0e-15 for double)
+    QMIN = ta.wpfloat(1.0e-15)
     #: exponential factor in ice terminal velocity equation v = zvz0i*rhoqi^zbvi, see eq. 5.169 in the COSMO microphysics documentation. Originally expressed as bvi in ICON.
     POWER_LAW_EXPONENT_FOR_ICE_MEAN_FALL_SPEED = ta.wpfloat(0.16)
     #: reference air density. Originally expressed as rho0 in ICON.

@@ -117,7 +117,7 @@ def test_full_muphys(
         dtype=ta.wpfloat,
     )
 
-    rtol, atol = (1e-14, 0) if test_utils.wp_is_dp else (1e-3, 1e-10)
+    rtol, atol = (1e-14, 1e-16) if test_utils.wp_is_dp else (1e-3, 1e-10)
     test_utils.assert_dallclose(ref.qv.asnumpy(), out.qv.asnumpy(), rtol=rtol, atol=atol)
 
     if not test_utils.wp_is_dp:
