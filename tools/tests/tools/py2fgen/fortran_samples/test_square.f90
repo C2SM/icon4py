@@ -11,19 +11,19 @@ program call_square_wrapper_cffi_plugin
    use square_plugin
    implicit none
    character(len=100) :: str_buffer
-   integer(c_int) :: cdim, dims.KDim, i, j, rc, n
+   integer(c_int) :: cdim, kdim, i, j, rc, n
    logical :: computation_correct
    real(c_double), dimension(:, :), allocatable :: input, result
 
    ! array dimensions
    cdim = 18
-   dims.KDim = 10
+   kdim = 10
 
    !$ACC enter data create(input, result)
 
    ! allocate arrays (allocate in column-major order)
-   allocate (input(cdim, dims.KDim))
-   allocate (result(cdim, dims.KDim))
+   allocate (input(cdim, kdim))
+   allocate (result(cdim, kdim))
 
    ! initialise arrays
    input = 5.0d0
@@ -77,7 +77,7 @@ program call_square_wrapper_cffi_plugin
    ! Assert each element of result is the square of the corresponding element in input
    computation_correct = .true.
    do i = 1, cdim
-      do j = 1, dims.KDim
+      do j = 1, kdim
          if (result(i, j) /= input(i, j)**2) then
             print *, "Error: result(", i, ",", j, ") =", result(i, j), &
                "is not the square of input(", i, ",", j, ") =", input(i, j)
