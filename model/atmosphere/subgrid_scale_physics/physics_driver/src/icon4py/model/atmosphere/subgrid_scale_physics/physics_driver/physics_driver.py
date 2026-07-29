@@ -84,10 +84,10 @@ class PhysicsDriver:
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
     ) -> None:
-        for proc in self._processes: # TODO (Yilu): rename to component
-            tc = proc.time_control
+        for process in self._processes:
+            tc = process.time_control
             tc.validate_interval(dtime)
-            state = proc.state
+            state = process.state
             state.gather_from_prognostic(prognostic, tracers)
             if not tc.enable_process:
                 continue
@@ -96,20 +96,20 @@ class PhysicsDriver:
                 continue
             # Compute on a firing (active) step, and also on the first in-window step -- when
             # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
-            if tc.is_active(simulation_current_datetime) or proc.name not in self._recycle_cache:
+            if tc.is_active(simulation_current_datetime) or process.name not in self._recycle_cache:
                 # compute
-                outputs = proc.component(state.as_component_input(), simulation_current_datetime)
-                self._recycle_cache[proc.name] = outputs
+                outputs = process.component(state.as_component_input(), simulation_current_datetime)
+                self._recycle_cache[process.name] = outputs
             else:
                 # recycle
-                outputs = self._recycle_cache[proc.name]
+                outputs = self._recycle_cache[process.name]
             # TODO (Yilu): ForcingMode.DIAGNOSTIC (compute without applying) is not implemented yet:
             # scatter_to_prognostic both applies tendencies and stores diagnostics, so a
             # compute-only path needs that split first (to be done with the State-protocol
             # formalization). Fail loud rather than silently apply for a DIAGNOSTIC process.
-            if proc.forcing_mode is not ForcingMode.APPLY:
+            if process.forcing_mode is not ForcingMode.APPLY:
                 raise NotImplementedError(
-                    f"process '{proc.name}': only ForcingMode.APPLY is implemented; "
+                    f"process '{process.name}': only ForcingMode.APPLY is implemented; "
                     "DIAGNOSTIC requires splitting scatter_to_prognostic into "
                     "apply-tendencies vs store-diagnostics"
                 )

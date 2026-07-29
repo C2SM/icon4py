@@ -31,8 +31,8 @@ class ProcessTimeControl:
     start_date: datetime.datetime
     end_date: datetime.datetime
     enable_process: bool = True
-    # TODO (Yilu): enbale_process should be removed from here, once we have a config for each component, then we can set the enable_process in the config file for each component.
-    # TODO (Yilu): rename enable_process to enable_component
+    # TODO (Yilu): enable_process should move out of here once each process has its own
+    # config section (the flag then comes from the config file)
 
     def is_in_window(self, simulation_current_datetime: datetime.datetime) -> bool:
         return self.start_date <= simulation_current_datetime < self.end_date
