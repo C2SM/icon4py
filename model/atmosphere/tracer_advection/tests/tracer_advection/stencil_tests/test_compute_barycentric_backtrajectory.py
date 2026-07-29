@@ -25,7 +25,6 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         p_vn: np.ndarray,
         p_vt: np.ndarray,
