@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import prognostic_state as prognostics, tracer_state
+    from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 
 
 def _require(field: fa.CellKField[ta.wpfloat] | None, name: str) -> fa.CellKField[ta.wpfloat]:
@@ -254,7 +254,7 @@ class TmxState:
         self._rho: fa.CellKField[ta.wpfloat] | None = None
         self._w: fa.CellKField[ta.wpfloat] | None = None
         self._vn: fa.EdgeKField[ta.wpfloat] | None = None
-        self._tracers: tracer_state.TracerState | None = None
+        self._tracers: tracer_states.TracerState | None = None
 
     # ------------------------------------------------------------------
     # PhysicsState protocol
@@ -263,7 +263,7 @@ class TmxState:
     def gather_from_prognostic(
         self,
         prognostic: prognostics.PrognosticState,
-        tracers: tracer_state.TracerState,
+        tracers: tracer_states.TracerState,
     ) -> None:
         """Bind prognostic references and diagnose all TMX input fields.
 

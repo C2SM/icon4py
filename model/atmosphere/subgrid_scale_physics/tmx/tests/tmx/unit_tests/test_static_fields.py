@@ -113,7 +113,7 @@ class TestWgtfacq1C:
             pz2 = a * z2**2 + b * z2 + c
             pz3 = a * z3**2 + b * z3 + c
             approx = weights[:, 0] * pz1 + weights[:, 1] * pz2 + weights[:, 2] * pz3
-            # Tolerance: z-values are O(100–2000 m), so a*z^2 can reach ~10^6 while
+            # Tolerance: z-values are O(100-2000 m), so a*z^2 can reach ~10^6 while
             # p(0)=c is O(1).  Catastrophic cancellation limits accuracy to ~1e-10
             # absolute; rtol=1e-8 still catches any formula error by 7+ orders of
             # magnitude while remaining robust across all random seeds.
@@ -189,7 +189,6 @@ class TestGeopot:
 
     def test_nonzero_terrain(self) -> None:
         """Surface level (z_ifc[:, -1]) at non-zero height: ground level still 0."""
-        ncells, nlev = 2, 4
         # Create z_ifc with non-zero ground level
         z_ifc = np.array(
             [
@@ -284,7 +283,7 @@ class TestCellsToEdges:
         fwd = static_fields.cells_to_edges(cell_field, c_lin_e, e2c_forward)
         bwd = static_fields.cells_to_edges(cell_field, c_lin_e, e2c_backward)
 
-        # fwd: 0.3*1 + 0.7*5 = 3.8;  bwd: 0.3*5 + 0.7*1 = 2.2
+        # expected 0.3*1 + 0.7*5 = 3.8 (fwd) and 0.3*5 + 0.7*1 = 2.2 (bwd)
         np.testing.assert_allclose(fwd, [[3.8]], rtol=1.0e-14)
         np.testing.assert_allclose(bwd, [[2.2]], rtol=1.0e-14)
 
@@ -355,7 +354,7 @@ class TestCellsToVerts:
         fwd = static_fields.cells_to_verts(cell_field, cells_aw_verts, v2c_forward)
         bwd = static_fields.cells_to_verts(cell_field, cells_aw_verts, v2c_backward)
 
-        # fwd: 0.25*2 + 0.75*8 = 6.5;  bwd: 0.25*8 + 0.75*2 = 3.5
+        # expected 0.25*2 + 0.75*8 = 6.5 (fwd) and 0.25*8 + 0.75*2 = 3.5 (bwd)
         np.testing.assert_allclose(fwd, [[6.5]], rtol=1.0e-14)
         np.testing.assert_allclose(bwd, [[3.5]], rtol=1.0e-14)
 
@@ -409,8 +408,8 @@ class TestWgtfacq1E:
         fwd = static_fields.compute_wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c_forward)
         bwd = static_fields.compute_wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c_backward)
 
-        # fwd: 0.3*[1,0,0] + 0.7*[0,0,1] = [0.3, 0.0, 0.7]
-        # bwd: 0.3*[0,0,1] + 0.7*[1,0,0] = [0.7, 0.0, 0.3]
+        # expected 0.3*[1,0,0] + 0.7*[0,0,1] = [0.3, 0.0, 0.7] (fwd)
+        # and 0.3*[0,0,1] + 0.7*[1,0,0] = [0.7, 0.0, 0.3] (bwd)
         np.testing.assert_allclose(fwd, [[0.3, 0.0, 0.7]], rtol=1.0e-14)
         np.testing.assert_allclose(bwd, [[0.7, 0.0, 0.3]], rtol=1.0e-14)
 

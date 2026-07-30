@@ -37,87 +37,156 @@ def test_tmx_plumbing() -> None:
     assert tmx_module.TmxConfig() is not None
 
 
+# Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends
+_TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
+    test_defs.Experiments.JW: {
+        "vn": (5.3e-7, 0.0),
+        "w": (8e-9, 0.0),
+        "exner": (4.5e-11, 5.5e-11),
+        "theta_v": (5.5e-8, 1.3e-10),
+        "rho": (1.5e-10, 2.2e-10),
+    },
+    test_defs.Experiments.GAUSS3D: {
+        "vn": (4.1e-13, 0.0),
+        "w": (8.1e-14, 0.0),
+        "exner": (1.3e-10, 1.3e-10),
+        "theta_v": (9.3e-8, 3.1e-10),
+        "rho": (1.8e-15, 3.7e-15),
+    },
+    test_defs.Experiments.MCH_CH_R04B09: {
+        "vn": (3.5e-3, 0.0),
+        "w": (1e-3, 0.0),
+        "exner": (6.8e-7, 9.9e-7),
+        "theta_v": (1.2e-3, 3.6e-6),
+        "rho": (3.5e-6, 3.7e-6),
+    },
+    test_defs.Experiments.EXCLAIM_APE_AES: {
+        "vn": (6e-7, 0.0),
+        "w": (1e-8, 0.0),
+        "rho": (9e-10, 0.0),
+        "exner": (1e-8, 0.0),
+        "theta_v": (0.0, 3e-8),
+        "qv": (1e-8, 0.0),
+        "qc": (1e-10, 0.0),
+        "qr": (1e-10, 0.0),
+        "qs": (1e-10, 0.0),
+        "qi": (1e-10, 0.0),
+        "qg": (1e-10, 0.0),
+    },
+}
+
+
+# Metadata selecting the MCH mid-time-step dynamics savepoints (see the MCH branch in
+# the test body): solve-nonhydro exit at the corrector (istep=2) of the last substep
+# (2 for MCH), and the non-initial diffusion savepoint. Only instantiated for MCH.
+@pytest.fixture  # type: ignore[no-redef]  # deliberately shadows the fixtures.py import
+def istep_exit() -> int:
+    return 2
+
+
+@pytest.fixture
+def substep_exit() -> int:
+    return 2
+
+
+@pytest.fixture
+def timeloop_diffusion_linit_exit() -> bool:
+    return False
+
+
 @pytest.mark.datatest
+@pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_description, timeloop_date_exit, step_date_exit",
+    "experiment_description, timeloop_date_init, timeloop_date_exit, step_date_exit",
     [
         (
             test_defs.Experiments.JW,
+            "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
         ),
         (
             test_defs.Experiments.GAUSS3D,
+            "2001-01-01T00:00:00.000",
             "2001-01-01T00:00:04.000",
             "2001-01-01T00:00:04.000",
         ),
         (
             test_defs.Experiments.EXCLAIM_APE_AES,
+            "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
         ),
-        # TODO (jcanton,msimberg) add MCH_CH_R04B09 Experiment here in https://github.com/C2SM/icon4py/pull/1281
+        (
+            test_defs.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:00.000",
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            test_defs.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+        ),
     ],
 )
 def test_standalone_driver(
     experiment_description: test_defs.ExperimentDescription,
+    timeloop_date_init: str,
     timeloop_date_exit: str,
-    step_date_exit: str,
     *,
+    request: pytest.FixtureRequest,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
-    data_provider: sb.IconSerialDataProvider,
+    savepoint_time_step_exit: sb.IconTimeStepExitSavepoint,
 ) -> None:
-    """End-to-end standalone-driver validation over one large time step.
+    """End-to-end standalone-driver validation over one time step.
 
-    Runs on both dry experiments (JW, GAUSS3D) and the moist AES aquaplanet
-    (EXCLAIM_APE_AES), branching on whether physics is enabled (``config.muphys``):
+    Experiments validate the final prognostic state against the end-of-time-step
+    (``time-step-exit``) savepoint. EXCLAIM_APE_AES additionally runs muphys and also
+    validates the tracers. Exception: MCH_CH_R04B09 compares against the mid-time-step
+    dynamics savepoints, because its reference runs NWP physics + limited-area nudging
+    after the dynamics, which the driver does not (see the comment in the body).
+    Per-field tolerances live in ``_TOLERANCES``.
 
-    - No physics: the final prognostic state comes purely from the dynamical core,
-      validated against the mid-time-step dynamics savepoints at tight tolerances.
-    - muphys enabled: validated against the end-of-time-step (``time-step-exit``)
-      savepoint. The driver runs muphys with ``MuphysScheme.ICON_NWP`` (the
-      MuphysConfig default) -- the port of the exact icon-nwp formulation that
-      generated the reference -- and the ICON reference runs graupel only (everything
-      else off), so the full prognostic state including the fields muphys writes
-      (exner, tracers) can be compared.
+    muphys (EXCLAIM_APE_AES): runs ``MuphysScheme.AES_GRAUPEL`` -- the port of the exact
+    ICON formulation that generated the reference. Graupel is the only *physics*
+    parameterization active, so vn/w/rho/exner/theta_v compare tightly; the tracer
+    comparison carries residuals from gaps not yet ported:
 
-    The muphys-written fields use provisional tolerances. The exner/theta_v coupling
-    now mirrors ICON exactly, but residual deviations remain from other phy2dyn gaps
-    not yet ported, so the tolerances stay loose until measured on the regenerated
-    archive:
+    - exner / theta_v: recomputed via the exact EOS in ``scatter_to_prognostic``, mirroring
+      ICON's phy2dyn coupling (mo_interface_iconam_aes.f90). Measured on v6: exner ~3e-9
+      (atol=1e-8), theta_v ~7e-9 relative (rtol=3e-8) -- essentially exact.
+    - tracer transport: the driver runs MIURA/PPM advection on the dycore-accumulated
+      mass fluxes and airmass, matching the reference configuration (ltransport=.TRUE.),
+      so this validates transport+muphys. Measured on v6 (gtfn_cpu): qc/qr/qs/qi/qg are
+      bit-exact and qv's residual is ~9e-10 (atol=1e-8) -- the remaining gap stems from
+      the clipping / vertical-extent items below.
+    - negative tracers: ICON clips them (iqneg_d2p/iqneg_p2d); the driver does not.
+    - vertical extent: ICON runs graupel on jks_cloudy..nlev; muphys runs the full column.
 
-    - exner / theta_v: ``scatter_to_prognostic`` recomputes exner via the exact EOS
-      from the updated virtual temperature and diagnoses theta_v = Tv/exner, mirroring
-      ICON's phy2dyn coupling (mo_interface_iconam_aes.f90), so the exner/rho/theta_v
-      trio stays EOS-consistent. The exner (atol=1e-6) and theta_v (atol=2.0) bounds are
-      still the pre-port provisional values; with the coupling ported they should
-      tighten substantially -- limited now only by the tracer gaps below feeding into
-      the virtual temperature -- and must be re-measured on the archive.
-    - negative tracers: ICON clips them before (iqneg_d2p) and after (iqneg_p2d)
-      physics; the driver does not.
-    - vertical extent: ICON runs graupel on jks_cloudy..nlev (zmaxcloudy); muphys runs
-      the full column.
-
-    The muphys granule itself is validated in isolation against the aes-graupel
-    savepoints in test_muphys_datatest.py.
+    The muphys granule itself is validated in isolation against the aes-graupel savepoints
+    in test_muphys_datatest.py.
     """
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_config(config_file_path)
-    if experiment_description == test_defs.Experiments.EXCLAIM_APE_AES:
-        assert config.muphys is not None, "muphys must be enabled for the APE_aes experiment"
-
+    config = driver_config.read_experiment_config_from_fortran(config_file_path)
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "ci_driver_output",
+            # 'start_of_simulation' stays at the beginning of the experiment: the second
+            # MCH_CH_R04B09 case starts the time loop later, i.e. it restarts.
+            "start_of_timestepping": datetime.datetime.fromisoformat(timeloop_date_init).replace(
+                tzinfo=datetime.UTC
+            ),
             "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
-                tzinfo=datetime.timezone.utc
+                tzinfo=datetime.UTC
             ),
         }
     )
@@ -137,70 +206,53 @@ def test_standalone_driver(
 
     prognostics = ds.prognostics.current
 
-    if config.muphys is None:
-        # Dry experiments (no physics): the final prognostic state is produced by the
-        # dynamical core, so validate it against the mid-time-step dynamics savepoints.
-        # istep=2 (corrector), substep=5 (last dyn substep) and linit=False are constant
-        # for JW and GAUSS3D.
-        nonhydro_exit = data_provider.from_savepoint_nonhydro_exit(
-            istep=2, date=step_date_exit, substep=5
-        )
-        diffusion_exit = data_provider.from_savepoint_diffusion_exit(
-            linit=False, date=step_date_exit
-        )
-        test_utils.assert_dallclose(
-            prognostics.vn.asnumpy(), diffusion_exit.vn().asnumpy(), atol=6e-7
-        )
-        test_utils.assert_dallclose(
-            prognostics.w.asnumpy(), diffusion_exit.w().asnumpy(), atol=8e-9
-        )
-        test_utils.assert_dallclose(
-            prognostics.rho.asnumpy(), nonhydro_exit.rho_new().asnumpy(), atol=9e-10
-        )
-        test_utils.assert_dallclose(
-            prognostics.exner.asnumpy(), diffusion_exit.exner().asnumpy(), atol=2e-10
-        )
-        test_utils.assert_dallclose(
-            prognostics.theta_v.asnumpy(), diffusion_exit.theta_v().asnumpy(), atol=1e-7
-        )
-        return
+    computed = {
+        "vn": prognostics.vn,
+        "w": prognostics.w,
+        "rho": prognostics.rho,
+        "exner": prognostics.exner,
+        "theta_v": prognostics.theta_v,
+    }
+    if experiment_description is test_defs.Experiments.MCH_CH_R04B09:
+        # The MCH reference runs the full NWP physics suite (nwp_phy_nml: convection,
+        # radiation, SSO, graupel, satad) plus limited-area boundary nudging AFTER the
+        # dynamics -- none of which the driver runs -- so its end-of-step state is not
+        # comparable (vn differs by O(10) m/s). Validate against the mid-time-step
+        # dynamics savepoints instead until NWP physics is ported.
+        diffusion_exit = request.getfixturevalue("savepoint_diffusion_exit")
+        nonhydro_exit = request.getfixturevalue("savepoint_nonhydro_exit")
+        references = {
+            "vn": diffusion_exit.vn(),
+            "w": diffusion_exit.w(),
+            "rho": nonhydro_exit.rho_new(),
+            "exner": diffusion_exit.exner(),
+            "theta_v": diffusion_exit.theta_v(),
+        }
+    else:
+        # Nothing runs after diffusion for JW/GAUSS3D, and for EXCLAIM_APE_AES muphys
+        # is the only active physics: validate against the end-of-time-step savepoint.
+        references = {
+            "vn": savepoint_time_step_exit.vn(),
+            "w": savepoint_time_step_exit.w(),
+            "rho": savepoint_time_step_exit.rho(),
+            "exner": savepoint_time_step_exit.exner(),
+            "theta_v": savepoint_time_step_exit.theta_v(),
+        }
 
-    # Physics enabled (EXCLAIM_APE_AES): validate the full prognostic state against the
-    # end-of-time-step savepoint (see the docstring for the reference setup and the
-    # provisional-tolerance rationale).
-    time_step_exit = data_provider.from_savepoint_time_step_exit(date=step_date_exit)
+    for tracer in prognostics.tracer.active_fields():
+        computed[tracer.name] = tracer.field
+        references[tracer.name] = getattr(savepoint_time_step_exit, tracer.name)()
 
-    # fields graupel does not touch: expect the dry-run tolerances
-    test_utils.assert_dallclose(prognostics.vn.asnumpy(), time_step_exit.vn().asnumpy(), atol=6e-7)
-    test_utils.assert_dallclose(prognostics.w.asnumpy(), time_step_exit.w().asnumpy(), atol=8e-9)
-    test_utils.assert_dallclose(
-        prognostics.rho.asnumpy(), time_step_exit.rho().asnumpy(), atol=9e-10
-    )
+    tolerances = _TOLERANCES[experiment_description]
 
-    # fields muphys writes: provisional tolerances, to be measured on the regenerated
-    # archive (ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL=true) and tightened once the
-    # fidelity gaps noted in the docstring are closed
-    test_utils.assert_dallclose(
-        prognostics.exner.asnumpy(), time_step_exit.exner().asnumpy(), atol=1e-6
-    )
-    test_utils.assert_dallclose(
-        prognostics.theta_v.asnumpy(), time_step_exit.theta_v().asnumpy(), atol=2.0
-    )
-
-    tracers = prognostics.tracer
-    for name, field in (
-        ("qv", tracers.qv),
-        ("qc", tracers.qc),
-        ("qr", tracers.qr),
-        ("qs", tracers.qs),
-        ("qi", tracers.qi),
-        ("qg", tracers.qg),
-    ):
-        assert field is not None, f"tracer {name} must be allocated for the APE_aes experiment"
+    for name, reference in references.items():
+        atol, rtol = tolerances[name]
         test_utils.assert_dallclose(
-            field.asnumpy(),
-            getattr(time_step_exit, name)().asnumpy(),
-            atol=1e-10,
+            computed[name].asnumpy(),
+            reference.asnumpy(),
+            atol=atol,
+            rtol=rtol,
+            err_msg=name,
         )
 
 
@@ -230,7 +282,8 @@ def test_standalone_driver_moist_physics_with_tmx(
 
     Config injection: ``TmxConfig()`` (defaults) is used rather than
     ``TmxConfig.from_fortran_dict(atm_dict)`` because the atm_dict is not
-    surfaced by ``read_config`` and re-reading it here would duplicate logic.
+    surfaced by ``read_experiment_config_from_fortran`` and re-reading it here
+    would duplicate logic.
     The defaults match the APE aquaplanet namelist for all parameters that
     affect this smoke test.
 
@@ -246,21 +299,22 @@ def test_standalone_driver_moist_physics_with_tmx(
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
-    config = driver_config.read_config(config_file_path)
+    config = driver_config.read_experiment_config_from_fortran(config_file_path)
     assert config.muphys is not None, "muphys must be enabled for the APE_aes experiment"
 
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "ci_driver_output",
             "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
-                tzinfo=datetime.timezone.utc
+                tzinfo=datetime.UTC
             ),
         }
     )
 
     # Inject TMX with default parameters (defaults match the aquaplanet namelist;
     # use TmxConfig() rather than from_fortran_dict because atm_dict is internal
-    # to read_config and re-reading it here would duplicate the loading logic).
+    # to read_experiment_config_from_fortran and re-reading it here would
+    # duplicate the loading logic).
     config = dataclasses.replace(config, tmx=tmx_module.TmxConfig())
 
     grid_manager = driver_utils.create_grid_manager(

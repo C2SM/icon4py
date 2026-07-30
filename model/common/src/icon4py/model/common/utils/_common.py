@@ -13,16 +13,7 @@ import abc
 import copy
 import functools
 from collections.abc import Callable, Generator
-from typing import (
-    ClassVar,
-    Concatenate,
-    Final,
-    Generic,
-    ParamSpec,
-    Protocol,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import ClassVar, Concatenate, Final, Protocol, TypeVar, runtime_checkable
 
 
 @runtime_checkable
@@ -35,7 +26,7 @@ T = TypeVar("T")
 C = TypeVar("C")
 
 
-class named_property(property, Generic[C, T]):
+class named_property[C, T](property):
     """
     A simple extension of the built-in `property` descriptor storing
     the name of the attribute it is assigned to.
@@ -100,7 +91,7 @@ class named_property(property, Generic[C, T]):
         return result
 
 
-class Pair(Generic[T]):  # noqa: PLW1641 [eq-without-hash]
+class Pair[T]:  # noqa: PLW1641 [eq-without-hash]
     """
     Generic class representing a pair of values.
 
@@ -238,10 +229,7 @@ class TimeStepPair(Pair[T]):
     next: named_property = Pair.frozen_second
 
 
-P = ParamSpec("P")
-
-
-def chainable(
+def chainable[T, **P](
     method_fn: Callable[Concatenate[T, P], None],
 ) -> Callable[Concatenate[T, P], T]:
     """

@@ -29,9 +29,15 @@ class _FakeGranule:
 
 
 def _input_dict(grid):
-    ck = lambda: data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-    half = lambda: data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-    cell = lambda: data_alloc.zero_field(grid, dims.CellDim)
+    def ck():
+        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+
+    def half():
+        return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+
+    def cell():
+        return data_alloc.zero_field(grid, dims.CellDim)
+
     d = {k: ck() for k in tmx_data.INPUTS_PROPERTIES}
     d["w"] = half()
     d["pressure_ifc"] = half()

@@ -119,8 +119,8 @@ def compute_wgtfacq1_e(
     standard ICON interpolation setup, so the corresponding row of
     ``wgtfacq1_c[-1]`` is multiplied by 0 and does not affect the result.
     """
-    # wgtfacq1_c[e2c]: (nedges, 2, 3)
-    # c_lin_e[:, :, newaxis] * wgtfacq1_c[e2c] → sum over local dim → (nedges, 3)
+    # gathering wgtfacq1_c over e2c gives shape (nedges, 2, 3); weighting by c_lin_e
+    # and summing over the local dimension reduces it to (nedges, 3)
     return np.einsum("ej,ejk->ek", c_lin_e, wgtfacq1_c[e2c])
 
 

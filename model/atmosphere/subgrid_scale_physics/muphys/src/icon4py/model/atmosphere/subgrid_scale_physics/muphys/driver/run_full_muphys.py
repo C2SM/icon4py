@@ -116,8 +116,17 @@ def setup_muphys(
     backend: model_backends.BackendLike,
     *,
     single_program: bool = False,
-    scheme: config.MuphysScheme = config.MuphysScheme.CPP_REFERENCE,
+    scheme: config.MuphysScheme = config.MuphysScheme.KOKKOS_MUPHYS,
 ):
+    # the GT4Py operators branch on a plain bool (the DSL has no match statement)
+    match scheme:
+        case config.MuphysScheme.AES_GRAUPEL:
+            use_aes_graupel = True
+        case config.MuphysScheme.KOKKOS_MUPHYS:
+            use_aes_graupel = False
+        case _:
+            raise ValueError(f"unknown muphys scheme: {scheme}")
+
     if single_program:
         # TODO(havogt): make an option in gt4py for thread-safety?
         with utils.recursion_limit(10**5):
@@ -127,7 +136,7 @@ def setup_muphys(
                 constant_args={
                     "dt": ta.wpfloat(dt),
                     "qnc": ta.wpfloat(qnc),
-                    "use_icon_nwp": scheme is config.MuphysScheme.ICON_NWP,
+                    "use_aes_graupel": use_aes_graupel,
                 },
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(0),

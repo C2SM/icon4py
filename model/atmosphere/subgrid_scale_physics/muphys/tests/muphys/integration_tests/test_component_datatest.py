@@ -28,21 +28,36 @@ _T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
 _MINI = utils.MuphysExperiment(name="mini", type=utils.ExperimentType.FULL_MUPHYS)
 
 
+class _FullDomainGrid:
+    """Grid stand-in for the grid-less muphys netCDF data: prognostic bounds = full domain."""
+
+    def __init__(self, num_cells: int, num_levels: int) -> None:
+        self.num_cells = num_cells
+        self.num_levels = num_levels
+
+    def start_index(self, domain: object) -> gtx.int32:
+        return gtx.int32(0)
+
+    def end_index(self, domain: object) -> gtx.int32:
+        return gtx.int32(self.num_cells)
+
+
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.level("integration")
 @pytest.mark.parametrize("experiment", [_MINI], ids=lambda e: e.name)
 def test_granule_matches_direct_muphys(
     backend_like: model_backends.BackendLike,
     experiment: utils.MuphysExperiment,
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)
-    inp = common.GraupelInput.load(filename=experiment.input_file, allocator=allocator)
+    graupel_input = common.GraupelInput.load(filename=experiment.input_file, allocator=allocator)
 
-    te0 = inp.t.asnumpy().copy()
-    q0 = {s: getattr(inp, f"q{s}").asnumpy().copy() for s in SPECIES}
+    te0 = graupel_input.t.asnumpy().copy()
+    q0 = {s: getattr(graupel_input, f"q{s}").asnumpy().copy() for s in SPECIES}
 
     muphys_program = run_full_muphys.setup_muphys(
-        inp=inp,
+        inp=graupel_input,
         dt=experiment.dt,
         qnc=experiment.qnc,
         backend=backend_like,
@@ -50,37 +65,36 @@ def test_granule_matches_direct_muphys(
     )
 
     granule = MuphysComponent(
-        ncells=inp.ncells,
-        nlev=inp.nlev,
+        grid=_FullDomainGrid(graupel_input.ncells, graupel_input.nlev),  # type: ignore[arg-type]  # mini data has no icon grid
         dtime=datetime.timedelta(seconds=experiment.dt),
         qnc=experiment.qnc,
         backend=backend_like,
         step=muphys_program,
     )
     state = {
-        "dz": inp.dz,
-        "te": inp.t,
-        "p": inp.p,
-        "rho": inp.rho,
-        "qv": inp.qv,
-        "qc": inp.qc,
-        "qr": inp.qr,
-        "qs": inp.qs,
-        "qi": inp.qi,
-        "qg": inp.qg,
+        "dz": graupel_input.dz,
+        "te": graupel_input.t,
+        "p": graupel_input.p,
+        "rho": graupel_input.rho,
+        "qv": graupel_input.qv,
+        "qc": graupel_input.qc,
+        "qr": graupel_input.qr,
+        "qs": graupel_input.qs,
+        "qi": graupel_input.qi,
+        "qg": graupel_input.qg,
     }
     out = granule(state, _T0)
 
     direct = common.GraupelOutput.allocate(
         allocator=allocator,
-        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+        domain=gtx.domain({dims.CellDim: graupel_input.ncells, dims.KDim: graupel_input.nlev}),
     )
     muphys_program(
-        dz=inp.dz,
-        te=inp.t,
-        p=inp.p,
-        rho=inp.rho,
-        q_in=inp.q,
+        dz=graupel_input.dz,
+        te=graupel_input.t,
+        p=graupel_input.p,
+        rho=graupel_input.rho,
+        q_in=graupel_input.q,
         t_out=direct.t,
         q_out=direct.q,
         pflx=direct.pflx,

@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import data as tmx_data
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.state import TmxState
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_state
+from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -49,9 +49,9 @@ def _tracer_state(
     qr: float = 0.0,
     qs: float = 0.0,
     qg: float = 0.0,
-) -> tracer_state.TracerState:
+) -> tracer_states.TracerState:
     """TracerState with all six species active (defaults to zero except where specified)."""
-    return tracer_state.TracerState(
+    return tracer_states.TracerState(
         qv=data_alloc.constant_field(grid, qv, dims.CellDim, dims.KDim),
         qc=data_alloc.constant_field(grid, qc, dims.CellDim, dims.KDim),
         qi=data_alloc.constant_field(grid, qi, dims.CellDim, dims.KDim),

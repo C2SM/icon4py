@@ -19,8 +19,8 @@ _PRECIP_KEY = dict(
     pflx="precipitation_flux",
     pr="rainfall_flux",
     ps="snowfall_flux",
-    pi="ice_fall_flux",
-    pg="graupel_fall_flux",
+    pi="icefall_flux",
+    pg="graupelfall_flux",
     pre="precipitation_energy_flux",
 )
 
@@ -35,5 +35,5 @@ INPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
 OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     "tend_temperature": data.TENDENCY_CF_ATTRIBUTES["temperature"],
     **{f"tend_q{s}": data.TENDENCY_CF_ATTRIBUTES[f"q{s}"] for s in SPECIES},
-    **{port: data.MICROPHYSICS_PRECIP_CF_ATTRIBUTES[key] for port, key in _PRECIP_KEY.items()},
+    **{port: data.PRECIPITATION_CF_ATTRIBUTES[key] for port, key in _PRECIP_KEY.items()},
 }

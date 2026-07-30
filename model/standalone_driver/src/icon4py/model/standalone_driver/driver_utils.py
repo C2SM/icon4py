@@ -13,29 +13,29 @@ import logging
 import os
 import pathlib
 import sys
-import time
 from typing import Any, Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     component as muphys_component,
     state as muphys_state,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_interface import physics_driver
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
     component as tmx_component,
     state as tmx_state,
     static_fields as tmx_static_fields,
 )
+from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
     constants,
     field_type_aliases as fa,
     model_backends,
+    time,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import (
@@ -54,10 +54,9 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory as states_factory
-from icon4py.model.common.states.tracer_state import TracerConfig
+from icon4py.model.common.states import factory as states_factory, static_fields, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import config as driver_config, driver_states
+from icon4py.model.standalone_driver import config as driver_config, driver_constants, driver_states
 
 
 log = logging.getLogger(__name__)
@@ -78,7 +77,7 @@ _LOGGING_LEVELS: dict[str, int] = {
 class Granules:
     diffusion: diffusion.Diffusion | None = None
     solve_nonhydro: solve_nh.SolveNonhydro | None = None
-    tracer_advection: advection.Advection | None = None
+    tracer_advection: tracer_advection.Advection | None = None
     physics: physics_driver.PhysicsDriver | None = None
 
 
@@ -90,7 +89,7 @@ def validate_granule_state_consistency(
     """
     Validate that enabled granules have their required states allocated.
     The graupel granule is currently not checked as it will be moved to the
-    physics interface.
+    physics driver.
 
     Raises:
         ValueError: if a granule is enabled but a state it requires is None.
@@ -180,7 +179,7 @@ def create_static_field_factories(
     geometry_config: geometry_configuration.GeometryConfig,
     interpolation_config: interpolation_factory.InterpolationConfig,
     metrics_config: metrics_factory.MetricsConfig,
-) -> driver_states.StaticFieldFactories:
+) -> static_fields.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
@@ -218,7 +217,7 @@ def create_static_field_factories(
         global_reductions=global_reductions,
     )
 
-    return driver_states.StaticFieldFactories(
+    return static_fields.StaticFieldFactories(
         geometry_field_source, interpolation_field_source, metrics_field_source
     )
 
@@ -228,7 +227,7 @@ def initialize_granules(
     config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
-    static_field_factories: driver_states.StaticFieldFactories,
+    static_field_factories: static_fields.StaticFieldFactories,
     model_time_variables: driver_states.ModelTimeVariables,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
@@ -414,13 +413,13 @@ def initialize_granules(
             exchange=exchange,
         )
 
-    tracer_advection_granule: advection.Advection | None = None
+    tracer_advection_granule: tracer_advection.Advection | None = None
     if config.tracer_advection is not None:
-        tracer_advection_granule = advection.convert_config_to_advection(
+        tracer_advection_granule = tracer_advection.convert_config_to_advection(
             grid=grid,
             backend=backend,
             config=config.tracer_advection,
-            interpolation_state=advection_states.AdvectionInterpolationState(
+            interpolation_state=tracer_advection_states.AdvectionInterpolationState(
                 geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
                 rbf_vec_coeff_e=interpolation_field_source.get(
                     interpolation_attributes.RBF_VEC_COEFF_E
@@ -432,7 +431,7 @@ def initialize_granules(
                     interpolation_attributes.POS_ON_TPLANE_E_Y
                 ),
             ),
-            least_squares_state=advection_states.AdvectionLeastSquaresState(
+            least_squares_state=tracer_advection_states.AdvectionLeastSquaresState(
                 lsq_pseudoinv_1=interpolation_field_source.get(
                     interpolation_attributes.LSQ_PSEUDOINV
                 )[:, 0, :],
@@ -440,7 +439,7 @@ def initialize_granules(
                     interpolation_attributes.LSQ_PSEUDOINV
                 )[:, 1, :],
             ),
-            metric_state=advection_states.AdvectionMetricState(
+            metric_state=tracer_advection_states.AdvectionMetricState(
                 deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
                 deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
                 deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
@@ -457,8 +456,7 @@ def initialize_granules(
         muphys_process = physics_driver.PhysicsProcess(
             name="muphys",
             component=muphys_component.MuphysComponent(
-                ncells=grid.num_cells,
-                nlev=grid.num_levels,
+                grid=grid,
                 dtime=config.driver.dtime,
                 qnc=config.muphys.qnc,
                 backend=backend,
@@ -528,6 +526,33 @@ def initialize_granules(
         tracer_advection=tracer_advection_granule,
         physics=physics_granule,
     )
+
+
+def spinup_second_order_divdamp_factor(
+    *,
+    elapsed_time_in_seconds: ta.wpfloat,
+    fourth_order_divdamp_factor: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Second order divergence damping factor (divdamp_fac_o2) during the spin-up phase.
+
+    update_spinup_damping in mo_nh_stepping.f90: the damping is enhanced during
+    the first half hour of integration and then decreases linearly to zero.
+    """
+    initial_period = driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+    transition_end_period = driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+    enhanced_factor = (
+        driver_constants.ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP * fourth_order_divdamp_factor
+    )
+    if elapsed_time_in_seconds <= initial_period:
+        return enhanced_factor
+    if elapsed_time_in_seconds <= transition_end_period:
+        return (
+            enhanced_factor
+            * (transition_end_period - elapsed_time_in_seconds)
+            / (transition_end_period - initial_period)
+        )
+    return ta.wpfloat("0.0")
 
 
 def find_maximum_from_field(
@@ -605,10 +630,10 @@ def display_driver_setup_in_log_file(
     config: driver_config.DriverConfig,
     model_time_variables: driver_states.ModelTimeVariables,
     vertical_params: v_grid.VerticalGrid,
-    tracer_config: TracerConfig | None = None,
+    tracer_config: tracer_states.TracerConfig | None = None,
 ) -> None:
     if tracer_config is None:
-        tracer_config = TracerConfig.none()
+        tracer_config = tracer_states.TracerConfig.none()
     log.info("===== ICON4Py Driver Configuration =====")
     log.info(f"Experiment name        : {config.experiment_name}")
     log.info(f"Time step              : {config.dtime.total_seconds()} s")
@@ -616,16 +641,18 @@ def display_driver_setup_in_log_file(
     log.info(f"End of simulation      : {model_time_variables.simulation_end_datetime}")
     log.info(f"Number of timesteps    : {model_time_variables.n_time_steps}")
     match config.end_of_simulation:
-        case driver_config.NumTimeSteps():
+        case time.NumTimeSteps():
             log.info("Running mode           : num_timesteps")
-        case driver_config.RelativeTime():
+        case time.RelativeTime():
             log.info("Running mode           : relative_time")
-        case driver_config.AbsoluteTime():
+        case time.AbsoluteTime():
             log.info("Running mode           : absolute_time")
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
-    log.info(f"Statistics enabled     : {config.enable_statistics_output}")
+    log.info(f"Prepare advection      : {config.do_prep_adv}")
+    log.info(f"Initial diffusion      : {config.diffuse_before_time_loop}")
+    log.info(f"Statistics enabled     : {config.enable_statistics_logging}")
     log.info(f"Active tracers         : {tracer_config}")
     log.info("")
 

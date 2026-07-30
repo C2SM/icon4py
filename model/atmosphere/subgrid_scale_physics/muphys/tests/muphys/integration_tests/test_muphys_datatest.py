@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 # accumulators isolates the mig contribution even if other AES processes ever
 # run before mig in this experiment (today they contribute exactly zero).
 #
-# The granule runs with MuphysScheme.ICON_NWP, the port of the icon-nwp
+# The granule runs with MuphysScheme.AES_GRAUPEL, the port of the ICON
 # formulation (mo_aes_graupel.f90) that generates the reference data, so
 # near-roundoff agreement is expected. Remaining known deviations:
 #   - Fortran clamps tendencies to full depletion (MAX(-q/dt), mo_cloud_mig.f90)
@@ -57,13 +57,14 @@ if TYPE_CHECKING:
 #     1.0 and not set in the experiment, hence a no-op here).
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "experiment_description",
     [definitions.Experiments.EXCLAIM_APE_AES],
 )
 @pytest.mark.parametrize(
     "date",
-    ["2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000", "2008-09-01T00:15:00.000"],
+    ["2008-09-01T00:00:00.000", "2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000"],
 )
 def test_muphys_granule(
     date: str,
@@ -80,11 +81,10 @@ def test_muphys_granule(
     jks = init_savepoint.jks_cloudy() - 1
 
     # MuphysConfig().qnc matches the Fortran cloud_num = 50.0e6 m^-3 (mo_cloud_mig.f90);
-    # the default scheme is ICON_NWP, matching the Fortran that generated the data
+    # the default scheme is AES_GRAUPEL, matching the Fortran that generated the data
     muphys_configuration = muphys_config.MuphysConfig()
     component = muphys_component.MuphysComponent(
-        ncells=icon_grid.num_cells,
-        nlev=icon_grid.num_levels,
+        grid=icon_grid,
         dtime=datetime.timedelta(seconds=dtime),
         qnc=muphys_configuration.qnc,
         backend=backend,

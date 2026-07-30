@@ -29,7 +29,7 @@ def _compute_air_mass(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_air_mass(
+def compute_air_mass(  # noqa: PLR0917 [too-many-positional-arguments]
     rho: fa.CellKField[wpfloat],
     ddqz_z_full: fa.CellKField[wpfloat],
     air_mass: fa.CellKField[wpfloat],
@@ -50,7 +50,7 @@ def compute_air_mass(
 
 
 @gtx.field_operator
-def _compute_cv_air(
+def _compute_cv_air(  # noqa: PLR0917 [too-many-positional-arguments]
     qv: fa.CellKField[wpfloat],
     qc: fa.CellKField[wpfloat],
     qi: fa.CellKField[wpfloat],
@@ -72,7 +72,7 @@ def _compute_cv_air(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_cv_air(
+def compute_cv_air(  # noqa: PLR0917 [too-many-positional-arguments]
     qv: fa.CellKField[wpfloat],
     qc: fa.CellKField[wpfloat],
     qi: fa.CellKField[wpfloat],
@@ -112,7 +112,7 @@ def _apply_tendency_on_edge_k(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def apply_tendency_on_edge_k(
+def apply_tendency_on_edge_k(  # noqa: PLR0917 [too-many-positional-arguments]
     field_a: fa.EdgeKField[wpfloat],
     coeff: wpfloat,
     field_b: fa.EdgeKField[wpfloat],
