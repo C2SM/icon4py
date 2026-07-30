@@ -725,3 +725,88 @@ def backfill(
 
 if __name__ == "__main__":
     sys.exit(cli())
+
+
+# ---------------------------------------------------------------------------
+# Triaging a changed record
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass(frozen=True)
+class DifferenceSummary:
+    """Where two versions of one field differ, and by how much."""
+
+    count: int
+    total: int
+    samples: list[tuple[tuple[int, ...], object, object]]
+
+
+def summarise_differences(old, new, *, limit: int = 10) -> DifferenceSummary:
+    """Locate the entries in which two same-shaped arrays differ.
+
+    Kept free of any array library so that it can be tested without data files; the
+    command below feeds it whatever Serialbox returns.
+    """
+
+    def walk(a, b, prefix: tuple[int, ...]):
+        if isinstance(a, (list, tuple)) or hasattr(a, "__len__"):
+            for i, (x, y) in enumerate(zip(a, b, strict=True)):
+                yield from walk(x, y, (*prefix, i))
+        elif a != b:
+            yield prefix, a, b
+
+    count = 0
+    samples: list[tuple[tuple[int, ...], object, object]] = []
+    for position, old_value, new_value in walk(old, new, ()):
+        count += 1
+        if len(samples) < limit:
+            samples.append((position, old_value, new_value))
+
+    # 'walk' only yields differing entries, so the size is counted separately.
+    return DifferenceSummary(count=count, total=_count_entries(old), samples=samples)
+
+
+def _count_entries(array) -> int:
+    if isinstance(array, (list, tuple)) or hasattr(array, "__len__"):
+        return sum(_count_entries(item) for item in array)
+    return 1
+
+
+@cli.command()
+def inspect(
+    new: Annotated[pathlib.Path, typer.Argument(help="Freshly generated archive directory.")],
+    baseline: Annotated[
+        pathlib.Path, typer.Option("--baseline", help="Archive to compare against.")
+    ],
+    limit: Annotated[int, typer.Option(help="Differing entries to show per field.")] = 5,
+) -> None:
+    """Show the values behind every changed guarded record.
+
+    A digest says that a field changed, not how. This reads the two arrays so that a
+    static-class hit can be triaged: a genuine change looks nothing like uninitialised
+    padding, but only the values tell them apart.
+    """
+    import serialbox  # noqa: PLC0415 [import-outside-top-level]
+
+    def read(archive_dir: pathlib.Path, rank: int, savepoint: str, ordinal: int, field: str):
+        serializer = serialbox.Serializer(
+            serialbox.OpenModeKind.Read, str(archive_dir / "ser_data"), f"icon_pydycore_rank{rank}"
+        )
+        matching = [p for p in serializer.savepoint_list() if p.name == savepoint]
+        return serializer.read(field, matching[ordinal])
+
+    comparison = compare_archives(baseline, new)
+    for name in ("static", "initial-state"):
+        for key in comparison.fingerprints.per_class[name].changed:
+            rank, savepoint, ordinal, field = key
+            summary = summarise_differences(
+                read(baseline, rank, savepoint, ordinal, field),
+                read(new, rank, savepoint, ordinal, field),
+                limit=limit,
+            )
+            print(
+                f"{savepoint}#{ordinal} {field} (rank {rank}): "
+                f"{summary.count} of {summary.total} entries differ"
+            )
+            for position, old_value, new_value in summary.samples:
+                print(f"    {position}: {old_value} -> {new_value}")

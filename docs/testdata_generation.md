@@ -171,6 +171,31 @@ If a new savepoint is reported as `UNCLASSIFIED`, add it to `STATIC_SAVEPOINTS` 
 `scripts/python/serdata.py` or leave it evolving — but decide, rather than letting it
 default into the unguarded class.
 
+### Triaging a static-class hit
+
+A digest says a field changed, not how. `serdata inspect` reads the values behind every
+changed guarded record:
+
+```bash
+./scripts/run serdata inspect <new archive dir> --baseline <previous archive dir>
+```
+
+Not every hit is a real change. Serialbox digests the whole `.dat` blob, including the
+`nproma` padding at the end of each block, and that padding is uninitialised memory which
+differs between runs. The two cases are easy to tell apart once you look:
+
+```
+icon-grid#0 primal_normal_cell_x (rank 0): 428 of 63168 entries differ
+    (0, 0, 0): 0.0 -> -0.07455088648970727      <- real: whole boundary rows, plausible values
+icon-grid#0 v_edge_orientation (rank 0): 7 of 189504 entries differ
+    (28576, 0, 3): 1031429292.0 -> 1651871860.0 <- padding: a handful of entries, junk magnitudes
+```
+
+The `v_edge_orientation` entries above sit at vertices with `num_edges = 0` and
+`owner_mask = false`; every real vertex holds a value in `[-1, 1]`. Confirm a suspected
+padding hit by checking the corresponding `*_owner_mask` or `v_num_edges` field before
+dismissing it.
+
 ### Run the datatests before uploading
 
 This is the step that catches what the fingerprint cannot: whether the delta actually

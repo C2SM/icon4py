@@ -32,6 +32,7 @@ from serdata import (
     read_namelist,
     render_diff_report,
     render_value_change,
+    summarise_differences,
     unclassified_savepoints,
 )
 
@@ -459,3 +460,34 @@ def test_report_strips_fortran_string_padding() -> None:
     # A value that Fortran padded to its declared width must not read as "unchanged
     # whitespace"; quoting is what makes an emptied string visible.
     assert render_value_change("                ", "PT300S     ") == "'' -> 'PT300S'"
+
+
+# --- triaging a changed record ------------------------------------------------
+
+
+def test_summarise_differences_reports_positions_and_values() -> None:
+    old = [[0.0, 1.0], [2.0, 3.0]]
+    new = [[0.0, 9.0], [2.0, 3.0]]
+
+    summary = summarise_differences(old, new, limit=5)
+
+    assert summary.count == 1
+    assert summary.total == 4
+    assert summary.samples == [((0, 1), 1.0, 9.0)]
+
+
+def test_summarise_differences_caps_the_samples() -> None:
+    old = [[0.0] * 10]
+    new = [[float(i + 1) for i in range(10)]]
+
+    summary = summarise_differences(old, new, limit=3)
+
+    assert summary.count == 10
+    assert len(summary.samples) == 3
+
+
+def test_summarise_differences_of_identical_arrays() -> None:
+    summary = summarise_differences([[1.0, 2.0]], [[1.0, 2.0]], limit=5)
+
+    assert summary.count == 0
+    assert summary.samples == []
