@@ -103,10 +103,10 @@ class PhysicsDriver:
             else:
                 # recycle
                 outputs = self._recycle_cache[process.name]
-            # TODO (Yilu): ForcingMode.DIAGNOSTIC (compute without applying) is not implemented yet:
-            # scatter_to_prognostic both applies tendencies and stores diagnostics, so a
-            # compute-only path needs that split first (to be done with the State-protocol
-            # formalization). Fail loud rather than silently apply for a DIAGNOSTIC process.
+            # TODO (Yilu): ForcingMode.DIAGNOSTIC (compute without applying) is not
+            # implemented yet. It falls out of the planned AES-style restructure
+            # (accumulate tendencies per process, apply once after all processes --): DIAGNOSTIC then
+            # simply skips the accumulation. Fail loud rather than silently apply.
             if process.forcing_mode is not ForcingMode.APPLY:
                 raise NotImplementedError(
                     f"process '{process.name}': only ForcingMode.APPLY is implemented; "
