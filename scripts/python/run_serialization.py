@@ -27,10 +27,10 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Annotated, Final, Literal
 
 import f90nml
-import serdata
 import typer
 
 from icon4py.model.common.utils import fortran_config
+from icon4py.model.testing import serialized_data
 
 
 if TYPE_CHECKING:
@@ -565,7 +565,7 @@ def write_archive_metadata(
     # The ICON revision comes from the version banner in the slurm log: the only
     # artifact with a verified link to the binary that produced the data.
     metadata = {
-        "schema": serdata.ARCHIVE_METADATA_SCHEMA,
+        "schema": serialized_data.ARCHIVE_METADATA_SCHEMA,
         "archive": {
             "experiment": experiment_description.name,
             "version": experiment_description.version,
@@ -574,8 +574,8 @@ def write_archive_metadata(
             "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         },
         "provenance": {
-            "icon": serdata.read_icon_banner_from_archive(dest_dir),
-            "icon4py": serdata.harvest_git(settings.icon4py_repo_dir),
+            "icon": serialized_data.read_icon_banner_from_archive(dest_dir),
+            "icon4py": serialized_data.harvest_git(settings.icon4py_repo_dir),
             "runtime": {
                 "slurm_job_id": job_id,
                 "uenv": settings.sbatch_uenv,
@@ -586,7 +586,7 @@ def write_archive_metadata(
         },
     }
 
-    metadata_path = dest_dir / serdata.ARCHIVE_METADATA_FNAME
+    metadata_path = dest_dir / serialized_data.ARCHIVE_METADATA_FNAME
     with metadata_path.open("w") as f:
         json.dump(metadata, f, indent=4)
     return metadata_path
@@ -614,12 +614,12 @@ def compare_with_previous_version(
     settings: SerializationSettings,
 ) -> tuple[str, pathlib.Path]:
     """Diff the new archive against the previous version and write the report."""
-    comparison = serdata.compare_archives(
+    comparison = serialized_data.compare_archives(
         previous_version_dir(experiment_description, comm_size, settings=settings),
         dest_dir,
         experiment=experiment_description.name,
     )
-    rendered = serdata.render_diff_report(comparison)
+    rendered = serialized_data.render_diff_report(comparison)
     print(rendered)
 
     reports_dir = settings.output_root / REPORTS_DIRNAME

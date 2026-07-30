@@ -17,7 +17,8 @@ import shutil
 import subprocess
 
 import pytest
-from serdata import (
+
+from icon4py.model.testing.serialized_data import (
     BannerParseError,
     backfill_archive_metadata,
     classify_savepoint,

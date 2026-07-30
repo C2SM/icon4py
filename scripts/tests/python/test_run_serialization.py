@@ -16,10 +16,13 @@ import shutil
 
 import pytest
 import run_serialization
-import serdata
 import typer
 
-from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+    serialized_data,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -89,12 +92,12 @@ def test_task_result_is_json_serializable() -> None:
 
 
 def test_archive_dirname_pattern_matches_the_authoritative_builder() -> None:
-    # 'serdata.parse_archive_dirname' is the inverse of the name that
+    # 'serialized_data.parse_archive_dirname' is the inverse of the name that
     # 'datatest_utils' builds, but cannot import it. Pin the two together here.
     for experiment in run_serialization.SerializationSettings.defaults().experiment_descriptions:
         for comm_size in (1, 2, 4):
             name = dt_utils.get_ranked_experiment_name_with_version(experiment, comm_size)
-            assert serdata.parse_archive_dirname(name) == (
+            assert serialized_data.parse_archive_dirname(name) == (
                 comm_size,
                 experiment.name,
                 experiment.version,
@@ -108,7 +111,9 @@ def test_comparison_without_a_baseline_is_unverified(tmp_path: pathlib.Path) -> 
         run_serialization.SerializationSettings.defaults(), output_root=tmp_path
     )
     archive = tmp_path / "mpitask1_exclaim_gauss3d_v05"
-    shutil.copytree(pathlib.Path(__file__).parent / "data" / "v05", archive)
+    # the archive fixtures live with the library that reads them
+    repo_root = pathlib.Path(__file__).resolve().parents[3]
+    shutil.copytree(repo_root / "model/testing/tests/testing/unit_tests/data/v05", archive)
 
     verdict, report_path = run_serialization.compare_with_previous_version(
         archive, test_defs.Experiments.GAUSS3D, 1, settings=settings
