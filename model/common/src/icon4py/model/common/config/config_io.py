@@ -32,7 +32,7 @@ def read[T](yaml_str: str, config_cls: type[T]) -> T:
 
 
 def write[T](config_inst: T) -> str:
-    return yaml.dump(CONV.unstructure(config_inst))
+    return yaml.dump(CONV.unstructure(config_inst), sort_keys=False)
 
 
 def structure_enum(val: str, enum_type: type[enum.Enum]) -> enum.Enum:
@@ -69,8 +69,8 @@ def structure_reltime(reltime_val: str, _: typing.Any) -> time.RelativeTime:
 
 
 @CONV.register_unstructure_hook
-def unstructure_reltime(reltime: time.RelativeTime) -> str:
-    return str(int(reltime.total_seconds()))
+def unstructure_reltime(reltime: time.RelativeTime) -> int:
+    return int(reltime.total_seconds())
 
 
 @CONV.register_structure_hook
@@ -90,7 +90,7 @@ def structure_endtime(endtime_dict: dict, _: typing.Any) -> time.EndOfSimulation
 
 @CONV.register_unstructure_hook
 def unstructure_endtime(endtime: time.EndOfSimulation) -> dict:
-    timetype = ""
+    timetype: str = ""
     match endtime:
         case time.AbsoluteTime():
             timetype = "absolute"

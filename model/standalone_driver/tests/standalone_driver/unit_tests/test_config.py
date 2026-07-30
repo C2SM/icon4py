@@ -182,4 +182,4 @@ def test_io_roundtrip_cls_cls() -> None:
 def test_io_roundtrip_str_str() -> None:
     config_str = (pathlib.Path(__file__).parent / "data" / "test_config.yml").read_text()
     roundtrip_str = config_io.write(config_io.read(config_str, driver_config.ExperimentConfig))
-    assert config_str == roundtrip_str
+    assert roundtrip_str == config_str
