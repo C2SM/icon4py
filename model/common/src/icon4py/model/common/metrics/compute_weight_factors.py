@@ -70,7 +70,7 @@ def compute_wgtfacq_c_dsl(
         z_ifc: Field[CellDim, KDim] (half levels), geometric height at the vertical interface of cells.
         nlev: int, last k level
     Returns:
-    Field[CellDim, dims.KDim] (full levels)
+    Field[CellDim, KDim] (full levels)
     """
     array_ns = data_alloc.array_namespace(z_ifc)
     wgtfacq_c = array_ns.zeros((z_ifc.shape[0], nlev + 1))
