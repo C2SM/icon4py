@@ -127,7 +127,12 @@ class Icon4pyDriver:
 
     @functools.cached_property
     def _compute_airmass(self) -> Callable[..., None]:
-        """Airmass program (``rho * ddqz_z_full * deepatmo_t1mc``) with its static inputs bound."""
+        """Airmass program (``rho * ddqz_z_full * deepatmo_t1mc``) with its static inputs bound.
+
+        ``deepatmo_t1mc`` (ICON's ``deepatmo_vol_mc``) is 1 in the shallow atmosphere, which
+        is the only mode the dycore supports; see the matching factors that tracer advection
+        gets in ``driver_utils.initialize_granules``.
+        """
         return model_options.setup_program(
             program=compute_airmass.compute_airmass,
             backend=self.backend,
