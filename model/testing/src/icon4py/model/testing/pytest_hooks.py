@@ -243,10 +243,28 @@ def pytest_runtest_makereport(item, call):
                 report.sections.append(("benchmark-extra", tuple([filtered_benchmark_name, info])))
 
 
+def _report_archive_provenance(terminalreporter):
+    """List the ICON revision behind each archive the session used.
+
+    A datatest failure is otherwise silent about which Fortran build produced the
+    reference it disagrees with.
+    """
+    from icon4py.model.testing import datatest_utils  # noqa: PLC0415 [import-outside-top-level]
+
+    seen = datatest_utils.archive_provenance_seen()
+    if not seen:
+        return
+    terminalreporter.ensure_newline()
+    terminalreporter.line(" Serialized test data ", bold=True, blue=True)
+    for archive, sha in sorted(seen.items()):
+        terminalreporter.line(f"  {archive:<40} icon {sha[:12]}")
+
+
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
     """
     Add a custom section to the terminal summary with GT4Py timer metrics from benchmarks.
     """
+    _report_archive_provenance(terminalreporter)
     # Gather gtx_metrics
     benchmark_gtx_metrics = []
     for outcome in ("passed", "failed", "skipped"):

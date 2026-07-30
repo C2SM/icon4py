@@ -16,7 +16,12 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.standalone_driver import config as driver_config
-from icon4py.model.testing import data_handling, definitions as test_defs, serialbox
+from icon4py.model.testing import (
+    data_handling,
+    definitions as test_defs,
+    serialbox,
+    serialized_data,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -130,6 +135,36 @@ def download_experiment(
     uri = get_experiment_archive_url(root_url, archive_path)
     destination_path = get_datapath_for_experiment(experiment_description, processor_props)
     data_handling.download_test_data(destination_path.parent, uri)
+    record_archive_provenance(experiment_description, destination_path.parent)
+
+
+# Provenance of every archive a test session touched, rendered in the terminal summary
+# so that a failure can be attributed to an ICON revision without any digging.
+_SEEN_ARCHIVES: dict[str, str] = {}
+
+
+def record_archive_provenance(
+    experiment_description: test_defs.ExperimentDescription, archive_dir: pathlib.Path
+) -> None:
+    """Note which ICON revision produced an archive, if it says.
+
+    Advisory only: archives published before the metadata existed simply do not report,
+    and a session must never fail over its own bookkeeping.
+    """
+    name = get_experiment_name_with_version(experiment_description)
+    if name in _SEEN_ARCHIVES:
+        return
+    try:
+        provenance = serialized_data.read_archive_provenance(archive_dir)
+        _SEEN_ARCHIVES[name] = provenance.get("icon", {}).get("sha") or "unknown"
+    except Exception as error:
+        logger.debug("Could not read the provenance of '%s': %s", archive_dir, error)
+        _SEEN_ARCHIVES[name] = "unknown"
+
+
+def archive_provenance_seen() -> dict[str, str]:
+    """The ICON revision behind every archive used so far in this session."""
+    return dict(_SEEN_ARCHIVES)
 
 
 def create_experiment_configuration(

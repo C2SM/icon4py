@@ -15,6 +15,7 @@ from __future__ import annotations
 import dataclasses
 import itertools
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -718,6 +719,34 @@ def report_results(results: list[TaskResult], *, settings: SerializationSettings
     log_status(f"Wrote task summary to {summary_path}")
 
 
+def run_datatests(*, settings: SerializationSettings) -> bool:
+    """Run the datatests against the freshly generated tree.
+
+    This is the only check that answers whether the delta actually breaks icon4py. The
+    generated layout is the one the tests consume, so it needs no staging step.
+    """
+    command = [
+        "uv",
+        "run",
+        "--group",
+        "test",
+        "--frozen",
+        "pytest",
+        "-n0",
+        "--datatest-only",
+        "--backend=gtfn_cpu",
+        "model/common",
+    ]
+    environment = {
+        **os.environ,
+        "ICON4PY_TEST_DATA_PATH": str(settings.experiments_dir),
+        "ICON4PY_ENABLE_TESTDATA_DOWNLOAD": "0",
+    }
+    log_status(f"Running datatests against {settings.experiments_dir}")
+    result = subprocess.run(command, cwd=settings.icon4py_repo_dir, env=environment, check=False)
+    return result.returncode == 0
+
+
 def print_next_steps(results: list[TaskResult], *, settings: SerializationSettings) -> None:
     # Only successful tasks produced an archive to act on.
     results = [result for result in results if result.status == "ok"]
@@ -765,6 +794,10 @@ def run_serialization(
     ] = None,
     dry_run: Annotated[
         bool, typer.Option("--dry-run", help="List the tasks that would run, then stop.")
+    ] = False,
+    run_tests: Annotated[
+        bool,
+        typer.Option("--run-tests", help="Run the datatests against the new data before stopping."),
     ] = False,
 ) -> None:
     """Run the serialization experiment series."""
