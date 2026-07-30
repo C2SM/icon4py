@@ -49,8 +49,8 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
     """
     First part for loop implementation with gt4py code
 
-    >>> z_ifc_off_koff = zero_field(icon_grid, EdgeDim, dims.KDim, extend={dims.KDim: 1})
-    >>> z_ifc_off = as_field((EdgeDim, dims.KDim), z_ifc[e2c[:, 0], :])
+    >>> z_ifc_off_koff = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
+    >>> z_ifc_off = as_field((EdgeDim, KDim,), z_ifc[e2c[:, 0], :])
     >>> _compute_z_ifc_off_koff(
     >>>     z_ifc_off=z_ifc_off,
     >>>     domain={EdgeDim: (horizontal_start, nedges), dims.KDim: (0, nlev)},
