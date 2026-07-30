@@ -93,6 +93,7 @@ dependencies = [
   "icon4py-atmosphere-dycore~=0.3.0",
   "icon4py-atmosphere-microphysics~=0.3.0",
   "icon4py-atmosphere-muphys~=0.3.0",
+  "icon4py-land-jsbach~=0.3.0",
   "icon4py-common~=0.3.0",
   "icon4py-standalone_driver~=0.3.0"
 ]
@@ -268,6 +269,7 @@ pythonpath = [
   "model/atmosphere/dycore",
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
+  "model/land/jsbach",
   "model/common",
   "model/standalone_driver",
   "model/testing",
@@ -419,6 +421,7 @@ icon4py-atmosphere-muphys = {workspace = true}
 icon4py-atmosphere-tracer_advection = {workspace = true}
 icon4py-bindings = {workspace = true}
 icon4py-common = {workspace = true}
+icon4py-land-jsbach = {workspace = true}
 icon4py-standalone_driver = {workspace = true}
 icon4py-testing = {workspace = true}
 icon4py-tools = {workspace = true}
@@ -431,6 +434,7 @@ members = [
   "model/atmosphere/dycore",
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
+  "model/land/jsbach",
   "model/common",
   "model/standalone_driver",
   "model/testing",

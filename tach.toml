@@ -6,6 +6,7 @@ source_roots = [
     "model/atmosphere/dycore/src",
     "model/atmosphere/subgrid_scale_physics/microphysics/src",
     "model/atmosphere/subgrid_scale_physics/muphys/src",
+    "model/land/jsbach/src",
     "model/standalone_driver/src",
     "model/common/src",
     "model/testing/src",
@@ -53,6 +54,10 @@ depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.model.atmosphere.subgrid_scale_physics.microphysics"
+depends_on = [{ path = "icon4py.model.common" }]
+
+[[modules]]
+path = "icon4py.model.land.jsbach"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]

@@ -30,13 +30,14 @@ version = 1
 [manifest]
 members = [
   "icon4py",
-  "icon4py-atmosphere-tracer_advection",
   "icon4py-atmosphere-diffusion",
   "icon4py-atmosphere-dycore",
   "icon4py-atmosphere-microphysics",
   "icon4py-atmosphere-muphys",
+  "icon4py-atmosphere-tracer-advection",
   "icon4py-bindings",
   "icon4py-common",
+  "icon4py-land-jsbach",
   "icon4py-standalone-driver",
   "icon4py-testing",
   "icon4py-tools"
@@ -1757,12 +1758,13 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "icon4py-atmosphere-tracer_advection"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
   {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-atmosphere-muphys"},
+  {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common"},
+  {name = "icon4py-land-jsbach"},
   {name = "icon4py-standalone-driver"}
 ]
 name = "icon4py"
@@ -1867,11 +1869,11 @@ typing-distributed = [
 provides-extras = ["all", "cuda12", "cuda13", "distributed", "fortran", "io", "profiling", "rocm7", "testing"]
 requires-dist = [
   {name = "icon4py", extras = ["distributed", "fortran", "io", "testing", "profiling"], marker = "extra == 'all'"},
-  {name = "icon4py-atmosphere-tracer_advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
+  {name = "icon4py-atmosphere-tracer-advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-bindings", marker = "extra == 'fortran'", editable = "bindings"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
@@ -1879,6 +1881,7 @@ requires-dist = [
   {name = "icon4py-common", extras = ["distributed"], marker = "extra == 'distributed'", editable = "model/common"},
   {name = "icon4py-common", extras = ["io"], marker = "extra == 'io'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
+  {name = "icon4py-land-jsbach", editable = "model/land/jsbach"},
   {name = "icon4py-standalone-driver", editable = "model/standalone_driver"},
   {name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing"},
   {name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0"}
@@ -2016,23 +2019,6 @@ dependencies = [
   {name = "icon4py-common"},
   {name = "packaging"}
 ]
-name = "icon4py-atmosphere-tracer_advection"
-source = {editable = "model/atmosphere/tracer_advection"}
-version = "0.3.0"
-
-[package.metadata]
-requires-dist = [
-  {name = "gt4py", specifier = "==1.1.12"},
-  {name = "icon4py-common", editable = "model/common"},
-  {name = "packaging", specifier = ">=20.0"}
-]
-
-[[package]]
-dependencies = [
-  {name = "gt4py"},
-  {name = "icon4py-common"},
-  {name = "packaging"}
-]
 name = "icon4py-atmosphere-diffusion"
 source = {editable = "model/atmosphere/diffusion"}
 version = "0.3.0"
@@ -2094,6 +2080,23 @@ requires-dist = [
   {name = "gt4py", specifier = "==1.1.12"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
+  {name = "packaging", specifier = ">=20.0"}
+]
+
+[[package]]
+dependencies = [
+  {name = "gt4py"},
+  {name = "icon4py-common"},
+  {name = "packaging"}
+]
+name = "icon4py-atmosphere-tracer-advection"
+source = {editable = "model/atmosphere/tracer_advection"}
+version = "0.3.0"
+
+[package.metadata]
+requires-dist = [
+  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
 
@@ -2230,6 +2233,23 @@ io = [
 rocm7 = [
   {name = "cupy-rocm-7-0"},
   {name = "gt4py", extra = ["rocm7"]}
+]
+
+[[package]]
+dependencies = [
+  {name = "gt4py"},
+  {name = "icon4py-common"},
+  {name = "packaging"}
+]
+name = "icon4py-land-jsbach"
+source = {editable = "model/land/jsbach"}
+version = "0.3.0"
+
+[package.metadata]
+requires-dist = [
+  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "icon4py-common", editable = "model/common"},
+  {name = "packaging", specifier = ">=20.0"}
 ]
 
 [[package]]
