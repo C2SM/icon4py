@@ -32,24 +32,27 @@ def minimum_image_offset(
     return extent * array_ns.round(delta / extent)
 
 
-def nearest_periodic_image(
+def minimum_image_separation(
     *,
     x: data_alloc.NDArray,
     y: data_alloc.NDArray,
     reference_x: data_alloc.NDArray | float,
     reference_y: data_alloc.NDArray | float,
-    domain_length: float,
-    domain_height: float,
+    domain_extent_x: float,
+    domain_extent_y: float,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    """Coordinates of the periodic image of ``(x, y)`` closest to ``(reference_x, reference_y)``.
+    """Shortest signed separation from ``(reference_x, reference_y)`` to ``(x, y)`` on the torus.
 
-    ``domain_length`` and ``domain_height`` are the periodic extents of the torus in the
-    x and y directions.
+    Equivalently the offset from the reference to the periodic image of ``(x, y)`` closest
+    to it.
+
+    The image coordinate is formed first and the reference subtracted from it, rather than
+    shifting the raw difference. Algebraically the same, but it is the operation order of
+    ICON's ``plane_torus_closest_coordinates`` followed by ``dv%x - v0`` for bit-identicity.
     """
-    return (
-        x - minimum_image_offset(delta=x - reference_x, extent=domain_length),
-        y - minimum_image_offset(delta=y - reference_y, extent=domain_height),
-    )
+    image_x = x - minimum_image_offset(delta=x - reference_x, extent=domain_extent_x)
+    image_y = y - minimum_image_offset(delta=y - reference_y, extent=domain_extent_y)
+    return (image_x - reference_x, image_y - reference_y)
 
 
 def horizontal_distance_to_point(
@@ -59,14 +62,14 @@ def horizontal_distance_to_point(
     point_x: float,
     point_y: float,
     wrap: bool,
-    domain_length: float | None = None,
-    domain_height: float | None = None,
+    domain_extent_x: float | None = None,
+    domain_extent_y: float | None = None,
 ) -> data_alloc.NDArray:
     """Horizontal distance from each point ``(x, y)`` to a fixed ``(point_x, point_y)``.
 
     With ``wrap=False`` this is the plain Euclidean distance on the plane. With
     ``wrap=True`` the distance is computed on a doubly-periodic torus using the
-    minimum-image convention, where ``domain_length`` and ``domain_height`` are the
+    minimum-image convention, where ``domain_extent_x`` and ``domain_extent_y`` are the
     periodic extents in the x and y directions (both required in that case).
 
     ``wrap`` has no default on purpose: the choice is not obvious for a doubly-periodic
@@ -77,13 +80,22 @@ def horizontal_distance_to_point(
     bubble and the Gaussian-hill topography) reproduce ICON and hence pass ``wrap=False``.
     """
     array_ns = data_alloc.array_namespace(x)
-    dx = x - point_x
-    dy = y - point_y
     if wrap:
-        if domain_length is None or domain_height is None:
-            raise ValueError("Periodic wrapping requires both 'domain_length' and 'domain_height'.")
-        dx = dx - minimum_image_offset(delta=dx, extent=domain_length)
-        dy = dy - minimum_image_offset(delta=dy, extent=domain_height)
+        if domain_extent_x is None or domain_extent_y is None:
+            raise ValueError(
+                "Periodic wrapping requires both 'domain_extent_x' and 'domain_extent_y'."
+            )
+        dx, dy = minimum_image_separation(
+            x=x,
+            y=y,
+            reference_x=point_x,
+            reference_y=point_y,
+            domain_extent_x=domain_extent_x,
+            domain_extent_y=domain_extent_y,
+        )
+    else:
+        dx = x - point_x
+        dy = y - point_y
     return array_ns.sqrt(dx * dx + dy * dy)
 
 

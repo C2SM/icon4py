@@ -29,15 +29,15 @@ def test_horizontal_distance_to_point_requires_wrap() -> None:
         distance_array_ns.horizontal_distance_to_point(x=x, y=y, point_x=0.0, point_y=0.0)  # type: ignore[call-arg]
 
 
-def test_nearest_periodic_image() -> None:
+def test_minimum_image_separation() -> None:
     # (9, 1) is closest to the reference (0, 0) through the x boundary, (1, 1) directly.
     x = np.array([9.0, 1.0])
     y = np.array([1.0, 1.0])
-    image_x, image_y = distance_array_ns.nearest_periodic_image(
-        x=x, y=y, reference_x=0.0, reference_y=0.0, domain_length=10.0, domain_height=10.0
+    dx, dy = distance_array_ns.minimum_image_separation(
+        x=x, y=y, reference_x=0.0, reference_y=0.0, domain_extent_x=10.0, domain_extent_y=10.0
     )
-    np.testing.assert_allclose(image_x, [-1.0, 1.0])
-    np.testing.assert_allclose(image_y, [1.0, 1.0])
+    np.testing.assert_allclose(dx, [-1.0, 1.0])
+    np.testing.assert_allclose(dy, [1.0, 1.0])
 
 
 def test_horizontal_distance_to_point_wrap_uses_nearest_image() -> None:
@@ -46,7 +46,7 @@ def test_horizontal_distance_to_point_wrap_uses_nearest_image() -> None:
     x = np.array([1.0, 9.0])
     y = np.array([0.0, 0.0])
     dist = distance_array_ns.horizontal_distance_to_point(
-        x=x, y=y, point_x=0.0, point_y=0.0, domain_length=10.0, domain_height=10.0, wrap=True
+        x=x, y=y, point_x=0.0, point_y=0.0, domain_extent_x=10.0, domain_extent_y=10.0, wrap=True
     )
     np.testing.assert_allclose(dist, [1.0, 1.0])
 
@@ -54,7 +54,7 @@ def test_horizontal_distance_to_point_wrap_uses_nearest_image() -> None:
 def test_horizontal_distance_to_point_wrap_requires_domain_extents() -> None:
     x = np.array([1.0])
     y = np.array([1.0])
-    with pytest.raises(ValueError, match="domain_length"):
+    with pytest.raises(ValueError, match="domain_extent_x"):
         distance_array_ns.horizontal_distance_to_point(
             x=x, y=y, point_x=0.0, point_y=0.0, wrap=True
         )

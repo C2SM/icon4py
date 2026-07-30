@@ -1315,16 +1315,16 @@ def compute_lsq_coeffs(
             neighbors = c2e2c[cells, :lsq_dim_c]
             center_x = cell_center_x[cells, array_ns.newaxis]
             center_y = cell_center_y[cells, array_ns.newaxis]
-            image_x, image_y = distance_array_ns.nearest_periodic_image(
-                x=cell_center_x[neighbors],
-                y=cell_center_y[neighbors],
-                reference_x=center_x,
-                reference_y=center_y,
-                domain_length=domain_length,
-                domain_height=domain_height,
+            z_dist_g[cells, :, 0], z_dist_g[cells, :, 1] = (
+                distance_array_ns.minimum_image_separation(
+                    x=cell_center_x[neighbors],
+                    y=cell_center_y[neighbors],
+                    reference_x=center_x,
+                    reference_y=center_y,
+                    domain_extent_x=domain_length,
+                    domain_extent_y=domain_height,
+                )
             )
-            z_dist_g[cells, :, 0] = image_x - center_x
-            z_dist_g[cells, :, 1] = image_y - center_y
 
     lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_wgt_exp)
 
