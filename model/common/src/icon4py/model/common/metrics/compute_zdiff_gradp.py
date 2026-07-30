@@ -69,7 +69,7 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
             >>> _compute_param.with_backend(backend)(
             >>>     z_me_jk=z_me[je, jk],
             >>>     z_ifc_off=z_ifc_off_e,
-            >>>     z_ifc_off_koff=as_field((dims.KDim,), z_ifc_off_koff.ndarray[je, :]),
+            >>>     z_ifc_off_koff=as_field((KDim,), z_ifc_off_koff.ndarray[je, :]),
             >>>     lower=int(flat_idx[je]),
             >>>     nlev=nlev - 1,
             >>>     out=(param_3, param_2),
