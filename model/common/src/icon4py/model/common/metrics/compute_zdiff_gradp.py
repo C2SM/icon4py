@@ -53,7 +53,7 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
     >>> z_ifc_off = as_field((EdgeDim, KDim,), z_ifc[e2c[:, 0], :])
     >>> _compute_z_ifc_off_koff(
     >>>     z_ifc_off=z_ifc_off,
-    >>>     domain={EdgeDim: (horizontal_start, nedges), dims.KDim: (0, nlev)},
+    >>>     domain={EdgeDim: (horizontal_start, nedges), KDim: (0, nlev)},
     >>>     out=z_ifc_off_koff,
     >>>     offset_provider={"Koff": icon_grid.get_offset_provider("Koff")}
     >>> )
