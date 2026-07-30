@@ -82,14 +82,14 @@ def foo(
         out=(half_level_var, full_level_var),
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            KDim: (vertical_start, vertical_end - 1),
         }
     )
     _init_cell_kdim_field_with_zero_vp(
         out=half_level_var,
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_end - 1, vertical_end),
+            KDim: (vertical_end - 1, vertical_end),
         }
     )
 )
