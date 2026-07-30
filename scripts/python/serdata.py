@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import collections
+import json
 import pathlib
 import sys
 from typing import Annotated
@@ -21,9 +22,12 @@ import typer
 
 from icon4py.model.testing.serialized_data import (
     SAVEPOINT_CLASSES,
+    TESTDATA_LOCK_SCHEMA,
     backfill_archive_metadata,
+    build_lock_entry,
     compare_archives,
     fingerprint_archive,
+    parse_archive_dirname,
     render_diff_report,
     summarise_differences,
 )
@@ -123,3 +127,34 @@ def inspect(
             )
             for position, old_value, new_value in summary.samples:
                 print(f"    {position}: {old_value} -> {new_value}")
+
+
+@cli.command()
+def bless(
+    archive: Annotated[pathlib.Path, typer.Argument(help="Extracted archive directory.")],
+    lock_dir: Annotated[
+        pathlib.Path, typer.Option("--lock-dir", help="Where the lockfiles live.")
+    ] = pathlib.Path("model/testing/testdata"),
+) -> None:
+    """Pin the guarded records of an archive so that CI notices if they move."""
+    parsed = parse_archive_dirname(archive.name)
+    if parsed is None:
+        raise typer.BadParameter(f"'{archive.name}' is not an archive directory name.")
+    comm_size, experiment, version = parsed
+
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    path = lock_dir / f"{experiment}.lock.json"
+    lock = json.loads(path.read_text()) if path.is_file() else {}
+    if lock.get("version") not in (None, version):
+        # A lockfile describes one published version; mixing two would pin records that
+        # never coexisted.
+        print(f"  replacing the v{lock['version']:02d} lock with v{version:02d}")
+        lock = {}
+
+    lock.update({"schema": TESTDATA_LOCK_SCHEMA, "experiment": experiment, "version": version})
+    entries = lock.setdefault("archives", {})
+    entries[str(comm_size)] = build_lock_entry(fingerprint_archive(archive), comm_size=comm_size)
+
+    with path.open("w") as f:
+        json.dump(lock, f, indent=2, sort_keys=True)
+    print(f"  pinned {len(entries[str(comm_size)]['records'])} records -> {path}")

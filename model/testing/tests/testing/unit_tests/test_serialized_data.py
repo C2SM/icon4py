@@ -21,6 +21,7 @@ import pytest
 from icon4py.model.testing.serialized_data import (
     BannerParseError,
     backfill_archive_metadata,
+    build_lock_entry,
     classify_savepoint,
     compare_archives,
     diff_fingerprints,
@@ -35,6 +36,7 @@ from icon4py.model.testing.serialized_data import (
     render_value_change,
     summarise_differences,
     unclassified_savepoints,
+    verify_against_lock,
 )
 
 
@@ -498,3 +500,67 @@ def test_summarise_differences_of_identical_arrays() -> None:
 
     assert summary.count == 0
     assert summary.samples == []
+
+
+# --- lockfile -----------------------------------------------------------------
+
+
+def test_lock_covers_only_the_guarded_classes() -> None:
+    lock = build_lock_entry(fingerprint_archive(DATA_DIR / "v05"), comm_size=2)
+
+    savepoints = {key.split("#", 1)[0] for key in lock["records"]}
+    assert savepoints == {
+        "icon-grid",
+        "interpolation-state",
+        "metric-state",
+        "smooth-topo-savepoint",
+        "diagnostics",
+        "prognostics",
+    }
+    # the trajectory is never locked: it is expected to move
+    assert not any("advection-exit" in key for key in lock["records"])
+
+
+def test_lock_keys_identify_rank_savepoint_occurrence_and_field() -> None:
+    lock = build_lock_entry(fingerprint_archive(DATA_DIR / "v05"), comm_size=2)
+
+    key = next(k for k in lock["records"] if "boundary_depth_index" in k and "rank0" in k)
+    assert key == "icon-grid#0/boundary_depth_index@rank0"
+    assert len(lock["records"][key]) == 16  # digests are truncated, they only need to differ
+
+
+def test_verify_against_lock_accepts_the_archive_it_was_built_from() -> None:
+    fingerprint = fingerprint_archive(DATA_DIR / "v05")
+    lock = build_lock_entry(fingerprint, comm_size=2)
+
+    assert verify_against_lock(lock, fingerprint) == []
+
+
+def test_verify_against_lock_reports_a_changed_record() -> None:
+    fingerprint = fingerprint_archive(DATA_DIR / "v05")
+    lock = build_lock_entry(fingerprint, comm_size=2)
+    lock["records"]["icon-grid#0/boundary_depth_index@rank0"] = "0" * 16
+
+    problems = verify_against_lock(lock, fingerprint)
+
+    assert len(problems) == 1
+    assert "boundary_depth_index" in problems[0]
+
+
+def test_verify_against_lock_reports_a_missing_record() -> None:
+    fingerprint = fingerprint_archive(DATA_DIR / "v05")
+    lock = build_lock_entry(fingerprint, comm_size=2)
+    lock["records"]["icon-grid#0/a_field_that_vanished@rank0"] = "0" * 16
+
+    problems = verify_against_lock(lock, fingerprint)
+
+    assert len(problems) == 1
+    assert "missing" in problems[0]
+
+
+def test_verify_against_lock_ignores_records_the_lock_does_not_know() -> None:
+    # A regeneration that adds instrumentation adds records; that is not a violation.
+    fingerprint = fingerprint_archive(DATA_DIR / "v06")
+    lock = build_lock_entry(fingerprint_archive(DATA_DIR / "v05"), comm_size=2)
+
+    assert verify_against_lock(lock, fingerprint) == []

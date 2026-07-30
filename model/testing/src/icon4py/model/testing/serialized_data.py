@@ -707,3 +707,49 @@ def _count_entries(array: Any) -> int:
     if isinstance(array, (list, tuple)) or hasattr(array, "__len__"):
         return sum(_count_entries(item) for item in array)
     return 1
+
+
+# ---------------------------------------------------------------------------
+# Lockfile
+# ---------------------------------------------------------------------------
+
+TESTDATA_LOCK_SCHEMA: Final = "icon4py-testdata-lock/1"
+
+# Digests only ever have to differ from one another, not to be reproducible outside
+# Serialbox, so the lockfile stores a prefix and stays small enough to read in a diff.
+_LOCKED_DIGEST_LENGTH: Final = 16
+
+# Classes whose records are pinned. The trajectory is deliberately absent: it is
+# expected to move, and locking it would make every regeneration a conflict.
+LOCKED_CLASSES: Final[tuple[SavepointClass, ...]] = ("static", "initial-state")
+
+
+def _lock_key(key: RecordKey) -> str:
+    rank, savepoint, ordinal, field = key
+    return f"{savepoint}#{ordinal}/{field}@rank{rank}"
+
+
+def build_lock_entry(fingerprint: Fingerprint, *, comm_size: int) -> dict:
+    """Pin the guarded records of one archive."""
+    records = {
+        _lock_key(key): digest[:_LOCKED_DIGEST_LENGTH]
+        for key, digest in fingerprint.records.items()
+        if fingerprint.classes.get(key[1], "evolving") in LOCKED_CLASSES
+    }
+    return {"comm_size": comm_size, "ranks": fingerprint.ranks, "records": records}
+
+
+def verify_against_lock(lock_entry: dict, fingerprint: Fingerprint) -> list[str]:
+    """Report every pinned record that changed or disappeared.
+
+    Records the lock does not know about are ignored: adding instrumentation adds
+    records, and that is not a violation of what was blessed.
+    """
+    current = {_lock_key(key): digest for key, digest in fingerprint.records.items()}
+    problems = []
+    for key, locked in sorted(lock_entry["records"].items()):
+        if key not in current:
+            problems.append(f"{key}: missing from the archive")
+        elif current[key][:_LOCKED_DIGEST_LENGTH] != locked:
+            problems.append(f"{key}: locked {locked}, found {current[key][:_LOCKED_DIGEST_LENGTH]}")
+    return problems
