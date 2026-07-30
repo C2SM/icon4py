@@ -101,6 +101,10 @@ fields from `rl_start=2` to `rl_start=1` in `src/shr_horizontal/mo_intp_coeffs.f
 broke three icon4py datatests with no recorded provenance to explain it. That incident is
 what the comparison step below exists to catch.
 
+Note what "catch" means here. That upstream change was deliberate and is being kept: the
+adjustment happens on the icon4py side. The point of the report is that the delta is
+visible and attributable at generation time, not that it can be rejected.
+
 ## Generating
 
 Settings — slurm account `cwd01`, partition `normal`, 15 minutes, uenv `icon/25.2:v3`,
@@ -181,9 +185,17 @@ ICON4PY_ENABLE_TESTDATA_DOWNLOAD=0 \
 
 ## Publishing
 
-> **Fill this in.** The upload command for `rgw.cscs.ch/c2sm:testdata` is not recorded
-> anywhere in the repository and is not reproduced here rather than guessed. Write the
-> exact command down the next time you publish.
+From the directory holding the tarballs:
+
+```bash
+aws --profile cscs-icon4py s3 sync . s3://testdata/experiments/ \
+  --exclude "*" --include "*.tar.gz"
+```
+
+`sync` uploads whatever is missing remotely, so the `--include` filter is what keeps it
+from walking the extracted directories, and the per-experiment versioning is what keeps
+it from overwriting a published object. Check the tarball names against the bucket before
+running it if you regenerated an experiment whose version you did not bump.
 
 Then open a PR containing the version bump in `definitions.py` and the comparison report
 in the PR body.
