@@ -45,7 +45,7 @@ def foo(
         out=(half_level_var, full_level_var),
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end),
         }
     )
 )
