@@ -109,7 +109,7 @@ def compute_wgtfacq_e_dsl(
         n_edges: number of edges
         nlev: int, last k level
     Returns:
-    Field[EdgeDim, dims.KDim] (full levels)
+    Field[EdgeDim, KDim] (full levels)
     """
     array_ns = data_alloc.array_namespace(e2c)
     wgtfacq_e_dsl = array_ns.zeros(shape=(n_edges, nlev + 1))
