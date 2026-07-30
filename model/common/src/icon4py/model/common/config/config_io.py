@@ -27,11 +27,11 @@ CONV.register_unstructure_hook(ta.wpfloat, lambda v: CONV.unstructure(float(v)))
 yaml.add_representer(type(None), lambda d, _: d.represent_scalar("tag:yaml.org,2002:null", ""))
 
 
-def read[T](yaml_str: str, config_cls: type[T]) -> T:
+def read_yaml_str[T](yaml_str: str, config_cls: type[T]) -> T:
     return CONV.structure(yaml.safe_load(yaml_str), config_cls)
 
 
-def write[T](config_inst: T) -> str:
+def write_yaml_str[T](config_inst: T) -> str:
     return yaml.dump(CONV.unstructure(config_inst), sort_keys=False)
 
 

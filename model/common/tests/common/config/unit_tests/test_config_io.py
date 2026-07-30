@@ -36,7 +36,9 @@ class ExampleEnum(int, enum.Enum):
 
 
 type CONFIG_UNION = ExampleConfig | AlternativeConfig
-config_io.register_config_union(CONFIG_UNION.__value__, {"example": ExampleConfig, "alt": AlternativeConfig})
+config_io.register_config_union(
+    CONFIG_UNION.__value__, {"example": ExampleConfig, "alt": AlternativeConfig}
+)
 
 
 @dataclasses.dataclass
@@ -44,13 +46,13 @@ class UnionConfig:
     union: CONFIG_UNION
 
 
-def test_read_empty_fails() -> None:
+def test_read_yaml_str_empty_fails() -> None:
     with pytest.raises(TypeError):
-        _ = config_io.read("", ExampleConfig)
+        _ = config_io.read_yaml_str("", ExampleConfig)
 
 
-def test_read_required_only() -> None:
-    config = config_io.read(
+def test_read_yaml_str_required_only() -> None:
+    config = config_io.read_yaml_str(
         textwrap.dedent(
             """
             required_flag: false
@@ -62,8 +64,8 @@ def test_read_required_only() -> None:
     assert config.optional_int == 5
 
 
-def test_read_all() -> None:
-    config = config_io.read(
+def test_read_yaml_str_all() -> None:
+    config = config_io.read_yaml_str(
         textwrap.dedent(
             """
             required_flag: true
@@ -76,9 +78,9 @@ def test_read_all() -> None:
     assert config.optional_int == 42
 
 
-def test_read_extra_keys_fails() -> None:
+def test_read_yaml_str_extra_keys_fails() -> None:
     with pytest.raises(cattrs.ClassValidationError):
-        _ = config_io.read(
+        _ = config_io.read_yaml_str(
             textwrap.dedent(
                 """
                 required_flag: true
@@ -89,34 +91,34 @@ def test_read_extra_keys_fails() -> None:
         )
 
 
-def test_read_write_roundtrip() -> None:
+def test_read_yaml_str_write_yaml_str_roundtrip() -> None:
     reference = textwrap.dedent(
         """\
         required_flag: false
         optional_int: 3
         """
     )
-    assert config_io.write(config_io.read(reference, ExampleConfig)) == reference
+    assert config_io.write_yaml_str(config_io.read_yaml_str(reference, ExampleConfig)) == reference
 
 
-def test_write_read_roundtrip() -> None:
+def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
     reference = ExampleConfig(True, 6)
-    assert config_io.read(config_io.write(reference), ExampleConfig) == reference
+    assert config_io.read_yaml_str(config_io.write_yaml_str(reference), ExampleConfig) == reference
 
 
 def test_roundtrip_abstime() -> None:
     abstime_str = "'2026-07-30T14:41:25'\n"
-    abstime = config_io.read(abstime_str, time.AbsoluteTime)
+    abstime = config_io.read_yaml_str(abstime_str, time.AbsoluteTime)
     assert abstime.year == 2026
     assert abstime.second == 25
-    assert config_io.write(abstime) == abstime_str
+    assert config_io.write_yaml_str(abstime) == abstime_str
 
 
 def test_roundtrip_reltime() -> None:
     reltime_str = "300\n...\n"
-    reltime = config_io.read(reltime_str, time.RelativeTime)
+    reltime = config_io.read_yaml_str(reltime_str, time.RelativeTime)
     assert reltime.seconds == 300
-    assert config_io.write(reltime) == reltime_str
+    assert config_io.write_yaml_str(reltime) == reltime_str
 
 
 @pytest.mark.parametrize(
@@ -134,16 +136,16 @@ def test_roundtrip_endtime_abs(
     class EndtimeConfig:
         endtime: time.EndOfSimulation
 
-    config = config_io.read(endtime_str, EndtimeConfig)
+    config = config_io.read_yaml_str(endtime_str, EndtimeConfig)
     assert check(config.endtime)
-    assert config_io.write(config) == endtime_str
+    assert config_io.write_yaml_str(config) == endtime_str
 
 
 def test_roundtrip_enum() -> None:
     enum_str = "foo\n...\n"
-    foo = config_io.read(enum_str, ExampleEnum)
+    foo = config_io.read_yaml_str(enum_str, ExampleEnum)
     assert foo is ExampleEnum.FOO
-    assert config_io.write(foo) == enum_str
+    assert config_io.write_yaml_str(foo) == enum_str
 
 
 @pytest.mark.parametrize(
@@ -158,7 +160,7 @@ def test_roundtrip_enum() -> None:
                   optional_int: 42
                 """
             ),
-            ExampleConfig(True, 42)
+            ExampleConfig(True, 42),
         ),
         (
             textwrap.dedent(
@@ -168,12 +170,11 @@ def test_roundtrip_enum() -> None:
                   unrelated_int: 7
                 """
             ),
-            AlternativeConfig(7)
-        )
-
-    )
+            AlternativeConfig(7),
+        ),
+    ),
 )
 def test_roundtrip_config_union(cfg_str: str, reference: CONFIG_UNION) -> None:
-    config = config_io.read(cfg_str, UnionConfig)
+    config = config_io.read_yaml_str(cfg_str, UnionConfig)
     assert config == UnionConfig(reference)
-    assert config_io.write(config) == cfg_str
+    assert config_io.write_yaml_str(config) == cfg_str

@@ -20,7 +20,7 @@ from icon4py.model.standalone_driver import config as driver_config, driver_stat
 
 
 def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
-    # fortran dumps the whole namelist, so the variables the driver reads are always
+    # fortran dumps the whole namelist, so the variables the driver read_yaml_strs are always
     # present. Here they only need a value when the test does not care about it.
     atm_dict = {
         "nonhydrostatic_nml": {"vcfl_threshold": 0.85, "ndyn_substeps": 5},
@@ -147,7 +147,7 @@ def test_restart_starts_the_time_loop_at_start_of_timestepping() -> None:
 
 
 def test_io_roundtrip_cls_cls() -> None:
-    conf = config_io.read(
+    conf = config_io.read_yaml_str(
         textwrap.dedent(
             """
             geometry: {}
@@ -176,10 +176,15 @@ def test_io_roundtrip_cls_cls() -> None:
         driver_config.ExperimentConfig,
     )
     assert conf.driver.experiment_name == "foo"
-    assert config_io.read(config_io.write(conf), driver_config.ExperimentConfig) == conf
+    assert (
+        config_io.read_yaml_str(config_io.write_yaml_str(conf), driver_config.ExperimentConfig)
+        == conf
+    )
 
 
 def test_io_roundtrip_str_str() -> None:
     config_str = (pathlib.Path(__file__).parent / "data" / "test_config.yml").read_text()
-    roundtrip_str = config_io.write(config_io.read(config_str, driver_config.ExperimentConfig))
+    roundtrip_str = config_io.write_yaml_str(
+        config_io.read_yaml_str(config_str, driver_config.ExperimentConfig)
+    )
     assert roundtrip_str == config_str
