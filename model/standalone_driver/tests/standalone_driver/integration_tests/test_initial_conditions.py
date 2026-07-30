@@ -51,6 +51,14 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "vn": (0.0, 0.0),
         "w": (0.0, 0.0),
     },
+    test_defs.Experiments.WEISMAN_KLEMP_TORUS: {
+        "rho": (3.8e-15, 9.6e-15),
+        "exner": (1.4e-15, 2.8e-15),
+        "theta_v": (2.0e-12, 2.8e-15),
+        "vn": (4.3e-14, 6.6e-13),
+        "w": (0.0, 0.0),
+        "qv": (2.0e-16, 1.6e-14),
+    },
     test_defs.Experiments.MCH_CH_R04B09: {
         "rho": (0.0, 0.0),
         "exner": (0.0, 0.0),
@@ -68,6 +76,7 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         test_defs.Experiments.JW,
         test_defs.Experiments.EXCLAIM_APE_AES,
         test_defs.Experiments.GAUSS3D,
+        test_defs.Experiments.WEISMAN_KLEMP_TORUS,
         test_defs.Experiments.MCH_CH_R04B09,
     ],
 )
