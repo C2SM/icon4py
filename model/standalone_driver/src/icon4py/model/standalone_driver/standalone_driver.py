@@ -48,6 +48,7 @@ from icon4py.model.common.states import (
     nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
+    tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
@@ -127,9 +128,11 @@ class Icon4pyDriver:
 
     @functools.cached_property
     def _compute_airmass(self) -> Callable[..., None]:
-        """Airmass program (``rho * ddqz_z_full``) with its static inputs bound.
+        """Airmass program (``rho * ddqz_z_full * deepatmo_t1mc``) with its static inputs bound.
 
-        The deep-atmosphere metric factor is identically 1 (shallow atmosphere).
+        ``deepatmo_t1mc`` (ICON's ``deepatmo_vol_mc``) is 1 in the shallow atmosphere, which
+        is the only mode the dycore supports; see the matching factors that tracer advection
+        gets in ``driver_utils.initialize_granules``.
         """
         return model_options.setup_program(
             program=compute_airmass.compute_airmass,
@@ -183,6 +186,7 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state = ds.solve_nonhydro_diagnostic
         tracer_advection_diagnostic_state = ds.tracer_advection_diagnostic
         prognostic_states = ds.prognostics
+        tracers = ds.tracers
         prep_adv = ds.prep_advection_prognostic
         tracer_prep_adv = ds.prep_tracer_advection_prognostic
 
@@ -235,6 +239,7 @@ class Icon4pyDriver:
                     solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
                     tracer_advection_diagnostic_state=tracer_advection_diagnostic_state,
                     prognostic_states=prognostic_states,
+                    tracers=tracers,
                     prep_adv=prep_adv,
                     tracer_prep_adv=tracer_prep_adv,
                 )
@@ -272,9 +277,19 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
         tracer_advection_diagnostic_state: tracer_advection_states.AdvectionDiagnosticState | None,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
+        tracers: common_utils.TimeStepPair[tracer_states.TracerState],
         prep_adv: dycore_states.PrepAdvection | None,
         tracer_prep_adv: tracer_advection_states.AdvectionPrepAdvState | None,
     ) -> None:
+        # Airmass (rho * dz) is tracer advection's density<->mixing-ratio conversion
+        # factor: computed from rho at the beginning of the time step and from the rho
+        # the dynamics leaves behind, as ICON does around its substep loop.
+        if tracer_advection_diagnostic_state is not None:
+            self._compute_airmass(
+                rho_in=prognostic_states.current.rho,
+                airmass_out=tracer_advection_diagnostic_state.airmass_now,
+            )
+
         if self.config.nonhydrostatic is not None:
             assert solve_nonhydro_diagnostic_state is not None
             assert prep_adv is not None
@@ -283,7 +298,18 @@ class Icon4pyDriver:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
-                tracer_advection_diagnostic_state=tracer_advection_diagnostic_state,
+            )
+
+        if tracer_advection_diagnostic_state is not None:
+            # the dynamics leaves the updated rho in 'next'; without it rho is unchanged
+            rho_after_dynamics = (
+                prognostic_states.next.rho
+                if self.config.nonhydrostatic is not None
+                else prognostic_states.current.rho
+            )
+            self._compute_airmass(
+                rho_in=rho_after_dynamics,
+                airmass_out=tracer_advection_diagnostic_state.airmass_new,
             )
 
         if self.granules.diffusion is not None:
@@ -309,8 +335,8 @@ class Icon4pyDriver:
         if self.granules.tracer_advection is not None:
             assert tracer_advection_diagnostic_state is not None
             assert tracer_prep_adv is not None
-            for tracer_current in prognostic_states.current.tracer.active_fields():
-                tracer_next_field = getattr(prognostic_states.next.tracer, tracer_current.name)
+            for tracer_current in tracers.current.active_fields():
+                tracer_next_field = getattr(tracers.next, tracer_current.name)
                 assert tracer_next_field is not None, (
                     f"tracer '{tracer_current.name}' active in current state but missing in next state"
                 )
@@ -325,12 +351,15 @@ class Icon4pyDriver:
         if self.granules.physics is not None:
             self.granules.physics.run(
                 prognostic=prognostic_states.next,
-                tracers=prognostic_states.next.tracer,
+                tracers=tracers.next,
                 dtime=self.config.driver.dtime,
                 simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
             )
 
         prognostic_states.swap()
+        # tracers are advanced once per time step, so they swap here and not with every
+        # dynamics substep (nnow_rcf/nnew_rcf vs nnow/nnew in ICON)
+        tracers.swap()
 
     def _update_time_levels_for_velocity_tendencies(
         self,
@@ -376,18 +405,7 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        tracer_advection_diagnostic_state: tracer_advection_states.AdvectionDiagnosticState
-        | None = None,
     ) -> None:
-        # Airmass (rho * dz) is tracer advection's density<->mixing-ratio conversion
-        # factor: compute it from the current state before the dynamics substeps and
-        # from the updated state after them, as ICON does.
-        if tracer_advection_diagnostic_state is not None:
-            self._compute_airmass(
-                rho_in=prognostic_states.current.rho,
-                airmass_out=tracer_advection_diagnostic_state.airmass_now,
-            )
-
         # updated once per time step, and not cached: it decreases with the elapsed time
         second_order_divdamp_factor = self._second_order_divdamp_factor()
 
@@ -423,12 +441,6 @@ class Icon4pyDriver:
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
         self._compute_total_mass_and_energy(prognostic_states.next)
-
-        if tracer_advection_diagnostic_state is not None:
-            self._compute_airmass(
-                rho_in=prognostic_states.next.rho,
-                airmass_out=tracer_advection_diagnostic_state.airmass_new,
-            )
 
     # watch_mode is true if step is <= 1 or cfl already near or exceeding threshold.
     # omit spinup feature and the option that if the model starts from IFS or COSMO data
@@ -795,6 +807,10 @@ def run_driver(
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
         allocator=allocator,
+    )
+    tracer_state_now = tracer_states.initialize_tracer_state(
+        grid=icon4py_driver.grid,
+        allocator=allocator,
         tracer_config=icon4py_driver.config.tracer_config,
     )
     solve_nonhydro_diagnostic_state = (
@@ -810,6 +826,7 @@ def run_driver(
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
+        tracer_state_now=tracer_state_now,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
@@ -825,6 +842,7 @@ def run_driver(
         exchange=icon4py_driver.exchange,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
+        tracer_state_now=tracer_state_now,
         diagnostic_state=diagnostic_state,
         experiment_config=icon4py_driver.config,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,

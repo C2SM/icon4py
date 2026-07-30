@@ -13,7 +13,7 @@ import pytest
 
 from icon4py.model.common import initial_condition, model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.states import data, prognostic_state as prognostics
+from icon4py.model.common.states import data, prognostic_state as prognostics, tracer_states
 from icon4py.model.standalone_driver import driver_utils, standalone_driver
 from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -114,6 +114,10 @@ def test_initial_conditions(
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
         allocator=allocator,
+    )
+    tracer_state_now = tracer_states.initialize_tracer_state(
+        grid=icon4py_driver.grid,
+        allocator=allocator,
         tracer_config=icon4py_driver.config.tracer_config,
     )
     initial_condition.create(
@@ -122,6 +126,7 @@ def test_initial_conditions(
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
+        tracer_state_now=tracer_state_now,
         solve_nonhydro_diagnostic_state=None,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
@@ -145,8 +150,8 @@ def test_initial_conditions(
     }
 
     # Moist experiments (e.g. APE) initialize the water-vapour tracer
-    if prognostic_state_now.tracer.qv is not None:
-        computed["qv"] = prognostic_state_now.tracer.qv
+    if tracer_state_now.qv is not None:
+        computed["qv"] = tracer_state_now.qv
         references["qv"] = prognostics_savepoint.tracer_now(data.QV)
 
     tolerances = _TOLERANCES[experiment_description]
