@@ -442,6 +442,8 @@ def test_compute_pos_on_tplane_e(
             )
     # rows before horizontal_start are not computed (they stay zero), while the
     # reference carries values on the boundary rows: compare the computed region only
+    # TODO (Yilu): revert to a full comparison once the computation covers the boundary
+    # rows like ICON does (follow-up PR)
     assert test_helpers.dallclose(
         pos_on_tplane_e_x[horizontal_start:],
         pos_on_tplane_e_x_ref[horizontal_start:],

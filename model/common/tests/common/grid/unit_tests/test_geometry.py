@@ -255,6 +255,8 @@ def test_primal_normal_cell(
     # the geometry computes these from LATERAL_BOUNDARY_LEVEL_2 on (rows before stay
     # zero), while the reference carries values on the boundary rows: compare the
     # computed region only
+    # TODO (Yilu): revert to a full comparison once the geometry computes the boundary
+    # rows like ICON does (follow-up PR)
     level = h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     start_index = grid_geometry.grid.start_index(level)
     assert test_utils.dallclose(
@@ -284,6 +286,8 @@ def test_dual_normal_cell(
     # the geometry computes these from LATERAL_BOUNDARY_LEVEL_2 on (rows before stay
     # zero), while the reference carries values on the boundary rows: compare the
     # computed region only
+    # TODO (Yilu): revert to a full comparison once the geometry computes the boundary
+    # rows like ICON does (follow-up PR)
     level = h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     start_index = grid_geometry.grid.start_index(level)
     assert test_utils.dallclose(
