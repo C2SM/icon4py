@@ -23,10 +23,11 @@ import sys
 import tarfile
 import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
-from typing import TYPE_CHECKING
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Annotated, Final, Literal
 
 import f90nml
+import serdata
 import typer
 
 from icon4py.model.common.utils import fortran_config
@@ -40,6 +41,28 @@ else:
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
+
+ARCHIVE_METADATA_FNAME: Final = "archive_metadata.json"
+ARCHIVE_METADATA_SCHEMA: Final = "icon4py-archive-metadata/1"
+RUN_SUMMARY_FNAME: Final = "run_summary.json"
+
+
+@dataclasses.dataclass(frozen=True)
+class TaskResult:
+    """Outcome of a single (experiment, comm_size) serialization task."""
+
+    experiment: str
+    version: int
+    comm_size: int
+    status: Literal["ok", "failed"]
+    job_id: str | None = None
+    tar_path: pathlib.Path | None = None
+    error: str | None = None
+
+    def as_dict(self) -> dict:
+        data = dataclasses.asdict(self)
+        data["tar_path"] = str(self.tar_path) if self.tar_path is not None else None
+        return data
 
 
 @dataclasses.dataclass(frozen=True)
@@ -61,7 +84,12 @@ class SerializationSettings:
     max_threads: int
 
     @classmethod
-    def defaults(cls) -> SerializationSettings:
+    def defaults(
+        cls,
+        *,
+        experiment_names: list[str] | None = None,
+        comm_sizes: list[int] | None = None,
+    ) -> SerializationSettings:
         # ======================================
         # START DEFAULT USER CONFIGURATION
         # ======================================
@@ -88,12 +116,12 @@ class SerializationSettings:
         SBATCH_UENV_VIEW = "default"
         JOB_POLL_SECONDS = 10
 
-        # Directories (derived from this script's location in icon4py/)
+        # Directories (derived from this script's location in the icon4py checkout).
+        # The checkout is expected to sit next to 'icon' and 'build_serialize' inside the
+        # icon-exclaim tree; that layout is validated where it is needed, so that the
+        # command still works from a checkout under another name.
         _THIS_FILE = pathlib.Path(__file__).resolve()
         ICON4PY_REPO_DIR = _THIS_FILE.parents[2]
-        assert ICON4PY_REPO_DIR.name == "icon4py", (
-            f"Expected icon4py repo dir, got {ICON4PY_REPO_DIR}"
-        )
         ROOT_PROJECT_DIR = ICON4PY_REPO_DIR.parent
         ICONF90_REPO_DIR = ROOT_PROJECT_DIR / "icon"
         BUILD_DIR = ROOT_PROJECT_DIR / "build_serialize"
@@ -105,6 +133,31 @@ class SerializationSettings:
 
         # Maximum concurrent threads for running experiments
         MAX_THREADS: int = 5
+
+        # ======================================
+        # END DEFAULT USER CONFIGURATION
+        # ======================================
+
+        # Command line selectors narrow the defaults above. Regenerating a subset is the
+        # normal case: experiment versions are independent, so rebuilding an experiment
+        # whose version was not bumped would overwrite an already published archive.
+        if experiment_names:
+            known = {experiment.name: experiment for experiment in EXPERIMENTS}
+            unknown = sorted(set(experiment_names) - set(known))
+            if unknown:
+                raise typer.BadParameter(
+                    f"unknown experiments: {', '.join(unknown)}. "
+                    f"Known experiments: {', '.join(sorted(known))}."
+                )
+            EXPERIMENTS = [known[name] for name in experiment_names]
+        if comm_sizes:
+            unsupported = sorted(set(comm_sizes) - set(COMM_SIZES))
+            if unsupported:
+                raise typer.BadParameter(
+                    f"unsupported communicator sizes: {unsupported}. "
+                    f"Known communicator sizes: {COMM_SIZES}."
+                )
+            COMM_SIZES = comm_sizes
 
         return cls(
             comm_sizes=COMM_SIZES,
@@ -123,10 +176,6 @@ class SerializationSettings:
             output_root=OUTPUT_ROOT,
             max_threads=MAX_THREADS,
         )
-
-        # ======================================
-        # END DEFAULT USER CONFIGURATION
-        # ======================================
 
 
 def get_f90exp_name(experiment_description: test_defs.ExperimentDescription) -> str:
@@ -505,13 +554,58 @@ def generate_update_script(
     _ = run_command(cmd, cwd=settings.build_dir)
 
 
+def write_archive_metadata(
+    dest_dir: pathlib.Path,
+    experiment_description: test_defs.ExperimentDescription,
+    comm_size: int,
+    job_id: str | None,
+    *,
+    settings: SerializationSettings,
+) -> pathlib.Path:
+    """Write the machine-readable identity of an archive next to its 'ser_data'.
+
+    The ICON revision is taken from the version banner in the slurm log, which is the
+    only artifact with a verified link to the binary that produced the data.
+    """
+    metadata = {
+        "schema": ARCHIVE_METADATA_SCHEMA,
+        "archive": {
+            "experiment": experiment_description.name,
+            "version": experiment_description.version,
+            "comm_size": comm_size,
+            "filename": dt_utils.get_experiment_archive_filename(experiment_description, comm_size),
+            "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        },
+        "provenance": {
+            "icon": serdata.read_icon_banner_from_archive(dest_dir),
+            "icon4py": serdata.harvest_git(settings.icon4py_repo_dir),
+            "runtime": {
+                "slurm_job_id": job_id,
+                "uenv": settings.sbatch_uenv,
+                "uenv_view": settings.sbatch_uenv_view,
+                "partition": settings.sbatch_partition,
+                "account": settings.sbatch_account,
+            },
+        },
+    }
+
+    metadata_path = dest_dir / ARCHIVE_METADATA_FNAME
+    with metadata_path.open("w") as f:
+        json.dump(metadata, f, indent=4)
+    return metadata_path
+
+
 def run_experiment(
     experiment_description: test_defs.ExperimentDescription,
     comm_size: int,
     *,
     settings: SerializationSettings,
-) -> None:
-    """Execute a single experiment with the given communicator size."""
+) -> TaskResult:
+    """Execute a single experiment with the given communicator size.
+
+    Failures are reported back rather than raised: a campaign is 18 slurm tasks over
+    several hours, and one broken task must not discard the others.
+    """
     try:
         # Clean up previous experiment output
         cleanup_exp_output(experiment_description, comm_size, settings=settings)
@@ -543,17 +637,65 @@ def run_experiment(
         log_status(f"Copying ser_data for {experiment_description.name} with {comm_size} ranks")
         dest_dir = copy_ser_data(experiment_description, comm_size, job_id, settings=settings)
 
+        log_status(f"Writing metadata for {experiment_description.name} with {comm_size} ranks")
+        write_archive_metadata(
+            dest_dir, experiment_description, comm_size, job_id, settings=settings
+        )
+
         log_status(f"Creating tar archive for {experiment_description.name} with {comm_size} ranks")
-        tar_folder(dest_dir, experiment_description, comm_size, settings=settings)
+        tar_path = tar_folder(dest_dir, experiment_description, comm_size, settings=settings)
 
         log_status(f"Completed {experiment_description.name} with {comm_size} ranks")
+        return TaskResult(
+            experiment=experiment_description.name,
+            version=experiment_description.version,
+            comm_size=comm_size,
+            status="ok",
+            job_id=job_id,
+            tar_path=tar_path,
+        )
     except Exception as e:
         log_status(f"ERROR in {experiment_description.name} with {comm_size} ranks: {e}")
-        raise
+        return TaskResult(
+            experiment=experiment_description.name,
+            version=experiment_description.version,
+            comm_size=comm_size,
+            status="failed",
+            error=f"{type(e).__name__}: {e}",
+        )
+
+
+def report_results(results: list[TaskResult], *, settings: SerializationSettings) -> None:
+    """Print the per-task outcome table and persist it next to the archives."""
+    width = max((len(result.experiment) for result in results), default=10)
+    log_status("Task summary:")
+    for result in results:
+        detail = result.error if result.status == "failed" else (result.tar_path or "")
+        print(
+            f"  {result.status:<6} {result.experiment:<{width}} v{result.version:02d} "
+            f"ranks={result.comm_size} {detail}"
+        )
+
+    summary_path = settings.output_root / RUN_SUMMARY_FNAME
+    with summary_path.open("w") as f:
+        json.dump([result.as_dict() for result in results], f, indent=4)
+    log_status(f"Wrote task summary to {summary_path}")
 
 
 @cli.command()
-def run_serialization() -> None:
+def run_serialization(
+    experiment: Annotated[
+        list[str] | None,
+        typer.Option("--experiment", "-e", help="Experiment to run; repeat for several."),
+    ] = None,
+    comm_size: Annotated[
+        list[int] | None,
+        typer.Option("--comm-size", "-c", help="Communicator size to run; repeat for several."),
+    ] = None,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="List the tasks that would run, then stop.")
+    ] = False,
+) -> None:
     """Run the serialization experiment series."""
 
     # Import here to reduce startup time for the CLI
@@ -563,18 +705,32 @@ def run_serialization() -> None:
         definitions as test_defs,
     )
 
-    settings = SerializationSettings.defaults()
-    settings.output_root.mkdir(parents=True, exist_ok=True)
+    settings = SerializationSettings.defaults(experiment_names=experiment, comm_sizes=comm_size)
 
     total_tasks = len(settings.experiment_descriptions) * len(settings.comm_sizes)
     log_status(
         f"Starting experiment series with {total_tasks} tasks ({len(settings.experiment_descriptions)} experiments x {len(settings.comm_sizes)} communicator sizes)"
     )
 
-    for rank_idx, comm_size in enumerate(settings.comm_sizes, 1):
+    if dry_run:
+        for size in settings.comm_sizes:
+            for experiment_description in settings.experiment_descriptions:
+                print(f"  {get_tar_path(experiment_description, size, settings=settings).name}")
+        return
+
+    if not settings.build_dir.is_dir():
+        raise typer.BadParameter(
+            f"Serialization build directory '{settings.build_dir}' does not exist. Run this "
+            "from the icon4py checkout inside the icon-exclaim build tree."
+        )
+
+    settings.output_root.mkdir(parents=True, exist_ok=True)
+    results: list[TaskResult] = []
+
+    for rank_idx, comm_size_value in enumerate(settings.comm_sizes, 1):
         num_experiments = len(settings.experiment_descriptions)
         log_status(
-            f"Starting communicator size {rank_idx}/{len(settings.comm_sizes)}: {comm_size} ranks ({num_experiments} experiments parallel)"
+            f"Starting communicator size {rank_idx}/{len(settings.comm_sizes)}: {comm_size_value} ranks ({num_experiments} experiments parallel)"
         )
 
         with ThreadPoolExecutor(max_workers=settings.max_threads) as executor:
@@ -582,21 +738,25 @@ def run_serialization() -> None:
 
             for experiment_description in settings.experiment_descriptions:
                 future = executor.submit(
-                    run_experiment, experiment_description, comm_size, settings=settings
+                    run_experiment, experiment_description, comm_size_value, settings=settings
                 )
                 futures.append(future)
 
             log_status(
-                f"All {len(futures)} experiments queued for {comm_size} ranks, waiting for completion..."
+                f"All {len(futures)} experiments queued for {comm_size_value} ranks, waiting for completion..."
             )
 
-            # Wait for all futures to complete and collect exceptions
-            for future in futures:
-                future.result()  # Re-raises any exceptions from the thread
+            results.extend(future.result() for future in futures)
 
         log_status(
-            f"Completed communicator size {rank_idx}/{len(settings.comm_sizes)}: {comm_size} ranks"
+            f"Completed communicator size {rank_idx}/{len(settings.comm_sizes)}: {comm_size_value} ranks"
         )
+
+    report_results(results, settings=settings)
+    failed = [result for result in results if result.status == "failed"]
+    if failed:
+        log_status(f"{len(failed)}/{len(results)} tasks failed.")
+        raise typer.Exit(code=1)
 
     log_status(f"All {total_tasks} tasks completed successfully!")
 
