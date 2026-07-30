@@ -440,8 +440,20 @@ def test_compute_pos_on_tplane_e(
                 dual_edge_length,
                 e2c,
             )
-    assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-8, rtol=1e-9)
-    assert test_helpers.dallclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref, atol=1e-8, rtol=1e-9)
+    # rows before horizontal_start are not computed (they stay zero), while the
+    # reference carries values on the boundary rows: compare the computed region only
+    assert test_helpers.dallclose(
+        pos_on_tplane_e_x[horizontal_start:],
+        pos_on_tplane_e_x_ref[horizontal_start:],
+        atol=1e-8,
+        rtol=1e-9,
+    )
+    assert test_helpers.dallclose(
+        pos_on_tplane_e_y[horizontal_start:],
+        pos_on_tplane_e_y_ref[horizontal_start:],
+        atol=1e-8,
+        rtol=1e-9,
+    )
 
 
 @pytest.mark.level("unit")
