@@ -7,18 +7,21 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
 import functools
-from typing import Protocol, TypedDict, Union, runtime_checkable
+from collections.abc import Sequence
+from typing import Literal, Protocol, TypedDict, runtime_checkable
 
 import gt4py._core.definitions as gt_coredefs
 import gt4py.next as gtx
 import gt4py.next.common as gt_common
 import numpy.typing as np_t
 
+import icon4py.model.common.type_alias as ta
+
 
 """Contains type definitions used for the model`s state representation."""
-
-DimensionT = Union[gtx.Dimension, str]
-BufferT = Union[np_t.ArrayLike, gtx.Field]
+type DimensionNames = Literal["cell", "edge", "vertex"]
+type BufferT = np_t.ArrayLike | gtx.Field
+type DTypeT = ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
 
 
 class OptionalMetaData(TypedDict, total=False):
@@ -26,8 +29,14 @@ class OptionalMetaData(TypedDict, total=False):
     long_name: str
     #: we might not have this one for all fields. But it is useful to have it for tractability with ICON
     icon_var_name: str
-    # TODO (@halungge) dims should probably be required
-    dims: tuple[DimensionT, ...]
+    #: list index for variables stored in fortran lists (e.g. tracers)
+    icon_var_list_index: int
+    # TODO(halungge): dims should probably be required?
+    dims: Sequence[gtx.Dimension]
+    dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
+    #: whether the vertical dimension of the field lives on interface (half) levels
+    #: rather than full levels
+    is_on_half_levels: bool
 
 
 class RequiredMetaData(TypedDict, total=True):

@@ -11,26 +11,65 @@ import datetime as dt
 import functools
 import logging
 import pathlib
-from typing import Final
+import uuid
+from typing import Final, Required, TypedDict
 
 import netCDF4 as nc
 import numpy as np
 import xarray as xr
 
+import icon4py.model.common.states.metadata
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 EDGE: Final[str] = "edge"
 VERTEX: Final[str] = "vertex"
 CELL: Final[str] = "cell"
-MODEL_INTERFACE_LEVEL: Final[str] = "interface_level"
+MODEL_HALF_LEVEL: Final[str] = "half_level"
 MODEL_LEVEL: Final[str] = "level"
 TIME: Final[str] = "time"
 
 log = logging.getLogger(__name__)
-processor_properties = decomposition.SingleNodeProcessProperties()
+process_properties = decomposition.SingleNodeProcessProperties()
+
+
+class GlobalFileAttributes(TypedDict, total=False):
+    """
+    Global file attributes of a ICON generated netCDF file.
+
+    Attribute map what ICON produces, (including the upper, lower case pattern).
+    Omissions (possibly incomplete):
+    - 'CDI' used for the supported CDI version (http://mpimet.mpg.de/cdi) since we do not support it
+
+    Additions:
+    - 'external_variables': variable used by CF conventions if cell_measure variables are used from an external file'
+    """
+
+    #: version of the supported CF conventions
+    Conventions: Required[str]  # TODO(halungge): check changelog? latest version is 1.11
+
+    #: unique id of the horizontal grid used in the simulation (from grid file)
+    uuidOfHGrid: Required[uuid.UUID]
+
+    #: institution name
+    institution: Required[str]
+
+    #: title of the file or simulation
+    title: Required[str]
+
+    #: source code repository
+    source: Required[str]
+
+    #: path of the binary and generation time stamp of the file
+    history: Required[str]
+
+    #: references for publication # TODO(halungge): check if this is the right reference
+    references: str
+    comment: str
+    external_variables: str
 
 
 @dataclasses.dataclass
@@ -50,12 +89,13 @@ class NETCDFWriter:
 
     def __init__(
         self,
-        file_name: pathlib.Path,
+        *,
+        file_name: pathlib.Path | str,
         vertical: v_grid.VerticalGrid,
-        horizontal: h_grid.HorizontalGridSize,
+        horizontal: base.HorizontalGridSize,
         time_properties: TimeProperties,
-        global_attrs: dict,
-        process_properties: decomposition.ProcessProperties = processor_properties,
+        global_attrs: GlobalFileAttributes,
+        process_properties: decomposition.ProcessProperties = process_properties,
     ):
         self._file_name = str(file_name)
         self._process_properties = process_properties
@@ -65,7 +105,8 @@ class NETCDFWriter:
         self.attrs = global_attrs
         self.dataset = None
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> str:
+        assert self.dataset is not None
         return self.dataset.getncattr(item)
 
     @functools.cached_property
@@ -77,7 +118,7 @@ class NETCDFWriter:
         return self._vertical_params.interface_physical_height.ndarray.shape[0]
 
     def initialize_dataset(self) -> None:
-        self.dataset = nc.Dataset(
+        self.dataset = nc.Dataset(  # type: ignore [assignment] # dataset is reassigned here
             self._file_name,
             "w",
             format="NETCDF4",
@@ -85,12 +126,13 @@ class NETCDFWriter:
             parallel=self._process_properties.comm_size > 1,
             comm=self._process_properties.comm,
         )
+        assert self.dataset is not None
         log.info(f"Creating file {self._file_name} at {self.dataset.filepath()}")
         self.dataset.setncatts({k: str(v) for (k, v) in self.attrs.items()})
         ## create dimensions all except time are fixed
         self.dataset.createDimension(TIME, None)
         self.dataset.createDimension(MODEL_LEVEL, self.num_levels)
-        self.dataset.createDimension(MODEL_INTERFACE_LEVEL, self.num_interfaces)
+        self.dataset.createDimension(MODEL_HALF_LEVEL, self.num_interfaces)
         self.dataset.createDimension(CELL, self._horizontal_size.num_cells)
         self.dataset.createDimension(VERTEX, self._horizontal_size.num_vertices)
         self.dataset.createDimension(EDGE, self._horizontal_size.num_edges)
@@ -110,22 +152,24 @@ class NETCDFWriter:
         levels.standard_name = cf_utils.LEVEL_STANDARD_NAME
         levels[:] = np.arange(self.num_levels, dtype=np.int32)
 
-        interface_levels = self.dataset.createVariable(
-            MODEL_INTERFACE_LEVEL, np.int32, (MODEL_INTERFACE_LEVEL,)
+        half_levels = self.dataset.createVariable(MODEL_HALF_LEVEL, np.int32, (MODEL_HALF_LEVEL,))
+        half_levels.units = "1"
+        half_levels.positive = "down"
+        half_levels.long_name = "model half level index"
+        half_levels.standard_name = (
+            icon4py.model.common.states.metadata.INTERFACE_LEVEL_STANDARD_NAME
         )
-        interface_levels.units = "1"
-        interface_levels.positive = "down"
-        interface_levels.long_name = "model interface level index"
-        interface_levels.standard_name = cf_utils.INTERFACE_LEVEL_STANDARD_NAME
-        interface_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
+        half_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
 
-        heights = self.dataset.createVariable("height", np.float64, (MODEL_INTERFACE_LEVEL,))
+        heights = self.dataset.createVariable("height", np.float64, (MODEL_HALF_LEVEL,))
         heights.units = "m"
         heights.positive = "up"
         heights.axis = cf_utils.COARDS_VERTICAL_COORDINATE_NAME
         heights.long_name = "height value of half levels without topography"
-        heights.standard_name = cf_utils.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
-        heights[:] = self._vertical_params.interface_physical_height.ndarray
+        heights.standard_name = (
+            icon4py.model.common.states.metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
+        )
+        heights[:] = data_alloc.as_numpy(self._vertical_params.interface_physical_height)
 
     def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None:
         """
@@ -139,34 +183,38 @@ class NETCDFWriter:
         Returns:
 
         """
+        assert self.dataset is not None
         time = self.dataset[TIME]
         time_pos = len(time)
         time[time_pos] = cf_utils.date2num(model_time, units=time.units, calendar=time.calendar)
         for var_name, new_slice in state_to_append.items():
             standard_name = new_slice.standard_name
-            new_slice = cf_utils.to_canonical_dim_order(new_slice)
+            canonical_new_slice = cf_utils.to_canonical_dim_order(new_slice)
             assert standard_name is not None, f"No short_name provided for {standard_name}."
             ds_var = filter_by_standard_name(self.dataset.variables, standard_name)
             if not ds_var:
-                dimensions = ("time", *new_slice.dims)
-                new_var = self.dataset.createVariable(var_name, new_slice.dtype, dimensions)
-                new_var[0, :] = new_slice.data
-                new_var.units = new_slice.units
-                new_var.standard_name = new_slice.standard_name
-                new_var.long_name = new_slice.long_name
-                new_var.coordinates = new_slice.coordinates
-                new_var.mesh = new_slice.mesh
-                new_var.location = new_slice.location
+                dimensions = ("time", *canonical_new_slice.dims)
+                new_var = self.dataset.createVariable(
+                    var_name, canonical_new_slice.dtype, dimensions
+                )
+                new_var[0, :] = data_alloc.as_numpy(canonical_new_slice.data)
+                new_var.units = canonical_new_slice.units
+                new_var.standard_name = canonical_new_slice.standard_name
+                new_var.long_name = canonical_new_slice.long_name
+                new_var.coordinates = canonical_new_slice.coordinates
+                new_var.mesh = canonical_new_slice.mesh
+                new_var.location = canonical_new_slice.location
 
             else:
-                var_name = ds_var.get(var_name).name
-                dims = ds_var.get(var_name).dimensions
-                shape = ds_var.get(var_name).shape
-                assert (
-                    len(new_slice.dims) == len(dims) - 1
-                ), f"Data variable dimensions do not match for {standard_name}."
+                assert ds_var is not None
+                actual_var_name = ds_var.get(var_name).name
+                dims = ds_var.get(actual_var_name).dimensions
+                shape = ds_var.get(actual_var_name).shape
+                assert len(canonical_new_slice.dims) == len(dims) - 1, (
+                    f"Data variable dimensions do not match for {standard_name}."
+                )
 
-                # TODO (magdalena) change for parallel/distributed case: where we write at `global_index` field on the node for the horizontal dim.
+                # TODO(halungge): change for parallel/distributed case: where we write at `global_index` field on the node for the horizontal dim.
                 # we can acutally assume fixed index ordering here, input arrays are  re-shaped to canonical order (see above)
 
                 right = (slice(None),) * (len(dims) - 1)
@@ -174,18 +222,23 @@ class NETCDFWriter:
                     slice(shape[cf_utils.COARDS_T_POS] - 1, shape[cf_utils.COARDS_T_POS]),
                 )
                 slices = expand_slice + right
-                self.dataset.variables[var_name][slices] = new_slice.data
+                self.dataset.variables[actual_var_name][slices] = data_alloc.as_numpy(
+                    canonical_new_slice.data
+                )
 
     def close(self) -> None:
+        assert self.dataset is not None
         if self.dataset.isopen():
             self.dataset.close()
 
     @property
     def dims(self) -> dict:
+        assert self.dataset is not None
         return self.dataset.dimensions
 
     @property
     def variables(self) -> dict:
+        assert self.dataset is not None
         return self.dataset.variables
 
 

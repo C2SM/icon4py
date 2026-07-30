@@ -5,28 +5,20 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
-from gt4py.next import Dimension, NeighborTableOffsetProvider
 
-from icon4py.model.common.settings import xp
+import numpy as np
+
+from icon4py.model.common.grid import gridfile
 
 
-def neighbortable_offset_provider_for_1d_sparse_fields(
-    old_shape: tuple[int, int],
-    origin_axis: Dimension,
-    neighbor_axis: Dimension,
-    has_skip_values: bool,
-):
-    table = xp.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)
-    assert (
-        table.dtype == gtx.int32
-    ), 'Neighbor table\'s ("{}" to "{}") data type for 1d sparse fields must be gtx.int32. Instead it\'s "{}"'.format(
-        origin_axis, neighbor_axis, table.dtype
-    )
-    return NeighborTableOffsetProvider(
-        table,
-        origin_axis,
-        neighbor_axis,
-        table.shape[1],
-        has_skip_values=has_skip_values,
-    )
+def revert_repeated_index_to_invalid(offset: np.ndarray):
+    num_elements = offset.shape[0]
+    for i in range(num_elements):
+        # convert repeated indices back into -1
+        for val in np.flip(offset[i, :]):
+            if np.count_nonzero(val == offset[i, :]) > 1:
+                unique_values, counts = np.unique(offset[i, :], return_counts=True)
+                rep_values = unique_values[counts > 1]
+                rep_indices = np.where(np.isin(offset[i, :], rep_values))[0]
+                offset[i, rep_indices[1:]] = gridfile.GridFile.INVALID_INDEX
+    return offset

@@ -6,16 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, broadcast
+from gt4py.next import astype, broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _apply_nabla2_to_w_in_upper_damping_layer(
     w: fa.CellKField[wpfloat],
     diff_multfac_n2w: fa.KField[wpfloat],
@@ -29,7 +26,7 @@ def _apply_nabla2_to_w_in_upper_damping_layer(
     return w_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_nabla2_to_w_in_upper_damping_layer(
     w: fa.CellKField[wpfloat],
     diff_multfac_n2w: fa.KField[wpfloat],
@@ -39,12 +36,12 @@ def apply_nabla2_to_w_in_upper_damping_layer(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_nabla2_to_w_in_upper_damping_layer(
-        w,
-        diff_multfac_n2w,
-        cell_area,
-        z_nabla2_c,
+        w=w,
+        diff_multfac_n2w=diff_multfac_n2w,
+        cell_area=cell_area,
+        z_nabla2_c=z_nabla2_c,
         out=w,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

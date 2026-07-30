@@ -8,7 +8,7 @@
 
 import pytest
 
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.common.test_utils.datatest_fixtures import (  # import fixtures from test_utils package
     damping_height,
     data_provider,
     data_provider_advection,
@@ -47,8 +47,8 @@ def enable_plots():
 
 @pytest.fixture
 def least_squares_savepoint(
-    data_provider,  # noqa: F811 # imported fixtures data_provider
-    data_provider_advection,  # noqa: F811 # imported fixtures data_provider_advection
+    data_provider,  # imported fixtures data_provider
+    data_provider_advection,  # imported fixtures data_provider_advection
 ):
     """
     Load data from least squares ICON savepoint.
@@ -58,8 +58,8 @@ def least_squares_savepoint(
 
 @pytest.fixture
 def advection_init_savepoint(
-    data_provider,  # noqa: F811 # imported fixtures data_provider
-    data_provider_advection,  # noqa: F811 # imported fixtures data_provider_advection
+    data_provider,  # imported fixtures data_provider
+    data_provider_advection,  # imported fixtures data_provider_advection
     date,
 ):
     """
@@ -75,8 +75,8 @@ def advection_init_savepoint(
 
 @pytest.fixture
 def advection_exit_savepoint(
-    data_provider,  # noqa: F811 # imported fixtures data_provider
-    data_provider_advection,  # noqa: F811 # imported fixtures data_provider_advection
+    data_provider,  # imported fixtures data_provider
+    data_provider_advection,  # imported fixtures data_provider_advection
     date,
 ):
     """

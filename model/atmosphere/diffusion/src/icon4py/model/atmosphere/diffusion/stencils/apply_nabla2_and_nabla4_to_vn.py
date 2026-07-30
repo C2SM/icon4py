@@ -6,16 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, broadcast, maximum
+from gt4py.next import astype, broadcast, maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _apply_nabla2_and_nabla4_to_vn(
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
@@ -38,7 +35,7 @@ def _apply_nabla2_and_nabla4_to_vn(
     return vn_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_nabla2_and_nabla4_to_vn(
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
@@ -52,16 +49,16 @@ def apply_nabla2_and_nabla4_to_vn(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_nabla2_and_nabla4_to_vn(
-        area_edge,
-        kh_smag_e,
-        z_nabla2_e,
-        z_nabla4_e2,
-        diff_multfac_vn,
-        nudgecoeff_e,
-        vn,
-        nudgezone_diff,
+        area_edge=area_edge,
+        kh_smag_e=kh_smag_e,
+        z_nabla2_e=z_nabla2_e,
+        z_nabla4_e2=z_nabla4_e2,
+        diff_multfac_vn=diff_multfac_vn,
+        nudgecoeff_e=nudgecoeff_e,
+        vn=vn,
+        nudgezone_diff=nudgezone_diff,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

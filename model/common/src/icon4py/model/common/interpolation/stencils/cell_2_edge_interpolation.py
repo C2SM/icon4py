@@ -6,16 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import neighbor_sum
+from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2CDim
-from icon4py.model.common.settings import backend
 
 
-@field_operator
+@gtx.field_operator
 def _cell_2_edge_interpolation(
     in_field: fa.CellKField[ta.wpfloat],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
@@ -31,7 +28,7 @@ def _cell_2_edge_interpolation(
     return neighbor_sum(in_field(E2C) * coeff, axis=E2CDim)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def cell_2_edge_interpolation(
     in_field: fa.CellKField[ta.wpfloat],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
@@ -40,10 +37,10 @@ def cell_2_edge_interpolation(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _cell_2_edge_interpolation(
-        in_field,
-        coeff,
+        in_field=in_field,
+        coeff=coeff,
         out=out_field,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

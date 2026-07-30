@@ -12,12 +12,13 @@ testdata
 simple_mesh*.nc
 /prof
 .profile
+pyrightconfig.json
 
 ### Sphinx ###
-**/docs/*.rst
+**/docs/_source/*.rst
 
 ### GT4Py ####
-.gt_cache/
+.gt4py_cache/
 
 # DaCe
 .dacecache
@@ -97,7 +98,7 @@ target/
 .ipynb_checkpoints
 
 # pyenv
-.python-version
+# .python-version
 
 # Environments
 .env*
@@ -131,5 +132,10 @@ venv.bak/
 # SpaceVim altfiles settings
 .project_alt.json
 
+# Claude
+.claude/*.local.json
+.claude/*.lock
+
 ### Others ###
 .obsidian
+pyrightconfig.json

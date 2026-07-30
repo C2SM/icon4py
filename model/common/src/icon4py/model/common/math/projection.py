@@ -5,18 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-import numpy as np
+from icon4py.model.common.math import distance_array_ns
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def gnomonic_proj(
-    lon_c: np.ndarray,
-    lat_c: np.ndarray,
-    lon: np.ndarray,
-    lat: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
+    lon_c: data_alloc.NDArray,
+    lat_c: data_alloc.NDArray,
+    lon: data_alloc.NDArray,
+    lat: data_alloc.NDArray,
+    sphere_radius: float,
+) -> data_alloc.NDArray:
     """
-    Compute gnomonic projection.
+    Compute gnomonic projection onto a tangent plane with origin at (lon_c, lat_c).
 
     gnomonic_proj
     Args:
@@ -24,8 +25,9 @@ def gnomonic_proj(
         lat_c: lattitude center on tangent plane
         lon: longitude point to be projected
         lat: lattitude point to be projected
+        sphere_radius: radius of the sphere
     Returns:
-        x, y: coordinates of projected point
+        x and y coordinates of the projected point on the tangent plane
 
     Variables:
         zk: scale factor perpendicular to the radius from the center of the map
@@ -35,10 +37,13 @@ def gnomonic_proj(
     TODO:
         replace this with a suitable library call
     """
-    cosc = np.sin(lat_c) * np.sin(lat) + np.cos(lat_c) * np.cos(lat) * np.cos(lon - lon_c)
+    array_ns = data_alloc.array_namespace(lon_c)
+    cosc = distance_array_ns.cos_central_angle(lon_center=lon_c, lat_center=lat_c, lon=lon, lat=lat)
     zk = 1.0 / cosc
 
-    x = zk * np.cos(lat) * np.sin(lon - lon_c)
-    y = zk * (np.cos(lat_c) * np.sin(lat) - np.sin(lat_c) * np.cos(lat) * np.cos(lon - lon_c))
-
-    return x, y
+    x = zk * array_ns.cos(lat) * array_ns.sin(lon - lon_c)
+    y = zk * (
+        array_ns.cos(lat_c) * array_ns.sin(lat)
+        - array_ns.sin(lat_c) * array_ns.cos(lat) * array_ns.cos(lon - lon_c)
+    )
+    return array_ns.column_stack((x, y)) * sphere_radius

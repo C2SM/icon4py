@@ -7,14 +7,27 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+class InvalidComputationError(Exception):
+    pass
+
+
 class InvalidConfigError(Exception):
     pass
 
 
 class IncompleteStateError(Exception):
-    def __init__(self, field_name):
-        super().__init__(f"Field '{field_name}' is missing in state.")
+    def __init__(self, field_name: str):
+        super().__init__(f"Field '{field_name}' is missing.")
+
+
+class ValidationError(Exception):
+    def __init__(self, name: str, msg: str):
+        super().__init__(f"'{name}':  {msg}.")
 
 
 class IconGridError(RuntimeError):
+    pass
+
+
+class MissingConnectivityError(ValueError):
     pass

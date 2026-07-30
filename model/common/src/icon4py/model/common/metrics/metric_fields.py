@@ -5,113 +5,67 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from dataclasses import dataclass
-from typing import Final
+
+"""Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
 
 import gt4py.next as gtx
 from gt4py.next import (
-    GridType,
-    abs,
+    abs,  # noqa: A004
     astype,
     broadcast,
-    exp,
-    field_operator,
+    int32,
+    max_over,
     maximum,
     minimum,
     neighbor_sum,
-    program,
-    scan_operator,
     sin,
     tanh,
     where,
 )
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import (
-    C2E,
-    C2E2C,
-    C2E2CO,
-    E2C,
-    C2E2CODim,
-    Koff,
-)
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, KDim
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
-from icon4py.model.common.math.helpers import (
-    _grad_fd_tang,
-    average_cell_kdim_level_up,
-    average_edge_kdim_level_up,
-    difference_k_level_up,
-    grad_fd_norm,
+from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
+    _compute_cell_2_vertex_interpolation,
+)
+from icon4py.model.common.math.gradient import _grad_fd_tang, grad_fd_norm
+from icon4py.model.common.math.vertical_operations import (
+    difference_level_plus1_on_cells,
+    with_boundaries_on_half_levels_on_cells,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-"""
-Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
-"""
-
-
-@dataclass(frozen=True)
-class MetricsConfig:
-    #: Temporal extrapolation of Exner for computation of horizontal pressure gradient, defined in `mo_nonhydrostatic_nml.f90` used only in metrics fields calculation.
-    exner_expol: Final[wpfloat] = 0.3333333333333
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_z_mc(
-    z_ifc: fa.CellKField[wpfloat],
-    z_mc: fa.CellKField[wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    """
-    Compute the geometric height of full levels from the geometric height of half levels (z_ifc).
-
-    This assumes that the input field z_ifc is defined on half levels (KHalfDim) and the
-    returned fields is defined on full levels (dims.KDim)
-
-    Args:
-        z_ifc: Field[Dims[dims.CellDim, dims.KDim], wpfloat] geometric height on half levels
-        z_mc: Field[Dims[dims.CellDim, dims.KDim], wpfloat] output, geometric height defined on full levels
-        horizontal_start:int32 start index of horizontal domain
-        horizontal_end:int32 end index of horizontal domain
-        vertical_start:int32 start index of vertical domain
-        vertical_end:int32 end index of vertical domain
-
-    """
-    average_cell_kdim_level_up(
-        z_ifc,
-        out=z_mc,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@field_operator
+# TODO(nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
+# TODO(nfarabullini): change dimension type hint for ddqz_z_half to cell, khalf
+@gtx.field_operator
 def _compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
-    k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-):
-    # TODO: change this to concat_where once it's merged
-    ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
-    ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
-    ddqz_z_half = where(k == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
-    return ddqz_z_half
+) -> fa.CellKField[wpfloat]:
+    return with_boundaries_on_half_levels_on_cells(
+        top=2.0 * (z_ifc - z_mc),
+        interior=z_mc(KDim - 1) - z_mc,
+        bottom=2.0 * (z_mc(KDim - 1) - z_ifc),
+        nlev=nlev,
+    )
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=None)
-def compute_ddqz_z_half(
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=None)
+def compute_ddqz_z_half(  # noqa: PLR0917 [too-many-positional-arguments]
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
-    k: fa.KField[gtx.int32],
     ddqz_z_half: fa.CellKField[wpfloat],
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -138,7 +92,6 @@ def compute_ddqz_z_half(
     _compute_ddqz_z_half(
         z_ifc,
         z_mc,
-        k,
         nlev,
         out=ddqz_z_half,
         domain={
@@ -148,17 +101,17 @@ def compute_ddqz_z_half(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_ddqz_z_full_and_inverse(
     z_ifc: fa.CellKField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    ddqz_z_full = difference_k_level_up(z_ifc)
+    ddqz_z_full = difference_level_plus1_on_cells(z_ifc)
     inverse_ddqz_z_full = 1.0 / ddqz_z_full
     return ddqz_z_full, inverse_ddqz_z_full
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_ddqz_z_full_and_inverse(
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_ddqz_z_full_and_inverse(  # noqa: PLR0917 [too-many-positional-arguments]
     z_ifc: fa.CellKField[wpfloat],
     ddqz_z_full: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[wpfloat],
@@ -193,29 +146,31 @@ def compute_ddqz_z_full_and_inverse(
     )
 
 
-@field_operator
-def _compute_scalfac_dd3d(
+@gtx.field_operator
+def _compute_scaling_factor_for_3d_divdamp(
     vct_a: fa.KField[wpfloat],
     divdamp_trans_start: wpfloat,
     divdamp_trans_end: wpfloat,
     divdamp_type: gtx.int32,
 ) -> fa.KField[wpfloat]:
-    scalfac_dd3d = broadcast(1.0, (dims.KDim,))
+    scaling_factor_for_3d_divdamp = broadcast(1.0, (dims.KDim,))
     if divdamp_type == 32:
-        zf = 0.5 * (vct_a + vct_a(Koff[1]))  # depends on nshift_total, assumed to be always 0
-        scalfac_dd3d = where(zf >= divdamp_trans_end, 0.0, scalfac_dd3d)
-        scalfac_dd3d = where(
+        zf = 0.5 * (vct_a + vct_a(KDim + 1))  # depends on nshift_total, assumed to be always 0
+        scaling_factor_for_3d_divdamp = where(
+            zf >= divdamp_trans_end, 0.0, scaling_factor_for_3d_divdamp
+        )
+        scaling_factor_for_3d_divdamp = where(
             zf >= divdamp_trans_start,
             (divdamp_trans_end - zf) / (divdamp_trans_end - divdamp_trans_start),
-            scalfac_dd3d,
+            scaling_factor_for_3d_divdamp,
         )
-    return scalfac_dd3d
+    return scaling_factor_for_3d_divdamp
 
 
-@program
-def compute_scalfac_dd3d(
+@gtx.program
+def compute_scaling_factor_for_3d_divdamp(  # noqa: PLR0917 [too-many-positional-arguments]
     vct_a: fa.KField[wpfloat],
-    scalfac_dd3d: fa.KField[wpfloat],
+    scaling_factor_for_3d_divdamp: fa.KField[wpfloat],
     divdamp_trans_start: wpfloat,
     divdamp_trans_end: wpfloat,
     divdamp_type: gtx.int32,
@@ -223,36 +178,34 @@ def compute_scalfac_dd3d(
     vertical_end: gtx.int32,
 ):
     """
-    Compute scaling factor for 3D divergence damping terms.
+    Compute scaling factor for 3D divergence damping terms (declared as scalfac_dd3d in ICON).
 
     See mo_vertical_grid.f90
 
     Args:
         vct_a: Field[Dims[dims.KDim], float],
-        scalfac_dd3d: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
+        scaling_factor_for_3d_divdamp: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
         divdamp_trans_start: lower bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_trans_end: upper bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_type: type of divergence damping (2D or 3D divergence)
         vertical_start: vertical start index
         vertical_end: vertical end index
     """
-    _compute_scalfac_dd3d(
+    _compute_scaling_factor_for_3d_divdamp(
         vct_a,
         divdamp_trans_start,
         divdamp_trans_end,
         divdamp_type,
-        out=scalfac_dd3d,
+        out=scaling_factor_for_3d_divdamp,
         domain={dims.KDim: (vertical_start, vertical_end)},
     )
 
 
-@field_operator
-def _compute_rayleigh_w(
+@gtx.field_operator
+def _compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
     vct_a: fa.KField[wpfloat],
     damping_height: wpfloat,
     rayleigh_type: gtx.int32,
-    rayleigh_classic: gtx.int32,
-    rayleigh_klemp: gtx.int32,
     rayleigh_coeff: wpfloat,
     vct_a_1: wpfloat,
     pi_const: wpfloat,
@@ -260,27 +213,25 @@ def _compute_rayleigh_w(
     rayleigh_w = broadcast(0.0, (dims.KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
-    if rayleigh_type == rayleigh_classic:
+    if rayleigh_type == 1:  # RayleighType.CLASSIC
         rayleigh_w = (
             rayleigh_coeff
             * (sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height))) ** 2
         )
 
-    elif rayleigh_type == rayleigh_klemp:
+    elif rayleigh_type == 2:  # RayleighType.KLEMP
         rayleigh_w = rayleigh_coeff * (
             1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
         )
     return rayleigh_w
 
 
-@program
-def compute_rayleigh_w(
+@gtx.program
+def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
     rayleigh_w: fa.KField[wpfloat],
     vct_a: fa.KField[wpfloat],
     damping_height: wpfloat,
     rayleigh_type: gtx.int32,
-    rayleigh_classic: gtx.int32,
-    rayleigh_klemp: gtx.int32,
     rayleigh_coeff: wpfloat,
     vct_a_1: wpfloat,
     pi_const: wpfloat,
@@ -309,8 +260,6 @@ def compute_rayleigh_w(
         vct_a,
         damping_height,
         rayleigh_type,
-        rayleigh_classic,
-        rayleigh_klemp,
         rayleigh_coeff,
         vct_a_1,
         pi_const,
@@ -319,18 +268,18 @@ def compute_rayleigh_w(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_coeff_dwdz(
     ddqz_z_full: fa.CellKField[wpfloat], z_ifc: fa.CellKField[wpfloat]
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
-    coeff1_dwdz = ddqz_z_full / ddqz_z_full(Koff[-1]) / (z_ifc(Koff[-1]) - z_ifc(Koff[1]))
-    coeff2_dwdz = ddqz_z_full(Koff[-1]) / ddqz_z_full / (z_ifc(Koff[-1]) - z_ifc(Koff[1]))
+    coeff1_dwdz = ddqz_z_full / ddqz_z_full(KDim - 1) / (z_ifc(KDim - 1) - z_ifc(KDim + 1))
+    coeff2_dwdz = ddqz_z_full(KDim - 1) / ddqz_z_full / (z_ifc(KDim - 1) - z_ifc(KDim + 1))
 
     return coeff1_dwdz, coeff2_dwdz
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_coeff_dwdz(
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_coeff_dwdz(  # noqa: PLR0917 [too-many-positional-arguments]
     ddqz_z_full: fa.CellKField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
@@ -367,124 +316,8 @@ def compute_coeff_dwdz(
     )
 
 
-@field_operator
-def _compute_d2dexdz2_fac1_mc(
-    theta_ref_mc: fa.CellKField[vpfloat],
-    inv_ddqz_z_full: fa.CellKField[vpfloat],
-    d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
-    cpd: float,
-    grav: wpfloat,
-    igradp_method: gtx.int32,
-    igradp_constant: gtx.int32,
-) -> fa.CellKField[vpfloat]:
-    if igradp_method <= igradp_constant:
-        d2dexdz2_fac1_mc = -grav / (cpd * theta_ref_mc**2) * inv_ddqz_z_full
-
-    return d2dexdz2_fac1_mc
-
-
-@field_operator
-def _compute_d2dexdz2_fac2_mc(
-    theta_ref_mc: fa.CellKField[vpfloat],
-    exner_ref_mc: fa.CellKField[vpfloat],
-    z_mc: fa.CellKField[wpfloat],
-    d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
-    cpd: float,
-    grav: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
-    igradp_method: gtx.int32,
-    igradp_constant: gtx.int32,
-) -> fa.CellKField[vpfloat]:
-    if igradp_method <= igradp_constant:
-        d2dexdz2_fac2_mc = (
-            2.0
-            * grav
-            / (cpd * theta_ref_mc**3)
-            * (grav / cpd - del_t_bg / h_scal_bg * exp(-z_mc / h_scal_bg))
-            / exner_ref_mc
-        )
-    return d2dexdz2_fac2_mc
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_d2dexdz2_fac_mc(
-    theta_ref_mc: fa.CellKField[vpfloat],
-    inv_ddqz_z_full: fa.CellKField[vpfloat],
-    exner_ref_mc: fa.CellKField[vpfloat],
-    z_mc: fa.CellKField[wpfloat],
-    d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
-    d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
-    cpd: float,
-    grav: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
-    igradp_method: gtx.int32,
-    igradp_constant: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    """
-    Compute d2dexdz2_fac1_mc and d2dexdz2_fac2_mc factors.
-
-    See mo_vertical_grid.f90
-
-    Args:
-        theta_ref_mc: reference Potential temperature, full level mass points
-        inv_ddqz_z_full: inverse layer thickness (for runtime optimization)
-        exner_ref_mc: reference Exner pressure, full level mass points
-        z_mc: geometric height defined on full levels
-        d2dexdz2_fac1_mc: (output) first vertical derivative of reference Exner pressure, full level mass points, divided by theta_ref
-        d2dexdz2_fac2_mc: (output) vertical derivative of d_exner_dz/theta_ref, full level mass points
-        cpd: Specific heat at constant pressure [J/K/kg]
-        grav: avergae gravitational acceleratio
-        del_t_bg: difference between sea level temperature and asymptotic stratospheric temperature
-        h_scal_bg: height scale for reference atmosphere [m]
-        igradp_method: method for computing the horizontal presure gradient
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
-    """
-
-    _compute_d2dexdz2_fac1_mc(
-        theta_ref_mc,
-        inv_ddqz_z_full,
-        d2dexdz2_fac1_mc,
-        cpd,
-        grav,
-        igradp_method,
-        igradp_constant,
-        out=d2dexdz2_fac1_mc,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-    _compute_d2dexdz2_fac2_mc(
-        theta_ref_mc,
-        exner_ref_mc,
-        z_mc,
-        d2dexdz2_fac2_mc,
-        cpd,
-        grav,
-        del_t_bg,
-        h_scal_bg,
-        igradp_method,
-        igradp_constant,
-        out=d2dexdz2_fac2_mc,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@program
-def compute_ddxn_z_half_e(
+@gtx.program
+def compute_ddxn_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
     z_ifc: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     ddxn_z_half_e: fa.EdgeKField[wpfloat],
@@ -504,9 +337,26 @@ def compute_ddxn_z_half_e(
     )
 
 
-@program
-def compute_ddxt_z_half_e(
-    z_ifv: gtx.Field[gtx.Dims[dims.VertexDim, dims.KDim], float],
+@gtx.field_operator
+def _compute_ddxt_z_half_e(
+    cell_in: fa.CellKField[wpfloat],
+    c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+):
+    z_ifv = _compute_cell_2_vertex_interpolation(cell_in, c_int)
+    ddxt_z_half_e = _grad_fd_tang(
+        z_ifv,
+        inv_primal_edge_length,
+        tangent_orientation,
+    )
+    return ddxt_z_half_e
+
+
+@gtx.program
+def compute_ddxt_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
+    cell_in: fa.CellKField[wpfloat],
+    c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     ddxt_z_half_e: fa.EdgeKField[wpfloat],
@@ -515,8 +365,9 @@ def compute_ddxt_z_half_e(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _grad_fd_tang(
-        z_ifv,
+    _compute_ddxt_z_half_e(
+        cell_in,
+        c_int,
         inv_primal_edge_length,
         tangent_orientation,
         out=ddxt_z_half_e,
@@ -527,68 +378,59 @@ def compute_ddxt_z_half_e(
     )
 
 
-@program
-def compute_ddxn_z_full(
-    z_ddxnt_z_half_e: fa.EdgeKField[wpfloat], ddxn_z_full: fa.EdgeKField[wpfloat]
-):
-    average_edge_kdim_level_up(z_ddxnt_z_half_e, out=ddxn_z_full)
+@gtx.field_operator
+def _compute_exner_w_explicit_weight_parameter(
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
+) -> fa.CellField[wpfloat]:
+    return 1.0 - exner_w_implicit_weight_parameter
 
 
-@field_operator
-def _compute_vwind_expl_wgt(vwind_impl_wgt: fa.CellField[wpfloat]) -> fa.CellField[wpfloat]:
-    return 1.0 - vwind_impl_wgt
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_vwind_expl_wgt(
-    vwind_impl_wgt: fa.CellField[wpfloat],
-    vwind_expl_wgt: fa.CellField[wpfloat],
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_exner_w_explicit_weight_parameter(
+    exner_w_implicit_weight_parameter: fa.CellField[wpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
     """
-    Compute vwind_expl_wgt.
+    Compute exner_w_explicit_weight_parameter.
 
     See mo_vertical_grid.f90
 
     Args:
-        vwind_impl_wgt: offcentering in vertical mass flux
-        vwind_expl_wgt: (output) 1 - of vwind_impl_wgt
+        exner_w_implicit_weight_parameter: offcentering in vertical mass flux
+        exner_w_explicit_weight_parameter: (output) 1 - exner_w_implicit_weight_parameter
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
 
     """
 
-    _compute_vwind_expl_wgt(
-        vwind_impl_wgt=vwind_impl_wgt,
-        out=vwind_expl_wgt,
+    _compute_exner_w_explicit_weight_parameter(
+        exner_w_implicit_weight_parameter=exner_w_implicit_weight_parameter,
+        out=exner_w_explicit_weight_parameter,
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_maxslp_maxhgtd(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    z_maxslp_0_1 = maximum(abs(ddxn_z_full(C2E[0])), abs(ddxn_z_full(C2E[1])))
-    z_maxslp = maximum(z_maxslp_0_1, abs(ddxn_z_full(C2E[2])))
+    tmp = abs(ddxn_z_full)
+    maxslp = max_over(tmp(C2E), axis=dims.C2EDim)
 
-    z_maxhgtd_0_1 = maximum(
-        abs(ddxn_z_full(C2E[0]) * dual_edge_length(C2E[0])),
-        abs(ddxn_z_full(C2E[1]) * dual_edge_length(C2E[1])),
-    )
-
-    z_maxhgtd = maximum(z_maxhgtd_0_1, abs(ddxn_z_full(C2E[2]) * dual_edge_length(C2E[2])))
-    return z_maxslp, z_maxhgtd
+    tmp_maxhgtd = abs(ddxn_z_full * dual_edge_length)
+    maxhgtd = max_over(tmp_maxhgtd(C2E), axis=dims.C2EDim)
+    return maxslp, maxhgtd
 
 
-@program
-def compute_maxslp_maxhgtd(
+@gtx.program
+def compute_maxslp_maxhgtd(  # noqa: PLR0917 [too-many-positional-arguments]
     ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], wpfloat],
     dual_edge_length: gtx.Field[gtx.Dims[dims.EdgeDim], wpfloat],
-    z_maxslp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
-    z_maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxslp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -602,8 +444,8 @@ def compute_maxslp_maxhgtd(
     Args:
         ddxn_z_full: dual_edge_length
         dual_edge_length: dual_edge_length
-        z_maxslp: output
-        z_maxhgtd: output
+        maxslp: output
+        maxhgtd: output
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
         vertical_start: vertical start index
@@ -612,7 +454,7 @@ def compute_maxslp_maxhgtd(
     _compute_maxslp_maxhgtd(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
-        out=(z_maxslp, z_maxhgtd),
+        out=(maxslp, maxhgtd),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -620,29 +462,31 @@ def compute_maxslp_maxhgtd(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_exner_exfac(
-    ddxn_z_full: fa.EdgeKField[wpfloat],
-    dual_edge_length: fa.EdgeField[wpfloat],
+    maxslp: fa.CellKField[wpfloat],
+    maxhgtd: fa.CellKField[wpfloat],
     exner_expol: wpfloat,
+    lateral_boundary_level_2: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
-    z_maxslp, z_maxhgtd = _compute_maxslp_maxhgtd(ddxn_z_full, dual_edge_length)
-
-    exner_exfac = exner_expol * minimum(1.0 - (4.0 * z_maxslp) ** 2, 1.0 - (0.002 * z_maxhgtd) ** 2)
-    exner_exfac = maximum(0.0, exner_exfac)
-    exner_exfac = where(
-        z_maxslp > 1.5, maximum(-1.0 / 6.0, 1.0 / 9.0 * (1.5 - z_maxslp)), exner_exfac
+    exner_exfac = concat_where(
+        dims.CellDim >= lateral_boundary_level_2,
+        exner_expol * minimum(1.0 - (4.0 * maxslp) ** 2, 1.0 - (0.002 * maxhgtd) ** 2),
+        exner_expol,
     )
+    exner_exfac = maximum(0.0, exner_exfac)
+    exner_exfac = where(maxslp > 1.5, maximum(-1.0 / 6.0, 1.0 / 9.0 * (1.5 - maxslp)), exner_exfac)
 
     return exner_exfac
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_exner_exfac(
-    ddxn_z_full: fa.EdgeKField[wpfloat],
-    dual_edge_length: fa.EdgeField[wpfloat],
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_exner_exfac(  # noqa: PLR0917 [too-many-positional-arguments]
+    maxslp: fa.CellKField[wpfloat],
+    maxhgtd: fa.CellKField[wpfloat],
     exner_exfac: fa.CellKField[wpfloat],
     exner_expol: wpfloat,
+    lateral_boundary_level_2: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -654,8 +498,8 @@ def compute_exner_exfac(
     Exner extrapolation reaches zero for a slope of 1/4 or a height difference of 500 m between adjacent grid points (empirically determined values). See mo_vertical_grid.f90
 
     Args:
-        ddxn_z_full: ddxn_z_full
-        dual_edge_length: dual_edge_length
+        maxslp: maxslp
+        maxhgtd: maxhgtd
         exner_exfac: Exner factor
         exner_expol: Exner extrapolation factor
         horizontal_start: horizontal start index
@@ -665,9 +509,10 @@ def compute_exner_exfac(
 
     """
     _compute_exner_exfac(
-        ddxn_z_full=ddxn_z_full,
-        dual_edge_length=dual_edge_length,
+        maxhgtd=maxhgtd,
+        maxslp=maxslp,
         exner_expol=exner_expol,
+        lateral_boundary_level_2=lateral_boundary_level_2,
         out=exner_exfac,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -676,100 +521,8 @@ def compute_exner_exfac(
     )
 
 
-@field_operator
-def _compute_vwind_impl_wgt_1(
-    z_ddxn_z_half_e: fa.EdgeField[wpfloat],
-    z_ddxt_z_half_e: fa.EdgeField[wpfloat],
-    dual_edge_length: fa.EdgeField[wpfloat],
-    vwind_offctr: wpfloat,
-) -> fa.CellField[wpfloat]:
-    z_ddx_1 = maximum(abs(z_ddxn_z_half_e(C2E[0])), abs(z_ddxt_z_half_e(C2E[0])))
-    z_ddx_2 = maximum(abs(z_ddxn_z_half_e(C2E[1])), abs(z_ddxt_z_half_e(C2E[1])))
-    z_ddx_3 = maximum(abs(z_ddxn_z_half_e(C2E[2])), abs(z_ddxt_z_half_e(C2E[2])))
-    z_ddx_1_2 = maximum(z_ddx_1, z_ddx_2)
-    z_maxslope = maximum(z_ddx_1_2, z_ddx_3)
-
-    z_diff_1_2 = maximum(
-        abs(z_ddxn_z_half_e(C2E[0]) * dual_edge_length(C2E[0])),
-        abs(z_ddxn_z_half_e(C2E[1]) * dual_edge_length(C2E[1])),
-    )
-    z_diff = maximum(z_diff_1_2, abs(z_ddxn_z_half_e(C2E[2]) * dual_edge_length(C2E[2])))
-    z_offctr_1 = maximum(vwind_offctr, 0.425 * z_maxslope ** (0.75))
-    z_offctr = maximum(z_offctr_1, minimum(0.25, 0.00025 * (z_diff - 250.0)))
-    z_offctr = minimum(maximum(vwind_offctr, 0.75), z_offctr)
-    vwind_impl_wgt = 0.5 + z_offctr
-    return vwind_impl_wgt
-
-
-@field_operator
-def _compute_vwind_impl_wgt_2(
-    vct_a: fa.KField[wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
-) -> fa.CellKField[wpfloat]:
-    z_diff_2 = (z_ifc - z_ifc(Koff[-1])) / (vct_a - vct_a(Koff[-1]))
-    vwind_impl_wgt_k = where(
-        z_diff_2 < 0.6, maximum(vwind_impl_wgt, 1.2 - z_diff_2), vwind_impl_wgt
-    )
-    return vwind_impl_wgt_k
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_vwind_impl_wgt_partial(
-    z_ddxn_z_half_e: fa.EdgeField[wpfloat],
-    z_ddxt_z_half_e: fa.EdgeField[wpfloat],
-    dual_edge_length: fa.EdgeField[wpfloat],
-    vct_a: fa.KField[wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    vwind_impl_wgt: fa.CellField[wpfloat],
-    vwind_impl_wgt_k: fa.CellKField[wpfloat],
-    vwind_offctr: wpfloat,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    """
-    Compute vwind_impl_wgt.
-
-    See mo_vertical_grid.f90
-
-    Args:
-        z_ddxn_z_half_e: intermediate storage for field
-        z_ddxt_z_half_e: intermediate storage for field
-        dual_edge_length: dual_edge_length
-        vct_a: Field[Dims[dims.KDim], float]
-        z_ifc: geometric height on half levels
-        vwind_impl_wgt: (output) offcentering in vertical mass flux
-        vwind_offctr: off-centering in vertical wind solver
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
-    """
-    _compute_vwind_impl_wgt_1(
-        z_ddxn_z_half_e=z_ddxn_z_half_e,
-        z_ddxt_z_half_e=z_ddxt_z_half_e,
-        dual_edge_length=dual_edge_length,
-        vwind_offctr=vwind_offctr,
-        out=vwind_impl_wgt,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-    _compute_vwind_impl_wgt_2(
-        vct_a=vct_a,
-        z_ifc=z_ifc,
-        vwind_impl_wgt=vwind_impl_wgt,
-        out=vwind_impl_wgt_k,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@program
-def compute_wgtfac_e(
+@gtx.program
+def compute_wgtfac_e(  # noqa: PLR0917 [too-many-positional-arguments]
     wgtfac_c: fa.CellKField[wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
     wgtfac_e: fa.EdgeKField[wpfloat],
@@ -804,115 +557,145 @@ def compute_wgtfac_e(
     )
 
 
-@field_operator
-def _compute_flat_idx(
-    z_me: fa.EdgeKField[wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    k_lev: fa.KField[gtx.int32],
-) -> fa.EdgeKField[gtx.int32]:
-    z_ifc_e_0 = z_ifc(E2C[0])
-    z_ifc_e_k_0 = z_ifc_e_0(Koff[1])
-    z_ifc_e_1 = z_ifc(E2C[1])
-    z_ifc_e_k_1 = z_ifc_e_1(Koff[1])
-    flat_idx = where(
+def compute_flat_max_idx(
+    *,
+    e2c: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    k_lev: data_alloc.NDArray,
+    exchange: decomposition.ExchangeRuntime,
+) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(e2c)
+    k_lev_minus1 = k_lev[:-1]
+    coeff_ = array_ns.expand_dims(c_lin_e, axis=-1)
+    z_me = array_ns.sum(z_mc[e2c] * coeff_, axis=1)
+    exchange.exchange(dims.EdgeDim, z_me, stream=decomposition.BLOCK)
+    z_ifc_e_0 = z_ifc[e2c[:, 0], :-1]
+    z_ifc_e_k_0 = z_ifc[e2c[:, 0], 1:]
+    z_ifc_e_1 = z_ifc[e2c[:, 1], :-1]
+    z_ifc_e_k_1 = z_ifc[e2c[:, 1], 1:]
+    k_lev_minus1_expand = array_ns.expand_dims(k_lev_minus1, axis=0).repeat(z_me.shape[0], axis=0)
+    flat_edge_index = array_ns.where(
         (z_me <= z_ifc_e_0) & (z_me >= z_ifc_e_k_0) & (z_me <= z_ifc_e_1) & (z_me >= z_ifc_e_k_1),
-        k_lev,
+        k_lev_minus1_expand,
         0,
     )
-    return flat_idx
+    flat_idx_max = array_ns.amax(flat_edge_index, axis=1)
+    return flat_idx_max
 
 
-@field_operator
-def _compute_z_aux2(
+def compute_nflat_gradp(
+    flat_idx_max: data_alloc.NDArray,
+    e_owner_mask: data_alloc.NDArray,
+    lateral_boundary_level: int,
+    nlev: int,
+    min_reduction: Callable[
+        [data_alloc.NDArray], data_alloc.ScalarT
+    ] = decomposition.single_node_reductions.min,
+) -> int:
+    """
+    compute the nflat_gradp value as the minimum value of the flat_idx_max array.
+    """
+    array_ns = data_alloc.array_namespace(flat_idx_max)
+    boundary_mask = array_ns.arange(flat_idx_max.shape[0]) >= lateral_boundary_level
+    mask_array = array_ns.where(
+        e_owner_mask & boundary_mask,
+        flat_idx_max,
+        nlev,
+    )
+    nflat_gradp = min_reduction(mask_array)
+    return nflat_gradp
+
+
+@gtx.field_operator
+def _compute_downward_extrapolation_distance(
     z_ifc: fa.CellField[wpfloat],
 ) -> fa.EdgeField[wpfloat]:
     extrapol_dist = 5.0
-    z_aux1 = maximum(z_ifc(E2C[0]), z_ifc(E2C[1]))
-    z_aux2 = z_aux1 - extrapol_dist
-
-    return z_aux2
+    x = max_over(z_ifc(E2C), axis=dims.E2CDim)
+    return x - extrapol_dist
 
 
-@field_operator
-def _compute_pg_edgeidx_vertidx(
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
-    z_ifc: fa.CellKField[wpfloat],
-    z_aux2: fa.EdgeField[wpfloat],
+@gtx.field_operator
+def _compute_pressure_gradient_downward_extrapolation_mask_distance(  # noqa: PLR0917 [too-many-positional-arguments]
+    z_mc: fa.CellKField[wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    topography: fa.CellField[wpfloat],
     e_owner_mask: fa.EdgeField[bool],
     flat_idx_max: fa.EdgeField[gtx.int32],
     e_lev: fa.EdgeField[gtx.int32],
     k_lev: fa.KField[gtx.int32],
-    pg_edgeidx: fa.EdgeKField[gtx.int32],
-    pg_vertidx: fa.EdgeKField[gtx.int32],
-) -> tuple[fa.EdgeKField[gtx.int32], fa.EdgeKField[gtx.int32]]:
+    horizontal_start_distance: int32,
+    horizontal_end_distance: int32,
+) -> fa.EdgeKField[wpfloat]:
+    """
+    Compute an edge mask and extrapolation distance for grid points requiring downward extrapolation of the pressure gradient.
+
+    See pg_edgeidx and pg_exdist in mo_vertical_grid.f90
+
+    Args:
+        z_mc: height of cells [m]
+        c_lin_e:  interpolation coefficient from cells to edges
+        topography: ground level height of cells [m]
+        e_owner_mask: mask edges owned by PE.
+        flat_idx_max: level from where edge levels start to become flat
+        e_lev: edge indices
+        k_lev: k-level indices
+        horizontal_start_distance: start index in edge fields from where extrapolation distance is computed
+        horizontal_end_distance: end index in edge fields until where extrapolation distance is computed
+
+    Returns:
+        pg_exdist_dsl: extrapolation distance
+
+    """
+
     e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
     k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
-    z_mc = average_cell_kdim_level_up(z_ifc)
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
-    pg_edgeidx = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < z_aux2) & e_owner_mask, e_lev, pg_edgeidx
+    downward_distance = _compute_downward_extrapolation_distance(topography)
+    extrapolation_distance = concat_where(
+        (horizontal_start_distance <= dims.EdgeDim) & (dims.EdgeDim < horizontal_end_distance),
+        downward_distance,
+        0.0,
     )
-    pg_vertidx = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < z_aux2) & e_owner_mask, k_lev, pg_vertidx
-    )
-    return pg_edgeidx, pg_vertidx
 
-
-@field_operator
-def _compute_pg_exdist_dsl(
-    z_me: fa.EdgeKField[wpfloat],
-    z_aux2: fa.EdgeField[wpfloat],
-    e_owner_mask: fa.EdgeField[bool],
-    flat_idx_max: fa.EdgeField[gtx.int32],
-    k_lev: fa.KField[gtx.int32],
-    pg_exdist_dsl: fa.EdgeKField[wpfloat],
-) -> fa.EdgeKField[wpfloat]:
-    k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
     pg_exdist_dsl = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < z_aux2) & e_owner_mask,
-        z_me - z_aux2,
-        pg_exdist_dsl,
+        (k_lev >= (flat_idx_max + 1)) & (z_me < extrapolation_distance) & e_owner_mask,
+        z_me - extrapolation_distance,
+        0.0,
     )
+
     return pg_exdist_dsl
 
 
-@program
-def compute_pg_exdist_dsl(
-    z_aux2: fa.EdgeField[wpfloat],
-    z_me: fa.EdgeKField[wpfloat],
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_pressure_gradient_downward_extrapolation_mask_distance(  # noqa: PLR0917 [too-many-positional-arguments]
+    z_mc: fa.CellKField[wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+    topography: fa.CellField[wpfloat],
     e_owner_mask: fa.EdgeField[bool],
     flat_idx_max: fa.EdgeField[gtx.int32],
+    e_lev: fa.EdgeField[gtx.int32],
     k_lev: fa.KField[gtx.int32],
     pg_exdist_dsl: fa.EdgeKField[wpfloat],
+    horizontal_start_distance: int32,
+    horizontal_end_distance: int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """
-    Compute pg_edgeidx_dsl.
-
-    See mo_vertical_grid.f90
-
-    Args:
-        z_aux2: Local field
-        z_me: Local field
-        e_owner_mask: Field of booleans over edges
-        flat_idx_max: Highest vertical index (counted from top to bottom) for which the edge point lies inside the cell box of the adjacent grid points
-        k_lev: Field of K levels
-        pg_exdist_dsl: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
-    """
-    _compute_pg_exdist_dsl(
-        z_me=z_me,
-        z_aux2=z_aux2,
-        e_owner_mask=e_owner_mask,
+    _compute_pressure_gradient_downward_extrapolation_mask_distance(
+        z_mc=z_mc,
+        c_lin_e=c_lin_e,
+        topography=topography,
         flat_idx_max=flat_idx_max,
+        e_owner_mask=e_owner_mask,
+        e_lev=e_lev,
         k_lev=k_lev,
-        pg_exdist_dsl=pg_exdist_dsl,
+        horizontal_start_distance=horizontal_start_distance,
+        horizontal_end_distance=horizontal_end_distance,
         out=pg_exdist_dsl,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -921,59 +704,15 @@ def compute_pg_exdist_dsl(
     )
 
 
-@field_operator
-def _compute_pg_edgeidx_dsl(
-    pg_edgeidx: fa.EdgeKField[gtx.int32],
-    pg_vertidx: fa.EdgeKField[gtx.int32],
-) -> fa.EdgeKField[bool]:
-    pg_edgeidx_dsl = where((pg_edgeidx > 0) & (pg_vertidx > 0), True, False)
-    return pg_edgeidx_dsl
-
-
-@program
-def compute_pg_edgeidx_dsl(
-    pg_edgeidx: fa.EdgeKField[gtx.int32],
-    pg_vertidx: fa.EdgeKField[gtx.int32],
-    pg_edgeidx_dsl: fa.EdgeKField[bool],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    """
-    Compute pg_edgeidx_dsl.
-
-    See mo_vertical_grid.f90
-
-    Args:
-        pg_edgeidx: Index Edge values
-        pg_vertidx: Index K values
-        pg_edgeidx_dsl: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
-    """
-    _compute_pg_edgeidx_dsl(
-        pg_edgeidx=pg_edgeidx,
-        pg_vertidx=pg_vertidx,
-        out=pg_edgeidx_dsl,
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@field_operator
+@gtx.field_operator
 def _compute_mask_prog_halo_c(
-    c_refin_ctrl: fa.CellField[gtx.int32], mask_prog_halo_c: fa.CellField[bool]
+    c_refin_ctrl: fa.CellField[gtx.int32],
 ) -> fa.CellField[bool]:
-    mask_prog_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), mask_prog_halo_c, True)
+    mask_prog_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), False, True)
     return mask_prog_halo_c
 
 
-@program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_mask_prog_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],
     mask_prog_halo_c: fa.CellField[bool],
@@ -993,121 +732,90 @@ def compute_mask_prog_halo_c(
     """
     _compute_mask_prog_halo_c(
         c_refin_ctrl,
-        mask_prog_halo_c,
         out=mask_prog_halo_c,
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 
-@field_operator
-def _compute_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[gtx.int32],
-    bdy_halo_c: fa.CellField[bool],
-) -> fa.CellField[bool]:
-    bdy_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), True, bdy_halo_c)
-    return bdy_halo_c
-
-
-@program
-def compute_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[gtx.int32],
-    bdy_halo_c: fa.CellField[bool],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-):
-    """
-    Compute bdy_halo_c.
-
-    See mo_vertical_grid.f90. mask_prog_halo_c_dsl_low_refin in ICON
-
-    Args:
-        c_refin_ctrl: Cell field of refin_ctrl
-        bdy_halo_c: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-    """
-    _compute_bdy_halo_c(
-        c_refin_ctrl,
-        bdy_halo_c,
-        out=bdy_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-
-@field_operator
-def _compute_hmask_dd3d(
+@gtx.field_operator
+def _compute_horizontal_mask_for_3d_divdamp(
     e_refin_ctrl: fa.EdgeField[gtx.int32],
     grf_nudge_start_e: gtx.int32,
     grf_nudgezone_width: gtx.int32,
 ) -> fa.EdgeField[wpfloat]:
-    hmask_dd3d = (
-        1
-        / (grf_nudgezone_width - 1)
-        * (e_refin_ctrl - (grf_nudge_start_e + grf_nudgezone_width - 1))
+    e_refin_ctrl_wp = astype(e_refin_ctrl, wpfloat)
+    grf_nudge_start_e_wp = astype(grf_nudge_start_e, wpfloat)
+    grf_nudgezone_width_wp = astype(grf_nudgezone_width, wpfloat)
+    horizontal_mask_for_3d_divdamp = where(
+        (e_refin_ctrl > (grf_nudge_start_e + grf_nudgezone_width - 1)),
+        1.0
+        / (grf_nudgezone_width_wp - 1.0)
+        * (e_refin_ctrl_wp - (grf_nudge_start_e_wp + grf_nudgezone_width_wp - 1.0)),
+        0.0,
     )
-    hmask_dd3d = where(
-        (e_refin_ctrl <= 0) | (e_refin_ctrl >= (grf_nudge_start_e + 2 * (grf_nudgezone_width - 1))),
-        1,
-        hmask_dd3d,
+    horizontal_mask_for_3d_divdamp = where(
+        (e_refin_ctrl <= 0)
+        | (e_refin_ctrl_wp >= (grf_nudge_start_e_wp + 2.0 * (grf_nudgezone_width_wp - 1.0))),
+        1.0,
+        horizontal_mask_for_3d_divdamp,
     )
-    hmask_dd3d = where(e_refin_ctrl <= (grf_nudge_start_e + grf_nudgezone_width - 1), 0, hmask_dd3d)
-    return astype(hmask_dd3d, wpfloat)
+    return horizontal_mask_for_3d_divdamp
 
 
-@program
-def compute_hmask_dd3d(
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_horizontal_mask_for_3d_divdamp(  # noqa: PLR0917 [too-many-positional-arguments]
     e_refin_ctrl: fa.EdgeField[gtx.int32],
-    hmask_dd3d: fa.EdgeField[wpfloat],
+    horizontal_mask_for_3d_divdamp: fa.EdgeField[wpfloat],
     grf_nudge_start_e: gtx.int32,
     grf_nudgezone_width: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
     """
-    Compute hmask_dd3d.
+    Compute horizontal_mask_for_3d_divdamp (declared as hmask_dd3d in ICON).
 
     See mo_vertical_grid.f90. Horizontal mask field for 3D divergence damping term.
 
     Args:
         e_refin_ctrl: Edge field of refin_ctrl
-        hmask_dd3d: output
+        horizontal_mask_for_3d_divdamp: output
         grf_nudge_start_e: mo_impl_constants_grf constant
         grf_nudgezone_width: mo_impl_constants_grf constant
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
     """
-    _compute_hmask_dd3d(
+    _compute_horizontal_mask_for_3d_divdamp(
         e_refin_ctrl=e_refin_ctrl,
         grf_nudge_start_e=grf_nudge_start_e,
         grf_nudgezone_width=grf_nudgezone_width,
-        out=hmask_dd3d,
+        out=horizontal_mask_for_3d_divdamp,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_weighted_cell_neighbor_sum(
-    field: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    field: fa.CellKField[wpfloat],
     c_bln_avg: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], wpfloat],
-) -> gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat]:
+) -> fa.CellKField[wpfloat]:
     field_avg = neighbor_sum(field(C2E2CO) * c_bln_avg, axis=C2E2CODim)
     return field_avg
 
 
-@program
-def compute_weighted_cell_neighbor_sum(
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_weighted_cell_neighbor_sum(  # noqa: PLR0917 [too-many-positional-arguments]
     maxslp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     c_bln_avg: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], wpfloat],
-    z_maxslp_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
-    z_maxhgtd_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxslp_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxhgtd_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
     """
-    Compute z_maxslp_avg and z_maxhgtd_avg.
+    Compute maxslp_avg and maxhgtd_avg.
 
     See mo_vertical_grid.f90.
 
@@ -1115,8 +823,8 @@ def compute_weighted_cell_neighbor_sum(
         maxslp: Max field over ddxn_z_full offset
         maxhgtd: Max field over ddxn_z_full offset*dual_edge_length offset
         c_bln_avg: Interpolation field
-        z_maxslp_avg: output
-        z_maxhgtd_avg: output
+        maxslp_avg: output
+        maxhgtd_avg: output
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
         vertical_start: vertical start index
@@ -1126,7 +834,7 @@ def compute_weighted_cell_neighbor_sum(
     _compute_weighted_cell_neighbor_sum(
         field=maxslp,
         c_bln_avg=c_bln_avg,
-        out=z_maxslp_avg,
+        out=maxslp_avg,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -1136,7 +844,7 @@ def compute_weighted_cell_neighbor_sum(
     _compute_weighted_cell_neighbor_sum(
         field=maxhgtd,
         c_bln_avg=c_bln_avg,
-        out=z_maxhgtd_avg,
+        out=maxhgtd_avg,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -1144,22 +852,21 @@ def compute_weighted_cell_neighbor_sum(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_max_nbhgt(
-    z_mc_nlev: gtx.Field[gtx.Dims[dims.CellDim], wpfloat],
-) -> gtx.Field[gtx.Dims[dims.CellDim], wpfloat]:
-    max_nbhgt_0_1 = maximum(z_mc_nlev(C2E2C[0]), z_mc_nlev(C2E2C[1]))
-    max_nbhgt = maximum(max_nbhgt_0_1, z_mc_nlev(C2E2C[2]))
+    z_mc_nlev: fa.CellField[wpfloat],
+) -> fa.CellField[wpfloat]:
+    max_nbhgt = max_over(z_mc_nlev(C2E2C), axis=dims.C2E2CDim)
     return max_nbhgt
 
 
-@program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_max_nbhgt(
-    z_mc_nlev: gtx.Field[gtx.Dims[dims.CellDim], wpfloat],
-    max_nbhgt: gtx.Field[gtx.Dims[dims.CellDim], wpfloat],
+    z_mc_nlev: fa.CellField[wpfloat],
+    max_nbhgt: fa.CellField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     """
     Compute max_nbhgt.
 
@@ -1178,8 +885,8 @@ def compute_max_nbhgt(
     )
 
 
-@scan_operator(axis=dims.KDim, forward=True, init=(0, False))
-def _compute_param(
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0, False))
+def _compute_param(  # noqa: PLR0917 [too-many-positional-arguments]
     param: tuple[gtx.int32, bool],
     z_me_jk: float,
     z_ifc_off: float,
@@ -1194,9 +901,54 @@ def _compute_param(
     return param_0 + 1, param_1
 
 
-@field_operator(grid_type=GridType.UNSTRUCTURED)
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _compute_z_ifc_off_koff(
-    z_ifc_off: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], wpfloat],
-) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], wpfloat]:
-    n = z_ifc_off(Koff[1])
+    z_ifc_off: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
+    n = z_ifc_off(KDim + 1)
     return n
+
+
+def compute_exner_w_implicit_weight_parameter(
+    *,
+    c2e: data_alloc.NDArray,
+    vct_a: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    z_ddxn_z_half_e: data_alloc.NDArray,
+    z_ddxt_z_half_e: data_alloc.NDArray,
+    dual_edge_length: data_alloc.NDArray,
+    vwind_offctr: float,
+    nlev: int,
+    horizontal_start_cell: int,
+) -> data_alloc.NDArray:
+    array_ns = data_alloc.array_namespace(c2e)
+    factor = max(vwind_offctr, 0.75)
+
+    zn_off = array_ns.abs(z_ddxn_z_half_e[:, nlev][c2e])
+    zt_off = array_ns.abs(z_ddxt_z_half_e[:, nlev][c2e])
+    stacked = array_ns.concatenate((zn_off, zt_off), axis=1)
+    maxslope = 0.425 * array_ns.amax(stacked, axis=1) ** (0.75)
+    diff = array_ns.minimum(
+        0.25,
+        0.00025 * (array_ns.amax(array_ns.abs(zn_off * dual_edge_length[c2e]), axis=1) - 250.0),
+    )
+    offctr = array_ns.minimum(
+        factor, array_ns.maximum(vwind_offctr, array_ns.maximum(maxslope, diff))
+    )
+    exner_w_implicit_weight_parameter = 0.5 + offctr
+
+    k_start = max(0, nlev - 9)
+
+    zdiff2 = (z_ifc[:, 0:nlev] - z_ifc[:, 1 : nlev + 1]) / (vct_a[0:nlev] - vct_a[1 : nlev + 1])
+
+    for jk in range(k_start, nlev):
+        zdiff2_sliced = zdiff2[horizontal_start_cell:, jk]
+        index_for_k = array_ns.nonzero(zdiff2_sliced < 0.6)[0]
+        max_value_k = array_ns.maximum(
+            1.2 - zdiff2_sliced, exner_w_implicit_weight_parameter[horizontal_start_cell:]
+        )
+        exner_w_implicit_weight_parameter[index_for_k + horizontal_start_cell] = max_value_k[
+            index_for_k
+        ]
+
+    return exner_w_implicit_weight_parameter

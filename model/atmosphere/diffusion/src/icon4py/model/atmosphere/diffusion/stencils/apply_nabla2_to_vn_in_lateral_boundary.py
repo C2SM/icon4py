@@ -6,15 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _apply_nabla2_to_vn_in_lateral_boundary(
     z_nabla2_e: fa.EdgeKField[wpfloat],
     area_edge: fa.EdgeField[wpfloat],
@@ -25,7 +22,7 @@ def _apply_nabla2_to_vn_in_lateral_boundary(
     return vn_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_nabla2_to_vn_in_lateral_boundary(
     z_nabla2_e: fa.EdgeKField[wpfloat],
     area_edge: fa.EdgeField[wpfloat],
@@ -35,12 +32,12 @@ def apply_nabla2_to_vn_in_lateral_boundary(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_nabla2_to_vn_in_lateral_boundary(
-        z_nabla2_e,
-        area_edge,
-        vn,
-        fac_bdydiff_v,
+        z_nabla2_e=z_nabla2_e,
+        area_edge=area_edge,
+        vn=vn,
+        fac_bdydiff_v=fac_bdydiff_v,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

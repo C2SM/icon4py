@@ -6,18 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import (
-    broadcast,
-    maximum,
-    minimum,
-)
+from gt4py.next import broadcast, maximum, minimum
 
 from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import KDim, Koff
+from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
-def _en_smag_fac_for_zero_nshift(
+def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-arguments]
     vect_a: fa.KField[float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
@@ -37,7 +33,7 @@ def _en_smag_fac_for_zero_nshift(
 
     bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
     aqdr = df32 / dz32 - bqdr * dz32
-    zf = 0.5 * (vect_a + vect_a(Koff[1]))
+    zf = 0.5 * (vect_a + vect_a(KDim + 1))
     zero = broadcast(0.0, (KDim,))
 
     dzlin = minimum(broadcast(dz21, (KDim,)), maximum(zero, zf - hdiff_smag_z))
@@ -47,7 +43,7 @@ def _en_smag_fac_for_zero_nshift(
 
 
 @gtx.program
-def en_smag_fac_for_zero_nshift(
+def en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-arguments]
     vect_a: fa.KField[float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
@@ -58,16 +54,16 @@ def en_smag_fac_for_zero_nshift(
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
     enh_smag_fac: fa.KField[float],
-):
+) -> None:
     _en_smag_fac_for_zero_nshift(
-        vect_a,
-        hdiff_smag_fac,
-        hdiff_smag_fac2,
-        hdiff_smag_fac3,
-        hdiff_smag_fac4,
-        hdiff_smag_z,
-        hdiff_smag_z2,
-        hdiff_smag_z3,
-        hdiff_smag_z4,
+        vect_a=vect_a,
+        hdiff_smag_fac=hdiff_smag_fac,
+        hdiff_smag_fac2=hdiff_smag_fac2,
+        hdiff_smag_fac3=hdiff_smag_fac3,
+        hdiff_smag_fac4=hdiff_smag_fac4,
+        hdiff_smag_z=hdiff_smag_z,
+        hdiff_smag_z2=hdiff_smag_z2,
+        hdiff_smag_z3=hdiff_smag_z3,
+        hdiff_smag_z4=hdiff_smag_z4,
         out=enh_smag_fac,
     )

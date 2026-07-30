@@ -14,10 +14,10 @@ The following code is an example:
 ```python
 @field_operator
 def _foo(
-    input_var,
-    k_field,
-    nlev,
-):
+    input_var: CellKField[wpfloat],
+    k_field: KField[wpfloat],
+    nlev: int32,
+) -> tuple[CellKField[wpfloat], CellKField[wpfloat]]:
     (half_level_var, full_level_var) =  where(
         (k_field >= 0) & (k_field < nlev),
         _compute_var(input_var),
@@ -28,16 +28,16 @@ def _foo(
 
 @program
 def foo(
-    input_var,
-    k_field,
-    nlev,
-    full_level_var,
-    half_level_var,
-    horizontal_start,
-    horizontal_end,
-    vertical_start,
-    vertical_end,
-):
+    input_var: CellKField[wpfloat],
+    k_field: KField[wpfloat],
+    nlev: int32,
+    full_level_var: CellField[wpfloat],
+    half_level_var: CellField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+) -> None:
     _foo(
         input_var,
         k_field,
@@ -69,14 +69,14 @@ Here is a fix to the example above:
 ```python
 @program
 def foo(
-    input_var,
-    full_level_var,
-    half_level_var,
-    horizontal_start,
-    horizontal_end,
-    vertical_start,
-    vertical_end,
-):
+    input_var: CellKField[wpfloat],
+    full_level_var: CellField[wpfloat],
+    half_level_var: CellField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+) -> None:
     _compute_var(
         input_var,
         out=(half_level_var, full_level_var),
