@@ -42,9 +42,8 @@ else:
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
-ARCHIVE_METADATA_FNAME: Final = "archive_metadata.json"
-ARCHIVE_METADATA_SCHEMA: Final = "icon4py-archive-metadata/1"
 RUN_SUMMARY_FNAME: Final = "run_summary.json"
+REPORTS_DIRNAME: Final = "reports"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -58,10 +57,14 @@ class TaskResult:
     job_id: str | None = None
     tar_path: pathlib.Path | None = None
     error: str | None = None
+    verdict: str | None = None
+    report_path: pathlib.Path | None = None
 
     def as_dict(self) -> dict:
         data = dataclasses.asdict(self)
-        data["tar_path"] = str(self.tar_path) if self.tar_path is not None else None
+        for name in ("tar_path", "report_path"):
+            value = getattr(self, name)
+            data[name] = str(value) if value is not None else None
         return data
 
 
@@ -568,7 +571,7 @@ def write_archive_metadata(
     only artifact with a verified link to the binary that produced the data.
     """
     metadata = {
-        "schema": ARCHIVE_METADATA_SCHEMA,
+        "schema": serdata.ARCHIVE_METADATA_SCHEMA,
         "archive": {
             "experiment": experiment_description.name,
             "version": experiment_description.version,
@@ -589,10 +592,47 @@ def write_archive_metadata(
         },
     }
 
-    metadata_path = dest_dir / ARCHIVE_METADATA_FNAME
+    metadata_path = dest_dir / serdata.ARCHIVE_METADATA_FNAME
     with metadata_path.open("w") as f:
         json.dump(metadata, f, indent=4)
     return metadata_path
+
+
+def compare_with_previous_version(
+    dest_dir: pathlib.Path,
+    experiment_description: test_defs.ExperimentDescription,
+    comm_size: int,
+    *,
+    settings: SerializationSettings,
+) -> tuple[str, pathlib.Path]:
+    """Diff the new archive against the previous version and write the report.
+
+    Returns the verdict and the path of the written report, so that no caller has to
+    reconstruct either.
+
+    The baseline is the previous version if it is still on disk. When it is not, the
+    report says so rather than reporting a clean comparison that never happened; the
+    previous archive can be extracted and passed to 'serdata diff --baseline' by hand.
+    """
+    previous = dataclasses.replace(
+        experiment_description, version=experiment_description.version - 1
+    )
+    baseline_dir = get_serdata_dst_dir(previous, comm_size, settings=settings)
+
+    comparison = serdata.compare_archives(
+        baseline_dir if baseline_dir.is_dir() else None,
+        dest_dir,
+        experiment=experiment_description.name,
+    )
+    rendered = serdata.render_diff_report(comparison)
+    print(rendered)
+
+    reports_dir = settings.output_root / REPORTS_DIRNAME
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    report_path = reports_dir / f"{dest_dir.name}.md"
+    report_path.write_text(rendered + "\n")
+
+    return comparison.verdict, report_path
 
 
 def run_experiment(
@@ -645,6 +685,11 @@ def run_experiment(
         log_status(f"Creating tar archive for {experiment_description.name} with {comm_size} ranks")
         tar_path = tar_folder(dest_dir, experiment_description, comm_size, settings=settings)
 
+        log_status(f"Comparing {experiment_description.name} with {comm_size} ranks")
+        verdict, report_path = compare_with_previous_version(
+            dest_dir, experiment_description, comm_size, settings=settings
+        )
+
         log_status(f"Completed {experiment_description.name} with {comm_size} ranks")
         return TaskResult(
             experiment=experiment_description.name,
@@ -653,6 +698,8 @@ def run_experiment(
             status="ok",
             job_id=job_id,
             tar_path=tar_path,
+            verdict=verdict,
+            report_path=report_path,
         )
     except Exception as e:
         log_status(f"ERROR in {experiment_description.name} with {comm_size} ranks: {e}")
@@ -670,7 +717,7 @@ def report_results(results: list[TaskResult], *, settings: SerializationSettings
     width = max((len(result.experiment) for result in results), default=10)
     log_status("Task summary:")
     for result in results:
-        detail = result.error if result.status == "failed" else (result.tar_path or "")
+        detail = result.error if result.status == "failed" else (result.verdict or "")
         print(
             f"  {result.status:<6} {result.experiment:<{width}} v{result.version:02d} "
             f"ranks={result.comm_size} {detail}"
@@ -680,6 +727,35 @@ def report_results(results: list[TaskResult], *, settings: SerializationSettings
     with summary_path.open("w") as f:
         json.dump([result.as_dict() for result in results], f, indent=4)
     log_status(f"Wrote task summary to {summary_path}")
+
+
+def print_next_steps(results: list[TaskResult], *, settings: SerializationSettings) -> None:
+    """Spell out what still has to happen by hand.
+
+    Regeneration happens a few times a year; the steps after it are the ones that get
+    forgotten, so they are printed with the values already filled in.
+    """
+    reviewable = [result for result in results if result.verdict != "OK"]
+    versions = {(result.experiment, result.version) for result in results}
+
+    print("\nNext steps:")
+    if reviewable:
+        print(f"  1. Review {len(reviewable)} archive(s) whose comparison is not OK:")
+        for result in reviewable:
+            print(f"       {result.verdict:<11} {result.report_path}")
+    print("  2. Run the datatests against the fresh data before publishing anything:")
+    print(
+        f"       ICON4PY_TEST_DATA_PATH={settings.experiments_dir} "
+        "ICON4PY_ENABLE_TESTDATA_DOWNLOAD=0 \\\n"
+        "         uv run --group test --frozen pytest -n0 --datatest-only "
+        "--backend=gtfn_cpu model/common"
+    )
+    print("  3. Upload the archives (see docs/testdata_generation.md):")
+    for result in results:
+        print(f"       {result.tar_path}")
+    print("  4. Set these versions in model/testing/src/icon4py/model/testing/definitions.py:")
+    for experiment, version in sorted(versions):
+        print(f"       {experiment}: version={version}")
 
 
 @cli.command()

@@ -1,0 +1,48 @@
+
+ ICON MPI interface runtime information:
+ mo_mpi::start_mpi Used MPI version: 3.1
+ mo_mpi::start_mpi ICON: Globally run on 4 mpi processes.
+
+ ICON runs on 4 mpi processes.
+
+ executable: /capstor/store/cscs/userlab/cwd01/jcanton/icon-exclaim.serialize/build_serialize/bin/icon
+ date: 20260703
+ time: 115609
+ user: Jacopo Canton, ETHZ (jcanton)
+ host: nid005237 (Linux 6.4.0-150600.23.53-64kb aarch64)
+ version: 2026.04
+ revision: icon-2025.10-dwd-2.0-242-g97986bc3592cc05c799717c70345f27a8c275d8d
+ repository: git@gitlab.dkrz.de:icon/icon-nwp.git
+ local branch: serialize_tmx
+ model components:
+   ICON-Land:
+     version: 2026.04
+     revision: icon-land-2026.04-6-ga7583e49db9c7286f1e1377a7c8409d0c11425c5
+   DACE: icon-nwp-2001-0-ga56af966bfc607d64b96580d1f35d70996800547
+ application libraries:
+   ECRAD: ecrad-safeguard-09666303-13-g19ceb48ac61ea1cab148149b65f7a496cb5d6626
+   RTE-RRTMGP: v1.7-18-g0a8f3011a07299ca7d2bdd0de59686746340379b
+ infrastructure and support libraries:
+   MEMMAN: 1.0.0-0-g90bd21b062b0a7a1c6f3b8675cce2098a1ca0045
+   ICONMATH: 2.0.0-0-g5ccb37a6deb378a1be584c1f95d91a841d2aab74
+   FORTRAN-SUPPORT: 2.2.1-0-g34246610b17db29f214fb2f95ca1c9087f09b89c
+   MTIME: 1.3.0-1-g04f02ccbd765104a1570355c5d3fdfcfdad11c4c
+   CDI:
+     version: 2.6.0
+     revision: cdi-2.6.0-1-g60e0a3b9899c8021437686d720702a978a5bb63d
+ other libraries:
+   ECCODES: 2.36.4
+   NetCDF-C: 4.9.2
+   MPI: MPI VERSION    : CRAY MPICH version 8.1.30.9 (ANL base 3.4a2)...
+ compilers:
+   Fortran: NVHPC 25.1.0 (nvfortran 25.1-0)
+   C: NVHPC 25.1.0 (GNU 13.2.0)
+ master_control: start model initialization.
+
+ atm runs on 4 mpi processes.
+
+ set_nproma_nblocks: Will recompute nproma based on nblocks_e
+ set_nproma_nblocks_sub: Will recompute nproma_sub based on nblocks_sub
+ mo_name_list_output_init::read_name_list_output_namelists: No output definition found; disabling output.
+ mo_dbg_nml/read_dbg_namelist:: read debug namelist dbg_index_nml
+ mo_dynamics_nml:read_dynamics_namelist: WARNING: The Namelist variable iequations is obsolete and will be removed soon.

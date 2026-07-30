@@ -1,0 +1,18 @@
+{
+ "grid_nml": {
+  "nroot": 2,
+  "start_lev": 4,
+  "lfeedback": [
+   true,
+   true
+  ]
+ },
+ "nonhydrostatic_nml": {
+  "damp_height": 45000.0,
+  "iadv_rhotheta": 2,
+  "old_key": 1
+ },
+ "run_nml": {
+  "ltestcase": true
+ }
+}

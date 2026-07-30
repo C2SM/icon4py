@@ -10,18 +10,28 @@
 
 from __future__ import annotations
 
+import dataclasses
+import json
 import pathlib
+import shutil
 import subprocess
 
 import pytest
 from serdata import (
     BannerParseError,
+    backfill_archive_metadata,
     classify_savepoint,
+    compare_archives,
     diff_fingerprints,
+    diff_namelists,
     fingerprint_archive,
     harvest_git,
+    parse_archive_dirname,
     parse_icon_log_banner,
     read_icon_banner_from_archive,
+    read_namelist,
+    render_diff_report,
+    render_value_change,
     unclassified_savepoints,
 )
 
@@ -299,3 +309,153 @@ def test_diff_reports_changed_records() -> None:
 def test_fingerprint_flags_savepoints_nobody_classified() -> None:
     # The fixtures contain only savepoints that are already classified.
     assert fingerprint_archive(DATA_DIR / "v06").unclassified == []
+
+
+# --- namelists ----------------------------------------------------------------
+
+
+def test_read_namelist_of_an_archive() -> None:
+    namelist = read_namelist(DATA_DIR / "v05")
+
+    assert namelist["grid_nml"]["nroot"] == 2
+
+
+def test_read_namelist_when_absent(tmp_path: pathlib.Path) -> None:
+    assert read_namelist(tmp_path) == {}
+
+
+def test_diff_namelists_reports_changed_defaults() -> None:
+    # An upstream change to a namelist default shows up here and nowhere else: the
+    # input namelists only carry the values the experiment sets explicitly.
+    diff = diff_namelists(read_namelist(DATA_DIR / "v05"), read_namelist(DATA_DIR / "v06"))
+
+    assert diff.changed == [("nonhydrostatic_nml", "damp_height", 45000.0, 12500.0)]
+    assert diff.added == [("nonhydrostatic_nml", "new_key")]
+    assert diff.removed == [("nonhydrostatic_nml", "old_key")]
+
+
+def test_diff_namelists_of_identical_input() -> None:
+    namelist = read_namelist(DATA_DIR / "v05")
+
+    diff = diff_namelists(namelist, namelist)
+
+    assert (diff.changed, diff.added, diff.removed) == ([], [], [])
+
+
+# --- comparison and report ----------------------------------------------------
+
+
+def test_compare_archives_verdict_is_ok_when_only_evolving_changed() -> None:
+    comparison = compare_archives(DATA_DIR / "v05", DATA_DIR / "v05")
+
+    assert comparison.verdict == "OK"
+
+
+def test_compare_archives_flags_a_changed_static_record() -> None:
+    comparison = compare_archives(DATA_DIR / "v05", DATA_DIR / "v06")
+    tampered = dataclasses.replace(
+        comparison,
+        fingerprints=dataclasses.replace(
+            comparison.fingerprints,
+            per_class={
+                **comparison.fingerprints.per_class,
+                "static": dataclasses.replace(
+                    comparison.fingerprints.per_class["static"],
+                    changed=[(0, "icon-grid", 0, "primal_normal_cell_x")],
+                ),
+            },
+        ),
+    )
+
+    assert tampered.verdict == "REVIEW"
+
+
+def test_report_names_changed_static_fields_and_counts_the_rest() -> None:
+    comparison = compare_archives(DATA_DIR / "v05", DATA_DIR / "v06")
+
+    report = render_diff_report(comparison)
+
+    assert "VERDICT: OK" in report
+    assert "tmx-init" in report  # a savepoint the regeneration added
+    assert "damp_height" in report  # the namelist default that drifted
+    assert "icon 97986bc359" in report  # provenance, abbreviated
+
+
+def test_report_states_when_there_is_no_baseline(tmp_path: pathlib.Path) -> None:
+    comparison = compare_archives(None, DATA_DIR / "v05")
+
+    report = render_diff_report(comparison)
+
+    assert "BASELINE: none" in report
+
+
+# --- archive directory names and backfill -------------------------------------
+
+
+def test_parse_archive_dirname() -> None:
+    assert parse_archive_dirname("mpitask4_exclaim_ape_aesPhys_v06") == (
+        4,
+        "exclaim_ape_aesPhys",
+        6,
+    )
+
+
+def test_parse_archive_dirname_rejects_other_directories() -> None:
+    assert parse_archive_dirname("grids") is None
+    assert parse_archive_dirname("mpitask4_exclaim_ape_aesPhys") is None
+
+
+def test_backfill_writes_metadata_for_existing_archives(tmp_path: pathlib.Path) -> None:
+    # Archives generated before the metadata file existed still carry the ICON log, so
+    # their provenance can be recovered locally without regenerating anything.
+    archive = tmp_path / "mpitask2_exclaim_ape_aesPhys_v05"
+    shutil.copytree(DATA_DIR / "v05", archive)
+
+    written = backfill_archive_metadata(tmp_path)
+
+    assert written == [archive / "archive_metadata.json"]
+    metadata = json.loads(written[0].read_text())
+    assert metadata["archive"] == {
+        "experiment": "exclaim_ape_aesPhys",
+        "version": 5,
+        "comm_size": 2,
+        "backfilled": True,
+    }
+    assert metadata["provenance"]["icon"]["sha"] == "97986bc3592cc05c799717c70345f27a8c275d8d"
+
+
+def test_backfill_skips_archives_that_already_have_metadata(tmp_path: pathlib.Path) -> None:
+    archive = tmp_path / "mpitask1_exclaim_gauss3d_v05"
+    shutil.copytree(DATA_DIR / "v05", archive)
+    (archive / "archive_metadata.json").write_text("{}")
+
+    assert backfill_archive_metadata(tmp_path) == []
+
+
+def test_backfill_reports_archives_it_cannot_read(tmp_path: pathlib.Path) -> None:
+    broken = tmp_path / "mpitask1_exclaim_gauss3d_v05"
+    broken.mkdir()
+
+    # one unreadable archive must not stop the others
+    assert backfill_archive_metadata(tmp_path) == []
+
+
+def test_report_points_at_the_differing_element_of_an_array_value() -> None:
+    # Namelist array values are long and mostly identical; truncating both sides makes
+    # the two look the same, which is worse than useless.
+    old = {"aes_vdf_nml": {"config": [1.0, 0.17, 0.25, 0.0]}}
+    new = {"aes_vdf_nml": {"config": [1.0, 0.42, 0.25, 0.0]}}
+
+    rendered = render_value_change(*diff_namelists(old, new).changed[0][2:])
+
+    assert rendered == "[1] 0.17 -> 0.42"
+
+
+def test_report_falls_back_to_whole_values_for_scalars() -> None:
+    assert render_value_change(45000.0, 12500.0) == "45000.0 -> 12500.0"
+
+
+def test_report_strips_fortran_string_padding() -> None:
+    # A value that Fortran padded to its declared width must not read as "unchanged
+    # whitespace"; quoting is what makes an emptied string visible.
+    assert render_value_change("                ", "PT300S     ") == "'' -> 'PT300S'"

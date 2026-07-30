@@ -24,8 +24,11 @@ import json
 import pathlib
 import re
 import subprocess
+import sys
 from collections.abc import Iterator
-from typing import Final, Literal
+from typing import Annotated, Final, Literal
+
+import typer
 
 
 # Top-level entries of the banner printed by 'mo_util_vcs::show_version'. They carry
@@ -386,3 +389,339 @@ def diff_fingerprints(old: Fingerprint, new: Fingerprint) -> FingerprintDiff:
         fields_added=sorted(new_fields - old_fields),
         fields_removed=sorted(old_fields - new_fields),
     )
+
+
+# ---------------------------------------------------------------------------
+# Namelists
+# ---------------------------------------------------------------------------
+
+# ICON's post-read namelist dump: every variable with its effective value, defaults
+# included. The input namelists only carry what the experiment sets explicitly, so this
+# is the only archived artifact in which an upstream change to a default is visible.
+NAMELIST_DUMP_FNAME: Final = "NAMELIST_ICON_output_atm.json"
+
+
+@dataclasses.dataclass(frozen=True)
+class NamelistDiff:
+    changed: list[tuple[str, str, object, object]]
+    added: list[tuple[str, str]]
+    removed: list[tuple[str, str]]
+
+
+def read_namelist(archive_dir: pathlib.Path) -> dict:
+    """Read the resolved namelist dump of an archive, or nothing if it has none."""
+    path = archive_dir / NAMELIST_DUMP_FNAME
+    return json.loads(path.read_text()) if path.is_file() else {}
+
+
+def diff_namelists(old: dict, new: dict) -> NamelistDiff:
+    """Compare two resolved namelist dumps variable by variable."""
+    changed: list[tuple[str, str, object, object]] = []
+    added: list[tuple[str, str]] = []
+    removed: list[tuple[str, str]] = []
+
+    for section in sorted(old.keys() | new.keys()):
+        old_section = old.get(section, {})
+        new_section = new.get(section, {})
+        for key in sorted(old_section.keys() | new_section.keys()):
+            if key not in old_section:
+                added.append((section, key))
+            elif key not in new_section:
+                removed.append((section, key))
+            elif old_section[key] != new_section[key]:
+                changed.append((section, key, old_section[key], new_section[key]))
+
+    return NamelistDiff(changed=changed, added=added, removed=removed)
+
+
+# ---------------------------------------------------------------------------
+# Comparing two archives
+# ---------------------------------------------------------------------------
+
+ARCHIVE_METADATA_FNAME: Final = "archive_metadata.json"
+ARCHIVE_METADATA_SCHEMA: Final = "icon4py-archive-metadata/1"
+
+_MAX_RENDERED_VALUE = 60
+_MAX_RENDERED_ELEMENTS = 3
+
+
+def read_archive_provenance(archive_dir: pathlib.Path) -> dict:
+    """Read an archive's provenance, from its metadata file or from the ICON log.
+
+    Archives generated before the metadata file existed still carry the log, so the
+    fallback is what lets a fresh archive be compared against an older one.
+    """
+    metadata_path = archive_dir / ARCHIVE_METADATA_FNAME
+    if metadata_path.is_file():
+        return json.loads(metadata_path.read_text()).get("provenance", {})
+    try:
+        return {"icon": read_icon_banner_from_archive(archive_dir)}
+    except BannerParseError as error:
+        return {"error": str(error)}
+
+
+@dataclasses.dataclass(frozen=True)
+class ArchiveComparison:
+    """Everything that changed between two versions of one experiment's archive."""
+
+    experiment: str
+    old_label: str | None
+    new_label: str
+    old_provenance: dict
+    new_provenance: dict
+    namelists: NamelistDiff
+    fingerprints: FingerprintDiff
+    unclassified: list[str]
+
+    @property
+    def verdict(self) -> str:
+        """'OK', 'REVIEW' if something guarded moved, 'UNVERIFIED' without a baseline.
+
+        Records appearing in a guarded class are not by themselves cause for review:
+        that is what adding instrumentation looks like. Records changing or vanishing
+        are.
+        """
+        if self.old_label is None:
+            return "UNVERIFIED"
+        if self.unclassified:
+            return "REVIEW"
+        for name in ("static", "initial-state"):
+            guarded = self.fingerprints.per_class[name]
+            if guarded.changed or guarded.removed:
+                return "REVIEW"
+        return "OK"
+
+
+def compare_archives(
+    old_dir: pathlib.Path | None, new_dir: pathlib.Path, *, experiment: str | None = None
+) -> ArchiveComparison:
+    """Compare a freshly generated archive against its predecessor.
+
+    The baseline is fingerprinted on the spot from its own 'ser_data', so a comparison
+    never depends on a previous run having written anything.
+    """
+    new = fingerprint_archive(new_dir)
+    old = (
+        fingerprint_archive(old_dir)
+        if old_dir is not None
+        else Fingerprint(records={}, classes={}, ranks=0, unclassified=[])
+    )
+
+    return ArchiveComparison(
+        experiment=experiment or new_dir.name,
+        old_label=old_dir.name if old_dir is not None else None,
+        new_label=new_dir.name,
+        old_provenance=read_archive_provenance(old_dir) if old_dir is not None else {},
+        new_provenance=read_archive_provenance(new_dir),
+        namelists=diff_namelists(
+            read_namelist(old_dir) if old_dir is not None else {}, read_namelist(new_dir)
+        ),
+        fingerprints=diff_fingerprints(old, new),
+        unclassified=new.unclassified,
+    )
+
+
+def _abbreviate(value: object) -> str:
+    # Fortran pads strings to a fixed width, so the padding has to go before the value
+    # is truncated, and quoting is what makes an emptied string visible.
+    text = repr(value.strip()) if isinstance(value, str) else str(value)
+    return text if len(text) <= _MAX_RENDERED_VALUE else text[: _MAX_RENDERED_VALUE - 3] + "..."
+
+
+def render_value_change(old: object, new: object) -> str:
+    """Describe how one namelist value changed.
+
+    Array values are long and mostly identical, so naming the differing positions is
+    the only rendering that tells the reader anything.
+    """
+    if isinstance(old, list) and isinstance(new, list) and len(old) == len(new):
+        differing = [i for i, (a, b) in enumerate(zip(old, new, strict=True)) if a != b]
+        if differing:
+            shown = differing[:_MAX_RENDERED_ELEMENTS]
+            rendered = ", ".join(
+                f"[{i}] {_abbreviate(old[i])} -> {_abbreviate(new[i])}" for i in shown
+            )
+            omitted = len(differing) - len(shown)
+            return rendered + (f", and {omitted} more" if omitted else "")
+    return f"{_abbreviate(old)} -> {_abbreviate(new)}"
+
+
+def _render_provenance(comparison: ArchiveComparison) -> str:
+    def sha(provenance: dict) -> str:
+        return (provenance.get("icon", {}).get("sha") or "unknown")[:10]
+
+    if comparison.old_label is None:
+        return f"provenance : icon {sha(comparison.new_provenance)}"
+    return f"provenance : icon {sha(comparison.old_provenance)} -> {sha(comparison.new_provenance)}"
+
+
+def _render_savepoints(keys: list[RecordKey]) -> str:
+    return ", ".join(sorted({key[1] for key in keys}))
+
+
+def render_diff_report(comparison: ArchiveComparison) -> str:
+    """Render the comparison as the few lines a human reads before publishing."""
+    old_label = comparison.old_label or "none"
+    lines = [
+        f"{comparison.experiment}  {old_label} -> {comparison.new_label}   "
+        f"VERDICT: {comparison.verdict}",
+    ]
+    if comparison.old_label is None:
+        lines.append("BASELINE: none -- no comparison performed")
+    lines.append(_render_provenance(comparison))
+
+    namelists = comparison.namelists
+    lines.append(
+        f"namelists  : {len(namelists.changed)} changed, {len(namelists.added)} added, "
+        f"{len(namelists.removed)} removed"
+    )
+    for section, key, old_value, new_value in namelists.changed:
+        lines.append(f"             {section}.{key}  {render_value_change(old_value, new_value)}")
+
+    fingerprints = comparison.fingerprints
+    lines.append(
+        f"structure  : savepoints +{len(fingerprints.savepoints_added)} "
+        f"-{len(fingerprints.savepoints_removed)} | fields "
+        f"+{len(fingerprints.fields_added)} -{len(fingerprints.fields_removed)}"
+    )
+    for name in SAVEPOINT_CLASSES:
+        class_diff = fingerprints.per_class[name]
+        lines.append(
+            f"{name.upper():<14} {class_diff.unchanged} unchanged, "
+            f"{len(class_diff.changed)} changed, {len(class_diff.added)} added, "
+            f"{len(class_diff.removed)} removed"
+        )
+        # Guarded classes are small enough to name field by field; the trajectory is not.
+        if name != "evolving":
+            for label, keys in (("changed", class_diff.changed), ("removed", class_diff.removed)):
+                for savepoint in sorted({key[1] for key in keys}):
+                    fields = sorted({key[3] for key in keys if key[1] == savepoint})
+                    lines.append(f"  {label} {savepoint:<22} {', '.join(fields)}")
+            if class_diff.added:
+                lines.append(f"  added savepoints: {_render_savepoints(class_diff.added)}")
+
+    if comparison.unclassified:
+        lines.append(f"UNCLASSIFIED savepoints: {', '.join(comparison.unclassified)}")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Backfilling archives generated before this metadata existed
+# ---------------------------------------------------------------------------
+
+# Inverse of 'icon4py.model.testing.datatest_utils.get_ranked_experiment_name_with_version'.
+# Kept as a pattern rather than an import so that this module stays usable without an
+# icon4py environment; 'scripts/tests/python/test_run_serialization.py' pins the two
+# together.
+_ARCHIVE_DIRNAME = re.compile(r"^mpitask(?P<comm_size>\d+)_(?P<experiment>.+)_v(?P<version>\d+)$")
+
+
+def parse_archive_dirname(name: str) -> tuple[int, str, int] | None:
+    """Recover '(comm_size, experiment, version)' from an archive directory name."""
+    match = _ARCHIVE_DIRNAME.match(name)
+    if match is None:
+        return None
+    return int(match["comm_size"]), match["experiment"], int(match["version"])
+
+
+def backfill_archive_metadata(testdata_root: pathlib.Path) -> list[pathlib.Path]:
+    """Write metadata for already extracted archives, from the logs they carry.
+
+    This makes archives that predate the metadata file usable as a diff baseline
+    without regenerating or re-publishing anything. Archives whose log cannot be read
+    are reported and skipped, so one bad archive does not stop the rest.
+    """
+    written = []
+    for archive_dir in sorted(p for p in testdata_root.iterdir() if p.is_dir()):
+        parsed = parse_archive_dirname(archive_dir.name)
+        if parsed is None:
+            continue
+        metadata_path = archive_dir / ARCHIVE_METADATA_FNAME
+        if metadata_path.exists():
+            continue
+
+        comm_size, experiment, version = parsed
+        try:
+            icon = read_icon_banner_from_archive(archive_dir)
+        except BannerParseError as error:
+            print(f"  skipped {archive_dir.name}: {error}")
+            continue
+
+        metadata = {
+            "schema": ARCHIVE_METADATA_SCHEMA,
+            # 'backfilled' marks this as reconstructed after the fact: the runtime
+            # section a generation run would record cannot be recovered from the log.
+            "archive": {
+                "experiment": experiment,
+                "version": version,
+                "comm_size": comm_size,
+                "backfilled": True,
+            },
+            "provenance": {"icon": icon},
+        }
+        with metadata_path.open("w") as f:
+            json.dump(metadata, f, indent=4)
+        written.append(metadata_path)
+
+    return written
+
+
+# ---------------------------------------------------------------------------
+# Command line
+# ---------------------------------------------------------------------------
+
+cli = typer.Typer(no_args_is_help=True, name="serdata", help=__doc__)
+
+
+@cli.command()
+def fingerprint(
+    archive: Annotated[pathlib.Path, typer.Argument(help="Extracted archive directory.")],
+) -> None:
+    """Summarise the per-field digests of an extracted archive."""
+    result = fingerprint_archive(archive)
+    counts: collections.Counter = collections.Counter(
+        result.classes.get(key[1], "evolving") for key in result.records
+    )
+    print(f"{archive.name}: {result.ranks} rank(s), {len(result.records)} records")
+    for name in SAVEPOINT_CLASSES:
+        print(f"  {name:<14} {counts[name]}")
+    if result.unclassified:
+        print(f"  UNCLASSIFIED savepoints: {', '.join(result.unclassified)}")
+
+
+@cli.command()
+def diff(
+    new: Annotated[pathlib.Path, typer.Argument(help="Freshly generated archive directory.")],
+    baseline: Annotated[
+        pathlib.Path | None,
+        typer.Option("--baseline", help="Archive to compare against; the previous version."),
+    ] = None,
+    report: Annotated[
+        pathlib.Path | None, typer.Option("--report", help="Also write the report here.")
+    ] = None,
+) -> None:
+    """Report what changed between an archive and its predecessor."""
+    comparison = compare_archives(baseline, new)
+    rendered = render_diff_report(comparison)
+    print(rendered)
+    if report is not None:
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text(rendered + "\n")
+
+
+@cli.command()
+def backfill(
+    testdata_root: Annotated[
+        pathlib.Path, typer.Argument(help="Directory holding the extracted archives.")
+    ],
+) -> None:
+    """Reconstruct metadata for archives generated before it existed."""
+    written = backfill_archive_metadata(testdata_root)
+    for path in written:
+        print(f"  wrote {path}")
+    print(f"{len(written)} archive(s) backfilled")
+
+
+if __name__ == "__main__":
+    sys.exit(cli())

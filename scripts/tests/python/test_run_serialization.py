@@ -12,19 +12,22 @@ from __future__ import annotations
 
 import dataclasses
 import pathlib
+import shutil
 
 import pytest
 import run_serialization
+import serdata
 import typer
 
-from icon4py.model.testing import definitions as test_defs
+from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs
 
 
 @pytest.fixture(autouse=True)
 def testing_definitions() -> None:
     # The driver imports 'icon4py.model.testing' lazily inside the command to keep CLI
-    # startup fast, so the module global has to be populated for direct calls.
+    # startup fast, so the module globals have to be populated for direct calls.
     run_serialization.test_defs = test_defs
+    run_serialization.dt_utils = dt_utils
 
 
 def test_defaults_runs_every_experiment_and_comm_size() -> None:
@@ -83,3 +86,59 @@ def test_task_result_is_json_serializable() -> None:
         ).as_dict()["tar_path"]
         is None
     )
+
+
+def test_archive_dirname_pattern_matches_the_authoritative_builder() -> None:
+    # 'serdata.parse_archive_dirname' is the inverse of the name that
+    # 'datatest_utils' builds, but cannot import it. Pin the two together here.
+    for experiment in run_serialization.SerializationSettings.defaults().experiment_descriptions:
+        for comm_size in (1, 2, 4):
+            name = dt_utils.get_ranked_experiment_name_with_version(experiment, comm_size)
+            assert serdata.parse_archive_dirname(name) == (
+                comm_size,
+                experiment.name,
+                experiment.version,
+            )
+
+
+def test_comparison_without_a_baseline_is_unverified(tmp_path: pathlib.Path) -> None:
+    # The first regeneration under this scheme has no predecessor on disk. It must say
+    # so rather than report a clean comparison that never happened.
+    settings = dataclasses.replace(
+        run_serialization.SerializationSettings.defaults(), output_root=tmp_path
+    )
+    archive = tmp_path / "mpitask1_exclaim_gauss3d_v05"
+    shutil.copytree(pathlib.Path(__file__).parent / "data" / "v05", archive)
+
+    verdict, report_path = run_serialization.compare_with_previous_version(
+        archive, test_defs.Experiments.GAUSS3D, 1, settings=settings
+    )
+
+    assert verdict == "UNVERIFIED"
+    # the report is named after the archive, not after the tarball: '.tar.gz' has two
+    # suffixes, so deriving the name from the tarball drops only the last one
+    assert report_path == tmp_path / "reports" / "mpitask1_exclaim_gauss3d_v05.md"
+    assert report_path.is_file()
+
+
+def test_next_steps_point_at_the_reports_that_need_review(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    settings = dataclasses.replace(
+        run_serialization.SerializationSettings.defaults(), output_root=tmp_path
+    )
+    result = run_serialization.TaskResult(
+        experiment="exclaim_gauss3d",
+        version=6,
+        comm_size=1,
+        status="ok",
+        tar_path=tmp_path / "mpitask1_exclaim_gauss3d_v06.tar.gz",
+        verdict="REVIEW",
+        report_path=tmp_path / "reports" / "mpitask1_exclaim_gauss3d_v06.md",
+    )
+
+    run_serialization.print_next_steps([result], settings=settings)
+
+    printed = capsys.readouterr().out
+    assert "reports/mpitask1_exclaim_gauss3d_v06.md" in printed
+    assert "exclaim_gauss3d: version=6" in printed
