@@ -25,7 +25,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -99,6 +99,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
+    tracer_state_now: tracer_states.TracerState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
@@ -112,7 +113,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     The reference experiment config for this is exp.exclaim_nh_weisman_klemp_sb.
     """
-    if prognostic_state_now.tracer.qv is None:
+    if tracer_state_now.qv is None:
         raise ValueError(
             "The Weisman-Klemp initial condition requires the 'qv' tracer to be active."
         )
@@ -259,7 +260,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     rho_ndarray[:, :] = (
         exner_ndarray**phy_const.CVD_O_RD * phy_const.P0REF / phy_const.RD / theta_v_ndarray
     )
-    prognostic_state_now.tracer.qv.ndarray[:, :] = qv[array_ns.newaxis, :]
+    tracer_state_now.qv.ndarray[:, :] = qv[array_ns.newaxis, :]
     log.info("Weisman-Klemp base-state profile completed.")
 
     # Sheared horizontal wind, projected onto the edge-normal direction.
@@ -306,7 +307,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         z_mc=z_mc,
         theta_v=theta_v_ndarray,
         rho=rho_ndarray,
-        qv=prognostic_state_now.tracer.qv.ndarray,
+        qv=tracer_state_now.qv.ndarray,
         exner=exner_ndarray,
         center_x=config.bubble_center_x,
         center_y=config.bubble_center_y,

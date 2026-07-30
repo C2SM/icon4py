@@ -155,6 +155,7 @@ def create(
                 grid=grid,
                 static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
             )
