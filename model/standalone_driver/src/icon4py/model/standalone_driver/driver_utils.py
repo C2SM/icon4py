@@ -23,6 +23,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
     constants,
+    dimension as dims,
     field_type_aliases as fa,
     model_backends,
     time,
@@ -422,6 +423,9 @@ def initialize_granules(
         lsq_pseudoinv = interpolation_field_source.export_field(
             interpolation_attributes.LSQ_PSEUDOINV
         )
+        deepatmo_shallow_factor = data_alloc.constant_field(
+            grid, 1.0, dims.KDim, allocator=model_backends.get_allocator(backend)
+        )
         tracer_advection_granule = tracer_advection.convert_config_to_advection(
             grid=grid,
             backend=backend,
@@ -445,9 +449,16 @@ def initialize_granules(
                 lsq_pseudoinv_2=lsq_pseudoinv[:, 1, :],
             ),
             metric_state=tracer_advection_states.AdvectionMetricState(
-                deepatmo_divh=metrics_field_source.export_field(metrics_attributes.DEEPATMO_DIVH),
-                deepatmo_divzl=metrics_field_source.export_field(metrics_attributes.DEEPATMO_DIVZL),
-                deepatmo_divzu=metrics_field_source.export_field(metrics_attributes.DEEPATMO_DIVZU),
+                # Shallow atmosphere: the deep-atmosphere modification factors are 1, as
+                # in ICON with 'ldeepatmo = .FALSE.' (mo_nonhydro_state.f90 initialises
+                # them to 1 and only mo_vertical_grid.f90 overwrites them, guarded by
+                # 'ldeepatmo'). Using the factory's deep-atmosphere values here would be
+                # inconsistent with the dycore, which has no deep-atmosphere mode, and
+                # with the airmass (rho * ddqz_z_full * deepatmo_vol) that tracer
+                # advection divides by.
+                deepatmo_divh=deepatmo_shallow_factor,
+                deepatmo_divzl=deepatmo_shallow_factor,
+                deepatmo_divzu=deepatmo_shallow_factor,
                 ddqz_z_full=metrics_field_source.export_field(metrics_attributes.DDQZ_Z_FULL),
             ),
             edge_params=edge_geometry,

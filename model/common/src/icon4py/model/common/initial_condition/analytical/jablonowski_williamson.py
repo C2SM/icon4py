@@ -32,7 +32,7 @@ from icon4py.model.common.initial_condition.analytical import utils as testcases
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -91,6 +91,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
+    tracer_state_now: tracer_states.TracerState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
@@ -283,9 +284,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     # Moist initialization only runs when transport is active. The only tracer we
     # need to set is qv; the hydrometeors (qc, qi, ...) keep their zero-initialized
     # value, so we don't touch them.
-    active_tracers = {name for name, _ in prognostic_state_now.tracer.active_fields()}
+    active_tracers = {name for name, _ in tracer_state_now.active_fields()}
     if active_tracers:
-        if prognostic_state_now.tracer.qv is None:
+        if tracer_state_now.qv is None:
             raise ValueError(
                 "Moist tracer initialization requires the 'qv' tracer to be active, "
                 f"but only {sorted(active_tracers)} are present."
@@ -313,7 +314,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             pressure=pressure_ndarray,
             cell_area=cell_area,
             ddqz_z_full=ddqz_z_full_field.ndarray,
-            qv=prognostic_state_now.tracer.qv.ndarray,
+            qv=tracer_state_now.qv.ndarray,
             global_reductions=global_reductions,
             n_iter=config.moisture_init_iterations,
             rh_at_1000hpa=config.rh_at_1000hpa,

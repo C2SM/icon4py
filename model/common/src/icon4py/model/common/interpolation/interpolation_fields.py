@@ -19,7 +19,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import gridfile, icon as icon_grid
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
-from icon4py.model.common.math import projection
+from icon4py.model.common.math import distance_array_ns, projection
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -1308,22 +1308,22 @@ def compute_lsq_coeffs(
                 )
 
         case icon_grid.GeometryType.TORUS:
-            for jc in range(start_idx, min_rlcell_int):
-                ilc_s = c2e2c[jc, :lsq_dim_c]
-                cc_cell = array_ns.zeros((lsq_dim_c, 2))
-                cc_cv = array_ns.asarray((cell_center_x[jc], cell_center_y[jc]))
-                for js in range(lsq_dim_c):
-                    cc_cell[js, :] = array_ns.asarray(
-                        projection.diff_on_edges_torus_numpy(
-                            cc_cv_x=cell_center_x[jc],
-                            cc_cv_y=cell_center_y[jc],
-                            cc_cell_x=cell_center_x[ilc_s][js],
-                            cc_cell_y=cell_center_y[ilc_s][js],
-                            domain_length=domain_length,
-                            domain_height=domain_height,
-                        )
-                    )
-                z_dist_g[jc, :, :] = cc_cell - cc_cv
+            # On the torus a neighbour may sit across a periodic boundary, so take the
+            # periodic image of each neighbour closest to the cell centre.
+            cells = slice(start_idx, min_rlcell_int)
+            neighbors = c2e2c[cells, :lsq_dim_c]
+            center_x = cell_center_x[cells, array_ns.newaxis]
+            center_y = cell_center_y[cells, array_ns.newaxis]
+            z_dist_g[cells, :, 0], z_dist_g[cells, :, 1] = (
+                distance_array_ns.minimum_image_separation(
+                    x=cell_center_x[neighbors],
+                    y=cell_center_y[neighbors],
+                    reference_x=center_x,
+                    reference_y=center_y,
+                    domain_extent_x=domain_length,
+                    domain_extent_y=domain_height,
+                )
+            )
 
     lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_wgt_exp)
 

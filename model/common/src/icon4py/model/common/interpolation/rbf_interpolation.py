@@ -13,7 +13,10 @@ import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as base_grid, icon as icon_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, env
+
+
+_DETERMINISTIC_RBF_COEFFS = env.flag_to_bool("ICON4PY_DETERMINISTIC_RBF_COEFFS", False)
 
 
 class RBFDimension(enum.Enum):
@@ -462,6 +465,84 @@ def _compute_rbf_interpolation_coeffs(
     return tuple(rbf_vec_coeff)
 
 
+def _compute_rbf_interpolation_coeffs_dispatch(
+    *,
+    element_center_lat: data_alloc.NDArray,
+    element_center_lon: data_alloc.NDArray,
+    element_center_x: data_alloc.NDArray,
+    element_center_y: data_alloc.NDArray,
+    element_center_z: data_alloc.NDArray,
+    edge_center_x: data_alloc.NDArray,
+    edge_center_y: data_alloc.NDArray,
+    edge_center_z: data_alloc.NDArray,
+    edge_normal_x: data_alloc.NDArray,
+    edge_normal_y: data_alloc.NDArray,
+    edge_normal_z: data_alloc.NDArray,
+    uv: tuple[tuple[data_alloc.NDArray, data_alloc.NDArray], ...],
+    rbf_offset: data_alloc.NDArray,
+    rbf_kernel: InterpolationKernel,
+    geometry_type: icon_grid.GeometryType,
+    scale_factor: gtx.float64,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    domain_length: gtx.float64,
+    domain_height: gtx.float64,
+) -> tuple[data_alloc.NDArray, ...]:
+    array_ns = data_alloc.array_namespace(element_center_lat)
+    on_gpu = "cupy" in getattr(array_ns, "__name__", "")
+    if on_gpu and _DETERMINISTIC_RBF_COEFFS:
+        # cupy's kernels used in the RBF interpolation are not fully
+        # deterministic likely due to different batch sizes, alignment etc. when
+        # a grid is decomposed. Fall back to numpy to get deterministic results
+        # between single- and multi-rank runs.
+        host_coeffs = _compute_rbf_interpolation_coeffs(
+            element_center_lat=data_alloc.as_numpy(element_center_lat),
+            element_center_lon=data_alloc.as_numpy(element_center_lon),
+            element_center_x=data_alloc.as_numpy(element_center_x),
+            element_center_y=data_alloc.as_numpy(element_center_y),
+            element_center_z=data_alloc.as_numpy(element_center_z),
+            edge_center_x=data_alloc.as_numpy(edge_center_x),
+            edge_center_y=data_alloc.as_numpy(edge_center_y),
+            edge_center_z=data_alloc.as_numpy(edge_center_z),
+            edge_normal_x=data_alloc.as_numpy(edge_normal_x),
+            edge_normal_y=data_alloc.as_numpy(edge_normal_y),
+            edge_normal_z=data_alloc.as_numpy(edge_normal_z),
+            uv=tuple(tuple(data_alloc.as_numpy(component) for component in pair) for pair in uv),
+            rbf_offset=data_alloc.as_numpy(rbf_offset),
+            rbf_kernel=rbf_kernel,
+            geometry_type=geometry_type,
+            scale_factor=scale_factor,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            domain_length=domain_length,
+            domain_height=domain_height,
+        )
+        return tuple(array_ns.asarray(coeff) for coeff in host_coeffs)
+
+    return _compute_rbf_interpolation_coeffs(
+        element_center_lat=element_center_lat,
+        element_center_lon=element_center_lon,
+        element_center_x=element_center_x,
+        element_center_y=element_center_y,
+        element_center_z=element_center_z,
+        edge_center_x=edge_center_x,
+        edge_center_y=edge_center_y,
+        edge_center_z=edge_center_z,
+        edge_normal_x=edge_normal_x,
+        edge_normal_y=edge_normal_y,
+        edge_normal_z=edge_normal_z,
+        uv=uv,
+        rbf_offset=rbf_offset,
+        rbf_kernel=rbf_kernel,
+        geometry_type=geometry_type,
+        scale_factor=scale_factor,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+
+
 def compute_rbf_interpolation_coeffs_cell(
     *,
     cell_center_lat: data_alloc.NDArray,
@@ -489,7 +570,7 @@ def compute_rbf_interpolation_coeffs_cell(
     zeros = array_ns.zeros(rbf_offset.shape[0])
     ones = array_ns.ones(rbf_offset.shape[0])
 
-    return _compute_rbf_interpolation_coeffs(
+    return _compute_rbf_interpolation_coeffs_dispatch(
         element_center_lat=cell_center_lat,
         element_center_lon=cell_center_lon,
         element_center_x=cell_center_x,
@@ -534,7 +615,7 @@ def compute_rbf_interpolation_coeffs_edge(
     domain_length: gtx.float64,
     domain_height: gtx.float64,
 ) -> data_alloc.NDArray:
-    return _compute_rbf_interpolation_coeffs(
+    return _compute_rbf_interpolation_coeffs_dispatch(
         element_center_lat=edge_lat,
         element_center_lon=edge_lon,
         element_center_x=edge_center_x,
@@ -584,7 +665,7 @@ def compute_rbf_interpolation_coeffs_vertex(
     zeros = array_ns.zeros(rbf_offset.shape[0])
     ones = array_ns.ones(rbf_offset.shape[0])
 
-    return _compute_rbf_interpolation_coeffs(
+    return _compute_rbf_interpolation_coeffs_dispatch(
         element_center_lat=vertex_lat,
         element_center_lon=vertex_lon,
         element_center_x=vertex_x,

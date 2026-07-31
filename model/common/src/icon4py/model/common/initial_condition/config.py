@@ -18,6 +18,7 @@ from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
+    weisman_klemp as wk_ic,
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
         nonhydro_states,
         prognostic_state as prognostics,
         static_fields,
+        tracer_states,
     )
 
 log = logging.getLogger(__name__)
@@ -40,7 +42,12 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class InitialConditionConfig:
-    config: jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig
+    config: (
+        jw_ic.JablonowskiWilliamsonConfig
+        | gauss_ic.Gauss3DConfig
+        | wk_ic.WeismanKlempConfig
+        | from_file_ic.FromFileConfig
+    )
 
     @classmethod
     def from_fortran_dict(
@@ -69,7 +76,7 @@ class InitialConditionConfig:
         testcase_nml = input_dict.get("nh_testcase_nml", {})
         test_name = testcase_nml.get("nh_test_name")
         config: (
-            jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig
+            jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | wk_ic.WeismanKlempConfig
         )  # mypy does not automatically catch type
         match test_name:
             case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
@@ -82,12 +89,15 @@ class InitialConditionConfig:
                 # Fortran resets jw_up to 0 only for jabw_s; other cases keep the default (1.0).
                 if test_name == "jabw_s":
                     config.baroclinic_amplitude = 0.0
-            case (
-                "gauss3D" | "wk82"
-            ):  # TODO (jcanton): wk82 is just a placeholder until next PR, it is not actually used
+            case "gauss3D":
                 log.info("Analytical initial condition for Gauss 3D test case")
                 config = fortran_config.config_dataclass_from_dict(
                     gauss_ic.Gauss3DConfig, testcase_nml
+                )
+            case "wk82":
+                log.info("Analytical initial condition for Weisman-Klemp test case")
+                config = fortran_config.config_dataclass_from_dict(
+                    wk_ic.WeismanKlempConfig, testcase_nml
                 )
             case name:
                 raise ValueError(f"Unknown or missing test case name: {name!r}")
@@ -102,13 +112,14 @@ def create(
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
+    tracer_state_now: tracer_states.TracerState,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
 ) -> None:
     """
-    Fill the prognostic state by dispatching on the type of ``config.config``.
+    Fill the prognostic and tracer states by dispatching on the type of ``config.config``.
 
     The perturbed exner function of the dycore is initialized too, when its diagnostic
     state is given: diagnosed from the initial state, or, when restarting, read from the
@@ -122,6 +133,7 @@ def create(
                 grid=grid,
                 static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
                 global_reductions=global_reductions,
@@ -133,6 +145,17 @@ def create(
                 grid=grid,
                 static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
+                backend=backend,
+                exchange=exchange,
+            )
+        case wk_ic.WeismanKlempConfig():
+            wk_ic.weisman_klemp(
+                config=config.config,
+                vertical_config=vertical_config,
+                grid=grid,
+                static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
             )
@@ -155,6 +178,7 @@ def create(
                 config=config.config,
                 grid=grid,
                 prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
             )
