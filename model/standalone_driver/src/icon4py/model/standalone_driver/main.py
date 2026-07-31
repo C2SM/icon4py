@@ -70,7 +70,12 @@ def main(
     ] = common_io.OutputBackend.ZARR,
     output_mode: Annotated[
         common_io.OutputMode,
-        typer.Option(help="How ranks write output in distributed runs."),
+        typer.Option(
+            help=(
+                "How ranks write output in distributed runs ('distributed' netCDF "
+                "needs an MPI-parallel netCDF4 installation)."
+            )
+        ),
     ] = common_io.OutputMode.DISTRIBUTED,
 ) -> None:
     """

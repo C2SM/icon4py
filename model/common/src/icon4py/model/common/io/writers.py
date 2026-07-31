@@ -161,4 +161,6 @@ def data_variable_attributes(canonical_slice: xr.DataArray) -> dict[str, str]:
 
 
 def filter_by_standard_name(model_state: dict, value: str) -> dict:
-    return {k: v for k, v in model_state.items() if value == v.standard_name}
+    # getattr with default: netCDF4 raises AttributeError for a missing attribute, and
+    # not every file variable carries a standard_name (e.g. global-index coordinates)
+    return {k: v for k, v in model_state.items() if value == getattr(v, "standard_name", None)}

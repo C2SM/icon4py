@@ -32,7 +32,7 @@ import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time as common_time
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.io import distributed, io as common_io, writers
+from icon4py.model.common.io import distributed, io as common_io, netcdf_writers, writers
 
 from ...fixtures import process_props
 
@@ -186,6 +186,17 @@ def assert_dataset_is_exact(
         (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER),
         (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER),
         (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED),
+        pytest.param(
+            common_io.OutputBackend.NETCDF,
+            common_io.OutputMode.DISTRIBUTED,
+            marks=pytest.mark.skipif(
+                netcdf_writers.missing_parallel_support() is not None,
+                reason=(
+                    "needs an MPI-parallel netCDF4 installation (PyPI wheels are serial "
+                    "builds; see 'Parallel netCDF' in 'icon4py.model.common.io')"
+                ),
+            ),
+        ),
     ],
 )
 def test_parallel_output_synthetic_decomposition(

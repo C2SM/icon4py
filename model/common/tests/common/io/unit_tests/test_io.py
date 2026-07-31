@@ -21,7 +21,7 @@ import uxarray as ux  # type: ignore[import-untyped]  # uxarray has no type hint
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time
 from icon4py.model.common.grid import base, vertical as v_grid
-from icon4py.model.common.io import distributed, ugrid
+from icon4py.model.common.io import distributed, netcdf_writers, ugrid, writers
 from icon4py.model.common.io.io import (
     PHASE_DISTRIBUTE,
     PHASE_WRITE,
@@ -401,6 +401,91 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path: pa
     assert "prognostics" in group_monitor._file_name_pattern
 
 
+class _SingleRankBlockDistribution:
+    """Rank-block layout on a single-rank communicator (serial file handle).
+
+    Stands in for ``RankBlockDistribution``, which the monitor only builds in
+    multi-rank runs: the monitor must hand the distribution's ``rank_blocks`` and its
+    own communicator to the writer, whatever the communicator size.
+    """
+
+    def __init__(self, horizontal_size: base.HorizontalGridSize) -> None:
+        self._horizontal_size = horizontal_size
+        self._rank_blocks = {
+            dim_name: distributed.RankBlock(
+                start=0,
+                count=size,
+                chunk=size,
+                padded_size=size,
+                global_size=size,
+                global_index=np.arange(size, dtype=np.int64),
+            )
+            for dim_name, size in writers.horizontal_axis_sizes(horizontal_size).items()
+        }
+
+    @property
+    def writes_output(self) -> bool:
+        return True
+
+    @property
+    def file_horizontal_size(self) -> base.HorizontalGridSize:
+        return self._horizontal_size
+
+    @property
+    def rank_blocks(self) -> dict[str, distributed.RankBlock]:
+        return self._rank_blocks
+
+    def prepare(self, state: dict) -> dict:
+        return state
+
+
+def test_fieldgroup_monitor_wires_rank_blocks_into_netcdf_writer(
+    test_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Pin the monitor-to-writer wiring of distributed netCDF output.
+
+    The end-to-end coverage of this wiring lives in the MPI tests, which run only on
+    MPI-parallel netCDF4 installations (i.e. on no plain PyPI-wheel setup); this test
+    pins on any installation that the writer receives the distribution's rank blocks
+    (global-index coordinates end up in the file) and the monitor's communicator.
+    """
+    monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: None)
+    grid = test_io_utils.simple_grid
+    config = FieldGroupIOConfig(
+        filename="rank_block.nc",
+        output_interval=time.NumTimeSteps(1),
+        variables=["exner_function", "air_density"],
+        backend=OutputBackend.NETCDF,
+        mode=OutputMode.DISTRIBUTED,
+    )
+    vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
+        vct_b=None,
+    )
+    group_monitor = FieldGroupMonitor(
+        config=config,
+        vertical=vertical_params,
+        distribution=_SingleRankBlockDistribution(grid.config.horizontal_config),
+        grid_id=uuid.UUID(grid.id),
+        output_path=test_path,
+        dtime=time.RelativeTime(hours=1),
+    )
+    group_monitor.store(
+        test_io_utils.model_state(grid), dt.datetime.fromisoformat("2024-01-01T00:00:00")
+    )
+    dataset = group_monitor._dataset
+    assert isinstance(dataset, netcdf_writers.NETCDFWriter)
+    assert dataset._process_props is group_monitor._process_props
+    group_monitor.close()
+    with ugrid.load_data_file(group_monitor.output_path / "rank_block_0001.nc") as ds:
+        for dim_name in ("cell", "edge", "vertex"):
+            assert f"{writers.GLOBAL_INDEX_PREFIX}_{dim_name}" in ds.variables
+        assert ds.sizes["cell"] == grid.num_cells
+        assert ds["air_density"].shape == (1, grid.num_levels, grid.num_cells)
+
+
 def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path: pathlib.Path) -> None:
     config = FieldGroupIOConfig(
         filename="vars/prognostics.nc",
@@ -484,11 +569,37 @@ def test_fieldgroup_config_rejects_unknown_backend() -> None:
         )
 
 
-def test_fieldgroup_config_rejects_distributed_netcdf() -> None:
-    with pytest.raises(errors.InvalidConfigError, match="parallel netCDF4"):
+def test_fieldgroup_config_rejects_distributed_netcdf_without_parallel_support(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # patched instead of relying on the local installation: PyPI wheels are always
+    # serial, but the test must also pass on a machine with a parallel build
+    monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: "<no parallel support>")
+    with pytest.raises(errors.InvalidConfigError) as err:
         FieldGroupIOConfig(
             filename="a.nc",
             variables=["air_density"],
             backend=OutputBackend.NETCDF,
             mode=OutputMode.DISTRIBUTED,
         )
+    # the error must state the reason and the full path to an executable setup
+    message = str(err.value)
+    assert "parallel netCDF4 installation" in message
+    assert "<no parallel support>" in message
+    assert "pip install --no-binary netcdf4" in message
+    assert "__has_parallel4_support__" in message
+    assert "'zarr' backend" in message and "'gather' mode" in message
+
+
+def test_fieldgroup_config_accepts_distributed_netcdf_with_parallel_support(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: None)
+    config = FieldGroupIOConfig(
+        filename="a.nc",
+        variables=["air_density"],
+        backend=OutputBackend.NETCDF,
+        mode=OutputMode.DISTRIBUTED,
+    )
+    assert config.backend is OutputBackend.NETCDF
+    assert config.mode is OutputMode.DISTRIBUTED

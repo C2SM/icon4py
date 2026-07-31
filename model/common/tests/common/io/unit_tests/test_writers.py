@@ -5,10 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import importlib.util
 import pathlib
 from datetime import datetime, timedelta
 
 import gt4py.next as gtx
+import netCDF4 as nc
 import numpy as np
 import pytest
 import xarray as xr
@@ -413,3 +415,239 @@ def test_initialize_writer_create_dimensions(
 
     assert writer.variables[writers.TIME].units == cf_utils.DEFAULT_TIME_UNIT
     assert writer.variables[writers.TIME].calendar == cf_utils.DEFAULT_CALENDAR
+
+
+def initialized_netcdf_rank_block_writer(
+    test_path: pathlib.Path,
+    random_name: str,
+    grid: grid_def.Grid,
+    rank_blocks: dict[str, distributed.RankBlock],
+    horizontal: grid_def.HorizontalGridSize,
+) -> tuple[netcdf_writers.NETCDFWriter, pathlib.Path]:
+    """Rank-block netCDF writer on a single-rank communicator (serial file handle)."""
+    file_path = test_path.absolute() / f"{random_name}.nc"
+    writer = netcdf_writers.NETCDFWriter(
+        file_name=file_path,
+        vertical=_vertical_params(grid),
+        horizontal=horizontal,
+        time_properties=writers.TimeProperties(
+            cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+        ),
+        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        rank_blocks=rank_blocks,
+    )
+    writer.initialize_dataset()
+    return writer, file_path
+
+
+def test_netcdf_writer_rank_block_writes_padded_block(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # the netCDF twin of the zarr rank-block test: padded horizontal axes, data in the
+    # rank's block, NaN data padding, -1 global-index padding. A single-rank
+    # communicator uses a serial file handle, so the layout is exercised without an
+    # MPI-parallel netCDF4 installation.
+    grid = test_io_utils.simple_grid
+    padding = 3
+    rank_blocks = {
+        dim_name: distributed.RankBlock(
+            start=0,
+            count=size,
+            chunk=size + padding,
+            padded_size=size + padding,
+            global_size=size,
+            global_index=np.arange(size, dtype=np.int64),
+        )
+        for dim_name, size in (
+            (writers.CELL, grid.num_cells),
+            (writers.EDGE, grid.num_edges),
+            (writers.VERTEX, grid.num_vertices),
+        )
+    }
+    padded_horizontal = grid_def.HorizontalGridSize(
+        num_cells=grid.num_cells + padding,
+        num_edges=grid.num_edges + padding,
+        num_vertices=grid.num_vertices + padding,
+    )
+    writer, file_path = initialized_netcdf_rank_block_writer(
+        test_path, random_name, grid, rank_blocks, padded_horizontal
+    )
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    writer.append(state, datetime.now())
+    writer.close()
+    with xr.open_dataset(file_path) as ds:
+        assert ds["air_density"].shape == (1, grid.num_levels, grid.num_cells + padding)
+        values = ds["air_density"].values[0]
+        test_utils.assert_dallclose(values[:, : grid.num_cells], state["air_density"].data.T)
+        # padding reads as NaN: written explicitly by the writer, matching the
+        # variable's fill value
+        assert np.all(np.isnan(values[:, grid.num_cells :]))
+        # the -1 padding is written explicitly, not encoded as a _FillValue attribute
+        # (xarray would decode that to NaN, turning the integer coordinate into floats)
+        global_index = ds[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].values
+        assert global_index.dtype == np.int64
+        assert np.all(global_index[: grid.num_cells] == np.arange(grid.num_cells))
+        assert np.all(global_index[grid.num_cells :] == -1)
+    # exactly one horizontal chunk per rank block: the same on-disk layout as the
+    # rank-block zarr store, keeping concurrent writes of different ranks in
+    # disjoint chunks
+    cell_chunk = rank_blocks[writers.CELL].chunk
+    with nc.Dataset(file_path) as raw:
+        assert raw["air_density"].chunking() == [1, grid.num_levels, cell_chunk]
+        assert raw[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].chunking() == [cell_chunk]
+
+
+def test_netcdf_writer_rank_block_writes_at_nonzero_start(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # file view of a non-root rank: its block starts at rank * chunk; data and global
+    # indices must land inside the block only. Unlike the zarr store (whose fill value
+    # covers the whole array), regions of other ranks are simply not written by this
+    # rank -- in a real run every rank covers its own block.
+    grid = test_io_utils.simple_grid
+    rank = 1
+    rank_blocks = {}
+    for dim_name, size in (
+        (writers.CELL, grid.num_cells),
+        (writers.EDGE, grid.num_edges),
+        (writers.VERTEX, grid.num_vertices),
+    ):
+        chunk = size + 1  # uneven layout: one padding entry per block
+        rank_blocks[dim_name] = distributed.RankBlock(
+            start=rank * chunk,
+            count=size,
+            chunk=chunk,
+            padded_size=2 * chunk,
+            global_size=2 * size,
+            global_index=np.arange(size, 2 * size, dtype=np.int64),
+        )
+    padded_horizontal = grid_def.HorizontalGridSize(
+        num_cells=rank_blocks[writers.CELL].padded_size,
+        num_edges=rank_blocks[writers.EDGE].padded_size,
+        num_vertices=rank_blocks[writers.VERTEX].padded_size,
+    )
+    writer, file_path = initialized_netcdf_rank_block_writer(
+        test_path, random_name, grid, rank_blocks, padded_horizontal
+    )
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    writer.append(state, datetime.now())
+    writer.close()
+    cell_block = rank_blocks[writers.CELL]
+    block = slice(cell_block.start, cell_block.start + cell_block.count)
+    with xr.open_dataset(file_path) as ds:
+        values = ds["air_density"].values[0]
+        test_utils.assert_dallclose(values[:, block], state["air_density"].data.T)
+        # everything this rank did not write reads as the NaN fill value: the other
+        # rank's block and the padding entry of this rank's block
+        assert np.all(np.isnan(values[:, : cell_block.start]))
+        assert np.all(np.isnan(values[:, cell_block.start + cell_block.count :]))
+        global_index = ds[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].values
+        assert np.all(global_index[block] == cell_block.global_index)
+        # the padding inside this rank's block is written as -1 (the other rank's
+        # block region belongs to the other rank and is not asserted here)
+        assert np.all(
+            global_index[cell_block.start + cell_block.count : cell_block.start + cell_block.chunk]
+            == -1
+        )
+
+
+class _TwoRankProcessProperties:
+    """Multi-rank ProcessProperties stand-in; the guard raises before any communication."""
+
+    comm = None
+    rank = 0
+    comm_name = ""
+    comm_size = 2
+
+    def is_single_rank(self) -> bool:
+        return False
+
+
+def test_netcdf_writer_rejects_multi_rank_blocks_without_parallel_support(
+    test_path: pathlib.Path, random_name: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # patched instead of relying on the local installation: PyPI wheels are always
+    # serial, but the test must also pass on a machine with a parallel build
+    monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: "<serial build>")
+    with pytest.raises(RuntimeError) as err:
+        netcdf_writers.NETCDFWriter(
+            file_name=test_path / f"{random_name}.nc",
+            vertical=_vertical_params(test_io_utils.simple_grid),
+            horizontal=test_io_utils.simple_grid.config.horizontal_config,
+            time_properties=writers.TimeProperties(
+                cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+            ),
+            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+            rank_blocks={},  # the guard fires on the mode alone, before any block is used
+            process_props=_TwoRankProcessProperties(),
+        )
+    message = str(err.value)
+    assert "<serial build>" in message
+    assert "pip install --no-binary netcdf4" in message
+    assert "__has_parallel4_support__" in message
+
+
+class _FakeNetCDF4Module:
+    """netCDF4 module stand-in with a controlled parallel-support flag.
+
+    The real predicate is bypassed (monkeypatched) everywhere else, so its three
+    branches are pinned here against a stub instead of the local installation.
+    """
+
+    __version__ = "0.0.0-test"
+    __netcdf4libversion__ = "0.0.0"
+    __hdf5libversion__ = "0.0.0"
+
+    def __init__(self, has_parallel4_support: bool) -> None:
+        self.__has_parallel4_support__ = has_parallel4_support
+
+
+def _find_spec_pretending_mpi4py(present: bool):
+    real_find_spec = importlib.util.find_spec
+
+    def find_spec(name, *args):
+        if name == "mpi4py":
+            return object() if present else None
+        return real_find_spec(name, *args)
+
+    return find_spec
+
+
+def test_missing_parallel_support_reports_serial_build(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(netcdf_writers, "nc", _FakeNetCDF4Module(False))
+    reason = netcdf_writers.missing_parallel_support()
+    assert reason is not None
+    assert "serial build" in reason
+    assert "__has_parallel4_support__" in reason
+    assert "PyPI wheels" in reason
+
+
+def test_missing_parallel_support_requires_mpi4py(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(netcdf_writers, "nc", _FakeNetCDF4Module(True))
+    monkeypatch.setattr(importlib.util, "find_spec", _find_spec_pretending_mpi4py(present=False))
+    assert netcdf_writers.missing_parallel_support() == "the 'mpi4py' package is not installed"
+
+
+def test_missing_parallel_support_accepts_parallel_build(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(netcdf_writers, "nc", _FakeNetCDF4Module(True))
+    monkeypatch.setattr(importlib.util, "find_spec", _find_spec_pretending_mpi4py(present=True))
+    assert netcdf_writers.missing_parallel_support() is None
+
+
+def test_bounded_middle_chunks_keeps_small_shapes_whole() -> None:
+    assert netcdf_writers._bounded_middle_chunks((80,), 10_000, 8) == (80,)
+
+
+def test_bounded_middle_chunks_shrinks_to_the_hdf5_limit() -> None:
+    # 80 levels x 10.5M cells x 8 B = 6.7 GB exceeds the 4 GiB chunk limit: the
+    # vertical chunk must shrink while the horizontal axis stays one chunk per block
+    horizontal_chunk = 10_500_000
+    (vertical_chunk,) = netcdf_writers._bounded_middle_chunks((80,), horizontal_chunk, 8)
+    assert 1 <= vertical_chunk < 80
+    assert vertical_chunk * horizontal_chunk * 8 <= netcdf_writers._MAX_CHUNK_BYTES
+
+
+def test_bounded_middle_chunks_rejects_oversized_rank_block() -> None:
+    # a single horizontal row of the block already exceeds the limit
+    with pytest.raises(RuntimeError, match="chunk size limit"):
+        netcdf_writers._bounded_middle_chunks((80,), 2**30, 8)

@@ -293,8 +293,12 @@ class DriverConfig:
         common_io.OutputMode,
         common_conf_opt.ConfigOption(
             description=(
-                "Write strategy of distributed runs ('gather' or 'distributed'), no effect "
-                "on single-rank runs (see 'icon4py.model.common.io.OutputMode')."
+                "Write strategy of distributed runs ('gather' or 'distributed'); "
+                "single-rank runs write the full state either way (see "
+                "'icon4py.model.common.io.OutputMode'). 'distributed' netCDF needs an "
+                "MPI-parallel netCDF4 installation and is rejected otherwise, "
+                "regardless of the rank count (see 'Parallel netCDF' in "
+                "'icon4py.model.common.io')."
             ),
             icon_equivalent=None,
         ),

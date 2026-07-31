@@ -49,7 +49,7 @@ Field groups are stored in the same file and share a common setting of
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
 - `variables`: List of variables names to be output. Variable names are the CF names used as keys in the model state (see [data.py](../states/data.py)).
 - `backend` (default="zarr"): File format of the group, `"netcdf"` or `"zarr"`.
-- `mode` (default="distributed"): Write strategy of distributed (MPI) runs: `"gather"` collects all fields on the root rank which writes them in global order; `"distributed"` lets every rank write its owned entries into a rank-contiguous block of a shared zarr store (see `io.distributed`). No effect on single-rank runs.
+- `mode` (default="distributed"): Write strategy of distributed (MPI) runs: `"gather"` collects all fields on the root rank which writes them in global order; `"distributed"` lets every rank write its owned entries into a rank-contiguous block of a shared store (see `io.distributed`). Single-rank runs write the full state either way, but `"distributed"` with the `"netcdf"` backend requires an MPI-parallel netCDF4 installation and is rejected at configuration time on serial installations regardless of the rank count (see "Parallel netCDF" below).
 - `nc_title` (optional): Title attribute of the generated files (netcdf and zarr).
 - `nc_comment` (optional): Comment attribute of the generated files (netcdf and zarr).
 
@@ -91,6 +91,39 @@ io_monitor = IOMonitor(io_config)
 monitor.store(model_state, time)
 ```
 
+### Parallel netCDF
+
+`mode="distributed"` with the `"netcdf"` backend means every rank writes its block of one
+shared netCDF file, which the installed `netCDF4` package must support:
+
+- **The PyPI wheels are serial builds.** `pip install netcdf4` (and therefore the icon4py
+  dependencies) ships `netCDF4` compiled against serial netCDF-C/HDF5 libraries --
+  MPI-parallel HDF5 cannot be distributed as a portable wheel. On such an installation
+  `netCDF4.__has_parallel4_support__` is `0` and distributed netCDF output is rejected
+  when the configuration is validated. This is a property of the wheels, not a missing
+  icon4py feature.
+- **Steps to enable the path**:
+  1. Provide MPI-enabled netCDF-C and HDF5 libraries: HPC environment modules or spack
+     (e.g. `spack install netcdf-c+mpi ^hdf5+mpi`), or on conda the
+     `conda-forge::netcdf4=*=mpi_*` builds (which replace steps 2-3).
+  2. In the icon4py environment, install `mpi4py` and the build requirements
+     (`Cython`, `numpy`, `setuptools`, `setuptools_scm`), then build the Python
+     package against the parallel libraries:
+     `HDF5_DIR=<hdf5-prefix> NETCDF4_DIR=<netcdf-c-prefix>
+     pip install --no-binary netcdf4 --no-build-isolation --force-reinstall netcdf4`.
+     `mpi4py` must be importable while the package builds -- with pip's default build
+     isolation the build runs in an environment without it and aborts, hence
+     `--no-build-isolation`.
+  3. Verify: `python -c "import netCDF4; print(netCDF4.__has_parallel4_support__)"`
+     must print `1`.
+- **Runtime checks**: the installation is verified at configuration validation, again
+  when a parallel writer is constructed and finally when the shared file is opened
+  (`netcdf_writers.missing_parallel_support`); every parallel open logs the netCDF4,
+  netCDF-C and HDF5 versions in use. A wrong installation therefore fails loudly with
+  the steps above -- never by writing corrupt files.
+- **Without a parallel installation**: use the `"zarr"` backend (parallel with any
+  installation) or `mode="gather"`.
+
 ### Restrictions
 
 - We support NETCDF4 files and zarr stores (zarr format 3).
@@ -98,7 +131,7 @@ monitor.store(model_state, time)
 - Horizontal coordinates the latitude and longitude in radians as provided by the ICON grid file.
 - Vertical coordinates are the model levels, there is no transformation to pressure levels.
 - Writing is synchronous: `store` returns once the data is written.
-- Distributed (MPI) runs write either gathered on the root rank (any backend) or with every rank writing its own block of a shared store (zarr only; parallel netCDF requires an MPI-enabled netCDF4 build and is not supported yet).
+- Distributed (MPI) runs write either gathered on the root rank (any backend) or with every rank writing its own block of a shared store (zarr with any installation; netCDF with an MPI-parallel netCDF4 installation, see "Parallel netCDF" above).
 - Global attributes of the datafiles and field metadata is only scarcely available and needs to be augmented.
 
 """

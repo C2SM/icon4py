@@ -75,16 +75,26 @@ PHASE_WRITE: Final[str] = "write"
 
 
 def validate_backend_mode_combination(backend: OutputBackend, mode: OutputMode) -> None:
-    """Reject output backend/mode combinations that have no writer.
+    """Reject output backend/mode combinations the installation cannot write.
+
+    Distributed netCDF means every rank writes to one shared file, which needs an
+    MPI-parallel netCDF4 installation -- the PyPI wheels are serial builds (see
+    ``netcdf_writers.missing_parallel_support``). The check is deliberately static
+    (independent of the run's actual rank count), so a configuration is valid or
+    invalid regardless of the machine it first runs on.
 
     Raises:
         InvalidConfigError: if the combination is not supported.
     """
     if mode == OutputMode.DISTRIBUTED and backend == OutputBackend.NETCDF:
-        raise exceptions.InvalidConfigError(
-            "Distributed netCDF output requires a parallel netCDF4 build and is not "
-            "supported yet; use the 'zarr' backend or the 'gather' mode."
-        )
+        reason = netcdf_writers.missing_parallel_support()
+        if reason is not None:
+            raise exceptions.InvalidConfigError(
+                f"Distributed netCDF output needs an MPI-parallel netCDF4 installation, "
+                f"but {reason}. {netcdf_writers.PARALLEL_INSTALL_HINT} Alternatively, "
+                f"use the 'zarr' backend (parallel with any installation) or the "
+                f"'gather' mode."
+            )
 
 
 def _interval_in_steps(output_interval: OutputInterval, dtime: time.RelativeTime) -> int:
@@ -140,10 +150,11 @@ class FieldGroupIOConfig(Config):
     timesteps_per_file: int = 10
     #: File format of the group's files; the matching value string is also accepted.
     backend: OutputBackend = OutputBackend.ZARR
-    #: Write strategy of distributed runs (no effect on single-rank runs); the matching
-    #: value string is also accepted. Distributed netCDF is rejected: it requires a
-    #: parallel netCDF4 build.
-    #: TODO (kotsaloscv): allow it once a parallel netCDF writer exists.
+    #: Write strategy of distributed runs (single-rank runs write the full state either
+    #: way); the matching value string is also accepted. Distributed netCDF requires an
+    #: MPI-parallel netCDF4 installation and is rejected otherwise, regardless of the
+    #: rank count (PyPI wheels are serial builds; see
+    #: ``netcdf_writers.missing_parallel_support``).
     mode: OutputMode = OutputMode.DISTRIBUTED
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
@@ -330,9 +341,14 @@ class IOMonitor(monitor.Monitor):
     def close(self) -> None:
         """Close all field-group writers.
 
-        Performs no communication, so it is safe to call from error paths (e.g. a
-        ``finally`` block), where the ranks of a distributed run may not be in lockstep
-        and a collective would turn the failure into a hang.
+        Performs no communication of its own, so it is safe to call from error paths
+        (e.g. a ``finally`` block), where the ranks of a distributed run may not be in
+        lockstep and a collective would turn the failure into a hang. One exception: a
+        parallel netCDF writer (distributed netCDF mode) closes an MPI-opened HDF5
+        file, which is collective -- every rank must call ``close``. The errors raised
+        by the IO layer itself are raised on all ranks together (see e.g.
+        ``FieldGroupMonitor._refuse_to_overwrite``), so the ranks still close in
+        lockstep on those paths.
         """
         for m in self._group_monitors:
             m.close()
@@ -382,6 +398,10 @@ class FieldGroupMonitor(monitor.Monitor):
     Monitor for a group of fields.
 
     This monitor is responsible for storing a group of fields that are output at the same time intervals.
+
+    With a multi-rank ``process_props``, construction is collective on its communicator
+    (the file attributes are broadcast so all ranks carry identical values), just like
+    ``store`` is.
     """
 
     def __init__(
@@ -397,18 +417,6 @@ class FieldGroupMonitor(monitor.Monitor):
         calendar: str = cf_utils.DEFAULT_CALENDAR,
         output_path: pathlib.Path = pathlib.Path(__file__).parent,
     ):
-        self._global_attrs: GlobalFileAttributes = {
-            "Conventions": "CF-1.7",  # TODO(halungge): check changelog? latest version is 1.11
-            "title": config.nc_title,
-            "comment": config.nc_comment,
-            "institution": "ETH Zurich and MeteoSwiss",
-            "source": "https://icon4py.github.io",
-            "history": output_path.absolute().as_posix()
-            + " "
-            + dt.datetime.now().isoformat(),  # TODO(halungge): this is actually the path to the binary in ICON not the output path
-            "references": "https://icon4py.github.io",
-            "uuidOfHGrid": grid_id,
-        }
         self.config = config
         self._time_properties = writers.TimeProperties(time_units, calendar)
         self._vertical_size = vertical
@@ -418,6 +426,24 @@ class FieldGroupMonitor(monitor.Monitor):
             if process_props is not None
             else decomposition.SingleNodeProcessProperties()
         )
+        # TODO(halungge): 'history' is actually the path to the binary in ICON, not the
+        #   output path
+        history = output_path.absolute().as_posix() + " " + dt.datetime.now().isoformat()
+        if not self._process_props.is_single_rank():
+            # rank-local timestamps diverge; in parallel netCDF mode every rank writes
+            # the global attributes (collective metadata operations), which requires
+            # identical values on all ranks
+            history = self._process_props.comm.bcast(history, root=0)
+        self._global_attrs: GlobalFileAttributes = {
+            "Conventions": "CF-1.7",  # TODO(halungge): check changelog? latest version is 1.11
+            "title": config.nc_title,
+            "comment": config.nc_comment,
+            "institution": "ETH Zurich and MeteoSwiss",
+            "source": "https://icon4py.github.io",
+            "history": history,
+            "references": "https://icon4py.github.io",
+            "uuidOfHGrid": grid_id,
+        }
         self._field_names = config.variables
         self._handle_output_path(output_path, config.filename)
         # The schedule is always evaluated in steps; a time-delta interval is normalized
@@ -485,6 +511,8 @@ class FieldGroupMonitor(monitor.Monitor):
                 horizontal=self._distribution.file_horizontal_size,
                 time_properties=self._time_properties,
                 global_attrs=self._global_attrs,
+                rank_blocks=self._distribution.rank_blocks,
+                process_props=self._process_props,
             )
         else:
             df = zarr_writers.ZarrWriter(

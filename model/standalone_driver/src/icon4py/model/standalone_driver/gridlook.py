@@ -152,29 +152,44 @@ def _normalized_uuid(value: str) -> str:
 
 
 def _json_safe(value: Any) -> Any:
-    """Coerce a netCDF attribute value to a JSON-serializable one for zarr attrs.
+    """Coerce a netCDF attribute value to a strict-JSON-serializable one for zarr attrs.
 
     ICON4Py's own output carries only string attributes, but a foreign netCDF source
     may attach numeric ones, which ``netCDF4`` returns as numpy scalars or arrays and
     ``zarr`` then refuses to serialize. numpy scalars become Python scalars, numpy
     arrays become (nested) lists, and byte strings are decoded; anything already
-    JSON-safe is passed through unchanged.
+    JSON-safe is passed through unchanged. Non-finite floats (e.g. a foreign
+    ``missing_value = NaN``) become strings: zarr-python would serialize them as bare
+    ``NaN``/``Infinity`` tokens -- invalid strict JSON that the gridlook browser
+    viewer's ``JSON.parse`` rejects wholesale.
     """
     if isinstance(value, np.ndarray):
-        return value.tolist()
+        return _json_safe(value.tolist())
+    if isinstance(value, list):
+        return [_json_safe(entry) for entry in value]
     if isinstance(value, np.generic):
-        return value.item()
+        value = value.item()
     if isinstance(value, bytes):
         return value.decode("utf-8", errors="replace")
+    if isinstance(value, float) and not np.isfinite(value):
+        return str(value)
     return value
 
 
 def _netcdf_attributes(source: nc.Variable | nc.Dataset) -> dict[str, Any]:
     """JSON-safe copy of a netCDF variable's or dataset's attributes."""
-    # NOTE: CF packing attributes (scale_factor, add_offset, _FillValue) are copied
-    # verbatim, not decoded; ingesting packed foreign netCDF is out of scope (driver
-    # output is never packed), so they are left for a future reader to interpret.
-    return {name: _json_safe(source.getncattr(name)) for name in source.ncattrs()}
+    # NOTE: the CF packing attributes scale_factor and add_offset are copied verbatim,
+    # not decoded; ingesting packed foreign netCDF is out of scope (driver output is
+    # never packed), so they are left for a future reader to interpret. _FillValue is
+    # dropped: the exporter sets its own fill value in the destination array metadata,
+    # and the rank-block netCDF writer's NaN _FillValue would otherwise end up as a
+    # bare NaN token in the store's JSON attributes -- invalid strict JSON that the
+    # gridlook browser viewer cannot parse.
+    return {
+        name: _json_safe(source.getncattr(name))
+        for name in source.ncattrs()
+        if name != "_FillValue"
+    }
 
 
 @dataclasses.dataclass(frozen=True)

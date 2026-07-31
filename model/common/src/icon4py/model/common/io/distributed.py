@@ -111,9 +111,11 @@ class RankBlock:
     ``count`` owned entries to ``[r * chunk, r * chunk + count)``. Since the store is
     chunked with exactly one chunk per block, concurrent writes of different ranks
     never touch the same chunk. Entries past ``count`` within a block are padding:
-    they are never written and hold the fill value. ``global_index`` maps the block's
-    entries to their positions in the undecomposed global grid of ``global_size``
-    entries (padding entries carry no global index).
+    they always read as the fill value (the zarr writer never writes them; the netCDF
+    writer writes them explicitly, since its parallel collectives require every rank
+    to participate in every write). ``global_index`` maps the block's entries to their
+    positions in the undecomposed global grid of ``global_size`` entries (padding
+    entries carry no global index).
     """
 
     start: int

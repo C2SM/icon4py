@@ -10,6 +10,7 @@
 
 import functools
 import http.server
+import json
 import pathlib
 import threading
 import urllib.request
@@ -174,13 +175,24 @@ def _write_grid_file(
         dataset.uuidOfHGrid = grid_uuid
 
 
-def _write_source_netcdf(path: pathlib.Path, *, numeric_attrs: bool = False) -> None:
-    """netCDF twin of the serial source store (netCDF output is always in global order).
+def _write_source_netcdf(
+    path: pathlib.Path, *, numeric_attrs: bool = False, rank_block: bool = False
+) -> None:
+    """netCDF twin of the source store: global order, or the rank-block layout of the
+    parallel netCDF writer (``rank_block``).
 
     With ``numeric_attrs`` the temperature variable carries non-string attributes such
     as a foreign netCDF source may attach; ``netCDF4`` returns those as numpy scalars
     and arrays, which zarr cannot serialize unless the exporter coerces them.
     """
+    if rank_block:
+        cell_global_index = CELL_GLOBAL_INDEX
+        edge_global_index = np.array([0, 2, -1, 1, 3, -1], dtype=np.int64)
+        num_edges = edge_global_index.shape[0]
+    else:
+        cell_global_index = np.arange(NUM_GLOBAL_CELLS, dtype=np.int64)
+        edge_global_index = None
+        num_edges = 4
     with nc.Dataset(path, "w", format="NETCDF4") as dataset:
         dataset.setncatts(
             {"title": "test run", "institution": "EXCLAIM - ETH Zurich", "uuidOfHGrid": GRID_UUID}
@@ -188,8 +200,8 @@ def _write_source_netcdf(path: pathlib.Path, *, numeric_attrs: bool = False) -> 
         dataset.createDimension(writers.TIME, None)
         dataset.createDimension(writers.MODEL_LEVEL, NUM_LEVELS)
         dataset.createDimension(writers.MODEL_HALF_LEVEL, NUM_LEVELS + 1)
-        dataset.createDimension(writers.CELL, NUM_GLOBAL_CELLS)
-        dataset.createDimension(writers.EDGE, 4)
+        dataset.createDimension(writers.CELL, cell_global_index.shape[0])
+        dataset.createDimension(writers.EDGE, num_edges)
 
         times = dataset.createVariable(writers.TIME, "f8", (writers.TIME,))
         times.setncatts(
@@ -205,27 +217,51 @@ def _write_source_netcdf(path: pathlib.Path, *, numeric_attrs: bool = False) -> 
         heights = dataset.createVariable("height", "f8", (writers.MODEL_HALF_LEVEL,))
         heights[:] = np.linspace(1000.0, 0.0, NUM_LEVELS + 1)
 
+        if edge_global_index is not None:
+            for dim_name, index_values in (
+                (writers.CELL, cell_global_index),
+                (writers.EDGE, edge_global_index),
+            ):
+                index_variable = dataset.createVariable(
+                    f"{writers.GLOBAL_INDEX_PREFIX}_{dim_name}", "i8", (dim_name,)
+                )
+                index_variable[:] = index_values
+
+        # the rank-block writer creates floating variables with a NaN fill value -- a
+        # real _FillValue attribute the exporter must strip (serial output carries none)
+        fill_value = np.nan if rank_block else None
         temperature = dataset.createVariable(
-            "temperature", "f4", (writers.TIME, writers.MODEL_LEVEL, writers.CELL)
+            "temperature",
+            "f4",
+            (writers.TIME, writers.MODEL_LEVEL, writers.CELL),
+            fill_value=fill_value,
         )
-        temperature[:] = _expected_global_values()
+        temperature[:] = _cell_values(cell_global_index)
         temperature.setncatts({"units": "K", "standard_name": "air_temperature"})
         if numeric_attrs:
             # non-CF numeric attributes (netCDF4 returns numpy scalars/arrays for these)
             temperature.setncattr("tuning_parameter", np.float32(0.5))
             temperature.setncattr("ensemble_member", np.int32(3))
             temperature.setncattr("sampled_levels", np.array([0, 1], dtype=np.int64))
+            # non-finite values would serialize as bare NaN/Infinity tokens (invalid
+            # strict JSON) unless the exporter coerces them
+            temperature.setncattr("missing_value", np.float32(np.nan))
         upward_air_velocity = dataset.createVariable(
-            "upward_air_velocity", "f4", (writers.TIME, writers.MODEL_HALF_LEVEL, writers.CELL)
+            "upward_air_velocity",
+            "f4",
+            (writers.TIME, writers.MODEL_HALF_LEVEL, writers.CELL),
+            fill_value=fill_value,
         )
-        upward_air_velocity[:] = np.broadcast_to(
-            np.arange(NUM_GLOBAL_CELLS, dtype=np.float32),
-            (NUM_TIMES, NUM_LEVELS + 1, NUM_GLOBAL_CELLS),
+        w_values = np.full(
+            (NUM_TIMES, NUM_LEVELS + 1, cell_global_index.shape[0]), np.nan, dtype=np.float32
         )
+        owned = cell_global_index >= 0
+        w_values[:, :, owned] = cell_global_index[owned].astype(np.float32)
+        upward_air_velocity[:] = w_values
         normal_velocity = dataset.createVariable(
             "normal_velocity", "f4", (writers.TIME, writers.MODEL_LEVEL, writers.EDGE)
         )
-        normal_velocity[:] = np.zeros((NUM_TIMES, NUM_LEVELS, 4), dtype=np.float32)
+        normal_velocity[:] = np.zeros((NUM_TIMES, NUM_LEVELS, num_edges), dtype=np.float32)
 
 
 @pytest.fixture
@@ -258,6 +294,23 @@ def _expected_global_values() -> np.ndarray:
     return _cell_values(np.arange(NUM_GLOBAL_CELLS, dtype=np.int64))
 
 
+def _assert_strict_json_metadata(store: pathlib.Path) -> None:
+    """Every zarr.json of the store must be spec-compliant (RFC 8259) JSON.
+
+    ``json.loads`` and zarr-python tolerate bare ``NaN``/``Infinity`` tokens (e.g. from
+    a NaN attribute value), but the gridlook browser viewer's ``JSON.parse`` does not --
+    a store carrying them exports without error and then fails to load.
+    """
+
+    def reject(token: str) -> float:
+        raise AssertionError(f"non-standard JSON token {token!r} in store metadata")
+
+    metadata_files = sorted(store.rglob("zarr.json"))
+    assert metadata_files, f"no zarr.json metadata found under {store}"
+    for metadata_file in metadata_files:
+        json.loads(metadata_file.read_text(), parse_constant=reject)
+
+
 def test_export_rank_block_reorders_to_global_order(
     source_store: pathlib.Path, grid_file: pathlib.Path, tmp_path: pathlib.Path
 ) -> None:
@@ -277,6 +330,30 @@ def test_export_rank_block_reorders_to_global_order(
     np.testing.assert_array_equal(
         np.asarray(upward_air_velocity[:])[0, 0], np.arange(NUM_GLOBAL_CELLS, dtype=np.float32)
     )
+    _assert_strict_json_metadata(output)
+
+
+def test_export_rank_block_netcdf_source_reorders_to_global_order(
+    grid_file: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    # the layout of the parallel netCDF writer (see 'common.io.netcdf_writers'), which
+    # the exporter must undo exactly like a rank-block zarr store's
+    source = tmp_path / "icon4py_output_0000.nc"
+    _write_source_netcdf(source, rank_block=True)
+    output = tmp_path / "viz.zarr"
+    exported, skipped = _export(source, grid_file, output)
+
+    assert exported == ["temperature", "upward_air_velocity"]
+    assert skipped == ["normal_velocity"]
+    temperature = _open_array(output, "temperature")
+    assert temperature.shape == (NUM_TIMES, NUM_LEVELS, NUM_GLOBAL_CELLS)
+    values = np.asarray(temperature[:])
+    assert not np.isnan(values).any()
+    np.testing.assert_array_equal(values, _expected_global_values())
+    # the source's NaN _FillValue attribute must not leak into the store metadata,
+    # where it would serialize as a bare NaN token the browser viewer cannot parse
+    assert "_FillValue" not in temperature.attrs
+    _assert_strict_json_metadata(output)
 
 
 def test_export_serial_store_copies_identically(
@@ -325,6 +402,10 @@ def test_export_netcdf_source_coerces_numeric_attributes(
     assert temperature.attrs["tuning_parameter"] == 0.5
     assert temperature.attrs["ensemble_member"] == 3
     assert temperature.attrs["sampled_levels"] == [0, 1]
+    # non-finite floats are stringified: as raw floats they would end up as bare
+    # NaN tokens in the store metadata, which strict JSON parsers reject
+    assert temperature.attrs["missing_value"] == "nan"
+    _assert_strict_json_metadata(output)
     reopened = zarr.open_group(str(output), mode="r")["temperature"]
     assert isinstance(reopened, zarr.Array)
     np.testing.assert_array_equal(np.asarray(reopened[:]), _expected_global_values())

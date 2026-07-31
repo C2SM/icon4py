@@ -10,8 +10,10 @@
 
 A single-rank run provides the reference output; multi-rank runs must reproduce it
 (within the multi-rank comparison tolerances) through every parallel output path:
-gathered netCDF, gathered zarr and rank-block distributed zarr (reassembled to global
-order via the stored global-index coordinates).
+gathered netCDF, gathered zarr and rank-block distributed zarr and netCDF (reassembled
+to global order via the stored global-index coordinates). The distributed netCDF path
+is exercised only on an MPI-parallel netCDF4 installation (PyPI wheels are serial
+builds; see "Parallel netCDF" in ``icon4py.model.common.io``).
 """
 
 import logging
@@ -24,7 +26,7 @@ import xarray as xr
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.common.io import io as common_io, writers
+from icon4py.model.common.io import io as common_io, netcdf_writers, writers
 from icon4py.model.standalone_driver import (
     config as driver_config,
     driver_io,
@@ -50,6 +52,19 @@ if mpi_decomposition.mpi4py is None:
     pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 _log = logging.getLogger(__file__)
+
+#: Multi-rank output paths verified against the single-rank reference. Distributed
+#: netCDF joins only on an MPI-parallel netCDF4 installation; the data-free MPI tests
+#: (``common/io/mpi_tests/test_parallel_io.py``) report it as an explicit skip instead.
+_MULTI_RANK_OUTPUT_COMBINATIONS: list[tuple[common_io.OutputBackend, common_io.OutputMode]] = [
+    (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER),
+    (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER),
+    (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED),
+]
+if netcdf_writers.missing_parallel_support() is None:
+    _MULTI_RANK_OUTPUT_COMBINATIONS.append(
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.DISTRIBUTED)
+    )
 
 
 def _run_driver_with_output(
@@ -115,7 +130,7 @@ def _assert_dataset_matches_reference(
 
 
 def _reassemble_global_order(dataset: xr.Dataset, reference: xr.Dataset) -> xr.Dataset:
-    """Undo the rank-block layout of a distributed zarr store via its global indices."""
+    """Undo the rank-block layout of a distributed store via its global indices."""
     reassembled = {}
     for name in driver_io.DEFAULT_OUTPUT_VARIABLES:
         variable = dataset[name]
@@ -173,11 +188,7 @@ def test_parallel_output_matches_single_rank_reference(
             output_mode=output_mode,
             config_file_path=config_file_path,
         )
-        for output_backend, output_mode in (
-            (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER),
-            (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER),
-            (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED),
-        )
+        for output_backend, output_mode in _MULTI_RANK_OUTPUT_COMBINATIONS
     }
 
     # all ranks must have finished writing before the root rank reads the stores
