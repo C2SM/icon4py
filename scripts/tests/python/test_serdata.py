@@ -39,6 +39,14 @@ from serdata import (
 
 DATA_DIR = pathlib.Path(__file__).resolve().parent / "data"
 
+# Expected content of the sample ICON version banner, named so the assertions stay short.
+ICON_SHA = "97986bc3592cc05c799717c70345f27a8c275d8d"
+ICON_DESCRIBE = f"icon-2025.10-dwd-2.0-242-g{ICON_SHA}"
+ICON_LAND_REVISION = "icon-land-2026.04-6-ga7583e49db9c7286f1e1377a7c8409d0c11425c5"
+DACE_REVISION = "icon-nwp-2001-0-ga56af966bfc607d64b96580d1f35d70996800547"
+MTIME_REVISION = "1.3.0-1-g04f02ccbd765104a1570355c5d3fdfcfdad11c4c"
+CDI_REVISION = "cdi-2.6.0-1-g60e0a3b9899c8021437686d720702a978a5bb63d"
+
 
 @pytest.fixture(scope="module")
 def banner_log() -> str:
@@ -48,10 +56,8 @@ def banner_log() -> str:
 def test_parse_banner_extracts_icon_revision(banner_log: str) -> None:
     banner = parse_icon_log_banner(banner_log)
 
-    assert banner["sha"] == "97986bc3592cc05c799717c70345f27a8c275d8d"
-    assert (
-        banner["describe"] == "icon-2025.10-dwd-2.0-242-g97986bc3592cc05c799717c70345f27a8c275d8d"
-    )
+    assert banner["sha"] == ICON_SHA
+    assert banner["describe"] == ICON_DESCRIBE
     assert banner["repository"] == "git@gitlab.dkrz.de:icon/icon-nwp.git"
     assert banner["branch"] == "serialize_tmx"
     assert banner["version"] == "2026.04"
@@ -70,12 +76,12 @@ def test_parse_banner_collects_externals_but_not_toolchain(banner_log: str) -> N
     banner = parse_icon_log_banner(banner_log)
 
     externals = banner["externals"]
-    assert externals["icon-land"] == "icon-land-2026.04-6-ga7583e49db9c7286f1e1377a7c8409d0c11425c5"
-    assert externals["dace"] == "icon-nwp-2001-0-ga56af966bfc607d64b96580d1f35d70996800547"
+    assert externals["icon-land"] == ICON_LAND_REVISION
+    assert externals["dace"] == DACE_REVISION
     assert externals["ecrad"].startswith("ecrad-safeguard-09666303-13-g")
-    assert externals["mtime"] == "1.3.0-1-g04f02ccbd765104a1570355c5d3fdfcfdad11c4c"
+    assert externals["mtime"] == MTIME_REVISION
     # nested entries expose a 'revision' line one level deeper than their name
-    assert externals["cdi"] == "cdi-2.6.0-1-g60e0a3b9899c8021437686d720702a978a5bb63d"
+    assert externals["cdi"] == CDI_REVISION
     # toolchain lives in its own section, not mixed into externals
     assert "eccodes" not in externals
     assert "fortran" not in externals
@@ -115,7 +121,7 @@ def test_read_banner_from_archive(tmp_path: pathlib.Path, banner_log: str) -> No
 
     banner = read_icon_banner_from_archive(tmp_path)
 
-    assert banner["sha"] == "97986bc3592cc05c799717c70345f27a8c275d8d"
+    assert banner["sha"] == ICON_SHA
     assert banner["source"] == "LOG.exp.foo_sb.run.12345.o"
 
 
@@ -422,7 +428,7 @@ def test_backfill_writes_metadata_for_existing_archives(tmp_path: pathlib.Path) 
         "comm_size": 2,
         "backfilled": True,
     }
-    assert metadata["provenance"]["icon"]["sha"] == "97986bc3592cc05c799717c70345f27a8c275d8d"
+    assert metadata["provenance"]["icon"]["sha"] == ICON_SHA
 
 
 def test_backfill_skips_archives_that_already_have_metadata(tmp_path: pathlib.Path) -> None:

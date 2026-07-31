@@ -59,6 +59,17 @@ _NESTED_ENTRY = re.compile(r"^(?P<indent> {2,})(?P<key>[^:]+): ?(?P<value>.*)$")
 _DESCRIBE_SHA = re.compile(r"-g(?P<sha>[0-9a-f]{7,40})$")
 
 
+ARCHIVE_METADATA_FNAME: Final = "archive_metadata.json"
+ARCHIVE_METADATA_SCHEMA: Final = "icon4py-archive-metadata/1"
+
+# ICON's post-read namelist dump: every variable at its effective value, defaults
+# included, so an upstream change to a default is visible only here.
+NAMELIST_DUMP_FNAME: Final = "NAMELIST_ICON_output_atm.json"
+
+_MAX_RENDERED_VALUE = 60
+_MAX_RENDERED_ELEMENTS = 3
+
+
 class BannerParseError(RuntimeError):
     """Raised when an ICON log does not contain a usable version banner."""
 
@@ -154,23 +165,22 @@ def read_icon_banner_from_archive(archive_dir: pathlib.Path) -> dict:
     return banner
 
 
+def _git_output(repo: pathlib.Path, *args: str) -> str | None:
+    result = subprocess.run(
+        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
 def harvest_git(repo: pathlib.Path) -> dict:
     """Record the git state of a working tree, or an empty mapping if there is none."""
-
-    def run(*args: str) -> str | None:
-        result = subprocess.run(
-            ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-        )
-        return result.stdout.strip() if result.returncode == 0 else None
-
-    sha = run("rev-parse", "HEAD")
+    sha = _git_output(repo, "rev-parse", "HEAD")
     if sha is None:
         return {}
-    status = run("status", "--porcelain")
     return {
         "sha": sha,
-        "branch": run("rev-parse", "--abbrev-ref", "HEAD"),
-        "dirty": bool(status),
+        "branch": _git_output(repo, "rev-parse", "--abbrev-ref", "HEAD"),
+        "dirty": bool(_git_output(repo, "status", "--porcelain")),
     }
 
 
@@ -243,9 +253,7 @@ class Fingerprint:
     records: dict[RecordKey, str]
     classes: dict[str, SavepointClass]
     ranks: int
-    # Savepoints that look time-invariant but are not in 'STATIC_SAVEPOINTS'. They are
-    # compared as 'evolving', which means they are not guarded, so they have to be
-    # classified by a human before the next regeneration.
+    # Not in 'STATIC_SAVEPOINTS', so compared as unguarded 'evolving'; needs a human.
     unclassified: list[str]
 
 
@@ -258,9 +266,7 @@ def _read_rank(meta_path: pathlib.Path, archive_path: pathlib.Path, rank: int) -
     if len(savepoints) != len(fields_per_savepoint):
         raise ValueError(f"Inconsistent savepoint vector in '{meta_path}'.")
 
-    # 'fields_table[field]' is an ordered list of [byte offset, digest]; the occurrence
-    # index used by 'fields_per_savepoint' is the list position, and element 0 is an
-    # offset into the .dat file, never an identifier to look up.
+    # Element 0 is a byte offset, not an id: the occurrence index is the list position.
     digests = {
         field: [entry[1] for entry in entries] for field, entries in archive["fields_table"].items()
     }
@@ -282,9 +288,7 @@ def _read_rank(meta_path: pathlib.Path, archive_path: pathlib.Path, rank: int) -
         # 'field_map' is a superset of what was actually written; only the fields listed
         # per savepoint are guaranteed to have a digest.
         for field, occurrence in (fields[name] or {}).items():
-            # Digests are Serialbox's own 32 byte tokens, printed byte by byte with
-            # leading zeros stripped. They are 54-64 characters long, are not
-            # interchangeable with 'hashlib.sha256', and must never be padded.
+            # Serialbox strips leading zeros per byte: 54-64 chars, never pad them.
             records[(rank, name, ordinal, field)] = digests[field][occurrence]
 
     return records, classes, described
@@ -353,28 +357,26 @@ class FingerprintDiff:
     fields_removed: list[str]
 
 
+def _of_class(keys, classes: dict, name: SavepointClass) -> list[RecordKey]:
+    return sorted(key for key in keys if classes.get(key[1], "evolving") == name)
+
+
 def diff_fingerprints(old: Fingerprint, new: Fingerprint) -> FingerprintDiff:
     """Compare two archives record by record, split by savepoint class."""
     classes = {**old.classes, **new.classes}
-
-    def class_of(key: RecordKey) -> SavepointClass:
-        return classes.get(key[1], "evolving")
-
     common = old.records.keys() & new.records.keys()
     only_new = new.records.keys() - old.records.keys()
     only_old = old.records.keys() - new.records.keys()
-
-    def of_class(keys, name: SavepointClass) -> list[RecordKey]:
-        return sorted(key for key in keys if class_of(key) == name)
+    same = [key for key in common if old.records[key] == new.records[key]]
+    moved = [key for key in common if old.records[key] != new.records[key]]
 
     per_class: dict[SavepointClass, ClassDiff] = {}
     for name in SAVEPOINT_CLASSES:
-        same = of_class((key for key in common if old.records[key] == new.records[key]), name)
         per_class[name] = ClassDiff(
-            unchanged=len(same),
-            changed=of_class((key for key in common if old.records[key] != new.records[key]), name),
-            added=of_class(only_new, name),
-            removed=of_class(only_old, name),
+            unchanged=len(_of_class(same, classes, name)),
+            changed=_of_class(moved, classes, name),
+            added=_of_class(only_new, classes, name),
+            removed=_of_class(only_old, classes, name),
         )
 
     old_savepoints = {key[1] for key in old.records}
@@ -394,11 +396,6 @@ def diff_fingerprints(old: Fingerprint, new: Fingerprint) -> FingerprintDiff:
 # ---------------------------------------------------------------------------
 # Namelists
 # ---------------------------------------------------------------------------
-
-# ICON's post-read namelist dump: every variable with its effective value, defaults
-# included. The input namelists only carry what the experiment sets explicitly, so this
-# is the only archived artifact in which an upstream change to a default is visible.
-NAMELIST_DUMP_FNAME: Final = "NAMELIST_ICON_output_atm.json"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -437,12 +434,6 @@ def diff_namelists(old: dict, new: dict) -> NamelistDiff:
 # ---------------------------------------------------------------------------
 # Comparing two archives
 # ---------------------------------------------------------------------------
-
-ARCHIVE_METADATA_FNAME: Final = "archive_metadata.json"
-ARCHIVE_METADATA_SCHEMA: Final = "icon4py-archive-metadata/1"
-
-_MAX_RENDERED_VALUE = 60
-_MAX_RENDERED_ELEMENTS = 3
 
 
 def read_archive_provenance(archive_dir: pathlib.Path) -> dict:
@@ -546,13 +537,15 @@ def render_value_change(old: object, new: object) -> str:
     return f"{_abbreviate(old)} -> {_abbreviate(new)}"
 
 
-def _render_provenance(comparison: ArchiveComparison) -> str:
-    def sha(provenance: dict) -> str:
-        return (provenance.get("icon", {}).get("sha") or "unknown")[:10]
+def _short_sha(provenance: dict) -> str:
+    return (provenance.get("icon", {}).get("sha") or "unknown")[:10]
 
+
+def _render_provenance(comparison: ArchiveComparison) -> str:
+    new = _short_sha(comparison.new_provenance)
     if comparison.old_label is None:
-        return f"provenance : icon {sha(comparison.new_provenance)}"
-    return f"provenance : icon {sha(comparison.old_provenance)} -> {sha(comparison.new_provenance)}"
+        return f"provenance : icon {new}"
+    return f"provenance : icon {_short_sha(comparison.old_provenance)} -> {new}"
 
 
 def _render_savepoints(keys: list[RecordKey]) -> str:
@@ -739,23 +732,22 @@ class DifferenceSummary:
     samples: list[tuple[tuple[int, ...], object, object]]
 
 
+def _walk_differences(a, b, prefix: tuple[int, ...] = ()):
+    if isinstance(a, (list, tuple)) or hasattr(a, "__len__"):
+        for i, (x, y) in enumerate(zip(a, b, strict=True)):
+            yield from _walk_differences(x, y, (*prefix, i))
+    elif a != b:
+        yield prefix, a, b
+
+
 def summarise_differences(old, new, *, limit: int = 10) -> DifferenceSummary:
     """Locate the entries in which two same-shaped arrays differ.
 
-    Kept free of any array library so that it can be tested without data files; the
-    command below feeds it whatever Serialbox returns.
+    Free of any array library so that it can be tested without data files.
     """
-
-    def walk(a, b, prefix: tuple[int, ...]):
-        if isinstance(a, (list, tuple)) or hasattr(a, "__len__"):
-            for i, (x, y) in enumerate(zip(a, b, strict=True)):
-                yield from walk(x, y, (*prefix, i))
-        elif a != b:
-            yield prefix, a, b
-
     count = 0
     samples: list[tuple[tuple[int, ...], object, object]] = []
-    for position, old_value, new_value in walk(old, new, ()):
+    for position, old_value, new_value in _walk_differences(old, new):
         count += 1
         if len(samples) < limit:
             samples.append((position, old_value, new_value))

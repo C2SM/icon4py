@@ -1,6 +1,6 @@
 # Generating serialized test data
 
-icon4py's datatests validate against Serialbox dumps produced by an instrumented ICON
+ICON4Py's datatests validate against Serialbox dumps produced by an instrumented ICON
 Fortran build. This document is the runbook for regenerating them.
 
 Generation runs on CSCS Santis under slurm; nothing here works on a laptop except the
@@ -98,7 +98,7 @@ Serialization branches on `git@gitlab.dkrz.de:icon/icon-nwp.git` get rebased and
 This matters: in June 2026 a regeneration silently picked up `a9435ae531`
 ("[nwp] Improve wave energy propagation near the coast"), which moved three geometry
 fields from `rl_start=2` to `rl_start=1` in `src/shr_horizontal/mo_intp_coeffs.f90` and
-broke three icon4py datatests with no recorded provenance to explain it. That incident is
+broke three ICON4Py datatests with no recorded provenance to explain it. That incident is
 what the comparison step below exists to catch.
 
 Note what "catch" means here. That upstream change was deliberate and is being kept: the

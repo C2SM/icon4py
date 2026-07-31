@@ -592,6 +592,20 @@ def write_archive_metadata(
     return metadata_path
 
 
+def previous_version_dir(
+    experiment_description: test_defs.ExperimentDescription,
+    comm_size: int,
+    *,
+    settings: SerializationSettings,
+) -> pathlib.Path | None:
+    """The previous version's archive, if it is still on disk to compare against."""
+    previous = dataclasses.replace(
+        experiment_description, version=experiment_description.version - 1
+    )
+    directory = get_serdata_dst_dir(previous, comm_size, settings=settings)
+    return directory if directory.is_dir() else None
+
+
 def compare_with_previous_version(
     dest_dir: pathlib.Path,
     experiment_description: test_defs.ExperimentDescription,
@@ -599,22 +613,9 @@ def compare_with_previous_version(
     *,
     settings: SerializationSettings,
 ) -> tuple[str, pathlib.Path]:
-    """Diff the new archive against the previous version and write the report.
-
-    Returns the verdict and the path of the written report, so that no caller has to
-    reconstruct either.
-
-    The baseline is the previous version if it is still on disk. When it is not, the
-    report says so rather than reporting a clean comparison that never happened; the
-    previous archive can be extracted and passed to 'serdata diff --baseline' by hand.
-    """
-    previous = dataclasses.replace(
-        experiment_description, version=experiment_description.version - 1
-    )
-    baseline_dir = get_serdata_dst_dir(previous, comm_size, settings=settings)
-
+    """Diff the new archive against the previous version and write the report."""
     comparison = serdata.compare_archives(
-        baseline_dir if baseline_dir.is_dir() else None,
+        previous_version_dir(experiment_description, comm_size, settings=settings),
         dest_dir,
         experiment=experiment_description.name,
     )
@@ -825,7 +826,11 @@ def run_serialization(
     report_results(results, settings=settings)
     failed = [result for result in results if result.status == "failed"]
     if failed:
-        log_status(f"{len(failed)}/{len(results)} tasks failed.")
+        log_status(
+            f"{len(failed)}/{len(results)} tasks failed: "
+            + ", ".join(f"{result.experiment_name}[{result.comm_size}]" for result in failed)
+            + f". See {settings.output_root / RUN_SUMMARY_FNAME} for the errors."
+        )
         raise typer.Exit(code=1)
 
     print_next_steps(results, settings=settings)
