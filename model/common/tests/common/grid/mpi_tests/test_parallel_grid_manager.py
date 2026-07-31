@@ -91,9 +91,6 @@ def _get_neighbor_tables(grid: base.Grid) -> dict:
 # another, so we declare them here for xfailing.
 embedded_broken_fields = {
     metrics_attributes.DDQZ_Z_HALF,
-    metrics_attributes.DEEPATMO_DIVH,
-    metrics_attributes.DEEPATMO_DIVZL,
-    metrics_attributes.DEEPATMO_DIVZU,
     metrics_attributes.EXNER_EXFAC,
     metrics_attributes.MAXHGTD_AVG,
     metrics_attributes.MAXSLP_AVG,
@@ -598,9 +595,6 @@ def _compare_metrics_fields_single_multi_rank(
         metrics_attributes.DDXN_Z_HALF_E,
         metrics_attributes.DDXT_Z_FULL,
         metrics_attributes.DDXT_Z_HALF_E,
-        metrics_attributes.DEEPATMO_DIVH,
-        metrics_attributes.DEEPATMO_DIVZL,
-        metrics_attributes.DEEPATMO_DIVZU,
         metrics_attributes.D_EXNER_DZ_REF_IC,
         metrics_attributes.EXNER_REF_MC,
         metrics_attributes.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,
