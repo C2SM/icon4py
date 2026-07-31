@@ -9,9 +9,9 @@
 """Shared surface of the output writers.
 
 The writer implementations live in :mod:`icon4py.model.common.io.netcdf_writers`
-(serial netCDF files) and :mod:`icon4py.model.common.io.zarr_writers` (serial and
-rank-block zarr stores). This module holds what they share so both file formats
-stay identical: the :class:`FieldWriter` protocol, the dimension names, and the
+and :mod:`icon4py.model.common.io.zarr_writers`, each supporting serial and
+rank-block output. This module holds what they share so both file formats stay
+identical: the :class:`FieldWriter` protocol, the dimension names, and the
 coordinate/variable attributes.
 """
 
@@ -21,11 +21,13 @@ import types
 import uuid
 from typing import Final, Protocol, Required, Self, TypedDict
 
+import numpy as np
 import xarray as xr
 
 import icon4py.model.common.states.metadata
 from icon4py.model.common.grid import base
 from icon4py.model.common.io import cf_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 EDGE: Final[str] = "edge"
@@ -35,7 +37,7 @@ MODEL_HALF_LEVEL: Final[str] = "half_level"
 MODEL_LEVEL: Final[str] = "level"
 TIME: Final[str] = "time"
 
-#: Prefix of the global-index coordinates of rank-block distributed zarr stores.
+#: Prefix of the global-index coordinates of rank-block output (zarr and netCDF).
 GLOBAL_INDEX_PREFIX: Final[str] = "global_index"
 
 
@@ -157,10 +159,53 @@ DATA_VARIABLE_ATTRIBUTES: Final[tuple[str, ...]] = (
 
 
 def data_variable_attributes(canonical_slice: xr.DataArray) -> dict[str, str]:
-    return {name: getattr(canonical_slice, name) for name in DATA_VARIABLE_ATTRIBUTES}
+    """CF/UGRID attributes of a field, raising for missing ones.
+
+    Both writers call this before any file mutation: a missing attribute must fail on
+    every rank identically, not on the root rank inside a store operation.
+    """
+    missing = [name for name in DATA_VARIABLE_ATTRIBUTES if name not in canonical_slice.attrs]
+    if missing:
+        raise ValueError(f"Field is missing the CF attributes: {', '.join(missing)}.")
+    return {name: canonical_slice.attrs[name] for name in DATA_VARIABLE_ATTRIBUTES}
 
 
 def filter_by_standard_name(model_state: dict, value: str) -> dict:
     # getattr with default: netCDF4 raises AttributeError for a missing attribute, and
     # not every file variable carries a standard_name (e.g. global-index coordinates)
     return {k: v for k, v in model_state.items() if value == getattr(v, "standard_name", None)}
+
+
+def canonicalize_time_slice(
+    state_to_append: dict[str, xr.DataArray], horizontal_sizes: dict[str, int]
+) -> tuple[dict[str, xr.DataArray], dict[str, np.ndarray]]:
+    """Canonicalize the fields of a time slice and transfer them to host memory.
+
+    Runs before any file/store mutation, on every rank: a failure (unsupported or
+    unknown dimensions, missing CF attributes, a device buffer that cannot be
+    converted) must raise identically on all ranks first, or the file would be left
+    with a phantom time slice -- and, in rank-block mode, the surviving ranks would
+    hang in the next collective.
+    """
+    canonical_slices: dict[str, xr.DataArray] = {}
+    host_data: dict[str, np.ndarray] = {}
+    for var_name, new_slice in state_to_append.items():
+        canonical_slice = cf_utils.to_canonical_dim_order(new_slice)
+        if canonical_slice is None:
+            raise ValueError(
+                f"Cannot write field '{var_name}': only fields with a horizontal and a "
+                f"vertical dimension are supported."
+            )
+        horizontal_name = str(canonical_slice.dims[-1])
+        if horizontal_name not in horizontal_sizes:
+            raise ValueError(
+                f"Cannot write field '{var_name}': unknown horizontal dimension "
+                f"'{horizontal_name}'."
+            )
+        try:
+            data_variable_attributes(canonical_slice)
+        except ValueError as err:
+            raise ValueError(f"Cannot write field '{var_name}': {err}") from err
+        canonical_slices[var_name] = canonical_slice
+        host_data[var_name] = data_alloc.as_numpy(canonical_slice.data)
+    return canonical_slices, host_data

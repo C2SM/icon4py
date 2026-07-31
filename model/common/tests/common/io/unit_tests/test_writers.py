@@ -64,7 +64,10 @@ def _vertical_params(grid: grid_def.Grid) -> v_grid.VerticalGrid:
 
 
 def initialized_writer(
-    test_path: pathlib.Path, random_name: str, grid: grid_def.Grid = test_io_utils.simple_grid
+    test_path: pathlib.Path,
+    random_name: str,
+    grid: grid_def.Grid = test_io_utils.simple_grid,
+    horizontal_chunk_size: int | None = None,
 ) -> tuple[netcdf_writers.NETCDFWriter, grid_def.Grid]:
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
@@ -76,6 +79,7 @@ def initialized_writer(
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
         ),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        horizontal_chunk_size=horizontal_chunk_size,
     )
     writer.initialize_dataset()
     return writer, grid
@@ -200,8 +204,11 @@ def initialized_zarr_writer(
     test_path: pathlib.Path,
     random_name: str,
     grid: grid_def.Grid = test_io_utils.simple_grid,
+    *,
     rank_blocks: dict[str, distributed.RankBlock] | None = None,
     horizontal: grid_def.HorizontalGridSize | None = None,
+    horizontal_chunk_size: int | None = None,
+    horizontal_shard_size: int | None = None,
 ) -> tuple[zarr_writers.ZarrWriter, pathlib.Path]:
     store_path = test_path.absolute() / f"{random_name}.zarr"
     writer = zarr_writers.ZarrWriter(
@@ -213,6 +220,8 @@ def initialized_zarr_writer(
         ),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
         rank_blocks=rank_blocks,
+        horizontal_chunk_size=horizontal_chunk_size,
+        horizontal_shard_size=horizontal_shard_size,
     )
     writer.initialize_dataset()
     return writer, store_path
@@ -303,7 +312,7 @@ def test_zarr_writer_rank_block_writes_padded_block(
         dim_name: distributed.RankBlock(
             start=0,
             count=size,
-            chunk=size + padding,
+            size=size + padding,
             padded_size=size + padding,
             global_size=size,
             global_index=np.arange(size, dtype=np.int64),
@@ -337,10 +346,9 @@ def test_zarr_writer_rank_block_writes_padded_block(
         global_index = ds[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].values
         assert np.all(global_index[: grid.num_cells] == np.arange(grid.num_cells))
         assert np.all(global_index[grid.num_cells :] == -1)
-    # exactly one horizontal chunk per rank block: the invariant that keeps concurrent
-    # writes of different ranks out of each other's chunk files
+    # default layout: one chunk per rank block
     group = zarr.open_group(store_path, mode="r")
-    cell_chunk = rank_blocks[writers.CELL].chunk
+    cell_chunk = rank_blocks[writers.CELL].size
     air_density = group["air_density"]
     global_index_cell = group[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"]
     assert isinstance(air_density, zarr.Array)
@@ -352,8 +360,9 @@ def test_zarr_writer_rank_block_writes_padded_block(
 def test_zarr_writer_rank_block_writes_at_nonzero_start(
     test_path: pathlib.Path, random_name: str
 ) -> None:
-    # store view of a non-root rank: its block starts at rank * chunk; data and global
-    # indices must land inside the block only, everything before and after stays padding
+    # store view of a non-root rank: its block starts at rank * block size; data and
+    # global indices must land inside the block only, everything before and after
+    # stays padding
     grid = test_io_utils.simple_grid
     rank = 1
     rank_blocks = {}
@@ -362,12 +371,12 @@ def test_zarr_writer_rank_block_writes_at_nonzero_start(
         (writers.EDGE, grid.num_edges),
         (writers.VERTEX, grid.num_vertices),
     ):
-        chunk = size + 1  # uneven layout: one padding entry per block
+        block_size = size + 1  # uneven layout: one padding entry per block
         rank_blocks[dim_name] = distributed.RankBlock(
-            start=rank * chunk,
+            start=rank * block_size,
             count=size,
-            chunk=chunk,
-            padded_size=2 * chunk,
+            size=block_size,
+            padded_size=2 * block_size,
             global_size=2 * size,
             global_index=np.arange(size, 2 * size, dtype=np.int64),
         )
@@ -394,6 +403,103 @@ def test_zarr_writer_rank_block_writes_at_nonzero_start(
         values = ds["air_density"].values[0]
         assert np.all(np.isnan(values[:, : cell_block.start]))
         assert np.all(np.isnan(values[:, cell_block.start + cell_block.count :]))
+
+
+def test_zarr_writer_horizontal_chunk_and_shard_sizes(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # a serial store with configured chunking/sharding: the horizontal axes split into
+    # chunks of the configured size, grouped into shards of whole chunks; the data
+    # content is independent of the layout
+    grid = test_io_utils.simple_grid
+    writer, store_path = initialized_zarr_writer(
+        test_path, random_name, horizontal_chunk_size=4, horizontal_shard_size=8
+    )
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    writer.append(state, datetime.now())
+    writer.close()
+    air_density = zarr.open_group(store_path, mode="r")["air_density"]
+    assert isinstance(air_density, zarr.Array)
+    assert air_density.chunks == (1, grid.num_levels, 4)
+    assert air_density.shards == (1, grid.num_levels, 8)
+    with xr.open_zarr(store_path) as ds:
+        test_utils.assert_dallclose(ds["air_density"].values[0], state["air_density"].data.T)
+
+
+def test_zarr_writer_rank_block_chunk_and_shard_sizes(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # rank-block store with sub-chunked, sharded blocks (block size a multiple of
+    # the shard size); data, padding and global indices are unchanged
+    grid = test_io_utils.simple_grid
+    chunk_size, shard_size = 3, 6
+    rank_blocks = {}
+    for dim_name, size in (
+        (writers.CELL, grid.num_cells),
+        (writers.EDGE, grid.num_edges),
+        (writers.VERTEX, grid.num_vertices),
+    ):
+        block_size = (size + shard_size - 1) // shard_size * shard_size
+        rank_blocks[dim_name] = distributed.RankBlock(
+            start=0,
+            count=size,
+            size=block_size,
+            padded_size=block_size,
+            global_size=size,
+            global_index=np.arange(size, dtype=np.int64),
+        )
+    padded_horizontal = grid_def.HorizontalGridSize(
+        num_cells=rank_blocks[writers.CELL].padded_size,
+        num_edges=rank_blocks[writers.EDGE].padded_size,
+        num_vertices=rank_blocks[writers.VERTEX].padded_size,
+    )
+    writer, store_path = initialized_zarr_writer(
+        test_path,
+        random_name,
+        grid,
+        rank_blocks=rank_blocks,
+        horizontal=padded_horizontal,
+        horizontal_chunk_size=chunk_size,
+        horizontal_shard_size=shard_size,
+    )
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    writer.append(state, datetime.now())
+    writer.close()
+    group = zarr.open_group(store_path, mode="r")
+    air_density = group["air_density"]
+    global_index_cell = group[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"]
+    assert isinstance(air_density, zarr.Array)
+    assert isinstance(global_index_cell, zarr.Array)
+    assert air_density.chunks == (1, grid.num_levels, chunk_size)
+    assert air_density.shards == (1, grid.num_levels, shard_size)
+    assert global_index_cell.chunks == (chunk_size,)
+    assert global_index_cell.shards == (shard_size,)
+    with xr.open_zarr(store_path) as ds:
+        values = ds["air_density"].values[0]
+        test_utils.assert_dallclose(values[:, : grid.num_cells], state["air_density"].data.T)
+        assert np.all(np.isnan(values[:, grid.num_cells :]))
+    with xr.open_zarr(store_path, mask_and_scale=False) as ds:
+        global_index = ds[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].values
+        assert np.all(global_index[: grid.num_cells] == np.arange(grid.num_cells))
+        assert np.all(global_index[grid.num_cells :] == -1)
+
+
+def test_zarr_writer_rejects_chunks_crossing_rank_blocks(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # a block size of 10 is no multiple of a chunk size of 4
+    with pytest.raises(ValueError, match="not a multiple"):
+        zarr_writers.ZarrWriter(
+            file_name=test_path / f"{random_name}.zarr",
+            vertical=_vertical_params(test_io_utils.simple_grid),
+            horizontal=test_io_utils.simple_grid.config.horizontal_config,
+            time_properties=writers.TimeProperties(
+                cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+            ),
+            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+            rank_blocks=_single_rank_block(10),
+            horizontal_chunk_size=4,
+        )
 
 
 def test_initialize_writer_create_dimensions(
@@ -423,6 +529,8 @@ def initialized_netcdf_rank_block_writer(
     grid: grid_def.Grid,
     rank_blocks: dict[str, distributed.RankBlock],
     horizontal: grid_def.HorizontalGridSize,
+    *,
+    horizontal_chunk_size: int | None = None,
 ) -> tuple[netcdf_writers.NETCDFWriter, pathlib.Path]:
     """Rank-block netCDF writer on a single-rank communicator (serial file handle)."""
     file_path = test_path.absolute() / f"{random_name}.nc"
@@ -435,6 +543,7 @@ def initialized_netcdf_rank_block_writer(
         ),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
         rank_blocks=rank_blocks,
+        horizontal_chunk_size=horizontal_chunk_size,
     )
     writer.initialize_dataset()
     return writer, file_path
@@ -453,7 +562,7 @@ def test_netcdf_writer_rank_block_writes_padded_block(
         dim_name: distributed.RankBlock(
             start=0,
             count=size,
-            chunk=size + padding,
+            size=size + padding,
             padded_size=size + padding,
             global_size=size,
             global_index=np.arange(size, dtype=np.int64),
@@ -488,10 +597,8 @@ def test_netcdf_writer_rank_block_writes_padded_block(
         assert global_index.dtype == np.int64
         assert np.all(global_index[: grid.num_cells] == np.arange(grid.num_cells))
         assert np.all(global_index[grid.num_cells :] == -1)
-    # exactly one horizontal chunk per rank block: the same on-disk layout as the
-    # rank-block zarr store, keeping concurrent writes of different ranks in
-    # disjoint chunks
-    cell_chunk = rank_blocks[writers.CELL].chunk
+    # default layout: one chunk per rank block, same as the rank-block zarr store
+    cell_chunk = rank_blocks[writers.CELL].size
     with nc.Dataset(file_path) as raw:
         assert raw["air_density"].chunking() == [1, grid.num_levels, cell_chunk]
         assert raw[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].chunking() == [cell_chunk]
@@ -500,8 +607,8 @@ def test_netcdf_writer_rank_block_writes_padded_block(
 def test_netcdf_writer_rank_block_writes_at_nonzero_start(
     test_path: pathlib.Path, random_name: str
 ) -> None:
-    # file view of a non-root rank: its block starts at rank * chunk; data and global
-    # indices must land inside the block only. Unlike the zarr store (whose fill value
+    # file view of a non-root rank: its block starts at rank * block size; data and
+    # global indices must land inside the block only. Unlike the zarr store (whose fill value
     # covers the whole array), regions of other ranks are simply not written by this
     # rank -- in a real run every rank covers its own block.
     grid = test_io_utils.simple_grid
@@ -512,12 +619,12 @@ def test_netcdf_writer_rank_block_writes_at_nonzero_start(
         (writers.EDGE, grid.num_edges),
         (writers.VERTEX, grid.num_vertices),
     ):
-        chunk = size + 1  # uneven layout: one padding entry per block
+        block_size = size + 1  # uneven layout: one padding entry per block
         rank_blocks[dim_name] = distributed.RankBlock(
-            start=rank * chunk,
+            start=rank * block_size,
             count=size,
-            chunk=chunk,
-            padded_size=2 * chunk,
+            size=block_size,
+            padded_size=2 * block_size,
             global_size=2 * size,
             global_index=np.arange(size, 2 * size, dtype=np.int64),
         )
@@ -546,8 +653,96 @@ def test_netcdf_writer_rank_block_writes_at_nonzero_start(
         # the padding inside this rank's block is written as -1 (the other rank's
         # block region belongs to the other rank and is not asserted here)
         assert np.all(
-            global_index[cell_block.start + cell_block.count : cell_block.start + cell_block.chunk]
+            global_index[cell_block.start + cell_block.count : cell_block.start + cell_block.size]
             == -1
+        )
+
+
+def test_netcdf_writer_horizontal_chunk_size(test_path: pathlib.Path, random_name: str) -> None:
+    # a serial file is chunked only when configured
+    writer, grid = initialized_writer(test_path, random_name, horizontal_chunk_size=4)
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    writer.append(state, datetime.now())
+    assert writer.variables["air_density"].chunking() == [1, grid.num_levels, 4]
+    writer.close()
+
+
+def test_netcdf_writer_horizontal_chunk_size_clamped_to_axis(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # netCDF rejects chunks larger than a fixed dimension: an oversized configured
+    # chunk is clamped to the axis size
+    writer, grid = initialized_writer(test_path, random_name, horizontal_chunk_size=10_000)
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    writer.append(state, datetime.now())
+    assert writer.variables["air_density"].chunking() == [1, grid.num_levels, grid.num_cells]
+    writer.close()
+
+
+def test_netcdf_writer_rank_block_horizontal_chunk_size(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # rank-block file with sub-chunked blocks: the chunk size divides every block size
+    # (padded sizes 21/30/12), so chunks never cross block boundaries; data and
+    # padding are unchanged
+    grid = test_io_utils.simple_grid
+    padding = 3
+    chunk_size = 3
+    rank_blocks = {
+        dim_name: distributed.RankBlock(
+            start=0,
+            count=size,
+            size=size + padding,
+            padded_size=size + padding,
+            global_size=size,
+            global_index=np.arange(size, dtype=np.int64),
+        )
+        for dim_name, size in (
+            (writers.CELL, grid.num_cells),
+            (writers.EDGE, grid.num_edges),
+            (writers.VERTEX, grid.num_vertices),
+        )
+    }
+    padded_horizontal = grid_def.HorizontalGridSize(
+        num_cells=grid.num_cells + padding,
+        num_edges=grid.num_edges + padding,
+        num_vertices=grid.num_vertices + padding,
+    )
+    writer, file_path = initialized_netcdf_rank_block_writer(
+        test_path,
+        random_name,
+        grid,
+        rank_blocks,
+        padded_horizontal,
+        horizontal_chunk_size=chunk_size,
+    )
+    state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
+    writer.append(state, datetime.now())
+    writer.close()
+    with nc.Dataset(file_path) as raw:
+        assert raw["air_density"].chunking() == [1, grid.num_levels, chunk_size]
+        assert raw[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].chunking() == [chunk_size]
+    with xr.open_dataset(file_path) as ds:
+        values = ds["air_density"].values[0]
+        test_utils.assert_dallclose(values[:, : grid.num_cells], state["air_density"].data.T)
+        assert np.all(np.isnan(values[:, grid.num_cells :]))
+
+
+def test_netcdf_writer_rejects_chunks_crossing_rank_blocks(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # a block size of 10 is no multiple of a chunk size of 4
+    with pytest.raises(ValueError, match="not a multiple"):
+        netcdf_writers.NETCDFWriter(
+            file_name=test_path / f"{random_name}.nc",
+            vertical=_vertical_params(test_io_utils.simple_grid),
+            horizontal=test_io_utils.simple_grid.config.horizontal_config,
+            time_properties=writers.TimeProperties(
+                cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+            ),
+            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+            rank_blocks=_single_rank_block(10),
+            horizontal_chunk_size=4,
         )
 
 
@@ -651,3 +846,96 @@ def test_bounded_middle_chunks_rejects_oversized_rank_block() -> None:
     # a single horizontal row of the block already exceeds the limit
     with pytest.raises(RuntimeError, match="chunk size limit"):
         netcdf_writers._bounded_middle_chunks((80,), 2**30, 8)
+
+
+def _single_rank_block(size: int) -> dict[str, distributed.RankBlock]:
+    return {
+        writers.CELL: distributed.RankBlock(
+            start=0,
+            count=size,
+            size=size,
+            padded_size=size,
+            global_size=size,
+            global_index=np.arange(size, dtype=np.int64),
+        )
+    }
+
+
+def test_zarr_writer_rejects_shards_crossing_rank_blocks(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # a block size of 24 holds whole chunks of 8 but not whole shards of 16
+    with pytest.raises(ValueError, match="shard"):
+        zarr_writers.ZarrWriter(
+            file_name=test_path / f"{random_name}.zarr",
+            vertical=_vertical_params(test_io_utils.simple_grid),
+            horizontal=test_io_utils.simple_grid.config.horizontal_config,
+            time_properties=writers.TimeProperties(
+                cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+            ),
+            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+            rank_blocks=_single_rank_block(24),
+            horizontal_chunk_size=8,
+            horizontal_shard_size=16,
+        )
+
+
+def test_zarr_writer_rejects_shard_without_dividing_chunk(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # every rank must reject the layout at construction; zarr itself would raise on
+    # the root rank only, inside a pre-barrier store operation
+    with pytest.raises(ValueError, match="shard size"):
+        zarr_writers.ZarrWriter(
+            file_name=test_path / f"{random_name}.zarr",
+            vertical=_vertical_params(test_io_utils.simple_grid),
+            horizontal=test_io_utils.simple_grid.config.horizontal_config,
+            time_properties=writers.TimeProperties(
+                cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+            ),
+            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+            horizontal_chunk_size=3,
+            horizontal_shard_size=8,
+        )
+
+
+def test_zarr_writer_append_invalid_field_leaves_store_unchanged(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # a bad field must raise before any store mutation (identically on every rank in
+    # rank-block mode), or the store would keep a phantom time slice
+    writer, store_path = initialized_zarr_writer(test_path, random_name)
+    grid = test_io_utils.simple_grid
+    no_attrs = xr.DataArray(np.zeros((grid.num_cells, grid.num_levels)), dims=("cell", "level"))
+    with pytest.raises(ValueError, match="missing the CF attributes"):
+        writer.append({"air_density": no_attrs}, datetime.now())
+    bogus_dims = xr.DataArray(np.zeros((4, 5)), dims=("foo", "bar"))
+    with pytest.raises(ValueError, match="unknown horizontal dimension"):
+        writer.append({"junk": bogus_dims}, datetime.now())
+    writer.close()
+    with xr.open_zarr(store_path) as ds:
+        assert ds.sizes[writers.TIME] == 0
+
+
+def test_netcdf_writer_append_invalid_field_leaves_file_unchanged(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    writer, grid = initialized_writer(test_path, random_name)
+    no_attrs = xr.DataArray(np.zeros((grid.num_cells, grid.num_levels)), dims=("cell", "level"))
+    with pytest.raises(ValueError, match="missing the CF attributes"):
+        writer.append({"air_density": no_attrs}, datetime.now())
+    assert len(writer.variables[writers.TIME]) == 0
+    writer.close()
+
+
+def test_netcdf_writer_append_two_fields_sharing_standard_name(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    # variables resolve by name (like the zarr writer): a shared standard_name must
+    # yield two variables, not silently overwrite the first
+    writer, grid = initialized_writer(test_path, random_name)
+    field = test_io_utils.model_state(grid)["air_density"]
+    writer.append({"air_density": field, "air_density_copy": field.copy(deep=True)}, datetime.now())
+    assert "air_density" in writer.variables
+    assert "air_density_copy" in writer.variables
+    writer.close()

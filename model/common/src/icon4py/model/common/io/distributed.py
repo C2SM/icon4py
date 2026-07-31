@@ -107,23 +107,47 @@ class RankBlock:
     """Rank-contiguous block of the padded horizontal axis of a shared output store.
 
     The horizontal axis of the store consists of ``comm_size`` blocks of the uniform
-    size ``chunk`` (the maximum owned count over all ranks): rank ``r`` writes its
-    ``count`` owned entries to ``[r * chunk, r * chunk + count)``. Since the store is
-    chunked with exactly one chunk per block, concurrent writes of different ranks
-    never touch the same chunk. Entries past ``count`` within a block are padding:
-    they always read as the fill value (the zarr writer never writes them; the netCDF
-    writer writes them explicitly, since its parallel collectives require every rank
-    to participate in every write). ``global_index`` maps the block's entries to their
-    positions in the undecomposed global grid of ``global_size`` entries (padding
-    entries carry no global index).
+    ``size`` (the maximum owned count over all ranks, rounded up to the block
+    alignment of :class:`RankBlockDistribution`): rank ``r`` writes its ``count``
+    owned entries to ``[r * size, r * size + count)``. The store is chunked so that
+    no chunk crosses a block boundary -- by default with exactly one chunk per block
+    -- hence concurrent writes of different ranks never touch the same chunk.
+    Entries past ``count`` within a block are padding: they always read as the fill
+    value (the zarr writer never writes them; the netCDF writer writes them
+    explicitly, since its parallel collectives require every rank to participate in
+    every write). ``global_index`` maps the block's entries to their positions in the
+    undecomposed global grid of ``global_size`` entries (padding entries carry no
+    global index).
     """
 
     start: int
     count: int
-    chunk: int
+    size: int
     padded_size: int
     global_size: int
     global_index: np.ndarray
+
+
+def check_chunks_align_with_blocks(
+    rank_blocks: dict[str, RankBlock], chunk_size: int, label: str
+) -> None:
+    """Reject a store chunk/shard size whose boundaries would cross rank-block boundaries.
+
+    A store axis is chunked uniformly from position 0, so concurrent writes of
+    different ranks stay in disjoint chunks (shards) only if every block size is a
+    multiple of the chunk (shard) size -- which ``RankBlockDistribution`` guarantees
+    when given the size as ``block_alignment``.
+
+    Raises:
+        ValueError: if a rank-block size is not a multiple of ``chunk_size``.
+    """
+    for dim_name, block in rank_blocks.items():
+        if block.size % chunk_size != 0:
+            raise ValueError(
+                f"Invalid horizontal {label} size {chunk_size}: the rank-block size "
+                f"{block.size} of dimension '{dim_name}' is not a multiple of it, so "
+                f"{label}s of concurrently writing ranks would overlap."
+            )
 
 
 def _host_owner_data(
@@ -199,9 +223,8 @@ class GatherDistribution:
             row_counts = self._allgather_counts(owned_global_index.shape[0])
             global_size = int(row_counts.sum())
             insert_index = self._gather_rows(owned_global_index, row_counts=row_counts)
-            # the root rank checks the partition property; the verdict is broadcast so
-            # all ranks raise together (a root-only raise would leave the other ranks
-            # blocked in the next collective)
+            # verdict broadcast so all ranks raise together instead of hanging in the
+            # next collective
             is_partition = insert_index is None or np.array_equal(
                 np.sort(insert_index), np.arange(global_size, dtype=np.int64)
             )
@@ -282,12 +305,18 @@ class RankBlockDistribution:
     also detaches the output from the live model state). The store's horizontal axes
     are padded to a uniform block size per rank; consumers recover the global order
     from the store's global-index coordinates.
+
+    ``block_alignment`` rounds the uniform block size up to a multiple of the given
+    value, so a store chunking (or sharding) of that granularity never crosses block
+    boundaries (see ``check_chunks_align_with_blocks``); the extra positions are
+    ordinary padding.
     """
 
     def __init__(
         self,
         process_props: decomposition.ProcessProperties,
         decomposition_info: decomposition.DecompositionInfo,
+        block_alignment: int = 1,
     ) -> None:
         self._process_props = process_props
         self._owner_masks: dict[str, np.ndarray] = {}
@@ -299,13 +328,14 @@ class RankBlockDistribution:
             counts = (
                 [count] if process_props.is_single_rank() else process_props.comm.allgather(count)
             )
-            chunk = int(max(counts))
+            max_count = int(max(counts))
+            size = (max_count + block_alignment - 1) // block_alignment * block_alignment
             self._owner_masks[dim_name] = mask
             self._rank_blocks[dim_name] = RankBlock(
-                start=process_props.rank * chunk,
+                start=process_props.rank * size,
                 count=count,
-                chunk=chunk,
-                padded_size=chunk * process_props.comm_size,
+                size=size,
+                padded_size=size * process_props.comm_size,
                 global_size=int(sum(counts)),
                 global_index=owned_global_index,
             )

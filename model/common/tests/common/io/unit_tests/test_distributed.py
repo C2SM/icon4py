@@ -108,11 +108,33 @@ def test_rank_block_distribution_single_rank_layout() -> None:
     num_owned_cells = int(CELL_OWNER_MASK.sum())
     assert cell_block.start == 0
     assert cell_block.count == num_owned_cells
-    assert cell_block.chunk == num_owned_cells
+    assert cell_block.size == num_owned_cells
     assert cell_block.padded_size == num_owned_cells
     assert cell_block.global_size == num_owned_cells
     assert np.all(cell_block.global_index == CELL_GLOBAL_INDEX[CELL_OWNER_MASK])
     assert distribution.file_horizontal_size.num_cells == num_owned_cells
+
+
+def test_rank_block_distribution_block_alignment_rounds_block_size_up() -> None:
+    # block size rounds up to a multiple of the alignment; count and global size are
+    # unaffected
+    distribution = distributed.RankBlockDistribution(
+        decomposition.SingleNodeProcessProperties(),
+        synthetic_decomposition_info(),
+        block_alignment=3,
+    )
+    num_owned_cells = int(CELL_OWNER_MASK.sum())  # 4 -> block size 6
+    cell_block = distribution.rank_blocks["cell"]
+    assert cell_block.count == num_owned_cells
+    assert cell_block.size == 6
+    assert cell_block.padded_size == 6
+    assert cell_block.global_size == num_owned_cells
+    # 3 owned edges are already aligned; 2 owned vertices round up to 3
+    assert distribution.rank_blocks["edge"].size == 3
+    assert distribution.rank_blocks["vertex"].size == 3
+    assert distribution.file_horizontal_size == base.HorizontalGridSize(
+        num_cells=6, num_edges=3, num_vertices=3
+    )
 
 
 def test_rank_block_distribution_prepare_strips_halos() -> None:
@@ -128,3 +150,15 @@ def test_rank_block_distribution_prepare_strips_halos() -> None:
     # the stripped data is a copy, detached from the live model state
     field.values[CELL_OWNER_MASK] += 1.0
     assert np.all(stripped.values == field.values[CELL_OWNER_MASK] - 1.0)
+
+
+def test_gather_distribution_rejects_non_partition_owned_indices() -> None:
+    # duplicate owned global indices: the gathered owned entries are no permutation of
+    # the global grid, which would silently corrupt the reassembled fields
+    info = decomposition.DecompositionInfo()
+    for dim in (dims.CellDim, dims.EdgeDim, dims.VertexDim):
+        owner_mask = np.ones(3, dtype=bool)
+        halo_levels = np.full(3, decomposition.DecompositionFlag.OWNED.value)
+        info.set_dimension(dim, np.asarray([0, 0, 1], dtype=np.int64), owner_mask, halo_levels)
+    with pytest.raises(ValueError, match="do not partition"):
+        distributed.GatherDistribution(decomposition.SingleNodeProcessProperties(), info)

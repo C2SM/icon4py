@@ -74,8 +74,8 @@ def test_standalone_driver_writes_output(
             "output_path": tmp_path / "io_driver_output",
             "enable_output": True,
             "output_backend": output_backend,
-            # gather is valid for both backends (mode has no effect on this
-            # single-rank run; the default distributed mode would reject netCDF)
+            # gather is valid for both backends everywhere (distributed netCDF
+            # would be rejected on serial netCDF4 installations)
             "output_mode": common_io.OutputMode.GATHER,
             "end_of_simulation": time.NumTimeSteps(1),
         }

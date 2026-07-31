@@ -225,9 +225,8 @@ class Icon4pyDriver:
                         self.model_time_variables.simulation_current_datetime,
                     )
             if self.io_monitor is not None:
-                # collective: report only on the success path, where all ranks are in
-                # lockstep -- close() below must also run when a rank fails, and stays
-                # communication-free for that reason
+                # collective: success path only, where all ranks are in lockstep
+                # (see IOMonitor.report_timings; close() stays communication-free)
                 self.io_monitor.report_timings()
         finally:
             if self.io_monitor is not None:

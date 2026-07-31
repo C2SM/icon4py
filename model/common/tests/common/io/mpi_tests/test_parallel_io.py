@@ -27,6 +27,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 import xarray as xr
+import zarr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time as common_time
@@ -125,6 +126,9 @@ def create_monitor(
     distribution: distributed.OutputDistribution,
     process_props: decomp_defs.ProcessProperties,
     output_path: pathlib.Path,
+    *,
+    horizontal_chunk_size: int | None = None,
+    horizontal_shard_size: int | None = None,
 ) -> common_io.FieldGroupMonitor:
     config = common_io.FieldGroupIOConfig(
         filename="synthetic_output",
@@ -133,6 +137,8 @@ def create_monitor(
         timesteps_per_file=2,  # forces a file rollover at the third capture step
         backend=output_backend,
         mode=output_mode,
+        horizontal_chunk_size=horizontal_chunk_size,
+        horizontal_shard_size=horizontal_shard_size,
     )
     vertical = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=NUM_LEVELS),
@@ -181,14 +187,17 @@ def assert_dataset_is_exact(
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "output_backend, output_mode",
+    "output_backend, output_mode, chunking",
     [
-        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER),
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER),
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, None),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER, None),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, None),
+        # sub-chunked, sharded rank blocks (block size rounded up to the shard size)
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, (8, 16)),
         pytest.param(
             common_io.OutputBackend.NETCDF,
             common_io.OutputMode.DISTRIBUTED,
+            None,
             marks=pytest.mark.skipif(
                 netcdf_writers.missing_parallel_support() is not None,
                 reason=(
@@ -203,18 +212,30 @@ def test_parallel_output_synthetic_decomposition(
     process_props: decomp_defs.ProcessProperties,
     output_backend: common_io.OutputBackend,
     output_mode: common_io.OutputMode,
+    chunking: tuple[int, int] | None,
     tmp_path: pathlib.Path,
 ) -> None:
     output_path = pathlib.Path(
         process_props.comm.bcast(str(tmp_path) if process_props.rank == 0 else None, root=0)
     )
+    chunk_size, shard_size = chunking if chunking is not None else (None, None)
     info = synthetic_decomposition_info(process_props)
     distribution: distributed.OutputDistribution = (
         distributed.GatherDistribution(process_props, info)
         if output_mode == common_io.OutputMode.GATHER
-        else distributed.RankBlockDistribution(process_props, info)
+        else distributed.RankBlockDistribution(
+            process_props, info, block_alignment=shard_size or chunk_size or 1
+        )
     )
-    monitor = create_monitor(output_backend, output_mode, distribution, process_props, output_path)
+    monitor = create_monitor(
+        output_backend,
+        output_mode,
+        distribution,
+        process_props,
+        output_path,
+        horizontal_chunk_size=chunk_size,
+        horizontal_shard_size=shard_size,
+    )
 
     for step in range(NUM_STEPS):
         model_time = dt.datetime(2000, 1, 1) + step * dt.timedelta(hours=1)
@@ -242,6 +263,17 @@ def test_parallel_output_synthetic_decomposition(
             else:
                 global_index = identity
             assert_dataset_is_exact(dataset, num_slices, first_step, global_index)
+        if chunking is not None:
+            # the configured layout must reach the store through the production path
+            group = zarr.open_group(path, mode="r")
+            air_density = group["air_density"]
+            global_index_cell = group[f"{writers.GLOBAL_INDEX_PREFIX}_cell"]
+            assert isinstance(air_density, zarr.Array)
+            assert isinstance(global_index_cell, zarr.Array)
+            assert air_density.chunks == (1, NUM_LEVELS, chunk_size)
+            assert air_density.shards == (1, NUM_LEVELS, shard_size)
+            assert global_index_cell.chunks == (chunk_size,)
+            assert global_index_cell.shards == (shard_size,)
 
 
 @pytest.mark.mpi(min_size=2)

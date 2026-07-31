@@ -40,13 +40,20 @@ class ZarrWriter:
     the NETCDFWriter -- used for single-rank runs and on the root rank of gathered output.
 
     Rank-block mode (``rank_blocks`` given): every rank writes only its rank-contiguous
-    block of the horizontal axes (see ``distributed.RankBlock``). The horizontal axes are
-    chunked with exactly one chunk per rank, so concurrent writes of different ranks never
-    touch the same chunk file. The root rank performs all store-metadata operations
-    (array creation, time-axis resizing); a single barrier per append orders them before
-    the data writes of all ranks. ``global_index_<dim>`` coordinates map store positions
-    to the undecomposed global grid; padding positions carry the fill value -1 (data
-    padding reads as NaN for floating dtypes and as zero otherwise).
+    block of the horizontal axes (see ``distributed.RankBlock``). The horizontal axes
+    are chunked so that no chunk (or shard) crosses a rank-block boundary, so
+    concurrent writes of different ranks never touch the same chunk file. The root rank
+    performs all store-metadata operations (array creation, time-axis resizing); a
+    single barrier per append orders them before the data writes of all ranks.
+    ``global_index_<dim>`` coordinates map store positions to the undecomposed global
+    grid; padding positions carry the fill value -1 (data padding reads as NaN for
+    floating dtypes and as zero otherwise).
+
+    ``horizontal_chunk_size`` overrides the horizontal chunk size (default: the whole
+    axis in serial mode, one chunk per rank block in rank-block mode);
+    ``horizontal_shard_size`` groups whole chunks into one storage file each (see
+    ``FieldGroupIOConfig``). In rank-block mode the block size must be a multiple of
+    the chunk/shard size (see ``distributed.check_chunks_align_with_blocks``).
     """
 
     def __init__(
@@ -59,6 +66,8 @@ class ZarrWriter:
         global_attrs: writers.GlobalFileAttributes,
         rank_blocks: dict[str, distributed.RankBlock] | None = None,
         process_props: decomposition.ProcessProperties | None = None,
+        horizontal_chunk_size: int | None = None,
+        horizontal_shard_size: int | None = None,
     ):
         self._file_name = str(file_name)
         self._time_properties = time_properties
@@ -66,6 +75,22 @@ class ZarrWriter:
         self._horizontal_sizes = writers.horizontal_axis_sizes(horizontal)
         self.attrs = global_attrs
         self._rank_blocks = rank_blocks
+        self._horizontal_chunk_size = horizontal_chunk_size
+        self._horizontal_shard_size = horizontal_shard_size
+        # construction runs on every rank; an invalid layout must raise here, not on
+        # the root rank alone inside a pre-barrier store operation
+        if horizontal_shard_size is not None and (
+            horizontal_chunk_size is None or horizontal_shard_size % horizontal_chunk_size != 0
+        ):
+            raise ValueError(
+                f"Invalid horizontal shard size {horizontal_shard_size}: requires a "
+                f"horizontal chunk size that divides it, got {horizontal_chunk_size}."
+            )
+        if rank_blocks is not None:
+            alignment = horizontal_shard_size or horizontal_chunk_size
+            if alignment is not None:
+                label = "shard" if horizontal_shard_size is not None else "chunk"
+                distributed.check_chunks_align_with_blocks(rank_blocks, alignment, label)
         self._process_props = (
             process_props
             if process_props is not None
@@ -117,9 +142,17 @@ class ZarrWriter:
         return slice(block.start, block.start + block.count)
 
     def _horizontal_chunk(self, dim_name: str) -> int:
+        if self._horizontal_chunk_size is not None:
+            return self._horizontal_chunk_size
         if self._rank_blocks is None:
             return self._horizontal_sizes[dim_name]
-        return self._rank_blocks[dim_name].chunk
+        return self._rank_blocks[dim_name].size
+
+    def _horizontal_shards(self, middle_shape: tuple[int, ...]) -> tuple[int, ...] | None:
+        """Shard shape of an array whose last axis is horizontal; None disables sharding."""
+        if self._horizontal_shard_size is None:
+            return None
+        return (*middle_shape, self._horizontal_shard_size)
 
     def _data_array(self, name: str) -> zarr.Array:
         """Typed access to a store array (``Group.__getitem__`` may also yield groups)."""
@@ -177,7 +210,8 @@ class ZarrWriter:
                     global_index = group.create_array(
                         f"{writers.GLOBAL_INDEX_PREFIX}_{dim_name}",
                         shape=(block.padded_size,),
-                        chunks=(block.chunk,),
+                        chunks=(self._horizontal_chunk(dim_name),),
+                        shards=self._horizontal_shards(()),
                         dtype=np.int64,
                         fill_value=-1,
                         dimension_names=[dim_name],
@@ -215,20 +249,9 @@ class ZarrWriter:
             model_time: time of the model state
         """
         assert self._group is not None
-        canonical_slices: dict[str, xr.DataArray] = {}
-        host_data: dict[str, np.ndarray] = {}
-        # canonicalize and transfer to host up front: a failure here (unsupported
-        # dimensions, device buffer that cannot be converted) must precede any store
-        # mutation, or the store would be left with a phantom time slice
-        for var_name, new_slice in state_to_append.items():
-            canonical_slice = cf_utils.to_canonical_dim_order(new_slice)
-            if canonical_slice is None:
-                raise ValueError(
-                    f"Cannot write field '{var_name}': only fields with a horizontal and a "
-                    f"vertical dimension are supported."
-                )
-            canonical_slices[var_name] = canonical_slice
-            host_data[var_name] = data_alloc.as_numpy(canonical_slice.data)
+        canonical_slices, host_data = writers.canonicalize_time_slice(
+            state_to_append, self._horizontal_sizes
+        )
         time_pos = self._append_count
         if self._is_root():
             times = self._data_array(writers.TIME)
@@ -266,6 +289,7 @@ class ZarrWriter:
             var_name,
             shape=shape,
             chunks=chunks,
+            shards=self._horizontal_shards(chunks[:-1]),
             dtype=canonical_slice.dtype,
             fill_value=fill_value,
             dimension_names=[writers.TIME, *(str(d) for d in canonical_slice.dims)],

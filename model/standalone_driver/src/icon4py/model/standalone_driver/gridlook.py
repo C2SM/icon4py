@@ -365,8 +365,8 @@ def export_store(
     """Write the gridlook store for a driver output.
 
     Args:
-        source: driver output: a zarr store (serial/gathered or rank-block) or a
-            netCDF file (always in global cell order).
+        source: driver output: a zarr store or a netCDF file, serial/gathered or
+            rank-block either way.
         grid_file: ICON grid file of the run the output was written by.
         output: path of the store to create; must not exist yet.
 

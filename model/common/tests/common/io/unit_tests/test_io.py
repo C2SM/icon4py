@@ -17,6 +17,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 import uxarray as ux  # type: ignore[import-untyped]  # uxarray has no type hints
+import zarr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time
@@ -39,6 +40,7 @@ from icon4py.model.testing import datatest_utils, definitions as test_defs, grid
 
 from ...fixtures import test_path
 from .. import utils as test_io_utils
+from .test_distributed import synthetic_decomposition_info
 
 
 # setting backend to fieldview embedded here.
@@ -415,7 +417,7 @@ class _SingleRankBlockDistribution:
             dim_name: distributed.RankBlock(
                 start=0,
                 count=size,
-                chunk=size,
+                size=size,
                 padded_size=size,
                 global_size=size,
                 global_index=np.arange(size, dtype=np.int64),
@@ -569,6 +571,104 @@ def test_fieldgroup_config_rejects_unknown_backend() -> None:
         )
 
 
+@pytest.mark.parametrize("field", ["horizontal_chunk_size", "horizontal_shard_size"])
+@pytest.mark.parametrize("value", [0, -3, True, 2.5])
+def test_fieldgroup_config_rejects_invalid_horizontal_chunking(
+    field: str, value: int | float
+) -> None:
+    with pytest.raises(errors.InvalidConfigError, match="positive integer"):
+        FieldGroupIOConfig(
+            filename="a.nc",
+            variables=["air_density"],
+            **{field: value},  # type: ignore[arg-type]  # invalid on purpose
+        )
+
+
+def test_fieldgroup_config_rejects_shard_for_netcdf() -> None:
+    with pytest.raises(errors.InvalidConfigError, match="'zarr' backend"):
+        FieldGroupIOConfig(
+            filename="a.nc",
+            variables=["air_density"],
+            backend=OutputBackend.NETCDF,
+            mode=OutputMode.GATHER,
+            horizontal_chunk_size=4,
+            horizontal_shard_size=8,
+        )
+
+
+def test_fieldgroup_config_rejects_shard_without_chunk() -> None:
+    with pytest.raises(errors.InvalidConfigError, match="requires 'horizontal_chunk_size'"):
+        FieldGroupIOConfig(
+            filename="a.nc",
+            variables=["air_density"],
+            horizontal_shard_size=8,
+        )
+
+
+def test_fieldgroup_config_rejects_shard_not_multiple_of_chunk() -> None:
+    with pytest.raises(errors.InvalidConfigError, match="not a multiple"):
+        FieldGroupIOConfig(
+            filename="a.nc",
+            variables=["air_density"],
+            horizontal_chunk_size=4,
+            horizontal_shard_size=10,
+        )
+
+
+def test_fieldgroup_config_block_alignment_is_shard_then_chunk_then_one() -> None:
+    default = FieldGroupIOConfig(filename="a.nc", variables=["air_density"])
+    assert default.block_alignment == 1
+    chunked = FieldGroupIOConfig(
+        filename="a.nc", variables=["air_density"], horizontal_chunk_size=4
+    )
+    assert chunked.block_alignment == 4
+    sharded = FieldGroupIOConfig(
+        filename="a.nc",
+        variables=["air_density"],
+        horizontal_chunk_size=4,
+        horizontal_shard_size=8,
+    )
+    assert sharded.block_alignment == 8
+
+
+def test_fieldgroup_monitor_wires_chunking_into_zarr_writer(test_path: pathlib.Path) -> None:
+    """Pin that the configured chunk/shard sizes reach the store layout."""
+    grid = test_io_utils.simple_grid
+    config = FieldGroupIOConfig(
+        filename="chunked.zarr",
+        output_interval=time.NumTimeSteps(1),
+        variables=["air_density"],
+        backend=OutputBackend.ZARR,
+        mode=OutputMode.GATHER,
+        horizontal_chunk_size=4,
+        horizontal_shard_size=8,
+    )
+    vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),  # type: ignore[arg-type]
+        vct_b=None,
+    )
+    group_monitor = FieldGroupMonitor(
+        config=config,
+        vertical=vertical_params,
+        distribution=distributed.SingleNodeDistribution(grid.config.horizontal_config),
+        grid_id=uuid.UUID(grid.id),
+        output_path=test_path,
+        dtime=time.RelativeTime(hours=1),
+    )
+    group_monitor.store(
+        test_io_utils.model_state(grid), dt.datetime.fromisoformat("2024-01-01T00:00:00")
+    )
+    group_monitor.close()
+    air_density = zarr.open_group(group_monitor.output_path / "chunked_0001.zarr", mode="r")[
+        "air_density"
+    ]
+    assert isinstance(air_density, zarr.Array)
+    assert air_density.chunks == (1, grid.num_levels, 4)
+    assert air_density.shards == (1, grid.num_levels, 8)
+
+
 def test_fieldgroup_config_rejects_distributed_netcdf_without_parallel_support(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -603,3 +703,122 @@ def test_fieldgroup_config_accepts_distributed_netcdf_with_parallel_support(
     )
     assert config.backend is OutputBackend.NETCDF
     assert config.mode is OutputMode.DISTRIBUTED
+
+
+def test_fieldgroup_monitor_interval_not_multiple_of_dtime_raises(test_path: pathlib.Path) -> None:
+    with pytest.raises(errors.InvalidConfigError, match="not a multiple"):
+        create_field_group_monitor(
+            test_path,
+            test_io_utils.simple_grid,
+            output_interval=time.RelativeTime(minutes=90),
+            dtime=time.RelativeTime(hours=1),
+        )
+
+
+def _simple_grid_vertical() -> v_grid.VerticalGrid:
+    num_levels = test_io_utils.simple_grid.num_levels
+    return v_grid.VerticalGrid(
+        config=v_grid.VerticalGridConfig(num_levels=num_levels),
+        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, num_levels + 1)),  # type: ignore[arg-type]
+        vct_b=None,
+    )
+
+
+def test_io_monitor_ugrid_failure_raises_runtime_error(test_path: pathlib.Path) -> None:
+    # a broken grid file must fail loudly (and, in a distributed run, on all ranks)
+    config = IOConfig(field_groups=[], output_path=str(test_path / "output"))
+    with pytest.raises(RuntimeError, match="UGRID topology"):
+        IOMonitor(
+            config=config,
+            vertical_size=_simple_grid_vertical(),
+            horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+            grid_file_name=test_path / "does_not_exist.nc",
+            grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+            dtime=time.RelativeTime(hours=1),
+        )
+
+
+def test_io_config_time_properties_reach_field_group_monitors(test_path: pathlib.Path) -> None:
+    config = IOConfig(
+        field_groups=[FieldGroupIOConfig(filename="t.nc", variables=["air_density"])],
+        output_path=str(test_path / "output"),
+        time_units="hours since 2000-01-01",
+        calendar="standard",
+    )
+    monitor = IOMonitor(
+        config=config,
+        vertical_size=_simple_grid_vertical(),
+        horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+        grid_file_name=test_io_utils.grid_file,
+        grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+        dtime=time.RelativeTime(hours=1),
+    )
+    assert monitor._group_monitors[0]._time_properties == writers.TimeProperties(
+        "hours since 2000-01-01", "standard"
+    )
+
+
+class _TwoRankComm:
+    """Rank-0 view of a two-rank communicator, faking the collectives used at setup."""
+
+    def allgather(self, value: int) -> list[int]:
+        return [value, value]
+
+    def bcast(self, value: str, root: int = 0) -> str:
+        return value
+
+
+class _TwoRankProcessProperties:
+    comm_name = ""
+    rank = 0
+    comm_size = 2
+
+    def __init__(self) -> None:
+        self.comm = _TwoRankComm()
+
+    def is_single_rank(self) -> bool:
+        return False
+
+
+def test_io_monitor_builds_alignment_aware_rank_block_distributions(
+    test_path: pathlib.Path,
+) -> None:
+    """Distributed groups get alignment-rounded blocks; equal alignments share one instance."""
+    sharded = dict(
+        variables=["air_density"],
+        backend=OutputBackend.ZARR,
+        mode=OutputMode.DISTRIBUTED,
+        horizontal_chunk_size=4,
+        horizontal_shard_size=8,
+    )
+    config = IOConfig(
+        field_groups=[
+            FieldGroupIOConfig(filename="a.zarr", **sharded),  # type: ignore[arg-type]
+            FieldGroupIOConfig(filename="b.zarr", **sharded),  # type: ignore[arg-type]
+            FieldGroupIOConfig(
+                filename="c.zarr",
+                variables=["air_density"],
+                backend=OutputBackend.ZARR,
+                mode=OutputMode.DISTRIBUTED,
+            ),
+        ],
+        output_path=str(test_path / "output"),
+    )
+    monitor = IOMonitor(
+        config=config,
+        vertical_size=_simple_grid_vertical(),
+        horizontal_size=test_io_utils.simple_grid.config.horizontal_config,
+        grid_file_name=test_io_utils.grid_file,
+        grid_id=uuid.UUID(test_io_utils.simple_grid.id),
+        dtime=time.RelativeTime(hours=1),
+        process_props=_TwoRankProcessProperties(),
+        decomposition_info=synthetic_decomposition_info(),
+    )
+    aligned, aligned_twin, unaligned = (m._distribution for m in monitor._group_monitors)
+    assert aligned is aligned_twin
+    assert aligned is not unaligned
+    # 4 owned cells: shard alignment 8 rounds the block up, the default keeps it at 4
+    assert aligned.rank_blocks is not None and unaligned.rank_blocks is not None
+    assert aligned.rank_blocks["cell"].size == 8
+    assert aligned.rank_blocks["cell"].padded_size == 16
+    assert unaligned.rank_blocks["cell"].size == 4

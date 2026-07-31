@@ -49,10 +49,10 @@ def _bounded_middle_chunks(
 ) -> tuple[int, ...]:
     """Chunk sizes of the dimensions between time and the horizontal axis.
 
-    The horizontal axis must keep exactly one chunk per rank block (concurrent writes
-    of different ranks stay in disjoint chunks), so only the middle (e.g. vertical)
-    chunk sizes can shrink to respect the HDF5 chunk size limit -- the equivalent zarr
-    layout has no such limit.
+    The horizontal chunk size is fixed by the rank-block layout or the configured
+    'horizontal_chunk_size', so only the middle (e.g. vertical) chunk sizes can
+    shrink to respect the HDF5 chunk size limit -- the equivalent zarr layout has no
+    such limit.
 
     Raises:
         RuntimeError: if the horizontal chunk alone already exceeds the limit.
@@ -60,10 +60,10 @@ def _bounded_middle_chunks(
     budget = _MAX_CHUNK_BYTES // (itemsize * max(horizontal_chunk, 1))
     if budget < 1:
         raise RuntimeError(
-            f"A rank block of {horizontal_chunk} entries of {itemsize} bytes exceeds "
-            f"the HDF5 chunk size limit ({_MAX_CHUNK_BYTES} bytes). Write with more "
-            "ranks (smaller per-rank blocks), or use the 'zarr' backend or the "
-            "'gather' mode."
+            f"A horizontal chunk of {horizontal_chunk} entries of {itemsize} bytes "
+            f"exceeds the HDF5 chunk size limit ({_MAX_CHUNK_BYTES} bytes). Configure "
+            "a smaller 'horizontal_chunk_size', write with more ranks (smaller "
+            "per-rank blocks), or use the 'zarr' backend."
         )
     chunks: list[int] = []
     for size in reversed(middle_shape):
@@ -116,10 +116,11 @@ class NETCDFWriter:
 
     Rank-block mode (``rank_blocks`` given): every rank writes only its rank-contiguous
     block of the horizontal axes (see ``distributed.RankBlock``), mirroring the layout
-    of the rank-block zarr store: padded horizontal axes chunked with exactly one chunk
-    per rank block, ``global_index_<dim>`` coordinates mapping file positions to the
-    undecomposed global grid (-1 marks padding) and data padding reading as NaN for
-    floating dtypes. On a multi-rank communicator this requires an MPI-parallel netCDF4
+    of the rank-block zarr store: padded horizontal axes chunked so that no chunk
+    crosses a rank-block boundary (one chunk per rank block by default,
+    ``horizontal_chunk_size`` entries otherwise), ``global_index_<dim>`` coordinates
+    mapping file positions to the undecomposed global grid (-1 marks padding) and data
+    padding reading as NaN for floating dtypes. On a multi-rank communicator this requires an MPI-parallel netCDF4
     installation (see ``missing_parallel_support``; checked at construction and at file
     open): the ranks share one file opened with ``parallel=True``, every rank performs
     the metadata operations (collective in netCDF), and variables touching the
@@ -138,13 +139,18 @@ class NETCDFWriter:
         global_attrs: writers.GlobalFileAttributes,
         rank_blocks: dict[str, distributed.RankBlock] | None = None,
         process_props: decomposition.ProcessProperties | None = None,
+        horizontal_chunk_size: int | None = None,
     ):
         self._file_name = str(file_name)
         self._time_properties = time_properties
         self._vertical_params = vertical
         self._horizontal_size = horizontal
+        self._horizontal_sizes = writers.horizontal_axis_sizes(horizontal)
         self.attrs = global_attrs
         self._rank_blocks = rank_blocks
+        self._horizontal_chunk_size = horizontal_chunk_size
+        if rank_blocks is not None and horizontal_chunk_size is not None:
+            distributed.check_chunks_align_with_blocks(rank_blocks, horizontal_chunk_size, "chunk")
         self._process_props = (
             process_props
             if process_props is not None
@@ -206,7 +212,23 @@ class NETCDFWriter:
         if self._rank_blocks is None:
             return slice(None)
         block = self._rank_blocks[dim_name]
-        return slice(block.start, block.start + block.chunk)
+        return slice(block.start, block.start + block.size)
+
+    def _horizontal_chunk(self, dim_name: str) -> int | None:
+        """Effective chunk size of a horizontal axis (None: let the library choose).
+
+        The rank-block layout is always chunked (one chunk per block unless
+        configured); a serial file is chunked only when 'horizontal_chunk_size' is
+        configured, clamped to the axis size (netCDF rejects chunks larger than a
+        fixed dimension).
+        """
+        if self._rank_blocks is not None:
+            if self._horizontal_chunk_size is not None:
+                return self._horizontal_chunk_size
+            return self._rank_blocks[dim_name].size
+        if self._horizontal_chunk_size is not None:
+            return min(self._horizontal_chunk_size, self._horizontal_sizes[dim_name])
+        return None
 
     def _pad_to_block(self, dim_name: str, data: np.ndarray) -> np.ndarray:
         """Extend owned entries along the last axis to the full rank block.
@@ -222,7 +244,7 @@ class NETCDFWriter:
             if np.issubdtype(data.dtype, np.floating)
             else nc.default_fillvals[f"{data.dtype.kind}{data.dtype.itemsize}"]
         )
-        padded = np.full((*data.shape[:-1], block.chunk), pad_value, dtype=data.dtype)
+        padded = np.full((*data.shape[:-1], block.size), pad_value, dtype=data.dtype)
         padded[..., : block.count] = data
         return padded
 
@@ -250,9 +272,8 @@ class NETCDFWriter:
         self.dataset = self._open_dataset()
         assert self.dataset is not None
         log.info(f"Creating file {self._file_name} at {self.dataset.filepath()}")
-        # metadata operations (attributes, dimensions, variable creation) are collective
-        # in parallel mode: every rank performs them, identically; data writes below are
-        # restricted to one rank (independent access) or one block per rank instead
+        # metadata operations are collective in parallel mode: every rank performs
+        # them, identically
         self.dataset.setncatts({k: str(v) for (k, v) in self.attrs.items()})
         ## create dimensions all except time are fixed
         self.dataset.createDimension(writers.TIME, None)
@@ -290,11 +311,13 @@ class NETCDFWriter:
             return
         assert self.dataset is not None
         for dim_name, block in self._rank_blocks.items():
+            chunk = self._horizontal_chunk(dim_name)
+            assert chunk is not None  # the rank-block layout is always chunked
             variable = self.dataset.createVariable(
                 f"{writers.GLOBAL_INDEX_PREFIX}_{dim_name}",
                 np.int64,
                 (dim_name,),
-                chunksizes=(block.chunk,),
+                chunksizes=(chunk,),
             )
             variable.setncatts(
                 {
@@ -310,9 +333,9 @@ class NETCDFWriter:
             # value instead; a netCDF _FillValue attribute is decoded as a missing
             # value by xarray, which would turn the integer coordinate into floats on
             # read.
-            block_values = np.full((block.chunk,), -1, dtype=np.int64)
+            block_values = np.full((block.size,), -1, dtype=np.int64)
             block_values[: block.count] = block.global_index
-            variable[block.start : block.start + block.chunk] = block_values
+            variable[block.start : block.start + block.size] = block_values
 
     def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None:
         """
@@ -327,35 +350,21 @@ class NETCDFWriter:
             model_time: time of the model state
         """
         assert self.dataset is not None
-        canonical_slices: dict[str, xr.DataArray] = {}
-        host_data: dict[str, np.ndarray] = {}
-        # canonicalize and transfer to host up front: a failure here (unsupported
-        # dimensions, device buffer that cannot be converted) must precede any file
-        # mutation, or the file would be left with a phantom time slice
-        for var_name, new_slice in state_to_append.items():
-            canonical_slice = cf_utils.to_canonical_dim_order(new_slice)
-            if canonical_slice is None:
-                raise ValueError(
-                    f"Cannot write field '{var_name}': only fields with a horizontal and a "
-                    f"vertical dimension are supported."
-                )
-            canonical_slices[var_name] = canonical_slice
-            host_data[var_name] = data_alloc.as_numpy(canonical_slice.data)
+        canonical_slices, host_data = writers.canonicalize_time_slice(
+            state_to_append, self._horizontal_sizes
+        )
         time = self.dataset[writers.TIME]
         time_pos = len(time)
         # every rank participates (the time variable is collective in parallel mode)
         # and writes the same value
         time[time_pos] = cf_utils.date2num(model_time, units=time.units, calendar=time.calendar)
         for var_name, canonical_slice in canonical_slices.items():
-            standard_name = canonical_slice.standard_name
-            assert standard_name is not None, f"No standard_name provided for {var_name}."
-            existing = writers.filter_by_standard_name(self.dataset.variables, standard_name)
-            if not existing:
+            if var_name not in self.dataset.variables:
                 variable = self._create_variable(var_name, canonical_slice)
             else:
-                variable = next(iter(existing.values()))
+                variable = self.dataset.variables[var_name]
                 assert len(canonical_slice.dims) == len(variable.dimensions) - 1, (
-                    f"Data variable dimensions do not match for {standard_name}."
+                    f"Data variable dimensions do not match for {var_name}."
                 )
             dim_name = str(canonical_slice.dims[-1])
             data = host_data[var_name]
@@ -364,32 +373,27 @@ class NETCDFWriter:
             horizontal_range = self._horizontal_write_range(dim_name)
             middle = (slice(None),) * (len(canonical_slice.dims) - 1)
             index: tuple[int | slice, ...] = (time_pos, *middle, horizontal_range)
-            # in parallel mode this write is collective: every rank must genuinely
-            # reach the underlying library call, which is why it covers the full,
-            # never empty block -- a zero-size write would be skipped inside
-            # netCDF4-python, leaving this rank out of a collective the other ranks
-            # are waiting in
+            # collective in parallel mode: covers the full block so every rank reaches
+            # the library call (see _horizontal_write_range)
             variable[index] = data
 
     def _create_variable(self, var_name: str, canonical_slice: xr.DataArray) -> Any:
         """Create the array of a data variable (on every rank -- collective in parallel mode)."""
         assert self.dataset is not None
         create_kwargs: dict[str, Any] = {}
-        if self._rank_blocks is not None:
-            horizontal_name = str(canonical_slice.dims[-1])
-            block = self._rank_blocks[horizontal_name]
-            # one chunk per rank block along the horizontal axis (the layout of the
-            # rank-block zarr store), keeping concurrent writes of different ranks in
-            # disjoint chunks; the middle chunk sizes shrink only if the HDF5 chunk
-            # size limit demands it. The NaN fill makes any never-written entry of a
-            # floating variable read as missing (other dtypes read as the netCDF
-            # default fill values).
+        horizontal_chunk = self._horizontal_chunk(str(canonical_slice.dims[-1]))
+        if horizontal_chunk is not None:
+            # chunks never cross rank-block boundaries (see
+            # check_chunks_align_with_blocks); middle chunks shrink only for the HDF5
+            # chunk size limit
             middle_chunks = _bounded_middle_chunks(
-                canonical_slice.shape[:-1], block.chunk, canonical_slice.dtype.itemsize
+                canonical_slice.shape[:-1], horizontal_chunk, canonical_slice.dtype.itemsize
             )
-            create_kwargs["chunksizes"] = (1, *middle_chunks, max(block.chunk, 1))
-            if np.issubdtype(canonical_slice.dtype, np.floating):
-                create_kwargs["fill_value"] = np.nan
+            create_kwargs["chunksizes"] = (1, *middle_chunks, max(horizontal_chunk, 1))
+        if self._rank_blocks is not None and np.issubdtype(canonical_slice.dtype, np.floating):
+            # the NaN fill makes any never-written entry of a floating variable read
+            # as missing (other dtypes read as the netCDF default fill values)
+            create_kwargs["fill_value"] = np.nan
         dimensions = (writers.TIME, *(str(d) for d in canonical_slice.dims))
         variable = self.dataset.createVariable(
             var_name, canonical_slice.dtype, dimensions, **create_kwargs
@@ -403,7 +407,8 @@ class NETCDFWriter:
     def close(self) -> None:
         """Close the file. Collective in parallel mode (an MPI-opened HDF5 file):
         every rank of the communicator must call it."""
-        assert self.dataset is not None
+        if self.dataset is None:
+            return
         if self.dataset.isopen():
             self.dataset.close()
 

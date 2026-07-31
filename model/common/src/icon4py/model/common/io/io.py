@@ -100,12 +100,17 @@ def validate_backend_mode_combination(backend: OutputBackend, mode: OutputMode) 
 def _interval_in_steps(output_interval: OutputInterval, dtime: time.RelativeTime) -> int:
     """Normalize an output interval to a number of model steps."""
     if isinstance(output_interval, time.RelativeTime):
-        steps = round(output_interval / dtime)
-        if steps < 1:
+        if output_interval < dtime:
             raise exceptions.InvalidConfigError(
                 f"Output interval {output_interval} is shorter than the model time step {dtime}."
             )
-        return steps
+        if output_interval % dtime:
+            # rounding silently would write at a cadence the user did not configure
+            raise exceptions.InvalidConfigError(
+                f"Output interval {output_interval} is not a multiple of the model "
+                f"time step {dtime}."
+            )
+        return int(output_interval // dtime)
     return output_interval
 
 
@@ -144,18 +149,28 @@ class FieldGroupIOConfig(Config):
     filename: str
     variables: list[str]
     #: Output schedule: either a number of model steps (``int``) or a simulation-time
-    #: delta (``datetime.timedelta``); a delta is normalized to steps using the model time
-    #: step. Defaults to every step.
+    #: delta (``datetime.timedelta``, must be a multiple of the model time step).
+    #: Defaults to every step.
     output_interval: OutputInterval = time.NumTimeSteps(1)
     timesteps_per_file: int = 10
     #: File format of the group's files; the matching value string is also accepted.
     backend: OutputBackend = OutputBackend.ZARR
-    #: Write strategy of distributed runs (single-rank runs write the full state either
-    #: way); the matching value string is also accepted. Distributed netCDF requires an
-    #: MPI-parallel netCDF4 installation and is rejected otherwise, regardless of the
-    #: rank count (PyPI wheels are serial builds; see
-    #: ``netcdf_writers.missing_parallel_support``).
+    #: Write strategy of distributed runs (see ``OutputMode``); the matching value
+    #: string is also accepted. Distributed netCDF needs an MPI-parallel netCDF4
+    #: installation (see ``validate_backend_mode_combination``).
     mode: OutputMode = OutputMode.DISTRIBUTED
+    #: Entries per chunk along the horizontal (cell/edge/vertex) axes. Default (None):
+    #: one chunk per rank block in distributed mode; otherwise the whole axis (zarr)
+    #: or the library default (netCDF). In distributed mode the rank-block size is
+    #: rounded up to a multiple of this value (see
+    #: ``distributed.check_chunks_align_with_blocks``).
+    horizontal_chunk_size: int | None = None
+    #: Zarr only: entries per shard along the horizontal axes, grouping whole chunks
+    #: (the value must be a multiple of ``horizontal_chunk_size``) into one storage
+    #: file each -- the number of files per time slice, the critical tuning knob on
+    #: parallel file systems. Default (None): no sharding, one file per chunk. In
+    #: distributed mode the rank-block size is rounded up to the shard size instead.
+    horizontal_shard_size: int | None = None
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
 
@@ -175,6 +190,41 @@ class FieldGroupIOConfig(Config):
                 f"valid values are: {', '.join(m.value for m in OutputMode)}."
             ) from err
         self.validate()
+
+    @property
+    def block_alignment(self) -> int:
+        """Granularity the distributed-mode rank-block size must be a multiple of.
+
+        The shard (or chunk) size of the group's store layout; 1 when neither is
+        configured (any block size aligns).
+        """
+        return self.horizontal_shard_size or self.horizontal_chunk_size or 1
+
+    def _validate_horizontal_chunking(self) -> None:
+        for name in ("horizontal_chunk_size", "horizontal_shard_size"):
+            value = getattr(self, name)
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, int) or value < 1
+            ):
+                raise exceptions.InvalidConfigError(
+                    f"Invalid '{name}': must be a positive integer, got {value!r}."
+                )
+        if self.horizontal_shard_size is None:
+            return
+        if self.backend != OutputBackend.ZARR:
+            raise exceptions.InvalidConfigError(
+                "Invalid 'horizontal_shard_size': sharding is only supported by the 'zarr' backend."
+            )
+        if self.horizontal_chunk_size is None:
+            raise exceptions.InvalidConfigError(
+                "Invalid 'horizontal_shard_size': requires 'horizontal_chunk_size' "
+                "(a shard groups whole chunks)."
+            )
+        if self.horizontal_shard_size % self.horizontal_chunk_size != 0:
+            raise exceptions.InvalidConfigError(
+                f"Invalid 'horizontal_shard_size': {self.horizontal_shard_size} is not "
+                f"a multiple of 'horizontal_chunk_size' ({self.horizontal_chunk_size})."
+            )
 
     def _validate_filename(self) -> None:
         if not self.filename:
@@ -203,6 +253,7 @@ class FieldGroupIOConfig(Config):
             )
         if not self.variables:
             raise exceptions.InvalidConfigError("No variables provided for output.")
+        self._validate_horizontal_chunking()
         validate_backend_mode_combination(self.backend, self.mode)
         self._validate_filename()
 
@@ -218,9 +269,9 @@ class IOConfig(Config):
 
     output_path: str = "./output/"
     field_groups: Sequence[FieldGroupIOConfig] = ()
-
-    time_units = cf_utils.DEFAULT_TIME_UNIT
-    calendar = cf_utils.DEFAULT_CALENDAR
+    #: Unit and calendar of the time coordinate in the data files.
+    time_units: str = cf_utils.DEFAULT_TIME_UNIT
+    calendar: str = cf_utils.DEFAULT_CALENDAR
 
     def __post_init__(self) -> None:
         self.validate()
@@ -240,8 +291,7 @@ class IOMonitor(monitor.Monitor):
     In a distributed run (multi-rank ``process_props``) the decomposition info is
     required: each field group writes through the output distribution of its configured
     ``mode`` (see ``OutputMode``). ``store`` is then collective on the communicator in
-    ``process_props``, which is also the seam for a future compute/output communicator
-    split: the monitor only ever uses the communicator it is given.
+    ``process_props``.
     """
 
     def __init__(
@@ -270,25 +320,37 @@ class IOMonitor(monitor.Monitor):
         )
         self._decomposition_info = decomposition_info
         self._horizontal_size = horizontal_size
-        self._distributions: dict[OutputMode, distributed.OutputDistribution] = {}
+        self._distributions: dict[tuple[OutputMode, int], distributed.OutputDistribution] = {}
         self._timings_logged = False
         self._initialize_output()
         self._group_monitors = [
             FieldGroupMonitor(
                 config=conf,
                 vertical=vertical_size,
-                distribution=self._get_distribution(conf.mode),
+                distribution=self._get_distribution(conf.mode, conf.block_alignment),
                 process_props=self._process_props,
                 grid_id=grid_id,
                 output_path=self._output_path,
                 dtime=dtime,
+                time_units=config.time_units,
+                calendar=config.calendar,
             )
             for conf in config.field_groups
         ]
 
-    def _get_distribution(self, mode: OutputMode) -> distributed.OutputDistribution:
-        """Build (or reuse) the output distribution of a mode; shared between groups."""
-        if mode not in self._distributions:
+    def _get_distribution(
+        self, mode: OutputMode, block_alignment: int
+    ) -> distributed.OutputDistribution:
+        """Build (or reuse) the output distribution of a mode; shared between groups.
+
+        Only the rank-block distribution depends on ``block_alignment`` (see
+        ``RankBlockDistribution``); for other modes it is normalized to 1 so groups
+        share one instance.
+        """
+        if self._process_props.is_single_rank() or mode == OutputMode.GATHER:
+            block_alignment = 1
+        key = (mode, block_alignment)
+        if key not in self._distributions:
             if self._process_props.is_single_rank():
                 distribution: distributed.OutputDistribution = distributed.SingleNodeDistribution(
                     self._horizontal_size
@@ -303,10 +365,10 @@ class IOMonitor(monitor.Monitor):
                 )
             else:
                 distribution = distributed.RankBlockDistribution(
-                    self._process_props, self._decomposition_info
+                    self._process_props, self._decomposition_info, block_alignment=block_alignment
                 )
-            self._distributions[mode] = distribution
-        return self._distributions[mode]
+            self._distributions[key] = distribution
+        return self._distributions[key]
 
     def _initialize_output(self) -> None:
         self._create_output_dir()
@@ -323,10 +385,21 @@ class IOMonitor(monitor.Monitor):
 
     def _write_ugrid(self) -> None:
         # the UGRID file is derived from the (global) grid file, identical on all ranks:
-        # written once by the root rank
+        # written once by the root rank; the verdict is broadcast so all ranks raise
+        # together instead of hanging in the next collective
+        failure: Exception | None = None
         if self._process_props.rank == 0:
-            writer = ugrid.IconUGridWriter(self._grid_file, self._output_path)
-            writer(validate=True)
+            try:
+                ugrid.IconUGridWriter(self._grid_file, self._output_path)(validate=True)
+            except Exception as err:
+                failure = err
+        message = str(failure) if failure is not None else None
+        if not self._process_props.is_single_rank():
+            message = self._process_props.comm.bcast(message, root=0)
+        if message is not None:
+            raise RuntimeError(
+                f"Writing the UGRID topology file for '{self._grid_file}' failed: {message}"
+            ) from failure
 
     @property
     def path(self) -> pathlib.Path:
@@ -341,14 +414,10 @@ class IOMonitor(monitor.Monitor):
     def close(self) -> None:
         """Close all field-group writers.
 
-        Performs no communication of its own, so it is safe to call from error paths
-        (e.g. a ``finally`` block), where the ranks of a distributed run may not be in
-        lockstep and a collective would turn the failure into a hang. One exception: a
-        parallel netCDF writer (distributed netCDF mode) closes an MPI-opened HDF5
-        file, which is collective -- every rank must call ``close``. The errors raised
-        by the IO layer itself are raised on all ranks together (see e.g.
-        ``FieldGroupMonitor._refuse_to_overwrite``), so the ranks still close in
-        lockstep on those paths.
+        Safe to call from error paths: no communication of its own. Exception: closing
+        a parallel netCDF file is collective, but IO-layer errors raise on all ranks
+        together (see e.g. ``FieldGroupMonitor._refuse_to_overwrite``), so the ranks
+        still close in lockstep.
         """
         for m in self._group_monitors:
             m.close()
@@ -359,11 +428,8 @@ class IOMonitor(monitor.Monitor):
         In a distributed run the maximum total over the ranks is reported as well (the
         slowest rank is what the model waits for), which makes this collective: call it
         on every rank of the communicator and only when the ranks are known to be in
-        lockstep (after a completed run, not from exception cleanup). Every rank
-        executes exactly the same sequence of collectives here -- one per group and
-        phase, in a fixed order, regardless of whether the rank recorded any samples
-        (e.g. only the root rank writes in gather mode) -- so no rank can be left
-        behind in a mismatched call.
+        lockstep (after a completed run, not from exception cleanup). Every rank runs
+        the same fixed sequence of collectives, even with no recorded samples.
         """
         if self._timings_logged:
             return
@@ -446,8 +512,6 @@ class FieldGroupMonitor(monitor.Monitor):
         }
         self._field_names = config.variables
         self._handle_output_path(output_path, config.filename)
-        # The schedule is always evaluated in steps; a time-delta interval is normalized
-        # to steps here, using the model time step.
         self._output_interval_steps = _interval_in_steps(config.output_interval, dtime)
         self._step_counter = 0
         self._file_counter = 0
@@ -513,6 +577,7 @@ class FieldGroupMonitor(monitor.Monitor):
                 global_attrs=self._global_attrs,
                 rank_blocks=self._distribution.rank_blocks,
                 process_props=self._process_props,
+                horizontal_chunk_size=self.config.horizontal_chunk_size,
             )
         else:
             df = zarr_writers.ZarrWriter(
@@ -523,6 +588,8 @@ class FieldGroupMonitor(monitor.Monitor):
                 global_attrs=self._global_attrs,
                 rank_blocks=self._distribution.rank_blocks,
                 process_props=self._process_props,
+                horizontal_chunk_size=self.config.horizontal_chunk_size,
+                horizontal_shard_size=self.config.horizontal_shard_size,
             )
         df.initialize_dataset()
         self._dataset = df
