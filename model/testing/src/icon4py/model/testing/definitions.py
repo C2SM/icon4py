@@ -156,9 +156,6 @@ class ExperimentDescription:
     name: str
     long_name: str
     grid: GridDescription
-    # Version of the published serialized-data archive. Deliberately without a default:
-    # experiments are regenerated individually, and a shared default means bumping one
-    # of them silently invalidates the archives of all the others.
     version: int
 
 

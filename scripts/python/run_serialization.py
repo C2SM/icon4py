@@ -50,8 +50,8 @@ REPORTS_DIRNAME: Final = "reports"
 class TaskResult:
     """Outcome of a single (experiment, comm_size) serialization task."""
 
-    experiment: str
-    version: int
+    experiment_name: str
+    experiment_version: int
     comm_size: int
     status: Literal["ok", "failed"]
     job_id: str | None = None
@@ -119,10 +119,7 @@ class SerializationSettings:
         SBATCH_UENV_VIEW = "default"
         JOB_POLL_SECONDS = 10
 
-        # Directories (derived from this script's location in the icon4py checkout).
-        # The checkout is expected to sit next to 'icon' and 'build_serialize' inside the
-        # icon-exclaim tree; that layout is validated where it is needed, so that the
-        # command still works from a checkout under another name.
+        # Directories (derived from this script's location in the icon4py checkout)
         _THIS_FILE = pathlib.Path(__file__).resolve()
         ICON4PY_REPO_DIR = _THIS_FILE.parents[2]
         ROOT_PROJECT_DIR = ICON4PY_REPO_DIR.parent
@@ -565,11 +562,8 @@ def write_archive_metadata(
     *,
     settings: SerializationSettings,
 ) -> pathlib.Path:
-    """Write the machine-readable identity of an archive next to its 'ser_data'.
-
-    The ICON revision is taken from the version banner in the slurm log, which is the
-    only artifact with a verified link to the binary that produced the data.
-    """
+    # The ICON revision comes from the version banner in the slurm log: the only
+    # artifact with a verified link to the binary that produced the data.
     metadata = {
         "schema": serdata.ARCHIVE_METADATA_SCHEMA,
         "archive": {
@@ -641,11 +635,6 @@ def run_experiment(
     *,
     settings: SerializationSettings,
 ) -> TaskResult:
-    """Execute a single experiment with the given communicator size.
-
-    Failures are reported back rather than raised: a campaign is 18 slurm tasks over
-    several hours, and one broken task must not discard the others.
-    """
     try:
         # Clean up previous experiment output
         cleanup_exp_output(experiment_description, comm_size, settings=settings)
@@ -692,8 +681,8 @@ def run_experiment(
 
         log_status(f"Completed {experiment_description.name} with {comm_size} ranks")
         return TaskResult(
-            experiment=experiment_description.name,
-            version=experiment_description.version,
+            experiment_name=experiment_description.name,
+            experiment_version=experiment_description.version,
             comm_size=comm_size,
             status="ok",
             job_id=job_id,
@@ -704,8 +693,8 @@ def run_experiment(
     except Exception as e:
         log_status(f"ERROR in {experiment_description.name} with {comm_size} ranks: {e}")
         return TaskResult(
-            experiment=experiment_description.name,
-            version=experiment_description.version,
+            experiment_name=experiment_description.name,
+            experiment_version=experiment_description.version,
             comm_size=comm_size,
             status="failed",
             error=f"{type(e).__name__}: {e}",
@@ -713,13 +702,12 @@ def run_experiment(
 
 
 def report_results(results: list[TaskResult], *, settings: SerializationSettings) -> None:
-    """Print the per-task outcome table and persist it next to the archives."""
-    width = max((len(result.experiment) for result in results), default=10)
+    width = max((len(result.experiment_name) for result in results), default=10)
     log_status("Task summary:")
     for result in results:
         detail = result.error if result.status == "failed" else (result.verdict or "")
         print(
-            f"  {result.status:<6} {result.experiment:<{width}} v{result.version:02d} "
+            f"  {result.status:<6} {result.experiment_name:<{width}} v{result.experiment_version:02d} "
             f"ranks={result.comm_size} {detail}"
         )
 
@@ -730,32 +718,38 @@ def report_results(results: list[TaskResult], *, settings: SerializationSettings
 
 
 def print_next_steps(results: list[TaskResult], *, settings: SerializationSettings) -> None:
-    """Spell out what still has to happen by hand.
+    # Only successful tasks produced an archive to act on.
+    results = [result for result in results if result.status == "ok"]
+    steps = []
 
-    Regeneration happens a few times a year; the steps after it are the ones that get
-    forgotten, so they are printed with the values already filled in.
-    """
     reviewable = [result for result in results if result.verdict != "OK"]
-    versions = {(result.experiment, result.version) for result in results}
+    if reviewable:
+        steps.append(
+            [f"Review {len(reviewable)} archive(s) whose comparison is not OK:"]
+            + [f"     {result.verdict:<11} {result.report_path}" for result in reviewable]
+        )
+
+    # 'model/common' holds the grid, metric and interpolation datatests, which is where
+    # a change in a published archive shows up first.
+    steps.append(
+        [
+            "Run the datatests against the fresh data before publishing anything:",
+            f"     ICON4PY_TEST_DATA_PATH={settings.experiments_dir} "
+            "ICON4PY_ENABLE_TESTDATA_DOWNLOAD=0 \\",
+            "       uv run --group test --frozen pytest --datatest-only "
+            "--backend=gtfn_cpu model/common",
+        ]
+    )
+    steps.append(
+        ["Upload the archives (see docs/testdata_generation.md):"]
+        + [f"     {result.tar_path}" for result in results]
+    )
 
     print("\nNext steps:")
-    if reviewable:
-        print(f"  1. Review {len(reviewable)} archive(s) whose comparison is not OK:")
-        for result in reviewable:
-            print(f"       {result.verdict:<11} {result.report_path}")
-    print("  2. Run the datatests against the fresh data before publishing anything:")
-    print(
-        f"       ICON4PY_TEST_DATA_PATH={settings.experiments_dir} "
-        "ICON4PY_ENABLE_TESTDATA_DOWNLOAD=0 \\\n"
-        "         uv run --group test --frozen pytest -n0 --datatest-only "
-        "--backend=gtfn_cpu model/common"
-    )
-    print("  3. Upload the archives (see docs/testdata_generation.md):")
-    for result in results:
-        print(f"       {result.tar_path}")
-    print("  4. Set these versions in model/testing/src/icon4py/model/testing/definitions.py:")
-    for experiment, version in sorted(versions):
-        print(f"       {experiment}: version={version}")
+    for number, (headline, *detail) in enumerate(steps, 1):
+        print(f"  {number}. {headline}")
+        for line in detail:
+            print(f"  {line}")
 
 
 @cli.command()
@@ -833,6 +827,8 @@ def run_serialization(
     if failed:
         log_status(f"{len(failed)}/{len(results)} tasks failed.")
         raise typer.Exit(code=1)
+
+    print_next_steps(results, settings=settings)
 
     log_status(f"All {total_tasks} tasks completed successfully!")
 

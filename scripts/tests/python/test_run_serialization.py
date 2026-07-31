@@ -71,8 +71,8 @@ def test_experiment_versions_are_explicit() -> None:
 
 def test_task_result_is_json_serializable() -> None:
     result = run_serialization.TaskResult(
-        experiment="exclaim_gauss3d",
-        version=5,
+        experiment_name="exclaim_gauss3d",
+        experiment_version=5,
         comm_size=1,
         status="ok",
         job_id="1234",
@@ -82,7 +82,7 @@ def test_task_result_is_json_serializable() -> None:
     assert result.as_dict()["tar_path"] == "/tmp/mpitask1_exclaim_gauss3d_v05.tar.gz"
     assert (
         run_serialization.TaskResult(
-            experiment="x", version=5, comm_size=1, status="failed", error="boom"
+            experiment_name="x", experiment_version=5, comm_size=1, status="failed", error="boom"
         ).as_dict()["tar_path"]
         is None
     )
@@ -128,8 +128,8 @@ def test_next_steps_point_at_the_reports_that_need_review(
         run_serialization.SerializationSettings.defaults(), output_root=tmp_path
     )
     result = run_serialization.TaskResult(
-        experiment="exclaim_gauss3d",
-        version=6,
+        experiment_name="exclaim_gauss3d",
+        experiment_version=6,
         comm_size=1,
         status="ok",
         tar_path=tmp_path / "mpitask1_exclaim_gauss3d_v06.tar.gz",
@@ -141,4 +141,38 @@ def test_next_steps_point_at_the_reports_that_need_review(
 
     printed = capsys.readouterr().out
     assert "reports/mpitask1_exclaim_gauss3d_v06.md" in printed
-    assert "exclaim_gauss3d: version=6" in printed
+
+
+def test_next_steps_are_printed_after_a_successful_campaign() -> None:
+    # The helper was once defined and never called; a run must actually reach it.
+    source = pathlib.Path(run_serialization.__file__).read_text()
+    body = source.split("def run_serialization(", 1)[1]
+    assert "print_next_steps(results, settings=settings)" in body
+
+
+def test_next_steps_ignores_failed_tasks(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    settings = dataclasses.replace(
+        run_serialization.SerializationSettings.defaults(), output_root=tmp_path
+    )
+    failed = run_serialization.TaskResult(
+        experiment_name="exclaim_gauss3d",
+        experiment_version=6,
+        comm_size=1,
+        status="failed",
+        error="boom",
+    )
+
+    run_serialization.print_next_steps([failed], settings=settings)
+
+    # a failed task has no verdict, report or tarball to point at
+    assert "None" not in capsys.readouterr().out
+
+
+def test_every_serdata_command_is_registered_before_the_entry_point() -> None:
+    # Commands defined after the '__main__' guard are missing when the file is run
+    # directly through its shebang.
+    source = (pathlib.Path(run_serialization.__file__).parent / "serdata.py").read_text()
+    guard = source.index('if __name__ == "__main__":')
+    assert "@cli.command()" not in source[guard:]

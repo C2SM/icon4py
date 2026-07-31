@@ -608,6 +608,8 @@ def render_diff_report(comparison: ArchiveComparison) -> str:
 
 # ---------------------------------------------------------------------------
 # Backfilling archives generated before this metadata existed
+#
+# Transitional: remove once every published archive carries 'archive_metadata.json'.
 # ---------------------------------------------------------------------------
 
 # Inverse of 'icon4py.model.testing.datatest_utils.get_ranked_experiment_name_with_version'.
@@ -723,10 +725,6 @@ def backfill(
     print(f"{len(written)} archive(s) backfilled")
 
 
-if __name__ == "__main__":
-    sys.exit(cli())
-
-
 # ---------------------------------------------------------------------------
 # Triaging a changed record
 # ---------------------------------------------------------------------------
@@ -810,3 +808,7 @@ def inspect(
             )
             for position, old_value, new_value in summary.samples:
                 print(f"    {position}: {old_value} -> {new_value}")
+
+
+if __name__ == "__main__":
+    sys.exit(cli())
