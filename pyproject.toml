@@ -176,7 +176,6 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/metrics/compute_advection_metrics.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/topography',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
