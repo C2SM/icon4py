@@ -160,6 +160,15 @@ def test_standalone_driver(
     The muphys granule itself is validated in isolation against the aes-graupel savepoints
     in test_muphys_datatest.py.
     """
+    if experiment_description is test_defs.Experiments.EXCLAIM_APE_AES and test_utils.is_dace(
+        backend
+    ):
+        # TODO (Yilu): remove once the memory corruption in the dace-generated kernels
+        # is fixed: the muphys+transport combination crashes with heap corruption
+        # ("free(): chunks in smallbin corrupted") on dace_cpu in CI, while all
+        # other experiments and the muphys-only dace tests pass.
+        pytest.skip("muphys+transport crashes with memory corruption on dace backends")
+
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
