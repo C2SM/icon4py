@@ -13,6 +13,7 @@ from gt4py.next import sin, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
+from icon4py.model.common.grid import gridfile
 from icon4py.model.common.math.coordinate_transformations import (
     geographical_to_cartesian_on_edges,
     geographical_to_cartesian_on_vertices,
@@ -508,6 +509,60 @@ def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(  # noqa
         ),
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
+
+
+def compute_zonal_and_meridional_component_of_edge_field_at_cell_center_ndarray(
+    *,
+    cell_lat: data_alloc.NDArray,
+    cell_lon: data_alloc.NDArray,
+    x: data_alloc.NDArray,
+    y: data_alloc.NDArray,
+    z: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    horizontal_start: gtx.int32,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """
+    Compute zonal (U) and meridional (V) component of a vector (x, y, z) at cell centers (lat, lon)
+
+    ndarray counterpart of :func:`compute_zonal_and_meridional_component_of_edge_field_at_cell_center`
+    that handles the boundary rows like ICON does (mo_intp_coeffs: complete_patchinfo):
+    the computation starts at edge row 1, where boundary edges have only one cell
+    neighbor, and the entry of the missing neighbor is left at zero.
+
+    Args:
+        cell_lat: latitude of cell centers
+        cell_lon: longitude of cell centers
+        x: x coordinate of the edge-based cartesian vector
+        y: y coordinate of the edge-based cartesian vector
+        z: z coordinate of the edge-based cartesian vector
+        e2c: edge to cell connectivity
+        horizontal_start: start index from where the field is computed
+
+    Returns:
+        u: zonal (U) component at the cell neighbors of the edge, shape (num_edges, 2)
+        v: meridional (V) component at the cell neighbors of the edge, shape (num_edges, 2)
+    """
+    array_ns = data_alloc.array_namespace(e2c)
+    llb = horizontal_start
+    u = array_ns.zeros(e2c.shape)
+    v = array_ns.zeros(e2c.shape)
+    # The missing neighbor is either INVALID_INDEX or a duplicate of the first one,
+    # depending on how the connectivity was constructed.
+    missing = gridfile.GridFile.INVALID_INDEX
+    valid_neighbor_0 = e2c[llb:, 0] != missing
+    valid_neighbor_1 = (e2c[llb:, 1] != missing) & (e2c[llb:, 1] != e2c[llb:, 0])
+    safe_e2c = array_ns.where(e2c != missing, e2c, 0)
+    for nc, valid_neighbor in ((0, valid_neighbor_0), (1, valid_neighbor_1)):
+        lat = cell_lat[safe_e2c[llb:, nc]]
+        lon = cell_lon[safe_e2c[llb:, nc]]
+        u_nc = array_ns.cos(lon) * y[llb:] - array_ns.sin(lon) * x[llb:]
+        v_nc = array_ns.cos(lat) * z[llb:] - array_ns.sin(lat) * (
+            array_ns.cos(lon) * x[llb:] + array_ns.sin(lon) * y[llb:]
+        )
+        norm = array_ns.sqrt(u_nc * u_nc + v_nc * v_nc)
+        u[llb:, nc] = array_ns.where(valid_neighbor, u_nc / norm, 0.0)
+        v[llb:, nc] = array_ns.where(valid_neighbor, v_nc / norm, 0.0)
+    return u, v
 
 
 @gtx.field_operator
