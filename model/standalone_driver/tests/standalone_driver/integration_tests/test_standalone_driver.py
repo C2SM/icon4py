@@ -239,7 +239,7 @@ def test_standalone_driver(
             "theta_v": savepoint_time_step_exit.theta_v(),
         }
 
-    for tracer in prognostics.tracer.active_fields():
+    for tracer in ds.tracers.current.active_fields():
         computed[tracer.name] = tracer.field
         references[tracer.name] = getattr(savepoint_time_step_exit, tracer.name)()
 
@@ -332,7 +332,7 @@ def test_standalone_driver_moist_physics_with_tmx(
 
     granules = icon4py_driver.granules
     prognostic = ds.prognostics.current
-    tracers = prognostic.tracer
+    tracers = ds.tracers.current
 
     assert granules.physics is not None
     assert [p.name for p in granules.physics._processes] == ["muphys", "tmx"]

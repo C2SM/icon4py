@@ -34,6 +34,7 @@ if TYPE_CHECKING:
         nonhydro_states,
         prognostic_state as prognostics,
         static_fields,
+        tracer_states,
     )
 
 log = logging.getLogger(__name__)
@@ -111,13 +112,14 @@ def create(
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
+    tracer_state_now: tracer_states.TracerState,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
 ) -> None:
     """
-    Fill the prognostic state by dispatching on the type of ``config.config``.
+    Fill the prognostic and tracer states by dispatching on the type of ``config.config``.
 
     The perturbed exner function of the dycore is initialized too, when its diagnostic
     state is given: diagnosed from the initial state, or, when restarting, read from the
@@ -131,6 +133,7 @@ def create(
                 grid=grid,
                 static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
                 global_reductions=global_reductions,
@@ -152,6 +155,7 @@ def create(
                 grid=grid,
                 static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
             )
@@ -174,6 +178,7 @@ def create(
                 config=config.config,
                 grid=grid,
                 prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
             )

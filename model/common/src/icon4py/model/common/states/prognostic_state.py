@@ -12,7 +12,6 @@ import dataclasses
 from typing import TYPE_CHECKING
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.states.tracer_states import TracerConfig, TracerState
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -26,7 +25,9 @@ if TYPE_CHECKING:
 class PrognosticState:
     """Class that contains the prognostic state.
 
-    Corresponds to ICON t_nh_prog
+    Corresponds to ICON t_nh_prog, minus the tracers: those live in a separate
+    `~icon4py.model.common.states.tracer_states.TracerState` because they are advanced
+    once per model time step while these fields are advanced once per dynamics substep.
     """
 
     rho: fa.CellKField[ta.wpfloat]  # density, rho(nproma, nlev, nblks_c) [kg/m^3]
@@ -36,10 +37,6 @@ class PrognosticState:
     ]  # horizontal wind normal to edges, vn(nproma, nlev, nblks_e)  [m/s]
     exner: fa.CellKField[ta.wpfloat]  # exner function, exner(nrpoma, nlev, nblks_c)
     theta_v: fa.CellKField[ta.wpfloat]  # virtual temperature, (nproma, nlev, nlbks_c) [K]
-    tracer: TracerState = dataclasses.field(
-        default_factory=TracerState
-    )  # tracer concentration, one CellKField per active tracer [kg/kg]
-    # TODO (Anyone): tracer should not inside the PrognosticState, since it cannot be swapped after every sub-timestep, it only swaps after 1 timestep
 
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:
@@ -49,11 +46,8 @@ class PrognosticState:
 def initialize_prognostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
-    tracer_config: TracerConfig | None = None,
 ) -> PrognosticState:
     """Initialize the prognostic state with zero fields."""
-    if tracer_config is None:
-        tracer_config = TracerConfig.none()
     rho = data_alloc.zero_field(
         grid,
         dims.CellDim,
@@ -90,12 +84,4 @@ def initialize_prognostic_state(
         allocator=allocator,
         dtype=ta.wpfloat,
     )
-    tracer = TracerState(
-        **{
-            name: data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-            )
-            for name in tracer_config.active_names
-        }
-    )
-    return PrognosticState(rho=rho, w=w, vn=vn, exner=exner, theta_v=theta_v, tracer=tracer)
+    return PrognosticState(rho=rho, w=w, vn=vn, exner=exner, theta_v=theta_v)
