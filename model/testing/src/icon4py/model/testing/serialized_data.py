@@ -605,12 +605,13 @@ def render_diff_report(comparison: ArchiveComparison) -> str:
 
 # ---------------------------------------------------------------------------
 # Backfilling archives generated before this metadata existed
+#
+# Transitional: remove once every published archive carries 'archive_metadata.json'.
 # ---------------------------------------------------------------------------
 
-# Inverse of 'icon4py.model.testing.datatest_utils.get_ranked_experiment_name_with_version'.
-# Kept as a pattern rather than an import so that this module stays usable without an
-# icon4py environment; 'scripts/tests/python/test_run_serialization.py' pins the two
-# together.
+# Inverse of 'datatest_utils.get_ranked_experiment_name_with_version'. It stays a
+# pattern because 'datatest_utils' imports this module, so importing it back would be
+# circular; 'scripts/tests/python/test_run_serialization.py' pins the two together.
 _ARCHIVE_DIRNAME = re.compile(r"^mpitask(?P<comm_size>\d+)_(?P<experiment>.+)_v(?P<version>\d+)$")
 
 

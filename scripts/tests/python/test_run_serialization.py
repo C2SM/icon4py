@@ -181,3 +181,11 @@ def test_every_serdata_command_is_registered_before_the_entry_point() -> None:
     source = (pathlib.Path(run_serialization.__file__).parent / "serdata.py").read_text()
     guard = source.index('if __name__ == "__main__":')
     assert "@cli.command()" not in source[guard:]
+
+
+def test_run_tests_flag_reaches_the_datatest_sweep() -> None:
+    # The flag was once accepted and wired to nothing.
+    body = (
+        pathlib.Path(run_serialization.__file__).read_text().split("def run_serialization(", 1)[1]
+    )
+    assert "run_datatests(settings=settings)" in body

@@ -85,10 +85,6 @@ def backfill(
     print(f"{len(written)} archive(s) backfilled")
 
 
-if __name__ == "__main__":
-    sys.exit(cli())
-
-
 @cli.command()
 def inspect(
     new: Annotated[pathlib.Path, typer.Argument(help="Freshly generated archive directory.")],
@@ -158,3 +154,7 @@ def bless(
     with path.open("w") as f:
         json.dump(lock, f, indent=2, sort_keys=True)
     print(f"  pinned {len(entries[str(comm_size)]['records'])} records -> {path}")
+
+
+if __name__ == "__main__":
+    sys.exit(cli())

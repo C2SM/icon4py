@@ -866,6 +866,10 @@ def run_serialization(
         )
         raise typer.Exit(code=1)
 
+    if run_tests and not run_datatests(settings=settings):
+        log_status("Datatests failed against the new data; do not publish it yet.")
+        raise typer.Exit(code=1)
+
     print_next_steps(results, settings=settings)
 
     log_status(f"All {total_tasks} tasks completed successfully!")
