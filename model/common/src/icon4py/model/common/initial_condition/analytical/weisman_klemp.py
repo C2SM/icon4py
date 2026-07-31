@@ -53,7 +53,7 @@ class WeismanKlempConfig:
     exponent_theta: float = 1.25
     #: exponent of the relative-humidity profile below the tropopause (expo_relhum_wk)
     exponent_relative_humidity: float = 1.25
-    #: temperature of the (isothermal) tropopause [K] (t_tropo_wk)
+    #: temperature of the tropopause [K] (t_tropo_wk)
     t_tropopause: float = 213.0
     #: relative humidity above the tropopause (rh_min_wk)
     rh_min: float = 0.10
@@ -137,7 +137,6 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     ddqz_z_half = metrics.get(metrics_attributes.DDQZ_Z_HALF).ndarray
     zone_idx = testcases_utils.zone_indices(grid)
 
-    num_edges = grid.num_edges
     num_levels = grid.num_levels
 
     grav_o_cpd = phy_const.GRAV_O_CPD
@@ -267,11 +266,10 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     wind_speed = config.max_wind_speed * (
         array_ns.tanh((height - config.h_min) / (config.wind_scale_height - config.h_min)) - 0.45
     )
-    interior_edge = array_ns.ones(num_edges, dtype=bool)
-    interior_edge[0 : zone_idx["end_edge_lateral_boundary_level_2"]] = False
-    prognostic_state_now.vn.ndarray[:, :] = (
-        array_ns.where(interior_edge[:, array_ns.newaxis], wind_speed[array_ns.newaxis, :], 0.0)
-        * primal_normal_x[:, array_ns.newaxis]
+    boundary_lvl2 = zone_idx["end_edge_lateral_boundary_level_2"]
+    prognostic_state_now.vn.ndarray[:boundary_lvl2, :] = 0.0
+    prognostic_state_now.vn.ndarray[boundary_lvl2:, :] = (
+        wind_speed[array_ns.newaxis, :] * primal_normal_x[boundary_lvl2:, array_ns.newaxis]
     )
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)

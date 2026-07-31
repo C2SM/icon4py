@@ -51,14 +51,13 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "vn": (0.0, 0.0),
         "w": (0.0, 0.0),
     },
-    # Provisional flat tolerances (not yet CI-measured, unlike the entries above).
     test_defs.Experiments.WEISMAN_KLEMP_TORUS: {
-        "rho": (0.0, 1.0e-12),
-        "exner": (1.0e-14, 1.0e-12),
-        "theta_v": (1.0e-11, 1.0e-12),
-        "vn": (1.0e-12, 1.0e-12),
-        "w": (1.0e-12, 1.0e-12),
-        "qv": (1.0e-13, 1.0e-12),
+        "rho": (3.8e-15, 9.6e-15),
+        "exner": (1.4e-15, 2.8e-15),
+        "theta_v": (2.0e-12, 2.8e-15),
+        "vn": (4.3e-14, 6.6e-13),
+        "w": (0.0, 0.0),
+        "qv": (2.0e-16, 1.6e-14),
     },
     test_defs.Experiments.MCH_CH_R04B09: {
         "rho": (0.0, 0.0),
