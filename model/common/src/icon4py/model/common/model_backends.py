@@ -87,7 +87,7 @@ def make_custom_dace_backend(
     use_metrics: bool = True,
     use_zero_origin: bool = False,
     use_max_domain_range_on_unstructured_shift: bool | None = None,
-    external_memory_allocator: gtx_transformations.ExternalMemoryAllocator | None = None,
+    use_external_workspace: bool = False,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
@@ -99,40 +99,41 @@ def make_custom_dace_backend(
             of GPU kernel execution with the Python driver code.
         optimization_args: A `dict` containing configuration parameters for
             the SDFG auto-optimize pipeline.
-        external_memory_allocator: Allocator used to provide workspace memory
-            when `transient_memory_mode` is `EXTERNAL`. When `None`, a shared
-            `IconWorkspaceAllocator` is used. See
-            `gtx_transformations.ExternalMemoryAllocator` for the contract.
         use_metrics: Add SDFG instrumentation to collect the metric for stencil
             compute time.
         use_max_domain_range_on_unstructured_shift: When True, compute `as_fieldop`
             expressions everywhere. Otherwise, when all connectivities are given
             at compile time, infer the minimal domain of all `as_fieldop` statically.
+        use_external_workspace: When True, use the shared singleton workspace allocator to provide
+            workspace memory for transient SDFG arrays. This is useful for AMD platform.
 
     Returns:
         A dace backend with custom configuration for the target device.
     """
     # Use the shared singleton workspace for all programs when no allocator is given.
-    if external_memory_allocator is None:
-        external_memory_allocator = dace_workspace.ICON_WORKSPACE_ALLOCATOR
-
-    # Use external workspace memory for all programs.
-    # TODO(edopao): remove this config before merge, external allocator is useful only for AMD platform.
-    if optimization_args is None:
-        optimization_args = {
-            "transient_memory_mode": gtx_transformations.TransientMemoryMode.EXTERNAL,
-        }
+    if use_external_workspace:
+        external_workspace = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(device)
+        if optimization_args is None:
+            optimization_args = {
+                "transient_memory_mode": gtx_transformations.TransientMemoryMode.EXTERNAL,
+            }
+        elif transient_memory_mode := optimization_args.get("transient_memory_mode"):
+            raise ValueError(
+                f"Cannot use external workspace with transient_memory_mode={transient_memory_mode}."
+            )
+        else:
+            optimization_args["transient_memory_mode"] = (
+                gtx_transformations.TransientMemoryMode.EXTERNAL
+            )
     else:
-        optimization_args["transient_memory_mode"] = (
-            gtx_transformations.TransientMemoryMode.EXTERNAL
-        )
+        external_workspace = None
 
     on_gpu = device == GPU
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
         auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
-        external_memory_allocator=external_memory_allocator,
+        external_workspace=external_workspace,
         optimization_args=optimization_args,
         unstructured_horizontal_has_unit_stride=True,
         use_metrics=use_metrics,

@@ -19,6 +19,7 @@ installs it by default.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from types import ModuleType
 from typing import ClassVar, Final
 
@@ -75,22 +76,10 @@ class IconWorkspaceAllocator:
     backends share it via the module-level `ICON_WORKSPACE_ALLOCATOR`. It keeps
     a single private workspace slab per device in `_workspace_slabs`, reused
     across every compiled program.
-
-    Implements `gtx_transformations.ExternalMemoryAllocator` structurally:
-    `allocate` is called once per SDFG storage type when arguments are
-    constructed, and `deallocate` is called once per storage type when the
-    compiled program is finalized. The slab is kept alive after `deallocate`
-    returns so that subsequent programs reuse it.
-
-    The allocator is part of the DaCe compilation artifact and must be
-    picklable. Because `__new__` always returns the existing instance and
-    `_workspace_slabs` is a class variable (not part of the instance `__dict__`),
-    pickling neither duplicates nor drops the cached slabs: unpickling yields
-    the same singleton with its cache intact.
     """
 
     _instance: ClassVar[IconWorkspaceAllocator | None] = None
-    _workspace_slabs: ClassVar[dict[gtx.DeviceType, tuple[data_allocation.NDArray, int]]] = {}
+    _workspace_slabs: ClassVar[dict[gtx.DeviceType, data_allocation.NDArray]] = {}
 
     def __new__(cls) -> IconWorkspaceAllocator:
         if cls._instance is None:
@@ -98,20 +87,20 @@ class IconWorkspaceAllocator:
         return cls._instance
 
     def allocate(
-        self, request: gtx_transformations.AllocationRequest
+        self, devices: gtx.DeviceType | Iterable[gtx.DeviceType]
     ) -> gtx_transformations.ExternalWorkspace:
-        if request.nbytes > _WORKSPACE_SIZE:
-            raise ValueError(
-                f"Requested workspace size {request.nbytes} exceeds the maximum "
-                f"allowed {_WORKSPACE_SIZE}."
-            )
-        alignment = max(_WORKSPACE_ALIGNMENT, request.alignment)
-        cached = self._workspace_slabs.get(request.device)
-        if cached is None or cached[0].nbytes < _WORKSPACE_SIZE or cached[1] < alignment:
-            slab = _aligned_slab(_WORKSPACE_SIZE, alignment, request.device)
-            self._workspace_slabs[request.device] = (slab, alignment)
-            return slab
-        return cached[0]
+        wsp = {}
+        if isinstance(devices, gtx.DeviceType):
+            devices = [devices]
+        for dev in devices:
+            if (cached := self._workspace_slabs.get(dev)) is None:
+                slab = _aligned_slab(_WORKSPACE_SIZE, _WORKSPACE_ALIGNMENT, devices)
+                self._workspace_slabs[dev] = slab
+                wsp[dev] = slab
+            else:
+                wsp[dev] = cached
+
+        return wsp
 
     def deallocate(self, wsp: gtx_transformations.ExternalWorkspace) -> None:
         # Keep the slab alive for reuse across programs; `deallocate` only
