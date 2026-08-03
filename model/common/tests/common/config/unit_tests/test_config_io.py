@@ -46,6 +46,11 @@ class UnionConfig:
     union: CONFIG_UNION
 
 
+@dataclasses.dataclass
+class EndtimeConfig:
+    endtime: time.EndOfSimulation
+
+
 def test_read_yaml_str_empty_fails() -> None:
     with pytest.raises(TypeError):
         _ = config_io.read_yaml_str("", ExampleConfig)
@@ -106,51 +111,29 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
     assert config_io.read_yaml_str(config_io.write_yaml_str(reference), ExampleConfig) == reference
 
 
-def test_roundtrip_abstime() -> None:
-    abstime_str = "'2026-07-30T14:41:25'\n"
-    abstime = config_io.read_yaml_str(abstime_str, time.AbsoluteTime)
-    assert abstime.year == 2026
-    assert abstime.second == 25
-    assert config_io.write_yaml_str(abstime) == abstime_str
-
-
-def test_roundtrip_reltime() -> None:
-    reltime_str = "300\n...\n"
-    reltime = config_io.read_yaml_str(reltime_str, time.RelativeTime)
-    assert reltime.seconds == 300
-    assert config_io.write_yaml_str(reltime) == reltime_str
-
-
 @pytest.mark.parametrize(
-    ("endtime_str", "check"),
-    [
-        ("endtime:\n  type: absolute\n  value: '2026-07-30T14:46:00'\n", lambda v: v.minute == 46),
-        ("endtime:\n  type: relative\n  value: 50\n", lambda v: v.seconds == 50),
-        ("endtime:\n  type: numsteps\n  value: 42\n", lambda v: v == 42),
-    ],
-)
-def test_roundtrip_endtime_abs(
-    endtime_str: str, check: typing.Callable[[typing.Any], bool]
-) -> None:
-    @dataclasses.dataclass
-    class EndtimeConfig:
-        endtime: time.EndOfSimulation
-
-    config = config_io.read_yaml_str(endtime_str, EndtimeConfig)
-    assert check(config.endtime)
-    assert config_io.write_yaml_str(config) == endtime_str
-
-
-def test_roundtrip_enum() -> None:
-    enum_str = "foo\n...\n"
-    foo = config_io.read_yaml_str(enum_str, ExampleEnum)
-    assert foo is ExampleEnum.FOO
-    assert config_io.write_yaml_str(foo) == enum_str
-
-
-@pytest.mark.parametrize(
-    ("cfg_str", "reference"),
+    ("input_str", "config_type", "reference"),
     (
+        (
+            "'2026-07-30T14:41:25'\n",
+            time.AbsoluteTime,
+            time.AbsoluteTime(year=2026, month=7, day=30, hour=14, minute=41, second=25),
+        ),
+        ("300\n...\n", time.RelativeTime, time.RelativeTime(seconds=300)),
+        (
+            "endtime:\n  type: absolute\n  value: '2026-07-30T14:41:46'\n",
+            EndtimeConfig,
+            EndtimeConfig(
+                time.AbsoluteTime(year=2026, month=7, day=30, hour=14, minute=41, second=46)
+            ),
+        ),
+        (
+            "endtime:\n  type: relative\n  value: 50\n",
+            EndtimeConfig,
+            EndtimeConfig(time.RelativeTime(seconds=50)),
+        ),
+        ("endtime:\n  type: numsteps\n  value: 42\n", EndtimeConfig, EndtimeConfig(42)),
+        ("foo\n...\n", ExampleEnum, ExampleEnum.FOO),
         (
             textwrap.dedent(
                 """\
@@ -160,7 +143,8 @@ def test_roundtrip_enum() -> None:
                   optional_int: 42
                 """
             ),
-            ExampleConfig(True, 42),
+            UnionConfig,
+            UnionConfig(ExampleConfig(True, 42)),
         ),
         (
             textwrap.dedent(
@@ -170,11 +154,16 @@ def test_roundtrip_enum() -> None:
                   unrelated_int: 7
                 """
             ),
-            AlternativeConfig(7),
+            UnionConfig,
+            UnionConfig(AlternativeConfig(7)),
         ),
     ),
 )
-def test_roundtrip_config_union(cfg_str: str, reference: CONFIG_UNION) -> None:
-    config = config_io.read_yaml_str(cfg_str, UnionConfig)
-    assert config == UnionConfig(reference)
-    assert config_io.write_yaml_str(config) == cfg_str
+def test_roundtrip_customized_type(
+    input_str: str,
+    config_type: type[time.AbsoluteTime | time.RelativeTime | time.EndOfSimulation],
+    reference: time.AbsoluteTime | time.RelativeTime,
+) -> None:
+    read_value = config_io.read_yaml_str(input_str, config_type)
+    assert read_value == reference
+    assert config_io.write_yaml_str(read_value) == input_str
