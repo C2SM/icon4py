@@ -87,7 +87,7 @@ def make_custom_dace_backend(
     use_metrics: bool = True,
     use_zero_origin: bool = False,
     use_max_domain_range_on_unstructured_shift: bool | None = None,
-    use_external_workspace: bool = False,
+    use_external_workspace: bool = True,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
@@ -107,11 +107,12 @@ def make_custom_dace_backend(
         use_external_workspace: When True, use the shared singleton workspace allocator to provide
             workspace memory for transient SDFG arrays. This is useful for AMD platform.
 
+    Note: uses external workspace memory for all programs.
+    TODO(edopao): remove this config before merge, external allocator is useful only for AMD platform.
+
     Returns:
         A dace backend with custom configuration for the target device.
     """
-    # Use external workspace memory for all programs.
-    # TODO(edopao): remove this config before merge, external allocator is useful only for AMD platform.
     if use_external_workspace:
         external_workspace = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(device)
         if optimization_args is None:
