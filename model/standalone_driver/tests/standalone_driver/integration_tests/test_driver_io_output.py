@@ -9,8 +9,8 @@
 """Integration test for single-node output from the standalone driver.
 
 Runs the Jablonowski-Williamson testcase for one step with output enabled and asserts
-that valid CF/UGRID NetCDF files are produced. It exercises the full ``store -> file``
-path, not just the in-memory bridge.
+that valid CF/UGRID NetCDF files (or zarr stores) are produced. It exercises the full
+``store -> file`` path, not just the in-memory bridge.
 
 Being a datatest, it requires the JW grid and experiment configuration.
 """
@@ -18,11 +18,12 @@ Being a datatest, it requires the JW grid and experiment configuration.
 import pathlib
 
 import gt4py.next.typing as gtx_typing
-import netCDF4 as nc
 import pytest
+import xarray as xr
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.io import io as common_io
 from icon4py.model.standalone_driver import (
     config as driver_config,
     driver_io,
@@ -40,11 +41,23 @@ def _find_one(directory: pathlib.Path, pattern: str) -> pathlib.Path:
     return matches[0]
 
 
+def _open_output(path: pathlib.Path, output_backend: common_io.OutputBackend) -> xr.Dataset:
+    match output_backend:
+        case common_io.OutputBackend.NETCDF:
+            return xr.open_dataset(path, decode_times=False)
+        case common_io.OutputBackend.ZARR:
+            return xr.open_zarr(path, decode_times=False)
+
+
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
+@pytest.mark.parametrize(
+    "output_backend", [common_io.OutputBackend.NETCDF, common_io.OutputBackend.ZARR]
+)
 def test_standalone_driver_writes_output(
     experiment_description: test_defs.ExperimentDescription,
+    output_backend: common_io.OutputBackend,
     *,
     download_ser_data: None,
     tmp_path: pathlib.Path,
@@ -60,6 +73,10 @@ def test_standalone_driver_writes_output(
         driver={
             "output_path": tmp_path / "io_driver_output",
             "enable_output": True,
+            "output_backend": output_backend,
+            # gather is valid for both backends everywhere (distributed netCDF
+            # would be rejected on serial netCDF4 installations)
+            "output_mode": common_io.OutputMode.GATHER,
             "end_of_simulation": time.NumTimeSteps(1),
         }
     )
@@ -82,17 +99,18 @@ def test_standalone_driver_writes_output(
 
     # single data file: all prognostic AND diagnostic fields together. Two time slices:
     # the initial state (always written) plus the one integrated step.
-    output_file = _find_one(tmp_path, f"{driver_io.DEFAULT_OUTPUT_FILENAME}_*.nc")
-    with nc.Dataset(output_file) as ds:
-        assert ds.Conventions == "CF-1.7"
+    suffix = common_io.FILE_SUFFIXES[output_backend]
+    output_file = _find_one(tmp_path, f"{driver_io.DEFAULT_OUTPUT_FILENAME}_*{suffix}")
+    with _open_output(output_file, output_backend) as ds:
+        assert ds.attrs["Conventions"] == "CF-1.7"
         for name in driver_io.DEFAULT_OUTPUT_VARIABLES:
             assert name in ds.variables, f"{name} missing from output"
-            var = ds.variables[name]
-            assert var.dimensions[0] == "time"
+            var = ds[name]
+            assert var.dims[0] == "time"
             assert var.shape[0] == 2
         # vertical placement: w on half (interface) levels, the rest on full levels
-        assert "half_level" in ds.variables["upward_air_velocity"].dimensions
-        assert "edge" in ds.variables["normal_velocity"].dimensions
+        assert "half_level" in ds["upward_air_velocity"].dims
+        assert "edge" in ds["normal_velocity"].dims
         # diagnostics live on cells/full levels
-        assert "cell" in ds.variables["temperature"].dimensions
-        assert len(ds.dimensions["time"]) == 2
+        assert "cell" in ds["temperature"].dims
+        assert ds.sizes["time"] == 2
