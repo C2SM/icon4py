@@ -113,8 +113,12 @@ def make_custom_dace_backend(
     Returns:
         A dace backend with custom configuration for the target device.
     """
-    if use_external_workspace and device is not None:
-        external_workspace = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(device)
+    if use_external_workspace:
+        if gtx.CUPY_DEVICE_TYPE is None:
+            devices = [gtx.DeviceType.CPU]
+        else:
+            devices = [gtx.DeviceType.CPU, gtx.CUPY_DEVICE_TYPE]
+        external_workspace = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(devices)
         if optimization_args is None:
             optimization_args = {
                 "transient_memory_mode": gtx_transformations.TransientMemoryMode.EXTERNAL,
