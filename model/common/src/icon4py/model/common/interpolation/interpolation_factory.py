@@ -199,7 +199,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             params={
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
-                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "max_nudging_coefficient": gtx.float64(self._config.max_nudging_coefficient),
                 "nudge_efold_width": self._config.nudge_efold_width,
                 "nudge_zone_width": self._config.nudge_zone_width,
             },
@@ -334,7 +334,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "domain_length": self._domain_length,
                 "domain_height": self._domain_height,
-                "grid_sphere_radius": constants.EARTH_RADIUS,
+                "grid_sphere_radius": gtx.float64(constants.EARTH_RADIUS),
                 "lsq_dim_unk": self._config.lsq_dim_unk,
                 "lsq_dim_c": self._config.lsq_dim_c,
                 "lsq_wgt_exp": self._config.lsq_wgt_exp,
@@ -408,7 +408,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     },
                     connectivities={"e2c": dims.E2CDim},
                     params={
-                        "grid_sphere_radius": constants.EARTH_RADIUS,
+                        "grid_sphere_radius": gtx.float64(constants.EARTH_RADIUS),
                         "horizontal_start": self.grid.start_index(
                             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                         ),

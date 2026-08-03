@@ -8,7 +8,7 @@
 import sys
 
 import gt4py.next as gtx
-from gt4py.next import broadcast, exp, log, maximum, minimum, where
+from gt4py.next import astype, broadcast, exp, log, maximum, minimum, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.microphysics_constants import (
     MicrophysicsConstants,
@@ -236,9 +236,9 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     )
 
     # for density correction of fall speeds
-    chlp = log(MicrophysicsConstants.REF_AIR_DENSITY / rho)
-    crho1o2 = exp(chlp / wpfloat("2.0"))
-    crhofac_qi = exp(chlp * exponent_for_density_factor_in_ice_sedimentation)
+    chlp = astype(log(MicrophysicsConstants.REF_AIR_DENSITY / rho), wpfloat)
+    crho1o2 = astype(exp(chlp / wpfloat("2.0")), wpfloat)
+    crhofac_qi = astype(exp(chlp * exponent_for_density_factor_in_ice_sedimentation), wpfloat)
 
     cdtdh = wpfloat("0.5") * dtime / dz
     cscmax = qc / dtime
@@ -297,16 +297,25 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     if k_lev > 0:
         vnew_s = (
             snow_sed0_kup
-            * exp(MicrophysicsConstants.CCSWXP * log((qs_kup + qs) * wpfloat("0.5") * rho_kup))
+            * astype(
+                exp(
+                    MicrophysicsConstants.CCSWXP
+                    * astype(log((qs_kup + qs) * wpfloat("0.5") * rho_kup), wpfloat)
+                ),
+                wpfloat,
+            )
             * crho1o2_kup
             if qs_kup + qs > MicrophysicsConstants.QMIN
             else wpfloat("0.0")
         )
         vnew_r = (
             power_law_coeff_for_rain_mean_fall_speed
-            * exp(
-                power_law_exponent_for_rain_mean_fall_speed
-                * log((qr_kup + qr) * wpfloat("0.5") * rho_kup)
+            * astype(
+                exp(
+                    power_law_exponent_for_rain_mean_fall_speed
+                    * astype(log((qr_kup + qr) * wpfloat("0.5") * rho_kup), wpfloat)
+                ),
+                wpfloat,
             )
             * crho1o2_kup
             if qr_kup + qr > MicrophysicsConstants.QMIN
@@ -314,9 +323,12 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         )
         vnew_g = (
             MicrophysicsConstants.POWER_LAW_COEFF_FOR_GRAUPEL_MEAN_FALL_SPEED
-            * exp(
-                MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_GRAUPEL_MEAN_FALL_SPEED
-                * log((qg_kup + qg) * wpfloat("0.5") * rho_kup)
+            * astype(
+                exp(
+                    MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_GRAUPEL_MEAN_FALL_SPEED
+                    * astype(log((qg_kup + qg) * wpfloat("0.5") * rho_kup), wpfloat)
+                ),
+                wpfloat,
             )
             * crho1o2_kup
             if qg_kup + qg > MicrophysicsConstants.QMIN
@@ -324,9 +336,12 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         )
         vnew_i = (
             power_law_coeff_for_ice_mean_fall_speed
-            * exp(
-                MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_ICE_MEAN_FALL_SPEED
-                * log((qi_kup + qi) * wpfloat("0.5") * rho_kup)
+            * astype(
+                exp(
+                    MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_ICE_MEAN_FALL_SPEED
+                    * astype(log((qi_kup + qi) * wpfloat("0.5") * rho_kup), wpfloat)
+                ),
+                wpfloat,
             )
             * crhofac_qi_kup
             if qi_kup + qi > MicrophysicsConstants.QMIN
@@ -334,7 +349,11 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         )
 
     if snow_exists:
-        terminal_velocity = snow_sed0 * exp(MicrophysicsConstants.CCSWXP * log(rhoqs)) * crho1o2
+        terminal_velocity = (
+            snow_sed0
+            * astype(exp(MicrophysicsConstants.CCSWXP * astype(log(rhoqs), wpfloat)), wpfloat)
+            * crho1o2
+        )
         # Prevent terminal fall speed of snow from being zero at the surface level
         if is_surface:
             terminal_velocity = maximum(
@@ -353,7 +372,10 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     if rain_exists:
         terminal_velocity = (
             power_law_coeff_for_rain_mean_fall_speed
-            * exp(power_law_exponent_for_rain_mean_fall_speed * log(rhoqr))
+            * astype(
+                exp(power_law_exponent_for_rain_mean_fall_speed * astype(log(rhoqr), wpfloat)),
+                wpfloat,
+            )
             * crho1o2
         )
         # Prevent terminal fall speed of rain from being zero at the surface level
@@ -374,7 +396,13 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     if graupel_exists:
         terminal_velocity = (
             MicrophysicsConstants.POWER_LAW_COEFF_FOR_GRAUPEL_MEAN_FALL_SPEED
-            * exp(MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_GRAUPEL_MEAN_FALL_SPEED * log(rhoqg))
+            * astype(
+                exp(
+                    MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_GRAUPEL_MEAN_FALL_SPEED
+                    * astype(log(rhoqg), wpfloat)
+                ),
+                wpfloat,
+            )
             * crho1o2
         )
         # Prevent terminal fall speed of graupel from being zero at the surface level
@@ -395,7 +423,13 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     if ice_exists:
         terminal_velocity = (
             power_law_coeff_for_ice_mean_fall_speed
-            * exp(MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_ICE_MEAN_FALL_SPEED * log(rhoqi))
+            * astype(
+                exp(
+                    MicrophysicsConstants.POWER_LAW_EXPONENT_FOR_ICE_MEAN_FALL_SPEED
+                    * astype(log(rhoqi), wpfloat)
+                ),
+                wpfloat,
+            )
             * crhofac_qi
         )
 
@@ -447,22 +481,24 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     cloud_exists = True if (qc > MicrophysicsConstants.QMIN) else False  # noqa: SIM210
 
     if rain_exists:
-        clnrhoqr = log(rhoqr)
+        clnrhoqr = astype(log(rhoqr), wpfloat)
         csrmax = (
             rhoqr_intermediate / rho / dtime
         )  # GZ: shifting this computation ahead of the IF condition changes results!
         celn7o8qrk = (
-            exp(wpfloat("7.0") / wpfloat("8.0") * clnrhoqr)
+            astype(exp(wpfloat("7.0") / wpfloat("8.0") * clnrhoqr), wpfloat)
             if qi + qc > MicrophysicsConstants.QMIN
             else wpfloat("0.0")
         )
         celn7o4qrk = (
-            exp(wpfloat("7.0") / wpfloat("4.0") * clnrhoqr)
+            astype(exp(wpfloat("7.0") / wpfloat("4.0") * clnrhoqr), wpfloat)
             if temperature < MicrophysicsConstants.THRESHOLD_FREEZE_TEMPERATURE
             else wpfloat("0.0")
         )  # FR new
         celn13o8qrk = (
-            exp(wpfloat("13.0") / wpfloat("8.0") * clnrhoqr) if ice_exists else wpfloat("0.0")
+            astype(exp(wpfloat("13.0") / wpfloat("8.0") * clnrhoqr), wpfloat)
+            if ice_exists
+            else wpfloat("0.0")
         )
 
     else:
@@ -473,42 +509,50 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
 
     # ** GZ: the following computation differs substantially from the corresponding code in cloudice **
     if snow_exists:
-        clnrhoqs = log(rhoqs)
+        clnrhoqs = astype(log(rhoqs), wpfloat)
         cssmax = (
             rhoqs_intermediate / rho / dtime
         )  # GZ: shifting this computation ahead of the IF condition changes results#
         if qi + qc > MicrophysicsConstants.QMIN:
-            celn3o4qsk = exp(wpfloat("3.0") / wpfloat("4.0") * clnrhoqs)
+            celn3o4qsk = astype(exp(wpfloat("3.0") / wpfloat("4.0") * clnrhoqs), wpfloat)
         else:
             celn3o4qsk = wpfloat("0.0")
-        celn8qsk = exp(wpfloat("0.8") * clnrhoqs)
+        celn8qsk = astype(exp(wpfloat("0.8") * clnrhoqs), wpfloat)
     else:
         cssmax = wpfloat("0.0")
         celn3o4qsk = wpfloat("0.0")
         celn8qsk = wpfloat("0.0")
 
     if graupel_exists:
-        clnrhoqg = log(rhoqg)
+        clnrhoqg = astype(log(rhoqg), wpfloat)
         csgmax = rhoqg_intermediate / rho / dtime
         if qi + qc > MicrophysicsConstants.QMIN:
-            celnrimexp_g = exp(MicrophysicsConstants.GRAUPEL_RIMEXP * clnrhoqg)
+            celnrimexp_g = astype(exp(MicrophysicsConstants.GRAUPEL_RIMEXP * clnrhoqg), wpfloat)
         else:
             celnrimexp_g = wpfloat("0.0")
-        celn6qgk = exp(wpfloat("0.6") * clnrhoqg)
+        celn6qgk = astype(exp(wpfloat("0.6") * clnrhoqg), wpfloat)
     else:
         csgmax = wpfloat("0.0")
         celnrimexp_g = wpfloat("0.0")
         celn6qgk = wpfloat("0.0")
 
     if ice_exists | snow_exists:
-        cdvtp = MicrophysicsConstants.CCDVTP * exp(wpfloat("1.94") * log(temperature)) / pressure
+        cdvtp = (
+            MicrophysicsConstants.CCDVTP
+            * astype(exp(wpfloat("1.94") * astype(log(temperature), wpfloat)), wpfloat)
+            / pressure
+        )
         chi = MicrophysicsConstants.CCSHI1 * cdvtp * rho * qvsi / (temperature * temperature)
         chlp = cdvtp / (wpfloat("1.0") + chi)
         cidep = MicrophysicsConstants.CCIDEP * chlp
 
         if snow_exists:
-            cslam = exp(
-                MicrophysicsConstants.CCSLXP * log(MicrophysicsConstants.CCSLAM * n0s / rhoqs)
+            cslam = astype(
+                exp(
+                    MicrophysicsConstants.CCSLXP
+                    * astype(log(MicrophysicsConstants.CCSLAM * n0s / rhoqs), wpfloat)
+                ),
+                wpfloat,
             )
             cslam = minimum(cslam, wpfloat("1.0e15"))
             csdep = wpfloat("4.0") * n0s * chlp

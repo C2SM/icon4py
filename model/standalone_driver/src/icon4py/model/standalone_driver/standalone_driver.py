@@ -170,9 +170,9 @@ class Icon4pyDriver:
         state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
         diagnostic_fields = self._diagnostics_computer.compute(
             prognostic_state,
-            ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
-            rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
-            rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
+            ddqz_z_full=metrics.export_field(metrics_attr.DDQZ_Z_FULL),
+            rbf_vec_coeff_c1=interpolation.export_field(intp_attr.RBF_VEC_COEFF_C1),
+            rbf_vec_coeff_c2=interpolation.export_field(intp_attr.RBF_VEC_COEFF_C2),
         )
         state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
         self.io_monitor.store(state_to_store, simulation_current_datetime)
@@ -527,7 +527,7 @@ class Icon4pyDriver:
 
         # reset max_vertical_cfl to zero
         solve_nonhydro_diagnostic_state.max_vertical_cfl = data_alloc.scalar_like_array(
-            0.0, self._allocator
+            ta.wpfloat(0.0), self._allocator
         )
 
     def _diffuse_before_time_loop(
@@ -591,7 +591,7 @@ class Icon4pyDriver:
             not self.config.driver.apply_extra_second_order_divdamp
             or elapsed_time_in_seconds > spinup_cutoff
         ):
-            return ta.wpfloat("0.0")
+            return ta.wpfloat(0.0)
 
         return driver_utils.spinup_second_order_divdamp_factor(
             elapsed_time_in_seconds=elapsed_time_in_seconds,
@@ -636,10 +636,10 @@ class Icon4pyDriver:
     ) -> None:
         if self.config.driver.enable_statistics_logging:
             rho_ndarray = prognostic_states.rho.ndarray
-            cell_area_ndarray = self.static_field_factories.geometry.get(
+            cell_area_ndarray = self.static_field_factories.geometry.export_field(
                 geom_attr.CELL_AREA
             ).ndarray
-            cell_thickness_ndarray = self.static_field_factories.metrics.get(
+            cell_thickness_ndarray = self.static_field_factories.metrics.export_field(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
             local_mass = (

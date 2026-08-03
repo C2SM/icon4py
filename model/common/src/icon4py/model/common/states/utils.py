@@ -16,7 +16,7 @@ from icon4py.model.common import type_alias as ta
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-FloatType: TypeAlias = ta.wpfloat | ta.vpfloat | float  # noqa: UP040
+FloatType: TypeAlias = ta.wpfloat | ta.vpfloat | gtx.float64 | float  # noqa: UP040
 IntegerType: TypeAlias = gtx.int32 | gtx.int64 | int  # noqa: UP040
 ScalarType: TypeAlias = FloatType | bool | IntegerType  # noqa: UP040
 

@@ -8,24 +8,25 @@
 import gt4py.next as gtx
 from gt4py.next import exp, log
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.dimension import KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
 def _diagnose_surface_pressure(
-    exner: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    ddqz_z_full: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
+    exner: fa.CellKField[wpfloat],
+    virtual_temperature: fa.CellKField[wpfloat],
+    ddqz_z_full: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
     surface_pressure = PhysicsConstants.p0ref * exp(
         PhysicsConstants.cpd_o_rd * log(exner(KDim - 3))
         + PhysicsConstants.grav_o_rd
         * (
             ddqz_z_full(KDim - 1) / virtual_temperature(KDim - 1)
             + ddqz_z_full(KDim - 2) / virtual_temperature(KDim - 2)
-            + 0.5 * ddqz_z_full(KDim - 3) / virtual_temperature(KDim - 3)
+            + wpfloat(0.5) * ddqz_z_full(KDim - 3) / virtual_temperature(KDim - 3)
         )
     )
     return surface_pressure
@@ -33,10 +34,10 @@ def _diagnose_surface_pressure(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def diagnose_surface_pressure(
-    exner: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    ddqz_z_full: fa.CellKField[ta.wpfloat],
-    surface_pressure: fa.CellKField[ta.wpfloat],
+    exner: fa.CellKField[wpfloat],
+    virtual_temperature: fa.CellKField[wpfloat],
+    ddqz_z_full: fa.CellKField[wpfloat],
+    surface_pressure: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

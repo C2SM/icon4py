@@ -29,6 +29,7 @@ from gt4py.next.ffront.decorator import FieldOperator
 from gt4py.next.instrumentation import hooks as gtx_hooks, metrics as gtx_metrics
 
 from icon4py.model.common import model_backends, model_options
+from icon4py.model.common.constants import WP_EPS
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
 from icon4py.model.testing import test_utils
@@ -202,6 +203,15 @@ class StencilTest:
 
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
+    RTOL = test_utils.scale_tol(5e3) * WP_EPS  # for double ≈ 1.11e-12
+    ATOL = 0.0
+
+    # TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 3e-6
+    # to cover floating point descripancies observed in CI tests. Failing CI can be found in
+    # https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/5125340235196978/2255149825504673/-/pipelines/2184694383
+    # from PR#861. Reason is probably derivatives of random data. Investigate and lower tolerance back to 1e-7 if possible.
+    RTOL = test_utils.scale_tol(3e-6)
+
     @pytest.fixture
     def _configured_program(
         self,
@@ -258,11 +268,6 @@ class StencilTest:
             )
 
             input_data_name = input_data[name]  # for mypy
-            # TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 1e-6
-            # to cover floating point descripancies observed in CI tests. Failing CI can be found in
-            # https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/5125340235196978/2255149825504673/-/pipelines/2184694383
-            # from PR#861. Reason is probably derivatives of random data. Investigate and lower tolerance back to 1e-7 if possible.
-            relative_tolerance = 3e-6
             if isinstance(input_data_name, tuple):
                 for i_out_field, out_field in enumerate(input_data_name):
                     test_utils.assert_dallclose(
@@ -270,7 +275,8 @@ class StencilTest:
                         reference_outputs[name][i_out_field][refslice],
                         equal_nan=True,
                         err_msg=f"Verification failed for '{name}[{i_out_field}]'",
-                        rtol=relative_tolerance,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
+                        rtol=self.RTOL,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
+                        atol=self.ATOL,
                     )
             else:
                 reference_outputs_name = reference_outputs[name]  # for mypy
@@ -280,7 +286,8 @@ class StencilTest:
                     reference_outputs_name[refslice],
                     equal_nan=True,
                     err_msg=f"Verification failed for '{name}'",
-                    rtol=relative_tolerance,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
+                    rtol=self.RTOL,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
+                    atol=self.ATOL,
                 )
 
     @staticmethod

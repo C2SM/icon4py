@@ -288,6 +288,7 @@ class DriverConfig:
                 f"the time loop cannot start at {self.start_of_timestepping}, before the "
                 f"beginning of the simulation ({self.start_of_simulation})."
             )
+        ta.dataclass_scalars_to_wp(self, attributes=["vertical_cfl_threshold"])
 
     @classmethod
     def make_initial(cls, **kwargs: Any) -> DriverConfig:

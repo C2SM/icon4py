@@ -9,8 +9,9 @@
 import gt4py.next as gtx
 from gt4py.next import broadcast, maximum, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO(dastrm): this stencil has no test
@@ -18,29 +19,31 @@ from icon4py.model.common.dimension import KDim
 
 @gtx.field_operator
 def _apply_density_increment(
-    rhodz_in: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
-    deepatmo_divzl: fa.KField[ta.wpfloat],
-    deepatmo_divzu: fa.KField[ta.wpfloat],
-    p_dtime: ta.wpfloat,
+    rhodz_in: fa.CellKField[wpfloat],
+    p_mflx_contra_v: fa.CellKField[wpfloat],
+    deepatmo_divzl: fa.KField[wpfloat],
+    deepatmo_divzu: fa.KField[wpfloat],
+    p_dtime: wpfloat,
     even_timestep: bool,
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKField[wpfloat]:
     even = broadcast(even_timestep, (dims.CellDim, dims.KDim))
     rhodz_incr = p_dtime * (
         p_mflx_contra_v(KDim + 1) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
     )
-    rhodz_out = where(even, rhodz_in + rhodz_incr, maximum(0.1 * rhodz_in, rhodz_in) - rhodz_incr)
+    rhodz_out = where(
+        even, rhodz_in + rhodz_incr, maximum(wpfloat(0.1) * rhodz_in, rhodz_in) - rhodz_incr
+    )
     return rhodz_out
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_density_increment(
-    rhodz_in: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
-    deepatmo_divzl: fa.KField[ta.wpfloat],
-    deepatmo_divzu: fa.KField[ta.wpfloat],
-    rhodz_out: fa.CellKField[ta.wpfloat],
-    p_dtime: ta.wpfloat,
+    rhodz_in: fa.CellKField[wpfloat],
+    p_mflx_contra_v: fa.CellKField[wpfloat],
+    deepatmo_divzl: fa.KField[wpfloat],
+    deepatmo_divzu: fa.KField[wpfloat],
+    rhodz_out: fa.CellKField[wpfloat],
+    p_dtime: wpfloat,
     even_timestep: bool,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

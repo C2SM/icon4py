@@ -76,10 +76,10 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         apply_2nd_order_divergence_damping: bool,
         apply_4th_order_divergence_damping: bool,
         divdamp_order: gtx.int32,
-        mean_cell_area: float,
-        second_order_divdamp_factor: float,
-        max_nudging_coefficient: float,
-        dbl_eps: float,
+        mean_cell_area: ta.wpfloat,
+        second_order_divdamp_factor: ta.wpfloat,
+        max_nudging_coefficient: ta.wpfloat,
+        wp_eps: ta.wpfloat,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
@@ -233,7 +233,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
 
         mean_cell_area = 1000.0
         max_nudging_coefficient = 0.3
-        dbl_eps = constants.DBL_EPS
+        wp_eps = constants.WP_EPS
 
         dtime = 0.9
         advection_implicit_weight_parameter = 0.75
@@ -290,7 +290,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             mean_cell_area=mean_cell_area,
             second_order_divdamp_factor=second_order_divdamp_factor,
             max_nudging_coefficient=max_nudging_coefficient,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             horizontal_start=start_edge_nudging_level_2,
             horizontal_end=end_edge_local,
             vertical_start=0,

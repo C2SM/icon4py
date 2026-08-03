@@ -34,7 +34,7 @@ import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Annotated
 
 import typer
@@ -73,6 +73,7 @@ ALL_GRIDS = ["simple", "icon_regional", "icon_global"]
 # should be changed to simplify this.
 ALL_LEVELS = ["unit", "integration", "validation"]
 ALL_TOOLS_SUBSETS = ["datatest", "unittest"]
+ALL_PRECISIONS = ["double", "single"]
 
 # Collection tuning. The per-cell timeout should be generous enough for the
 # first cold import of icon4py/GT4Py; the overall collection run is bounded
@@ -203,6 +204,7 @@ def _run_nox_collection(
     pytest_args: list[str],
     env: dict[str, str],
     timeout: float,
+    precision: str = "double",
 ) -> bool:
     """Run a nox session with --collect-only and return whether to keep the cell.
 
@@ -226,6 +228,9 @@ def _run_nox_collection(
     ]
     full_env = os.environ.copy()
     full_env.update(env)
+    # Set FLOAT_PRECISION for single-precision test collection
+    if precision == "single":
+        full_env["FLOAT_PRECISION"] = "single"
     result = subprocess.run(
         cmd,
         capture_output=True,
@@ -273,6 +278,7 @@ class _MatrixCell:
     matrix: dict[str, str]
     session: str
     pytest_args: list[str]
+    precision: str = "double"
 
 
 def _model_cells(
@@ -400,6 +406,29 @@ def _model_mpi_cells(
     return cells
 
 
+def _add_precision_variants(cells: list[_MatrixCell], precisions: list[str]) -> list[_MatrixCell]:
+    """Create cells for each precision variant.
+
+    For each precision in the list, creates cells with appropriate settings:
+    - "double": original cells (default)
+    - "single": cells with suffix _single_precision and FLOAT_PRECISION="single"
+    """
+    # Only keep original cells if "double" is requested
+    result = list(cells) if "double" in precisions else []
+
+    if "single" in precisions:
+        for cell in cells:
+            new_cell = replace(
+                cell,
+                job_name=f"{cell.job_name}_single_precision",
+                variables={**cell.variables, "FLOAT_PRECISION": "single"},
+                precision="single",
+            )
+            result.append(new_cell)
+
+    return result
+
+
 def _collect_cells(cells: list[_MatrixCell]) -> tuple[list[_MatrixCell], list[_MatrixCell]]:
     """Run collection for every cell in parallel and return kept/dropped cells.
 
@@ -425,6 +454,7 @@ def _collect_cells(cells: list[_MatrixCell]) -> tuple[list[_MatrixCell], list[_M
                 cell.pytest_args,
                 env,
                 _COLLECTION_TIMEOUT_SECONDS,
+                cell.precision,
             ): i
             for i, cell in enumerate(cells)
         }
@@ -472,6 +502,7 @@ def _print_collection_summary(
     backends: list[str],
     levels: list[str],
     grids: list[str],
+    precisions: list[str],
     kept: list[_MatrixCell],
     dropped: list[_MatrixCell],
 ) -> None:
@@ -494,6 +525,8 @@ def _print_collection_summary(
         print(f"  levels: {levels}", file=sys.stderr)
     if grids:
         print(f"  grids: {grids}", file=sys.stderr)
+    if precisions:
+        print(f"  precisions: {precisions}", file=sys.stderr)
     print(f"  eligible cells: {len(kept) + len(dropped)}", file=sys.stderr)
     print(f"  selected cells: {len(kept)}", file=sys.stderr)
     for cell in kept:
@@ -518,6 +551,7 @@ def _generate_child_pipeline(
     backends: str | None = None,
     levels: str | None = None,
     grids: str | None = None,
+    precision_variants: str | None = None,
 ) -> str:
     """Return the child pipeline YAML as a string.
 
@@ -571,6 +605,11 @@ def _generate_child_pipeline(
     )
     _validate_tokens("TOOLS_SUBSETS", requested_tools_subsets, ALL_TOOLS_SUBSETS)
 
+    requested_precisions = _resolve_filter(
+        precision_variants, "PRECISION_VARIANTS", default=["double"]
+    )
+    _validate_tokens("PRECISION_VARIANTS", requested_precisions, ALL_PRECISIONS)
+
     cells: list[_MatrixCell] = []
 
     if "model" in requested_sessions:
@@ -601,6 +640,9 @@ def _generate_child_pipeline(
             )
         )
 
+    # Add precision variants (e.g., single-precision) for all cells
+    cells = _add_precision_variants(cells, requested_precisions)
+
     kept_cells, dropped_cells = _collect_cells(cells)
 
     _print_collection_summary(
@@ -613,6 +655,7 @@ def _generate_child_pipeline(
         backends=requested_backends,
         levels=requested_levels,
         grids=requested_grids,
+        precisions=requested_precisions,
         kept=kept_cells,
         dropped=dropped_cells,
     )
@@ -687,6 +730,13 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
         str | None,
         typer.Option("--grids", help="Colon/comma-separated grid filter"),
     ] = None,
+    precision_variants: Annotated[
+        str | None,
+        typer.Option(
+            "--precision-variants",
+            help="Colon/comma-separated precision filter (double, single)",
+        ),
+    ] = None,
 ) -> None:
     """Generate child pipeline YAML to stdout.
 
@@ -705,6 +755,7 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
             backends=backends,
             levels=levels,
             grids=grids,
+            precision_variants=precision_variants,
         )
     )
 

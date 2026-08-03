@@ -309,7 +309,7 @@ class GridGeometry(factory.FieldSource):
                         "vertex_lat": attrs.VERTEX_LAT,
                         "vertex_lon": attrs.VERTEX_LON,
                     },
-                    params={"radius": self._grid.grid_params.radius},
+                    params={"radius": gtx.float64(self._grid.grid_params.radius)},
                     do_exchange=True,
                 )
                 self.register_provider(vertex_vertex_distance)
@@ -317,7 +317,7 @@ class GridGeometry(factory.FieldSource):
                 coriolis_param = factory.ProgramFieldProvider(
                     func=stencils.compute_coriolis_parameter_on_edges,
                     deps={"edge_center_lat": attrs.EDGE_LAT},
-                    params={"angular_velocity": constants.EARTH_ANGULAR_VELOCITY},
+                    params={"angular_velocity": gtx.float64(constants.EARTH_ANGULAR_VELOCITY)},
                     fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
                     domain={
                         dims.EdgeDim: (
@@ -439,7 +439,7 @@ class GridGeometry(factory.FieldSource):
             self.register_provider(mean_dual_cell_area_np)
 
             characteristic_length_np = factory.NumpyDataProvider(
-                func=math_utils.compute_sqrt,
+                func=lambda input_val: gtx.sqrt(input_val),  # noqa: PLW0108
                 domain=(),
                 deps={
                     "input_val": attrs.MEAN_CELL_AREA,

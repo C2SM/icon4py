@@ -15,7 +15,7 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_graupel_only
-from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
 from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
 
@@ -48,6 +48,7 @@ _GRAUPEL_TEST_CASES = [
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     ("experiment", "enable_dace_hooks"),
     _GRAUPEL_TEST_CASES,
@@ -63,7 +64,9 @@ def test_graupel_only(
 ) -> None:
     assert experiment.type == utils.ExperimentType.GRAUPEL_ONLY
     inp = common.GraupelInput.load(
-        filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
+        filename=experiment.input_file,
+        allocator=model_backends.get_allocator(backend_like),
+        dtype=ta.wpfloat,
     )
 
     graupel_run_program = run_graupel_only.setup_graupel(
@@ -92,6 +95,7 @@ def test_graupel_only(
             "qg": inp.qg,
             "t": inp.t,
         },
+        dtype=ta.wpfloat,
     )
 
     graupel_run_program(
@@ -111,16 +115,47 @@ def test_graupel_only(
     )
 
     ref = common.GraupelOutput.load(
-        filename=experiment.reference_file, allocator=model_backends.get_allocator(backend_like)
+        filename=experiment.reference_file,
+        allocator=model_backends.get_allocator(backend_like),
+        dtype=ta.wpfloat,
     )
 
     rtol = 1e-14
     atol = 1e-16
 
-    test_utils.assert_dallclose(ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.qi.asnumpy(), out.qi.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.qr.asnumpy(), out.qr.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.qs.asnumpy(), out.qs.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.qg.asnumpy(), out.qg.asnumpy(), atol=atol, rtol=rtol)
-    test_utils.assert_dallclose(ref.t.asnumpy(), out.t.asnumpy(), atol=atol, rtol=rtol)
+    test_utils.assert_dallclose(
+        ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol if test_utils.wp_is_dp else 2e-6
+    )
+    test_utils.assert_dallclose(
+        ref.qc.asnumpy(),
+        out.qc.asnumpy(),
+        atol=atol if test_utils.wp_is_dp else 3e-8,
+        rtol=rtol if test_utils.wp_is_dp else 1e-4,
+    )
+    test_utils.assert_dallclose(
+        ref.qi.asnumpy(),
+        out.qi.asnumpy(),
+        atol=atol if test_utils.wp_is_dp else 2e-11,
+        rtol=rtol if test_utils.wp_is_dp else 1e-5,
+    )
+    test_utils.assert_dallclose(
+        ref.qr.asnumpy(),
+        out.qr.asnumpy(),
+        atol=atol if test_utils.wp_is_dp else 3e-8,
+        rtol=rtol if test_utils.wp_is_dp else 2e-5,
+    )
+    test_utils.assert_dallclose(
+        ref.qs.asnumpy(),
+        out.qs.asnumpy(),
+        atol=atol if test_utils.wp_is_dp else 8e-7,
+        rtol=rtol if test_utils.wp_is_dp else 4e-5,
+    )
+    test_utils.assert_dallclose(
+        ref.qg.asnumpy(),
+        out.qg.asnumpy(),
+        atol=atol if test_utils.wp_is_dp else 8e-11,
+        rtol=rtol if test_utils.wp_is_dp else 2e-5,
+    )
+    test_utils.assert_dallclose(
+        ref.t.asnumpy(), out.t.asnumpy(), atol=atol, rtol=rtol if test_utils.wp_is_dp else 2e-7
+    )

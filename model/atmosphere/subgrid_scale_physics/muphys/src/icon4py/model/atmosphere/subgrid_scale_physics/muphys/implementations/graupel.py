@@ -8,7 +8,7 @@
 from typing import NamedTuple
 
 import gt4py.next as gtx
-from gt4py.next import broadcast, maximum, minimum, power, sqrt, where
+from gt4py.next import astype, broadcast, maximum, minimum, power, sqrt, where
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
@@ -199,7 +199,7 @@ def _precip_and_t(  # noqa: PLR0917 [too-many-positional-arguments]
     dz: ta.wpfloat,
 ) -> IntegrationState:
     zeta = dt / (wpfloat(2.0) * dz)
-    xrho = sqrt(GraupelConsts.rho_00 / rho)
+    xrho = astype(sqrt(GraupelConsts.rho_00 / rho), wpfloat)
 
     vc_r = _vel_scale_factor_default_scalar(xrho)
     vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q.s)

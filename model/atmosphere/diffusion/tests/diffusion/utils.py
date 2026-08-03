@@ -42,15 +42,23 @@ def verify_diffusion_fields(
         ref_dwdy = diffusion_savepoint.dwdy().asnumpy()
         val_dwdy = diagnostic_state.dwdy.asnumpy()
 
-        assert test_utils.dallclose(val_div_ic, ref_div_ic, atol=1e-16)
-        assert test_utils.dallclose(val_hdef_ic, ref_hdef_ic, atol=1e-13)
-        assert test_utils.dallclose(val_dwdx, ref_dwdx, atol=1e-18)
-        assert test_utils.dallclose(val_dwdy, ref_dwdy, atol=1e-18)
+        test_utils.assert_dallclose(
+            val_div_ic, ref_div_ic, atol=1e-16 if test_utils.wp_is_dp else 4e-9
+        )
+        test_utils.assert_dallclose(
+            val_hdef_ic, ref_hdef_ic, atol=1e-13 if test_utils.wp_is_dp else 2e-12
+        )
+        test_utils.assert_dallclose(val_dwdx, ref_dwdx, atol=1e-18 if test_utils.wp_is_dp else 2e-9)
+        test_utils.assert_dallclose(
+            val_dwdy, ref_dwdy, atol=1e-18, rtol=1e-12 if test_utils.wp_is_dp else 0.6
+        )
 
-    assert test_utils.dallclose(val_vn, ref_vn, atol=1.0e-8, rtol=1.0e-9)
-    assert test_utils.dallclose(val_w, ref_w, atol=1e-14)
-    assert test_utils.dallclose(val_theta_v, ref_theta_v)
-    assert test_utils.dallclose(val_exner, ref_exner)
+    test_utils.assert_dallclose(
+        val_vn, ref_vn, atol=1.0e-8 if test_utils.wp_is_dp else 4e-6, rtol=1.0e-9
+    )
+    test_utils.assert_dallclose(val_w, ref_w, atol=1e-14 if test_utils.wp_is_dp else 2e-7)
+    test_utils.assert_dallclose(val_theta_v, ref_theta_v)
+    test_utils.assert_dallclose(val_exner, ref_exner)
 
 
 def smag_limit_numpy(func, *args):

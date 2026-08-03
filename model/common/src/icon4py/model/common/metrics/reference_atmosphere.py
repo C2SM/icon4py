@@ -6,28 +6,27 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import astype, exp, log
+from gt4py.next import exp, log
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
 def _compute_reference_atmosphere_edge_fields(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    p0ref: wpfloat,
-    p0sl_bg: wpfloat,
-    grav: wpfloat,
-    cpd: wpfloat,
-    rd: wpfloat,
-    h_scal_bg: wpfloat,
-    t0sl_bg: wpfloat,
-    del_t_bg: wpfloat,
-) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
+    z_mc: fa.CellKField[gtx.float64],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+    p0ref: gtx.float64,
+    p0sl_bg: gtx.float64,
+    grav: gtx.float64,
+    cpd: gtx.float64,
+    rd: gtx.float64,
+    h_scal_bg: gtx.float64,
+    t0sl_bg: gtx.float64,
+    del_t_bg: gtx.float64,
+) -> tuple[fa.EdgeKField[gtx.float64], fa.EdgeKField[gtx.float64]]:
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     denom = t0sl_bg - del_t_bg
     exp_z_me = exp(z_me / h_scal_bg)
@@ -42,18 +41,18 @@ def _compute_reference_atmosphere_edge_fields(  # noqa: PLR0917 [too-many-positi
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_reference_atmosphere_edge_fields(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
-    rho_ref_me: fa.EdgeKField[wpfloat],
-    theta_ref_me: fa.EdgeKField[wpfloat],
-    p0ref: wpfloat,
-    p0sl_bg: wpfloat,
-    grav: wpfloat,
-    cpd: wpfloat,
-    rd: wpfloat,
-    h_scal_bg: wpfloat,
-    t0sl_bg: wpfloat,
-    del_t_bg: wpfloat,
+    z_mc: fa.CellKField[gtx.float64],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+    rho_ref_me: fa.EdgeKField[gtx.float64],
+    theta_ref_me: fa.EdgeKField[gtx.float64],
+    p0ref: gtx.float64,
+    p0sl_bg: gtx.float64,
+    grav: gtx.float64,
+    cpd: gtx.float64,
+    rd: gtx.float64,
+    h_scal_bg: gtx.float64,
+    t0sl_bg: gtx.float64,
+    del_t_bg: gtx.float64,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -80,11 +79,11 @@ def compute_reference_atmosphere_edge_fields(  # noqa: PLR0917 [too-many-positio
 
 @gtx.field_operator
 def compute_z_temp(
-    z_mc: fa.CellKField[wpfloat],
-    t0sl_bg: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
-) -> fa.CellKField[wpfloat]:
+    z_mc: fa.CellKField[gtx.float64],
+    t0sl_bg: gtx.float64,
+    del_t_bg: gtx.float64,
+    h_scal_bg: gtx.float64,
+) -> fa.CellKField[gtx.float64]:
     denom = t0sl_bg - del_t_bg
     z_temp = denom + del_t_bg * exp(-z_mc / h_scal_bg)
     return z_temp
@@ -92,14 +91,14 @@ def compute_z_temp(
 
 @gtx.field_operator
 def compute_z_aux1_cell(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_mc: fa.CellKField[wpfloat],
-    p0sl_bg: wpfloat,
-    grav: wpfloat,
-    rd: wpfloat,
-    h_scal_bg: wpfloat,
-    t0sl_bg: wpfloat,
-    del_t_bg: wpfloat,
-) -> fa.CellKField[wpfloat]:
+    z_mc: fa.CellKField[gtx.float64],
+    p0sl_bg: gtx.float64,
+    grav: gtx.float64,
+    rd: gtx.float64,
+    h_scal_bg: gtx.float64,
+    t0sl_bg: gtx.float64,
+    del_t_bg: gtx.float64,
+) -> fa.CellKField[gtx.float64]:
     denom = t0sl_bg - del_t_bg
     logval = log((exp(z_mc / h_scal_bg) * denom + del_t_bg) / t0sl_bg)
     return p0sl_bg * exp(-grav / rd * h_scal_bg / denom * logval)
@@ -107,19 +106,19 @@ def compute_z_aux1_cell(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @gtx.field_operator
 def _compute_reference_atmosphere_cell_fields(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_mc: fa.CellKField[wpfloat],
-    p0ref: wpfloat,
-    p0sl_bg: wpfloat,
-    grav: wpfloat,
-    cpd: wpfloat,
-    rd: wpfloat,
-    h_scal_bg: wpfloat,
-    t0sl_bg: wpfloat,
-    del_t_bg: wpfloat,
+    z_mc: fa.CellKField[gtx.float64],
+    p0ref: gtx.float64,
+    p0sl_bg: gtx.float64,
+    grav: gtx.float64,
+    cpd: gtx.float64,
+    rd: gtx.float64,
+    h_scal_bg: gtx.float64,
+    t0sl_bg: gtx.float64,
+    del_t_bg: gtx.float64,
 ) -> tuple[
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
+    fa.CellKField[gtx.float64],
+    fa.CellKField[gtx.float64],
+    fa.CellKField[gtx.float64],
 ]:
     z_aux1 = compute_z_aux1_cell(
         z_mc=z_mc,
@@ -145,18 +144,18 @@ def _compute_reference_atmosphere_cell_fields(  # noqa: PLR0917 [too-many-positi
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_reference_atmosphere_cell_fields(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_height: fa.CellKField[wpfloat],
-    exner_ref_mc: fa.CellKField[wpfloat],
-    rho_ref_mc: fa.CellKField[wpfloat],
-    theta_ref_mc: fa.CellKField[wpfloat],
-    p0ref: wpfloat,
-    p0sl_bg: wpfloat,
-    grav: wpfloat,
-    cpd: wpfloat,
-    rd: wpfloat,
-    h_scal_bg: wpfloat,
-    t0sl_bg: wpfloat,
-    del_t_bg: wpfloat,
+    z_height: fa.CellKField[gtx.float64],
+    exner_ref_mc: fa.CellKField[gtx.float64],
+    rho_ref_mc: fa.CellKField[gtx.float64],
+    theta_ref_mc: fa.CellKField[gtx.float64],
+    p0ref: gtx.float64,
+    p0sl_bg: gtx.float64,
+    grav: gtx.float64,
+    cpd: gtx.float64,
+    rd: gtx.float64,
+    h_scal_bg: gtx.float64,
+    t0sl_bg: gtx.float64,
+    del_t_bg: gtx.float64,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -203,16 +202,16 @@ def compute_reference_atmosphere_cell_fields(  # noqa: PLR0917 [too-many-positio
 
 @gtx.field_operator
 def _compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_ifc: fa.CellKField[wpfloat],
-    t0sl_bg: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
-    grav: wpfloat,
-    cpd: wpfloat,
-    rd: wpfloat,
-    p0sl_bg: wpfloat,
-    rd_o_cpd: wpfloat,
-    p0ref: wpfloat,
+    z_ifc: fa.CellKField[gtx.float64],
+    t0sl_bg: gtx.float64,
+    del_t_bg: gtx.float64,
+    h_scal_bg: gtx.float64,
+    grav: gtx.float64,
+    cpd: gtx.float64,
+    rd: gtx.float64,
+    p0sl_bg: gtx.float64,
+    rd_o_cpd: gtx.float64,
+    p0ref: gtx.float64,
 ):
     """
     Calculate the reference Exner pressure and its first vertical derivative, half level mass points.
@@ -233,15 +232,15 @@ def _compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-argu
 
 @gtx.field_operator
 def _compute_d2dexdz2_fac_mc(  # noqa: PLR0917 [too-many-positional-arguments]
-    theta_ref_mc: fa.CellKField[vpfloat],
-    inv_ddqz_z_full: fa.CellKField[vpfloat],
-    exner_ref_mc: fa.CellKField[vpfloat],
-    z_mc: fa.CellKField[wpfloat],
-    cpd: wpfloat,
-    grav: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
+    theta_ref_mc: fa.CellKField[gtx.float64],
+    inv_ddqz_z_full: fa.CellKField[gtx.float64],
+    exner_ref_mc: fa.CellKField[gtx.float64],
+    z_mc: fa.CellKField[gtx.float64],
+    cpd: gtx.float64,
+    grav: gtx.float64,
+    del_t_bg: gtx.float64,
+    h_scal_bg: gtx.float64,
+) -> tuple[fa.CellKField[gtx.float64], fa.CellKField[gtx.float64]]:
     """
     Compute vertical derivative of d_exner_dz/theta_ref for full level mass points.
 
@@ -263,11 +262,6 @@ def _compute_d2dexdz2_fac_mc(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
     """
-    del_t_bg = astype(del_t_bg, vpfloat)
-    cpd = astype(cpd, vpfloat)
-    grav = astype(grav, vpfloat)
-    h_scal_bg = astype(h_scal_bg, vpfloat)
-    z_mc = astype(z_mc, vpfloat)
     fac1 = -grav / (cpd * theta_ref_mc**2) * inv_ddqz_z_full
     fac2 = (
         2.0
@@ -282,18 +276,18 @@ def _compute_d2dexdz2_fac_mc(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_ifc: fa.CellKField[wpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[wpfloat],
-    theta_ref_ic: fa.CellKField[wpfloat],
-    t0sl_bg: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
-    grav: wpfloat,
-    rd: wpfloat,
-    cpd: wpfloat,
-    p0sl_bg: wpfloat,
-    rd_o_cpd: wpfloat,
-    p0ref: wpfloat,
+    z_ifc: fa.CellKField[gtx.float64],
+    d_exner_dz_ref_ic: fa.CellKField[gtx.float64],
+    theta_ref_ic: fa.CellKField[gtx.float64],
+    t0sl_bg: gtx.float64,
+    del_t_bg: gtx.float64,
+    h_scal_bg: gtx.float64,
+    grav: gtx.float64,
+    rd: gtx.float64,
+    cpd: gtx.float64,
+    p0sl_bg: gtx.float64,
+    rd_o_cpd: gtx.float64,
+    p0ref: gtx.float64,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -320,16 +314,16 @@ def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-argum
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_d2dexdz2_fac_mc(  # noqa: PLR0917 [too-many-positional-arguments]
-    theta_ref_mc: fa.CellKField[vpfloat],
-    inv_ddqz_z_full: fa.CellKField[vpfloat],
-    exner_ref_mc: fa.CellKField[vpfloat],
-    z_mc: fa.CellKField[wpfloat],
-    d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
-    d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
-    cpd: float,
-    grav: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
+    theta_ref_mc: fa.CellKField[gtx.float64],
+    inv_ddqz_z_full: fa.CellKField[gtx.float64],
+    exner_ref_mc: fa.CellKField[gtx.float64],
+    z_mc: fa.CellKField[gtx.float64],
+    d2dexdz2_fac1_mc: fa.CellKField[gtx.float64],
+    d2dexdz2_fac2_mc: fa.CellKField[gtx.float64],
+    cpd: gtx.float64,
+    grav: gtx.float64,
+    del_t_bg: gtx.float64,
+    h_scal_bg: gtx.float64,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

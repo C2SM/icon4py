@@ -22,8 +22,8 @@ def _apply_4th_order_divergence_damping(
     z_graddiv2_vn: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
-    mean_cell_area: float,
-    second_order_divdamp_factor: float,
+    mean_cell_area: wpfloat,
+    second_order_divdamp_factor: wpfloat,
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_4th_order_divdamp."""
     scal_divdamp = _calculate_fourth_order_divdamp_scaling_coeff(
@@ -43,8 +43,8 @@ def apply_4th_order_divergence_damping(
     z_graddiv2_vn: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
-    mean_cell_area: float,
-    second_order_divdamp_factor: float,
+    mean_cell_area: wpfloat,
+    second_order_divdamp_factor: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

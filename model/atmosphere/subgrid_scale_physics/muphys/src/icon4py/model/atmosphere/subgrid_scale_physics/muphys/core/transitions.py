@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import exp, maximum, minimum, power, sqrt, where
+from gt4py.next import astype, exp, maximum, minimum, power, sqrt, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
     GraupelConsts,
@@ -131,7 +131,7 @@ def _cloud_to_snow(
     Return:                 Conversion rate
     """
     ECS = wpfloat(0.9)
-    B_RIM = -(wpfloat(GraupelConsts.v1s) + wpfloat(3.0))
+    B_RIM = -(GraupelConsts.v1s + wpfloat(3.0))
     C_RIM = wpfloat(2.61) * ECS * GraupelConsts.v0s  # (with pi*gam(v1s+3)/4 = 2.610)
     ZERO = wpfloat(0.0)
     return where(
@@ -208,7 +208,7 @@ def _graupel_to_rain(
 
     Return:                 Conversion rate
     """
-    A_MELT = wpfloat(GraupelConsts.tx) - wpfloat(389.5)  # melting prefactor
+    A_MELT = GraupelConsts.tx - wpfloat(389.5)  # melting prefactor
     B_MELT = wpfloat(0.6)  # melting exponent
     C1_MELT = wpfloat(12.31698)  # Constants in melting formula
     C2_MELT = wpfloat(7.39441e-05)  # Constants in melting formula
@@ -709,7 +709,7 @@ def _vapor_x_snow(  # noqa: PLR0917 [too-many-positional-arguments]
     """
     NU = wpfloat(1.75e-5)  # kinematic viscosity of air
     A0_VS = wpfloat(1.0)
-    A1_VS = wpfloat(0.4182) * sqrt(GraupelConsts.v0s / NU)
+    A1_VS = wpfloat(0.4182) * astype(sqrt(GraupelConsts.v0s / NU), wpfloat)
     A2_VS = -(GraupelConsts.v1s + wpfloat(1.0)) / wpfloat(2.0)
     EPS = wpfloat(1.0e-15)
     QS_LIM = wpfloat(1.0e-7)

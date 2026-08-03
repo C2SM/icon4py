@@ -26,22 +26,22 @@ def _sum_neighbor_contributions_all(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
-    js_gt0 = js >= 0.0
-    js_gt1 = js >= 1.0
-    js_gt2 = js >= 2.0
-    js_gt3 = js >= 3.0
-    js_gt4 = js >= 4.0
+    js_gt0 = js >= wpfloat(0.0)
+    js_gt1 = js >= wpfloat(1.0)
+    js_gt2 = js >= wpfloat(2.0)
+    js_gt3 = js >= wpfloat(3.0)
+    js_gt4 = js >= wpfloat(4.0)
 
-    prod_p0 = where(mask1 & js_gt0, p_cc * p_cellmass_now, 0.0)
-    prod_p1 = where(mask1 & js_gt1, p_cc(KDim + 1) * p_cellmass_now(KDim + 1), 0.0)
-    prod_p2 = where(mask1 & js_gt2, p_cc(KDim + 2) * p_cellmass_now(KDim + 2), 0.0)
-    prod_p3 = where(mask1 & js_gt3, p_cc(KDim + 3) * p_cellmass_now(KDim + 3), 0.0)
-    prod_p4 = where(mask1 & js_gt4, p_cc(KDim + 4) * p_cellmass_now(KDim + 4), 0.0)
-    prod_m0 = where(mask2 & js_gt0, p_cc(KDim - 1) * p_cellmass_now(KDim - 1), 0.0)
-    prod_m1 = where(mask2 & js_gt1, p_cc(KDim - 2) * p_cellmass_now(KDim - 2), 0.0)
-    prod_m2 = where(mask2 & js_gt2, p_cc(KDim - 3) * p_cellmass_now(KDim - 3), 0.0)
-    prod_m3 = where(mask2 & js_gt3, p_cc(KDim - 4) * p_cellmass_now(KDim - 4), 0.0)
-    prod_m4 = where(mask2 & js_gt4, p_cc(KDim - 5) * p_cellmass_now(KDim - 5), 0.0)
+    prod_p0 = where(mask1 & js_gt0, p_cc * p_cellmass_now, wpfloat(0.0))
+    prod_p1 = where(mask1 & js_gt1, p_cc(KDim + 1) * p_cellmass_now(KDim + 1), wpfloat(0.0))
+    prod_p2 = where(mask1 & js_gt2, p_cc(KDim + 2) * p_cellmass_now(KDim + 2), wpfloat(0.0))
+    prod_p3 = where(mask1 & js_gt3, p_cc(KDim + 3) * p_cellmass_now(KDim + 3), wpfloat(0.0))
+    prod_p4 = where(mask1 & js_gt4, p_cc(KDim + 4) * p_cellmass_now(KDim + 4), wpfloat(0.0))
+    prod_m0 = where(mask2 & js_gt0, p_cc(KDim - 1) * p_cellmass_now(KDim - 1), wpfloat(0.0))
+    prod_m1 = where(mask2 & js_gt1, p_cc(KDim - 2) * p_cellmass_now(KDim - 2), wpfloat(0.0))
+    prod_m2 = where(mask2 & js_gt2, p_cc(KDim - 3) * p_cellmass_now(KDim - 3), wpfloat(0.0))
+    prod_m3 = where(mask2 & js_gt3, p_cc(KDim - 4) * p_cellmass_now(KDim - 4), wpfloat(0.0))
+    prod_m4 = where(mask2 & js_gt4, p_cc(KDim - 5) * p_cellmass_now(KDim - 5), wpfloat(0.0))
 
     prod_jks = (
         prod_p0
@@ -68,11 +68,11 @@ def _compute_ppm4gpu_integer_flux(
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    js = floor(abs(z_cfl)) - 1.0
+    js = floor(abs(z_cfl)) - wpfloat(1.0)
 
-    z_cfl_pos = z_cfl > 0.0
-    z_cfl_neg = z_cfl < 0.0
-    wsign = where(z_cfl_pos, 1.0, -1.0)
+    z_cfl_pos = z_cfl > wpfloat(0.0)
+    z_cfl_neg = z_cfl < wpfloat(0.0)
+    wsign = where(z_cfl_pos, wpfloat(1.0), wpfloat(-1.0))
 
     in_slev_bounds = astype(k, wpfloat) - js >= astype(slev, wpfloat)
 
@@ -86,7 +86,7 @@ def _compute_ppm4gpu_integer_flux(
 
     z_iflx = wsign * p_cc_cellmass_now_jks
 
-    p_upflux = p_upflux + where(in_slev_bounds, z_iflx / p_dtime, 0.0)
+    p_upflux = p_upflux + where(in_slev_bounds, z_iflx / p_dtime, wpfloat(0.0))
 
     return p_upflux
 
