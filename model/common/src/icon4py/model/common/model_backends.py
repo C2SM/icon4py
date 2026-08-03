@@ -113,7 +113,7 @@ def make_custom_dace_backend(
     Returns:
         A dace backend with custom configuration for the target device.
     """
-    if use_external_workspace and device in (gtx.DeviceType.CUDA, gtx.DeviceType.ROCM):
+    if use_external_workspace and device is not None:
         external_workspace = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(device)
         if optimization_args is None:
             optimization_args = {
