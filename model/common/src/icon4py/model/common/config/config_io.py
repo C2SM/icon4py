@@ -105,10 +105,10 @@ def unstructure_endtime(endtime: time.EndOfSimulation) -> dict:
 
 def register_config_union[T](union_type: type[T], mapping: typing.Mapping[str, type[T]]) -> None:
     def structure(config_dict: dict, _: typing.Any) -> T:
-        topotype = config_dict.pop("type")
-        if topotype not in mapping:
-            raise TypeError(f"Unsupported type spec for {union_type}: {topotype}")
-        return CONV.structure(config_dict, mapping[topotype])
+        config_type = config_dict.pop("type")
+        if config_type not in mapping:
+            raise TypeError(f"Unsupported type spec for {union_type}: {config_type}")
+        return CONV.structure(config_dict, mapping[config_type])
 
     inverse_mapping: dict[type[T], str] = {v: k for k, v in mapping.items()}
 

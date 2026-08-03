@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-type TOPOCONFIG = (
+type TOPO_CONFIG = (
     flat_topo.FlatTopographyConfig
     | jw_topo.JablonowskiWilliamsonConfig
     | gausshill_topo.GaussianHillConfig
@@ -40,7 +40,7 @@ type TOPOCONFIG = (
 )
 
 config_io.register_config_union(
-    TOPOCONFIG.__value__,
+    TOPO_CONFIG.__value__,
     {
         "flat": flat_topo.FlatTopographyConfig,
         "jablonowski_williamson": jw_topo.JablonowskiWilliamsonConfig,
@@ -52,7 +52,7 @@ config_io.register_config_union(
 
 @dataclasses.dataclass
 class TopographyConfig:
-    config: TOPOCONFIG
+    config: TOPO_CONFIG
 
     @classmethod
     def from_fortran_dict(

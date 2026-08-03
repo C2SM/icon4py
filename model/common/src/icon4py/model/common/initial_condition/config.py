@@ -41,13 +41,13 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-type ICCONFIG = (
+type IC_CONFIG = (
     jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig
 )
 
 
 config_io.register_config_union(
-    ICCONFIG.__value__,
+    IC_CONFIG.__value__,
     {
         "jablonowski_williamson": jw_ic.JablonowskiWilliamsonConfig,
         "gauss_3d": gauss_ic.Gauss3DConfig,
@@ -59,7 +59,7 @@ config_io.register_config_union(
 
 @dataclasses.dataclass
 class InitialConditionConfig:
-    config: ICCONFIG
+    config: IC_CONFIG
 
     @classmethod
     def from_fortran_dict(

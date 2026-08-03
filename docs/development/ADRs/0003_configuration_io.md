@@ -7,13 +7,13 @@ tags: [config, io, yaml]
 - **Status**: valid
 - **Authors**: Rico Häuselmann (@DropD)
 - **Created**: 2026-07-29
-- **Updated**: 2026-07-29
+- **Updated**: 2026-08-03
 
 While implementing and discussing ICON4Py's own configuration files, design choices were made. This ADR is meant to serve as guidance for updating the implementation.
 
 ## Context
 
-The configuration file is the primary way for a normal user to interact with ICON4Py, hence the first implementation has been preceded by experiments and discussions. The results are laid out in the rest of this document.
+The configuration file is the primary way for a user to interact with ICON4Py, hence the first implementation has been preceded by experiments and discussions. The results are laid out in the rest of this document.
 
 The following features / trade-offs were discussed and investigated:
 
@@ -44,6 +44,12 @@ Change if a demonstrably better format is identified.
 At the time of writing this ADR, some component configuration classes contain attributes which should be configured only once for the whole experiment. They also provide default values for those options. This makes the configuration format obviously error prone.
 
 We decided to remove these duplicated options from the components, as they were historically necessary but serve only convenience now. This is a work in progress.
+
+Examples of currently known instances:
+
+- `DiffusionConfig.ndyn_substeps`: the diffusion granule should consume the value of `DriverConfig.ndyn_substeps` at initialization
+- `NonHydrostaticConfig.ndyn_substeps`: `SolveNonhydro.time_step` is already given the relevant value as a parameter and never references the config option.
+- `topography.analytical.jablonowski_williamson.JablonowskiWilliamsonConfig` and `initial_condition.analytical.jablonowski_williamson.JablonowskiWilliamsonConfig` each have attributes `u0` and `eta_0`. Each must hold the same value across both configuration classes for the run to be valid.
 
 ### Usability - Round Trips
 
