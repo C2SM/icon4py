@@ -9,24 +9,23 @@
 from __future__ import annotations
 
 import dataclasses
+import enum
 import logging
 from typing import TYPE_CHECKING, ClassVar
 
 from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
     model_backends,
-    thermodynamic_functions as thermo,
 )
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
     vertical as v_grid,
 )
-from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
-from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
+from icon4py.model.common.states import tracer_states
+
 
 
 if TYPE_CHECKING:
@@ -38,12 +37,217 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+class TracerProfile(int, enum.Enum):
+    """
+    Initial tracer profile for idealized advection test cases.
+    """
+
+    #: two-dimensional smooth Gaussian curve
+    GAUSSIAN_2D = 1
+    #: two-dimensional smooth off-centered Gaussian curve
+    GAUSSIAN_2D_OFFCENTER = 2
+    #: two-dimensional discontinuous circle
+    CIRCLE_2D = 3
+
+
+class VelocityField(int, enum.Enum):
+    """
+    Velocity field for idealized advection test cases.
+    """
+
+    #: constant velocity field
+    CONSTANT = 1
+    #: two-dimensional divergence-free swirling velocity field
+    VORTEX_2D = 2
+    #: two-dimensional increasingly deformational field
+    INCREASING_2D = 3
+
+
 @dataclasses.dataclass
 class LinearAdvectionConfig:
-    #: base height of the profile [m] (hmin_wk)
-    h_min: float = 0.0
-    
+    #: initial tracer profile
+    tracer_profle: TracerProfile
+    #: velocity field
+    velocity_field: VelocityField
+
     fortran_name_map: ClassVar[dict[str, str]] = {}
+
+    def __post_init__(self) -> None:
+        if self.tracer_profle not in TracerProfile:
+            raise ValueError(f"Invalid tracer profile: {self.tracer_profle}")
+        if self.velocity_field not in VelocityField:
+            raise ValueError(f"Invalid velocity field: {self.velocity_field}")
+        if self.velocity_field == VelocityField.INCREASING_2D:
+            raise NotImplementedError(
+                "The 'INCREASING_2D' velocity field is not yet implemented."
+            )
+
+
+def _get_torus_dimensions(domain_size: float):
+    return 0.5 * domain_size, 0.5 * domain_size, domain_size, domain_size
+
+
+def _prepare_torus_quadratic_quadrature(
+    vertex_x: data_alloc.NDArray,
+    vertex_y: data_alloc.NDArray,
+    cell_center_x: data_alloc.NDArray,
+    cell_center_y: data_alloc.NDArray,
+    c2v_connectivity: data_alloc.NDArray,
+    min_edge_length: float,
+):
+    """
+    Prepare three-point quadrature rule on torus grids.
+
+    Args:
+        grid: input argument, IconGrid that entails a torus grid
+        vertex_x: input argument, array that contains the vertex x-coordinates
+        vertex_y: input argument, array that contains the vertex y-coordinates
+        cell_center_x: input argument, array that contains the cell center x-coordinates
+        cell_center_y: input argument, array that contains the cell center y-coordinates
+        c2v_connectivity: input argument, array that contains the cell-to-vertex connectivity
+        min_edge_length: input argument, the smallest edge length in the grid
+
+    Usage:
+        The return values of this function are meant to be used for setting cell averages on torus grids.
+        A two-dimensional scalar function f(x,y) can be projected onto a torus plane array arr as follows:
+            arr = xp.sum(weights * f(nodes[0,:,:], nodes[1,:,:]), axis=0)
+
+    """
+    array_ns = data_alloc.array_namespace(vertex_x)
+    alpha = array_ns.array([[0.5, 0, 0.5], [0.5, 0.5, 0], [0, 0.5, 0.5]])
+    weights_single = array_ns.array([1 / 3, 1 / 3, 1 / 3])
+
+    n_cells = cell_center_x.shape[0]
+    n_points = weights_single.size
+
+    weights = array_ns.tile(weights_single[:, None], (1, n_cells))
+    nodes = array_ns.zeros((2, n_points, n_cells))
+
+    c2v_x = vertex_x[c2v_connectivity]
+    c2v_y = vertex_y[c2v_connectivity]
+
+    nodes[0, :, :] = array_ns.matmul(alpha, c2v_x.T)
+    nodes[1, :, :] = array_ns.matmul(alpha, c2v_y.T)
+
+    # revert to cell centers for degenerate triangles at the domain boundary due to periodicity
+    node_x_diff = c2v_x - array_ns.roll(c2v_x, 1, axis=1)
+    node_y_diff = c2v_y - array_ns.roll(c2v_y, 1, axis=1)
+    node_dist_max = array_ns.max(array_ns.sqrt(node_x_diff**2 + node_y_diff**2), axis=1)
+    mask = node_dist_max > 2.0 * min_edge_length
+    weights[:, mask] = 1 / n_points
+    nodes[:, :, mask] = array_ns.stack((cell_center_x[None, mask], cell_center_y[None, mask]))
+
+    return weights, nodes
+
+
+def _compute_idealized_velocity_field(
+    velocity_field: VelocityField,
+    edge_center_x: data_alloc.NDArray,
+    edge_center_y: data_alloc.NDArray,
+    domain_length: float,
+    domain_height: float,
+    time: float,
+    time_end: float,
+):
+    match velocity_field:
+        case VelocityField.CONSTANT:
+            u, v = domain_length, domain_height
+        case VelocityField.VORTEX_2D:
+            array_ns = data_alloc.array_namespace(edge_center_x)
+            v_scal = 1.0  # measure for deformation
+            u = (
+                -v_scal
+                * domain_length
+                * (array_ns.sin(array_ns.pi * edge_center_x / domain_length) ** 2)
+                * array_ns.cos(array_ns.pi * edge_center_y / domain_height)
+                * array_ns.sin(array_ns.pi * edge_center_y / domain_height)
+                * array_ns.cos(array_ns.pi * time / time_end)
+            )
+            v = (
+                v_scal
+                * domain_height
+                * array_ns.cos(array_ns.pi * edge_center_x / domain_length)
+                * array_ns.sin(array_ns.pi * edge_center_x / domain_length)
+                * (array_ns.sin(array_ns.pi * edge_center_y / domain_height) ** 2)
+                * array_ns.cos(array_ns.pi * time / time_end)
+            )
+        case _:
+            raise NotImplementedError(
+                f"Velocity field {velocity_field} not implemented."
+            )
+    return u, v
+
+
+def _construct_idealized_prep_adv(
+    velocity_field: VelocityField,
+    prep_adv_state: tracer_advection_states.AdvectionPrepAdvState,
+    primal_normal_x: data_alloc.NDArray,
+    primal_normal_y: data_alloc.NDArray,
+    edge_center_x: data_alloc.NDArray,
+    edge_center_y: data_alloc.NDArray,
+    domain_length: float,
+    domain_height: float,
+    time: float,
+    dtime: float,
+    time_end: float,
+) -> tracer_advection_states.AdvectionPrepAdvState:
+    # we assume that the airmass is constant 1.0, the mass flux equals the velocity
+    # impose 2D velocity field at time n+1/2 as required by the numerical scheme
+    u, v = _compute_idealized_velocity_field(
+        velocity_field,
+        domain_length,
+        domain_height,
+        edge_center_x,
+        edge_center_y,
+        time + dtime / 2.0,
+        time_end,
+    )
+    vn = u * primal_normal_x + v * primal_normal_y
+
+    vn_traj = prep_adv_state.vn_traj.ndarray
+    mass_flx_me = prep_adv_state.mass_flx_me.ndarray
+    mass_flx_ic = prep_adv_state.mass_flx_ic.ndarray
+    vn_traj[:,:] = vn[None, :]
+    mass_flx_me[:,:] = vn[None, :]
+    mass_flx_ic[:,:] = 0.0
+
+
+def _construct_idealized_tracer(
+    tracer_profile: TracerProfile,
+    tracer: data_alloc.NDArray,
+    domain_center_x: float,
+    domain_center_y: float,
+    domain_length: float,
+    domain_height: float,
+    weights: data_alloc.NDArray,
+    nodes: data_alloc.NDArray,
+):
+    array_ns = data_alloc.array_namespace(nodes)
+    # impose tracer IC at the horizontal grid center
+    dx, dy = distance_array_ns.minimum_image_separation(
+        x=nodes[0, :, :],
+        y=nodes[1, :, :],
+        reference_x=domain_center_x,
+        reference_y=domain_center_y,
+        domain_extent_x=domain_length,
+        domain_extent_y=domain_height,
+    )
+    match tracer_profile:
+        case TracerProfile.GAUSSIAN_2D:
+            decay_factor = ((domain_length + domain_height) / 2.0) ** (-1.65)
+            vertex_tracer = array_ns.exp(-decay_factor * (dx**2 + dy**2))
+        case TracerProfile.GAUSSIAN_2D_OFFCENTER:
+            dy -= domain_height / 4
+            decay_factor = ((domain_length + domain_height) / 2.0) ** (-1.5)
+            vertex_tracer = array_ns.exp(-decay_factor * (dx**2 + dy**2))
+        case TracerProfile.CIRCLE_2D:
+            radius = (domain_length + domain_height) / 8.0
+            vertex_tracer = array_ns.where(dx**2 + dy**2 <= radius**2, 1.0, 0.0)
+        case _:
+            raise NotImplementedError(
+                f"Initial conditions {test_config.initial_conditions} not implemented."
+            )
+    tracer[:,:] = array_ns.sum(weights * vertex_tracer, axis=0)[:, array_ns.newaxis]
 
 
 def linear_advection(  # noqa: PLR0915 [too-many-statements]
@@ -52,8 +256,8 @@ def linear_advection(  # noqa: PLR0915 [too-many-statements]
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
-    prognostic_state: prognostics.PrognosticState,
-    tracer_state: prognostics.TracerState,
+    tracers: tracer_states.TracerState,
+    prep_adv_state: tracer_advection_states.AdvectionPrepAdvState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
@@ -61,208 +265,106 @@ def linear_advection(  # noqa: PLR0915 [too-many-statements]
     Initial condition for the idealized advection test case.
 
     """
-    if tracer_state.qv is None:
+    if tracers.qv is None:
         raise ValueError(
             "The initial condition for the linear advection test case requires the 'qv' to be active."
         )
 
     allocator = model_backends.get_allocator(backend)
-    array_ns = data_alloc.import_array_ns(allocator)
 
     geometry = static_fields.geometry
-    metrics = static_fields.metrics
-    primal_normal_x = geometry.get(geometry_meta.EDGE_NORMAL_U).ndarray
-    inv_dual_edge_length = geometry.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}").ndarray
-    edge_cell_distance = geometry.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray
-    primal_edge_length = geometry.get(geometry_meta.EDGE_LENGTH).ndarray
-    cell_area = geometry.get(geometry_meta.CELL_AREA).ndarray
-    z_mc = metrics.get(metrics_attributes.Z_MC).ndarray
-    z_ifc = metrics.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
-    exner_ref_mc = metrics.get(metrics_attributes.EXNER_REF_MC).ndarray
-    d_exner_dz_ref_ic = metrics.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
-    theta_ref_mc = metrics.get(metrics_attributes.THETA_REF_MC).ndarray
-    theta_ref_ic = metrics.get(metrics_attributes.THETA_REF_IC).ndarray
-    wgtfac_c = metrics.get(metrics_attributes.WGTFAC_C).ndarray
-    ddqz_z_half = metrics.get(metrics_attributes.DDQZ_Z_HALF).ndarray
-    zone_idx = testcases_utils.zone_indices(grid)
+    vertex_x = geometry.get(geometry_meta.VERTEX_X).ndarray
+    vertex_y = geometry.get(geometry_meta.VERTEX_Y).ndarray
+    cell_center_x = geometry.get(geometry_meta.CELL_CENTER_X).ndarray
+    cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
+    min_edge_length = geometry.get(geometry_meta.EDGE_LENGTH).ndarray.min()
+    (
+        domain_center_x,
+        domain_center_y,
+        domain_length,
+        domain_height,
+    ) = _get_torus_dimensions(grid.grid_params.domain_length)
 
-    num_levels = grid.num_levels
-
-    grav_o_cpd = phy_const.GRAV_O_CPD
-    vtmpc1 = phy_const.RV_O_RD_MINUS_1
-    h_tropopause = config.h_tropopause
-    t_tropopause = config.t_tropopause
-    theta_tropopause = config.theta_tropopause
-    qv_max = config.qv_max
-
-    exner_ndarray = prognostic_state_now.exner.ndarray
-    rho_ndarray = prognostic_state_now.rho.ndarray
-    theta_v_ndarray = prognostic_state_now.theta_v.ndarray
-
-    # With flat topography (wk82) the height of the model levels is horizontally
-    # homogeneous, so the base-state profiles depend on the vertical level only.
-    height = z_mc[0, :]
-
-    # Level index right above the tropopause (levels are ordered top to bottom, so the
-    # height decreases with the level index).
-    k_tropopause = int(array_ns.sum(height >= h_tropopause)) - 1
-    if not 0 <= k_tropopause < num_levels - 1:
-        raise ValueError(f"The model top must be higher than the tropopause at {h_tropopause} m.")
-
-    theta = array_ns.zeros((num_levels,))
-    exner = array_ns.zeros((num_levels,))
-    qv = array_ns.zeros((num_levels,))
-    theta_v = array_ns.zeros((num_levels,))
-    relative_humidity = array_ns.zeros((num_levels,))
-    temperature = array_ns.zeros((num_levels,))
-
-    # Tropopause reference values.
-    exner_tropopause = t_tropopause / theta_tropopause
-    vapor_pressure_tropopause = config.rh_min * thermo.sat_pres_water(
-        array_ns.asarray(t_tropopause)
-    )
-    pressure_tropopause = phy_const.P0REF * exner_tropopause**phy_const.CPD_O_RD
-    qv_tropopause = thermo.specific_humidity(vapor_pressure_tropopause, pressure_tropopause)
-    theta_v_tropopause = theta_tropopause * (1.0 + vtmpc1 * qv_tropopause)
-
-    # Above the tropopause the layer is isothermal (T = t_tropopause).
-    above = slice(0, k_tropopause + 1)
-    height_above = height[above]
-    theta[above] = theta_tropopause * array_ns.exp(
-        grav_o_cpd / t_tropopause * (height_above - h_tropopause)
-    )
-    exner[above] = exner_tropopause * array_ns.exp(
-        -grav_o_cpd / t_tropopause * (height_above - h_tropopause)
-    )
-    pressure_above = phy_const.P0REF * exner[above] ** phy_const.CPD_O_RD
-    qv[above] = thermo.specific_humidity(vapor_pressure_tropopause, pressure_above)
-    theta_v[above] = theta[above] * (1.0 + vtmpc1 * qv[above])
-    relative_humidity[above] = config.rh_min
-    temperature[above] = t_tropopause
-
-    # Below the tropopause the potential temperature and relative humidity profiles are
-    # prescribed; exner, qv and theta_v then follow from a downward hydrostatic integration.
-    below = slice(k_tropopause + 1, num_levels)
-    height_below = height[below]
-    theta[below] = (
-        config.theta_surface
-        + (theta_tropopause - config.theta_surface)
-        * (height_below / h_tropopause) ** config.exponent_theta
-    )
-    relative_humidity[below] = array_ns.minimum(
-        1.0 - 0.75 * (height_below / h_tropopause) ** config.exponent_relative_humidity,
-        config.rh_max,
+    weights, nodes = _prepare_torus_quadratic_quadrature(
+        grid, vertex_x, vertex_y, cell_center_x, cell_center_y, min_edge_length
     )
 
-    def _integrate_layer(
-        k: int,
-        exner_above: data_alloc.NDArray,
-        theta_v_above: data_alloc.NDArray,
-        qv_estimate: data_alloc.NDArray,
-    ) -> None:
-        # Two-pass piecewise hydrostatic integration of one layer (see mo_nh_wk_exp.f90):
-        # a preliminary qv estimate gives theta_v, which sets exner, from which qv and
-        # theta_v are finally recomputed.
-        delta_height = (
-            height[k] - height[k - 1] if k > k_tropopause + 1 else (height[k] - h_tropopause)
-        )
-
-        theta_v_aux = theta[k] * (1.0 + vtmpc1 * qv_estimate)
-        exner_aux = exner_above - grav_o_cpd * delta_height / (
-            theta_v_aux - theta_v_above
-        ) * array_ns.log(theta_v_aux / theta_v_above)
-        vapor_pressure_aux = relative_humidity[k] * thermo.sat_pres_water(theta[k] * exner_aux)
-        pressure_aux = phy_const.P0REF * exner_aux**phy_const.CPD_O_RD
-        qv_aux = thermo.specific_humidity(vapor_pressure_aux, pressure_aux)
-        if k > k_tropopause + 1:
-            qv_aux = array_ns.minimum(qv_max, qv_aux)
-        theta_v_aux = theta[k] * (1.0 + vtmpc1 * qv_aux)
-
-        exner[k] = exner_above - grav_o_cpd * delta_height / (
-            theta_v_aux - theta_v_above
-        ) * array_ns.log(theta_v_aux / theta_v_above)
-        temperature[k] = theta[k] * exner[k]
-        vapor_pressure = relative_humidity[k] * thermo.sat_pres_water(temperature[k])
-        pressure = phy_const.P0REF * exner[k] ** phy_const.CPD_O_RD
-        qv[k] = thermo.specific_humidity(vapor_pressure, pressure)
-        if k > k_tropopause + 1:
-            qv[k] = array_ns.minimum(qv_max, qv[k])
-        theta_v[k] = theta[k] * (1.0 + vtmpc1 * qv[k])
-
-    # First layer below the tropopause uses the tropopause reference values.
-    _integrate_layer(k_tropopause + 1, exner_tropopause, theta_v_tropopause, qv_tropopause)
-    # Remaining layers extrapolate qv from the two levels above as a first guess.
-    for k in range(k_tropopause + 2, num_levels):
-        qv_extrapolated = array_ns.minimum(
-            qv_max,
-            qv[k - 1]
-            + (qv[k - 2] - qv[k - 1])
-            / (height[k - 2] - height[k - 1])
-            * (height[k] - height[k - 1]),
-        )
-        _integrate_layer(k, exner[k - 1], theta_v[k - 1], qv_extrapolated)
-
-    # Broadcast the column profiles onto all cells.
-    exner_ndarray[:, :] = exner[array_ns.newaxis, :]
-    theta_v_ndarray[:, :] = theta_v[array_ns.newaxis, :]
-    rho_ndarray[:, :] = (
-        exner_ndarray**phy_const.CVD_O_RD * phy_const.P0REF / phy_const.RD / theta_v_ndarray
+    _construct_idealized_prep_adv(
+        velocity_field=config.velocity_field,
+        prep_adv_state=prep_adv_state,
+        primal_normal_x=geometry.get(geometry_meta.PRIMAL_NORMAL_X).ndarray,
+        primal_normal_y=geometry.get(geometry_meta.PRIMAL_NORMAL_Y).ndarray,
+        edge_center_x=geometry.get(geometry_meta.EDGE_CENTER_X).ndarray,
+        edge_center_y=geometry.get(geometry_meta.EDGE_CENTER_Y).ndarray,
+        domain_length=domain_length,
+        domain_height=domain_height,
+        time=0.0,
+        dtime=vertical_config.dtime,
+        time_end=vertical_config.time_end,
     )
-    prognostic_state_now.tracer.qv.ndarray[:, :] = qv[array_ns.newaxis, :]
-    log.info("Weisman-Klemp base-state profile completed.")
+    # TODO: do exchange since they are edge fields
 
-    # Sheared horizontal wind, projected onto the edge-normal direction.
-    wind_speed = config.max_wind_speed * (
-        array_ns.tanh((height - config.h_min) / (config.wind_scale_height - config.h_min)) - 0.45
-    )
-    boundary_lvl2 = zone_idx["end_edge_lateral_boundary_level_2"]
-    prognostic_state_now.vn.ndarray[:boundary_lvl2, :] = 0.0
-    prognostic_state_now.vn.ndarray[boundary_lvl2:, :] = (
-        wind_speed[array_ns.newaxis, :] * primal_normal_x[boundary_lvl2:, array_ns.newaxis]
+    _construct_idealized_tracer(
+        config.tracer_profle,
+        tracers.qv.ndarray,
+        domain_center_x,
+        domain_center_y,
+        domain_length,
+        domain_height,
+        weights,
+        nodes,
     )
 
-    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
-    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
-        grid=grid,
-        z_ifc=z_ifc,
-        inv_dual_edge_length=inv_dual_edge_length,
-        edge_cell_distance=edge_cell_distance,
-        primal_edge_length=primal_edge_length,
-        cell_area=cell_area,
-        vn=prognostic_state_now.vn.ndarray,
-        vct_b=vct_b.ndarray,
-        nlev=num_levels,
-    )
-    exchange.exchange(dims.CellDim, prognostic_state_now.w)
 
-    testcases_utils.apply_hydrostatic_adjustment_ndarray(
-        rho=rho_ndarray,
-        exner=exner_ndarray,
-        theta_v=theta_v_ndarray,
-        exner_ref_mc=exner_ref_mc,
-        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
-        theta_ref_mc=theta_ref_mc,
-        theta_ref_ic=theta_ref_ic,
-        wgtfac_c=wgtfac_c,
-        ddqz_z_half=ddqz_z_half,
-        num_levels=num_levels,
-    )
-    log.info("Hydrostatic adjustment computation completed.")
-
-    testcases_utils.init_bubble(
-        grid=grid,
-        geometry=geometry,
-        z_mc=z_mc,
-        theta_v=theta_v_ndarray,
-        rho=rho_ndarray,
-        qv=prognostic_state_now.tracer.qv.ndarray,
-        exner=exner_ndarray,
-        center_x=config.bubble_center_x,
-        center_y=config.bubble_center_y,
-        center_z=config.bubble_center_z,
-        horizontal_width=config.bubble_horizontal_width,
-        vertical_width=config.bubble_vertical_width,
-        amplitude=config.bubble_amplitude,
-        radius=config.bubble_radius,
-    )
-    log.info("Warm-bubble perturbation completed.")
+def construct_idealized_tracer_reference(
+    test_config,
+    icon_grid,
+    x_center,
+    y_center,
+    x_range,
+    y_range,
+    edges_center_x,
+    edges_center_y,
+    node_x,
+    node_y,
+    time,
+    time_end,
+    weights,
+    nodes,
+    reference_solution=None,
+    cell_center_x_high=None,
+    cell_center_y_high=None,
+) -> fa.CellKField[ta.wpfloat]:
+    array_ns = data_alloc.array_namespace(nodes)
+    if reference_solution is None:
+        # use exact solution
+        match test_config.velocity_field:
+            case VelocityField.CONSTANT:
+                # linearly shifted ICs
+                u, v = get_idealized_velocity_field(
+                    test_config, x_range, y_range, edges_center_x, edges_center_y, time, time_end
+                )
+                x = nodes[0, :, :] - (x_center + u * time)
+                y = nodes[1, :, :] - (y_center + v * time)
+                tracer = array_ns.sum(
+                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
+                )
+            case VelocityField.VORTEX_2D:
+                # ICs
+                x = nodes[0, :, :] - x_center
+                y = nodes[1, :, :] - y_center
+                tracer = array_ns.sum(
+                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
+                )
+            case VelocityField.INCREASING_2D:
+                # shifted and deformed ICs
+                et = array_ns.exp(time)
+                emt = array_ns.exp(-time)
+                x = -emt * (-x_range + x_range * et - x_range * time - nodes[0, :, :]) - x_center
+                y = -y_range + y_range * et - y_range * et * time + nodes[1, :, :] * et - y_center
+                tracer = array_ns.sum(
+                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
+                )
+            case _:
+                raise NotImplementedError(
+                    f"Exact solution with velocity field {test_config.velocity_field} not implemented."

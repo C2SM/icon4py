@@ -19,6 +19,7 @@ from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
     weisman_klemp as wk_ic,
+    linear_advection as lin_adv_ic,
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes
@@ -45,6 +46,7 @@ class InitialConditionConfig:
         jw_ic.JablonowskiWilliamsonConfig
         | gauss_ic.Gauss3DConfig
         | wk_ic.WeismanKlempConfig
+        | lin_adv_ic.LinearAdvectionConfig
         | from_file_ic.FromFileConfig
     )
 
@@ -99,7 +101,7 @@ class InitialConditionConfig:
                     wk_ic.WeismanKlempConfig, testcase_nml
                 )
             case name:
-                raise ValueError(f"Unknown or missing test case name: {name!r}")
+                raise ValueError(f"Unknown or missing test case name read from Fortran namelist: {name!r}")
 
         return cls(config=config)
 
@@ -147,6 +149,16 @@ def create(
             )
         case wk_ic.WeismanKlempConfig():
             wk_ic.weisman_klemp(
+                config=config.config,
+                vertical_config=vertical_config,
+                grid=grid,
+                static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
+                backend=backend,
+                exchange=exchange,
+            )
+        case lin_adv_ic.LinearAdvectionConfig():
+            lin_adv_ic.linear_advection(
                 config=config.config,
                 vertical_config=vertical_config,
                 grid=grid,
