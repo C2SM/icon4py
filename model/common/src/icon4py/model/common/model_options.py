@@ -33,7 +33,8 @@ def get_dace_options(
     optimization_hooks = optimization_args.get("optimization_hooks", {})
     # Use external workspace memory for all programs.
     # TODO(edopao): remove this config before merge, external allocator is useful only for AMD platform.
-    backend_descriptor["use_external_workspace"] = True
+    if backend_descriptor.get("device"):
+        backend_descriptor["use_external_workspace"] = True
     if program_name in [
         "vertically_implicit_solver_at_corrector_step",
         "vertically_implicit_solver_at_predictor_step",
