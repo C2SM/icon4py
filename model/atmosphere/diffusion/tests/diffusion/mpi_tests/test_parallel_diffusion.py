@@ -100,6 +100,7 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
         cell_params=cell_geometry,
         exchange=exchange,
         backend=backend,
+        substep_as_float=float(experiment.config.driver.ndyn_substeps),
     )
 
     _log.info(f"rank={process_props.rank}/{process_props.comm_size}: diffusion initialized ")

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import functools
 import logging
 import math
 import sys
@@ -325,14 +324,6 @@ class DiffusionConfig:
         ),
     ] = True
 
-    ndyn_substeps: typing.Annotated[
-        int,
-        common_conf_opt.ConfigOption(
-            description="Number of dynamics substeps per fast-physics step.",
-            icon_equivalent=common_conf_opt.IconOption("ndyn_substeps", ("nonhydrostatic_nml",)),
-        ),
-    ] = 5
-
     temperature_boundary_diffusion_denominator: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
@@ -396,7 +387,6 @@ class DiffusionConfig:
     ] = False
 
     def __post_init__(self) -> None:
-
         self._validate()
 
     @classmethod
@@ -438,10 +428,6 @@ class DiffusionConfig:
                 f"and {TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND} "
                 f"implemented"
             )
-
-    @functools.cached_property
-    def substep_as_float(self) -> float:
-        return float(self.ndyn_substeps)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -511,6 +497,7 @@ class Diffusion:
         | model_backends.BackendDescriptor
         | None,
         exchange: decomposition.ExchangeRuntime,
+        substep_as_float: float,
     ) -> None:
         self._allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
@@ -540,11 +527,11 @@ class Diffusion:
         )
         self.bdy_diff: float = 0.015 / (config.max_nudging_coefficient + sys.float_info.epsilon)
         self.fac_bdydiff_v: float = (
-            math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
+            math.sqrt(substep_as_float) / config.velocity_boundary_diffusion_denominator
         )
 
-        self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
-        self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
+        self.smag_offset: float = 0.25 * params.K4 * substep_as_float
+        self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * substep_as_float)
         self._determine_horizontal_domains()
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
@@ -707,7 +694,7 @@ class Diffusion:
 
         self.init_diffusion_local_fields_for_regular_timestep(
             params.K4,
-            config.substep_as_float,
+            substep_as_float,
             *params.smagorinski_factor,
             *params.smagorinski_height,
             self._vertical_grid.interface_physical_height,
