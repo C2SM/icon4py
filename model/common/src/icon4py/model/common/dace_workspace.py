@@ -94,7 +94,7 @@ class IconWorkspaceAllocator:
             devices = [devices]
         for dev in devices:
             if (cached := self._workspace_slabs.get(dev)) is None:
-                slab = _aligned_slab(_WORKSPACE_SIZE, _WORKSPACE_ALIGNMENT, devices)
+                slab = _aligned_slab(_WORKSPACE_SIZE, _WORKSPACE_ALIGNMENT, dev)
                 self._workspace_slabs[dev] = slab
                 wsp[dev] = slab
             else:
