@@ -111,7 +111,11 @@ class RankBlock:
     alignment of :class:`RankBlockDistribution`): rank ``r`` writes its ``count``
     owned entries to ``[r * size, r * size + count)``. The store is chunked so that
     no chunk crosses a block boundary -- by default with exactly one chunk per block
-    -- hence concurrent writes of different ranks never touch the same chunk.
+    -- hence concurrent writes of different ranks never touch the same chunk. An axis
+    therefore never holds fewer chunks (or shard files) than ranks; the default
+    one-chunk-per-block layout is that minimum. Dedicated IO ranks (planned for
+    asynchronous output) will lower this floor to the IO-rank count, making chunk and
+    shard counts freely tunable.
     Entries past ``count`` within a block are padding: they always read as the fill
     value (the zarr writer never writes them; the netCDF writer writes them
     explicitly, since its parallel collectives require every rank to participate in
