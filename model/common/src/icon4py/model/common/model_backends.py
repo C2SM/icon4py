@@ -110,7 +110,8 @@ def make_custom_dace_backend(
     Returns:
         A dace backend with custom configuration for the target device.
     """
-    # Use the shared singleton workspace for all programs when no allocator is given.
+    # Use external workspace memory for all programs.
+    # TODO(edopao): remove this config before merge, external allocator is useful only for AMD platform.
     if use_external_workspace:
         external_workspace = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(device)
         if optimization_args is None:
