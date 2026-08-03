@@ -63,7 +63,6 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
         apply_zdiffusion_t=False,
         velocity_boundary_diffusion_denominator=150.0,
         max_nudging_coefficient=0.375,
-        ndyn_substeps=5,
         shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
@@ -167,6 +166,7 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
         cell_params=cell_geometry,
         backend=backend_like,
         exchange=decomp_defs.single_node_exchange,
+        substep_as_float=5.0,
     )
 
     benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)

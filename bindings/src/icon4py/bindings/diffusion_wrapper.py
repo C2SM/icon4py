@@ -138,7 +138,6 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         smagorinski_scaling_height3=smagorinski_scaling_height3,
         smagorinski_scaling_height4=smagorinski_scaling_height4,
         apply_to_temperature=hdiff_temp,
-        ndyn_substeps=int(ndyn_substeps),
         velocity_boundary_diffusion_denominator=denom_diffu_v,
         max_nudging_coefficient=nudge_max_coeff,
         shear_type=TurbulenceShearForcingType(itype_sher),
@@ -255,6 +254,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             cell_params=grid_wrapper.grid_state.cell_geometry,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
+            substep_as_float=float(ndyn_substeps),
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
