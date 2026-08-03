@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.testing import filters
+from icon4py.model.testing import filters, provenance
 
 
 __all__ = [
@@ -243,10 +243,33 @@ def pytest_runtest_makereport(item, call):
                 report.sections.append(("benchmark-extra", tuple([filtered_benchmark_name, info])))
 
 
+def _report_serialized_data_provenance(terminalreporter):
+    """List the ICON build behind each archive the session used.
+
+    Without this, a datatest failure says nothing about which Fortran build produced
+    the reference values it disagrees with.
+    """
+    seen = provenance.seen()
+    if not seen:
+        return
+    terminalreporter.ensure_newline()
+    terminalreporter.line(" Serialized test data ", bold=True, blue=True)
+    for archive, revision in sorted(seen.items()):
+        terminalreporter.line(f"  {archive:<44} {revision}")
+
+
+def pytest_testnodedown(node, error):
+    """Collect what an xdist worker saw; the summary is rendered on the controller."""
+    recorded = getattr(node, "workeroutput", {}).get("icon4py_provenance")
+    if recorded:
+        provenance.merge(recorded)
+
+
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
     """
     Add a custom section to the terminal summary with GT4Py timer metrics from benchmarks.
     """
+    _report_serialized_data_provenance(terminalreporter)
     # Gather gtx_metrics
     benchmark_gtx_metrics = []
     for outcome in ("passed", "failed", "skipped"):
@@ -405,3 +428,8 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     scheduler = getattr(session.config, "_mpi_scheduler", None)
     if scheduler is not None:
         scheduler.finalize()
+
+    # Hand the provenance back to the controller when running under xdist.
+    workeroutput = getattr(session.config, "workeroutput", None)
+    if workeroutput is not None:
+        workeroutput["icon4py_provenance"] = provenance.seen()
