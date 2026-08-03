@@ -402,6 +402,7 @@ def initialize_granules(
             cell_params=cell_geometry,
             backend=backend,
             exchange=exchange,
++            substep_as_float=float(config.driver.ndyn_substeps),
         )
 
     tracer_advection_granule: tracer_advection.Advection | None = None
