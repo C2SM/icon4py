@@ -1644,8 +1644,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging#65301140e772357fb820dca01751cc0439a977f2"}
-version = "1.1.12.post34+65301140"
+source = {git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging#f909c3715885746e0b8d1aef596bddd683a69f05"}
+version = "1.1.12.post35+f909c371"
 
 [package.optional-dependencies]
 cuda12 = [
