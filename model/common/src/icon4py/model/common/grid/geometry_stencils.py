@@ -12,8 +12,8 @@ from gt4py import next as gtx
 from gt4py.next import sin, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
-from icon4py.model.common.grid import gridfile
+from icon4py.model.common.dimension import E2C2V, E2V, EdgeDim
+from icon4py.model.common.grid import utils as grid_utils
 from icon4py.model.common.math.coordinate_transformations import (
     geographical_to_cartesian_on_edges,
     geographical_to_cartesian_on_vertices,
@@ -435,82 +435,6 @@ def compute_zonal_and_meridional_component_of_edge_field_at_vertex(  # noqa: PLR
     )
 
 
-@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def zonal_and_meridional_component_of_edge_field_at_cell_center(
-    cell_lat: fa.CellField[ta.wpfloat],
-    cell_lon: fa.CellField[ta.wpfloat],
-    x: fa.EdgeField[ta.wpfloat],
-    y: fa.EdgeField[ta.wpfloat],
-    z: fa.EdgeField[ta.wpfloat],
-) -> tuple[
-    fa.EdgeField[ta.wpfloat],
-    fa.EdgeField[ta.wpfloat],
-    fa.EdgeField[ta.wpfloat],
-    fa.EdgeField[ta.wpfloat],
-]:
-    """
-    Compute zonal (U) and meridional (V) component of a vector (x, y, z) at cell centers (lat, lon)
-
-    The vector is defined on edges and the projection is computed for the neighboring cell center s of the edge.
-
-    Args:
-        cell_lat: latitude of cell centers
-        cell_lon: longitude of cell centers
-        x: x coordinate
-        y: y coordinate
-        z: z coordinate
-
-    Returns:
-        u_cell_0: zonal (U) component at first cell neighbor of the edge E2C[0]
-        v_cell_0: meridional (V) component at first cell neighbor of the edge E2C[1]
-        u_cell_0: zonal (U) component at first cell neighbor of the edge E2C[0]
-        v_cell_0: meridional (V) component at first cell neighbor of the edge E2C[1]
-
-    """
-    cell_lat_0 = cell_lat(E2C[0])
-    cell_lon_0 = cell_lon(E2C[0])
-    u_cell_0, v_cell_0 = zonal_and_meridional_components_on_edges(cell_lat_0, cell_lon_0, x, y, z)
-    cell_lat_1 = cell_lat(E2C[1])
-    cell_lon_1 = cell_lon(E2C[1])
-    u_cell_1, v_cell_1 = zonal_and_meridional_components_on_edges(cell_lat_1, cell_lon_1, x, y, z)
-    return (
-        u_cell_0,
-        v_cell_0,
-        u_cell_1,
-        v_cell_1,
-    )
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(  # noqa: PLR0917 [too-many-positional-arguments]
-    cell_lat: fa.CellField[ta.wpfloat],
-    cell_lon: fa.CellField[ta.wpfloat],
-    x: fa.EdgeField[ta.wpfloat],
-    y: fa.EdgeField[ta.wpfloat],
-    z: fa.EdgeField[ta.wpfloat],
-    u_cell_1: fa.EdgeField[ta.wpfloat],
-    v_cell_1: fa.EdgeField[ta.wpfloat],
-    u_cell_2: fa.EdgeField[ta.wpfloat],
-    v_cell_2: fa.EdgeField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-):
-    zonal_and_meridional_component_of_edge_field_at_cell_center(
-        cell_lat=cell_lat,
-        cell_lon=cell_lon,
-        x=x,
-        y=y,
-        z=z,
-        out=(
-            u_cell_1,
-            v_cell_1,
-            u_cell_2,
-            v_cell_2,
-        ),
-        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
-    )
-
-
 def compute_zonal_and_meridional_component_of_edge_field_at_cell_center_ndarray(
     *,
     cell_lat: data_alloc.NDArray,
@@ -522,10 +446,10 @@ def compute_zonal_and_meridional_component_of_edge_field_at_cell_center_ndarray(
     horizontal_start: gtx.int32,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
-    Compute zonal (U) and meridional (V) component of a vector (x, y, z) at cell centers (lat, lon)
+    Compute zonal (U) and meridional (V) component of a vector (x, y, z) at the cell
+    centers neighboring each edge.
 
-    ndarray counterpart of :func:`compute_zonal_and_meridional_component_of_edge_field_at_cell_center`
-    that handles the boundary rows like ICON does (mo_intp_coeffs: complete_patchinfo):
+    Handles the boundary rows like ICON does (mo_intp_coeffs: complete_patchinfo):
     the computation starts at edge row 1, where boundary edges have only one cell
     neighbor, and the entry of the missing neighbor is left at zero.
 
@@ -546,13 +470,8 @@ def compute_zonal_and_meridional_component_of_edge_field_at_cell_center_ndarray(
     llb = horizontal_start
     u = array_ns.zeros(e2c.shape)
     v = array_ns.zeros(e2c.shape)
-    # The missing neighbor is either INVALID_INDEX or a duplicate of the first one,
-    # depending on how the connectivity was constructed.
-    missing = gridfile.GridFile.INVALID_INDEX
-    valid_neighbor_0 = e2c[llb:, 0] != missing
-    valid_neighbor_1 = (e2c[llb:, 1] != missing) & (e2c[llb:, 1] != e2c[llb:, 0])
-    safe_e2c = array_ns.where(e2c != missing, e2c, 0)
-    for nc, valid_neighbor in ((0, valid_neighbor_0), (1, valid_neighbor_1)):
+    valid_neighbor_0, valid_neighbor_1, safe_e2c = grid_utils.valid_e2c_neighbors(e2c)
+    for nc, valid_neighbor in ((0, valid_neighbor_0[llb:]), (1, valid_neighbor_1[llb:])):
         lat = cell_lat[safe_e2c[llb:, nc]]
         lon = cell_lon[safe_e2c[llb:, nc]]
         u_nc = array_ns.cos(lon) * y[llb:] - array_ns.sin(lon) * x[llb:]

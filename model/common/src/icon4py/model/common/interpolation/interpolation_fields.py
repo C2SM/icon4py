@@ -18,7 +18,7 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, V2E
-from icon4py.model.common.grid import gridfile, icon as icon_grid
+from icon4py.model.common.grid import gridfile, icon as icon_grid, utils as grid_utils
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.math import distance_array_ns, projection
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -1086,9 +1086,9 @@ def compute_pos_on_tplane_e_x_y(
     llb = horizontal_start
     pos_on_tplane_e_x = array_ns.zeros(e2c.shape)
     pos_on_tplane_e_y = array_ns.zeros(e2c.shape)
-    valid_neighbor_0 = e2c[llb:, 0] != MISSING
-    valid_neighbor_1 = (e2c[llb:, 1] != MISSING) & (e2c[llb:, 1] != e2c[llb:, 0])
-    safe_e2c = array_ns.where(e2c != MISSING, e2c, 0)
+    valid_neighbor_0, valid_neighbor_1, safe_e2c = grid_utils.valid_e2c_neighbors(e2c)
+    valid_neighbor_0 = valid_neighbor_0[llb:]
+    valid_neighbor_1 = valid_neighbor_1[llb:]
     xyloc_plane_n1 = array_ns.zeros([e2c.shape[0], 2])
     xyloc_plane_n2 = array_ns.zeros([e2c.shape[0], 2])
     xyloc_plane_n1[llb:, :] = projection.gnomonic_proj(
