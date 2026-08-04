@@ -64,7 +64,8 @@ typing = [
   "mypy[faster-cache]>=1.13.0",
   "typing-extensions>=4.11.0",
   "types-cffi>=1.16.0",
-  "scipy-stubs>=1.15.3.0"
+  "scipy-stubs>=1.15.3.0",
+  "types-pyyaml>=6.0.12.20260518"
 ]
 typing-distributed = ["mpi4py>=3.1.5", "pymetis>2022.1"]
 
@@ -93,6 +94,7 @@ dependencies = [
   "icon4py-atmosphere-dycore~=0.3.0",
   "icon4py-atmosphere-microphysics~=0.3.0",
   "icon4py-atmosphere-muphys~=0.3.0",
+  "icon4py-atmosphere-physics-driver~=0.3.0",
   "icon4py-common~=0.3.0",
   "icon4py-standalone_driver~=0.3.0"
 ]
@@ -157,6 +159,10 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/src',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/state.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/data.py',
   # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
@@ -171,7 +177,6 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
-  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/metrics/compute_advection_metrics.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/topography',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
@@ -190,6 +195,7 @@ $MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
 $MYPY_CONFIG_FILE_DIR/model/standalone_driver/src:
 $MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests:
@@ -269,6 +275,7 @@ pythonpath = [
   "model/atmosphere/dycore",
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
+  "model/atmosphere/subgrid_scale_physics/physics_driver",
   "model/common",
   "model/standalone_driver",
   "model/testing",
@@ -417,6 +424,7 @@ icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
 icon4py-atmosphere-muphys = {workspace = true}
+icon4py-atmosphere-physics-driver = {workspace = true}
 icon4py-atmosphere-tracer_advection = {workspace = true}
 icon4py-bindings = {workspace = true}
 icon4py-common = {workspace = true}
@@ -432,6 +440,7 @@ members = [
   "model/atmosphere/dycore",
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
+  "model/atmosphere/subgrid_scale_physics/physics_driver",
   "model/common",
   "model/standalone_driver",
   "model/testing",

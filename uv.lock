@@ -34,6 +34,7 @@ members = [
   "icon4py-atmosphere-dycore",
   "icon4py-atmosphere-microphysics",
   "icon4py-atmosphere-muphys",
+  "icon4py-atmosphere-physics-driver",
   "icon4py-atmosphere-tracer-advection",
   "icon4py-bindings",
   "icon4py-common",
@@ -1757,6 +1758,7 @@ dependencies = [
   {name = "icon4py-atmosphere-dycore"},
   {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-atmosphere-muphys"},
+  {name = "icon4py-atmosphere-physics-driver"},
   {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common"},
   {name = "icon4py-standalone-driver"}
@@ -1802,6 +1804,7 @@ dev = [
   {name = "tach"},
   {name = "texsoup"},
   {name = "types-cffi"},
+  {name = "types-pyyaml"},
   {name = "typing-extensions"},
   {name = "validate-pyproject-schema-store", extra = ["all"]},
   {name = "wheel"}
@@ -1852,6 +1855,7 @@ typing = [
   {name = "mypy", extra = ["faster-cache"]},
   {name = "scipy-stubs"},
   {name = "types-cffi"},
+  {name = "types-pyyaml"},
   {name = "typing-extensions"}
 ]
 typing-distributed = [
@@ -1867,6 +1871,7 @@ requires-dist = [
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
+  {name = "icon4py-atmosphere-physics-driver", editable = "model/atmosphere/subgrid_scale_physics/physics_driver"},
   {name = "icon4py-atmosphere-tracer-advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-bindings", marker = "extra == 'fortran'", editable = "bindings"},
   {name = "icon4py-common", editable = "model/common"},
@@ -1917,6 +1922,7 @@ dev = [
   {name = "tach", specifier = ">=0.23.0"},
   {name = "texsoup", specifier = ">=0.3.1"},
   {name = "types-cffi", specifier = ">=1.16.0"},
+  {name = "types-pyyaml", specifier = ">=6.0.12.20260518"},
   {name = "typing-extensions", specifier = ">=4.11.0"},
   {name = "validate-pyproject-schema-store", extras = ["all"], specifier = ">=2025.6.13"},
   {name = "wheel", specifier = ">=0.45.0"}
@@ -1967,6 +1973,7 @@ typing = [
   {name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0"},
   {name = "scipy-stubs", specifier = ">=1.15.3.0"},
   {name = "types-cffi", specifier = ">=1.16.0"},
+  {name = "types-pyyaml", specifier = ">=6.0.12.20260518"},
   {name = "typing-extensions", specifier = ">=4.11.0"}
 ]
 typing-distributed = [
@@ -2078,6 +2085,21 @@ requires-dist = [
 
 [[package]]
 dependencies = [
+  {name = "icon4py-common"},
+  {name = "packaging"}
+]
+name = "icon4py-atmosphere-physics-driver"
+source = {editable = "model/atmosphere/subgrid_scale_physics/physics_driver"}
+version = "0.2.0"
+
+[package.metadata]
+requires-dist = [
+  {name = "icon4py-common", editable = "model/common"},
+  {name = "packaging", specifier = ">=20.0"}
+]
+
+[[package]]
+dependencies = [
   {name = "gt4py"},
   {name = "icon4py-common"},
   {name = "packaging"}
@@ -2146,9 +2168,11 @@ profiling = [
 [[package]]
 dependencies = [
   {name = "array-api-compat"},
+  {name = "cattrs"},
   {name = "gt4py"},
   {name = "numpy"},
   {name = "packaging"},
+  {name = "pyyaml"},
   {name = "serialbox4py"}
 ]
 name = "icon4py-common"
@@ -2160,6 +2184,7 @@ provides-extras = ["all", "cuda12", "cuda13", "distributed", "io", "rocm7"]
 requires-dist = [
   {name = "array-api-compat", specifier = ">=1.13.0"},
   {name = "cartopy", marker = "extra == 'io'", specifier = ">=0.22.0"},
+  {name = "cattrs", specifier = ">=26.1.0"},
   {name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
@@ -2178,6 +2203,7 @@ requires-dist = [
   {name = "numpy", marker = "extra == 'io'", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"},
   {name = "pymetis", marker = "extra == 'io'", specifier = ">2022.1"},
+  {name = "pyyaml", specifier = ">=6.0.3"},
   {name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0"},
   {name = "serialbox4py", specifier = ">=2.6.2"},
   {name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0"},
@@ -2234,6 +2260,8 @@ dependencies = [
   {name = "gt4py"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
+  {name = "icon4py-atmosphere-muphys"},
+  {name = "icon4py-atmosphere-physics-driver"},
   {name = "icon4py-common", extra = ["io"]},
   {name = "packaging"},
   {name = "typer"}
@@ -2248,6 +2276,8 @@ requires-dist = [
   {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
+  {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
+  {name = "icon4py-atmosphere-physics-driver", editable = "model/atmosphere/subgrid_scale_physics/physics_driver"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"},
   {name = "typer", specifier = ">=0.20.0"}
@@ -5235,6 +5265,15 @@ source = {registry = "https://pypi.org/simple"}
 version = "2.0.0.20260518"
 wheels = [
   {url = "https://files.pythonhosted.org/packages/68/44/d3b4aafa20a3f76384ba19a513d39272add13746dcfe0409d8d4974fd464/types_cffi-2.0.0.20260518-py3-none-any.whl", hash = "sha256:5b68a215a95d0eac4203b58e766ff7fe40c2e091b1fa1a9e54111f04cc560084", size = 20198, upload-time = "2026-05-18T06:06:49.83Z"}
+]
+
+[[package]]
+name = "types-pyyaml"
+sdist = {url = "https://files.pythonhosted.org/packages/b8/83/4a1afc3fbfcf5b8d46fc390cd95ed6b0dc9010a265f4e9f46314efffa37a/types_pyyaml-6.0.12.20260518.tar.gz", hash = "sha256:d917f83fb38462550338c1297faedd860b3ec83912b96b1e3d73255f7473e466", size = 17850, upload-time = "2026-05-18T06:01:58.675Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "6.0.12.20260518"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/06/a2/c01db32be2ae7d6a1689972f3c492b149ee4e164b12fdfd9f64b50888215/types_pyyaml-6.0.12.20260518-py3-none-any.whl", hash = "sha256:d2150f75a231c9fe9c7463bd29487d93e60bac90400287351384bc2284eba7cd", size = 20312, upload-time = "2026-05-18T06:01:57.368Z"}
 ]
 
 [[package]]

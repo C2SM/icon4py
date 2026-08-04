@@ -110,7 +110,6 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
-    # data_provider,
     backend,
     advection_init_savepoint,
     advection_exit_savepoint,
