@@ -1086,10 +1086,6 @@ def compute_pos_on_tplane_e_x_y(
     llb = horizontal_start
     pos_on_tplane_e_x = array_ns.zeros(e2c.shape)
     pos_on_tplane_e_y = array_ns.zeros(e2c.shape)
-    # Row-1 boundary edges have only one cell neighbor; ICON skips the missing one
-    # and leaves its entry at zero (mo_intp_coeffs: calculate_tangent_plane_at_edge).
-    # The missing neighbor is either MISSING or a duplicate of the first one,
-    # depending on how the connectivity was constructed.
     valid_neighbor_0 = e2c[llb:, 0] != MISSING
     valid_neighbor_1 = (e2c[llb:, 1] != MISSING) & (e2c[llb:, 1] != e2c[llb:, 0])
     safe_e2c = array_ns.where(e2c != MISSING, e2c, 0)

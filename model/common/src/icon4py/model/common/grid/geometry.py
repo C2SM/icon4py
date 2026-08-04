@@ -565,9 +565,6 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(normal_vert_wrapper)
 
-        # Computed as ndarray from edge row 1 with the missing-neighbor guards,
-        # like ICON does (mo_intp_coeffs: complete_patchinfo); a GT4Py stencil
-        # cannot skip the invalid E2C neighbor of the boundary edges.
         normal_cell = factory.NumpyDataProvider(
             func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center_ndarray,
             domain=(dims.EdgeDim, dims.E2CDim),
