@@ -39,21 +39,36 @@ the Fortran `file:line`.
 GT4Py has **no absolute field indexing** — only relative K-offsets (`field(Koff[1])`)
 — so neither is expressible as a stencil access. (The `is>itop` / `is>=itop` masks are
 NOT gathers, just per-level comparisons, and are already handled, e.g. in
-`snow_temperature_back_substitution`.) The two gathers map cleanly onto the two
-available techniques:
+`snow_temperature_back_substitution`.)
 
-- **(2) → scan-carry.** The forward-elimination scan visits every layer; compute the
-  flux per level and carry/select the value at `k == itop`, emit it as the surface
-  `CellField`. No gather.
-- **(1) → host-side precompute.** `itop_old` is the previous step's value and the
-  coefficients are persisted state, so gather `seed[ic] = t_snow_acoef[ic, itop_old[ic]]`
-  host-side (numpy, in the orchestration/granule layer, which may do field ops) into a
-  `CellField`, then a masked stencil fills layers `k in [itop, itop_old)`.
+**Project decision (policy): handle every such per-cell gather host-side (option b),
+always.** The granule/orchestration layer gathers with `array_ns` (backend-agnostic:
+numpy on CPU, cupy on GPU — no host round-trip), producing a plain `CellField` the
+stencils consume; stencils stay index-free. This is the port's anticorruption layer
+against JSBACH's per-cell index idioms, has direct icon4py precedent
+(`compute_diffusion_metrics.py:186` uses `array_ns.take_along_axis`), and generalises
+to the many gathers still to come (HYDRO etc.). All physics *arithmetic* stays in
+GT4Py; only data movement/selection is host-side, so bit-reproducibility is unaffected.
 
-So the snow build is portable as-is. Geometry note: it couples snow to the two
-uppermost soil layers over `nsnow+2` levels (host-side `zmid`/`zd1` prep, as for soil).
-**Snow is also likely inactive in the `aes_bubble_land_tmx` validation** (warm desert
-bubble, 2 h), so it is not on the slice-1 critical path regardless.
+Applied to the two snow gathers:
+
+- **(1) re-seed** `seed[ic] = t_snow_acoef[ic, itop_old[ic]]` via `array_ns.take_along_axis`
+  → `CellField`, then a masked stencil fills layers `k in [itop, itop_old)`.
+- **(2) grnd_hflx/hcap_grnd @itop**: a stencil computes the flux per level as a
+  `CellKField`; the host selects the `itop` level with `array_ns.take_along_axis`.
+
+Future migration: if/when GT4Py grows a native gather, replace these host ops with it
+so the DSL is not left and re-entered — the seam is small and localised by design.
+
+Geometry note: snow couples to the two uppermost soil layers over `nsnow+2` levels
+(host-side `zmid`/`zd1` prep, as for soil). **Snow is also likely inactive in the
+`aes_bubble_land_tmx` validation** (warm desert bubble, 2 h), so it is not on the
+slice-1 critical path regardless.
+
+⚠️ Verify once empirically before relying on this in a GPU hot path: that interleaving
+a per-timestep `array_ns` gather with GT4Py programs does not force a stream sync /
+block whole-granule graph capture. (icon4py's existing `array_ns` gathers are all
+one-time setup, not per-step.)
 
 ## Not yet done (next steps)
 
