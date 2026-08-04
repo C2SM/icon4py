@@ -139,7 +139,6 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         smagorinski_scaling_height4=smagorinski_scaling_height4,
         apply_to_temperature=hdiff_temp,
         velocity_boundary_diffusion_denominator=denom_diffu_v,
-        max_nudging_coefficient=nudge_max_coeff,
         shear_type=TurbulenceShearForcingType(itype_sher),
         iforcing=ForcingType(iforcing),
         a_hshr=a_hshr,
@@ -255,6 +254,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
             substep_as_float=float(ndyn_substeps),
+            max_nudging_coefficient=nudge_max_coeff,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
