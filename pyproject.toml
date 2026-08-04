@@ -64,7 +64,8 @@ typing = [
   "mypy[faster-cache]>=1.13.0",
   "typing-extensions>=4.11.0",
   "types-cffi>=1.16.0",
-  "scipy-stubs>=1.15.3.0"
+  "scipy-stubs>=1.15.3.0",
+  "types-pyyaml>=6.0.12.20260518"
 ]
 typing-distributed = ["mpi4py>=3.1.5", "pymetis>2022.1"]
 
