@@ -48,16 +48,16 @@ backend = None
 
 
 @pytest.mark.parametrize(
-    "name, expected",
+    "name, suffix, expected",
     [
-        ("output.nc", "output_0002.nc"),
-        ("outxxput_20220101.xc", "outxxput_20220101_0002.nc"),
-        ("output_20220101T000000_x", "output_20220101T000000_x_0002.nc"),
+        ("output.nc", ".nc", "output_0002.nc"),
+        ("outxxput_20220101.xc", ".nc", "outxxput_20220101_0002.nc"),
+        ("output_20220101T000000_x", ".zarr", "output_20220101T000000_x_0002.zarr"),
     ],
 )
-def test_generate_name(name: str, expected: str) -> None:
+def test_generate_name(name: str, suffix: str, expected: str) -> None:
     counter = 2
-    assert expected == generate_name(name, counter)
+    assert expected == generate_name(name, counter, suffix)
 
 
 def is_valid_uxgrid(file: pathlib.Path | str) -> bool:
@@ -430,7 +430,7 @@ class _SingleRankBlockDistribution:
         return True
 
     @property
-    def file_horizontal_size(self) -> base.HorizontalGridSize:
+    def output_horizontal_size(self) -> base.HorizontalGridSize:
         return self._horizontal_size
 
     @property
@@ -669,32 +669,16 @@ def test_fieldgroup_monitor_wires_chunking_into_zarr_writer(test_path: pathlib.P
     assert air_density.shards == (1, grid.num_levels, 8)
 
 
-def test_fieldgroup_config_rejects_distributed_netcdf_without_parallel_support(
+def test_fieldgroup_config_accepts_distributed_netcdf_on_any_installation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # patched instead of relying on the local installation: PyPI wheels are always
-    # serial, but the test must also pass on a machine with a parallel build
-    monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: "<no parallel support>")
-    with pytest.raises(errors.InvalidConfigError) as err:
-        FieldGroupIOConfig(
-            filename="a.nc",
-            variables=["air_density"],
-            backend=OutputBackend.NETCDF,
-            mode=OutputMode.DISTRIBUTED,
-        )
-    # the error must state the reason and the full path to an executable setup
-    message = str(err.value)
-    assert "parallel netCDF4 installation" in message
-    assert "<no parallel support>" in message
-    assert "pip install --no-binary netcdf4" in message
-    assert "__has_parallel4_support__" in message
-    assert "'zarr' backend" in message and "'gather' mode" in message
+    """The config never rejects distributed netCDF: the check is rank-aware.
 
-
-def test_fieldgroup_config_accepts_distributed_netcdf_with_parallel_support(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: None)
+    Whether the combination is writable depends on the run's rank count (single-rank
+    runs use a serial file handle), so it is checked when the writer is created --
+    a static config-time rejection would break serial runs on serial installations.
+    """
+    monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: "<serial build>")
     config = FieldGroupIOConfig(
         filename="a.nc",
         variables=["air_density"],
@@ -766,6 +750,19 @@ class _TwoRankComm:
 
     def bcast(self, value: str, root: int = 0) -> str:
         return value
+
+    def Gatherv(self, send: np.ndarray, recv: list[np.ndarray] | None, root: int = 0) -> None:
+        """Pretend the second rank owns the complementary global indices.
+
+        Used only by the setup-time partition validation: the gathered indices of the
+        two "ranks" then form a permutation of the global grid, as a real
+        decomposition's would.
+        """
+        if recv is None:
+            return
+        buffer = recv[0]
+        buffer[: send.shape[0]] = send
+        buffer[send.shape[0] :] = np.setdiff1d(np.arange(buffer.shape[0]), send)
 
 
 class _TwoRankProcessProperties:

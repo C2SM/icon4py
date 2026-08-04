@@ -133,7 +133,8 @@ venv.bak/
 .project_alt.json
 
 # Claude
-.claude
+.claude/*.local.json
+.claude/*.lock
 
 ### Others ###
 .obsidian

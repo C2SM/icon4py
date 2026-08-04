@@ -49,7 +49,9 @@ Field groups are stored in the same file and share a common setting of
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
 - `variables`: List of variables names to be output. Variable names are the CF names used as keys in the model state (see [data.py](../states/data.py)).
 - `backend` (default="zarr"): File format of the group, `"netcdf"` or `"zarr"`.
-- `mode` (default="distributed"): Write strategy of distributed (MPI) runs: `"gather"` collects all fields on the root rank which writes them in global order; `"distributed"` lets every rank write its owned entries into a rank-contiguous block of a shared store (see `io.distributed`). Single-rank runs write the full state either way, but `"distributed"` with the `"netcdf"` backend requires an MPI-parallel netCDF4 installation and is rejected at configuration time on serial installations regardless of the rank count (see "Parallel netCDF" below).
+- `mode` (default="distributed"): Write strategy of distributed (MPI) runs; single-rank runs write the full state either way:
+    - `"gather"`: the owned entries of all ranks are collected on the root rank, which writes them in global order.
+    - `"distributed"`: every rank writes its owned entries into a rank-contiguous block of a shared store (see `io.distributed`). The horizontal axes of such a store are rank-ordered and padded, so its data variables carry the marker attribute `icon4py_layout = "rank_block"` instead of a UGRID mesh association: a consumer must reorder them by the store's `global_index_<dim>` coordinates before the UGRID mesh applies. With the `"netcdf"` backend, multi-rank runs need an MPI-parallel netCDF4 installation (checked when the writer is created, see "Parallel netCDF" below).
 - `horizontal_chunk_size` (optional): Entries per chunk along the horizontal (cell/edge/vertex) axes. Default: one chunk per rank block in `"distributed"` mode; otherwise the whole axis (zarr) or the library default (netcdf). In `"distributed"` mode the rank-block size is rounded up to a multiple of this value so chunks never cross rank-block boundaries.
 - `horizontal_shard_size` (optional, `"zarr"` backend only): Entries per shard along the horizontal axes; must be a multiple of `horizontal_chunk_size`. A shard groups whole chunks into a single storage file, so this controls the number of files written per time slice -- the critical tuning knob on parallel file systems. Default: no sharding (one file per chunk). In `"distributed"` mode the rank-block size is rounded up to the shard size instead.
 - `nc_title` (optional): Title attribute of the generated files (netcdf and zarr).
@@ -102,7 +104,8 @@ shared netCDF file, which the installed `netCDF4` package must support:
   dependencies) ships `netCDF4` compiled against serial netCDF-C/HDF5 libraries --
   MPI-parallel HDF5 cannot be distributed as a portable wheel. On such an installation
   `netCDF4.__has_parallel4_support__` is `0` and distributed netCDF output is rejected
-  when the configuration is validated.
+  in multi-rank runs, when the writer is created (single-rank runs write through a
+  serial file handle and never need parallel support).
 - **Steps to enable the path**:
   1. Provide MPI-enabled netCDF-C and HDF5 libraries: HPC environment modules or spack
      (e.g. `spack install netcdf-c+mpi ^hdf5+mpi`), or on conda the
@@ -117,8 +120,8 @@ shared netCDF file, which the installed `netCDF4` package must support:
      `--no-build-isolation`.
   3. Verify: `python -c "import netCDF4; print(netCDF4.__has_parallel4_support__)"`
      must print `1`.
-- **Runtime checks**: the installation is verified at configuration validation, again
-  when a parallel writer is constructed and finally when the shared file is opened
+- **Runtime checks**: the installation is verified when a parallel writer is
+  constructed and again when the shared file is opened
   (`netcdf_writers.missing_parallel_support`); every parallel open logs the netCDF4,
   netCDF-C and HDF5 versions in use. A wrong installation therefore fails loudly with
   the steps above -- never by writing corrupt files.

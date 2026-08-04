@@ -56,7 +56,7 @@ def test_single_node_distribution_passes_state_through() -> None:
     state = {"air_density": cell_field(6)}
     assert distribution.writes_output
     assert distribution.rank_blocks is None
-    assert distribution.file_horizontal_size == horizontal_size
+    assert distribution.output_horizontal_size == horizontal_size
     assert distribution.prepare(state) is state
 
 
@@ -83,7 +83,7 @@ def test_gather_distribution_single_rank_global_sizes_are_owned_counts() -> None
     distribution = distributed.GatherDistribution(
         decomposition.SingleNodeProcessProperties(), synthetic_decomposition_info()
     )
-    horizontal_size = distribution.file_horizontal_size
+    horizontal_size = distribution.output_horizontal_size
     assert horizontal_size.num_cells == int(CELL_OWNER_MASK.sum())
     assert horizontal_size.num_edges == int(EDGE_OWNER_MASK.sum())
     assert horizontal_size.num_vertices == int(VERTEX_OWNER_MASK.sum())
@@ -112,7 +112,7 @@ def test_rank_block_distribution_single_rank_layout() -> None:
     assert cell_block.padded_size == num_owned_cells
     assert cell_block.global_size == num_owned_cells
     assert np.all(cell_block.global_index == CELL_GLOBAL_INDEX[CELL_OWNER_MASK])
-    assert distribution.file_horizontal_size.num_cells == num_owned_cells
+    assert distribution.output_horizontal_size.num_cells == num_owned_cells
 
 
 def test_rank_block_distribution_block_alignment_rounds_block_size_up() -> None:
@@ -132,7 +132,7 @@ def test_rank_block_distribution_block_alignment_rounds_block_size_up() -> None:
     # 3 owned edges are already aligned; 2 owned vertices round up to 3
     assert distribution.rank_blocks["edge"].size == 3
     assert distribution.rank_blocks["vertex"].size == 3
-    assert distribution.file_horizontal_size == base.HorizontalGridSize(
+    assert distribution.output_horizontal_size == base.HorizontalGridSize(
         num_cells=6, num_edges=3, num_vertices=3
     )
 
@@ -152,13 +152,47 @@ def test_rank_block_distribution_prepare_strips_halos() -> None:
     assert np.all(stripped.values == field.values[CELL_OWNER_MASK] - 1.0)
 
 
-def test_gather_distribution_rejects_non_partition_owned_indices() -> None:
-    # duplicate owned global indices: the gathered owned entries are no permutation of
-    # the global grid, which would silently corrupt the reassembled fields
+def _non_partition_decomposition_info() -> decomposition.DecompositionInfo:
+    # duplicate owned global indices: the owned entries of the ranks are no permutation
+    # of the global grid, which would silently corrupt the reassembled fields
     info = decomposition.DecompositionInfo()
     for dim in (dims.CellDim, dims.EdgeDim, dims.VertexDim):
         owner_mask = np.ones(3, dtype=bool)
         halo_levels = np.full(3, decomposition.DecompositionFlag.OWNED.value)
         info.set_dimension(dim, np.asarray([0, 0, 1], dtype=np.int64), owner_mask, halo_levels)
+    return info
+
+
+def test_gather_distribution_rejects_non_partition_owned_indices() -> None:
     with pytest.raises(ValueError, match="do not partition"):
-        distributed.GatherDistribution(decomposition.SingleNodeProcessProperties(), info)
+        distributed.GatherDistribution(
+            decomposition.SingleNodeProcessProperties(), _non_partition_decomposition_info()
+        )
+
+
+def test_rank_block_distribution_rejects_non_partition_owned_indices() -> None:
+    with pytest.raises(ValueError, match="do not partition"):
+        distributed.RankBlockDistribution(
+            decomposition.SingleNodeProcessProperties(), _non_partition_decomposition_info()
+        )
+
+
+@pytest.mark.parametrize("block_alignment", [0, -4])
+def test_rank_block_distribution_rejects_non_positive_block_alignment(
+    block_alignment: int,
+) -> None:
+    with pytest.raises(ValueError, match="Invalid block alignment"):
+        distributed.RankBlockDistribution(
+            decomposition.SingleNodeProcessProperties(),
+            synthetic_decomposition_info(),
+            block_alignment=block_alignment,
+        )
+
+
+def test_rank_block_global_index_is_read_only() -> None:
+    distribution = distributed.RankBlockDistribution(
+        decomposition.SingleNodeProcessProperties(), synthetic_decomposition_info()
+    )
+    cell_block = distribution.rank_blocks["cell"]
+    with pytest.raises(ValueError, match="read-only"):
+        cell_block.global_index[0] = 99

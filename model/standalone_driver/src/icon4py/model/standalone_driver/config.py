@@ -295,8 +295,8 @@ class DriverConfig:
             description=(
                 "Write strategy of distributed runs ('gather' or 'distributed', see "
                 "'icon4py.model.common.io.OutputMode'); 'distributed' netCDF needs an "
-                "MPI-parallel netCDF4 installation (see 'Parallel netCDF' in "
-                "'icon4py.model.common.io')."
+                "MPI-parallel netCDF4 installation in multi-rank runs (see 'Parallel "
+                "netCDF' in 'icon4py.model.common.io')."
             ),
             icon_equivalent=None,
         ),
@@ -308,8 +308,6 @@ class DriverConfig:
                 f"the time loop cannot start at {self.start_of_timestepping}, before the "
                 f"beginning of the simulation ({self.start_of_simulation})."
             )
-        # fail at config construction, not after minutes of driver initialization
-        common_io.validate_backend_mode_combination(self.output_backend, self.output_mode)
 
     @classmethod
     def make_initial(cls, **kwargs: Any) -> DriverConfig:

@@ -69,8 +69,7 @@ def _bounded_middle_chunks(
     for size in reversed(middle_shape):
         take = min(size, budget)
         chunks.append(take)
-        budget //= take
-        budget = max(budget, 1)
+        budget = max(budget // take, 1)
     chunks.reverse()
     return tuple(chunks)
 
@@ -157,13 +156,14 @@ class NETCDFWriter:
             else decomposition.SingleNodeProcessProperties()
         )
         self.dataset: nc.Dataset | None = None
-        if self._is_parallel():
+        if self._is_distributed():
             reason = missing_parallel_support()
             if reason is not None:
                 raise RuntimeError(
                     f"Cannot write '{self._file_name}' in parallel "
                     f"({self._process_props.comm_size} ranks share one netCDF file): "
-                    f"{reason}. {PARALLEL_INSTALL_HINT}"
+                    f"{reason}. {PARALLEL_INSTALL_HINT} Alternatively, use the 'zarr' "
+                    f"backend (parallel with any installation) or the 'gather' mode."
                 )
 
     def __getitem__(self, item: str) -> str:
@@ -189,7 +189,7 @@ class NETCDFWriter:
     def num_interfaces(self) -> int:
         return self._vertical_params.interface_physical_height.ndarray.shape[0]
 
-    def _is_parallel(self) -> bool:
+    def _is_distributed(self) -> bool:
         """Whether the ranks of a multi-rank communicator share this file.
 
         Rank-block layout alone does not imply parallel access: on a single-rank
@@ -249,7 +249,7 @@ class NETCDFWriter:
         return padded
 
     def _open_dataset(self) -> nc.Dataset:
-        if not self._is_parallel():
+        if not self._is_distributed():
             return nc.Dataset(self._file_name, "w", format="NETCDF4", persist=True)
         log.info(f"Opening {self._file_name} for parallel writing ({build_description()})")
         try:
@@ -286,7 +286,7 @@ class NETCDFWriter:
         # create time variables
         times = self.dataset.createVariable(writers.TIME, "f8", (writers.TIME,))
         times.setncatts(writers.time_attributes(self._time_properties))
-        if self._is_parallel():
+        if self._is_distributed():
             # writes touching the unlimited time dimension must be collective
             times.set_collective(True)
         # create vertical coordinates:
@@ -398,8 +398,12 @@ class NETCDFWriter:
         variable = self.dataset.createVariable(
             var_name, canonical_slice.dtype, dimensions, **create_kwargs
         )
-        variable.setncatts(writers.data_variable_attributes(canonical_slice))
-        if self._is_parallel():
+        variable.setncatts(
+            writers.data_variable_attributes(
+                canonical_slice, rank_block_layout=self._rank_blocks is not None
+            )
+        )
+        if self._is_distributed():
             # writes touching the unlimited time dimension must be collective
             variable.set_collective(True)
         return variable

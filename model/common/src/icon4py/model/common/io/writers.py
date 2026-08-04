@@ -157,23 +157,41 @@ DATA_VARIABLE_ATTRIBUTES: Final[tuple[str, ...]] = (
     "location",
 )
 
+#: The attributes asserting the UGRID mesh association of a variable. The association
+#: holds only when the variable's horizontal axis is in the global order of the
+#: referenced topology -- which a rank-block store's axes are not.
+UGRID_ASSOCIATION_ATTRIBUTES: Final[tuple[str, ...]] = ("mesh", "location")
 
-def data_variable_attributes(canonical_slice: xr.DataArray) -> dict[str, str]:
+#: Marker attribute replacing the UGRID association on rank-block variables: their
+#: horizontal axes are rank-ordered and padded (see ``distributed.RankBlock``), so a
+#: reader must reorder them by the store's ``global_index_<dim>`` coordinate before
+#: the mesh of the UGRID topology file applies.
+LAYOUT_ATTRIBUTE: Final[str] = "icon4py_layout"
+RANK_BLOCK_LAYOUT: Final[str] = "rank_block"
+
+
+def data_variable_attributes(
+    canonical_slice: xr.DataArray, *, rank_block_layout: bool = False
+) -> dict[str, str]:
     """CF/UGRID attributes of a field, raising for missing ones.
 
     Both writers call this before any file mutation: a missing attribute must fail on
     every rank identically, not on the root rank inside a store operation.
+
+    With ``rank_block_layout`` the UGRID association (``mesh``, ``location``) is
+    replaced by ``icon4py_layout = "rank_block"``: the variable's horizontal axis is
+    rank-ordered and padded, so a UGRID-aware reader would otherwise silently place
+    the values on the wrong mesh entities (see ``LAYOUT_ATTRIBUTE``).
     """
     missing = [name for name in DATA_VARIABLE_ATTRIBUTES if name not in canonical_slice.attrs]
     if missing:
         raise ValueError(f"Field is missing the CF attributes: {', '.join(missing)}.")
-    return {name: canonical_slice.attrs[name] for name in DATA_VARIABLE_ATTRIBUTES}
-
-
-def filter_by_standard_name(model_state: dict, value: str) -> dict:
-    # getattr with default: netCDF4 raises AttributeError for a missing attribute, and
-    # not every file variable carries a standard_name (e.g. global-index coordinates)
-    return {k: v for k, v in model_state.items() if value == getattr(v, "standard_name", None)}
+    attrs = {name: canonical_slice.attrs[name] for name in DATA_VARIABLE_ATTRIBUTES}
+    if rank_block_layout:
+        for name in UGRID_ASSOCIATION_ATTRIBUTES:
+            del attrs[name]
+        attrs[LAYOUT_ATTRIBUTE] = RANK_BLOCK_LAYOUT
+    return attrs
 
 
 def canonicalize_time_slice(

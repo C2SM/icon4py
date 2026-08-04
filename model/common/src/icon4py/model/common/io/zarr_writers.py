@@ -294,7 +294,11 @@ class ZarrWriter:
             fill_value=fill_value,
             dimension_names=[writers.TIME, *(str(d) for d in canonical_slice.dims)],
         )
-        variable.attrs.update(writers.data_variable_attributes(canonical_slice))
+        variable.attrs.update(
+            writers.data_variable_attributes(
+                canonical_slice, rank_block_layout=self._rank_blocks is not None
+            )
+        )
 
     def close(self) -> None:
         if self._group is None:

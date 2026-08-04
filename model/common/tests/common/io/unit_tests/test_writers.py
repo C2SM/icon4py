@@ -34,24 +34,6 @@ from ...fixtures import random_name, test_path
 from .. import utils as test_io_utils
 
 
-@pytest.mark.parametrize("value", ["air_density", "upward_air_velocity"])
-def test_filter_by_standard_name(value):
-    state = test_io_utils.model_state(test_io_utils.simple_grid)
-    assert writers.filter_by_standard_name(state, value) == {value: state[value]}
-
-
-def test_filter_by_standard_name_key_differs_from_name():
-    state = test_io_utils.model_state(test_io_utils.simple_grid)
-    assert writers.filter_by_standard_name(state, "virtual_potential_temperature") == {
-        "theta_v": state["theta_v"]
-    }
-
-
-def test_filter_by_standard_name_non_existing_name():
-    state = test_io_utils.model_state(test_io_utils.simple_grid)
-    assert writers.filter_by_standard_name(state, "does_not_exist") == {}
-
-
 def _vertical_params(grid: grid_def.Grid) -> v_grid.VerticalGrid:
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
@@ -255,6 +237,10 @@ def test_zarr_writer_append_timeslice_create_new_var(
         assert ds["air_density"].shape == (1, grid.num_levels, grid.num_cells)
         test_utils.assert_dallclose(ds["air_density"].values[0], state["air_density"].data.T)
         assert ds["air_density"].attrs["standard_name"] == "air_density"
+        # serial store: the horizontal axis is in global order, the UGRID association holds
+        assert ds["air_density"].attrs["mesh"] == "mesh"
+        assert ds["air_density"].attrs["location"] == "face"
+        assert writers.LAYOUT_ATTRIBUTE not in ds["air_density"].attrs
 
 
 def test_zarr_writer_append_timeslice_to_existing_var(
@@ -339,6 +325,11 @@ def test_zarr_writer_rank_block_writes_padded_block(
         values = ds["air_density"].values[0]
         test_utils.assert_dallclose(values[:, : grid.num_cells], state["air_density"].data.T)
         assert np.all(np.isnan(values[:, grid.num_cells :]))
+        # the rank-ordered, padded axis invalidates the UGRID association: the layout
+        # marker replaces it, so no reader places the values on the mesh unreordered
+        assert ds["air_density"].attrs[writers.LAYOUT_ATTRIBUTE] == writers.RANK_BLOCK_LAYOUT
+        assert "mesh" not in ds["air_density"].attrs
+        assert "location" not in ds["air_density"].attrs
     # the -1 padding marker doubles as the store's fill value (which xarray does not
     # decode as a missing value for format 3); read undecoded to pin the on-disk
     # contract independent of the reader's decoding defaults
@@ -591,6 +582,11 @@ def test_netcdf_writer_rank_block_writes_padded_block(
         # padding reads as NaN: written explicitly by the writer, matching the
         # variable's fill value
         assert np.all(np.isnan(values[:, grid.num_cells :]))
+        # the rank-ordered, padded axis invalidates the UGRID association: the layout
+        # marker replaces it, so no reader places the values on the mesh unreordered
+        assert ds["air_density"].attrs[writers.LAYOUT_ATTRIBUTE] == writers.RANK_BLOCK_LAYOUT
+        assert "mesh" not in ds["air_density"].attrs
+        assert "location" not in ds["air_density"].attrs
         # the -1 padding is written explicitly, not encoded as a _FillValue attribute
         # (xarray would decode that to NaN, turning the integer coordinate into floats)
         global_index = ds[f"{writers.GLOBAL_INDEX_PREFIX}_{writers.CELL}"].values
@@ -780,6 +776,7 @@ def test_netcdf_writer_rejects_multi_rank_blocks_without_parallel_support(
     assert "<serial build>" in message
     assert "pip install --no-binary netcdf4" in message
     assert "__has_parallel4_support__" in message
+    assert "'zarr' backend" in message and "'gather' mode" in message
 
 
 class _FakeNetCDF4Module:

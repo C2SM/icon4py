@@ -145,27 +145,16 @@ def test_restart_starts_the_time_loop_at_start_of_timestepping() -> None:
     assert model_time.n_time_steps == 15
 
 
-def test_driver_config_rejects_distributed_netcdf_at_construction(
+def test_driver_config_accepts_distributed_netcdf_on_any_installation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # patched instead of relying on the local installation: PyPI wheels are always
-    # serial, but the test must also pass on a machine with a parallel build
+    """The driver config never rejects distributed netCDF: the check is rank-aware.
+
+    Single-rank runs write through a serial file handle whatever the installation, so
+    the parallel-support check happens when the writer is created in a multi-rank run
+    (see ``netcdf_writers.NETCDFWriter``), not at config construction.
+    """
     monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: "<serial build>")
-    atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "PT300S"})
-    with pytest.raises(errors.InvalidConfigError, match="parallel netCDF4"):
-        driver_config.DriverConfig.from_fortran_dict(
-            atm_dict=atm_dict,
-            master_dict=master_dict,
-            profiling_options=None,
-            output_backend=common_io.OutputBackend.NETCDF,
-            output_mode=common_io.OutputMode.DISTRIBUTED,
-        )
-
-
-def test_driver_config_accepts_distributed_netcdf_with_parallel_support(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: None)
     atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "PT300S"})
     config = driver_config.DriverConfig.from_fortran_dict(
         atm_dict=atm_dict,

@@ -10,9 +10,10 @@
 Distribution of decomposed model state for output.
 
 In a distributed (MPI) run every rank holds only its local part of each field: the
-entries it owns plus halo entries duplicated from neighboring ranks. Before such fields
-can be written they must be reduced to owned entries (halos are owned -- and written --
-by their home rank) and placed correctly relative to the undecomposed global grid.
+entries it owns plus halo entries -- read-only copies of entries owned by neighboring
+ranks. Before such fields can be written they must be reduced to owned entries (every
+halo entry is written by the rank that owns it, where it is not a halo) and placed
+correctly relative to the undecomposed global grid.
 This module provides the strategies for that step, sitting between the
 ``FieldGroupMonitor`` (scheduling) and the writers (file format):
 
@@ -63,7 +64,7 @@ class OutputDistribution(Protocol):
         ...
 
     @property
-    def file_horizontal_size(self) -> base.HorizontalGridSize:
+    def output_horizontal_size(self) -> base.HorizontalGridSize:
         """Horizontal dimension sizes of the output file/store."""
         ...
 
@@ -91,7 +92,7 @@ class SingleNodeDistribution:
         return True
 
     @property
-    def file_horizontal_size(self) -> base.HorizontalGridSize:
+    def output_horizontal_size(self) -> base.HorizontalGridSize:
         return self.horizontal_size
 
     @property
@@ -107,21 +108,36 @@ class RankBlock:
     """Rank-contiguous block of the padded horizontal axis of a shared output store.
 
     The horizontal axis of the store consists of ``comm_size`` blocks of the uniform
-    ``size`` (the maximum owned count over all ranks, rounded up to the block
-    alignment of :class:`RankBlockDistribution`): rank ``r`` writes its ``count``
-    owned entries to ``[r * size, r * size + count)``. The store is chunked so that
-    no chunk crosses a block boundary -- by default with exactly one chunk per block
-    -- hence concurrent writes of different ranks never touch the same chunk. An axis
-    therefore never holds fewer chunks (or shard files) than ranks; the default
-    one-chunk-per-block layout is that minimum. Dedicated IO ranks (planned for
-    asynchronous output) will lower this floor to the IO-rank count, making chunk and
-    shard counts freely tunable.
+    ``size``: rank ``r`` writes its ``count`` owned entries to
+    ``[r * size, r * size + count)``. The store is chunked so that no chunk crosses a
+    block boundary -- by default with exactly one chunk per block -- hence concurrent
+    writes of different ranks never touch the same chunk. An axis therefore never
+    holds fewer chunks (or shard files) than ranks; the default one-chunk-per-block
+    layout is that minimum. Dedicated IO ranks (planned for asynchronous output) will
+    lower this floor to the IO-rank count, making chunk and shard counts freely
+    tunable.
+
     Entries past ``count`` within a block are padding: they always read as the fill
     value (the zarr writer never writes them; the netCDF writer writes them
     explicitly, since its parallel collectives require every rank to participate in
-    every write). ``global_index`` maps the block's entries to their positions in the
-    undecomposed global grid of ``global_size`` entries (padding entries carry no
-    global index).
+    every write). The amount of padding per axis, ``padded_size - global_size``, is
+    driven by the decomposition imbalance and the block alignment; the ratio is
+    logged at construction. Because the axis is rank-ordered and padded, the
+    variables of a rank-block store carry no UGRID mesh association: they are marked
+    ``icon4py_layout = "rank_block"`` instead (see ``writers.LAYOUT_ATTRIBUTE``), and
+    a consumer must reorder them by ``global_index`` before the mesh of the UGRID
+    topology file applies.
+
+    Attributes:
+        start: first position of this rank's block on the store axis (``rank * size``).
+        count: number of entries this rank owns (and writes).
+        size: uniform block size: the maximum ``count`` over the ranks, rounded up to
+            the block alignment of :class:`RankBlockDistribution`.
+        padded_size: total size of the store axis (``comm_size * size``).
+        global_size: number of entries of the undecomposed global grid.
+        global_index: position of each of the ``count`` owned entries in the
+            undecomposed global grid (a read-only array; padding entries carry no
+            global index).
     """
 
     start: int
@@ -171,6 +187,73 @@ def _host_owner_data(
     return mask, owned_global_index
 
 
+def _allgather_entry_counts(
+    process_props: decomposition.ProcessProperties, count: int
+) -> np.ndarray:
+    """Owned-entry counts of all ranks (one entry per rank, in rank order)."""
+    if process_props.is_single_rank():
+        return np.asarray([count], dtype=np.int64)
+    return np.asarray(process_props.comm.allgather(count), dtype=np.int64)
+
+
+def _gather_entries(
+    process_props: decomposition.ProcessProperties,
+    local_entries: np.ndarray,
+    *,
+    entry_counts: np.ndarray,
+) -> np.ndarray | None:
+    """Concatenate the ranks' entries (leading-axis) on the root rank, in rank order.
+
+    Returns the concatenation on the root rank and None on all other ranks.
+    """
+    if process_props.is_single_rank():
+        return local_entries
+    send = np.ascontiguousarray(local_entries)
+    entry_elements = int(np.prod(send.shape[1:], dtype=np.int64))
+    if process_props.rank == 0:
+        gathered = np.empty((int(entry_counts.sum()), *send.shape[1:]), dtype=send.dtype)
+        process_props.comm.Gatherv(send, [gathered, entry_counts * entry_elements], root=0)
+        return gathered
+    process_props.comm.Gatherv(send, None, root=0)
+    return None
+
+
+def _check_partition(
+    process_props: decomposition.ProcessProperties,
+    dim_name: str,
+    owned_global_index: np.ndarray,
+    entry_counts: np.ndarray,
+) -> np.ndarray | None:
+    """Check that the ranks' owned global indices partition the global grid.
+
+    Collective: the owned global indices of all ranks are gathered on the root rank
+    and verified to be a permutation of ``0..N-1`` -- overlapping or gappy owner
+    masks would otherwise reassemble a plausible-looking but wrong global field. The
+    verdict is broadcast so all ranks raise together instead of hanging in the next
+    collective.
+
+    Returns the gathered indices on the root rank (None on all other ranks), for
+    reuse as insertion indices.
+
+    Raises:
+        ValueError: if the owned global indices are not a permutation of ``0..N-1``.
+    """
+    global_size = int(entry_counts.sum())
+    gathered_index = _gather_entries(process_props, owned_global_index, entry_counts=entry_counts)
+    is_partition = gathered_index is None or np.array_equal(
+        np.sort(gathered_index), np.arange(global_size, dtype=np.int64)
+    )
+    if not process_props.is_single_rank():
+        is_partition = process_props.comm.bcast(is_partition, root=0)
+    if not is_partition:
+        raise ValueError(
+            f"Owner masks of dimension '{dim_name}' do not partition the global grid: "
+            f"the owned global indices of all ranks are not a permutation of "
+            f"0..{global_size - 1}."
+        )
+    return gathered_index
+
+
 def _owned_entries(
     dim_name: str, owner_masks: dict[str, np.ndarray], field: xr.DataArray
 ) -> np.ndarray:
@@ -218,31 +301,19 @@ class GatherDistribution:
     ) -> None:
         self._process_props = process_props
         self._owner_masks: dict[str, np.ndarray] = {}
-        self._row_counts: dict[str, np.ndarray] = {}
+        self._entry_counts: dict[str, np.ndarray] = {}
         self._insert_index: dict[str, np.ndarray] = {}
         self._global_size: dict[str, int] = {}
 
         for dim, dim_name in HORIZONTAL_DIM_NAMES.items():
             mask, owned_global_index = _host_owner_data(decomposition_info, dim)
-            row_counts = self._allgather_counts(owned_global_index.shape[0])
-            global_size = int(row_counts.sum())
-            insert_index = self._gather_rows(owned_global_index, row_counts=row_counts)
-            # verdict broadcast so all ranks raise together instead of hanging in the
-            # next collective
-            is_partition = insert_index is None or np.array_equal(
-                np.sort(insert_index), np.arange(global_size, dtype=np.int64)
+            entry_counts = _allgather_entry_counts(process_props, owned_global_index.shape[0])
+            insert_index = _check_partition(
+                process_props, dim_name, owned_global_index, entry_counts
             )
-            if not self._process_props.is_single_rank():
-                is_partition = self._process_props.comm.bcast(is_partition, root=0)
-            if not is_partition:
-                raise ValueError(
-                    f"Owner masks of dimension '{dim_name}' do not partition the global grid: "
-                    f"the owned global indices of all ranks are not a permutation of "
-                    f"0..{global_size - 1}."
-                )
             self._owner_masks[dim_name] = mask
-            self._row_counts[dim_name] = row_counts
-            self._global_size[dim_name] = global_size
+            self._entry_counts[dim_name] = entry_counts
+            self._global_size[dim_name] = int(entry_counts.sum())
             if insert_index is not None:
                 self._insert_index[dim_name] = insert_index
 
@@ -251,7 +322,7 @@ class GatherDistribution:
         return self._process_props.rank == 0
 
     @property
-    def file_horizontal_size(self) -> base.HorizontalGridSize:
+    def output_horizontal_size(self) -> base.HorizontalGridSize:
         return base.HorizontalGridSize(
             num_cells=self._global_size[HORIZONTAL_DIM_NAMES[dims.CellDim]],
             num_edges=self._global_size[HORIZONTAL_DIM_NAMES[dims.EdgeDim]],
@@ -267,37 +338,18 @@ class GatherDistribution:
         for name, field in state.items():
             dim_name = str(field.dims[0])
             owned = _owned_entries(dim_name, self._owner_masks, field)
-            rows = self._gather_rows(owned, row_counts=self._row_counts[dim_name])
-            if rows is not None:
+            entries = _gather_entries(
+                self._process_props, owned, entry_counts=self._entry_counts[dim_name]
+            )
+            if entries is not None:
                 global_field = np.empty(
                     (self._global_size[dim_name], *owned.shape[1:]), dtype=owned.dtype
                 )
-                global_field[self._insert_index[dim_name]] = rows
+                global_field[self._insert_index[dim_name]] = entries
                 gathered[name] = xr.DataArray(
                     global_field, dims=field.dims, attrs=dict(field.attrs)
                 )
         return gathered if self.writes_output else None
-
-    def _allgather_counts(self, count: int) -> np.ndarray:
-        if self._process_props.is_single_rank():
-            return np.asarray([count], dtype=np.int64)
-        return np.asarray(self._process_props.comm.allgather(count), dtype=np.int64)
-
-    def _gather_rows(self, local_rows: np.ndarray, *, row_counts: np.ndarray) -> np.ndarray | None:
-        """Concatenate the ranks' rows (leading-axis entries) on the root rank, in rank order.
-
-        Returns the concatenation on the root rank and None on all other ranks.
-        """
-        if self._process_props.is_single_rank():
-            return local_rows
-        send = np.ascontiguousarray(local_rows)
-        row_elements = int(np.prod(send.shape[1:], dtype=np.int64))
-        if self.writes_output:
-            gathered = np.empty((int(row_counts.sum()), *send.shape[1:]), dtype=send.dtype)
-            self._process_props.comm.Gatherv(send, [gathered, row_counts * row_elements], root=0)
-            return gathered
-        self._process_props.comm.Gatherv(send, None, root=0)
-        return None
 
 
 class RankBlockDistribution:
@@ -305,10 +357,12 @@ class RankBlockDistribution:
 
     Halo entries are dropped using the owner masks; each rank then writes its owned
     entries itself, into the rank-contiguous block described by :class:`RankBlock`.
-    There is no data communication: ``prepare`` only strips halos (the copy this makes
-    also detaches the output from the live model state). The store's horizontal axes
-    are padded to a uniform block size per rank; consumers recover the global order
-    from the store's global-index coordinates.
+    At capture steps there is no data communication: ``prepare`` only strips halos
+    (the copy this makes also detaches the output from the live model state).
+    Construction gathers the owned global indices once to validate that the owner
+    masks partition the global grid (see ``_check_partition``). The store's
+    horizontal axes are padded to a uniform block size per rank; consumers recover
+    the global order from the store's global-index coordinates.
 
     ``block_alignment`` rounds the uniform block size up to a multiple of the given
     value, so a store chunking (or sharding) of that granularity never crosses block
@@ -322,25 +376,39 @@ class RankBlockDistribution:
         decomposition_info: decomposition.DecompositionInfo,
         block_alignment: int = 1,
     ) -> None:
+        if block_alignment < 1:
+            raise ValueError(
+                f"Invalid block alignment {block_alignment}: must be a positive integer."
+            )
         self._process_props = process_props
         self._owner_masks: dict[str, np.ndarray] = {}
         self._rank_blocks: dict[str, RankBlock] = {}
 
         for dim, dim_name in HORIZONTAL_DIM_NAMES.items():
             mask, owned_global_index = _host_owner_data(decomposition_info, dim)
+            # ``RankBlock`` is frozen; keep the array it hands out immutable too
+            owned_global_index.setflags(write=False)
             count = owned_global_index.shape[0]
-            counts = (
-                [count] if process_props.is_single_rank() else process_props.comm.allgather(count)
-            )
-            max_count = int(max(counts))
+            entry_counts = _allgather_entry_counts(process_props, count)
+            _check_partition(process_props, dim_name, owned_global_index, entry_counts)
+            max_count = int(entry_counts.max())
             size = (max_count + block_alignment - 1) // block_alignment * block_alignment
+            global_size = int(entry_counts.sum())
+            padded_size = size * process_props.comm_size
+            if padded_size > global_size:
+                log.info(
+                    f"Rank-block axis '{dim_name}': {padded_size - global_size} of "
+                    f"{padded_size} positions are padding "
+                    f"({(padded_size - global_size) / padded_size:.1%}; the amount is "
+                    f"driven by the decomposition imbalance and the block alignment)."
+                )
             self._owner_masks[dim_name] = mask
             self._rank_blocks[dim_name] = RankBlock(
                 start=process_props.rank * size,
                 count=count,
                 size=size,
-                padded_size=size * process_props.comm_size,
-                global_size=int(sum(counts)),
+                padded_size=padded_size,
+                global_size=global_size,
                 global_index=owned_global_index,
             )
 
@@ -349,7 +417,7 @@ class RankBlockDistribution:
         return True
 
     @property
-    def file_horizontal_size(self) -> base.HorizontalGridSize:
+    def output_horizontal_size(self) -> base.HorizontalGridSize:
         """Padded sizes: the store's horizontal axes, not the global grid sizes."""
         return base.HorizontalGridSize(
             num_cells=self._rank_blocks[HORIZONTAL_DIM_NAMES[dims.CellDim]].padded_size,

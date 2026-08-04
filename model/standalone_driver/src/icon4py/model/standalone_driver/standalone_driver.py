@@ -163,8 +163,15 @@ class Icon4pyDriver:
         The assembled DataArrays reference the live state (see ``io.utils.to_data_array``),
         so they must be written here and now -- before the next step mutates the state. The
         static diagnostic inputs are fetched directly from the field factories.
+
+        At steps no field group captures, only the monitor's schedule counters advance:
+        nothing is assembled, timed or written -- so the diagnostics are not computed
+        for steps that discard them, and the output timers hold only real capture work.
         """
         assert self.io_monitor is not None
+        if not self.io_monitor.captures_next_store():
+            self.io_monitor.store({}, simulation_current_datetime)
+            return
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
             metrics = self.static_field_factories.metrics
             interpolation = self.static_field_factories.interpolation
@@ -258,8 +265,6 @@ class Icon4pyDriver:
                         self.model_time_variables.simulation_current_datetime,
                     )
             if self.io_monitor is not None:
-                # collective: success path only, where all ranks are in lockstep
-                # (see IOMonitor.report_timings; close() stays communication-free)
                 self.io_monitor.report_timings()
         finally:
             if self.io_monitor is not None:

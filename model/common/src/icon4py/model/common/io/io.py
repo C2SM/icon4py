@@ -74,29 +74,6 @@ PHASE_DISTRIBUTE: Final[str] = "distribute"
 PHASE_WRITE: Final[str] = "write"
 
 
-def validate_backend_mode_combination(backend: OutputBackend, mode: OutputMode) -> None:
-    """Reject output backend/mode combinations the installation cannot write.
-
-    Distributed netCDF means every rank writes to one shared file, which needs an
-    MPI-parallel netCDF4 installation -- the PyPI wheels are serial builds (see
-    ``netcdf_writers.missing_parallel_support``). The check is deliberately static
-    (independent of the run's actual rank count), so a configuration is valid or
-    invalid regardless of the machine it first runs on.
-
-    Raises:
-        InvalidConfigError: if the combination is not supported.
-    """
-    if mode == OutputMode.DISTRIBUTED and backend == OutputBackend.NETCDF:
-        reason = netcdf_writers.missing_parallel_support()
-        if reason is not None:
-            raise exceptions.InvalidConfigError(
-                f"Distributed netCDF output needs an MPI-parallel netCDF4 installation, "
-                f"but {reason}. {netcdf_writers.PARALLEL_INSTALL_HINT} Alternatively, "
-                f"use the 'zarr' backend (parallel with any installation) or the "
-                f"'gather' mode."
-            )
-
-
 def _interval_in_steps(output_interval: OutputInterval, dtime: time.RelativeTime) -> int:
     """Normalize an output interval to a number of model steps."""
     if isinstance(output_interval, time.RelativeTime):
@@ -105,7 +82,6 @@ def _interval_in_steps(output_interval: OutputInterval, dtime: time.RelativeTime
                 f"Output interval {output_interval} is shorter than the model time step {dtime}."
             )
         if output_interval % dtime:
-            # rounding silently would write at a cadence the user did not configure
             raise exceptions.InvalidConfigError(
                 f"Output interval {output_interval} is not a multiple of the model "
                 f"time step {dtime}."
@@ -157,19 +133,16 @@ class FieldGroupIOConfig(Config):
     backend: OutputBackend = OutputBackend.ZARR
     #: Write strategy of distributed runs (see ``OutputMode``); the matching value
     #: string is also accepted. Distributed netCDF needs an MPI-parallel netCDF4
-    #: installation (see ``validate_backend_mode_combination``).
+    #: installation in multi-rank runs (checked when the writer is created, see
+    #: ``netcdf_writers.NETCDFWriter``).
     mode: OutputMode = OutputMode.DISTRIBUTED
     #: Entries per chunk along the horizontal (cell/edge/vertex) axes. Default (None):
     #: one chunk per rank block in distributed mode; otherwise the whole axis (zarr)
-    #: or the library default (netCDF). In distributed mode the rank-block size is
-    #: rounded up to a multiple of this value (see
-    #: ``distributed.check_chunks_align_with_blocks``).
+    #: or the library default (netCDF).
     horizontal_chunk_size: int | None = None
     #: Zarr only: entries per shard along the horizontal axes, grouping whole chunks
-    #: (the value must be a multiple of ``horizontal_chunk_size``) into one storage
-    #: file each -- the number of files per time slice, the critical tuning knob on
-    #: parallel file systems. Default (None): no sharding, one file per chunk. In
-    #: distributed mode the rank-block size is rounded up to the shard size instead.
+    #: into one storage file each; must be a multiple of ``horizontal_chunk_size``.
+    #: Default (None): no sharding, one file per chunk.
     horizontal_shard_size: int | None = None
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
@@ -254,7 +227,6 @@ class FieldGroupIOConfig(Config):
         if not self.variables:
             raise exceptions.InvalidConfigError("No variables provided for output.")
         self._validate_horizontal_chunking()
-        validate_backend_mode_combination(self.backend, self.mode)
         self._validate_filename()
 
 
@@ -422,14 +394,23 @@ class IOMonitor(monitor.Monitor):
         for m in self._group_monitors:
             m.close()
 
-    def report_timings(self) -> None:
-        """Log the accumulated output overhead, per field group and phase.
+    def captures_next_store(self) -> bool:
+        """Whether any field group captures at the next ``store`` call.
 
-        In a distributed run the maximum total over the ranks is reported as well (the
-        slowest rank is what the model waits for), which makes this collective: call it
-        on every rank of the communicator and only when the ranks are known to be in
-        lockstep (after a completed run, not from exception cleanup). Every rank runs
-        the same fixed sequence of collectives, even with no recorded samples.
+        A pure predicate (no counter changes), identical on all ranks: callers may
+        skip assembling the output state for steps nobody captures -- ``store`` must
+        still be called every step (it advances the schedule counters).
+        """
+        return any(m.captures_next_store() for m in self._group_monitors)
+
+    def report_timings(self) -> None:
+        """Log the accumulated output overhead of this rank, per field group and phase.
+
+        Deliberately communication-free: a reduction over the ranks would leave the
+        surviving ranks blocked in a collective when one rank failed earlier, and
+        timing output is not worth a hang. Every rank logs its own totals; the
+        slowest rank -- what the model waits for -- is found by comparing the
+        per-rank lines.
         """
         if self._timings_logged:
             return
@@ -437,26 +418,19 @@ class IOMonitor(monitor.Monitor):
         for m in self._group_monitors:
             for phase in (PHASE_DISTRIBUTE, PHASE_WRITE):
                 seconds = m.phase_seconds[phase]
-                total = sum(seconds)
-                if self._process_props.is_single_rank():
-                    max_total, max_captures = total, len(seconds)
-                else:
-                    totals: list[tuple[float, int]] = self._process_props.comm.allgather(
-                        (total, len(seconds))
-                    )
-                    max_total = max(t for t, _ in totals)
-                    max_captures = max(n for _, n in totals)
-                if max_captures == 0:
+                if not seconds:
                     continue
-                report = (
-                    f"output timings of group '{m.config.filename}', phase '{phase}': "
-                    f"max total over ranks {max_total:.6f} s over {max_captures} capture(s)"
+                log.info(
+                    f"output timings of group '{m.config.filename}', phase '{phase}' on "
+                    f"rank {self._process_props.rank}: total {sum(seconds):.6f} s, mean "
+                    f"{statistics.mean(seconds):.6f} s over {len(seconds)} capture(s)"
                 )
-                if seconds:
-                    report += (
-                        f"; this rank: total {total:.6f} s, mean {statistics.mean(seconds):.6f} s"
-                    )
-                log.info(report)
+
+
+def generate_name(fname: str, counter: int, suffix: str) -> str:
+    """File name numbered by the rollover counter, e.g. ``output_0001.zarr``."""
+    stem = fname.split(".", maxsplit=1)[0]
+    return f"{stem}_{counter:0>4}{suffix}"
 
 
 class FieldGroupMonitor(monitor.Monitor):
@@ -572,7 +546,7 @@ class FieldGroupMonitor(monitor.Monitor):
             df = netcdf_writers.NETCDFWriter(
                 file_name=filename_path,
                 vertical=vertical_params,
-                horizontal=self._distribution.file_horizontal_size,
+                horizontal=self._distribution.output_horizontal_size,
                 time_properties=self._time_properties,
                 global_attrs=self._global_attrs,
                 rank_blocks=self._distribution.rank_blocks,
@@ -583,7 +557,7 @@ class FieldGroupMonitor(monitor.Monitor):
             df = zarr_writers.ZarrWriter(
                 file_name=filename_path,
                 vertical=vertical_params,
-                horizontal=self._distribution.file_horizontal_size,
+                horizontal=self._distribution.output_horizontal_size,
                 time_properties=self._time_properties,
                 global_attrs=self._global_attrs,
                 rank_blocks=self._distribution.rank_blocks,
@@ -660,6 +634,10 @@ class FieldGroupMonitor(monitor.Monitor):
         # fire every N model steps
         return self._step_counter % self._output_interval_steps == 0
 
+    def captures_next_store(self) -> bool:
+        """Whether the next ``store`` call falls on a capture step (pure predicate)."""
+        return (self._step_counter + 1) % self._output_interval_steps == 0
+
     @property
     def phase_seconds(self) -> dict[str, list[float]]:
         """Per-phase wall-clock seconds of every capture step (output overhead)."""
@@ -671,10 +649,3 @@ class FieldGroupMonitor(monitor.Monitor):
         # reset unconditionally: gather-mode ranks without a writer must keep the same
         # counter values as the writing rank
         self._current_timesteps_in_file = 0
-
-
-def generate_name(
-    fname: str, counter: int, suffix: str = FILE_SUFFIXES[OutputBackend.NETCDF]
-) -> str:
-    stem = fname.split(".", maxsplit=1)[0]
-    return f"{stem}_{counter:0>4}{suffix}"
