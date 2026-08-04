@@ -94,10 +94,15 @@ one-time setup, not per-step.)
    `calc_thermal_conductivity` (the `l_heat_cap_dyn`/`l_heat_cond_dyn` default path,
    moisture-coupled to HYDRO). Needed for non-bubble experiments; not on the bubble
    validation path.
-4. **Oracle (M1, long pole)** — add JSBACH SSE savepoints to a land+tmx experiment
-   and run ICON to capture them (in progress: a separate icon-nwp worktree
-   instruments the savepoints and a validation experiment on an icon4py grid). Until
-   then the kernels are numpy-validated, not yet ICON-bitwise-validated.
+4. **Oracle (M1, long pole)** — instrumentation DONE on the icon-nwp branch
+   `serialize_jsbach_sse` (off `serialize_tmx_sfc`): `serialize_sse_entry/exit/geometry`
+   in `mo_icon4py_verification.f90`, call sites in `update_land`, and the experiment
+   `exp.aes_bubble_land_tmx_sse_ser` (`l_freeze=.FALSE.`, serialization on). See that
+   branch's `JSBACH_SSE_VALIDATION.md`. Remaining: build + run ICON with the land pool
+   data to emit the savepoints (Serialbox2 builds and ICON configures on this mac, but
+   the run needs the land input files, so generation is on the ICON machine), then
+   register the dataset in icon4py `definitions.py` and add the datatest that drives
+   the three kernels against `sse-solve-exit`. Grid decision still open (below).
 5. **tmx seam** — replace the prescribed `land_*` fields in the `tmx-surface`
    worktree once that stabilises.
 
