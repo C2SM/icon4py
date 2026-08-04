@@ -28,6 +28,7 @@ dependencies = [
   "icon4py-common~=0.3.0",
   # external dependencies
   "gt4py==1.1.12",
+  'numpy>=1.23.3',
   'packaging>=20.0'
 ]
 description = "ICON-Land (JSBACH) land-surface scheme, GT4Py port."
