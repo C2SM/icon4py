@@ -62,14 +62,9 @@ lb_lateral = edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         (attrs.EDGE_NORMAL_V, "primal_normal_v2", lb_local),
         (attrs.EDGE_NORMAL_VERTEX_U, "primal_normal_vert_x", lb_local),
         (attrs.EDGE_NORMAL_VERTEX_V, "primal_normal_vert_y", lb_local),
-        # the *_cell projections are computed from LATERAL_BOUNDARY_LEVEL_2 on (rows
-        # before stay zero), while the reference carries values on the boundary rows:
-        # compare the computed region only
-        # TODO (Yilu): revert to lb_local once the geometry computes the boundary rows
-        # like ICON does (follow-up PR)
-        (attrs.EDGE_NORMAL_CELL_U, "primal_normal_cell_x", lb_lateral),
-        (attrs.EDGE_NORMAL_CELL_V, "primal_normal_cell_y", lb_lateral),
-        (attrs.EDGE_TANGENT_CELL_U, "dual_normal_cell_x", lb_lateral),
+        (attrs.EDGE_NORMAL_CELL_U, "primal_normal_cell_x", lb_local),
+        (attrs.EDGE_NORMAL_CELL_V, "primal_normal_cell_y", lb_local),
+        (attrs.EDGE_TANGENT_CELL_U, "dual_normal_cell_x", lb_local),
         (attrs.EDGE_TANGENT_VERTEX_U, "dual_normal_vert_x", lb_local),
         (attrs.EDGE_TANGENT_VERTEX_V, "dual_normal_vert_y", lb_local),
     ],
