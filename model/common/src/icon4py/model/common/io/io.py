@@ -408,9 +408,10 @@ class IOMonitor(monitor.Monitor):
 
         Deliberately communication-free: a reduction over the ranks would leave the
         surviving ranks blocked in a collective when one rank failed earlier, and
-        timing output is not worth a hang. Every rank logs its own totals; the
-        slowest rank -- what the model waits for -- is found by comparing the
-        per-rank lines.
+        timing output is not worth a hang. Every rank logs its own totals; whether
+        the non-root lines appear is up to the logging configuration (the driver's
+        ``ParallelLogger`` filter passes INFO records on the root rank only, so a
+        default driver run reports the root's timings whatever the rank count).
         """
         if self._timings_logged:
             return
