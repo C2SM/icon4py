@@ -70,6 +70,78 @@ def finalize_mpi() -> None:
         MPI.Finalize()
 
 
+def allgather_entry_counts(process_props: decomp_defs.ProcessProperties, count: int) -> np.ndarray:
+    """Entry counts of all ranks (one entry per rank, in rank order).
+
+    Collective on the communicator; works on a single-rank communicator without an
+    MPI installation.
+    """
+    if process_props.is_single_rank():
+        return np.asarray([count], dtype=np.int64)
+    return np.asarray(process_props.comm.allgather(count), dtype=np.int64)
+
+
+def gather_entries(
+    process_props: decomp_defs.ProcessProperties,
+    local_entries: np.ndarray,
+    *,
+    entry_counts: np.ndarray,
+) -> np.ndarray | None:
+    """Concatenate the ranks' entries (leading-axis) on the root rank, in rank order.
+
+    ``entry_counts`` holds the per-rank leading-axis sizes (see
+    ``allgather_entry_counts``); trailing axes must agree between the ranks. Returns
+    the concatenation on the root rank and None on all other ranks. Collective on the
+    communicator; works on a single-rank communicator without an MPI installation.
+    """
+    if process_props.is_single_rank():
+        return local_entries
+    send = np.ascontiguousarray(local_entries)
+    entry_elements = int(np.prod(send.shape[1:], dtype=np.int64))
+    if process_props.rank == 0:
+        gathered = np.empty((int(entry_counts.sum()), *send.shape[1:]), dtype=send.dtype)
+        process_props.comm.Gatherv(send, [gathered, entry_counts * entry_elements], root=0)
+        return gathered
+    process_props.comm.Gatherv(send, None, root=0)
+    return None
+
+
+def check_owned_indices_partition(
+    process_props: decomp_defs.ProcessProperties,
+    dim_name: str,
+    owned_global_index: np.ndarray,
+    entry_counts: np.ndarray,
+) -> np.ndarray | None:
+    """Check that the ranks' owned global indices partition the global grid.
+
+    Collective: the owned global indices of all ranks are gathered on the root rank
+    and verified to be a permutation of ``0..N-1`` -- overlapping or gappy owner
+    masks would otherwise reassemble a plausible-looking but wrong global field. The
+    verdict is broadcast so all ranks raise together instead of hanging in the next
+    collective.
+
+    Returns the gathered indices on the root rank (None on all other ranks), for
+    reuse as insertion indices.
+
+    Raises:
+        ValueError: if the owned global indices are not a permutation of ``0..N-1``.
+    """
+    global_size = int(entry_counts.sum())
+    gathered_index = gather_entries(process_props, owned_global_index, entry_counts=entry_counts)
+    is_partition = gathered_index is None or np.array_equal(
+        np.sort(gathered_index), np.arange(global_size, dtype=np.int64)
+    )
+    if not process_props.is_single_rank():
+        is_partition = process_props.comm.bcast(is_partition, root=0)
+    if not is_partition:
+        raise ValueError(
+            f"Owner masks of dimension '{dim_name}' do not partition the global grid: "
+            f"the owned global indices of all ranks are not a permutation of "
+            f"0..{global_size - 1}."
+        )
+    return gathered_index
+
+
 def _get_process_properties(with_mpi: bool = False, comm_id: CommId = None) -> Any:
     def _get_current_comm_or_comm_world(comm_id: CommId) -> mpi4py.MPI.Comm:
         if isinstance(comm_id, int):

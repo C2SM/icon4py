@@ -41,7 +41,7 @@ import numpy as np
 import xarray as xr
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import base
 from icon4py.model.common.io import ugrid
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -52,6 +52,11 @@ log = logging.getLogger(__name__)
 #: CF dimension name ("cell", "edge", "vertex") for each horizontal dimension.
 HORIZONTAL_DIM_NAMES: Final[dict[gtx.Dimension, str]] = {
     dim: ugrid.dimension_mapping(dim, is_on_half_levels=False) for dim in dims.horizontal_dims()
+}
+
+#: Horizontal dimension for each CF dimension name (inverse of HORIZONTAL_DIM_NAMES).
+HORIZONTAL_DIMS_BY_NAME: Final[dict[str, gtx.Dimension]] = {
+    name: dim for dim, name in HORIZONTAL_DIM_NAMES.items()
 }
 
 
@@ -170,103 +175,30 @@ def check_chunks_align_with_blocks(
             )
 
 
-def _host_owner_data(
+def _owned_global_index(
     decomposition_info: decomposition.DecompositionInfo, dim: gtx.Dimension
-) -> tuple[np.ndarray, np.ndarray]:
-    """Owner mask and owned global indices of a dimension, as host (numpy) arrays.
-
-    The decomposition info may hold device (cupy) buffers on GPU backends, but
-    everything downstream of here -- halo stripping, the MPI collectives and the
-    writers -- operates on host arrays. The host copies are made once here, at
-    distribution construction, instead of at every capture step.
-    """
-    mask = data_alloc.as_numpy(decomposition_info.owner_mask(dim))
-    owned_global_index = data_alloc.as_numpy(
-        decomposition_info.global_index(dim, decomposition.DecompositionInfo.EntryType.OWNED)
-    ).astype(np.int64)
-    return mask, owned_global_index
-
-
-def _allgather_entry_counts(
-    process_props: decomposition.ProcessProperties, count: int
 ) -> np.ndarray:
-    """Owned-entry counts of all ranks (one entry per rank, in rank order)."""
-    if process_props.is_single_rank():
-        return np.asarray([count], dtype=np.int64)
-    return np.asarray(process_props.comm.allgather(count), dtype=np.int64)
-
-
-def _gather_entries(
-    process_props: decomposition.ProcessProperties,
-    local_entries: np.ndarray,
-    *,
-    entry_counts: np.ndarray,
-) -> np.ndarray | None:
-    """Concatenate the ranks' entries (leading-axis) on the root rank, in rank order.
-
-    Returns the concatenation on the root rank and None on all other ranks.
-    """
-    if process_props.is_single_rank():
-        return local_entries
-    send = np.ascontiguousarray(local_entries)
-    entry_elements = int(np.prod(send.shape[1:], dtype=np.int64))
-    if process_props.rank == 0:
-        gathered = np.empty((int(entry_counts.sum()), *send.shape[1:]), dtype=send.dtype)
-        process_props.comm.Gatherv(send, [gathered, entry_counts * entry_elements], root=0)
-        return gathered
-    process_props.comm.Gatherv(send, None, root=0)
-    return None
-
-
-def _check_partition(
-    process_props: decomposition.ProcessProperties,
-    dim_name: str,
-    owned_global_index: np.ndarray,
-    entry_counts: np.ndarray,
-) -> np.ndarray | None:
-    """Check that the ranks' owned global indices partition the global grid.
-
-    Collective: the owned global indices of all ranks are gathered on the root rank
-    and verified to be a permutation of ``0..N-1`` -- overlapping or gappy owner
-    masks would otherwise reassemble a plausible-looking but wrong global field. The
-    verdict is broadcast so all ranks raise together instead of hanging in the next
-    collective.
-
-    Returns the gathered indices on the root rank (None on all other ranks), for
-    reuse as insertion indices.
-
-    Raises:
-        ValueError: if the owned global indices are not a permutation of ``0..N-1``.
-    """
-    global_size = int(entry_counts.sum())
-    gathered_index = _gather_entries(process_props, owned_global_index, entry_counts=entry_counts)
-    is_partition = gathered_index is None or np.array_equal(
-        np.sort(gathered_index), np.arange(global_size, dtype=np.int64)
+    """Owned global indices of a dimension, as int64 (the MPI-exchange dtype)."""
+    return np.asarray(
+        decomposition_info.global_index(dim, decomposition.DecompositionInfo.EntryType.OWNED),
+        dtype=np.int64,
     )
-    if not process_props.is_single_rank():
-        is_partition = process_props.comm.bcast(is_partition, root=0)
-    if not is_partition:
-        raise ValueError(
-            f"Owner masks of dimension '{dim_name}' do not partition the global grid: "
-            f"the owned global indices of all ranks are not a permutation of "
-            f"0..{global_size - 1}."
-        )
-    return gathered_index
 
 
 def _owned_entries(
-    dim_name: str, owner_masks: dict[str, np.ndarray], field: xr.DataArray
+    dim_name: str, decomposition_info: decomposition.DecompositionInfo, field: xr.DataArray
 ) -> np.ndarray:
     """Drop halo entries from the leading (horizontal) axis of a field."""
-    if dim_name not in owner_masks:
+    dim = HORIZONTAL_DIMS_BY_NAME.get(dim_name)
+    if dim is None:
         raise ValueError(
             f"Cannot distribute field with leading dimension '{dim_name}': "
-            f"expected one of {sorted(owner_masks)}."
+            f"expected one of {sorted(HORIZONTAL_DIMS_BY_NAME)}."
         )
     # as_numpy: fields may still hold device buffers here (the writers transfer to
     # host with the same helper)
     data = data_alloc.as_numpy(field.data)
-    mask = owner_masks[dim_name]
+    mask = decomposition_info.owner_mask(dim)
     if data.shape[0] != mask.shape[0]:
         raise ValueError(
             f"Field of leading dimension '{dim_name}' has {data.shape[0]} entries, "
@@ -292,6 +224,11 @@ class GatherDistribution:
 
     On a single-rank communicator no communication happens, but owner mask and global
     index are still applied (owned entries only, global order).
+
+    The decomposition info is converted to host buffers once at construction
+    (``DecompositionInfo.as_host``): halo stripping, the MPI collectives and the
+    writers all operate on host arrays, so device-backed (GPU) decompositions would
+    otherwise transfer at every capture step.
     """
 
     def __init__(
@@ -300,18 +237,19 @@ class GatherDistribution:
         decomposition_info: decomposition.DecompositionInfo,
     ) -> None:
         self._process_props = process_props
-        self._owner_masks: dict[str, np.ndarray] = {}
+        self._decomposition_info = decomposition_info.as_host()
         self._entry_counts: dict[str, np.ndarray] = {}
         self._insert_index: dict[str, np.ndarray] = {}
         self._global_size: dict[str, int] = {}
 
         for dim, dim_name in HORIZONTAL_DIM_NAMES.items():
-            mask, owned_global_index = _host_owner_data(decomposition_info, dim)
-            entry_counts = _allgather_entry_counts(process_props, owned_global_index.shape[0])
-            insert_index = _check_partition(
+            owned_global_index = _owned_global_index(self._decomposition_info, dim)
+            entry_counts = mpi_decomposition.allgather_entry_counts(
+                process_props, owned_global_index.shape[0]
+            )
+            insert_index = mpi_decomposition.check_owned_indices_partition(
                 process_props, dim_name, owned_global_index, entry_counts
             )
-            self._owner_masks[dim_name] = mask
             self._entry_counts[dim_name] = entry_counts
             self._global_size[dim_name] = int(entry_counts.sum())
             if insert_index is not None:
@@ -337,8 +275,8 @@ class GatherDistribution:
         gathered: dict[str, xr.DataArray] = {}
         for name, field in state.items():
             dim_name = str(field.dims[0])
-            owned = _owned_entries(dim_name, self._owner_masks, field)
-            entries = _gather_entries(
+            owned = _owned_entries(dim_name, self._decomposition_info, field)
+            entries = mpi_decomposition.gather_entries(
                 self._process_props, owned, entry_counts=self._entry_counts[dim_name]
             )
             if entries is not None:
@@ -360,9 +298,11 @@ class RankBlockDistribution:
     At capture steps there is no data communication: ``prepare`` only strips halos
     (the copy this makes also detaches the output from the live model state).
     Construction gathers the owned global indices once to validate that the owner
-    masks partition the global grid (see ``_check_partition``). The store's
-    horizontal axes are padded to a uniform block size per rank; consumers recover
-    the global order from the store's global-index coordinates.
+    masks partition the global grid (``mpi_decomposition.check_owned_indices_partition``)
+    and converts the decomposition info to host buffers once
+    (``DecompositionInfo.as_host``). The store's horizontal axes are padded to a
+    uniform block size per rank; consumers recover the global order from the store's
+    global-index coordinates.
 
     ``block_alignment`` rounds the uniform block size up to a multiple of the given
     value, so a store chunking (or sharding) of that granularity never crosses block
@@ -381,16 +321,18 @@ class RankBlockDistribution:
                 f"Invalid block alignment {block_alignment}: must be a positive integer."
             )
         self._process_props = process_props
-        self._owner_masks: dict[str, np.ndarray] = {}
+        self._decomposition_info = decomposition_info.as_host()
         self._rank_blocks: dict[str, RankBlock] = {}
 
         for dim, dim_name in HORIZONTAL_DIM_NAMES.items():
-            mask, owned_global_index = _host_owner_data(decomposition_info, dim)
+            owned_global_index = _owned_global_index(self._decomposition_info, dim)
             # ``RankBlock`` is frozen; keep the array it hands out immutable too
             owned_global_index.setflags(write=False)
             count = owned_global_index.shape[0]
-            entry_counts = _allgather_entry_counts(process_props, count)
-            _check_partition(process_props, dim_name, owned_global_index, entry_counts)
+            entry_counts = mpi_decomposition.allgather_entry_counts(process_props, count)
+            mpi_decomposition.check_owned_indices_partition(
+                process_props, dim_name, owned_global_index, entry_counts
+            )
             max_count = int(entry_counts.max())
             size = (max_count + block_alignment - 1) // block_alignment * block_alignment
             global_size = int(entry_counts.sum())
@@ -402,7 +344,6 @@ class RankBlockDistribution:
                     f"({(padded_size - global_size) / padded_size:.1%}; the amount is "
                     f"driven by the decomposition imbalance and the block alignment)."
                 )
-            self._owner_masks[dim_name] = mask
             self._rank_blocks[dim_name] = RankBlock(
                 start=process_props.rank * size,
                 count=count,
@@ -432,7 +373,7 @@ class RankBlockDistribution:
     def prepare(self, state: dict[str, xr.DataArray]) -> dict[str, xr.DataArray] | None:
         return {
             name: xr.DataArray(
-                _owned_entries(str(field.dims[0]), self._owner_masks, field),
+                _owned_entries(str(field.dims[0]), self._decomposition_info, field),
                 dims=field.dims,
                 attrs=dict(field.attrs),
             )
