@@ -27,23 +27,33 @@ Convention: field/argument names follow the JSBACH source (e.g. `t_soil_sl`,
 Fortran-validated ports; function names are descriptive; docstrings cross-reference
 the Fortran `file:line`.
 
-## Open design fork (needs a decision) — snow coefficient build
+## Snow coefficient build — resolved approach (no new GT4Py capability needed)
 
 `calc_snow_abcoeff` (:866-1035) and the newly-formed-layer coefficient re-seeding
-(:809-822) use **data-dependent indexing**:
+(:809-822) contain the only two **data-dependent gathers** in the snow path:
 
-- `t_snow_acoef(ic, itop_old(ic))` — gather a coefficient at a per-cell layer index;
-- `grnd_hflx(ic)` / `hcap_grnd(ic)` evaluated at `is = itop(ic)` — scatter/gather at
-  a per-cell layer index;
-- geometry couples snow to the two uppermost soil layers over `nsnow+2` levels.
+1. re-seed `t_snow_acoef/bcoef(ic, itop_old(ic))` (:817-818) — read a coefficient at
+   a per-cell layer index;
+2. `grnd_hflx(ic)` / `hcap_grnd(ic)` evaluated at `is = itop(ic)` (:1026-1028).
 
-This is exactly the gather/scatter question the handoff (`HANDOFF.md` §8.1) flagged
-as gating the batching approach. It should be resolved deliberately, not improvised.
-Options to weigh: (a) carry the top-layer coefficient as scan state as we cross
-`itop` (avoids the gather); (b) precompute an itop-aligned field host-side; (c) use
-whatever indexed access current gt4py supports. **Snow is also likely inactive in
-the `aes_bubble_land_tmx` validation** (warm desert bubble, 2 h), so this is not on
-the slice-1 critical path.
+GT4Py has **no absolute field indexing** — only relative K-offsets (`field(Koff[1])`)
+— so neither is expressible as a stencil access. (The `is>itop` / `is>=itop` masks are
+NOT gathers, just per-level comparisons, and are already handled, e.g. in
+`snow_temperature_back_substitution`.) The two gathers map cleanly onto the two
+available techniques:
+
+- **(2) → scan-carry.** The forward-elimination scan visits every layer; compute the
+  flux per level and carry/select the value at `k == itop`, emit it as the surface
+  `CellField`. No gather.
+- **(1) → host-side precompute.** `itop_old` is the previous step's value and the
+  coefficients are persisted state, so gather `seed[ic] = t_snow_acoef[ic, itop_old[ic]]`
+  host-side (numpy, in the orchestration/granule layer, which may do field ops) into a
+  `CellField`, then a masked stencil fills layers `k in [itop, itop_old)`.
+
+So the snow build is portable as-is. Geometry note: it couples snow to the two
+uppermost soil layers over `nsnow+2` levels (host-side `zmid`/`zd1` prep, as for soil).
+**Snow is also likely inactive in the `aes_bubble_land_tmx` validation** (warm desert
+bubble, 2 h), so it is not on the slice-1 critical path regardless.
 
 ## Not yet done (next steps)
 
