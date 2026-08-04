@@ -120,6 +120,9 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
 
     exchange = definitions.create_exchange(process_props, decomposition_info)
 
+    assert (
+        experiment.config.interpolation.max_nudging_coefficient is not None
+    )  # TODO(ricoh): [c37] remove after declarativifying InterpolationConfig
     solve_nonhydro = nh.SolveNonhydro(
         grid=icon_grid,
         config=experiment.config.nonhydrostatic,
@@ -132,6 +135,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
         exchange=exchange,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
     _log.info(

@@ -386,12 +386,10 @@ def read_experiment_config_from_fortran(
 
     nonhydro_cfg = solve_nh.NonHydrostaticConfig.from_fortran_dict(
         atm_dict,
-        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
     )
 
     diffusion_cfg = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,
-        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
     )
 
     do_tracer_advection = not (

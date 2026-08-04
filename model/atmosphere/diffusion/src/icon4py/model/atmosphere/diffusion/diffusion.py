@@ -340,16 +340,6 @@ class DiffusionConfig:
         ),
     ] = 200.0
 
-    max_nudging_coefficient: typing.Annotated[
-        float,
-        common_conf_opt.ConfigOption(
-            description="Maximum relaxation coefficient for lateral boundary nudging",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="nudge_max_coeff", path=("interpol_nml",), read_from_icon=False
-            ),
-        ),
-    ] = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
-
     shear_type: typing.Annotated[
         TurbulenceShearForcingType,
         common_conf_opt.ConfigOption(
@@ -498,6 +488,7 @@ class Diffusion:
         | None,
         exchange: decomposition.ExchangeRuntime,
         substep_as_float: float,
+        max_nudging_coefficient: float,
     ) -> None:
         self._allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
@@ -522,10 +513,8 @@ class Diffusion:
         self.thresh_tdiff: float = -5.0
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
-        self.nudgezone_diff: float = 0.04 / (
-            config.max_nudging_coefficient + sys.float_info.epsilon
-        )
-        self.bdy_diff: float = 0.015 / (config.max_nudging_coefficient + sys.float_info.epsilon)
+        self.nudgezone_diff: float = 0.04 / (max_nudging_coefficient + sys.float_info.epsilon)
+        self.bdy_diff: float = 0.015 / (max_nudging_coefficient + sys.float_info.epsilon)
         self.fac_bdydiff_v: float = (
             math.sqrt(substep_as_float) / config.velocity_boundary_diffusion_denominator
         )
