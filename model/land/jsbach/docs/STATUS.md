@@ -22,6 +22,16 @@ recurrences, passing on `embedded` and `gtfn_cpu`):
 Together the three soil kernels are the complete **non-freezing** soil temperature
 solve.
 
+Setup / wiring (host-side, `soil_thermal_properties.py`, plain-pytest unit tests):
+
+- `soil_thermal_grid`: soil_depth_energy vertical geometry (dz, mids, bots, zd1)
+  from the layer bottom depths (`soillev`), per mo_sse_config_class.f90:238-256.
+- `fao_soil_thermal_properties`: per-cell vol_heat_cap / heat_cond from the FAO
+  soil-type index (static FAO path, the bubble-validation config), broadcast to
+  layers. The FAO lookup is a host-side gather (gather policy). The dynamic
+  moisture path (calc_vol_heat_capacity / calc_thermal_conductivity) is the config
+  default but is NOT used by the bubble validation, so it is not ported.
+
 Convention: field/argument names follow the JSBACH source (e.g. `t_soil_sl`,
 `t_soil_acoef`, `t_srf`), matching the dycore/muphys convention for
 Fortran-validated ports; function names are descriptive; docstrings cross-reference
@@ -72,19 +82,23 @@ one-time setup, not per-step.)
 
 ## Not yet done (next steps)
 
-1. **Geometry prep** — `dz`, `zd1 = 1/(mids(k+1)-mids(k))` are currently kernel
-   inputs; wire them from the `soil_depth_energy` vgrid (one-time, host-side).
-2. **Soil properties** — `vol_heat_cap`, `heat_cond` come from the SSE properties
-   task (fao index → parameter tables); port `calc_*` for those or prescribe from
-   serialized data.
-3. **Freeze/melt + thaw depth** (:507-687) — deferred; start with
-   `l_freeze=.FALSE.`, `l_supercool=.FALSE.`.
-4. **SSE orchestration** — a process module assembling back-sub → coefficients →
-   ground flux in the calc_soil_temperature order, wired to inputs.
-5. **Oracle (M1, long pole)** — needs the Fortran machine: add JSBACH savepoints to
-   `exp.aes_bubble_land_tmx` (tier-2) and/or an offline single-column standalone run
-   (tier-1); register the 20x4 torus grid + experiment in icon4py.
-6. **tmx seam** — replace the prescribed `land_*` fields in the `tmx-surface`
+1. **SSE orchestration (granule)** — a `model.Component`-style process module (the
+   icon4py `setup_program` pattern) assembling back-sub → coefficients → ground flux
+   in the calc_soil_temperature order, wired to the geometry/properties above. Best
+   done alongside the oracle so the assembled step can be validated end-to-end, not
+   just by numpy self-consistency.
+2. **Freeze/melt + thaw depth** (:507-687) — the bubble config sets `l_freeze=.TRUE.`
+   but on warm desert it is likely a no-op (soil > tmelt); confirm against the oracle,
+   then port if it fires. `l_supercool=.FALSE.`.
+3. **Dynamic thermal properties** — `calc_vol_heat_capacity` /
+   `calc_thermal_conductivity` (the `l_heat_cap_dyn`/`l_heat_cond_dyn` default path,
+   moisture-coupled to HYDRO). Needed for non-bubble experiments; not on the bubble
+   validation path.
+4. **Oracle (M1, long pole)** — add JSBACH SSE savepoints to a land+tmx experiment
+   and run ICON to capture them (in progress: a separate icon-nwp worktree
+   instruments the savepoints and a validation experiment on an icon4py grid). Until
+   then the kernels are numpy-validated, not yet ICON-bitwise-validated.
+5. **tmx seam** — replace the prescribed `land_*` fields in the `tmx-surface`
    worktree once that stabilises.
 
 ## Running the tests
