@@ -417,7 +417,7 @@ def test_compute_pos_on_tplane_e(
     edges_lon = grid_savepoint.edges_center_lon().ndarray
     edges_lat = grid_savepoint.edges_center_lat().ndarray
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
-    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
 
     match icon_grid.grid_params.geometry_type:
         case icon.GeometryType.ICOSAHEDRON:
@@ -440,22 +440,8 @@ def test_compute_pos_on_tplane_e(
                 dual_edge_length,
                 e2c,
             )
-    # rows before horizontal_start are not computed (they stay zero), while the
-    # reference carries values on the boundary rows: compare the computed region only
-    # TODO (Yilu): revert to a full comparison once the computation covers the boundary
-    # rows like ICON does (follow-up PR)
-    assert test_helpers.dallclose(
-        pos_on_tplane_e_x[horizontal_start:],
-        pos_on_tplane_e_x_ref[horizontal_start:],
-        atol=1e-8,
-        rtol=1e-9,
-    )
-    assert test_helpers.dallclose(
-        pos_on_tplane_e_y[horizontal_start:],
-        pos_on_tplane_e_y_ref[horizontal_start:],
-        atol=1e-8,
-        rtol=1e-9,
-    )
+    assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-8, rtol=1e-9)
+    assert test_helpers.dallclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref, atol=1e-8, rtol=1e-9)
 
 
 @pytest.mark.level("unit")

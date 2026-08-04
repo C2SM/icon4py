@@ -267,25 +267,8 @@ def test_pos_on_tplane_e_x_y(
     factory = _get_interpolation_factory(backend, experiment)
     field_1 = factory.get(attrs.POS_ON_TPLANE_E_X)
     field_2 = factory.get(attrs.POS_ON_TPLANE_E_Y)
-    # rows before horizontal_start are not computed (they stay zero), while the
-    # reference carries values on the boundary rows: compare the computed region only
-    # TODO (Yilu): revert to a full comparison once the computation covers the boundary
-    # rows like ICON does (follow-up PR)
-    horizontal_start = factory.grid.start_index(
-        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-    assert test_helpers.dallclose(
-        field_ref_1.asnumpy()[horizontal_start:],
-        field_1.asnumpy()[horizontal_start:],
-        atol=1e-8,
-        rtol=1e-9,
-    )
-    assert test_helpers.dallclose(
-        field_ref_2.asnumpy()[horizontal_start:],
-        field_2.asnumpy()[horizontal_start:],
-        atol=1e-8,
-        rtol=1e-9,
-    )
+    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1e-8, rtol=1e-9)
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-8, rtol=1e-9)
 
 
 @pytest.mark.level("integration")
