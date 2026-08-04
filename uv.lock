@@ -1644,8 +1644,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging#f909c3715885746e0b8d1aef596bddd683a69f05"}
-version = "1.1.12.post35+f909c371"
+source = {git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams#8ea28bdea4ebcf98725691abc4422f5248f66a65"}
+version = "1.1.12.post46+8ea28bde"
 
 [package.optional-dependencies]
 cuda12 = [
@@ -2018,7 +2018,7 @@ version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2035,7 +2035,7 @@ version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2052,7 +2052,7 @@ version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2070,7 +2070,7 @@ version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
@@ -2088,7 +2088,7 @@ version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2117,9 +2117,9 @@ requires-dist = [
   {name = "click", specifier = ">=8.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
@@ -2166,10 +2166,10 @@ requires-dist = [
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.7.0"},
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
-  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
+  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0"},
   {name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common"},
   {name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5"},
@@ -2245,7 +2245,7 @@ version = "0.3.0"
 [package.metadata]
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
@@ -2271,7 +2271,7 @@ version = "0.3.0"
 [package.metadata]
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"},
@@ -2303,7 +2303,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.1.7"},
   {name = "configargparse", specifier = ">=1.7.1"},
   {name = "fprettify", specifier = ">=0.3.7"},
-  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_ext_memory_staging"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=dace_sync_streams"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
