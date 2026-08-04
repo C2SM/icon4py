@@ -4,7 +4,7 @@
 # hash, compiler flags, job name and week to start with a fresh cache every week.
 # ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR is set as the root and
 # GT4PY_BUILD_CACHE_DIR is set to
-# ${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache/base-<hash>-uv-lock-<hash of uv.lock>-flags-<hash of CXXFLAGS=${CXXFLAGS} NVCC_APPEND_FLAGS=${NVCC_APPEND_FLAGS}>-job-<job name>-${DATE}.
+# ${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache/base-<hash>-uv-lock-<hash of uv.lock>-flags-<hash of CXXFLAGS=${CXXFLAGS} NVCC_APPEND_FLAGS=${NVCC_APPEND_FLAGS}>-job-<hash of job name>-${DATE}.
 
 set -euo pipefail
 
@@ -13,7 +13,7 @@ set -euo pipefail
 find "${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache" -mindepth 1 -maxdepth 1 -type d -mtime +7 -exec rm -rf {} + || true
 
 uv_lock_hash=$(sha256sum "./uv.lock" | awk '{print substr($1,1,32)}')
-job_name="${CI_JOB_NAME_SLUG}"
+job_name=$(echo -n "${CI_JOB_NAME}" | sha256sum | awk '{print substr($1,1,16)}')
 if [[ -z "${BASE_IMAGE:-}" ]]; then
     echo "BASE_IMAGE must be set and non-empty" >&2
     exit 1
