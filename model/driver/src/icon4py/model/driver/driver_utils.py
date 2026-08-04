@@ -373,6 +373,9 @@ def initialize_granules(
 
     solve_nonhydro_granule: solve_nh.SolveNonhydro | None = None
     if config.nonhydrostatic is not None:
+        assert (
+            config.interpolation.max_nudging_coefficient is not None
+        )  # TODO(ricoh): [c37] remove after declarativifying InterpolationConfig
         nonhydro_params = solve_nh.NonHydrostaticParams(config.nonhydrostatic)
         solve_nonhydro_granule = solve_nh.SolveNonhydro(
             grid=grid,
@@ -386,10 +389,14 @@ def initialize_granules(
             cell_geometry=cell_geometry,
             owner_mask=owner_mask,
             exchange=exchange,
+            max_nudging_coefficient=config.interpolation.max_nudging_coefficient,
         )
 
     diffusion_granule: diffusion.Diffusion | None = None
     if config.diffusion is not None:
+        assert (
+            config.interpolation.max_nudging_coefficient is not None
+        )  # TODO(ricoh): [c37] remove after declarativifying InterpolationConfig
         diffusion_params = diffusion.DiffusionParams(config.diffusion)
         diffusion_granule = diffusion.Diffusion(
             grid=grid,
@@ -402,7 +409,8 @@ def initialize_granules(
             cell_params=cell_geometry,
             backend=backend,
             exchange=exchange,
-+            substep_as_float=float(config.driver.ndyn_substeps),
+            substep_as_float=float(config.driver.ndyn_substeps),
+            max_nudging_coefficient=config.interpolation.max_nudging_coefficient,
         )
 
     tracer_advection_granule: tracer_advection.Advection | None = None
