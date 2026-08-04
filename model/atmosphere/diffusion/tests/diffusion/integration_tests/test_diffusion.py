@@ -173,6 +173,7 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
 
+    assert experiment.config.interpolation.max_nudging_coefficient is not None
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
@@ -185,6 +186,7 @@ def test_diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         backend=backend,
         exchange=decomp_defs.SingleNodeExchange(),
         substep_as_float=float(experiment.config.driver.ndyn_substeps),
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
     assert diffusion_granule.diff_multfac_w == min(
@@ -288,6 +290,7 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
         vct_b=vct_b,
     )
 
+    assert experiment.config.interpolation.max_nudging_coefficient is not None
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
@@ -300,6 +303,7 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
         backend=backend,
         exchange=decomp_defs.SingleNodeExchange(),
         substep_as_float=float(experiment.config.driver.ndyn_substeps),
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
     _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule, backend)
@@ -357,6 +361,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
     config = experiment.config.diffusion
     additional_parameters = diffusion.DiffusionParams(config)
 
+    assert experiment.config.interpolation.max_nudging_coefficient is not None
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
@@ -369,6 +374,7 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
         backend=backend,
         exchange=decomp_defs.SingleNodeExchange(),
         substep_as_float=float(experiment.config.driver.ndyn_substeps),
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -414,6 +420,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
     config = experiment.config.diffusion
     params = diffusion.DiffusionParams(config)
 
+    assert experiment.config.interpolation.max_nudging_coefficient is not None
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
@@ -426,6 +433,7 @@ def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-argum
         backend=backend,
         exchange=decomp_defs.SingleNodeExchange(),
         substep_as_float=float(experiment.config.driver.ndyn_substeps),
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
