@@ -8,8 +8,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 from gt4py.next import typing as gtx_typing
 
@@ -110,13 +108,13 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     vertical_advection_type: tracer_advection.VerticalAdvectionType,
     vertical_advection_limiter: tracer_advection.VerticalAdvectionLimiter,
     *,
-    grid_savepoint: Any,
+    grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
-    interpolation_savepoint: Any,
-    metrics_savepoint: Any,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
     backend: gtx_typing.Backend | None,
-    advection_init_savepoint: Any,
-    advection_exit_savepoint: Any,
+    advection_init_savepoint: sb.AdvectionInitSavepoint,
+    advection_exit_savepoint: sb.AdvectionExitSavepoint,
     experiment: test_defs.Experiment,
     process_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,

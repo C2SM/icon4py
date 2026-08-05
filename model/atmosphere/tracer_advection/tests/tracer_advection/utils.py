@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -46,12 +46,12 @@ def construct_least_squares_state(
     return tracer_advection_states.AdvectionLeastSquaresState(
         lsq_pseudoinv_1=gtx.as_field(
             (dims.CellDim, dims.C2E2CDim),
-            least_squares_coeffs[:, 0, :],  # type: ignore[arg-type]  # NDArrayObject Protocol limitation
+            least_squares_coeffs[:, 0, :],  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol is not assignable to data_alloc.NDArray
             allocator=backend,
         ),
         lsq_pseudoinv_2=gtx.as_field(
             (dims.CellDim, dims.C2E2CDim),
-            least_squares_coeffs[:, 1, :],  # type: ignore[arg-type]  # NDArrayObject Protocol limitation
+            least_squares_coeffs[:, 1, :],  # type: ignore[arg-type]  # GT4Py NDArrayObject Protocol is not assignable to data_alloc.NDArray
             allocator=backend,
         ),
     )
@@ -114,7 +114,7 @@ def construct_prep_adv(
     )
 
 
-def log_dbg(field: Any, name: str = "") -> None:
+def log_dbg(field: data_alloc.NDArray, name: str = "") -> None:
     log.debug(f"{name}: min={field.min()}, max={field.max()}, mean={field.mean()}")
 
 
