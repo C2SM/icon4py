@@ -147,13 +147,13 @@ version = "{current_version}"
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
 exclude = '''(?x)^(
-  .*/serialbox\.py$|
-  .*/docs/.*|
-  ^bindings/tests/.*|
-  ^tools/tests/.*|
-  ^scripts/.*|
-  ^noxfile\.py$|
-  ^scripts-cli\.py$|
+  .*/serialbox\.py$|          # serialbox C-extension module without type stubs
+  .*/docs/.*|                 # documentation files
+  ^bindings/tests/.*|         # untyped bindings tests (future annotation work)
+  ^tools/tests/.*|            # untyped tools tests (future annotation work)
+  ^scripts/.*|                # command-line scripts not type-checked
+  ^noxfile\.py$|              # nox session definitions
+  ^scripts-cli\.py$|          # CLI entry point
   # New untyped code from origin/main: excluded to keep the opt-out mypy config clean
   # until these files are annotated in follow-up work.
   ^model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/core/(properties|transitions)\.py$|
