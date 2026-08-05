@@ -13,8 +13,7 @@ The provider fills the surface-flux input buffers of the granule
 once per physics step. This cycle ships only :class:`ZeroFluxProvider` (pure
 plumbing); the ocean bulk-flux scheme (prescribed SST, Louis exchange
 coefficients — ``mo_tmx_surface.f90`` / ``mo_vdf_sfc.f90``) is a follow-up
-implementation behind the same seam. Design:
-``docs/superpowers/specs/2026-07-31-tmx-surface-flux-seam-design.md``.
+implementation behind the same seam.
 """
 
 from __future__ import annotations
