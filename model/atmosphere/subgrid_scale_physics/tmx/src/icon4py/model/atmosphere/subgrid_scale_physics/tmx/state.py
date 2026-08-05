@@ -9,9 +9,8 @@
 """TmxState — physics-state adapter for the TMX turbulent mixing scheme.
 
 Bridges the dycore's prognostic state and the :class:`TmxComponent` contract.
-The class follows the same *gather / as_component_input / scatter* pattern as
-``muphys.state.State``.  Only the gather half (plus ``as_component_input``) is
-implemented here; ``scatter_to_prognostic`` is deferred to Task 5.
+The class follows the same *gather / as_component_input / scatter* pattern. All three protocol methods (``gather_from_prognostic``,
+``as_component_input``, ``scatter_to_prognostic``) are implemented here.
 """
 
 from __future__ import annotations
@@ -31,6 +30,7 @@ from icon4py.model.common import (
     model_options,
     type_alias as ta,
 )
+from icon4py.model.common.components.physics_state import PhysicsState
 from icon4py.model.common.diagnostic_calculations.stencils import (
     calculate_tendency,
     diagnose_pressure,
@@ -64,7 +64,7 @@ def _require(field: fa.CellKField[ta.wpfloat] | None, name: str) -> fa.CellKFiel
     return field
 
 
-class TmxState:
+class TmxState(PhysicsState):
     """Physics-state adapter for the TMX turbulent mixing scheme.
 
     Two independent axes describe each field:
