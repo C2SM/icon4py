@@ -31,7 +31,7 @@ from icon4py.model.common.utils import data_allocation
 
 # TODO(edopao): make these configurable via environment variables or model options
 _WORKSPACE_SIZE: Final[int] = (
-    200 * 1024 * 1024
+    256 * 1024 * 1024
 )  # Max workspace size per device for ICON4Py programs
 _WORKSPACE_ALIGNMENT: Final[int] = 256  # Matches DaCe's default transient-storage alignment
 
