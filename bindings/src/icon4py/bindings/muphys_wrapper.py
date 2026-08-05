@@ -52,7 +52,7 @@ def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
         backend_descriptor = {
             "backend_factory": model_backends.make_custom_dace_backend,
             "device": model_backends.CPU if t.array_ns == np else model_backends.GPU,  # type: ignore[attr-defined]  # to be fixed in gt4py
-            "max_concurrent_gpu_streams": 1 if wait_for_completion else 0,
+            "async_sdfg_call": not wait_for_completion,
         }
         graupel_program = run_graupel_only.setup_graupel(
             dt=dt,
