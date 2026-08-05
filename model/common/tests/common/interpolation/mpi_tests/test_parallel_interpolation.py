@@ -48,36 +48,18 @@ if TYPE_CHECKING:
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, intrp_name, rtol, atol, lb_domain",
+    "attrs_name, intrp_name, rtol, atol",
     [
-        (attrs.C_BLN_AVG, "c_bln_avg", 1e-11, 0.0, None),
+        (attrs.C_BLN_AVG, "c_bln_avg", 1e-11, 0.0),
         (
             attrs.E_FLX_AVG,
             "e_flx_avg",
             5e-9,
             1e-10,
-            None,
         ),  # FIXME (halungge): should run with default tolerances
-        (attrs.E_BLN_C_S, "e_bln_c_s", 1e-10, 0.0, None),
-        # pos_on_tplane_e is computed from LATERAL_BOUNDARY_LEVEL_2 on (rows before
-        # stay zero), while the reference carries values on the boundary rows:
-        # compare the computed region only
-        # TODO (Yilu): revert to a full comparison once the interpolation computes the
-        # boundary rows like ICON does (follow-up PR)
-        (
-            attrs.POS_ON_TPLANE_E_X,
-            "pos_on_tplane_e_x",
-            1e-9,
-            1e-8,
-            h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-        ),
-        (
-            attrs.POS_ON_TPLANE_E_Y,
-            "pos_on_tplane_e_y",
-            1e-9,
-            1e-8,
-            h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-        ),
+        (attrs.E_BLN_C_S, "e_bln_c_s", 1e-10, 0.0),
+        (attrs.POS_ON_TPLANE_E_X, "pos_on_tplane_e_x", 1e-9, 1e-8),
+        (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-9, 1e-8),
     ],
 )
 def test_distributed_interpolation_with_custom_tolerance(  # noqa: PLR0917 [too-many-positional-arguments]
@@ -92,15 +74,13 @@ def test_distributed_interpolation_with_custom_tolerance(  # noqa: PLR0917 [too-
     intrp_name: str,
     rtol: float,
     atol: float,
-    lb_domain: h_grid.Domain | None,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field_ref = field_ref.asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
-    lb = intp_factory.grid.start_index(lb_domain) if lb_domain is not None else 0
-    assert test_utils.dallclose(field[lb:], field_ref[lb:], atol=atol, rtol=rtol), (
+    assert test_utils.dallclose(field, field_ref, atol=atol, rtol=rtol), (
         f"comparison of {attrs_name} failed"
     )
 
