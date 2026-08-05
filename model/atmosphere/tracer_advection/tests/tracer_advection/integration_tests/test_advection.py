@@ -119,7 +119,6 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     icon_grid: base_grid.Grid,
     interpolation_savepoint: Any,
     metrics_savepoint: Any,
-    # data_provider,
     backend: gtx_typing.Backend | None,
     advection_init_savepoint: Any,
     advection_exit_savepoint: Any,

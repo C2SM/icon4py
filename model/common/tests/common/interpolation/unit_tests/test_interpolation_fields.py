@@ -417,7 +417,7 @@ def test_compute_pos_on_tplane_e(
     edges_lon = grid_savepoint.edges_center_lon().ndarray
     edges_lat = grid_savepoint.edges_center_lat().ndarray
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
-    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
 
     match icon_grid.grid_params.geometry_type:  # type: ignore[attr-defined]  # IconGrid-specific attribute
         case icon.GeometryType.ICOSAHEDRON:

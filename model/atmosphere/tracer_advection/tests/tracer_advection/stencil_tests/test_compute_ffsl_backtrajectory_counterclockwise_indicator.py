@@ -32,7 +32,6 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(stencil_tests.Stenc
 
     @staticmethod
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         p_vn: np.ndarray,
         tangent_orientation: np.ndarray,

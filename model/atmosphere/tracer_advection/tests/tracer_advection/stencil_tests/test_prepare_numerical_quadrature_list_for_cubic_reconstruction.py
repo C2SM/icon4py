@@ -405,7 +405,6 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
     @classmethod
     def reference(
         cls,
-        connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         famask_int: Any,
         p_coords_dreg_v_1_x: Any,

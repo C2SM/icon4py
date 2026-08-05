@@ -57,6 +57,8 @@ class OptionalMetaData(TypedDict, total=False):
     is_on_half_levels: bool
     #: CF convention: direction of increase for vertical coordinate
     positive: str
+    #: physics-component output category: "tendency" applied as field += val*dt; "diagnostic" stored unscaled
+    kind: Literal["tendency", "diagnostic"]
 
 
 class RequiredMetaData(TypedDict, total=True):

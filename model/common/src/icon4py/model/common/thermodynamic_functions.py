@@ -46,6 +46,19 @@ def sat_pres_ice(temperature: data_alloc.NDArray) -> data_alloc.NDArray:
     )
 
 
+def specific_humidity(
+    vapor_pressure: data_alloc.NDArray, pressure: data_alloc.NDArray
+) -> data_alloc.NDArray:
+    """Specific humidity [kg/kg] from the water-vapour partial pressure and the total pressure.
+
+    Mirrors ``spec_humi`` in ``mo_thdyn_functions.f90``:
+    ``rdv * pv / (p - (1 - rdv) * pv)`` with ``rdv = RD / RV``.
+    """
+    return (
+        phy_const.RD_O_RV * vapor_pressure / (pressure - (1.0 - phy_const.RD_O_RV) * vapor_pressure)
+    )
+
+
 def qv_from_relative_humidity(
     temperature: data_alloc.NDArray,
     pressure: data_alloc.NDArray,

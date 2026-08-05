@@ -20,7 +20,11 @@ import serialbox  # type: ignore[import-untyped]  # optional dependency without 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
+from icon4py.model.common.states import (
+    nonhydro_states,
+    prognostic_state as prognostics,
+    tracer_states,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -116,10 +120,11 @@ def read_initial_condition_from_file(
     config: FromFileConfig,
     grid: icon_grid.IconGrid,
     prognostic_state_now: prognostics.PrognosticState,
+    tracer_state_now: tracer_states.TracerState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
-    """Initialise the prognostic state from the serialized ICON initial state."""
+    """Initialise the prognostic and tracer states from the serialized ICON initial state."""
     array_ns = data_alloc.import_array_ns(model_backends.get_allocator(backend))
 
     log.info("Reading the initial condition from %s", config.data_path)
@@ -135,7 +140,7 @@ def read_initial_condition_from_file(
 
     if config.ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
-        for i, tracer in enumerate(prognostic_state_now.tracer.active_fields()):
+        for i, tracer in enumerate(tracer_state_now.active_fields()):
             tracer.field.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
 
 

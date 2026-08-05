@@ -11,10 +11,17 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Iterator
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.states.data import COMMON_TRACER_CF_ATTRIBUTES
+from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
 
 
 class TracerField(NamedTuple):
@@ -99,7 +106,11 @@ class TracerConfig:
 class TracerState:
     """
     Class that contains the tracer state which includes hydrometeors and aerosols.
-    Corresponds to tracer pointers in ICON t_nh_prog
+    Corresponds to tracer pointers in ICON t_nh_prog.
+
+    Kept out of `PrognosticState` on purpose: tracers are advanced once per model time
+    step, not once per dynamics substep, so their two time levels are swapped at a
+    different rate than the dynamical ones (nnow_rcf/nnew_rcf vs nnow/nnew in ICON).
     """
 
     #: specific humidity [kg/kg] at cell center
@@ -121,3 +132,30 @@ class TracerState:
             field = getattr(self, name)
             if field is not None:
                 yield TracerField(name=name, field=field)
+
+    def copy(self, allocator: gtx_typing.Allocator | None = None) -> TracerState:
+        """A new state with a copy of each active field, for the other time level."""
+        return TracerState(
+            **{
+                tracer.name: data_alloc.as_field(tracer.field, allocator=allocator)
+                for tracer in self.active_fields()
+            }
+        )
+
+
+def initialize_tracer_state(
+    grid: base_grid.Grid,
+    allocator: gtx_typing.Allocator | None,
+    tracer_config: TracerConfig | None = None,
+) -> TracerState:
+    """Initialize the active tracers with zero fields; the inactive ones stay ``None``."""
+    if tracer_config is None:
+        tracer_config = TracerConfig.none()
+    return TracerState(
+        **{
+            name: data_alloc.zero_field(
+                grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+            )
+            for name in tracer_config.active_names
+        }
+    )

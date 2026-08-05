@@ -18,9 +18,9 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, V2E
-from icon4py.model.common.grid import gridfile, icon as icon_grid
+from icon4py.model.common.grid import gridfile, icon as icon_grid, utils as grid_utils
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
-from icon4py.model.common.math import projection
+from icon4py.model.common.math import distance_array_ns, projection
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -1089,25 +1089,28 @@ def compute_pos_on_tplane_e_x_y(
     llb = horizontal_start
     pos_on_tplane_e_x = array_ns.zeros(e2c.shape)
     pos_on_tplane_e_y = array_ns.zeros(e2c.shape)
+    valid_neighbor_0, valid_neighbor_1, safe_e2c = grid_utils.valid_e2c_neighbors(e2c)
+    valid_neighbor_0 = valid_neighbor_0[llb:]
+    valid_neighbor_1 = valid_neighbor_1[llb:]
     xyloc_plane_n1 = array_ns.zeros([e2c.shape[0], 2])
     xyloc_plane_n2 = array_ns.zeros([e2c.shape[0], 2])
     xyloc_plane_n1[llb:, :] = projection.gnomonic_proj(
         edges_lon[llb:],
         edges_lat[llb:],
-        cells_lon[e2c[llb:, 0]],
-        cells_lat[e2c[llb:, 0]],
+        cells_lon[safe_e2c[llb:, 0]],
+        cells_lat[safe_e2c[llb:, 0]],
         grid_sphere_radius,
     )
     xyloc_plane_n2[llb:, :] = projection.gnomonic_proj(
         edges_lon[llb:],
         edges_lat[llb:],
-        cells_lon[e2c[llb:, 1]],
-        cells_lat[e2c[llb:, 1]],
+        cells_lon[safe_e2c[llb:, 1]],
+        cells_lat[safe_e2c[llb:, 1]],
         grid_sphere_radius,
     )
 
     pos_on_tplane_e_x[llb:, 0] = array_ns.where(
-        owner_mask[llb:],
+        owner_mask[llb:] & valid_neighbor_0,
         (
             xyloc_plane_n1[llb:, 0] * primal_normal_v1[llb:]
             + xyloc_plane_n1[llb:, 1] * primal_normal_v2[llb:]
@@ -1115,7 +1118,7 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e_x[llb:, 0],
     )
     pos_on_tplane_e_y[llb:, 0] = array_ns.where(
-        owner_mask[llb:],
+        owner_mask[llb:] & valid_neighbor_0,
         (
             xyloc_plane_n1[llb:, 0] * dual_normal_v1[llb:]
             + xyloc_plane_n1[llb:, 1] * dual_normal_v2[llb:]
@@ -1123,7 +1126,7 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e_y[llb:, 0],
     )
     pos_on_tplane_e_x[llb:, 1] = array_ns.where(
-        owner_mask[llb:],
+        owner_mask[llb:] & valid_neighbor_1,
         (
             xyloc_plane_n2[llb:, 0] * primal_normal_v1[llb:]
             + xyloc_plane_n2[llb:, 1] * primal_normal_v2[llb:]
@@ -1131,7 +1134,7 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e_x[llb:, 1],
     )
     pos_on_tplane_e_y[llb:, 1] = array_ns.where(
-        owner_mask[llb:],
+        owner_mask[llb:] & valid_neighbor_1,
         (
             xyloc_plane_n2[llb:, 0] * dual_normal_v1[llb:]
             + xyloc_plane_n2[llb:, 1] * dual_normal_v2[llb:]
@@ -1312,22 +1315,22 @@ def compute_lsq_coeffs(
                 )
 
         case icon_grid.GeometryType.TORUS:
-            for jc in range(start_idx, min_rlcell_int):
-                ilc_s = c2e2c[jc, :lsq_dim_c]
-                cc_cell = array_ns.zeros((lsq_dim_c, 2))
-                cc_cv = array_ns.asarray((cell_center_x[jc], cell_center_y[jc]))
-                for js in range(lsq_dim_c):
-                    cc_cell[js, :] = array_ns.asarray(
-                        projection.diff_on_edges_torus_numpy(
-                            cc_cv_x=cell_center_x[jc],
-                            cc_cv_y=cell_center_y[jc],
-                            cc_cell_x=cell_center_x[ilc_s][js],
-                            cc_cell_y=cell_center_y[ilc_s][js],
-                            domain_length=domain_length,
-                            domain_height=domain_height,
-                        )
-                    )
-                z_dist_g[jc, :, :] = cc_cell - cc_cv
+            # On the torus a neighbour may sit across a periodic boundary, so take the
+            # periodic image of each neighbour closest to the cell centre.
+            cells = slice(start_idx, min_rlcell_int)
+            neighbors = c2e2c[cells, :lsq_dim_c]
+            center_x = cell_center_x[cells, array_ns.newaxis]
+            center_y = cell_center_y[cells, array_ns.newaxis]
+            z_dist_g[cells, :, 0], z_dist_g[cells, :, 1] = (
+                distance_array_ns.minimum_image_separation(
+                    x=cell_center_x[neighbors],
+                    y=cell_center_y[neighbors],
+                    reference_x=center_x,
+                    reference_y=center_y,
+                    domain_extent_x=domain_length,
+                    domain_extent_y=domain_height,
+                )
+            )
 
     lsq_weights_c = compute_lsq_weights_c(z_dist_g, lsq_wgt_exp)
 
