@@ -6,8 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Any
-
 import numpy as np
 import pytest
 from gt4py.next import typing as gtx_typing
@@ -16,13 +14,16 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.common.grid import icon
+from icon4py.model.testing import serialbox as sb
 
 from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.datatest
 def test_verify_geofac_n2s_field_manipulation(
-    interpolation_savepoint: Any, icon_grid: icon.IconGrid, backend: gtx_typing.Backend
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: icon.IconGrid,
+    backend: gtx_typing.Backend,
 ) -> None:
     geofac_n2s = interpolation_savepoint.geofac_n2s().asnumpy()
     interpolation_state = diffusion_states.DiffusionInterpolationState(

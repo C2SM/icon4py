@@ -5,8 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
-
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -67,7 +65,7 @@ class TestApplyDiffusionToVn(StencilTest):
         fac_bdydiff_v: np.ndarray,
         start_2nd_nudge_line_idx_e: np.int32,
         limited_area: bool,
-        **kwargs: Any,
+        **kwargs: int,
     ) -> dict:
         edge = np.arange(area_edge.shape[0])
         vn_cp = vn.copy()
