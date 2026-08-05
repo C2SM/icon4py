@@ -61,7 +61,7 @@ def _tracer_state(
     )
 
 
-def _tmx_state(grid) -> TmxState:
+def _tmx_state(grid, **kwargs) -> TmxState:
     """Construct a TmxState on the simple grid with neutral/zero interpolation coefficients."""
     return TmxState(
         grid=grid,
@@ -72,6 +72,7 @@ def _tmx_state(grid) -> TmxState:
         primal_normal_cell_x=data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.E2CDim),
         primal_normal_cell_y=data_alloc.zero_field(grid, dims.EdgeDim, dims.E2CDim),
         backend=None,
+        **kwargs,
     )
 
 

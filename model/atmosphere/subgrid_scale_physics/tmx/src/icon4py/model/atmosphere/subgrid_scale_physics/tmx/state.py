@@ -20,7 +20,11 @@ from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import state_stencils
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
+    state_stencils,
+    surface_fluxes,
+    tmx_states,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vn_from_uv import (
     compute_vn_from_uv,
 )
@@ -72,7 +76,8 @@ class TmxState(PhysicsState):
     tmx role
       - input    : fed to the TmxComponent via ``as_component_input``
       - internal : used only to diagnose derived inputs (pressure, T, u, v)
-      - seam     : surface-flux buffers owned here; TMX fills them, scatter reads them
+      - seam     : surface-flux buffers owned here; the surface-flux provider fills
+                   them each gather, the granule consumes them as inputs
 
     memory ownership
       - reference : a pointer into the dycore state, no copy — rho, w, vn, tracers
@@ -91,6 +96,7 @@ class TmxState(PhysicsState):
         c_lin_e: gtx.Field,
         primal_normal_cell_x: gtx.Field,
         primal_normal_cell_y: gtx.Field,
+        surface_flux_provider: surface_fluxes.SurfaceFluxProvider | None = None,
         backend: gtx_typing.Backend | None = None,
     ) -> None:
         self._num_cells = grid.num_cells
@@ -237,13 +243,22 @@ class TmxState(PhysicsState):
         self.air_mass = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self.cv_air = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
 
-        # --- Surface-flux buffers: 2-D (CellDim only), allocated once, zero.
-        #     TMX fills them during a step; scatter reads them back to the land model.
+        # --- Surface-flux buffers: 2-D (CellDim only), granule *inputs*.
+        #     The surface-flux provider (phase-2 seam) fills them at the end of
+        #     every gather; the granule consumes them via as_component_input.
         self.evapotranspiration = data_alloc.zero_field(grid, dims.CellDim, allocator=backend)
         self.sensible_heat_flux = data_alloc.zero_field(grid, dims.CellDim, allocator=backend)
         self.u_stress = data_alloc.zero_field(grid, dims.CellDim, allocator=backend)
         self.v_stress = data_alloc.zero_field(grid, dims.CellDim, allocator=backend)
         self.q_snocpymlt = data_alloc.zero_field(grid, dims.CellDim, allocator=backend)
+        self._surface_flux_provider = surface_flux_provider or surface_fluxes.ZeroFluxProvider()
+        self._surface_flux_state = tmx_states.TmxSurfaceFluxState(
+            evapotranspiration=self.evapotranspiration,
+            sensible_heat_flux=self.sensible_heat_flux,
+            u_stress=self.u_stress,
+            v_stress=self.v_stress,
+            q_snocpymlt=self.q_snocpymlt,
+        )
 
         # --- Scratch buffers for scatter (Task 5) ---
         self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
@@ -340,6 +355,9 @@ class TmxState(PhysicsState):
             air_mass=self.air_mass,
             cv_air=self.cv_air,
         )
+
+        # 6. Surface fluxes (phase-2 seam): the provider sets every flux, every step
+        self._surface_flux_provider.compute(out=self._surface_flux_state)
 
     def scatter_to_prognostic(
         self,
@@ -457,7 +475,7 @@ class TmxState(PhysicsState):
             # TMX-specific computed fields
             "air_mass": self.air_mass,
             "cv_air": self.cv_air,
-            # Surface-flux seam (phase-2; zero until TMX fills them)
+            # Surface-flux seam (filled by the surface-flux provider each gather)
             "evapotranspiration": self.evapotranspiration,
             "sensible_heat_flux": self.sensible_heat_flux,
             "u_stress": self.u_stress,
