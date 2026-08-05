@@ -8,8 +8,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import gt4py.next.typing as gtx_typing
 import pytest
 
@@ -23,7 +21,11 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_defs, grid_utils as gridtest_utils
+from icon4py.model.testing import (
+    definitions as test_defs,
+    grid_utils as gridtest_utils,
+    serialbox as sb,
+)
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
@@ -115,13 +117,13 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     vertical_advection_type: tracer_advection.VerticalAdvectionType,
     vertical_advection_limiter: tracer_advection.VerticalAdvectionLimiter,
     *,
-    grid_savepoint: Any,
+    grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
-    interpolation_savepoint: Any,
-    metrics_savepoint: Any,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
     backend: gtx_typing.Backend | None,
-    advection_init_savepoint: Any,
-    advection_exit_savepoint: Any,
+    advection_init_savepoint: sb.AdvectionInitSavepoint,
+    advection_exit_savepoint: sb.AdvectionExitSavepoint,
     experiment: test_defs.Experiment,
 ) -> None:
     # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
@@ -148,8 +150,8 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
         cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
         c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
         cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
-        domain_length=geometry.grid.grid_params.domain_length,  # type: ignore[arg-type]  # float | None, compute_lsq_coeffs handles None for icosahedron grids
-        domain_height=geometry.grid.grid_params.domain_height,  # type: ignore[arg-type]  # float | None, compute_lsq_coeffs handles None for icosahedron grids
+        domain_length=geometry.grid.grid_params.domain_length,
+        domain_height=geometry.grid.grid_params.domain_height,
         grid_sphere_radius=constants.EARTH_RADIUS,
         lsq_dim_unk=experiment.config.interpolation.lsq_dim_unk,
         lsq_dim_c=experiment.config.interpolation.lsq_dim_c,
