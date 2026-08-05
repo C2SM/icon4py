@@ -81,14 +81,49 @@ variables:
     SLURM_MPI_TYPE: pmix
     USE_MPI: NO
     PMIX_MCA_psec: native
+    # The following values are based on recommendations
+    # from https://github.com/eth-cscs/alps-extended-images.
     FI_PROVIDER: cxi
     OMPI_MCA_pml: cm
     OMPI_MCA_mtl: ofi
+    OMPI_MCA_btl: "^tcp,uct,usnic"
+    OMPI_MCA_opal_common_ofi_provider_include: cxi
+    FI_CXI_DEFAULT_CQ_SIZE: 131072
+    FI_CXI_DEFAULT_TX_SIZE: 16384
+    FI_CXI_DISABLE_HOST_REGISTER: 1
+    FI_CXI_RDZV_PROTO: alt_read
+    FI_CXI_RDZV_EAGER_SIZE: 0
+    FI_CXI_RDZV_GET_MIN: 0
+    FI_CXI_RDZV_THRESHOLD: 0
+    FI_CXI_RX_MATCH_MODE: hybrid
+    FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD: 16777216
+    FI_MR_CACHE_MONITOR: userfaultfd
+    FI_MR_CACHE_MAX_SIZE: -1
+    FI_MR_CACHE_MAX_COUNT: 524288
+    NCCL_NET: "AWS Libfabric"
+    NCCL_SOCKET_IFNAME: hsn
+    NCCL_CROSS_NIC: 0
+    NCCL_PXN_DISABLE: 1
+    NCCL_P2P_LEVEL: NVL
+    NCCL_NET_GDR_LEVEL: PHB
+    NCCL_NET_GDR_C2C: 1
+    NCCL_NET_GDR_READ: 1
+    NCCL_PROTO: "^LL128"
+    NCCL_NCHANNELS_PER_NET_PEER: 1
+    NCCL_SOCKET_NTHREADS: 4
+    NCCL_NSOCKS_PERTHREAD: 1
+    NCCL_MAX_CTAS: 16
+    # This is enabled to allow multiple concurrent subcommunicators on the same GPU
+    NCCL_MULTI_RANK_GPU_ENABLE: 1
+    NCCL_DEBUG: WARN
+    SLURM_NETWORK: disable_rdzv_get
     # The default without MPS is 8 for both max connection variables. With MPS
     # they are lowered to 2 by default, so we set them back to their non-MPS
     # defaults for potentially increased concurrency on the GPU.
     CUDA_DEVICE_MAX_CONNECTIONS: 8
     CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
+    CUDA_CACHE_DISABLE: 1
+    CUPY_CACHE_IN_MEMORY: 1
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: true
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: true
