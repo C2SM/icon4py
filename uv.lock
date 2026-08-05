@@ -1828,13 +1828,16 @@ lint = [
 scripts = [
   {name = "bump-my-version"},
   {name = "f90nml"},
+  {name = "ipython"},
   {name = "lazy-loader"},
+  {name = "numpy"},
   {name = "packaging"},
   {name = "pip"},
   {name = "pooch"},
   {name = "pytest"},
   {name = "pyyaml"},
   {name = "rich"},
+  {name = "serialbox4py"},
   {name = "setuptools"},
   {name = "typer"},
   {name = "wheel"}
@@ -1943,13 +1946,16 @@ lint = [
 scripts = [
   {name = "bump-my-version", specifier = ">=0.16.0"},
   {name = "f90nml", specifier = ">=1.5"},
+  {name = "ipython", specifier = ">=8.30"},
   {name = "lazy-loader", specifier = ">=0.5"},
+  {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=24.0"},
   {name = "pip", specifier = ">=22.1.1"},
   {name = "pooch", specifier = ">=1.7.0"},
   {name = "pytest", specifier = ">=8.0.1"},
   {name = "pyyaml", specifier = ">=6.0"},
   {name = "rich", specifier = ">=13.0.0"},
+  {name = "serialbox4py", specifier = ">=2.6.2"},
   {name = "setuptools", specifier = ">=70.1.1"},
   {name = "typer", specifier = ">=0.15"},
   {name = "wheel", specifier = ">=0.45.0"}
@@ -2373,6 +2379,51 @@ source = {registry = "https://pypi.org/simple"}
 version = "2.3.0"
 wheels = [
   {url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z"}
+]
+
+[[package]]
+dependencies = [
+  {name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"},
+  {name = "ipython-pygments-lexers"},
+  {name = "jedi"},
+  {name = "matplotlib-inline"},
+  {name = "pexpect", marker = "(sys_platform != 'emscripten' and sys_platform != 'win32') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'win32' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (sys_platform == 'win32' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'win32' and extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"},
+  {name = "prompt-toolkit"},
+  {name = "psutil", marker = "(sys_platform != 'cygwin' and sys_platform != 'emscripten') or (sys_platform == 'cygwin' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (sys_platform == 'cygwin' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'cygwin' and extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"},
+  {name = "pygments"},
+  {name = "stack-data"},
+  {name = "traitlets"}
+]
+name = "ipython"
+sdist = {url = "https://files.pythonhosted.org/packages/06/96/b150fe7e25a5a29ae9ac1374e71488639605d39a1ea4abb74c9ce33af235/ipython-9.16.1.tar.gz", hash = "sha256:5a3d1f9a47ff216d6cf9cf863124f6a2c1a198d1354c546a4d24a370a283b64c", size = 4515302, upload-time = "2026-08-03T08:36:15.571Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "9.16.1"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/bc/8e/1239df488393d61076653bfb29f759d0f60cab8e030abdf7c17c31539b51/ipython-9.16.1-py3-none-any.whl", hash = "sha256:4acae635506f6d352d94c4899a19d5f85f8bc4d230932342dca556fdab1c69b4", size = 625974, upload-time = "2026-08-03T08:36:13.654Z"}
+]
+
+[[package]]
+dependencies = [
+  {name = "pygments"}
+]
+name = "ipython-pygments-lexers"
+sdist = {url = "https://files.pythonhosted.org/packages/ef/4c/5dd1d8af08107f88c7f741ead7a40854b8ac24ddf9ae850afbcf698aa552/ipython_pygments_lexers-1.1.1.tar.gz", hash = "sha256:09c0138009e56b6854f9535736f4171d855c8c08a563a0dcd8022f78355c7e81", size = 8393, upload-time = "2025-01-17T11:24:34.505Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "1.1.1"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/d9/33/1f075bf72b0b747cb3288d011319aaf64083cf2efef8354174e3ed4540e2/ipython_pygments_lexers-1.1.1-py3-none-any.whl", hash = "sha256:a9462224a505ade19a605f71f8fa63c2048833ce50abc86768a0d81d876dc81c", size = 8074, upload-time = "2025-01-17T11:24:33.271Z"}
+]
+
+[[package]]
+dependencies = [
+  {name = "parso"}
+]
+name = "jedi"
+sdist = {url = "https://files.pythonhosted.org/packages/46/b7/a3635f6a2d7cf5b5dd98064fc1d5fbbafcb25477bcea204a3a92145d158b/jedi-0.20.0.tar.gz", hash = "sha256:c3f4ccbd276696f4b19c54618d4fb18f9fc24b0aef02acf704b23f487daa1011", size = 3119416, upload-time = "2026-05-01T23:38:47.814Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "0.20.0"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/9a/93/242e2eab5fe682ffcb8b0084bde703a41d51e17ee0f3a31ff0d9d813620a/jedi-0.20.0-py2.py3-none-any.whl", hash = "sha256:7bdd9c2634f56713299976f4cbd59cb3fa92165cc5e05ea811fb253480728b67", size = 4884812, upload-time = "2026-05-01T23:38:43.919Z"}
 ]
 
 [[package]]
@@ -2898,6 +2949,18 @@ wheels = [
   {url = "https://files.pythonhosted.org/packages/67/b2/ef8d6bb59b0edb6c16c968b70f548aa13b54348972def5aa6ac85df67145/matplotlib-3.10.9-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:4e42042d54db34fda4e95a7bd3e5789c2a995d2dad3eb8850232ee534092fbbf", size = 9680884, upload-time = "2026-04-24T00:13:48.066Z"},
   {url = "https://files.pythonhosted.org/packages/61/1c/d21bfeb9931881ebe96bcfcff27c7ae4b160ae0ec291a714c42641a56d75/matplotlib-3.10.9-cp314-cp314t-win_amd64.whl", hash = "sha256:c27df8b3848f32a83d1767566595e43cfaa4460380974da06f4279a7ec143c39", size = 8432333, upload-time = "2026-04-24T00:13:51.008Z"},
   {url = "https://files.pythonhosted.org/packages/78/23/92493c3e6e1b635ccfff146f7b99e674808787915420373ac399283764c2/matplotlib-3.10.9-cp314-cp314t-win_arm64.whl", hash = "sha256:a49f1eadc84ca85fd72fa4e89e70e61bf86452df6f971af04b12c60761a0772c", size = 8324785, upload-time = "2026-04-24T00:13:53.633Z"}
+]
+
+[[package]]
+dependencies = [
+  {name = "traitlets"}
+]
+name = "matplotlib-inline"
+sdist = {url = "https://files.pythonhosted.org/packages/bd/c0/9f7c9a46090390368a4d7bcb76bb87a4a36c421e4c0792cdb53486ffac7a/matplotlib_inline-0.2.2.tar.gz", hash = "sha256:72f3fe8fce36b70d4a5b612f899090cd0401deddc4ea90e1572b9f4bfb058c79", size = 8150, upload-time = "2026-05-08T17:33:33.49Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "0.2.2"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/41/09/5b161152e2d90f7b87f781c2e1267494aef9c32498df793f73ad0a0a494a/matplotlib_inline-0.2.2-py3-none-any.whl", hash = "sha256:3c821cf1c209f59fb2d2d64abbf5b23b67bcb2210d663f9918dd851c6da1fcf6", size = 9534, upload-time = "2026-05-08T17:33:32.055Z"}
 ]
 
 [[package]]
@@ -3631,6 +3694,15 @@ wheels = [
 ]
 
 [[package]]
+name = "parso"
+sdist = {url = "https://files.pythonhosted.org/packages/30/4b/90c937815137d43ce71ba043cd3566221e9df6b9c805f24b5d138c9d40a7/parso-0.8.7.tar.gz", hash = "sha256:eaaac4c9fdd5e9e8852dc778d2d7405897ec510f2a298071453e5e3a07914bb1", size = 401824, upload-time = "2026-05-01T23:13:02.138Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "0.8.7"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/99/5d/8268b644392ee874ee82a635cd0df1773de230bde356c38de28e298392cc/parso-0.8.7-py2.py3-none-any.whl", hash = "sha256:a8926eb2a1b915486941fdbd31e86a4baf88fe8c210f25f2f35ecec5b574ca1c", size = 107025, upload-time = "2026-05-01T23:12:58.867Z"}
+]
+
+[[package]]
 dependencies = [
   {name = "locket"},
   {name = "toolz"}
@@ -3650,6 +3722,18 @@ source = {registry = "https://pypi.org/simple"}
 version = "1.1.1"
 wheels = [
   {url = "https://files.pythonhosted.org/packages/f1/d9/7fb5aa316bc299258e68c73ba3bddbc499654a07f151cba08f6153988714/pathspec-1.1.1-py3-none-any.whl", hash = "sha256:a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189", size = 57328, upload-time = "2026-04-27T01:46:07.06Z"}
+]
+
+[[package]]
+dependencies = [
+  {name = "ptyprocess", marker = "(sys_platform != 'emscripten' and sys_platform != 'win32') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'win32' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (sys_platform == 'win32' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'win32' and extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"}
+]
+name = "pexpect"
+sdist = {url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "4.9.0"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/9e/c3/059298687310d527a58bb01f3b1965787ee3b40dce76752eda8b44e9a2c5/pexpect-4.9.0-py2.py3-none-any.whl", hash = "sha256:7236d1e080e4936be2dc3e326cec0af72acf9212a7e1d060210e70a47e253523", size = 63772, upload-time = "2023-11-25T06:56:14.81Z"}
 ]
 
 [[package]]
@@ -3825,6 +3909,24 @@ wheels = [
   {url = "https://files.pythonhosted.org/packages/04/78/0acd37ca84ce3ddffaa92ef0f571e073faa6d8ff1f0559ab1272188ea2be/psutil-7.2.2-cp36-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:b58fabe35e80b264a4e3bb23e6b96f9e45a3df7fb7eed419ac0e5947c61e47cc", size = 148266, upload-time = "2026-01-28T18:15:31.597Z"},
   {url = "https://files.pythonhosted.org/packages/b4/90/e2159492b5426be0c1fef7acba807a03511f97c5f86b3caeda6ad92351a7/psutil-7.2.2-cp37-abi3-win_amd64.whl", hash = "sha256:eb7e81434c8d223ec4a219b5fc1c47d0417b12be7ea866e24fb5ad6e84b3d988", size = 137737, upload-time = "2026-01-28T18:15:33.849Z"},
   {url = "https://files.pythonhosted.org/packages/8c/c7/7bb2e321574b10df20cbde462a94e2b71d05f9bbda251ef27d104668306a/psutil-7.2.2-cp37-abi3-win_arm64.whl", hash = "sha256:8c233660f575a5a89e6d4cb65d9f938126312bca76d8fe087b947b3a1aaac9ee", size = 134617, upload-time = "2026-01-28T18:15:36.514Z"}
+]
+
+[[package]]
+name = "ptyprocess"
+sdist = {url = "https://files.pythonhosted.org/packages/20/e5/16ff212c1e452235a90aeb09066144d0c5a6a8c0834397e03f5224495c4e/ptyprocess-0.7.0.tar.gz", hash = "sha256:5c5d0a3b48ceee0b48485e0c26037c0acd7d29765ca3fbb5cb3831d347423220", size = 70762, upload-time = "2020-12-28T15:15:30.155Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "0.7.0"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/22/a6/858897256d0deac81a172289110f31629fc4cee19b6f01283303e18c8db3/ptyprocess-0.7.0-py2.py3-none-any.whl", hash = "sha256:4b41f3967fce3af57cc7e94b888626c18bf37a083e3651ca8feeb66d492fef35", size = 13993, upload-time = "2020-12-28T15:15:28.35Z"}
+]
+
+[[package]]
+name = "pure-eval"
+sdist = {url = "https://files.pythonhosted.org/packages/cd/05/0a34433a064256a578f1783a10da6df098ceaa4a57bbeaa96a6c0352786b/pure_eval-0.2.3.tar.gz", hash = "sha256:5f4e983f40564c576c7c8635ae88db5956bb2229d7e9237d03b3c0b0190eaf42", size = 19752, upload-time = "2024-07-21T12:58:21.801Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "0.2.3"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/8e/37/efad0257dc6e593a18957422533ff0f87ede7c9c6ea010a2177d738fb82f/pure_eval-0.2.3-py3-none-any.whl", hash = "sha256:1db8e35b67b3d218d818ae653e27f06c3aa420901fa7b081ca98cbedc874e0d0", size = 11842, upload-time = "2024-07-21T12:58:20.04Z"}
 ]
 
 [[package]]
@@ -5003,6 +5105,20 @@ wheels = [
 ]
 
 [[package]]
+dependencies = [
+  {name = "asttokens"},
+  {name = "executing"},
+  {name = "pure-eval"}
+]
+name = "stack-data"
+sdist = {url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707, upload-time = "2023-09-30T13:58:05.479Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "0.6.3"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521, upload-time = "2023-09-30T13:58:03.53Z"}
+]
+
+[[package]]
 name = "standard-imghdr"
 sdist = {url = "https://files.pythonhosted.org/packages/09/d2/2eb5521072c9598886035c65c023f39f7384bcb73eed70794f469e34efac/standard_imghdr-3.10.14.tar.gz", hash = "sha256:2598fe2e7c540dbda34b233295e10957ab8dc8ac6f3bd9eaa8d38be167232e52", size = 5474, upload-time = "2024-04-21T18:55:10.859Z"}
 source = {registry = "https://pypi.org/simple"}
@@ -5203,6 +5319,15 @@ source = {registry = "https://pypi.org/simple"}
 version = "4.67.3"
 wheels = [
   {url = "https://files.pythonhosted.org/packages/16/e1/3079a9ff9b8e11b846c6ac5c8b5bfb7ff225eee721825310c91b3b50304f/tqdm-4.67.3-py3-none-any.whl", hash = "sha256:ee1e4c0e59148062281c49d80b25b67771a127c85fc9676d3be5f243206826bf", size = 78374, upload-time = "2026-02-03T17:35:50.982Z"}
+]
+
+[[package]]
+name = "traitlets"
+sdist = {url = "https://files.pythonhosted.org/packages/2c/2e/a7fbfe268c8a3b32546930c0297c101d65a4a14c304ad5790a9f478f0e4e/traitlets-5.16.1.tar.gz", hash = "sha256:ed900c2b631aa3a112811139fa97b8d2c3bad5e989656bba4b7e52c7852c18c1", size = 166137, upload-time = "2026-08-03T08:32:36.848Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "5.16.1"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/ad/66/0d785f0bc5e4315a96c989bb476d0fc07ea4f85132550c7b156ca2035d52/traitlets-5.16.1-py3-none-any.whl", hash = "sha256:f775618166caa0396c8e337099240f2bd3e5e917d203b2e6fbe21a58d3cb1f6b", size = 86211, upload-time = "2026-08-03T08:32:34.48Z"}
 ]
 
 [[package]]
