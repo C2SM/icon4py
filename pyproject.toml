@@ -247,6 +247,19 @@ ignore_missing_imports = true
 module = ["dace", "dace.*"]
 
 [[tool.mypy.overrides]]
+ignore_missing_imports = true
+# ghex is an optional distributed dependency with no type stubs. Treat it as Any
+# so MPI decomposition code can be checked consistently whether ghex is installed.
+module = ["ghex", "ghex.*"]
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+# viztracer is an optional profiling dependency with no type stubs. Treat it as
+# Any so the bindings viztracer plugin can be checked consistently whether
+# viztracer is installed.
+module = ["viztracer"]
+
+[[tool.mypy.overrides]]
 # GT4Py Field dim type variance: constructing graupel.Q with concrete-dimension
 # fields is rejected by mypy even though the program accepts them at runtime.
 # Single occurrence in this file; per-line ignore is unstable across environments

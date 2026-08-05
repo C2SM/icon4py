@@ -108,11 +108,11 @@ def _read_prognostic_state(
     read_cell_k: Callable[[str], data_alloc.NDArray],
     read_edge_k: Callable[[str], data_alloc.NDArray],
 ) -> None:
-    prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
-    prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
-    prognostic_state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
-    prognostic_state.vn.ndarray[:, :] = read_edge_k("vn_now")  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
-    prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
+    prognostic_state.rho.ndarray[:, :] = read_cell_k("rho_now")
+    prognostic_state.exner.ndarray[:, :] = read_cell_k("exner_now")
+    prognostic_state.theta_v.ndarray[:, :] = read_cell_k("theta_v_now")
+    prognostic_state.vn.ndarray[:, :] = read_edge_k("vn_now")
+    prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")
 
 
 def read_initial_condition_from_file(
@@ -141,7 +141,7 @@ def read_initial_condition_from_file(
     if config.ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
         for i, tracer in enumerate(tracer_state_now.active_fields()):
-            tracer.field.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
+            tracer.field.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
 
 
 def read_restart_from_file(
@@ -203,7 +203,7 @@ def read_restart_from_file(
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
-    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = (  # type: ignore[index]  # NDArrayObject Protocol lacks __setitem__ (D4)
+    solve_nonhydro_diagnostic_state.perturbed_exner_at_cells_on_model_levels.ndarray[:, :] = (
         read_cell_k("exner_pr")
     )
 
