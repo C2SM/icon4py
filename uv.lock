@@ -1174,9 +1174,9 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-sdist = {url = "https://files.pythonhosted.org/packages/3a/07/a0410822c1aaef052c0015e7a8399a7d7da76a11e0a97939027c15d125ee/dace-2.0.0a4.tar.gz", hash = "sha256:f45f84b59a34846e0049347559416c1fac39c739aa6cbc791e27e1973d58b1ad", size = 6026693, upload-time = "2026-06-25T14:09:32.009Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/55/b1/6ecb926fad1efcb99afc9f148493f4bd33a788c3c7079b90ad764e7f56f3/dace-2.0.0a5.tar.gz", hash = "sha256:09d9185c9d0dd663ce00c3cfd11d0c9048f80415db7080d09d109fce0e044a02", size = 6185419, upload-time = "2026-07-23T17:57:33.557Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "2.0.0a4"
+version = "2.0.0a5"
 
 [[package]]
 dependencies = [
@@ -1645,11 +1645,11 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-sdist = {url = "https://files.pythonhosted.org/packages/f3/a6/08dc6048622fc1219becbfe6c01175247fae30ea5315de3551d06584a8a7/gt4py-1.1.12.tar.gz", hash = "sha256:1d8dcb49fa244e4bd5e770ef9ae5865a710fdb0b78396afabc2dcdaaba5f2ef5", size = 859588, upload-time = "2026-07-20T13:35:00.063Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/7d/85/57e39c3caadcf3f2d72988ac17f0094ef76b6c4739fec252270a3b8d67e1/gt4py-1.2.0.tar.gz", hash = "sha256:c00e8469cc1426da4477ac5ff79f52aea04d51aec7d1001d7d7e3c01cc9788b4", size = 861599, upload-time = "2026-08-05T09:53:29.056Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "1.1.12"
+version = "1.2.0"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/e7/7f/84113ba9e57bfefe1d64597b20c31df2d18dfdbbc845caede17c4d6df15e/gt4py-1.1.12-py3-none-any.whl", hash = "sha256:c5bbe385aedeae10a2b77e9350b1fcb2f2c793e6f311808010ed27e0bf3ca470", size = 1077990, upload-time = "2026-07-20T13:34:58.18Z"}
+  {url = "https://files.pythonhosted.org/packages/d1/82/10260441a6bd1bad392464306772f40ae0ff0177208d196dd94c8e81b284/gt4py-1.2.0-py3-none-any.whl", hash = "sha256:caedcefedaae24cabb76fb24322b18c6859d48309a24aa8cf1b44dbfe1b7807b", size = 1078899, upload-time = "2026-08-05T09:53:27.443Z"}
 ]
 
 [package.optional-dependencies]
@@ -2029,7 +2029,7 @@ version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "gt4py", specifier = "==1.2.0"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2046,7 +2046,7 @@ version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "gt4py", specifier = "==1.2.0"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2063,7 +2063,7 @@ version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "gt4py", specifier = "==1.2.0"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2081,7 +2081,7 @@ version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "gt4py", specifier = "==1.2.0"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
@@ -2114,7 +2114,7 @@ version = "0.3.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "gt4py", specifier = "==1.2.0"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2143,7 +2143,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
-  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "gt4py", specifier = "==1.2.0"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
@@ -2195,7 +2195,7 @@ requires-dist = [
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.7.0"},
-  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "gt4py", specifier = "==1.2.0"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
   {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'"},
@@ -2277,7 +2277,7 @@ version = "0.3.0"
 [package.metadata]
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "gt4py", specifier = "==1.2.0"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
@@ -2305,7 +2305,7 @@ version = "0.3.0"
 [package.metadata]
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
-  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "gt4py", specifier = "==1.2.0"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"},
@@ -2337,7 +2337,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.1.7"},
   {name = "configargparse", specifier = ">=1.7.1"},
   {name = "fprettify", specifier = ">=0.3.7"},
-  {name = "gt4py", specifier = "==1.1.12"},
+  {name = "gt4py", specifier = "==1.2.0"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},

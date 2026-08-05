@@ -211,6 +211,14 @@ module = [
 ]
 
 [[tool.mypy.overrides]]
+disallow_untyped_defs = false
+module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
+
+[[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
+disable_error_code = ["index", "misc"]
+module = ["icon4py.model.common.initial_condition.*"]
+
+[[tool.mypy.overrides]]
 # GT4Py/numpy typing incompatibilities: NDArrayObject Protocol mismatch, Field
 # shape attr, dtype type-var. Cannot be fixed in user code.
 # NOTE: ~35 errors in bindings/dycore_wrapper.py.
@@ -421,9 +429,9 @@ icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
 icon4py-atmosphere-muphys = {workspace = true}
 icon4py-atmosphere-physics-driver = {workspace = true}
-# dace = {index = "gridtools"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
+# dace = {index = "gridtools"}
 icon4py-atmosphere-tracer_advection = {workspace = true}
 icon4py-bindings = {workspace = true}
 icon4py-common = {workspace = true}
