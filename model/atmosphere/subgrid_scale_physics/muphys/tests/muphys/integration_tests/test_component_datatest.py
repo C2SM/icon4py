@@ -89,12 +89,15 @@ def test_granule_matches_direct_muphys(
         allocator=allocator,
         domain=gtx.domain({dims.CellDim: graupel_input.ncells, dims.KDim: graupel_input.nlev}),
     )
+    direct.t.ndarray[...] = graupel_input.t.ndarray
+    for s in SPECIES:
+        getattr(direct, f"q{s}").ndarray[...] = getattr(graupel_input, f"q{s}").ndarray
     muphys_program(
         dz=graupel_input.dz,
-        te=graupel_input.t,
+        te=direct.t,
         p=graupel_input.p,
         rho=graupel_input.rho,
-        q_in=graupel_input.q,
+        q_in=direct.q,
         t_out=direct.t,
         q_out=direct.q,
         pflx=direct.pflx,

@@ -114,15 +114,6 @@ class MuphysComponent:
         self._step = step
 
         cell_k_domain = gtx.domain({dims.CellDim: self._ncells, dims.KDim: self._nlev})
-        self._t_out = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._q_out = Q(
-            v=gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
-            c=gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
-            r=gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
-            s=gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
-            i=gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
-            g=gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
-        )
         self._pflx = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
         self._pr = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
         self._ps = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
@@ -155,8 +146,9 @@ class MuphysComponent:
     ) -> dict[str, model.DataField]:
         """Run muphys, then convert its updated state into tendencies.
 
-        muphys returns updated state (t_out, q_out); this boundary converts it
-        to tendencies ``(new - old) / dt`` s. Precip outputs are diagnostics, passed straight through.
+        muphys updates the state in place (t_out/q_out alias te/q_in); this boundary
+        converts it to tendencies ``(new - old) / dt``. Precip outputs are diagnostics,
+        passed straight through.
         """
         # cast from generic ``DataField`` to bare gt4py fields
         fields = cast("dict[str, fa.CellKField[ta.wpfloat]]", state)
@@ -165,14 +157,18 @@ class MuphysComponent:
         for s in SPECIES:
             self._copy_field(field=fields[f"q{s}"], output_field=getattr(self._q_in, s))
 
+        # muphys must be invoked in place (the outputs alias the inputs), following
+        # the same convention as the muphys driver: the dace backend compiles the
+        # program with this aliasing baked in and leaves distinct output buffers
+        # unwritten.
         self._step(
             dz=fields["dz"],
             te=self._te_in,
             p=fields["p"],
             rho=fields["rho"],
             q_in=self._q_in,
-            q_out=self._q_out,
-            t_out=self._t_out,
+            q_out=self._q_in,
+            t_out=self._te_in,
             pflx=self._pflx,
             pr=self._pr,
             ps=self._ps,
@@ -184,14 +180,14 @@ class MuphysComponent:
         self._calculate_tendency(
             dtime=self._dt_seconds,
             old_field=fields["te"],
-            new_field=self._t_out,
+            new_field=self._te_in,
             tendency=self._tendencies["tend_temperature"],
         )
         for s in SPECIES:
             self._calculate_tendency(
                 dtime=self._dt_seconds,
                 old_field=fields[f"q{s}"],
-                new_field=getattr(self._q_out, s),
+                new_field=getattr(self._q_in, s),
                 tendency=self._tendencies[f"tend_q{s}"],
             )
 
