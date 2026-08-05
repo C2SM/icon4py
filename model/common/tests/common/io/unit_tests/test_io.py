@@ -402,7 +402,7 @@ def test_fieldgroup_config_rejects_invalid_interval() -> None:
         FieldGroupIOConfig(
             filename="a.nc",
             variables=["air_density"],
-            output_interval="1 HOUR",  # type: ignore[arg-type]  # invalid interval type for validation test
+            output_interval="1 HOUR",  # type: ignore[arg-type]  # string is intentionally invalid to test that FieldGroupIOConfig rejects non-OutputInterval types
         )
 
 
