@@ -9,22 +9,22 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import T_from_internal_energy
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.physics.thermodynamics import internal_energy
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-class TestTFromInternalEnergy(StencilTest):
-    PROGRAM = T_from_internal_energy
-    OUTPUTS = ("temperature",)
+class TestInternalEnergy(StencilTest):
+    PROGRAM = internal_energy
+    OUTPUTS = ("energy",)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         *,
-        u: np.ndarray,
+        t: np.ndarray,
         qv: np.ndarray,
         qliq: np.ndarray,
         qice: np.ndarray,
@@ -32,14 +32,12 @@ class TestTFromInternalEnergy(StencilTest):
         dz: np.ndarray,
         **kwargs,
     ) -> dict:
-        return dict(temperature=np.full(u.shape, 255.75599999999997))
+        return dict(energy=np.full(t.shape, 38265357.270336017))
 
     @pytest.fixture
     def input_data(self, grid):
         return dict(
-            u=data_alloc.constant_field(
-                grid, 38265357.270336017, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
+            t=data_alloc.constant_field(grid, 255.756, dims.CellDim, dims.KDim, dtype=wpfloat),
             qv=data_alloc.constant_field(grid, 0.00122576, dims.CellDim, dims.KDim, dtype=wpfloat),
             qliq=data_alloc.constant_field(
                 grid, 1.63837e-20, dims.CellDim, dims.KDim, dtype=wpfloat
@@ -49,5 +47,5 @@ class TestTFromInternalEnergy(StencilTest):
             ),
             rho=data_alloc.constant_field(grid, 0.83444, dims.CellDim, dims.KDim, dtype=wpfloat),
             dz=data_alloc.constant_field(grid, 249.569, dims.CellDim, dims.KDim, dtype=wpfloat),
-            temperature=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            energy=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

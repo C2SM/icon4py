@@ -37,6 +37,13 @@ class IconOption:
     path: tuple[str, ...]
     list_to_value: bool = False
     read_from_icon: bool = True
+    # position of the option in an unnamed (positional) namelist record.
+    # Derived-type namelists (e.g. the AES physics ``aes_*_nml``) are echoed
+    # by ICON as an anonymous array of the member values in declaration
+    # order; for these, ``path`` leads to that array and ``unnamed_index``
+    # is the 0-based member position within one record (i.e. one domain),
+    # while ``name`` only serves as documentation.
+    unnamed_index: int | None = None
     converter: typing.Callable[[typing.Any], typing.Any] | None = None
 
     def convert(
@@ -68,7 +75,11 @@ class IconOption:
             data = icon_config
             for subsection in self.path:
                 data = data[subsection]
-            raw_value = data[self.name]
+            if self.unnamed_index is not None:
+                # 'data' is the positional record of a derived-type namelist
+                raw_value = data[self.unnamed_index]
+            else:
+                raw_value = data[self.name]
             de_listified = (
                 fortran_config.list_to_value(raw_value) if self.list_to_value else raw_value
             )

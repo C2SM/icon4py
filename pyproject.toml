@@ -95,6 +95,7 @@ dependencies = [
   "icon4py-atmosphere-microphysics~=0.3.0",
   "icon4py-atmosphere-muphys~=0.3.0",
   "icon4py-atmosphere-physics-driver~=0.3.0",
+  "icon4py-atmosphere-tmx~=0.3.0",
   "icon4py-common~=0.3.0",
   "icon4py-standalone_driver~=0.3.0"
 ]
@@ -163,6 +164,8 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/state.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/component.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/data.py',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/src',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
@@ -196,6 +199,7 @@ $MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/physics_driver/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/tmx/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
 $MYPY_CONFIG_FILE_DIR/model/standalone_driver/src:
 $MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests:
@@ -276,6 +280,7 @@ pythonpath = [
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/atmosphere/subgrid_scale_physics/physics_driver",
+  "model/atmosphere/subgrid_scale_physics/tmx",
   "model/common",
   "model/standalone_driver",
   "model/testing",
@@ -425,6 +430,7 @@ icon4py-atmosphere-physics-driver = {workspace = true}
 # dace = {index = "gridtools"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
+icon4py-atmosphere-tmx = {workspace = true}
 icon4py-atmosphere-tracer_advection = {workspace = true}
 icon4py-bindings = {workspace = true}
 icon4py-common = {workspace = true}
@@ -441,6 +447,7 @@ members = [
   "model/atmosphere/subgrid_scale_physics/microphysics",
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/atmosphere/subgrid_scale_physics/physics_driver",
+  "model/atmosphere/subgrid_scale_physics/tmx",
   "model/common",
   "model/standalone_driver",
   "model/testing",

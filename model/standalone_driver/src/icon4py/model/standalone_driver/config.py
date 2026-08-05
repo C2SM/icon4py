@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx as tmx_module
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
     initial_condition,
@@ -326,6 +327,7 @@ class ExperimentConfig:
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     muphys: muphys_config.MuphysConfig | None = None
+    tmx: tmx_module.TmxConfig | None = None
 
     def __post_init__(self) -> None:
         # The file-based initial condition needs the clock of the driver to know which

@@ -29,6 +29,7 @@ dependencies = [
   "icon4py-atmosphere-diffusion~=0.3.0",
   "icon4py-atmosphere-physics-driver~=0.3.0",
   "icon4py-atmosphere-muphys~=0.3.0",
+  "icon4py-atmosphere-tmx~=0.3.0",
   "icon4py-common[io]~=0.3.0",
   # external dependencies
   "typer>=0.20.0",

@@ -1,0 +1,73 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
+import numpy as np
+import pytest
+
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_km_to_edges import (
+    interpolate_km_to_edges,
+)
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.stencil_tests import StencilTest
+
+
+def interpolate_km_to_edges_numpy(
+    km_ic: np.ndarray, *, c_lin_e: np.ndarray, e2c: np.ndarray, km_min: float
+) -> np.ndarray:
+    return np.maximum(km_min, np.sum(km_ic[e2c] * c_lin_e[:, :, np.newaxis], axis=1))
+
+
+@pytest.mark.skip_value_error
+class TestInterpolateKmToEdges(StencilTest):
+    PROGRAM = interpolate_km_to_edges
+    OUTPUTS = ("km_ie",)
+
+    @staticmethod
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
+        km_ic: np.ndarray,
+        c_lin_e: np.ndarray,
+        km_min: float,
+        **kwargs,
+    ) -> dict:
+        km_ie = interpolate_km_to_edges_numpy(
+            km_ic,
+            c_lin_e=c_lin_e,
+            e2c=connectivities[dims.E2CDim],
+            km_min=km_min,
+        )
+        return dict(km_ie=km_ie)
+
+    @pytest.fixture
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        km_ic = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=wpfloat, extend={dims.KDim: 1}
+        )
+        c_lin_e = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, low=0.0, high=1.0, dtype=wpfloat
+        )
+        km_ie = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
+        )
+
+        return dict(
+            km_ic=km_ic,
+            c_lin_e=c_lin_e,
+            km_ie=km_ie,
+            # large enough that the floor is active for part of the field
+            km_min=wpfloat(0.5),
+            horizontal_start=0,
+            horizontal_end=gtx.int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=gtx.int32(grid.num_levels + 1),
+        )
