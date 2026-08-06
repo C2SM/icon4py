@@ -32,19 +32,23 @@ def get_dace_options(
     optimization_args = backend_descriptor.get("optimization_args", {})
     optimization_hooks = optimization_args.get("optimization_hooks", {})
 
-    backend_descriptor["external_workspace"] = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(
-        device
-    )
-    optimization_args["transient_memory_mode"] = gtx_transformations.TransientMemoryMode.EXTERNAL
-    if device == model_backends.DeviceType.ROCM:
-        # The workspace memory allows to avoid the overhead of runtime allocations,
-        # which are expensive in the AMD runtime. We run on the default stream because
-        # the HIP code generator in DaCe does not support multi streams yet.
-        backend_descriptor["max_concurrent_gpu_streams"] = 0
-    else:
-        # For CUDA, the workspace memory allows to exploit multi-stream execution,
-        # while not worrying about in-order memory allocation on the stream pool.
-        backend_descriptor["max_concurrent_gpu_streams"] = 8
+    if device != gtx.DeviceType.CPU:
+        # Enable workspace memory for all non-CPU backends, see below.
+        backend_descriptor["external_workspace"] = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(
+            device
+        )
+        optimization_args["transient_memory_mode"] = (
+            gtx_transformations.TransientMemoryMode.EXTERNAL
+        )
+        if device == model_backends.DeviceType.ROCM:
+            # The workspace memory allows to avoid the overhead of runtime allocations,
+            # which are expensive in the AMD runtime. We run on the default stream because
+            # the HIP code generator in DaCe does not support multi streams yet.
+            backend_descriptor["max_concurrent_gpu_streams"] = 0
+        else:
+            # For CUDA, the workspace memory allows to exploit multi-stream execution,
+            # while not worrying about in-order memory allocation on the stream pool.
+            backend_descriptor["max_concurrent_gpu_streams"] = 8
 
     if program_name in [
         "vertically_implicit_solver_at_corrector_step",
