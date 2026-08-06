@@ -1166,7 +1166,6 @@ dependencies = [
   {name = "fparser"},
   {name = "ml-dtypes"},
   {name = "networkx"},
-  {name = "ninja"},
   {name = "numpy"},
   {name = "packaging"},
   {name = "ply"},
@@ -1176,7 +1175,7 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/edopao/dace?branch=phimuell__new-gpu-codegen-dev#384bc5ccff38551785f73a28ec08689535a4ee03"}
+source = {git = "https://github.com/edopao/dace?branch=phimuell__new-gpu-codegen-dev#8dc41e5789287ade56cb2c5dcf6cb254ea52470a"}
 version = "2.3.36"
 
 [[package]]
@@ -1646,8 +1645,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/GridTools/gt4py?branch=edopao%2Fdace_new_gpu_codegen#5d1bf2f9475ebbac752e558c668062952462472c"}
-version = "1.2.0.post152+5d1bf2f9"
+source = {git = "https://github.com/GridTools/gt4py?branch=edopao%2Fdace_new_gpu_codegen#c9add942a56bf14f5756dcfb74966aad5952ffed"}
+version = "1.2.0.post154+c9add942"
 
 [package.optional-dependencies]
 cuda12 = [
