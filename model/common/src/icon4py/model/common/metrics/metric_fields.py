@@ -590,9 +590,7 @@ def compute_nflat_gradp(
     e_owner_mask: data_alloc.NDArray,
     lateral_boundary_level: int,
     nlev: int,
-    min_reduction: Callable[
-        [data_alloc.NDArray], data_alloc.ScalarT
-    ] = decomposition.single_node_reductions.min,
+    min_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
 ) -> int:
     """
     compute the nflat_gradp value as the minimum value of the flat_idx_max array.
