@@ -331,9 +331,9 @@ def compute_perturbed_quantities_and_interpolation(
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
                 dims.KDim: (model_top, surface_level - 1),
             },
-            # The `maximum(1, ...)` mirrors `MAX(2, nflatlev)` in ICON: computing the top half
-            # level would require the upward extrapolation that icon4py does not implement,
-            # see https://github.com/C2SM/icon4py/issues/1418
+            # The `maximum(1, ...)` mirrors `MAX(2, nflatlev)` in ICON.
+            # TODO(havogt): computing the top half level requires an upward extrapolation that
+            # icon4py does not implement, see https://github.com/C2SM/icon4py/issues/1418
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
                 dims.KDim: (maximum(1, nflatlev), surface_level - 1),
