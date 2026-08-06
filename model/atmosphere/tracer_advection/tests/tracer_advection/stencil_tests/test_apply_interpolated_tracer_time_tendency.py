@@ -26,7 +26,6 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         p_tracer_now: np.ndarray,
         p_grf_tend_tracer: np.ndarray,

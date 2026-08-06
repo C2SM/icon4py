@@ -18,6 +18,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     nonhydro_states,
     prognostic_state as prognostics,
+    tracer_states,
 )
 from icon4py.model.standalone_driver import (
     config as driver_config,
@@ -124,6 +125,10 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     single_rank_prognostic = prognostics.initialize_prognostic_state(
         grid=single_rank_icon4py_driver.grid,
         allocator=allocator,
+    )
+    single_rank_tracer = tracer_states.initialize_tracer_state(
+        grid=single_rank_icon4py_driver.grid,
+        allocator=allocator,
         tracer_config=single_rank_icon4py_driver.config.tracer_config,
     )
     single_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
@@ -135,6 +140,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         grid=single_rank_icon4py_driver.grid,
         static_fields=single_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=single_rank_prognostic,
+        tracer_state_now=single_rank_tracer,
         backend=single_rank_icon4py_driver.backend,
         exchange=single_rank_icon4py_driver.exchange,
         global_reductions=single_rank_icon4py_driver.global_reductions,
@@ -150,6 +156,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         exchange=single_rank_icon4py_driver.exchange,
         static_fields=single_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=single_rank_prognostic,
+        tracer_state_now=single_rank_tracer,
         diagnostic_state=single_rank_diagnostic,
         experiment_config=single_rank_icon4py_driver.config,
         solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
@@ -176,6 +183,10 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     multi_rank_prognostic = prognostics.initialize_prognostic_state(
         grid=multi_rank_icon4py_driver.grid,
         allocator=allocator,
+    )
+    multi_rank_tracer = tracer_states.initialize_tracer_state(
+        grid=multi_rank_icon4py_driver.grid,
+        allocator=allocator,
         tracer_config=multi_rank_icon4py_driver.config.tracer_config,
     )
     multi_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
@@ -187,6 +198,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         grid=multi_rank_icon4py_driver.grid,
         static_fields=multi_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=multi_rank_prognostic,
+        tracer_state_now=multi_rank_tracer,
         backend=multi_rank_icon4py_driver.backend,
         exchange=multi_rank_icon4py_driver.exchange,
         global_reductions=multi_rank_icon4py_driver.global_reductions,
@@ -202,6 +214,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         exchange=multi_rank_icon4py_driver.exchange,
         static_fields=multi_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=multi_rank_prognostic,
+        tracer_state_now=multi_rank_tracer,
         diagnostic_state=multi_rank_diagnostic,
         experiment_config=multi_rank_icon4py_driver.config,
         solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
@@ -213,12 +226,12 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     ] + [(name, single_rank_ds.diagnostic, multi_rank_ds.diagnostic) for name in ("u", "v")]
 
     # Moist experiments (e.g. APE) initialize the water-vapour tracer
-    if single_rank_ds.prognostics.current.tracer.qv is not None:
+    if single_rank_ds.tracers.current.qv is not None:
         fields_to_check.append(
             (
                 "qv",
-                single_rank_ds.prognostics.current.tracer,
-                multi_rank_ds.prognostics.current.tracer,
+                single_rank_ds.tracers.current,
+                multi_rank_ds.tracers.current,
             )
         )
 

@@ -48,6 +48,7 @@ _GRAUPEL_TEST_CASES = [
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     ("experiment", "enable_dace_hooks"),
     _GRAUPEL_TEST_CASES,
