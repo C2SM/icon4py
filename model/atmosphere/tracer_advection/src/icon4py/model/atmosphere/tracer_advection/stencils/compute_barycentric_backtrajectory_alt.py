@@ -10,7 +10,6 @@ import gt4py.next as gtx
 from gt4py.next import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2CDim
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -32,27 +31,29 @@ def _compute_barycentric_backtrajectory_alt(
     lvn_pos = p_vn >= 0.0
 
     z_ntdistv_bary_1 = -(
-        p_vn * p_dthalf + where(lvn_pos, pos_on_tplane_e_1[E2CDim(0)], pos_on_tplane_e_1[E2CDim(1)])
+        p_vn * p_dthalf
+        + where(lvn_pos, pos_on_tplane_e_1[dims.E2CDim(0)], pos_on_tplane_e_1[dims.E2CDim(1)])
     )
 
     z_ntdistv_bary_2 = -(
-        p_vt * p_dthalf + where(lvn_pos, pos_on_tplane_e_2[E2CDim(0)], pos_on_tplane_e_2[E2CDim(1)])
+        p_vt * p_dthalf
+        + where(lvn_pos, pos_on_tplane_e_2[dims.E2CDim(0)], pos_on_tplane_e_2[dims.E2CDim(1)])
     )
 
     p_distv_bary_1 = where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_1[E2CDim(0)]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[E2CDim(0)],
-        z_ntdistv_bary_1 * primal_normal_cell_1[E2CDim(1)]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[E2CDim(1)],
+        z_ntdistv_bary_1 * primal_normal_cell_1[dims.E2CDim(0)]
+        + z_ntdistv_bary_2 * dual_normal_cell_1[dims.E2CDim(0)],
+        z_ntdistv_bary_1 * primal_normal_cell_1[dims.E2CDim(1)]
+        + z_ntdistv_bary_2 * dual_normal_cell_1[dims.E2CDim(1)],
     )
 
     p_distv_bary_2 = where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_2[E2CDim(0)]
-        + z_ntdistv_bary_2 * dual_normal_cell_2[E2CDim(0)],
-        z_ntdistv_bary_1 * primal_normal_cell_2[E2CDim(1)]
-        + z_ntdistv_bary_2 * dual_normal_cell_2[E2CDim(1)],
+        z_ntdistv_bary_1 * primal_normal_cell_2[dims.E2CDim(0)]
+        + z_ntdistv_bary_2 * dual_normal_cell_2[dims.E2CDim(0)],
+        z_ntdistv_bary_1 * primal_normal_cell_2[dims.E2CDim(1)]
+        + z_ntdistv_bary_2 * dual_normal_cell_2[dims.E2CDim(1)],
     )
 
     return (astype(p_distv_bary_1, vpfloat), astype(p_distv_bary_2, vpfloat))

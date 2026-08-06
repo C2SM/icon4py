@@ -8,7 +8,6 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -30,7 +29,7 @@ def _interpolate_cell_field_to_half_levels_vp(
     """
     interpolation_to_half_levels_vp = wgtfac_c * interpolant + (
         vpfloat("1.0") - wgtfac_c
-    ) * interpolant(KDim - 1)
+    ) * interpolant(dims.KDim - 1)
     return interpolation_to_half_levels_vp
 
 
