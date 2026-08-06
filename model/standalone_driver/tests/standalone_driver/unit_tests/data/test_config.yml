@@ -14,7 +14,6 @@ metrics:
 interpolation:
   divergence_averaging_central_cell_weight: 0.5
   max_nudging_coefficient: 0.375
-  _nudge_max_coeff:
   nudge_efold_width: 2.0
   nudge_zone_width: 10
   rbf_kernel_cell: gaussian

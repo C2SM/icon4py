@@ -289,16 +289,6 @@ class NonHydrostaticConfig:
         ),
     ] = 0.25
 
-    max_nudging_coefficient: typing.Annotated[
-        float,
-        common_conf_opt.ConfigOption(
-            description="Maximum relaxation coefficient for lateral boundary nudging",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="nudge_max_coeff", path=("interpol_nml",), read_from_icon=False
-            ),
-        ),
-    ] = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
-
     # TODO(muellch): The four divdamp factors and heights should be in one or two dataclasses.
     fourth_order_divdamp_factor: typing.Annotated[
         float,
@@ -487,6 +477,7 @@ class SolveNonhydro:
         | model_backends.BackendDescriptor
         | None,
         exchange: decomposition.ExchangeRuntime,
+        max_nudging_coefficient: float,
     ):
         self._exchange = exchange
 
@@ -612,7 +603,7 @@ class SolveNonhydro:
                 "limited_area": self._grid.limited_area,
                 "divdamp_order": gtx.int32(self._config.divdamp_order),
                 "mean_cell_area": self._cell_params.mean_cell_area,
-                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "max_nudging_coefficient": max_nudging_coefficient,
                 "dbl_eps": constants.DBL_EPS,
             },
             variants={
