@@ -36,7 +36,6 @@ lint = [
   'validate-pyproject-schema-store[all]>=2025.06.13'
 ]
 scripts = [
-  "ipython>=8.30",
   "lazy-loader>=0.5",
   "numpy>=1.23.3",
   "packaging>=24.0",
