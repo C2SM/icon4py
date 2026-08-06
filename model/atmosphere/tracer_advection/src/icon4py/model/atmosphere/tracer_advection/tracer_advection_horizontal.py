@@ -502,7 +502,6 @@ class SemiLagrangian(FiniteVolume):
         self._interpolation_state = interpolation_state
         self._metric_state = metric_state
         self._edge_params = edge_params
-        self._cell_params = cell_params
         self._backend = backend
 
         # cell indices

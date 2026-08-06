@@ -20,9 +20,15 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
+    component as muphys_component,
+    state as muphys_state,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
     constants,
+    dimension as dims,
     field_type_aliases as fa,
     model_backends,
     time,
@@ -68,6 +74,7 @@ class Granules:
     diffusion: diffusion.Diffusion | None = None
     solve_nonhydro: solve_nh.SolveNonhydro | None = None
     tracer_advection: tracer_advection.Advection | None = None
+    physics: physics_driver.PhysicsDriver | None = None
 
 
 def validate_granule_state_consistency(
@@ -78,7 +85,7 @@ def validate_granule_state_consistency(
     """
     Validate that enabled granules have their required states allocated.
     The graupel granule is currently not checked as it will be moved to the
-    physics interface.
+    physics driver.
 
     Raises:
         ValueError: if a granule is enabled but a state it requires is None.
@@ -217,6 +224,7 @@ def initialize_granules(
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
     static_field_factories: static_fields.StaticFieldFactories,
+    model_time_variables: driver_states.ModelTimeVariables,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
@@ -403,6 +411,9 @@ def initialize_granules(
 
     tracer_advection_granule: tracer_advection.Advection | None = None
     if config.tracer_advection is not None:
+        deepatmo_shallow_factor = data_alloc.constant_field(
+            grid, 1.0, dims.KDim, allocator=model_backends.get_allocator(backend)
+        )
         tracer_advection_granule = tracer_advection.convert_config_to_advection(
             grid=grid,
             backend=backend,
@@ -428,9 +439,16 @@ def initialize_granules(
                 )[:, 1, :],
             ),
             metric_state=tracer_advection_states.AdvectionMetricState(
-                deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
-                deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
-                deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
+                # Shallow atmosphere: the deep-atmosphere modification factors are 1, as
+                # in ICON with 'ldeepatmo = .FALSE.' (mo_nonhydro_state.f90 initialises
+                # them to 1 and only mo_vertical_grid.f90 overwrites them, guarded by
+                # 'ldeepatmo'). Using the factory's deep-atmosphere values here would be
+                # inconsistent with the dycore, which has no deep-atmosphere mode, and
+                # with the airmass (rho * ddqz_z_full * deepatmo_vol) that tracer
+                # advection divides by.
+                deepatmo_divh=deepatmo_shallow_factor,
+                deepatmo_divzl=deepatmo_shallow_factor,
+                deepatmo_divzu=deepatmo_shallow_factor,
                 ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
             ),
             edge_params=edge_geometry,
@@ -438,10 +456,32 @@ def initialize_granules(
             exchange=exchange,
         )
 
+    physics_granule: physics_driver.PhysicsDriver | None = None
+    if config.muphys is not None:
+        muphys_process = physics_driver.PhysicsProcess(
+            name="muphys",
+            component=muphys_component.MuphysComponent(
+                grid=grid,
+                dtime=config.driver.dtime,
+                qnc=config.muphys.qnc,
+                backend=backend,
+                scheme=config.muphys.scheme,
+            ),
+            state=muphys_state.State(grid=grid, metrics=metrics_field_source, backend=backend),
+            time_control=physics_driver.ProcessTimeControl(
+                interval=config.driver.dtime,
+                start_date=config.driver.start_of_simulation,
+                end_date=model_time_variables.simulation_end_datetime,
+                enable_process=True,
+            ),
+        )
+        physics_granule = physics_driver.PhysicsDriver([muphys_process])
+
     return Granules(
         solve_nonhydro=solve_nonhydro_granule,
         diffusion=diffusion_granule,
         tracer_advection=tracer_advection_granule,
+        physics=physics_granule,
     )
 
 

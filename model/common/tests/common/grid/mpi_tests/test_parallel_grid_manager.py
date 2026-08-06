@@ -91,9 +91,6 @@ def _get_neighbor_tables(grid: base.Grid) -> dict:
 # another, so we declare them here for xfailing.
 embedded_broken_fields = {
     metrics_attributes.DDQZ_Z_HALF,
-    metrics_attributes.DEEPATMO_DIVH,
-    metrics_attributes.DEEPATMO_DIVZL,
-    metrics_attributes.DEEPATMO_DIVZU,
     metrics_attributes.EXNER_EXFAC,
     metrics_attributes.MAXHGTD_AVG,
     metrics_attributes.MAXSLP_AVG,
@@ -198,6 +195,7 @@ def _compare_geometry_fields_single_multi_rank(
     field = multi_rank_geometry.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
+    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-15, rtol=0.0)
     parallel_helpers.check_local_global_field(
         decomposition_info=multi_rank_gm.decomposition_info,
         process_props=process_props,
@@ -205,7 +203,8 @@ def _compare_geometry_fields_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=1e-15,
+        atol=atol,
+        rtol=rtol,
     )
 
     _log.info(f"rank = {process_props.rank} - DONE")
@@ -351,6 +350,15 @@ def _compare_interpolation_fields_single_multi_rank(
     field = multi_rank_interpolation.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
+    atol, rtol = test_utils.get_mpi_comparison_tolerance(
+        backend,
+        atol=3e-9
+        if attrs_name.startswith("rbf")
+        else 1e-10
+        if attrs_name.startswith("pos_on_tplane")
+        else 1e-15,
+        rtol=0.0,
+    )
     parallel_helpers.check_local_global_field(
         decomposition_info=multi_rank_gm.decomposition_info,
         process_props=process_props,
@@ -358,11 +366,8 @@ def _compare_interpolation_fields_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=3e-9
-        if attrs_name.startswith("rbf")
-        else 1e-10
-        if attrs_name.startswith("pos_on_tplane")
-        else 1e-15,
+        atol=atol,
+        rtol=rtol,
     )
 
     _log.info(f"rank = {process_props.rank} - DONE")
@@ -559,6 +564,8 @@ def _compare_metrics_fields_single_multi_rank(
             atol = 2e-13
         else:
             atol = 0.0
+
+        atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-15, rtol=0.0)
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_gm.decomposition_info,
             process_props=process_props,
@@ -567,6 +574,7 @@ def _compare_metrics_fields_single_multi_rank(
             local_field=field.asnumpy(),
             check_halos=True,
             atol=atol,
+            rtol=rtol,
         )
 
     _log.info(f"rank = {process_props.rank} - DONE")
@@ -587,9 +595,6 @@ def _compare_metrics_fields_single_multi_rank(
         metrics_attributes.DDXN_Z_HALF_E,
         metrics_attributes.DDXT_Z_FULL,
         metrics_attributes.DDXT_Z_HALF_E,
-        metrics_attributes.DEEPATMO_DIVH,
-        metrics_attributes.DEEPATMO_DIVZL,
-        metrics_attributes.DEEPATMO_DIVZU,
         metrics_attributes.D_EXNER_DZ_REF_IC,
         metrics_attributes.EXNER_REF_MC,
         metrics_attributes.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,

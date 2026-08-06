@@ -28,7 +28,6 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     decomposition,
     decomposition_info,
-    definitions,
     download_ser_data,
     experiment,
     experiment_description,
@@ -38,6 +37,7 @@ from icon4py.model.testing.fixtures.datatest import (
     linit,
     metrics_savepoint,
     process_props,
+    test_defs,
     topography_savepoint,
 )
 
@@ -105,7 +105,7 @@ def geometry_from_savepoint(
 @pytest.fixture
 def interpolation_factory_from_savepoint(
     *,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend,
     decomposition_info: decomposition.DecompositionInfo,
@@ -129,7 +129,7 @@ def interpolation_factory_from_savepoint(
 @pytest.fixture
 def metrics_factory_from_savepoint(
     *,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
