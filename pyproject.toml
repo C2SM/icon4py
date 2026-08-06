@@ -147,8 +147,8 @@ version = "{current_version}"
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
 exclude = '''(?x)^(
-  .*/serialbox\.py$|          # serialbox C-extension module without type stubs
-  .*/docs/.*|                 # documentation files
+  ^model/testing/src/icon4py/model/testing/serialbox\.py$|  # serialbox C-extension module without type stubs
+  .*/docs/.*|                                                 # documentation files (depth-matched; docs/ may appear under multiple roots)
   # Sibling packages in the same namespace are already fully annotated; these
   # remaining directories are outside the model namespace packages and are
   # excluded from this type-checking rollout.
