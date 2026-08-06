@@ -10,22 +10,15 @@
 
 """Inspect serialized ICON savepoint archives.
 
-Auto-discovers every savepoint in an archive and summarizes the fields it holds,
-so that reference data can be checked for being actually useful (a field that is
-an all-zero array validates nothing) before it is relied on in a datatest.
+Summarizes the fields a savepoint holds, so that reference data can be checked for
+carrying information at all -- an all-zero array validates nothing -- before a datatest
+relies on it. Select the archive by experiment (``-e``, resolved through
+``icon4py.model.testing.definitions``) or by a path to a ``ser_data`` directory (``-p``).
 
-The archive is selected either by experiment (resolved through
-``icon4py.model.testing.definitions``, with an optional version override) or by
-a direct path to a ``ser_data`` directory.
-
-Examples:
     ./scripts/run inspect-savepoints savepoints -e exclaim_ape_aesPhys
     ./scripts/run inspect-savepoints stats -e exclaim_nh_weisman_klemp -v 7 -f tracers
     ./scripts/run inspect-savepoints diff -e exclaim_ape_aesPhys -n aes-graupel-exit -f tracers
     ./scripts/run inspect-savepoints shell -e exclaim_ape_aesPhys
-
-The ``shell`` command drops into an interactive interpreter with the archive
-bound to ``e``, for analyses this CLI does not cover.
 """
 
 from __future__ import annotations
@@ -66,17 +59,17 @@ def resolve_experiment(name: str) -> test_defs.ExperimentDescription:
     """Resolve an experiment by its ``Experiments`` attribute name or its ICON name."""
     from icon4py.model.testing import definitions  # noqa: PLC0415 [import-outside-top-level]
 
-    known = {
-        attribute: value
+    known = [
+        (attribute, value)
         for attribute, value in vars(definitions.Experiments).items()
         if isinstance(value, definitions.ExperimentDescription)
-    }
-    for attribute, description in known.items():
+    ]
+    for attribute, description in known:
         if name.lower() in (attribute.lower(), description.name.lower()):
             return description
     raise typer.BadParameter(
         f"Unknown experiment '{name}'. Known experiments: "
-        f"{', '.join(sorted(description.name for description in known.values()))}."
+        f"{', '.join(sorted(description.name for _, description in known))}."
     )
 
 
@@ -302,25 +295,16 @@ class ArchiveExplorer:
         self, values: np.ndarray, reference: SavepointRef, field: str
     ) -> list[FieldStats]:
         labels = component_labels(field, values.shape[-1]) if values.ndim > 1 else None
-        if labels is None:
-            return [
-                summarize(
-                    values,
-                    savepoint=reference.name,
-                    date=reference.date,
-                    field=field,
-                    component=None,
-                )
-            ]
+        species = (
+            [(values, None)]
+            if labels is None
+            else [(values[..., index], label) for index, label in enumerate(labels)]
+        )
         return [
             summarize(
-                values[..., index],
-                savepoint=reference.name,
-                date=reference.date,
-                field=field,
-                component=label,
+                slice_, savepoint=reference.name, date=reference.date, field=field, component=label
             )
-            for index, label in enumerate(labels)
+            for slice_, label in species
         ]
 
 

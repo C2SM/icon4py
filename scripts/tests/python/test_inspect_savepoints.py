@@ -11,7 +11,8 @@
 from __future__ import annotations
 
 import numpy as np
-from inspect_savepoints import summarize
+import pytest
+from inspect_savepoints import ArchiveExplorer, SavepointRef, summarize
 
 
 def _summarize(values: np.ndarray):
@@ -38,3 +39,44 @@ def test_summarize_excludes_non_finite_values_from_the_range():
 
     assert (stats.min, stats.max) == (1.0, 3.0)
     assert stats.n_nonfinite == 2
+
+
+class _FakeSerializer:
+    """Returns a prepared array per (savepoint, field), like serialbox does."""
+
+    def __init__(self, arrays: dict[tuple[int, str], np.ndarray]) -> None:
+        self._arrays = arrays
+
+    def read(self, field: str, savepoint: int) -> np.ndarray:
+        return self._arrays[(savepoint, field)]
+
+
+def _explorer(arrays: dict[tuple[int, str], np.ndarray]) -> ArchiveExplorer:
+    # '__init__' opens a real archive; 'diff_stats' only needs these two attributes.
+    explorer = object.__new__(ArchiveExplorer)
+    explorer._serializer = _FakeSerializer(arrays)
+    explorer._raw = (0, 1)
+    return explorer
+
+
+def test_diff_stats_summarizes_the_change_between_two_savepoints():
+    before = SavepointRef(0, "diffusion-init", "2001-01-01T00:00:04.000")
+    after = SavepointRef(1, "diffusion-exit", "2001-01-01T00:00:04.000")
+    explorer = _explorer({(0, "theta_v"): np.zeros((2, 2)), (1, "theta_v"): np.full((2, 2), 0.5)})
+
+    [stats] = explorer.diff_stats(before, after, "theta_v")
+
+    assert (stats.min, stats.max, stats.mean) == (0.5, 0.5, 0.5)
+    # the two endpoints are named, so the row says what was compared
+    assert stats.savepoint == "diffusion-init -> diffusion-exit"
+    # equal endpoints collapse rather than repeating themselves
+    assert stats.date == "2001-01-01T00:00:04.000"
+
+
+def test_diff_stats_rejects_savepoints_of_different_shape():
+    before = SavepointRef(0, "a", None)
+    after = SavepointRef(1, "b", None)
+    explorer = _explorer({(0, "vn"): np.zeros((2, 2)), (1, "vn"): np.zeros((3, 3))})
+
+    with pytest.raises(ValueError, match="Shape mismatch"):
+        explorer.diff_stats(before, after, "vn")
