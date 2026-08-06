@@ -720,7 +720,7 @@ def initialize_driver(
 
     log.info("initializing the topography")
     cell_topography = topography.create(
-        config=config.topography,
+        config=config.boundaries.topography,
         grid_manager=grid_manager,
         backend=backend,
         exchange=exchange,
@@ -831,7 +831,7 @@ def run_driver(
         else None
     )
     initial_condition.create(
-        config=icon4py_driver.config.initial_condition,
+        config=icon4py_driver.config.boundaries.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,

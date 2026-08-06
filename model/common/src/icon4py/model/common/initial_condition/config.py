@@ -119,7 +119,7 @@ class InitialConditionConfig:
 
 def create(
     *,
-    config: InitialConditionConfig,
+    config: IC_CONFIG,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
@@ -137,10 +137,10 @@ def create(
     state is given: diagnosed from the initial state, or, when restarting, read from the
     serialized data together with the advective tendencies of the previous time step.
     """
-    match config.config:
+    match config:
         case jw_ic.JablonowskiWilliamsonConfig():
             jw_ic.jablonowski_williamson(
-                config=config.config,
+                config=config,
                 vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
@@ -152,7 +152,7 @@ def create(
             )
         case gauss_ic.Gauss3DConfig():
             gauss_ic.gauss3d(
-                config=config.config,
+                config=config,
                 vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
@@ -162,7 +162,7 @@ def create(
             )
         case wk_ic.WeismanKlempConfig():
             wk_ic.weisman_klemp(
-                config=config.config,
+                config=config,
                 vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
@@ -172,13 +172,13 @@ def create(
                 exchange=exchange,
             )
         case from_file_ic.FromFileConfig():
-            if config.config.is_restart:
+            if config.is_restart:
                 if solve_nonhydro_diagnostic_state is None:
                     raise ValueError(
                         "restarting needs the diagnostic state of the dycore to initialize."
                     )
                 from_file_ic.read_restart_from_file(
-                    config=config.config,
+                    config=config,
                     grid=grid,
                     prognostic_state_now=prognostic_state_now,
                     solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
@@ -187,7 +187,7 @@ def create(
                 )
                 return
             from_file_ic.read_initial_condition_from_file(
-                config=config.config,
+                config=config,
                 grid=grid,
                 prognostic_state_now=prognostic_state_now,
                 tracer_state_now=tracer_state_now,
