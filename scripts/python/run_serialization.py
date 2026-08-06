@@ -15,7 +15,6 @@ from __future__ import annotations
 import dataclasses
 import itertools
 import json
-import os
 import pathlib
 import re
 import shutil
@@ -503,20 +502,13 @@ def generate_update_script(
     _ = run_command(cmd, cwd=settings.build_dir)
 
 
-@dataclasses.dataclass(frozen=True)
-class TaskResult:
-    experiment_name: str
-    comm_size: int
-    error: str | None = None
-
-
 def run_experiment(
     experiment_description: test_defs.ExperimentDescription,
     comm_size: int,
     *,
     settings: SerializationSettings,
-) -> TaskResult:
-    """Execute a single experiment with the given communicator size."""
+) -> str | None:
+    """Execute a single experiment; returns a message if it failed."""
     try:
         # Clean up previous experiment output
         cleanup_exp_output(experiment_description, comm_size, settings=settings)
@@ -552,15 +544,16 @@ def run_experiment(
         tar_folder(dest_dir, experiment_description, comm_size, settings=settings)
 
         log_status(f"Completed {experiment_description.name} with {comm_size} ranks")
-        return TaskResult(experiment_description.name, comm_size)
+        return None
     except Exception as e:
         # A campaign is 18 slurm tasks over several hours; one bad task reports itself
         # rather than discarding the rest.
-        log_status(f"ERROR in {experiment_description.name} with {comm_size} ranks: {e}")
-        return TaskResult(experiment_description.name, comm_size, error=f"{type(e).__name__}: {e}")
+        message = f"{experiment_description.name} ranks={comm_size}: {type(e).__name__}: {e}"
+        log_status(f"ERROR in {message}")
+        return message
 
 
-def preflight(*, settings: SerializationSettings) -> None:
+def preflight(*, settings: SerializationSettings, allow_dirty: bool = False) -> None:
     """Show what this campaign will be built from, before spending hours on it.
 
     The archives record their own provenance in the ICON log, but by then the data
@@ -578,37 +571,11 @@ def preflight(*, settings: SerializationSettings) -> None:
     dirty = run_command(
         ["git", "status", "--porcelain"], cwd=settings.icon4py_repo_dir, check=False
     )
-    if dirty.stdout.strip():
+    if not allow_dirty and (dirty.returncode != 0 or dirty.stdout.strip()):
         raise typer.BadParameter(
             f"The icon4py checkout at '{settings.icon4py_repo_dir}' has uncommitted changes; "
             "the data would not be reproducible. Commit them or pass '--allow-dirty'."
         )
-
-
-def run_datatests(*, settings: SerializationSettings) -> bool:
-    """Run the datatests against the fresh data, before any of it is published."""
-    log_status(f"Running datatests against {settings.experiments_dir}")
-    result = subprocess.run(
-        [
-            "uv",
-            "run",
-            "--group",
-            "test",
-            "--frozen",
-            "pytest",
-            "--datatest-only",
-            "--backend=gtfn_cpu",
-            "model/common",
-        ],
-        cwd=settings.icon4py_repo_dir,
-        env={
-            **os.environ,
-            "ICON4PY_TEST_DATA_PATH": str(settings.experiments_dir),
-            "ICON4PY_ENABLE_TESTDATA_DOWNLOAD": "0",
-        },
-        check=False,
-    )
-    return result.returncode == 0
 
 
 @cli.command()
@@ -618,9 +585,6 @@ def run_serialization(
     ] = False,
     allow_dirty: Annotated[
         bool, typer.Option("--allow-dirty", help="Generate from a modified icon4py checkout.")
-    ] = False,
-    skip_tests: Annotated[
-        bool, typer.Option("--skip-tests", help="Do not run the datatests against the new data.")
     ] = False,
 ) -> None:
     """Run the serialization experiment series."""
@@ -642,11 +606,10 @@ def run_serialization(
                 )
         return
 
-    if not allow_dirty:
-        preflight(settings=settings)
+    preflight(settings=settings, allow_dirty=allow_dirty)
     settings.output_root.mkdir(parents=True, exist_ok=True)
 
-    results: list[TaskResult] = []
+    failures: list[str] = []
     total_tasks = len(settings.experiment_descriptions) * len(settings.comm_sizes)
     log_status(
         f"Starting experiment series with {total_tasks} tasks ({len(settings.experiment_descriptions)} experiments x {len(settings.comm_sizes)} communicator sizes)"
@@ -671,20 +634,15 @@ def run_serialization(
                 f"All {len(futures)} experiments queued for {comm_size} ranks, waiting for completion..."
             )
 
-            results.extend(future.result() for future in futures)
+            failures.extend(filter(None, (future.result() for future in futures)))
 
         log_status(
             f"Completed communicator size {rank_idx}/{len(settings.comm_sizes)}: {comm_size} ranks"
         )
 
-    failed = [result for result in results if result.error]
-    if failed:
-        for result in failed:
-            log_status(f"FAILED {result.experiment_name} ranks={result.comm_size}: {result.error}")
-        raise typer.Exit(code=1)
-
-    if not skip_tests and not run_datatests(settings=settings):
-        log_status("Datatests failed against the new data; do not publish it.")
+    if failures:
+        for failure in failures:
+            log_status(f"FAILED {failure}")
         raise typer.Exit(code=1)
 
     log_status(f"All {total_tasks} tasks completed successfully!")

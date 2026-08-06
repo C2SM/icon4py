@@ -6,17 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Which ICON build produced the serialized data a test session is using.
-
-ICON prints its 'git describe' at startup and the generation script copies that log
-into every archive, so the provenance of every archive ever published is already on
-disk. Reading it back turns 'these reference values disagree with the code' into
-'these reference values came from ICON <revision>', which is the difference between
-hours of archaeology and one 'git log'.
-
-Deliberately free of heavy imports: the pytest plugin that renders this is registered
-for every session in the repository, including ones with no serialized data at all.
-"""
+"""Which ICON build produced the serialized data a test session is using."""
 
 from __future__ import annotations
 
@@ -24,40 +14,32 @@ import pathlib
 import re
 
 
-_REVISION = re.compile(r"^ revision: (?P<revision>\S+)$", re.MULTILINE)
+_REVISION = re.compile(r"^ revision: (\S+)$")
 
-# Archive directory name -> ICON revision, for the session's terminal summary.
-_seen: dict[str, str] = {}
+# Archive directory name -> ICON revision, rendered in the terminal summary.
+seen: dict[str, str] = {}
 
 
 def read_icon_revision(archive_dir: pathlib.Path) -> str | None:
     """The 'git describe' of the ICON build that wrote an archive, if it says.
 
-    The full describe string is returned rather than the bare commit: it is a valid
-    git revision, so 'git log OLD..NEW' works on it directly, and its release lineage
-    distinguishes a two-commit bump from a jump to another ICON release.
+    The full describe string rather than the bare commit: it is a valid git revision,
+    so 'git log OLD..NEW' works on it directly.
     """
     for log in sorted(archive_dir.glob("LOG.*.o")):
-        match = _REVISION.search(log.read_text(errors="replace"))
-        if match:
-            return match["revision"]
+        with log.open(errors="replace") as lines:
+            for line in lines:
+                match = _REVISION.match(line.rstrip("\n"))
+                if match:
+                    return match[1]
     return None
 
 
 def record(archive_name: str, archive_dir: pathlib.Path) -> None:
     """Note the provenance of an archive this session uses. Never raises."""
-    if archive_name in _seen:
+    if archive_name in seen:
         return
     try:
-        _seen[archive_name] = read_icon_revision(archive_dir) or "unknown"
+        seen[archive_name] = read_icon_revision(archive_dir) or "unknown"
     except OSError:
-        _seen[archive_name] = "unknown"
-
-
-def seen() -> dict[str, str]:
-    return dict(_seen)
-
-
-def merge(recorded: dict[str, str]) -> None:
-    """Take in what another process saw, so that xdist workers reach the summary."""
-    _seen.update(recorded)
+        seen[archive_name] = "unknown"

@@ -244,25 +244,21 @@ def pytest_runtest_makereport(item, call):
 
 
 def _report_serialized_data_provenance(terminalreporter):
-    """List the ICON build behind each archive the session used.
-
-    Without this, a datatest failure says nothing about which Fortran build produced
-    the reference values it disagrees with.
-    """
-    seen = provenance.seen()
-    if not seen:
+    """Say which ICON build produced the reference values the session used."""
+    if not provenance.seen:
         return
     terminalreporter.ensure_newline()
     terminalreporter.line(" Serialized test data ", bold=True, blue=True)
-    for archive, revision in sorted(seen.items()):
+    for archive, revision in sorted(provenance.seen.items()):
         terminalreporter.line(f"  {archive:<44} {revision}")
 
 
+# 'optionalhook' because the archives are downloaded in the xdist workers while the
+# summary is rendered on the controller, but this plugin is loaded for every session
+# in the repository, including those without xdist installed.
+@pytest.hookimpl(optionalhook=True)
 def pytest_testnodedown(node, error):
-    """Collect what an xdist worker saw; the summary is rendered on the controller."""
-    recorded = getattr(node, "workeroutput", {}).get("icon4py_provenance")
-    if recorded:
-        provenance.merge(recorded)
+    provenance.seen.update(getattr(node, "workeroutput", {}).get("icon4py_provenance", {}))
 
 
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
@@ -432,4 +428,4 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     # Hand the provenance back to the controller when running under xdist.
     workeroutput = getattr(session.config, "workeroutput", None)
     if workeroutput is not None:
-        workeroutput["icon4py_provenance"] = provenance.seen()
+        workeroutput["icon4py_provenance"] = provenance.seen
