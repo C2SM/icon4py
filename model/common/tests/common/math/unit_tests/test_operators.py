@@ -22,6 +22,7 @@ from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
+@pytest.mark.embedded_remap_error
 class TestNabla2OnCell(StencilTest):
     PROGRAM = compute_nabla2_on_cell
     OUTPUTS = ("nabla2_psi_c",)
@@ -51,6 +52,7 @@ class TestNabla2OnCell(StencilTest):
         )
 
 
+@pytest.mark.embedded_remap_error
 class TestNabla2OnCellK(StencilTest):
     PROGRAM = compute_nabla2_on_cell_k
     OUTPUTS = ("nabla2_psi_c",)

@@ -42,6 +42,7 @@ def compute_avg_vn_and_graddiv_vn_and_vt_numpy(
     return z_vn_avg, z_graddiv_vn, vt
 
 
+@pytest.mark.embedded_remap_error
 class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
     PROGRAM = compute_avg_vn_and_graddiv_vn_and_vt
     OUTPUTS = ("z_vn_avg", "z_graddiv_vn", "vt")

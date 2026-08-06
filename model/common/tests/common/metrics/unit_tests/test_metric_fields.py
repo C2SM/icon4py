@@ -45,6 +45,7 @@ vertex_domain = horizontal.domain(dims.VertexDim)
 
 
 @pytest.mark.level("unit")
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_compute_ddq_z_half(
     icon_grid: base_grid.Grid,
@@ -367,6 +368,7 @@ def test_compute_wgtfac_e(
 
 
 @pytest.mark.level("unit")
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     metrics_savepoint: sb.MetricSavepoint,
