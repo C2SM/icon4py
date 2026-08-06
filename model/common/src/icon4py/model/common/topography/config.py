@@ -100,22 +100,22 @@ class TopographyConfig:
 
 def create(
     *,
-    config: TopographyConfig,
+    config: TOPO_CONFIG,
     grid_manager: gm.GridManager,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """Create topography array by dispatching on the type of ``config.config``."""
-    match config.config:
+    match config:
         case flat_topo.FlatTopographyConfig():
             return flat_topo.flat_topography(grid_manager=grid_manager)
         case jw_topo.JablonowskiWilliamsonConfig():
-            return jw_topo.jablonowski_williamson(config=config.config, grid_manager=grid_manager)
+            return jw_topo.jablonowski_williamson(config=config, grid_manager=grid_manager)
         case gausshill_topo.GaussianHillConfig():
-            return gausshill_topo.gaussian_hill(config=config.config, grid_manager=grid_manager)
+            return gausshill_topo.gaussian_hill(config=config, grid_manager=grid_manager)
         case from_file_topo.FromFileConfig():
             return from_file_topo.read_from_file(
-                config=config.config,
+                config=config,
                 grid_manager=grid_manager,
                 backend=backend,
                 exchange=exchange,

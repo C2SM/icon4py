@@ -27,6 +27,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
+    boundaries,
     initial_condition,
     prescribed_tendencies,
     time,
@@ -336,8 +337,7 @@ class ExperimentConfig:
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
-    topography: topography.TopographyConfig
-    initial_condition: initial_condition.InitialConditionConfig
+    boundaries: boundaries.BoundariesConfig
     prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
@@ -351,7 +351,7 @@ class ExperimentConfig:
         # The file-based initial condition needs the clock of the driver to know which
         # savepoint to read: the initial state, or the state of a later time step when
         # restarting. 'with_overrides' rebuilds the config, so the two stay in sync.
-        initial_condition_config = self.initial_condition.config
+        initial_condition_config = self.boundaries.initial_condition
         if isinstance(initial_condition_config, from_file.FromFileConfig):
             initial_condition_config.start_of_simulation = self.driver.start_of_simulation
             initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
@@ -406,12 +406,10 @@ def read_experiment_config_from_fortran(
 
     nonhydro_cfg = solve_nh.NonHydrostaticConfig.from_fortran_dict(
         atm_dict,
-        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
     )
 
     diffusion_cfg = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,
-        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
     )
 
     do_tracer_advection = not (
@@ -488,14 +486,16 @@ def read_experiment_config_from_fortran(
         metrics=metrics_cfg,
         interpolation=interpolation_cfg,
         vertical_grid=vertical_grid_cfg,
-        topography=topography_cfg,
         nonhydrostatic=nonhydro_cfg,
         diffusion=diffusion_cfg,
         tracer_config=tracer_cfg,
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         muphys=muphys_cfg,
-        initial_condition=initial_condition_cfg,
+        boundaries=boundaries.BoundariesConfig(
+            topography=topography_cfg.config,
+            initial_condition=initial_condition_cfg.config,
+        ),
         prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
             atm_dict=atm_dict, data_path=config_file_path
         ),

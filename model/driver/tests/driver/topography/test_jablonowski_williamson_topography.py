@@ -47,11 +47,11 @@ def test_jablonowski_williamson_topography(
         keep_skip_values=True,
         allocator=model_backends.get_allocator(backend),
     )
-    config = topography.TopographyConfig(
-        config=jw_topo.JablonowskiWilliamsonConfig(),
-    )
     topo_c = topography.create(
-        config=config, grid_manager=gm, backend=backend, exchange=decomp_defs.SingleNodeExchange()
+        config=jw_topo.JablonowskiWilliamsonConfig(),
+        grid_manager=gm,
+        backend=backend,
+        exchange=decomp_defs.SingleNodeExchange(),
     )
 
     topo_c_ref = topography_savepoint.topo_c()
