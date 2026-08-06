@@ -84,7 +84,7 @@ class SerializationSettings:
         SBATCH_PARTITION = "normal"
         SBATCH_TIME = "00:15:00"
         SBATCH_ACCOUNT = "cwd01"
-        SBATCH_UENV = "icon/27.6:v1"
+        SBATCH_UENV = "icon/26.7:v1"
         SBATCH_UENV_VIEW = "default"
         JOB_POLL_SECONDS = 10
 

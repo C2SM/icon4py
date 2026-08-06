@@ -75,7 +75,7 @@ aws --profile cscs-icon4py s3 sync . s3://testdata/experiments/ --exclude "*" --
 ```bash
 git clone git@github.com:C2SM/icon-exclaim.git icon-exclaim.serialize
 cd icon-exclaim.serialize && git checkout icon4py-dev
-uenv start --view=default icon/27.6:v1
+uenv start --view=default icon/26.7:v1
 ./install_dependencies.sh --icon git@gitlab.dkrz.de:icon/icon-nwp.git#<branch> --icon4py <branch>
 ./setup.sh build_serialize
 ```
