@@ -373,9 +373,6 @@ def initialize_granules(
 
     solve_nonhydro_granule: solve_nh.SolveNonhydro | None = None
     if config.nonhydrostatic is not None:
-        assert (
-            config.interpolation.max_nudging_coefficient is not None
-        )  # TODO(ricoh): [c37] remove after declarativifying InterpolationConfig
         nonhydro_params = solve_nh.NonHydrostaticParams(config.nonhydrostatic)
         solve_nonhydro_granule = solve_nh.SolveNonhydro(
             grid=grid,
@@ -394,9 +391,6 @@ def initialize_granules(
 
     diffusion_granule: diffusion.Diffusion | None = None
     if config.diffusion is not None:
-        assert (
-            config.interpolation.max_nudging_coefficient is not None
-        )  # TODO(ricoh): [c37] remove after declarativifying InterpolationConfig
         diffusion_params = diffusion.DiffusionParams(config.diffusion)
         diffusion_granule = diffusion.Diffusion(
             grid=grid,
