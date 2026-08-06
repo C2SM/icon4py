@@ -199,9 +199,11 @@ module = [
 ]
 
 [[tool.mypy.overrides]]
-# GT4Py/numpy typing incompatibilities: NDArrayObject Protocol mismatch, Field
-# shape attr, dtype type-var. Cannot be fixed in user code.
-# NOTE: ~90 errors in muphys/driver/common.py.
+# GT4Py/numpy typing incompatibilities in muphys/driver/common.py:
+# NDArrayObject Protocol mismatch, Field shape attr, dtype type-var, and
+# default-value type mismatches. Cannot be fixed in user code.
+# NOTE: ~90 errors. Empirically verified: removing any of arg-type,
+# attr-defined, misc, type-var, or assignment reproduces errors.
 # Per-line ignores would add ~90 lines of identical boilerplate with no
 # type-safety benefit. Module-level override kept per D6 documented-justification rule.
 disable_error_code = ["arg-type", "attr-defined", "misc", "type-var", "assignment"]
@@ -210,12 +212,14 @@ module = [
 ]
 
 [[tool.mypy.overrides]]
-# GT4Py/numpy typing incompatibilities: NDArrayObject Protocol mismatch, Field
-# shape attr, dtype type-var. Cannot be fixed in user code.
-# NOTE: ~35 errors in bindings/dycore_wrapper.py.
+# GT4Py Field dim type variance in bindings/dycore_wrapper.py: constructing
+# dycore states with concrete-dimension fields is rejected by mypy even though
+# the program accepts them at runtime.
+# NOTE: ~35 errors. Empirically verified: arg-type and assignment are still
+# required; attr-defined and type-var are not.
 # Per-line ignores would add ~35 lines of identical boilerplate with no
 # type-safety benefit. Module-level override kept per D6 documented-justification rule.
-disable_error_code = ["arg-type", "attr-defined", "assignment"]
+disable_error_code = ["arg-type", "assignment"]
 module = [
   "icon4py.bindings.dycore_wrapper"
 ]
