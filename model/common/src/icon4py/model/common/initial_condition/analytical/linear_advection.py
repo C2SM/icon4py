@@ -11,15 +11,12 @@ from __future__ import annotations
 import dataclasses
 import enum
 import logging
+import numpy as np
 from typing import TYPE_CHECKING, ClassVar
 
-from icon4py.model.common import (
-    model_backends,
-)
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
-    vertical as v_grid,
 )
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -69,18 +66,27 @@ class LinearAdvectionConfig:
     tracer_profle: TracerProfile
     #: velocity field
     velocity_field: VelocityField
+    #: cfl number
+    cfl_number: float
 
     fortran_name_map: ClassVar[dict[str, str]] = {}
 
-    def __post_init__(self) -> None:
-        if self.tracer_profle not in TracerProfile:
-            raise ValueError(f"Invalid tracer profile: {self.tracer_profle}")
-        if self.velocity_field not in VelocityField:
-            raise ValueError(f"Invalid velocity field: {self.velocity_field}")
-        if self.velocity_field == VelocityField.INCREASING_2D:
+
+def compute_max_velocity(
+    velocity_field: VelocityField,
+    domain_length: float,
+    domain_height: float,
+) -> float:
+    # note: as we need vel_max at time n+1/2 and vel_max is needed for the time step, we have a chicken-and-egg problem
+    # instead of doing a fixed-point iteration, we simply estimate an upper bound for vel_max
+    match velocity_field:
+        case VelocityField.CONSTANT | VelocityField.VORTEX_2D:
+            vel_max = (domain_length**2 + domain_height**2) ** 0.5
+        case _:
             raise NotImplementedError(
-                "The 'INCREASING_2D' velocity field is not yet implemented."
+                f"Velocity field {velocity_field} not implemented."
             )
+    return vel_max
 
 
 def _get_torus_dimensions(domain_size: float):
@@ -142,35 +148,12 @@ def _prepare_torus_quadratic_quadrature(
 
 def _compute_idealized_velocity_field(
     velocity_field: VelocityField,
-    edge_center_x: data_alloc.NDArray,
-    edge_center_y: data_alloc.NDArray,
     domain_length: float,
     domain_height: float,
-    time: float,
-    time_end: float,
 ):
     match velocity_field:
         case VelocityField.CONSTANT:
             u, v = domain_length, domain_height
-        case VelocityField.VORTEX_2D:
-            array_ns = data_alloc.array_namespace(edge_center_x)
-            v_scal = 1.0  # measure for deformation
-            u = (
-                -v_scal
-                * domain_length
-                * (array_ns.sin(array_ns.pi * edge_center_x / domain_length) ** 2)
-                * array_ns.cos(array_ns.pi * edge_center_y / domain_height)
-                * array_ns.sin(array_ns.pi * edge_center_y / domain_height)
-                * array_ns.cos(array_ns.pi * time / time_end)
-            )
-            v = (
-                v_scal
-                * domain_height
-                * array_ns.cos(array_ns.pi * edge_center_x / domain_length)
-                * array_ns.sin(array_ns.pi * edge_center_x / domain_length)
-                * (array_ns.sin(array_ns.pi * edge_center_y / domain_height) ** 2)
-                * array_ns.cos(array_ns.pi * time / time_end)
-            )
         case _:
             raise NotImplementedError(
                 f"Velocity field {velocity_field} not implemented."
@@ -183,13 +166,8 @@ def _construct_idealized_prep_adv(
     prep_adv_state: tracer_advection_states.AdvectionPrepAdvState,
     primal_normal_x: data_alloc.NDArray,
     primal_normal_y: data_alloc.NDArray,
-    edge_center_x: data_alloc.NDArray,
-    edge_center_y: data_alloc.NDArray,
     domain_length: float,
     domain_height: float,
-    time: float,
-    dtime: float,
-    time_end: float,
 ) -> tracer_advection_states.AdvectionPrepAdvState:
     # we assume that the airmass is constant 1.0, the mass flux equals the velocity
     # impose 2D velocity field at time n+1/2 as required by the numerical scheme
@@ -197,10 +175,6 @@ def _construct_idealized_prep_adv(
         velocity_field,
         domain_length,
         domain_height,
-        edge_center_x,
-        edge_center_y,
-        time + dtime / 2.0,
-        time_end,
     )
     vn = u * primal_normal_x + v * primal_normal_y
 
@@ -253,25 +227,19 @@ def _construct_idealized_tracer(
 def linear_advection(  # noqa: PLR0915 [too-many-statements]
     *,
     config: LinearAdvectionConfig,
-    vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
-    tracers: tracer_states.TracerState,
-    prep_adv_state: tracer_advection_states.AdvectionPrepAdvState,
-    backend: gtx_typing.Backend | None,
-    exchange: decomposition_defs.ExchangeRuntime,
+    tracer_state_now: tracer_states.TracerState,
+    adv_prep_adv_state: tracer_advection_states.AdvectionPrepAdvState,
 ) -> None:
     """
     Initial condition for the idealized advection test case.
 
     """
-    if tracers.qv is None:
+    if tracer_state_now.qv is None:
         raise ValueError(
             "The initial condition for the linear advection test case requires the 'qv' to be active."
         )
-
-    allocator = model_backends.get_allocator(backend)
-
     geometry = static_fields.geometry
     vertex_x = geometry.get(geometry_meta.VERTEX_X).ndarray
     vertex_y = geometry.get(geometry_meta.VERTEX_Y).ndarray
@@ -291,32 +259,26 @@ def linear_advection(  # noqa: PLR0915 [too-many-statements]
 
     _construct_idealized_prep_adv(
         velocity_field=config.velocity_field,
-        prep_adv_state=prep_adv_state,
+        prep_adv_state=adv_prep_adv_state,
         primal_normal_x=geometry.get(geometry_meta.PRIMAL_NORMAL_X).ndarray,
         primal_normal_y=geometry.get(geometry_meta.PRIMAL_NORMAL_Y).ndarray,
         edge_center_x=geometry.get(geometry_meta.EDGE_CENTER_X).ndarray,
         edge_center_y=geometry.get(geometry_meta.EDGE_CENTER_Y).ndarray,
-        domain_length=domain_length,
-        domain_height=domain_height,
-        time=0.0,
-        dtime=vertical_config.dtime,
-        time_end=vertical_config.time_end,
     )
-    # TODO: do exchange since they are edge fields
 
     _construct_idealized_tracer(
-        config.tracer_profle,
-        tracers.qv.ndarray,
-        domain_center_x,
-        domain_center_y,
-        domain_length,
-        domain_height,
-        weights,
-        nodes,
+        tracer_profile=config.tracer_profle,
+        tracer=tracer_state_now.qv.ndarray,
+        domain_center_x=domain_center_x,
+        domain_center_y=domain_center_y,
+        domain_length=domain_length,
+        domain_height=domain_height,
+        weights=weights,
+        nodes=nodes,
     )
 
 
-def construct_idealized_tracer_reference(
+def construct_reference_tracer_numpy(
     test_config,
     icon_grid,
     x_center,
@@ -327,44 +289,38 @@ def construct_idealized_tracer_reference(
     edges_center_y,
     node_x,
     node_y,
-    time,
-    time_end,
+    integration_time,
     weights,
     nodes,
-    reference_solution=None,
-    cell_center_x_high=None,
-    cell_center_y_high=None,
-) -> fa.CellKField[ta.wpfloat]:
-    array_ns = data_alloc.array_namespace(nodes)
-    if reference_solution is None:
-        # use exact solution
-        match test_config.velocity_field:
-            case VelocityField.CONSTANT:
-                # linearly shifted ICs
-                u, v = get_idealized_velocity_field(
-                    test_config, x_range, y_range, edges_center_x, edges_center_y, time, time_end
-                )
-                x = nodes[0, :, :] - (x_center + u * time)
-                y = nodes[1, :, :] - (y_center + v * time)
-                tracer = array_ns.sum(
-                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
-                )
-            case VelocityField.VORTEX_2D:
-                # ICs
-                x = nodes[0, :, :] - x_center
-                y = nodes[1, :, :] - y_center
-                tracer = array_ns.sum(
-                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
-                )
-            case VelocityField.INCREASING_2D:
-                # shifted and deformed ICs
-                et = array_ns.exp(time)
-                emt = array_ns.exp(-time)
-                x = -emt * (-x_range + x_range * et - x_range * time - nodes[0, :, :]) - x_center
-                y = -y_range + y_range * et - y_range * et * time + nodes[1, :, :] * et - y_center
-                tracer = array_ns.sum(
-                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
-                )
-            case _:
-                raise NotImplementedError(
-                    f"Exact solution with velocity field {test_config.velocity_field} not implemented."
+) -> data_alloc.NDArray:
+    match test_config.velocity_field:
+        case VelocityField.CONSTANT:
+            # linearly shifted ICs
+            u, v = _compute_idealized_velocity_field(
+                test_config, x_range, y_range, edges_center_x, edges_center_y, time, time_end
+            )
+            x = nodes[0, :, :] - (x_center + u * time)
+            y = nodes[1, :, :] - (y_center + v * time)
+            tracer = array_ns.sum(
+                weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
+            )
+        case VelocityField.VORTEX_2D:
+            # ICs
+            x = nodes[0, :, :] - x_center
+            y = nodes[1, :, :] - y_center
+            tracer = array_ns.sum(
+                weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
+            )
+        case VelocityField.INCREASING_2D:
+            # shifted and deformed ICs
+            et = array_ns.exp(time)
+            emt = array_ns.exp(-time)
+            x = -emt * (-x_range + x_range * et - x_range * time - nodes[0, :, :]) - x_center
+            y = -y_range + y_range * et - y_range * et * time + nodes[1, :, :] * et - y_center
+            tracer = array_ns.sum(
+                weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
+            )
+        case _:
+            raise NotImplementedError(
+                f"Exact solution with velocity field {test_config.velocity_field} not implemented."
+            )

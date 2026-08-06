@@ -14,6 +14,7 @@ import pathlib
 from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common import time
+from icon4py.model.common.config import config_io
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
@@ -37,19 +38,31 @@ if TYPE_CHECKING:
         static_fields,
         tracer_states,
     )
+    from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 
 log = logging.getLogger(__name__)
 
 
+type IC_CONFIG = (
+    jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig
+)
+
+
+config_io.register_config_union(
+    IC_CONFIG.__value__,
+    {
+        "jablonowski_williamson": jw_ic.JablonowskiWilliamsonConfig,
+        "gauss_3d": gauss_ic.Gauss3DConfig,
+        "from_file": from_file_ic.FromFileConfig,
+        "weissman_klemp": wk_ic.WeismanKlempConfig,
+        "linear_adv": lin_adv_ic.LinearAdvectionConfig,
+    },
+)
+
+
 @dataclasses.dataclass
 class InitialConditionConfig:
-    config: (
-        jw_ic.JablonowskiWilliamsonConfig
-        | gauss_ic.Gauss3DConfig
-        | wk_ic.WeismanKlempConfig
-        | lin_adv_ic.LinearAdvectionConfig
-        | from_file_ic.FromFileConfig
-    )
+    config: IC_CONFIG
 
     @classmethod
     def from_fortran_dict(
@@ -116,6 +129,7 @@ def create(
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
+    adv_prep_adv_state: tracer_advection_states.AdvectionPrepAdvState | None,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
@@ -164,12 +178,10 @@ def create(
         case lin_adv_ic.LinearAdvectionConfig():
             lin_adv_ic.linear_advection(
                 config=config.config,
-                vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
-                prognostic_state_now=prognostic_state_now,
-                backend=backend,
-                exchange=exchange,
+                tracer_state_now=tracer_state_now,
+                adv_prep_adv_state=adv_prep_adv_state,
             )
         case from_file_ic.FromFileConfig():
             if config.config.is_restart:

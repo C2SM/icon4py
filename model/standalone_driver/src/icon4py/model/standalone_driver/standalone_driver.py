@@ -73,6 +73,7 @@ class Icon4pyDriver:
         decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: static_fields.StaticFieldFactories,
         granules: driver_utils.Granules,
+        model_time_variables: driver_states.ModelTimeVariables,
         vertical_grid_config: v_grid.VerticalGridConfig,
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
@@ -87,7 +88,7 @@ class Icon4pyDriver:
         self.static_field_factories = static_field_factories
         self.granules = granules
         self.vertical_grid_config = vertical_grid_config
-        self.model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
+        self.model_time_variables = model_time_variables
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
@@ -346,6 +347,14 @@ class Icon4pyDriver:
                     p_tracer_new=tracer_next_field,
                     dtime=self.model_time_variables.dtime_in_seconds,
                 )
+
+        if self.granules.physics is not None:
+            self.granules.physics.run(
+                prognostic=prognostic_states.next,
+                tracers=tracers.next,
+                dtime=self.config.driver.dtime,
+                simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
+            )
 
         prognostic_states.swap()
         # tracers are advanced once per time step, so they swap here and not with every
@@ -720,12 +729,15 @@ def initialize_driver(
         metrics_config=config.metrics,
     )
 
+    model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
+
     log.info("initializing granules")
     granules = driver_utils.initialize_granules(
         config=config,
         grid=grid_manager.grid,
         vertical_grid=vertical_grid,
         static_field_factories=static_field_factories,
+        model_time_variables=model_time_variables,
         exchange=exchange,
         owner_mask=gtx.as_field(
             (dims.CellDim,),
@@ -758,6 +770,7 @@ def initialize_driver(
         decomposition_info=decomposition_info,
         static_field_factories=static_field_factories,
         granules=granules,
+        model_time_variables=model_time_variables,
         vertical_grid_config=config.vertical_grid,
         exchange=exchange,
         global_reductions=global_reductions,
@@ -807,6 +820,13 @@ def run_driver(
         if icon4py_driver.config.nonhydrostatic is not None
         else None
     )
+    adv_prep_adv_state = (
+        tracer_advection_states.initialize_advection_prep_adv_state(
+            grid=icon4py_driver.grid, allocator=allocator
+        )
+        if icon4py_driver.config.tracer_advection is not None
+        else None
+    )
     initial_condition.create(
         config=icon4py_driver.config.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
@@ -815,6 +835,7 @@ def run_driver(
         prognostic_state_now=prognostic_state_now,
         tracer_state_now=tracer_state_now,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+        adv_prep_adv_state=adv_prep_adv_state,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,

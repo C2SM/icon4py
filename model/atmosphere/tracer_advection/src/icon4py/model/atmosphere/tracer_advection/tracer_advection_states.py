@@ -53,7 +53,7 @@ class AdvectionPrepAdvState:
     mass_flx_me: fa.EdgeKField[ta.wpfloat]
 
     #: mass flux at half level centers averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_ic: fa.CellKField[ta.wpfloat]  # TODO(dastrm): should be KHalfDim
+    mass_flx_ic: fa.CellKHalfField[ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -124,7 +124,38 @@ def initialize_advection_diagnostic_state(
         hfl_tracer=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
+        # vertical flux at cell half levels: one more level than KDim
         vfl_tracer=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=allocator,
+            dtype=ta.wpfloat,
         ),
     )
+
+
+def initialize_advection_prep_adv_state(
+    grid: icon_grid.IconGrid,
+    allocator: gtx_typing.Allocator,
+) -> AdvectionPrepAdvState:
+    kwargs: dict[str, gtx.Field] = {}
+    for field in dataclasses.fields(AdvectionPrepAdvState):
+        type_hint = field.type
+        assert isinstance(type_hint, str)
+        if "Edge" in type_hint:
+            horizontal_dim = dims.EdgeDim
+        elif "Cell" in type_hint:
+            horizontal_dim = dims.CellDim
+        else:
+            raise NotImplementedError(f"Unsupported field type hint: {type_hint}")
+        # 'CellKHalfField' is currently an alias for the same 'KDim'-based field as
+        # "half level" variant is only distinguishable by name, not by its resolved dims.
+        extend = {dims.KDim: 1} if "KHalf" in type_hint else None
+        kwargs[field.name] = data_alloc.zero_field(
+            grid, horizontal_dim, dims.KDim, extend=extend, allocator=allocator, dtype=ta.wpfloat
+        )
+    return AdvectionPrepAdvState(**kwargs)
+
+
