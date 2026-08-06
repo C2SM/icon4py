@@ -179,6 +179,7 @@ def test_rbf_interpolation_coeffs_cell(
         if grid.grid_params.geometry_type
         else pytest.fail("geometry_type cannot be None")
     )
+    assert grid.grid_params.domain_length is not None and grid.grid_params.domain_height is not None
 
     rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_coeffs_cell(
         cell_center_lat=geometry.get(geometry_attrs.CELL_LAT).ndarray,
@@ -202,8 +203,8 @@ def test_rbf_interpolation_coeffs_cell(
         ),
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
-        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type] # test would fail if None
-        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type] # test would fail if None
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
     )
 
     rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().asnumpy()
@@ -254,6 +255,7 @@ def test_rbf_interpolation_coeffs_vertex(
         if grid.grid_params.geometry_type
         else pytest.fail("geometry_type cannot be None")
     )
+    assert grid.grid_params.domain_length is not None and grid.grid_params.domain_height is not None
 
     rbf_vec_coeff_v1, rbf_vec_coeff_v2 = rbf.compute_rbf_interpolation_coeffs_vertex(
         vertex_lat=geometry.get(geometry_attrs.VERTEX_LAT).ndarray,
@@ -277,8 +279,8 @@ def test_rbf_interpolation_coeffs_vertex(
         ),
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
-        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type] # test would fail if None
-        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type] # test would fail if None
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
     )
 
     rbf_vec_coeff_v1_ref = interpolation_savepoint.rbf_vec_coeff_v1()
@@ -329,6 +331,7 @@ def test_rbf_interpolation_coeffs_edge(
         if grid.grid_params.geometry_type
         else pytest.fail("geometry_type cannot be None")
     )
+    assert grid.grid_params.domain_length is not None and grid.grid_params.domain_height is not None
 
     rbf_vec_coeff_e = rbf.compute_rbf_interpolation_coeffs_edge(
         edge_lat=geometry.get(geometry_attrs.EDGE_LAT).ndarray,
@@ -354,8 +357,8 @@ def test_rbf_interpolation_coeffs_edge(
         ),
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
-        domain_length=grid.grid_params.domain_length,  # type: ignore[arg-type] # test would fail if None
-        domain_height=grid.grid_params.domain_height,  # type: ignore[arg-type] # test would fail if None
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
     )
 
     rbf_vec_coeff_e_ref = interpolation_savepoint.rbf_vec_coeff_e()
