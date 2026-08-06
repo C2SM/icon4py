@@ -300,6 +300,9 @@ def compute_perturbed_quantities_and_interpolation(
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         ),
         domain=(
+            # `perturbed_rho_at_cells_on_model_levels` and
+            # `perturbed_theta_v_at_cells_on_model_levels` are reconstructed to edges by the second
+            # order Miura scheme, which reaches the second halo line.
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo_level_2),
                 dims.KDim: (model_top, surface_level - 1),
@@ -332,6 +335,8 @@ def compute_perturbed_quantities_and_interpolation(
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_local),
                 dims.KDim: (model_top + 1, surface_level - 1),
             },
+            # `temporal_extrapolation_of_perturbed_exner` and its two vertical derivatives below
+            # are consumed by the horizontal pressure gradient at edges, which reaches halo cells.
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
                 dims.KDim: (model_top, surface_level - 1),
