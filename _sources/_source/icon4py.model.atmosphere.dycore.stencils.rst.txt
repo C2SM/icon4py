@@ -420,6 +420,14 @@ icon4py.model.atmosphere.dycore.stencils.extrapolate\_at\_top module
    :undoc-members:
    :show-inheritance:
 
+icon4py.model.atmosphere.dycore.stencils.extrapolate\_quadratically\_to\_surface module
+---------------------------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.extrapolate_quadratically_to_surface
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 icon4py.model.atmosphere.dycore.stencils.extrapolate\_temporally\_exner\_pressure module
 ----------------------------------------------------------------------------------------
 
@@ -448,14 +456,6 @@ icon4py.model.atmosphere.dycore.stencils.interpolate\_contravariant\_vertical\_v
 ----------------------------------------------------------------------------------------------------------------
 
 .. automodule:: icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_vertical_velocity_to_full_levels
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-icon4py.model.atmosphere.dycore.stencils.interpolate\_to\_surface module
-------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface
    :members:
    :undoc-members:
    :show-inheritance:
