@@ -6,10 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import functools
 import logging
 import math
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -35,7 +38,6 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.math import vertical_operations as vertical_ops
 from icon4py.model.common.metrics import (
-    compute_advection_metrics,
     compute_coeff_gradekin,
     compute_diffusion_metrics,
     compute_zdiff_gradp,
@@ -45,7 +47,7 @@ from icon4py.model.common.metrics import (
     reference_atmosphere as ra,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -121,6 +123,23 @@ class MetricsConfig:
                 f"Only rayleigh_type = KLEMP is implemented, got {self.rayleigh_type}."
             )
 
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> MetricsConfig:
+        nonhydrostatic_nml = atmo_dict["nonhydrostatic_nml"]
+        return cls(
+            exner_expol=nonhydrostatic_nml["exner_expol"],
+            vwind_offctr=nonhydrostatic_nml["vwind_offctr"],
+            thslp_zdiffu=nonhydrostatic_nml["thslp_zdiffu"],
+            thhgtd_zdiffu=nonhydrostatic_nml["thhgtd_zdiffu"],
+            rayleigh_type=constants.RayleighType(nonhydrostatic_nml["rayleigh_type"]),
+            rayleigh_coeff=fortran_config.list_to_value(nonhydrostatic_nml["rayleigh_coeff"]),
+            divdamp_trans_start=nonhydrostatic_nml["divdamp_trans_start"],
+            divdamp_trans_end=nonhydrostatic_nml["divdamp_trans_end"],
+            divdamp_type=nonhydrostatic_nml["divdamp_type"],
+            igradp_method=nonhydrostatic_nml["igradp_method"],
+            **overrides,
+        )
+
 
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
@@ -180,12 +199,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 fields={
                     "topography": topography,
                     "vct_a": self._vertical_grid.interface_physical_height,
-                    "height_u": self._vertical_grid.interface_physical_height[
-                        : self._grid.num_levels
-                    ],
-                    "height_l": self._vertical_grid.interface_physical_height[
-                        1 : self._grid.num_levels + 1
-                    ],
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
@@ -999,31 +1012,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
 
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
-
-        compute_advection_deepatmo_fields = factory.ProgramFieldProvider(
-            func=compute_advection_metrics.compute_advection_deepatmo_fields.with_backend(
-                self._backend
-            ),
-            domain={
-                dims.KDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
-                ),
-            },
-            fields={
-                attrs.DEEPATMO_DIVH: attrs.DEEPATMO_DIVH,
-                attrs.DEEPATMO_DIVZL: attrs.DEEPATMO_DIVZL,
-                attrs.DEEPATMO_DIVZU: attrs.DEEPATMO_DIVZU,
-            },
-            deps={
-                "height_u": "height_u",
-                "height_l": "height_l",
-            },
-            params={"grid_sphere_radius": constants.EARTH_RADIUS},
-            do_exchange=False,
-        )
-
-        self.register_provider(compute_advection_deepatmo_fields)
 
     def get_int32(self, name: str) -> gtx.int32:
         return gtx.int32(self.get(name, factory.RetrievalType.SCALAR))

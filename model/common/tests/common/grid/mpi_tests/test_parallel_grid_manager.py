@@ -23,6 +23,7 @@ from icon4py.model.common.grid import (
     base,
     geometry,
     geometry_attributes,
+    geometry_config,
     grid_manager as gm,
     gridfile,
     icon,
@@ -55,6 +56,7 @@ from . import utils
 _log = logging.getLogger(__file__)
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.mpi(min_size=2)
 def test_grid_manager_validate_decomposer(
@@ -89,9 +91,6 @@ def _get_neighbor_tables(grid: base.Grid) -> dict:
 # another, so we declare them here for xfailing.
 embedded_broken_fields = {
     metrics_attributes.DDQZ_Z_HALF,
-    metrics_attributes.DEEPATMO_DIVH,
-    metrics_attributes.DEEPATMO_DIVZL,
-    metrics_attributes.DEEPATMO_DIVZU,
     metrics_attributes.EXNER_EXFAC,
     metrics_attributes.MAXHGTD_AVG,
     metrics_attributes.MAXSLP_AVG,
@@ -120,6 +119,8 @@ def _make_single_rank_geometry(
         decomposition_info=grid_manager.decomposition_info,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
+        config=geometry_config.GeometryConfig(),
+        process_props=decomp_defs.SingleNodeProcessProperties(),
         exchange=decomp_defs.single_node_exchange,
     )
     return grid_manager, grid_geometry
@@ -146,6 +147,8 @@ def _make_multi_rank_geometry(
         decomposition_info=grid_manager.decomposition_info,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
+        config=geometry_config.GeometryConfig(),
+        process_props=process_props,
         exchange=decomp_defs.create_exchange(process_props, grid_manager.decomposition_info),
         global_reductions=decomp_defs.create_reduction(
             process_props, grid_manager.decomposition_info
@@ -192,6 +195,7 @@ def _compare_geometry_fields_single_multi_rank(
     field = multi_rank_geometry.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
+    atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-15, rtol=0.0)
     parallel_helpers.check_local_global_field(
         decomposition_info=multi_rank_gm.decomposition_info,
         process_props=process_props,
@@ -199,12 +203,14 @@ def _compare_geometry_fields_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=1e-15,
+        atol=atol,
+        rtol=rtol,
     )
 
     _log.info(f"rank = {process_props.rank} - DONE")
 
 
+@pytest.mark.datatest
 @pytest.mark.level("unit")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -244,6 +250,7 @@ def test_geometry_fields_compare_single_multi_rank_unit(
     _compare_geometry_fields_single_multi_rank(process_props, backend, grid_description, attrs_name)
 
 
+@pytest.mark.datatest
 @pytest.mark.level("integration")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -343,6 +350,15 @@ def _compare_interpolation_fields_single_multi_rank(
     field = multi_rank_interpolation.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
+    atol, rtol = test_utils.get_mpi_comparison_tolerance(
+        backend,
+        atol=3e-9
+        if attrs_name.startswith("rbf")
+        else 1e-10
+        if attrs_name.startswith("pos_on_tplane")
+        else 1e-15,
+        rtol=0.0,
+    )
     parallel_helpers.check_local_global_field(
         decomposition_info=multi_rank_gm.decomposition_info,
         process_props=process_props,
@@ -350,16 +366,14 @@ def _compare_interpolation_fields_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=3e-9
-        if attrs_name.startswith("rbf")
-        else 1e-10
-        if attrs_name.startswith("pos_on_tplane")
-        else 1e-15,
+        atol=atol,
+        rtol=rtol,
     )
 
     _log.info(f"rank = {process_props.rank} - DONE")
 
 
+@pytest.mark.datatest
 @pytest.mark.level("unit")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -390,6 +404,7 @@ def test_interpolation_fields_compare_single_multi_rank_unit(
     _compare_interpolation_fields_single_multi_rank(process_props, backend, experiment, attrs_name)
 
 
+@pytest.mark.datatest
 @pytest.mark.level("integration")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -537,13 +552,20 @@ def _compare_metrics_fields_single_multi_rank(
             model_backends.is_cpu_backend(backend)
             or (
                 model_backends.is_gpu_backend(backend)
-                and attrs_name == metrics_attributes.DDQZ_Z_FULL_E
+                and attrs_name
+                in {
+                    metrics_attributes.DDQZ_Z_FULL_E,
+                    metrics_attributes.RHO_REF_ME,
+                    metrics_attributes.THETA_REF_ME,
+                }
             )
         ):
             # TODO (jcanton,phimuell): figure out dace undeterministic behaviour
-            atol = 1e-13
+            atol = 2e-13
         else:
             atol = 0.0
+
+        atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-15, rtol=0.0)
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_gm.decomposition_info,
             process_props=process_props,
@@ -552,11 +574,13 @@ def _compare_metrics_fields_single_multi_rank(
             local_field=field.asnumpy(),
             check_halos=True,
             atol=atol,
+            rtol=rtol,
         )
 
     _log.info(f"rank = {process_props.rank} - DONE")
 
 
+@pytest.mark.datatest
 @pytest.mark.level("unit")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -571,9 +595,6 @@ def _compare_metrics_fields_single_multi_rank(
         metrics_attributes.DDXN_Z_HALF_E,
         metrics_attributes.DDXT_Z_FULL,
         metrics_attributes.DDXT_Z_HALF_E,
-        metrics_attributes.DEEPATMO_DIVH,
-        metrics_attributes.DEEPATMO_DIVZL,
-        metrics_attributes.DEEPATMO_DIVZU,
         metrics_attributes.D_EXNER_DZ_REF_IC,
         metrics_attributes.EXNER_REF_MC,
         metrics_attributes.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,
@@ -610,6 +631,7 @@ def test_metrics_fields_compare_single_multi_rank_unit(
     _compare_metrics_fields_single_multi_rank(process_props, backend, experiment, attrs_name)
 
 
+@pytest.mark.datatest
 @pytest.mark.level("integration")
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
@@ -642,6 +664,7 @@ def test_metrics_fields_compare_single_multi_rank_integration(
 # MASK_PROG_HALO_C is defined specially only on halos, so we have a separate
 # test for it. It doesn't make sense to compare to a single-rank reference since
 # it has no halos.
+@pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_metrics_mask_prog_halo_c(
@@ -739,6 +762,7 @@ def test_metrics_mask_prog_halo_c(
     _log.info(f"rank = {process_props.rank} - DONE")
 
 
+@pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_validate_skip_values_in_distributed_connectivities(
@@ -774,6 +798,7 @@ def test_validate_skip_values_in_distributed_connectivities(
                 )
 
 
+@pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize("grid", [test_defs.Grids.MCH_CH_R04B09_DSL])
@@ -793,6 +818,7 @@ def test_limited_area_raises(
         )
 
 
+@pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(

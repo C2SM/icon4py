@@ -1,4 +1,4 @@
-#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
+#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --only-group scripts python3
 #
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
@@ -21,7 +21,7 @@ import functools
 import os
 import pathlib
 import shlex
-from typing import Annotated, NamedTuple, TypeAlias
+from typing import Annotated, NamedTuple
 
 import pytest
 import rich
@@ -124,7 +124,7 @@ def check_layout(  # noqa: PLR0912 [too-many-branches]
 
 
 # -- fixture-requests --
-FixtureRequestLocation: TypeAlias = tuple[pathlib.Path, str]
+type FixtureRequestLocation = tuple[pathlib.Path, str]
 
 
 class RequestedFixtures(NamedTuple):

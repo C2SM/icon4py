@@ -133,6 +133,7 @@ def test_distributed_metrics_attrs(  # noqa: PLR0917 [too-many-positional-argume
         (attrs.COEFF2_DWDZ, "coeff2_dwdz"),
         (attrs.THETA_REF_MC, "theta_ref_mc"),
         (attrs.EXNER_REF_MC, "exner_ref_mc"),
+        (attrs.RHO_REF_MC, "rho_ref_mc"),
         (attrs.RHO_REF_ME, "rho_ref_me"),
         (attrs.THETA_REF_ME, "theta_ref_me"),
         (attrs.D2DEXDZ2_FAC1_MC, "d2dexdz2_fac1_mc"),
@@ -145,6 +146,8 @@ def test_distributed_metrics_attrs(  # noqa: PLR0917 [too-many-positional-argume
         (attrs.MASK_PROG_HALO_C, "mask_prog_halo_c"),
         (attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP, "hmask_dd3d"),
         (attrs.WGTFAC_C, "wgtfac_c"),
+        (attrs.WGTFAC_E, "wgtfac_e"),
+        (attrs.WGTFACQ_C, "wgtfacq_c"),
         (attrs.EXNER_EXFAC, "exner_exfac"),
     ],
 )

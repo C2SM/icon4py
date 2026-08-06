@@ -9,12 +9,12 @@ import pytest
 
 from icon4py.model.testing.fixtures import (
     backend,
+    backend_like,
     data_provider,
     download_ser_data,
     experiment,
     experiment_description,
     grid_savepoint,
-    icon_grid,
     interpolation_savepoint,
     istep_exit,
     istep_init,
@@ -24,9 +24,11 @@ from icon4py.model.testing.fixtures import (
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_final,
+    savepoint_time_step_exit,
     savepoint_velocity_init,
     step_date_exit,
     step_date_init,
+    topography_savepoint,
 )
 
 

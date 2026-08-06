@@ -18,7 +18,7 @@ from icon4py.tools import py2fgen
 _FLOAT64_2D = py2fgen.ArrayParamDescriptor(
     rank=2,
     dtype=py2fgen.FLOAT64,
-    memory_space=py2fgen.MemorySpace.HOST,
+    memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
     is_optional=False,
 )
 

@@ -18,8 +18,8 @@ CFL_THRESHOLD_FACTOR = ta.wpfloat("0.9")
 #: Factor multiplied to the user-defined CFL number to determine the whether to leave watchmode
 CFL_LEAVE_WATCHMODE_FACTOR = ta.wpfloat("0.76")
 
-#: Adjustment factor for second order divergence damping
-ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP = ta.wpfloat("0.8")
+#: Adjustment factor for second order divergence damping (update_spinup_damping in mo_nh_stepping.f90)
+ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP = ta.wpfloat("8.0")
 
 #: Initial period for second order divergence damping
 INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP = ta.wpfloat("1800.0")

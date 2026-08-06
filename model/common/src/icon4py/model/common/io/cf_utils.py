@@ -64,7 +64,7 @@ def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray | None:
         if dims[0] in ("cell", "edge", "vertex") and dims[1] in (
             metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME,
             "level",
-            "interface_level",
+            "half_level",
         ):
             return data.transpose(dims[1], dims[0], *dims[2:], transpose_coords=True)
         else:

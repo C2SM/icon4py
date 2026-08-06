@@ -18,7 +18,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils as testing_helpers
+from icon4py.model.testing import definitions as test_defs, test_utils as testing_helpers
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -69,7 +69,7 @@ def test_compute_ddq_z_half(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlevp1,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
@@ -95,7 +95,7 @@ def test_compute_ddqz_z_full_and_inverse(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
@@ -123,7 +123,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
         divdamp_type=divdamp_type,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(
@@ -135,7 +135,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
 @pytest.mark.datatest
 def test_compute_rayleigh_w(
     icon_grid: base_grid.Grid,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
@@ -186,7 +186,7 @@ def test_compute_coeff_dwdz(
         horizontal_end=icon_grid.num_cells,
         vertical_start=1,
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_ref.asnumpy())
@@ -224,7 +224,7 @@ def test_compute_exner_exfac(
     grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
@@ -267,7 +267,7 @@ def test_compute_exner_w_implicit_weight_parameter(  # noqa: PLR0917 [too-many-p
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()
@@ -418,7 +418,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C": icon_grid.get_connectivity("E2C"),
-            "Koff": dims.KDim,
         },
     )
 

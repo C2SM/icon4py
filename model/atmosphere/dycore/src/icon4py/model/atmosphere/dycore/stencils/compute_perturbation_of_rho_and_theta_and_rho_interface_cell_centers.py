@@ -12,7 +12,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_th
     _compute_perturbation_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -31,7 +31,7 @@ def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     """Formerly known as _mo_solve_nonhydro_stencil_08."""
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
-    rho_ic = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(Koff[-1])
+    rho_ic = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(KDim - 1)
     z_rth_pr_1, z_rth_pr_2 = _compute_perturbation_of_rho_and_theta(
         rho=rho, rho_ref_mc=rho_ref_mc, theta_v=theta_v, theta_ref_mc=theta_ref_mc
     )

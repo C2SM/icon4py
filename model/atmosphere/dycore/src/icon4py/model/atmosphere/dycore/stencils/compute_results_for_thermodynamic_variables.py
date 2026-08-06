@@ -11,7 +11,7 @@ from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -41,12 +41,12 @@ def _compute_results_for_thermodynamic_variables(
     )
 
     rho_new_wp = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full_wp * (
-        rho_ic * w - rho_ic(Koff[1]) * w(Koff[1])
+        rho_ic * w - rho_ic(KDim + 1) * w(KDim + 1)
     )
     exner_new_wp = (
         z_exner_expl
         + exner_ref_mc_wp
-        - z_beta_wp * (z_alpha_wp * w - z_alpha_wp(Koff[1]) * w(Koff[1]))
+        - z_beta_wp * (z_alpha_wp * w - z_alpha_wp(KDim + 1) * w(KDim + 1))
     )
     theta_v_new_wp = (
         rho_now

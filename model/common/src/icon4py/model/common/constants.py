@@ -11,6 +11,7 @@ import sys
 from typing import Final
 
 from icon4py.model.common import type_alias as ta
+from icon4py.model.common.config import config_io
 
 
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
@@ -33,6 +34,8 @@ RD_O_CVD: Final[ta.wpfloat] = RD / CVD
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[ta.wpfloat] = 461.51
 RV: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR
+#: RD/RV, rdv in ICON.
+RD_O_RV: Final[ta.wpfloat] = GAS_CONSTANT_DRY_AIR / GAS_CONSTANT_WATER_VAPOR
 
 #: Specific heat capacity of water vapor at constant pressure [J/K/kg]
 SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR: Final[ta.wpfloat] = 1869.46
@@ -71,6 +74,29 @@ LATENT_HEAT_FOR_FUSION: Final[ta.wpfloat] = (
 
 #: Triple point of water at 611hPa [K]
 WATER_TRIPLE_POINT_TEMPERATURE: Final[ta.wpfloat] = 273.16
+
+# Tetens formula constants for the saturation vapour pressure, called c1es, c3les,
+# c4les, c3ies and c4ies in ICON (mo_lookup_tables_constants.f90).
+# e_sat = TETENS_P0 * exp(A * (T - tmelt) / (T - B)), with the *_WATER coefficients
+# over liquid water and the *_ICE coefficients over ice.
+TETENS_P0: Final[ta.wpfloat] = 610.78
+TETENS_A_WATER: Final[ta.wpfloat] = 17.269
+TETENS_B_WATER: Final[ta.wpfloat] = 35.86
+TETENS_A_ICE: Final[ta.wpfloat] = 21.875
+TETENS_B_ICE: Final[ta.wpfloat] = 7.66
+
+# Minimum temperature for saturation-over-ice calculations [K]. Used to clamp T
+# in the Tetens ice branch (mo_thdyn_functions.f90).
+MINIMUM_TEMPERATURE_ICE_SATURATION: Final[ta.wpfloat] = 180.0
+
+# Reference pressure for the APE/JW relative-humidity profile [Pa].
+RELATIVE_HUMIDITY_REFERENCE_PRESSURE: Final[ta.wpfloat] = 200000.0
+
+# Pressure threshold below which the stratospheric specific-humidity cap applies [Pa].
+STRATOSPHERE_PRESSURE_THRESHOLD: Final[ta.wpfloat] = 10000.0
+
+# Stratospheric specific-humidity cap [kg/kg].
+STRATOSPHERIC_QV_CAP: Final[ta.wpfloat] = 5.0e-6
 
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
@@ -149,6 +175,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     eps = DBL_EPS
 
 
+@config_io.register_enum
 class RayleighType(int, enum.Enum):
     #: classical Rayleigh damping, which makes use of a reference state.
     CLASSIC = 1

@@ -35,6 +35,7 @@ PROGNOSTIC_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
         long_name="vertical air velocity component",
         units="m s-1",
         icon_var_name="w",
+        is_on_half_levels=True,
     ),
     normal_velocity=dict(
         standard_name="normal_velocity",
@@ -50,43 +51,57 @@ PROGNOSTIC_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     ),
 )
 
+#: index of tracer variables in the serialized fortran list
+QV: Final[int] = 0
+QC: Final[int] = 1
+QI: Final[int] = 2
+QR: Final[int] = 3
+QS: Final[int] = 4
+QG: Final[int] = 5
+
 #: CF attributes of common tracer variables
 COMMON_TRACER_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
-    specific_humidity=dict(
+    qv=dict(
         standard_name="specific_humidity",
         long_name="ratio of water vapor mass to total moist air parcel mass",
         units="1",
         icon_var_name="qv",
+        icon_var_list_index=QV,
     ),
-    specific_cloud=dict(
+    qc=dict(
         standard_name="specific_cloud_content",
         long_name="ratio of cloud water mass to total moist air parcel mass",
         units="1",
         icon_var_name="qc",
+        icon_var_list_index=QC,
     ),
-    specific_ice=dict(
+    qi=dict(
         standard_name="specific_ice_content",
         long_name="ratio of cloud ice mass to total moist air parcel mass",
         units="1",
         icon_var_name="qi",
+        icon_var_list_index=QI,
     ),
-    specific_rain=dict(
+    qr=dict(
         standard_name="specific_rain_content",
         long_name="ratio of rain mass to total moist air parcel mass",
         units="1",
         icon_var_name="qr",
+        icon_var_list_index=QR,
     ),
-    specific_snow=dict(
+    qs=dict(
         standard_name="specific_snow_content",
         long_name="ratio of snow mass to total moist air parcel mass",
         units="1",
         icon_var_name="qs",
+        icon_var_list_index=QS,
     ),
-    specific_graupel=dict(
+    qg=dict(
         standard_name="specific_graupel_content",
         long_name="ratio of graupel mass to total moist air parcel mass",
         units="1",
         icon_var_name="qg",
+        icon_var_list_index=QG,
     ),
 )
 
@@ -128,4 +143,75 @@ DIAGNOSTIC_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
         units="Pa",
         icon_var_name="pres_sfc",
     ),
+)
+
+# CF attributes of precipitation-flux diagnostics.
+PRECIPITATION_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
+    precipitation_flux=dict(
+        standard_name="precipitation_flux",
+        long_name="total precipitation flux (rain + snow + graupel + ice)",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    rainfall_flux=dict(
+        standard_name="rainfall_flux",
+        long_name="rainfall flux",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    snowfall_flux=dict(
+        standard_name="snowfall_flux",
+        long_name="snowfall flux",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    graupelfall_flux=dict(
+        standard_name="graupelfall_flux",
+        long_name="graupelfall flux",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    icefall_flux=dict(
+        standard_name="icefall_flux",
+        long_name="icefall flux",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    precipitation_energy_flux=dict(
+        standard_name="precipitation_energy_flux",
+        long_name="energy flux carried by precipitation",
+        units="W m-2",
+        kind="diagnostic",
+    ),
+)
+
+
+def tendency_of(base: model.FieldMetaData) -> model.FieldMetaData:
+    """Derive generic tendency metadata for ``base`` (CF ``tendency_of_<name>``).
+
+    The tendency carries ``kind="tendency"`` and ``base``'s units per second; a
+    dimensionless base (``units="1"``) yields ``"s-1"`` rather than ``"1 s-1"``.
+    """
+    base_units = base["units"]
+    units = "s-1" if base_units == "1" else f"{base_units} s-1"
+    tendency: model.FieldMetaData = dict(
+        standard_name=f"tendency_of_{base['standard_name']}",
+        units=units,
+        kind="tendency",
+    )
+    long_name = base.get("long_name")
+    if long_name is not None:
+        tendency["long_name"] = f"tendency of {long_name}"
+    return tendency
+
+
+# Generic tendencies of the temperature and tracer fields, derived from their base identities so names/units never drift.
+TENDENCY_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
+    temperature=tendency_of(DIAGNOSTIC_CF_ATTRIBUTES["temperature"]),
+    qv=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qv"]),
+    qc=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qc"]),
+    qi=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qi"]),
+    qr=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qr"]),
+    qs=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qs"]),
+    qg=tendency_of(COMMON_TRACER_CF_ATTRIBUTES["qg"]),
 )

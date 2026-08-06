@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, astype, minimum, neighbor_sum, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2C2EO, E2V, E2C2EODim, E2CDim, Koff
+from icon4py.model.common.dimension import E2C, E2C2EO, E2V, E2C2EODim, E2CDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -42,8 +42,8 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     )
     ddt_vn_apc_wp = where(
         # TODO(havogt): my guess is if the second condition is `True`, then
-        # `(levelmask | levelmask(Koff[1]))` is also `True`
-        (levelmask | levelmask(Koff[1]))
+        # `(levelmask | levelmask(KDim + 1))` is also `True`
+        (levelmask | levelmask(KDim + 1))
         & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
         ddt_vn_apc_wp
         + difcoef

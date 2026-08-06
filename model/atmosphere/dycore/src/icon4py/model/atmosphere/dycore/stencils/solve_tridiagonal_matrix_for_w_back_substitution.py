@@ -17,7 +17,7 @@ def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
     w_state: wpfloat, z_q: vpfloat, w: wpfloat
 ) -> wpfloat:
     """Formerly known as _mo_solve_nonhydro_stencil_53_scan."""
-    return w + w_state * astype(z_q, wpfloat)
+    return w + w_state * astype(z_q, wpfloat)  # type: ignore[return-value] # return type hints for scan operator broken in GT4Py
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

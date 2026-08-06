@@ -254,7 +254,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 continue
 
             # Collect offset providers
-            if "\offProv" in line:
+            if r"\offProv" in line:
                 match = re.search(r"\\offProv\{([^}]+)\}", line)
                 if match:
                     offset_providers.add(match.group(1))
@@ -288,7 +288,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                                 var_longname = method_info["map_shortname_to_longname"][element]
                                 parent_name, short_name = self.split_variable_name(var_longname)
                                 vname = (
-                                    f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{parent_name}.}}}}}}$"
+                                    rf"$\color{{grey}}{{\scriptstyle{{\texttt{{{parent_name}.}}}}}}$"
                                     if parent_name
                                     else ""
                                 ) + f"{short_name}"
@@ -323,7 +323,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         Returns:
             The processed LaTeX math line with applied formatting rules.
         """
-        symbols_needing_space = ["\Wrbf", "\Wlev", "\WtimeExner"]
+        symbols_needing_space = [r"\Wrbf", r"\Wlev", r"\WtimeExner"]
 
         if options["NeedsAlignChar"]:
             # Align multiline equations to the left
