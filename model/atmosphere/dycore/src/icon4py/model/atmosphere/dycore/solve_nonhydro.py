@@ -941,18 +941,6 @@ class SolveNonhydro:
         """
         Declared as z_dexner_dz_c_1 in ICON.
         """
-        self.perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-            self._grid,
-            dims.CellDim,
-            dims.KDim,
-            dtype=ta.vpfloat,
-            extend={dims.KDim: 1},
-            allocator=allocator,
-        )
-
-        """
-        Declared as z_theta_v_pr_ic in ICON.
-        """
         self.nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
@@ -1228,7 +1216,6 @@ class SolveNonhydro:
             perturbed_rho_at_cells_on_model_levels=self.perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=self.perturbed_theta_v_at_cells_on_model_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
-            perturbed_theta_v_at_cells_on_half_levels=self.perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             current_rho=prognostic_states.current.rho,
             current_theta_v=prognostic_states.current.theta_v,
@@ -1402,7 +1389,6 @@ class SolveNonhydro:
 
         self._compute_interpolation_and_nonhydro_buoy(
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
-            perturbed_theta_v_at_cells_on_half_levels=self.perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             w=prognostic_states.next.w,

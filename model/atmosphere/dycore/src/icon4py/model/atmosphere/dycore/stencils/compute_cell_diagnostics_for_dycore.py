@@ -79,7 +79,6 @@ def _compute_perturbed_quantities_and_interpolation(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
@@ -163,7 +162,6 @@ def _compute_perturbed_quantities_and_interpolation(
         perturbed_theta_v_at_cells_on_model_levels,
         perturbed_exner_at_cells_on_model_levels,
         rho_at_cells_on_half_levels,
-        perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels,
         nonhydro_buoy_at_cells_on_half_levels,
         temporal_extrapolation_of_perturbed_exner,
@@ -181,7 +179,6 @@ def compute_perturbed_quantities_and_interpolation(
     perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
     reference_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
@@ -224,7 +221,6 @@ def compute_perturbed_quantities_and_interpolation(
         - perturbed_rho_at_cells_on_model_levels: perturbed air density (actual density minus reference density) [kg m-3]
         - perturbed_theta_v_at_cells_on_model_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) [K]
         - rho_at_cells_on_half_levels: air density [kg m-3]
-        - perturbed_theta_v_at_cells_on_half_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) [kg m-3]
         - theta_v_at_cells_on_half_levels: virtual potential temperature [K]
         - current_rho: virtual potential temperature at current substep [K]
         - reference_rho_at_cells_on_model_levels: reference air density [kg m-3]
@@ -258,7 +254,6 @@ def compute_perturbed_quantities_and_interpolation(
         - perturbed_rho_at_cells_on_model_levels
         - perturbed_theta_v_at_cells_on_model_levels
         - rho_at_cells_on_half_levels
-        - perturbed_theta_v_at_cells_on_half_levels
         - theta_v_at_cells_on_half_levels
         - nonhydro_buoy_at_cells_on_half_levels
         - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level
@@ -292,7 +287,6 @@ def compute_perturbed_quantities_and_interpolation(
             perturbed_theta_v_at_cells_on_model_levels,
             perturbed_exner_at_cells_on_model_levels,
             rho_at_cells_on_half_levels,
-            perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
             nonhydro_buoy_at_cells_on_half_levels,
             temporal_extrapolation_of_perturbed_exner,
@@ -320,10 +314,6 @@ def compute_perturbed_quantities_and_interpolation(
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_local),
                 dims.KDim: (model_top + 1, surface_level - 1),
-            },
-            {
-                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_local),
-                dims.KDim: (model_top + 1, surface_level),
             },
             # `theta_v_at_cells_on_half_levels` is read through E2C by the hydrostatic correction
             # term, which reaches halo cells from local edges.
@@ -372,7 +362,6 @@ def _compute_interpolation_and_nonhydro_buoy(
     rhotheta_implicit_weight_parameter: ta.wpfloat,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
@@ -457,7 +446,6 @@ def _compute_interpolation_and_nonhydro_buoy(
     )
     return (
         rho_at_cells_on_half_levels,
-        perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels,
         astype(nonhydro_buoy_at_cells_on_half_levels, vpfloat),
     )
@@ -466,7 +454,6 @@ def _compute_interpolation_and_nonhydro_buoy(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_interpolation_and_nonhydro_buoy(
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     nonhydro_buoy_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
@@ -497,7 +484,6 @@ def compute_interpolation_and_nonhydro_buoy(
 
     Args:
         - rho_at_cells_on_half_levels: air density at cells on half levels [kg m-3]
-        - perturbed_theta_v_at_cells_on_half_levels: perturbed virtual potential temperature (actual virtual potential temperature minus reference virtual potential temperature) at cells on half levels [kg m-3]
         - theta_v_at_cells_on_half_levels: virtual potential temperature at cells on half levels [K]
         - nonhydro_buoy_at_cells_on_half_levels: pressure buoyancy acceleration at cells on half levels [m s-2]
         - w: vertical wind at cell centers [m s-1]
@@ -522,7 +508,6 @@ def compute_interpolation_and_nonhydro_buoy(
 
     Returns:
         - rho_at_cells_on_half_levels
-        - perturbed_theta_v_at_cells_on_half_levels
         - theta_v_at_cells_on_half_levels
         - nonhydro_buoy_at_cells_on_half_levels
     """
@@ -544,7 +529,6 @@ def compute_interpolation_and_nonhydro_buoy(
         rhotheta_implicit_weight_parameter=rhotheta_implicit_weight_parameter,
         out=(
             rho_at_cells_on_half_levels,
-            perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
             nonhydro_buoy_at_cells_on_half_levels,
         ),

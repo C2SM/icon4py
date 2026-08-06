@@ -280,12 +280,6 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
 
     # stencils 7,8,9, 11
     assert test_utils.dallclose(
-        solve_nonhydro.perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_3:, :
-        ],
-        sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
-    )
-    assert test_utils.dallclose(
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy()[
             cell_start_lateral_boundary_level_3:, :
         ],
@@ -996,9 +990,6 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
     perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
-    perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
@@ -1045,7 +1036,6 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
     z_exner_ex_pr_ref = sp_ref.z_exner_ex_pr()
     exner_pr_ref = sp_exit.exner_pr()
     rho_ic_ref = sp_exit.rho_ic()
-    z_theta_v_pr_ic_ref = sp_exit.z_theta_v_pr_ic()
     theta_v_ic_ref = sp_ref.theta_v_ic()
     z_dexner_dz_c_1_ref = sp_ref.z_dexner_dz_c(0)
     z_dexner_dz_c_2_ref = sp_ref.z_dexner_dz_c(1)
@@ -1060,7 +1050,6 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
         perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
-        perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         current_rho=current_rho,
         reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
@@ -1109,17 +1098,12 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
         perturbed_exner_at_cells_on_model_levels.asnumpy(), exner_pr_ref.asnumpy()
     )
 
-    # `rho_ic` and `z_theta_v_pr_ic` are only computed on locally owned cells, the reference
-    # contains ICON's values on the halo.
+    # `rho_ic` is only computed on locally owned cells, the reference contains ICON's halo values.
     assert test_utils.dallclose(
         rho_at_cells_on_half_levels.asnumpy()[lb:end_cell_local, :],
         rho_ic_ref.asnumpy()[lb:end_cell_local, :],
     )
 
-    assert test_utils.dallclose(
-        perturbed_theta_v_at_cells_on_half_levels.asnumpy()[lb:end_cell_local, :],
-        z_theta_v_pr_ic_ref.asnumpy()[lb:end_cell_local, :],
-    )
     assert test_utils.dallclose(
         theta_v_at_cells_on_half_levels.asnumpy()[lb:, :], theta_v_ic_ref.asnumpy()[lb:, :]
     )
@@ -1188,9 +1172,6 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     rhotheta_explicit_weight_parameter = sp_init.wgt_nnow_rth()
     rhotheta_implicit_weight_parameter = sp_init.wgt_nnew_rth()
 
-    perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
@@ -1209,7 +1190,6 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
 
     rho_ic_ref = sp_ref.rho_ic()
-    z_theta_v_pr_ic_ref = sp_exit.z_theta_v_pr_ic()
     theta_v_ic_ref = sp_ref.theta_v_ic()
     z_th_ddz_exner_c_ref = sp_exit.z_th_ddz_exner_c()
 
@@ -1217,7 +1197,6 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
         backend
     )(
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
-        perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         w=w,
@@ -1248,16 +1227,6 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
 
     assert test_utils.dallclose(
         theta_v_at_cells_on_half_levels.asnumpy()[:, :], theta_v_ic_ref.asnumpy()[:, :]
-    )
-
-    assert test_utils.dallclose(
-        perturbed_theta_v_at_cells_on_half_levels.asnumpy()[
-            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
-        ],
-        z_theta_v_pr_ic_ref.asnumpy()[
-            start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
-        ],
-        rtol=4e-9,
     )
 
     assert test_utils.dallclose(

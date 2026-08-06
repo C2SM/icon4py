@@ -60,7 +60,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         "perturbed_rho_at_cells_on_model_levels",
         "perturbed_theta_v_at_cells_on_model_levels",
         "rho_at_cells_on_half_levels",
-        "perturbed_theta_v_at_cells_on_half_levels",
         "theta_v_at_cells_on_half_levels",
         "nonhydro_buoy_at_cells_on_half_levels",
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
@@ -97,7 +96,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         reference_theta_at_cells_on_model_levels: np.ndarray,
         perturbed_rho_at_cells_on_model_levels: np.ndarray,
         perturbed_theta_v_at_cells_on_model_levels: np.ndarray,
-        perturbed_theta_v_at_cells_on_half_levels: np.ndarray,
         reference_theta_at_cells_on_half_levels: np.ndarray,
         wgtfacq_c: np.ndarray,
         wgtfac_c: np.ndarray,
@@ -130,6 +128,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         cell = np.arange(end_cell_halo_level_2)
         horz_idx = cell[:, np.newaxis]
         surface_level = kwargs["surface_level"]
+        perturbed_theta_v_at_cells_on_half_levels = np.zeros_like(theta_v_at_cells_on_half_levels)
 
         (
             perturbed_rho_at_cells_on_model_levels,
@@ -359,7 +358,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
-            perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
@@ -378,9 +376,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim
         )
         perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
-        )
-        perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         reference_theta_at_cells_on_half_levels = data_alloc.random_field(
@@ -443,7 +438,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
-            perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             current_rho=current_rho,
             reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
