@@ -625,7 +625,7 @@ def _require_decomp_info_for_distributed(
     decomp_info: DecompositionInfo | None,
 ) -> None:
     if decomp_info is None and not process_props.is_single_rank():
-        raise ValueError("decomp_info is required for distributed runs.")
+        raise ValueError("'decomp_info' is required for distributed runs.")
 
 
 def create_exchange(

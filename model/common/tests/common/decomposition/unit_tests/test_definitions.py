@@ -50,13 +50,13 @@ def test_create_single_node_runtime_without_mpi(process_props):  # fixture
 
 def test_create_exchange_requires_decomp_info_for_distributed() -> None:
     process_props = _FakeDistributedProcessProperties()
-    with pytest.raises(ValueError, match="decomp_info is required for distributed runs"):
+    with pytest.raises(ValueError, match="'decomp_info' is required for distributed runs"):
         definitions.create_exchange(process_props, None)
 
 
 def test_create_reduction_requires_decomp_info_for_distributed() -> None:
     process_props = _FakeDistributedProcessProperties()
-    with pytest.raises(ValueError, match="decomp_info is required for distributed runs"):
+    with pytest.raises(ValueError, match="'decomp_info' is required for distributed runs"):
         definitions.create_reduction(process_props, None)
 
 
