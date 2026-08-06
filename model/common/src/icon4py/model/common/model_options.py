@@ -32,7 +32,7 @@ def get_dace_options(
     optimization_args = backend_descriptor.get("optimization_args", {})
     optimization_hooks = optimization_args.get("optimization_hooks", {})
 
-    if device != gtx.DeviceType.CPU:
+    if device is not None and device != gtx.DeviceType.CPU:
         # Enable workspace memory for all non-CPU backends, see below.
         backend_descriptor["external_workspace"] = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(
             device
