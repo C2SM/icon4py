@@ -255,12 +255,12 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         _integrate_layer(k, exner[k - 1], theta_v[k - 1], qv_extrapolated)
 
     # Broadcast the column profiles onto all cells.
-    exner_ndarray[:, :] = exner[array_ns.newaxis, :]
-    theta_v_ndarray[:, :] = theta_v[array_ns.newaxis, :]
-    rho_ndarray[:, :] = (
+    exner_ndarray[:, :] = exner[array_ns.newaxis, :]  # type: ignore[index]  # NDArrayObject Protocol doesn't support this
+    theta_v_ndarray[:, :] = theta_v[array_ns.newaxis, :]  # type: ignore[index]  # NDArrayObject Protocol doesn't support this
+    rho_ndarray[:, :] = (  # type: ignore[index]  # NDArrayObject Protocol doesn't support this
         exner_ndarray**phy_const.CVD_O_RD * phy_const.P0REF / phy_const.RD / theta_v_ndarray
     )
-    tracer_state_now.qv.ndarray[:, :] = qv[array_ns.newaxis, :]
+    tracer_state_now.qv.ndarray[:, :] = qv[array_ns.newaxis, :]  # type: ignore[index]  # NDArrayObject Protocol doesn't support this
     log.info("Weisman-Klemp base-state profile completed.")
 
     # Sheared horizontal wind, projected onto the edge-normal direction.
@@ -268,13 +268,13 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         array_ns.tanh((height - config.h_min) / (config.wind_scale_height - config.h_min)) - 0.45
     )
     boundary_lvl2 = zone_idx["end_edge_lateral_boundary_level_2"]
-    prognostic_state_now.vn.ndarray[:boundary_lvl2, :] = 0.0
-    prognostic_state_now.vn.ndarray[boundary_lvl2:, :] = (
+    prognostic_state_now.vn.ndarray[:boundary_lvl2, :] = 0.0  # type: ignore[index]  # NDArrayObject Protocol doesn't support this
+    prognostic_state_now.vn.ndarray[boundary_lvl2:, :] = (  # type: ignore[index]  # NDArrayObject Protocol doesn't support this
         wind_speed[array_ns.newaxis, :] * primal_normal_x[boundary_lvl2:, array_ns.newaxis]
     )
 
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
-    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(  # type: ignore[index]  # NDArrayObject Protocol doesn't support this
         grid=grid,
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,

@@ -156,11 +156,7 @@ exclude = '''(?x)^(
   ^tools/tests/.*|            # untyped tools tests (future annotation work)
   ^scripts/.*|                # command-line scripts not imported as part of the checked packages
   ^noxfile\.py$|              # nox session definitions
-  ^scripts-cli\.py$|          # CLI entry point
-  # Large analytical initial-condition modules (~720 lines) contain many
-  # ndarray index operations that need per-line ignores per D4. Left excluded
-  # as a follow-up (see R37 discussion).
-  ^model/common/src/icon4py/model/common/initial_condition/analytical/(utils|weisman_klemp)\.py$
+  ^scripts-cli\.py$           # CLI entry point
 )$'''
 explicit_package_bases = true
 files = [
