@@ -190,9 +190,6 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    assert (
-        experiment.config.interpolation.max_nudging_coefficient is not None
-    )  # TODO(ricoh): [c37] remove after declarativifying InterpolationConfig
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
@@ -516,9 +513,6 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    assert (
-        experiment.config.interpolation.max_nudging_coefficient is not None
-    )  # TODO(ricoh): [c37] remove after declarativifying InterpolationConfig
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
@@ -701,9 +695,6 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    assert (
-        experiment.config.interpolation.max_nudging_coefficient is not None
-    )  # TODO(ricoh): [c37] remove after declarativifying InterpolationConfig
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
@@ -830,9 +821,6 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    assert (
-        experiment.config.interpolation.max_nudging_coefficient is not None
-    )  # TODO(ricoh): [c37] remove after declarativifying InterpolationConfig
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
