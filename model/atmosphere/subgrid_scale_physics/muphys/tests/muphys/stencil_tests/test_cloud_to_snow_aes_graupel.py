@@ -5,6 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -16,6 +20,10 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
 
 
 class TestCloudToSnowAesGraupel(StencilTest):
@@ -31,8 +39,8 @@ class TestCloudToSnowAesGraupel(StencilTest):
         qs: np.ndarray,
         ns: np.ndarray,
         lam: np.ndarray,
-        **kwargs,
-    ) -> dict:
+        **kwargs: Any,
+    ) -> dict[str, np.ndarray]:
         # mirrors ICON mo_aes_graupel.f90 cloud_to_snow (riming tuning factor 3.0)
         c_rim = 2.61 * 0.9 * 25.0 * 3.0
         rate = np.where(
@@ -43,7 +51,7 @@ class TestCloudToSnowAesGraupel(StencilTest):
         return dict(riming_snow_rate=rate)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.Grid) -> dict[str, Any]:
         return dict(
             t=data_alloc.constant_field(grid, 256.571, dims.CellDim, dims.KDim, dtype=wpfloat),
             qc=data_alloc.constant_field(grid, 3.31476e-05, dims.CellDim, dims.KDim, dtype=wpfloat),

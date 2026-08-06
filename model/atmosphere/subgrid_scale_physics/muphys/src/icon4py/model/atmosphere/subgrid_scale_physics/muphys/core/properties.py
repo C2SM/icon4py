@@ -662,7 +662,7 @@ def snow_number_aes_graupel(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     rho_s: fa.CellKField[ta.wpfloat],  # Snow mass density rho*qs
     number: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _snow_number_aes_graupel(t=t, rho_s=rho_s, out=number)
 
 
@@ -695,7 +695,7 @@ def snow_lambda_aes_graupel(
     rho_s: fa.CellKField[ta.wpfloat],  # Snow mass density rho*qs
     ns: fa.CellKField[ta.wpfloat],  # Snow number
     riming_snow_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _snow_lambda_aes_graupel(rho_s=rho_s, ns=ns, out=riming_snow_rate)
 
 

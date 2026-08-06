@@ -853,7 +853,7 @@ def cloud_to_rain_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     qr: fa.CellKField[ta.wpfloat],  # Rain water specific mass
     nc: ta.wpfloat,  # Cloud water number concentration
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _cloud_to_rain_aes_graupel(t=t, rho=rho, qc=qc, qr=qr, nc=nc, out=conversion_rate)
 
 
@@ -900,7 +900,7 @@ def cloud_to_snow_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     ns: fa.CellKField[ta.wpfloat],  # Snow number
     lam: fa.CellKField[ta.wpfloat],  # Snow slope parameter
     riming_snow_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _cloud_to_snow_aes_graupel(t=t, qc=qc, qs=qs, ns=ns, lam=lam, out=riming_snow_rate)
 
 
@@ -968,5 +968,5 @@ def rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     dvsw: fa.CellKField[ta.wpfloat],  # qv-qsat_water(T)
     dt: ta.wpfloat,  # time step
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _rain_to_vapor_aes_graupel(t=t, rho=rho, qc=qc, qr=qr, dvsw=dvsw, dt=dt, out=conversion_rate)
