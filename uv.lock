@@ -2194,7 +2194,7 @@ requires-dist = [
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
-  {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.7.0"},
+  {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
   {name = "gt4py", specifier = "==1.2.0"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
