@@ -121,7 +121,7 @@ def test_initial_conditions(
         tracer_config=icon4py_driver.config.tracer_config,
     )
     initial_condition.create(
-        config=icon4py_driver.config.initial_condition,
+        config=icon4py_driver.config.boundaries.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,

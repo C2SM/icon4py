@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import enum
 import typing
 
@@ -21,6 +22,18 @@ T = typing.TypeVar("T", bound=enum.Enum)
 
 
 CONV = cattrs.preconf.pyyaml.PyyamlConverter(forbid_extra_keys=True)
+
+
+@dataclasses.dataclass
+class ConfigUnionStructurer[T]:
+    union_type: type[T]
+    type_map: typing.Mapping[str, type[T]]
+
+    def __call__(self, spec: dict, _: typing.Any) -> T:
+        config_type = spec.pop("type")
+        if config_type not in self.type_map:
+            raise TypeError(f"Unsupported type spec for {self.union_type}: {config_type}")
+        return CONV.structure(spec, self.type_map[config_type])
 
 
 CONV.register_unstructure_hook(ta.wpfloat, lambda v: CONV.unstructure(float(v)))
@@ -104,16 +117,13 @@ def unstructure_endtime(endtime: time.EndOfSimulation) -> dict:
 
 
 def register_config_union[T](union_type: type[T], mapping: typing.Mapping[str, type[T]]) -> None:
-    def structure(config_dict: dict, _: typing.Any) -> T:
-        config_type = config_dict.pop("type")
-        if config_type not in mapping:
-            raise TypeError(f"Unsupported type spec for {union_type}: {config_type}")
-        return CONV.structure(config_dict, mapping[config_type])
 
     inverse_mapping: dict[type[T], str] = {v: k for k, v in mapping.items()}
 
     def unstructure(instance: T) -> dict:
         return {"type": inverse_mapping[type(instance)], **CONV.unstructure(instance)}
 
-    CONV.register_structure_hook(union_type, structure)
+    CONV.register_structure_hook(
+        union_type, ConfigUnionStructurer(union_type=union_type, type_map=mapping)
+    )
     CONV.register_unstructure_hook(union_type, unstructure)
