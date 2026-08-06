@@ -84,7 +84,15 @@ class AdvectionLeastSquaresState:
 
 @dataclasses.dataclass(frozen=True)
 class AdvectionMetricState:
-    """Represents the metric fields needed in tracer_advection."""
+    """Represents the metric fields needed in tracer_advection.
+
+    The deep-atmosphere modification factors below are all 1 in the shallow atmosphere,
+    which is the only mode icon4py supports (the dycore rejects 'deepatmos_mode', see
+    'solve_nonhydro.NonHydrostaticConfig'). ICON does the same: it initialises them to 1
+    in 'mo_nonhydro_state.f90' and only overwrites them inside the 'IF (ldeepatmo)'
+    branch of 'mo_vertical_grid.f90'. They are kept as fields, rather than folded away,
+    because the ICON stencils they feed take them unconditionally.
+    """
 
     #: metrical modification factor for horizontal part of divergence at full levels (KDim)
     deepatmo_divh: fa.KField[ta.wpfloat]
@@ -116,7 +124,13 @@ def initialize_advection_diagnostic_state(
         hfl_tracer=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
+        # vertical flux at cell half levels: one more level than KDim
         vfl_tracer=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=allocator,
+            dtype=ta.wpfloat,
         ),
     )

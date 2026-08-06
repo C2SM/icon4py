@@ -11,6 +11,7 @@ import sys
 from typing import Final
 
 from icon4py.model.common import type_alias as ta
+from icon4py.model.common.config import config_io
 
 
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
@@ -33,6 +34,8 @@ RD_O_CVD: Final[ta.wpfloat] = RD / CVD
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[ta.wpfloat] = 461.51
 RV: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR
+#: RD/RV, rdv in ICON.
+RD_O_RV: Final[ta.wpfloat] = GAS_CONSTANT_DRY_AIR / GAS_CONSTANT_WATER_VAPOR
 
 #: Specific heat capacity of water vapor at constant pressure [J/K/kg]
 SPECIFIC_HEAT_CAPACITY_PRESSURE_WATER_VAPOR: Final[ta.wpfloat] = 1869.46
@@ -172,6 +175,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     eps = DBL_EPS
 
 
+@config_io.register_enum
 class RayleighType(int, enum.Enum):
     #: classical Rayleigh damping, which makes use of a reference state.
     CLASSIC = 1
