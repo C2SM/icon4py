@@ -47,18 +47,18 @@ ALL_SESSIONS = ["model", "model_mpi", "tools"]
 ALL_MODEL_SUBSETS = ["stencils", "datatest", "basic"]
 ALL_MODEL_MPI_SUBSETS = ["basic", "datatest"]
 ALL_MODEL_SUBPACKAGES = [
-    "advection",
+    "tracer_advection",
     "diffusion",
     "dycore",
     "microphysics",
     "muphys",
+    "physics_driver",
     "common",
-    "driver",
     "standalone_driver",
 ]
 
 ALL_MODEL_MPI_SUBPACKAGES = [
-    "advection",
+    "tracer_advection",
     "diffusion",
     "dycore",
     "common",

@@ -20,14 +20,19 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config
-from icon4py.model.testing import config, data_handling, datatest_utils as dt_utils, definitions
+from icon4py.model.testing import (
+    config,
+    data_handling,
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+)
 
 
 grid_geometries: dict[str, geometry.GridGeometry] = {}
 
 
 def get_grid_manager_from_experiment(
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     keep_skip_values: bool,
     allocator: gtx_typing.Allocator,
     process_props: decomposition.ProcessProperties | None = None,
@@ -42,7 +47,7 @@ def get_grid_manager_from_experiment(
 
 
 def get_grid_manager_from_identifier(
-    grid: definitions.GridDescription,
+    grid: test_defs.GridDescription,
     num_levels: int,
     keep_skip_values: bool,
     allocator: gtx_typing.Allocator,
@@ -86,12 +91,12 @@ def get_grid_manager(
     return manager
 
 
-def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
+def _download_grid_file(grid: test_defs.GridDescription) -> pathlib.Path:
     full_name = dt_utils.get_grid_filepath(grid)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
     if config.ENABLE_GRID_DOWNLOAD:
-        uri = dt_utils.get_grid_archive_url(definitions.TESTDATA_ROOT_URL, grid)
+        uri = dt_utils.get_grid_archive_url(test_defs.TESTDATA_ROOT_URL, grid)
         data_handling.download_and_extract(
             uri,
             grid_directory,
@@ -109,7 +114,7 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
 
 def get_grid_geometry(
     backend: gtx_typing.Backend | None,
-    grid: definitions.GridDescription,
+    grid: test_defs.GridDescription,
     experiment_config: driver_config.ExperimentConfig,
 ) -> geometry.GridGeometry:
     register_name = "_".join(

@@ -20,7 +20,7 @@ import typer
 
 
 if TYPE_CHECKING:
-    from icon4py.model.testing import definitions
+    from icon4py.model.testing import definitions as test_defs
 
 
 cli = typer.Typer(
@@ -28,16 +28,18 @@ cli = typer.Typer(
 )
 
 
-def get_validation_grids() -> list[definitions.GridDescription]:
+def get_validation_grids() -> list[test_defs.GridDescription]:
     # Import here to reduce startup time of the CLI
-    from icon4py.model.testing import definitions  # noqa: PLC0415 [import-outside-top-level]
+    from icon4py.model.testing import (  # noqa: PLC0415 [import-outside-top-level]
+        definitions as test_defs,
+    )
 
     return [
-        definitions.Grids.R01B01_GLOBAL,
-        definitions.Grids.R02B04_GLOBAL,
-        definitions.Grids.MCH_CH_R04B09_DSL,
-        definitions.Grids.MCH_OPR_R04B07_DOMAIN01,
-        definitions.Grids.TORUS_50000x5000,
+        test_defs.Grids.R01B01_GLOBAL,
+        test_defs.Grids.R02B04_GLOBAL,
+        test_defs.Grids.MCH_CH_R04B09_DSL,
+        test_defs.Grids.MCH_OPR_R04B07_DOMAIN01,
+        test_defs.Grids.TORUS_50000x5000,
     ]  # change to MCH_OPR_R04B07_DOMAIN01
 
 
@@ -47,11 +49,11 @@ def cache_key() -> None:
 
     from icon4py.model.testing import (  # noqa: PLC0415 [import-outside-top-level]
         datatest_utils as dt_utils,
-        definitions,
+        definitions as test_defs,
     )
 
     d = "_".join(
-        grid.name + dt_utils.get_grid_archive_url(definitions.TESTDATA_ROOT_URL, grid)
+        grid.name + dt_utils.get_grid_archive_url(test_defs.TESTDATA_ROOT_URL, grid)
         for grid in get_validation_grids()
     )
     hexdigest = hashlib.md5(d.encode()).hexdigest()

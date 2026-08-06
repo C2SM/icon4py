@@ -19,12 +19,13 @@ from typing import Any
 
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
-from icon4py.model.atmosphere.advection import advection as tracer_advection
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
     initial_condition,
     prescribed_tendencies,
@@ -38,7 +39,7 @@ from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states import tracer_state
+from icon4py.model.common.states import tracer_states
 from icon4py.model.common.utils import fortran_config
 
 
@@ -321,9 +322,10 @@ class ExperimentConfig:
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
     diffusion: diffusion.DiffusionConfig | None = None
-    tracer_config: tracer_state.TracerConfig | None = None
+    tracer_config: tracer_states.TracerConfig | None = None
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
+    muphys: muphys_config.MuphysConfig | None = None
 
     def __post_init__(self) -> None:
         # The file-based initial condition needs the clock of the driver to know which
@@ -396,8 +398,12 @@ def read_experiment_config_from_fortran(
         "exclaim_ch_r04b09_dsl" in config_file_path.name
         or "exclaim_ape_R02B04" in config_file_path.name
     )
-    # The experiments above were run in fortran with a tracer advection scheme
-    # that has not been ported to ICON4Py and can not be used for testing.
+    # The driver supplies advection's inputs (airmass and the mass fluxes the dycore
+    # accumulates over the substeps), and exclaim_ape_aesPhys runs tracer advection:
+    # the driver test validates transport+muphys against the end-of-time-step
+    # reference (hydrometeors bit-exact, see the test_standalone_driver docstring).
+    # The two experiments above stay disabled until their runs are validated the same
+    # way (their datatests do not compare tracers yet).
     # TODO (jcanton): this isn't the right place to keep a special case
     # handling. Either fix these experiments or move the special case handling.
     tracer_advection_cfg = (
@@ -408,7 +414,15 @@ def read_experiment_config_from_fortran(
     ntracer = (
         fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
     )
-    tracer_cfg = tracer_state.TracerConfig.from_ntracer(ntracer)
+    # AES physics implies muphys is active for the experiments we support today; the presence
+    # of the aes_phy_nml namelist mirrors the graupel `do_physics` check below. A robust
+    # dt_mig>0 check needs the raw namelist (see docs/2026-07-22-muphys-namelist-dt-mig-gate.md).
+    aes_physics_on = "aes_phy_nml" in atm_dict
+    tracer_cfg = (
+        tracer_states.TracerConfig.all()
+        if aes_physics_on
+        else tracer_states.TracerConfig.from_ntracer(ntracer)
+    )
 
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
     # If these two namelists are missing it means that the experiment was run
@@ -447,6 +461,8 @@ def read_experiment_config_from_fortran(
             config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
         )
 
+    muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
+
     return ExperimentConfig(
         geometry=geometry_cfg,
         metrics=metrics_cfg,
@@ -458,6 +474,7 @@ def read_experiment_config_from_fortran(
         tracer_config=tracer_cfg,
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
+        muphys=muphys_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
             atm_dict=atm_dict, data_path=config_file_path

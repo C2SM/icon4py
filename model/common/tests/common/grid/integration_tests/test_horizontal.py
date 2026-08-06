@@ -14,7 +14,7 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions as test_defs
 from icon4py.model.testing.fixtures import download_ser_data, experiment, experiment_description
 
 from ...fixtures import *  # noqa: F403
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_map_icon_start_end_index(
-    experiment: definitions.Experiment, dim: gtx.Dimension, grid_savepoint: sb.IconGridSavepoint
+    experiment: test_defs.Experiment, dim: gtx.Dimension, grid_savepoint: sb.IconGridSavepoint
 ) -> None:
     end_indices = grid_savepoint.end_index()
     start_indices = grid_savepoint.start_index()

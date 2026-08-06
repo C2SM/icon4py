@@ -13,9 +13,9 @@ import pytest
 
 from icon4py.model.common import initial_condition, model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.states import data, prognostic_state as prognostics
+from icon4py.model.common.states import data, prognostic_state as prognostics, tracer_states
 from icon4py.model.standalone_driver import driver_utils, standalone_driver
-from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -28,30 +28,40 @@ from icon4py.model.testing.fixtures.datatest import (
 
 # Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends
 # (gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu).
-_TOLERANCES: dict[definitions.ExperimentDescription, dict[str, tuple[float, float]]] = {
-    definitions.Experiments.JW: {
+_TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
+    test_defs.Experiments.JW: {
         "rho": (6.5e-15, 1.3e-14),
         "exner": (2.2e-15, 3.8e-15),
         "theta_v": (2.2e-12, 3.7e-15),
         "vn": (3.2e-13, 0.0),
         "w": (1.5e-17, 0.0),
     },
-    # No 'qv' yet: the tracers arrive with C2SM/icon4py#1301.
-    definitions.Experiments.EXCLAIM_APE_AES: {
+    test_defs.Experiments.EXCLAIM_APE_AES: {
         "rho": (6.4e-15, 1.3e-14),
         "exner": (2.2e-15, 3.8e-15),
         "theta_v": (2.2e-12, 3.8e-15),
         "vn": (3.2e-13, 0.0),
         "w": (0.0, 0.0),
+        # qv agrees with ICON only to round-off (~2e-14 max abs on qv~1e-2): the IC
+        # uses the iterative qv_from_relative_humidity solve.
+        "qv": (1e-13, 0.0),
     },
-    definitions.Experiments.GAUSS3D: {
+    test_defs.Experiments.GAUSS3D: {
         "rho": (1.2e-15, 3e-15),
         "exner": (6.7e-16, 1.3e-15),
         "theta_v": (1.2e-13, 4e-16),
         "vn": (0.0, 0.0),
         "w": (0.0, 0.0),
     },
-    definitions.Experiments.MCH_CH_R04B09: {
+    test_defs.Experiments.WEISMAN_KLEMP_TORUS: {
+        "rho": (3.8e-15, 9.6e-15),
+        "exner": (1.4e-15, 2.8e-15),
+        "theta_v": (2.0e-12, 2.8e-15),
+        "vn": (4.3e-14, 6.6e-13),
+        "w": (0.0, 0.0),
+        "qv": (2.0e-16, 1.6e-14),
+    },
+    test_defs.Experiments.MCH_CH_R04B09: {
         "rho": (0.0, 0.0),
         "exner": (0.0, 0.0),
         "theta_v": (0.0, 0.0),
@@ -65,16 +75,17 @@ _TOLERANCES: dict[definitions.ExperimentDescription, dict[str, tuple[float, floa
 @pytest.mark.parametrize(
     "experiment_description",
     [
-        definitions.Experiments.JW,
-        definitions.Experiments.EXCLAIM_APE_AES,
-        definitions.Experiments.GAUSS3D,
-        definitions.Experiments.MCH_CH_R04B09,
+        test_defs.Experiments.JW,
+        test_defs.Experiments.EXCLAIM_APE_AES,
+        test_defs.Experiments.GAUSS3D,
+        test_defs.Experiments.WEISMAN_KLEMP_TORUS,
+        test_defs.Experiments.MCH_CH_R04B09,
     ],
 )
 @pytest.mark.datatest
 def test_initial_conditions(
-    experiment_description: definitions.ExperimentDescription,
-    experiment: definitions.Experiment,
+    experiment_description: test_defs.ExperimentDescription,
+    experiment: test_defs.Experiment,
     *,
     data_provider: sb.IconSerialDataProvider,
     tmp_path: pathlib.Path,
@@ -103,6 +114,10 @@ def test_initial_conditions(
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
         allocator=allocator,
+    )
+    tracer_state_now = tracer_states.initialize_tracer_state(
+        grid=icon4py_driver.grid,
+        allocator=allocator,
         tracer_config=icon4py_driver.config.tracer_config,
     )
     initial_condition.create(
@@ -111,6 +126,7 @@ def test_initial_conditions(
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
+        tracer_state_now=tracer_state_now,
         solve_nonhydro_diagnostic_state=None,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
@@ -134,8 +150,8 @@ def test_initial_conditions(
     }
 
     # Moist experiments (e.g. APE) initialize the water-vapour tracer
-    if prognostic_state_now.tracer.qv is not None:
-        computed["qv"] = prognostic_state_now.tracer.qv
+    if tracer_state_now.qv is not None:
+        computed["qv"] = tracer_state_now.qv
         references["qv"] = prognostics_savepoint.tracer_now(data.QV)
 
     tolerances = _TOLERANCES[experiment_description]

@@ -18,7 +18,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.metrics.compute_zdiff_gradp import compute_zdiff_gradp
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,

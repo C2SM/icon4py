@@ -27,7 +27,7 @@ from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 def test_validate_divdamp_fields_against_savepoint_values(
     grid_savepoint: sb.IconGridSavepoint,
     savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
@@ -108,7 +108,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, step_date_init, substep_init, at_initial_timestep",
     [
@@ -145,12 +145,12 @@ def test_time_step_flags(
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -467,12 +467,12 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -657,12 +657,12 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -784,7 +784,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
 # why is this not run for APE?
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, at_initial_timestep",
     [
@@ -952,7 +952,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
     config = solve_nh.NonHydrostaticConfig()
     params = solve_nh.NonHydrostaticParams(config)
@@ -970,12 +970,12 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1176,12 +1176,12 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1312,12 +1312,12 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1510,12 +1510,12 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1658,12 +1658,12 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1826,12 +1826,12 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [to
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1941,12 +1941,12 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -2130,12 +2130,12 @@ def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-man
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
