@@ -37,6 +37,8 @@ class OptionalMetaData(TypedDict, total=False):
     #: whether the vertical dimension of the field lives on interface (half) levels
     #: rather than full levels
     is_on_half_levels: bool
+    #: physics-component output category: "tendency" applied as field += val*dt; "diagnostic" stored unscaled
+    kind: Literal["tendency", "diagnostic"]
 
 
 class RequiredMetaData(TypedDict, total=True):
