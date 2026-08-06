@@ -151,17 +151,18 @@ exclude = '''(?x)^(
   .*/docs/.*|                 # documentation files
   ^bindings/tests/.*|         # untyped bindings tests (future annotation work)
   ^tools/tests/.*|            # untyped tools tests (future annotation work)
-  ^scripts/.*|                # command-line scripts not type-checked
+  ^scripts/.*|                # command-line scripts not imported as part of the checked packages
   ^noxfile\.py$|              # nox session definitions
   ^scripts-cli\.py$|          # CLI entry point
-  # New untyped code from origin/main: excluded to keep the opt-out mypy config clean
-  # until these files are annotated in follow-up work.
-  ^model/atmosphere/subgrid_scale_physics/muphys/src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/core/(properties|transitions)\.py$|
-  ^model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/stencil_tests/test_.*_aes_graupel\.py$|
-  ^model/atmosphere/subgrid_scale_physics/muphys/tests/muphys/integration_tests/test_(component|muphys)_datatest\.py$|
-  ^model/atmosphere/subgrid_scale_physics/physics_driver/tests/physics_driver/unit_tests/test_physics_driver\.py$|
-  ^model/common/src/icon4py/model/common/initial_condition/analytical/(utils|weisman_klemp)\.py$|
-  ^model/common/tests/common/diagnostic_calculations/unit_tests/test_diagnostic_calculations\.py$
+  # Sibling packages in the same namespace are already fully annotated; these
+  # remaining directories are outside the model namespace packages and are
+  # excluded from this type-checking rollout.
+  ^bindings/tests/.*|         # untyped bindings tests (future annotation work)
+  ^tools/tests/.*|            # untyped tools tests (future annotation work)
+  # Large analytical initial-condition modules (~620 lines) contain many
+  # ndarray index operations that need per-line ignores per D4. Left excluded
+  # as a follow-up (see R37 discussion).
+  ^model/common/src/icon4py/model/common/initial_condition/analytical/(utils|weisman_klemp)\.py$
 )$'''
 explicit_package_bases = true
 files = [
@@ -194,6 +195,10 @@ warn_unused_configs = true
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
+# serialbox is a C-extension module without type stubs. ignore_errors is used
+# instead of ignore_missing_imports because the branch also exposes stubs for
+# IconGridSavepoint etc. in icon4py.model.testing.serialbox; those hand-written
+# declarations rely on the untyped serialbox module. Per D3.
 ignore_errors = true
 module = [
   'icon4py.model.testing.serialbox'
@@ -209,14 +214,6 @@ disable_error_code = ["arg-type", "attr-defined", "misc", "type-var", "assignmen
 module = [
   "icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.common"
 ]
-
-[[tool.mypy.overrides]]
-disallow_untyped_defs = false
-module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
-
-[[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
-disable_error_code = ["index", "misc"]
-module = ["icon4py.model.common.initial_condition.*"]
 
 [[tool.mypy.overrides]]
 # GT4Py/numpy typing incompatibilities: NDArrayObject Protocol mismatch, Field
