@@ -935,6 +935,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 def test_non_hydrostatic_params(savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint) -> None:
     config = solve_nh.NonHydrostaticConfig()
     params = solve_nh.NonHydrostaticParams(config)
