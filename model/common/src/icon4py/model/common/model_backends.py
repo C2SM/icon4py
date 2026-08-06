@@ -5,12 +5,16 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 from typing import Any, Final, TypeAlias, TypeGuard
 
 import gt4py.next as gtx
+import gt4py.next.custom_layout_allocators as gtx_allocators
 import gt4py.next.typing as gtx_typing
-from gt4py.next import backend as gtx_backend, custom_layout_allocators as gtx_allocators
+from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
+from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
@@ -77,10 +81,12 @@ def make_custom_dace_backend(
     device: DeviceType,
     auto_optimize: bool = True,
     async_sdfg_call: bool = True,
+    max_concurrent_gpu_streams: int = 0,
     optimization_args: dict[str, Any] | None = None,
     use_metrics: bool = True,
     use_zero_origin: bool = False,
     use_max_domain_range_on_unstructured_shift: bool | None = None,
+    external_workspace: gtx_transformations.ExternalWorkspace | None = None,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
@@ -90,6 +96,9 @@ def make_custom_dace_backend(
         auto_optimize: Enable the SDFG auto-optimize pipeline.
         async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
             of GPU kernel execution with the Python driver code.
+        max_concurrent_gpu_streams: The maximum number of concurrent GPU streams
+            to use for the SDFG execution. The default '0' means it will use the
+            default stream only.
         optimization_args: A `dict` containing configuration parameters for
             the SDFG auto-optimize pipeline.
         use_metrics: Add SDFG instrumentation to collect the metric for stencil
@@ -97,15 +106,35 @@ def make_custom_dace_backend(
         use_max_domain_range_on_unstructured_shift: When True, compute `as_fieldop`
             expressions everywhere. Otherwise, when all connectivities are given
             at compile time, infer the minimal domain of all `as_fieldop` statically.
+        external_workspace: The external workspace memory to use as storage for
+            the transient arrays. If `None`, the transient arrays will be allocated
+            inside the SDFG with scope lifetime.
 
     Returns:
         A dace backend with custom configuration for the target device.
     """
+    if external_workspace is not None:
+        if optimization_args is None:
+            optimization_args = {
+                "transient_memory_mode": gtx_transformations.TransientMemoryMode.EXTERNAL,
+            }
+        elif transient_memory_mode := optimization_args.get("transient_memory_mode"):
+            if transient_memory_mode != gtx_transformations.TransientMemoryMode.EXTERNAL:
+                raise ValueError(
+                    f"Cannot use external workspace with transient_memory_mode={transient_memory_mode}."
+                )
+        else:
+            optimization_args["transient_memory_mode"] = (
+                gtx_transformations.TransientMemoryMode.EXTERNAL
+            )
+
     on_gpu = device == GPU
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
         auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
+        external_workspace=external_workspace,
+        max_concurrent_gpu_streams=max_concurrent_gpu_streams,
         optimization_args=optimization_args,
         unstructured_horizontal_has_unit_stride=True,
         use_metrics=use_metrics,

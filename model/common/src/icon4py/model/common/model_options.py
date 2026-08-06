@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import dace_workspace, model_backends
 
 
 log = logging.getLogger(__name__)
@@ -28,9 +28,28 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
 def get_dace_options(
     program_name: str, **backend_descriptor: Any
 ) -> model_backends.BackendDescriptor:
-    is_rocm_device = backend_descriptor.get("device") == model_backends.DeviceType.ROCM
+    device = backend_descriptor.get("device")
     optimization_args = backend_descriptor.get("optimization_args", {})
     optimization_hooks = optimization_args.get("optimization_hooks", {})
+
+    if device is not None and device != gtx.DeviceType.CPU:
+        # Enable workspace memory for all non-CPU backends, see below.
+        backend_descriptor["external_workspace"] = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(
+            device
+        )
+        optimization_args["transient_memory_mode"] = (
+            gtx_transformations.TransientMemoryMode.EXTERNAL
+        )
+        if device == model_backends.DeviceType.ROCM:
+            # The workspace memory allows to avoid the overhead of runtime allocations,
+            # which are expensive in the AMD runtime. We run on the default stream because
+            # the HIP code generator in DaCe does not support multi streams yet.
+            backend_descriptor["max_concurrent_gpu_streams"] = 0
+        else:
+            # For CUDA, the workspace memory allows to exploit multi-stream execution,
+            # while not worrying about in-order memory allocation on the stream pool.
+            backend_descriptor["max_concurrent_gpu_streams"] = 8
+
     if program_name in [
         "vertically_implicit_solver_at_corrector_step",
         "vertically_implicit_solver_at_predictor_step",
@@ -55,7 +74,7 @@ def get_dace_options(
         backend_descriptor["use_zero_origin"] = True
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
-        if not is_rocm_device:
+        if device != model_backends.DeviceType.ROCM:
             optimization_args["gpu_maxnreg"] = 80
             optimization_args["gpu_block_size_2d"] = (64, 6)
         optimization_args["gpu_memory_pool"] = False

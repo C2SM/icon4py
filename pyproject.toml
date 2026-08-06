@@ -415,14 +415,15 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
+dace = {git = "https://github.com/edopao/dace", branch = "phimuell__new-gpu-codegen-dev"}
+gt4py = {git = "https://github.com/GridTools/gt4py", branch = "edopao/dace_new_gpu_codegen"}
+# gt4py = {index = "test.pypi"}
+# dace = {index = "gridtools"}
 icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
 icon4py-atmosphere-muphys = {workspace = true}
 icon4py-atmosphere-physics-driver = {workspace = true}
-# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
-# gt4py = {index = "test.pypi"}
-# dace = {index = "gridtools"}
 icon4py-atmosphere-tracer_advection = {workspace = true}
 icon4py-bindings = {workspace = true}
 icon4py-common = {workspace = true}
