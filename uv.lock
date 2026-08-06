@@ -1645,8 +1645,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/GridTools/gt4py?branch=edopao%2Fdace_new_gpu_codegen#fcdff40b61d54774cf4e0837b97780329b8679a3"}
-version = "1.2.0.post155+fcdff40b"
+source = {git = "https://github.com/GridTools/gt4py?branch=edopao%2Fdace_new_gpu_codegen#344870212df15f18513ef40a455e2cc599bcdb14"}
+version = "1.2.0.post156+34487021"
 
 [package.optional-dependencies]
 cuda12 = [
