@@ -35,7 +35,7 @@ import functools
 import itertools
 import pathlib
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Annotated, Any, Final
+from typing import TYPE_CHECKING, Annotated, Final
 
 import typer
 
@@ -102,11 +102,7 @@ class SavepointRef:
 
     index: int
     name: str
-    meta: dict[str, Any]
-
-    @property
-    def date(self) -> str | None:
-        return self.meta.get("date")
+    date: str | None
 
     @property
     def label(self) -> str:
@@ -137,23 +133,15 @@ class FieldStats:
         return f"{self.field}.{self.component}" if self.component else self.field
 
 
-def tracer_labels() -> tuple[str, ...]:
-    """Names of the tracer species, ordered as ICON serializes them."""
-    from icon4py.model.common.states import data  # noqa: PLC0415 [import-outside-top-level]
-
-    by_index = {
-        attributes["icon_var_list_index"]: name
-        for name, attributes in data.COMMON_TRACER_CF_ATTRIBUTES.items()
-        if "icon_var_list_index" in attributes
-    }
-    return tuple(by_index[index] for index in sorted(by_index))
-
-
 def component_labels(field: str, size: int) -> tuple[str, ...] | None:
     """Labels for the trailing axis of *field*, or None if it is not a component axis."""
     if TRACER_FIELD_MARKER not in field:
         return None
-    known = tracer_labels()
+    # the serialization order of the tracers, as the model itself defines it
+    from icon4py.model.common.states.tracer_states import (  # noqa: PLC0415 [import-outside-top-level]
+        _TRACER_FIELDS as known,
+    )
+
     return tuple(known[i] if i < len(known) else f"idx{i}" for i in range(size))
 
 
@@ -213,7 +201,7 @@ class ArchiveExplorer:
         )
         self._raw = tuple(self._serializer.savepoint_list())
         self.savepoints = tuple(
-            SavepointRef(index=index, name=savepoint.name, meta=savepoint.metainfo.to_dict())
+            SavepointRef(index, savepoint.name, savepoint.metainfo.to_dict().get("date"))
             for index, savepoint in enumerate(self._raw)
         )
 
@@ -340,7 +328,11 @@ class ArchiveExplorer:
 
 
 def format_table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
-    """Render *rows* as a left-aligned fixed-width table."""
+    """Render *rows* as a left-aligned fixed-width table.
+
+    Not 'rich.table': it truncates to the terminal width, and savepoint and field names
+    are the whole point of this output.
+    """
     if not rows:
         return "(no rows)"
     widths = [
