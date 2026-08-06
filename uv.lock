@@ -1552,8 +1552,8 @@ dependencies = [
   {name = "numpy"}
 ]
 name = "ghex"
-sdist = {url = "https://test-files.pythonhosted.org/packages/a3/bc/773f20762d7d269e6b56d7fd8c39f522e48be875cc2e52b87bc2e9bfc806/ghex-0.9.0.tar.gz", hash = "sha256:165115747171c2b16367dace0420d8d50ddc925a1ad9b037c6669ffa70e7a596", size = 8932624, upload-time = "2026-08-06T14:19:38.553Z"}
-source = {registry = "https://test.pypi.org/simple/"}
+sdist = {url = "https://files.pythonhosted.org/packages/a3/bc/773f20762d7d269e6b56d7fd8c39f522e48be875cc2e52b87bc2e9bfc806/ghex-0.9.0.tar.gz", hash = "sha256:165115747171c2b16367dace0420d8d50ddc925a1ad9b037c6669ffa70e7a596", size = 8932624, upload-time = "2026-08-06T15:29:30.433Z"}
+source = {registry = "https://pypi.org/simple"}
 version = "0.9.0"
 
 [[package]]
@@ -2194,7 +2194,7 @@ requires-dist = [
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
-  {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.7.0", index = "https://test.pypi.org/simple/"},
+  {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.7.0"},
   {name = "gt4py", specifier = "==1.2.0"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
