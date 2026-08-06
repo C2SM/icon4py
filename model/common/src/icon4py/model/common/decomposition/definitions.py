@@ -673,9 +673,10 @@ def create_reduction(
     decomposition_info: DecompositionInfo | None = None,
 ) -> Reductions:
     """
-    Create a Global Reduction depending on the runtime size.
+    Create a reductions object depending on the runtime size.
 
-    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+    For a single-rank run, returns a SingleNodeReductions object.
+    For a distributed run, returns a GlobalReductions object.
     """
     _require_decomp_info_for_distributed(process_props, decomposition_info)
     key = (id(process_props), id(decomposition_info))
