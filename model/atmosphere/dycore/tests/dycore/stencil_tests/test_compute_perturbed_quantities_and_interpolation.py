@@ -197,7 +197,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
-                & (nflatlev <= vert_idx[: surface_level - 1]),
+                & (max(1, nflatlev) <= vert_idx[: surface_level - 1]),
                 compute_first_vertical_derivative_numpy(
                     cell_kdim_field=exner_at_cells_on_half_levels, inv_ddqz_z_full=inv_ddqz_z_full
                 ),
@@ -324,7 +324,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = np.where(
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
-                & (nflat_gradp <= vert_idx[: surface_level - 1]),
+                & (max(1, nflat_gradp) <= vert_idx[: surface_level - 1]),
                 compute_approx_of_2nd_vertical_derivative_of_exner_numpy(
                     z_theta_v_pr_ic=perturbed_theta_v_at_cells_on_half_levels,
                     d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,

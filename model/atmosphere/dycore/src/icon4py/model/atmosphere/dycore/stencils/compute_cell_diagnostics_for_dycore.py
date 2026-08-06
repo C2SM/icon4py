@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next import astype
+from gt4py.next import astype, maximum
 
 from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDiscretizationType
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
@@ -331,13 +331,16 @@ def compute_perturbed_quantities_and_interpolation(
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
                 dims.KDim: (model_top, surface_level - 1),
             },
+            # The `maximum(1, ...)` mirrors `MAX(2, nflatlev)` in ICON: computing the top half
+            # level would require the upward extrapolation that icon4py does not implement,
+            # see https://github.com/C2SM/icon4py/issues/1418
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-                dims.KDim: (nflatlev, surface_level - 1),
+                dims.KDim: (maximum(1, nflatlev), surface_level - 1),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-                dims.KDim: (nflat_gradp, surface_level - 1),
+                dims.KDim: (maximum(1, nflat_gradp), surface_level - 1),
             },
         ),
     )
