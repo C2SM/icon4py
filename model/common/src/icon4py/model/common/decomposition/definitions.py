@@ -620,6 +620,14 @@ def _create_exchange_impl(
     raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
 
 
+def _require_decomp_info_for_distributed(
+    process_props: ProcessProperties,
+    decomp_info: DecompositionInfo | None,
+) -> None:
+    if decomp_info is None and not process_props.is_single_rank():
+        raise ValueError("decomp_info is required for distributed runs.")
+
+
 def create_exchange(
     process_props: ProcessProperties,
     decomp_info: DecompositionInfo | None = None,
@@ -629,6 +637,7 @@ def create_exchange(
 
     Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
     """
+    _require_decomp_info_for_distributed(process_props, decomp_info)
     key = (id(process_props), id(decomp_info))
     if (entry := _exchange_cache.get(key)) is not None:
         if entry.process_props_ref() is None or (
@@ -668,6 +677,7 @@ def create_reduction(
 
     Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
     """
+    _require_decomp_info_for_distributed(process_props, decomposition_info)
     key = (id(process_props), id(decomposition_info))
     if (entry := _reduction_cache.get(key)) is not None:
         if entry.process_props_ref() is None or (
