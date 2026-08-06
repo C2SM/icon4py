@@ -805,7 +805,7 @@ def _is_compatible_union(annotation: Any, expected: types.UnionType | typing._Sp
         if typing.get_origin(expected) in {types.UnionType, typing.Union}
         else (expected,)
     )
-    return set(possible_types) <= set(expected_types) and None not in possible_types
+    return set(t for t in possible_types if t is not type(None)) <= set(expected_types)
 
 
 def _is_compatible_value(
