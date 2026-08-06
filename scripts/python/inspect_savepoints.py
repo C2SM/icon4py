@@ -294,7 +294,7 @@ class ArchiveExplorer:
         labelled = SavepointRef(
             index=after.index,
             name=_transition(before.name, after.name),
-            meta={**after.meta, "date": _transition(before.date, after.date)},
+            date=_transition(before.date, after.date),
         )
         return self._summarize_components(second - first, labelled, field)
 
