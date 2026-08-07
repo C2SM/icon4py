@@ -72,14 +72,14 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
         input_field: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        offset = np.roll(input_field, shift=1, axis=1)
-        average = 0.5 * (input_field + offset)
-        return dict(average=average)
+        shp = input_field.shape
+        res = 0.5 * (input_field + np.roll(input_field, shift=-1, axis=1))[:, : shp[1] - 1]
+        return dict(average=res)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        input_field = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        result = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        input_field = data_alloc.random_field(grid, dims.EdgeDim, dims.KHalfDim)
+        result = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             input_field=input_field,
             average=result,
@@ -113,7 +113,7 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        input_field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        input_field = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
         result = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             input_field=input_field,

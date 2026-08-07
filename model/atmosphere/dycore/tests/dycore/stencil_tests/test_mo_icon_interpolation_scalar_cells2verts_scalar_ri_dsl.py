@@ -52,9 +52,9 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        p_cell_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        p_cell_in = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
         c_intp = random_field(grid, dims.VertexDim, dims.V2CDim, dtype=wpfloat)
-        p_vert_out = zero_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
+        p_vert_out = zero_field(grid, dims.VertexDim, dims.KHalfDim, dtype=vpfloat)
 
         return dict(
             p_cell_in=p_cell_in,
@@ -63,5 +63,5 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_vertices),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

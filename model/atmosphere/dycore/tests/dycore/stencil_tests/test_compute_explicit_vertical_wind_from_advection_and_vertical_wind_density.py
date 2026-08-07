@@ -86,15 +86,21 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        w_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        ddt_w_adv_ntl1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        ddt_w_adv_ntl2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_th_ddz_exner_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_w_expl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        w_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        ddt_w_adv_ntl1 = data_alloc.random_field(
+            grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
+        )
+        ddt_w_adv_ntl2 = data_alloc.random_field(
+            grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
+        )
+        z_th_ddz_exner_c = data_alloc.random_field(
+            grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
+        )
+        z_w_expl = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        z_contr_w_fl_l = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_contr_w_fl_l = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
         wgt_nnow_vel = ta.wpfloat("8.0")
         wgt_nnew_vel = ta.wpfloat("9.0")
@@ -117,5 +123,5 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

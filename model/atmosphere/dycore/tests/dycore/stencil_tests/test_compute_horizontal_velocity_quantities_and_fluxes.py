@@ -296,7 +296,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         )
 
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KHalfDim)
         wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         e_flx_avg = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
         geofac_grdiv = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)

@@ -202,8 +202,73 @@ def compute_reference_atmosphere_cell_fields(  # noqa: PLR0917 [too-many-positio
 
 
 @gtx.field_operator
+def _compute_reference_atmosphere_cell_fields_on_half_levels(  # noqa: PLR0917 [too-many-positional-arguments]
+    z_ifc: fa.CellKHalfField[wpfloat],
+    p0ref: wpfloat,
+    p0sl_bg: wpfloat,
+    grav: wpfloat,
+    cpd: wpfloat,
+    rd: wpfloat,
+    h_scal_bg: wpfloat,
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+) -> tuple[
+    fa.CellKHalfField[wpfloat],
+    fa.CellKHalfField[wpfloat],
+    fa.CellKHalfField[wpfloat],
+]:
+    denom = t0sl_bg - del_t_bg
+    z_aux1 = p0sl_bg * exp(
+        -grav / rd * h_scal_bg / denom * log((exp(z_ifc / h_scal_bg) * denom + del_t_bg) / t0sl_bg)
+    )
+    exner_ref_ic = (z_aux1 / p0ref) ** (rd / cpd)
+    z_temp = denom + del_t_bg * exp(-z_ifc / h_scal_bg)
+    rho_ref_ic = z_aux1 / (rd * z_temp)
+    theta_ref_ic = z_temp / exner_ref_ic
+    return theta_ref_ic, exner_ref_ic, rho_ref_ic
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_reference_atmosphere_cell_fields_on_half_levels(  # noqa: PLR0917 [too-many-positional-arguments]
+    z_height: fa.CellKHalfField[wpfloat],
+    exner_ref_ic: fa.CellKHalfField[wpfloat],
+    rho_ref_ic: fa.CellKHalfField[wpfloat],
+    theta_ref_ic: fa.CellKHalfField[wpfloat],
+    p0ref: wpfloat,
+    p0sl_bg: wpfloat,
+    grav: wpfloat,
+    cpd: wpfloat,
+    rd: wpfloat,
+    h_scal_bg: wpfloat,
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    """Calculate reference atmosphere fields on half levels."""
+    _compute_reference_atmosphere_cell_fields_on_half_levels(
+        z_ifc=z_height,
+        p0ref=p0ref,
+        p0sl_bg=p0sl_bg,
+        grav=grav,
+        cpd=cpd,
+        rd=rd,
+        h_scal_bg=h_scal_bg,
+        t0sl_bg=t0sl_bg,
+        del_t_bg=del_t_bg,
+        out=(theta_ref_ic, exner_ref_ic, rho_ref_ic),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
 def _compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_ifc: fa.CellKField[wpfloat],
+    z_ifc: fa.CellKHalfField[wpfloat],
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
     h_scal_bg: wpfloat,
@@ -282,9 +347,9 @@ def _compute_d2dexdz2_fac_mc(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_ifc: fa.CellKField[wpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[wpfloat],
-    theta_ref_ic: fa.CellKField[wpfloat],
+    z_ifc: fa.CellKHalfField[wpfloat],
+    d_exner_dz_ref_ic: fa.CellKHalfField[wpfloat],
+    theta_ref_ic: fa.CellKHalfField[wpfloat],
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
     h_scal_bg: wpfloat,
@@ -313,7 +378,7 @@ def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-argum
         out=(theta_ref_ic, d_exner_dz_ref_ic),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
 

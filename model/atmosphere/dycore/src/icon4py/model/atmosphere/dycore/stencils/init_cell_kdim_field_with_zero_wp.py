@@ -18,6 +18,11 @@ def _init_cell_kdim_field_with_zero_wp() -> fa.CellKField[wpfloat]:
     return broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
 
 
+@gtx.field_operator
+def _init_cell_khalf_field_with_zero_wp() -> fa.CellKHalfField[wpfloat]:
+    return broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim))
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_cell_kdim_field_with_zero_wp(
     field_with_zero_wp: fa.CellKField[wpfloat],

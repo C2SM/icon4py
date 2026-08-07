@@ -23,12 +23,15 @@ from icon4py.model.testing.stencil_tests import StencilTest
 def interpolate_to_surface_numpy(
     interpolant: np.ndarray, wgtfacq_c: np.ndarray, interpolation_to_surface: np.ndarray
 ) -> np.ndarray:
+    # half level k is extrapolated from the three model levels below it
     interpolation_to_surface = np.copy(interpolation_to_surface)
-    interpolation_to_surface[:, 3:] = (
-        np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(interpolant, shift=1, axis=1)
-        + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(interpolant, shift=2, axis=1)
-        + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(interpolant, shift=3, axis=1)
-    )[:, 3:]
+    nlev = interpolant.shape[1]
+    k = np.arange(3, nlev)
+    interpolation_to_surface[:, 3:nlev] = (
+        wgtfacq_c[:, k - 1] * interpolant[:, k - 1]
+        + wgtfacq_c[:, k - 2] * interpolant[:, k - 2]
+        + wgtfacq_c[:, k - 3] * interpolant[:, k - 3]
+    )
     return interpolation_to_surface
 
 
@@ -56,7 +59,7 @@ class TestInterpolateToSurface(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolant = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        interpolation_to_surface = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        interpolation_to_surface = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
 
         return dict(
             interpolant=interpolant,

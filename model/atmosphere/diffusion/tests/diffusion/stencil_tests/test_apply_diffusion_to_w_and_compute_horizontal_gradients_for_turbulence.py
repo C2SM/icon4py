@@ -145,15 +145,15 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
         geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim)
         geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim)
-        diff_multfac_n2w = random_field(grid, dims.KDim)
+        diff_multfac_n2w = random_field(grid, dims.KHalfDim)
         area = random_field(grid, dims.CellDim)
         geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim)
-        w_old = random_field(grid, dims.CellDim, dims.KDim)
+        w_old = random_field(grid, dims.CellDim, dims.KHalfDim)
         diff_multfac_w = 5.0
 
-        w = zero_field(grid, dims.CellDim, dims.KDim)
-        dwdx = random_field(grid, dims.CellDim, dims.KDim)
-        dwdy = random_field(grid, dims.CellDim, dims.KDim)
+        w = zero_field(grid, dims.CellDim, dims.KHalfDim)
+        dwdx = random_field(grid, dims.CellDim, dims.KHalfDim)
+        dwdy = random_field(grid, dims.CellDim, dims.KHalfDim)
 
         return dict(
             area=area,

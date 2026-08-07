@@ -24,12 +24,12 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 def interpolate_edge_field_to_half_levels_vp_numpy(
     wgtfac_e: np.ndarray, interpolant: np.ndarray
 ) -> np.ndarray:
-    interpolant_offset_1 = np.roll(interpolant, shift=1, axis=1)
-    interpolation_to_half_levels_vp = (
-        wgtfac_e * interpolant + (1.0 - wgtfac_e) * interpolant_offset_1
+    nlev = interpolant.shape[1]
+    interpolation_to_half_levels_vp = np.zeros((interpolant.shape[0], nlev + 1))
+    w = wgtfac_e[:, 1:nlev]
+    interpolation_to_half_levels_vp[:, 1:nlev] = (
+        w * interpolant[:, 1:nlev] + (1.0 - w) * interpolant[:, 0 : nlev - 1]
     )
-    interpolation_to_half_levels_vp[:, 0] = 0
-
     return interpolation_to_half_levels_vp
 
 
@@ -53,8 +53,10 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base_grid.Grid) -> dict:
         interpolant = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        interpolation_to_half_levels_vp = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KHalfDim, dtype=vpfloat)
+        interpolation_to_half_levels_vp = zero_field(
+            grid, dims.EdgeDim, dims.KHalfDim, dtype=vpfloat
+        )
 
         return dict(
             wgtfac_e=wgtfac_e,

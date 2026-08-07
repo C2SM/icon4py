@@ -15,17 +15,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _calculate_nabla2_for_w(
-    w: fa.CellKField[wpfloat], geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], wpfloat]
-) -> fa.CellKField[vpfloat]:
+    w: fa.CellKHalfField[wpfloat], geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], wpfloat]
+) -> fa.CellKHalfField[vpfloat]:
     z_nabla2_c_wp = neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim)
     return astype(z_nabla2_c_wp, vpfloat)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def calculate_nabla2_for_w(
-    w: fa.CellKField[wpfloat],
+    w: fa.CellKHalfField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], wpfloat],
-    z_nabla2_c: fa.CellKField[vpfloat],
+    z_nabla2_c: fa.CellKHalfField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -38,6 +38,6 @@ def calculate_nabla2_for_w(
         out=z_nabla2_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

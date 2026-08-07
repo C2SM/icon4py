@@ -130,9 +130,9 @@ class MetricStateNonHydro:
     mask_prog_halo_c: fa.CellKField[bool]
     rayleigh_w: fa.KField[ta.wpfloat]
 
-    wgtfac_c: fa.CellKField[ta.vpfloat]
+    wgtfac_c: fa.CellKHalfField[ta.vpfloat]
     wgtfacq_c: fa.CellKField[ta.vpfloat]
-    wgtfac_e: fa.EdgeKField[ta.vpfloat]
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat]
     wgtfacq_e: fa.EdgeKField[ta.vpfloat]
 
     time_extrapolation_parameter_for_exner: fa.CellKField[ta.vpfloat]
@@ -159,15 +159,15 @@ class MetricStateNonHydro:
     """
     Declared as theta_ref_me in ICON.
     """
-    reference_theta_at_cells_on_half_levels: fa.CellKField[ta.vpfloat]
+    reference_theta_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat]
     """
     Declared as theta_ref_ic in ICON.
     """
-    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat]
+    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat]
     """
     Declared as d_exner_dz_ref_ic in ICON.
     """
-    ddqz_z_half: fa.CellKField[ta.vpfloat]  # dims.KHalfDim
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat]
     d2dexdz2_fac1_mc: fa.CellKField[ta.vpfloat]
     d2dexdz2_fac2_mc: fa.CellKField[ta.vpfloat]
     ddxn_z_full: fa.EdgeKField[ta.vpfloat]
@@ -223,11 +223,11 @@ class PrepAdvection:
 
     vn_traj: fa.EdgeKField[ta.wpfloat]
     mass_flx_me: fa.EdgeKField[ta.wpfloat]
-    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat]
+    dynamical_vertical_mass_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat]
     """
     Declared as mass_flx_ic in ICON.
     """
-    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKField[ta.wpfloat]
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat]
     """
     Declared as vol_flx_ic in ICON.
     """
@@ -245,16 +245,14 @@ def initialize_prep_advection(
     dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
     dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )

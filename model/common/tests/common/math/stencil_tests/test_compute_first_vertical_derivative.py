@@ -46,9 +46,7 @@ class TestComputeFirstVerticalDerivative(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        cell_kdim_field = random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
-        )
+        cell_kdim_field = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         first_vertical_derivative = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 

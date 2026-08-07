@@ -40,39 +40,39 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     wgt_nnew_rth: ta.wpfloat,
 ) -> tuple[np.ndarray, ...]:
     vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-    rho_now_offset = np.roll(rho_now, shift=1, axis=1)
-    rho_var_offset = np.roll(rho_var, shift=1, axis=1)
-    theta_now_offset = np.roll(theta_now, shift=1, axis=1)
-    theta_var_offset = np.roll(theta_var, shift=1, axis=1)
-    theta_ref_mc_offset = np.roll(theta_ref_mc, shift=1, axis=1)
-    exner_pr_offset = np.roll(exner_pr, shift=1, axis=1)
+    nlev = rho_now.shape[1]
+    lo, hi = slice(0, nlev - 1), slice(1, nlev)  # model levels k-1 and k, for half level k
 
-    z_w_backtraj = -(w - w_concorr_c) * dtime * 0.5 / ddqz_z_half
-    z_rho_tavg_m1 = wgt_nnow_rth * rho_now_offset + wgt_nnew_rth * rho_var_offset
-    z_theta_tavg_m1 = wgt_nnow_rth * theta_now_offset + wgt_nnew_rth * theta_var_offset
-    z_rho_tavg = wgt_nnow_rth * rho_now + wgt_nnew_rth * rho_var
-    z_theta_tavg = wgt_nnow_rth * theta_now + wgt_nnew_rth * theta_var
-    rho_ic = (
-        wgtfac_c * z_rho_tavg
-        + (1 - wgtfac_c) * z_rho_tavg_m1
-        + z_w_backtraj * (z_rho_tavg_m1 - z_rho_tavg)
+    def half(a: np.ndarray) -> np.ndarray:
+        out = np.zeros((a.shape[0], nlev + 1))
+        out[:, 1:nlev] = a
+        return out
+
+    w_ = wgtfac_c[:, hi]
+    z_w_backtraj = -(w[:, hi] - w_concorr_c[:, hi]) * dtime * 0.5 / ddqz_z_half[:, hi]
+    z_rho_tavg_m1 = wgt_nnow_rth * rho_now[:, lo] + wgt_nnew_rth * rho_var[:, lo]
+    z_theta_tavg_m1 = wgt_nnow_rth * theta_now[:, lo] + wgt_nnew_rth * theta_var[:, lo]
+    z_rho_tavg = wgt_nnow_rth * rho_now[:, hi] + wgt_nnew_rth * rho_var[:, hi]
+    z_theta_tavg = wgt_nnow_rth * theta_now[:, hi] + wgt_nnew_rth * theta_var[:, hi]
+
+    rho_ic = half(
+        w_ * z_rho_tavg + (1 - w_) * z_rho_tavg_m1 + z_w_backtraj * (z_rho_tavg_m1 - z_rho_tavg)
     )
-    rho_ic[:, 0] = 0
-    z_theta_v_pr_mc_m1 = z_theta_tavg_m1 - theta_ref_mc_offset
-    z_theta_v_pr_mc = z_theta_tavg - theta_ref_mc
-    z_theta_v_pr_ic = wgtfac_c * z_theta_v_pr_mc + (1 - wgtfac_c) * z_theta_v_pr_mc_m1
-    z_theta_v_pr_ic[:, 0] = 0
-    theta_v_ic = (
-        wgtfac_c * z_theta_tavg
-        + (1 - wgtfac_c) * z_theta_tavg_m1
+    z_theta_v_pr_mc_m1 = z_theta_tavg_m1 - theta_ref_mc[:, lo]
+    z_theta_v_pr_mc = z_theta_tavg - theta_ref_mc[:, hi]
+    z_theta_v_pr_ic = half(w_ * z_theta_v_pr_mc + (1 - w_) * z_theta_v_pr_mc_m1)
+    theta_v_ic = half(
+        w_ * z_theta_tavg
+        + (1 - w_) * z_theta_tavg_m1
         + z_w_backtraj * (z_theta_tavg_m1 - z_theta_tavg)
     )
-    theta_v_ic[:, 0] = 0
-    z_th_ddz_exner_c = (
-        vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
-        + z_theta_v_pr_ic * d_exner_dz_ref_ic
+    z_th_ddz_exner_c = half(
+        vwind_expl_wgt
+        * theta_v_ic[:, hi]
+        * (exner_pr[:, lo] - exner_pr[:, hi])
+        / ddqz_z_half[:, hi]
+        + z_theta_v_pr_ic[:, hi] * d_exner_dz_ref_ic[:, hi]
     )
-    z_th_ddz_exner_c[:, 0] = 0
     return (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c)
 
 
@@ -135,22 +135,26 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
         dtime = ta.wpfloat("1.0")
         wgt_nnow_rth = ta.wpfloat("2.0")
         wgt_nnew_rth = ta.wpfloat("3.0")
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        w_concorr_c = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_var = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         theta_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         theta_var = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         theta_ref_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         vwind_expl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
         exner_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        d_exner_dz_ref_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        rho_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_theta_v_pr_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        theta_v_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_th_ddz_exner_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        d_exner_dz_ref_ic = data_alloc.random_field(
+            grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
+        )
+        rho_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        z_theta_v_pr_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
+        theta_v_ic = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        z_th_ddz_exner_c = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
+        )
         return dict(
             w=w,
             w_concorr_c=w_concorr_c,

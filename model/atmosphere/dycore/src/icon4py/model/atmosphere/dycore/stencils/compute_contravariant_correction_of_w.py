@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E, C2EDim, KDim
+from icon4py.model.common.dimension import C2E, C2EDim, KHalfDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -17,13 +17,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_contravariant_correction_of_w(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
-    wgtfac_c: fa.CellKField[vpfloat],
-) -> fa.CellKField[vpfloat]:
+    wgtfac_c: fa.CellKHalfField[vpfloat],
+) -> fa.CellKHalfField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_39."""
-    z_w_concorr_me_offset_1 = z_w_concorr_me(KDim - 1)
+    z_w_concorr_me_offset_1 = z_w_concorr_me(KHalfDim - 0.5)
 
     z_w_concorr_me_wp, z_w_concorr_me_offset_1_wp = astype(
-        (z_w_concorr_me, z_w_concorr_me_offset_1), wpfloat
+        (z_w_concorr_me(KHalfDim + 0.5), z_w_concorr_me_offset_1), wpfloat
     )
 
     z_w_concorr_mc_m1_wp = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_1_wp(C2E), axis=C2EDim)
@@ -42,8 +42,8 @@ def _compute_contravariant_correction_of_w(
 def compute_contravariant_correction_of_w(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
-    wgtfac_c: fa.CellKField[vpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKHalfField[vpfloat],
+    w_concorr_c: fa.CellKHalfField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -56,6 +56,6 @@ def compute_contravariant_correction_of_w(
         out=w_concorr_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

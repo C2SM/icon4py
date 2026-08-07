@@ -18,11 +18,11 @@ def _compute_explicit_part_for_rho_and_exner(
     rho_nnow: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     z_flxdiv_mass: fa.CellKField[vpfloat],
-    z_contr_w_fl_l: fa.CellKField[wpfloat],
+    z_contr_w_fl_l: fa.CellKHalfField[wpfloat],
     exner_pr: fa.CellKField[wpfloat],
     z_beta: fa.CellKField[vpfloat],
     z_flxdiv_theta: fa.CellKField[vpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
     ddt_exner_phy: fa.CellKField[vpfloat],
     dtime: wpfloat,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
@@ -32,7 +32,7 @@ def _compute_explicit_part_for_rho_and_exner(
     )
 
     z_rho_expl_wp = rho_nnow - dtime * inv_ddqz_z_full_wp * (
-        z_flxdiv_mass_wp + z_contr_w_fl_l - z_contr_w_fl_l(KDim + 1)
+        z_flxdiv_mass_wp + z_contr_w_fl_l(KDim - 0.5) - z_contr_w_fl_l(KDim + 0.5)
     )
 
     z_exner_expl_wp = (
@@ -40,8 +40,8 @@ def _compute_explicit_part_for_rho_and_exner(
         - z_beta_wp
         * (
             z_flxdiv_theta_wp
-            + theta_v_ic * z_contr_w_fl_l
-            - theta_v_ic(KDim + 1) * z_contr_w_fl_l(KDim + 1)
+            + theta_v_ic(KDim - 0.5) * z_contr_w_fl_l(KDim - 0.5)
+            - theta_v_ic(KDim + 0.5) * z_contr_w_fl_l(KDim + 0.5)
         )
         + dtime * ddt_exner_phy_wp
     )
@@ -55,11 +55,11 @@ def compute_explicit_part_for_rho_and_exner(
     rho_nnow: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     z_flxdiv_mass: fa.CellKField[vpfloat],
-    z_contr_w_fl_l: fa.CellKField[wpfloat],
+    z_contr_w_fl_l: fa.CellKHalfField[wpfloat],
     exner_pr: fa.CellKField[wpfloat],
     z_beta: fa.CellKField[vpfloat],
     z_flxdiv_theta: fa.CellKField[vpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
     ddt_exner_phy: fa.CellKField[vpfloat],
     dtime: wpfloat,
     horizontal_start: gtx.int32,

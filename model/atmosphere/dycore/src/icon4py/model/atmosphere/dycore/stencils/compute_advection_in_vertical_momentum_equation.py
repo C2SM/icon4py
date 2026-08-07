@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common.dimension import KDim, KHalfDim
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
 )
@@ -34,7 +34,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _interpolate_contravariant_vertical_velocity_to_full_levels(
-    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[vpfloat],
     nlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
     # TODO(havogt): Note that `concat_where(dims.KDim == nlev-1, ...)` is currently broken
@@ -44,23 +44,23 @@ def _interpolate_contravariant_vertical_velocity_to_full_levels(
         dims.KDim < nlev - 1,
         vpfloat("0.5")
         * (
-            contravariant_corrected_w_at_cells_on_half_levels
-            + contravariant_corrected_w_at_cells_on_half_levels(KDim + 1)
+            contravariant_corrected_w_at_cells_on_half_levels(KDim - 0.5)
+            + contravariant_corrected_w_at_cells_on_half_levels(KDim + 0.5)
         ),
-        vpfloat("0.5") * contravariant_corrected_w_at_cells_on_half_levels,
+        vpfloat("0.5") * contravariant_corrected_w_at_cells_on_half_levels(KDim - 0.5),
     )
 
 
 @gtx.field_operator
 def _compute_horizontal_advection_of_w(
-    w: fa.CellKField[ta.wpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
+    vn_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
-) -> fa.EdgeKField[ta.vpfloat]:
+) -> fa.EdgeKHalfField[ta.vpfloat]:
     w_at_vertices = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
     horizontal_advection_of_w_at_edges_on_half_levels = (
@@ -80,34 +80,38 @@ def _compute_horizontal_advection_of_w(
 
 @gtx.field_operator
 def _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
-    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
-    w: fa.CellKField[wpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[vpfloat],
+    w: fa.CellKHalfField[wpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
-) -> fa.CellKField[vpfloat]:
+) -> fa.CellKHalfField[vpfloat]:
     contravariant_corrected_w_at_cells_on_half_levels_wp = astype(
         contravariant_corrected_w_at_cells_on_half_levels, wpfloat
     )
-    coeff1_dwdz_wp, coeff2_dwdz_wp = astype((coeff1_dwdz, coeff2_dwdz), wpfloat)
+    coeff1_dwdz_at_half_levels = coeff1_dwdz(KHalfDim + 0.5)
+    coeff2_dwdz_at_half_levels = coeff2_dwdz(KHalfDim + 0.5)
+    coeff1_dwdz_wp, coeff2_dwdz_wp = astype(
+        (coeff1_dwdz_at_half_levels, coeff2_dwdz_at_half_levels), wpfloat
+    )
 
     vertical_wind_advective_tendency_wp = -contravariant_corrected_w_at_cells_on_half_levels_wp * (
-        w(KDim - 1) * coeff1_dwdz_wp
-        - w(KDim + 1) * coeff2_dwdz_wp
-        + w * astype(coeff2_dwdz - coeff1_dwdz, wpfloat)
+        w(KHalfDim - 1) * coeff1_dwdz_wp
+        - w(KHalfDim + 1) * coeff2_dwdz_wp
+        + w * astype(coeff2_dwdz_at_half_levels - coeff1_dwdz_at_half_levels, wpfloat)
     )
     return astype(vertical_wind_advective_tendency_wp, vpfloat)
 
 
 @gtx.field_operator
 def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
-    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
 ) -> tuple[
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[bool],
-    fa.CellKField[ta.vpfloat],
+    fa.CellKHalfField[ta.vpfloat],
+    fa.CellKHalfField[bool],
+    fa.CellKHalfField[ta.vpfloat],
 ]:
     contravariant_corrected_w_at_cells_on_half_levels_wp, ddqz_z_half_wp = astype(
         (contravariant_corrected_w_at_cells_on_half_levels, ddqz_z_half), wpfloat
@@ -115,14 +119,14 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 
     cfl_clipping = where(
         abs(contravariant_corrected_w_at_cells_on_half_levels) > cfl_w_limit * ddqz_z_half,
-        broadcast(True, (dims.CellDim, dims.KDim)),
+        broadcast(True, (dims.CellDim, dims.KHalfDim)),
         False,
     )
 
     vertical_cfl = where(
         cfl_clipping,
         contravariant_corrected_w_at_cells_on_half_levels_wp * dtime / ddqz_z_half_wp,
-        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )
     vertical_cfl_vp = astype(vertical_cfl, vpfloat)
 
@@ -147,9 +151,9 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 
 @gtx.field_operator
 def _compute_contravariant_corrected_w(
-    w: fa.CellKField[ta.wpfloat],
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-) -> fa.CellKField[ta.vpfloat]:
+    w: fa.CellKHalfField[ta.wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+) -> fa.CellKHalfField[ta.vpfloat]:
     contravariant_corrected_w_at_cells_on_half_levels = (
         astype(w, vpfloat) - contravariant_correction_at_cells_on_half_levels
     )
@@ -159,21 +163,21 @@ def _compute_contravariant_corrected_w(
 
 @gtx.field_operator
 def _compute_contravariant_corrected_w_and_cfl(
-    w: fa.CellKField[ta.wpfloat],
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
-) -> tuple[fa.CellKField[ta.vpfloat], fa.CellKField[bool], fa.CellKField[ta.vpfloat]]:
+) -> tuple[fa.CellKHalfField[ta.vpfloat], fa.CellKHalfField[bool], fa.CellKHalfField[ta.vpfloat]]:
     #: intermediate variable contravariant_corrected_w_at_cells_on_half_levels is originally declared as z_w_con_c in ICON
     contravariant_corrected_w_at_cells_on_half_levels = _compute_contravariant_corrected_w(
         w, contravariant_correction_at_cells_on_half_levels
     )
 
     (contravariant_corrected_w_at_cells_on_half_levels, cfl_clipping, vertical_cfl) = concat_where(
-        (dims.KDim >= maximum(2, end_index_of_damping_layer - 2)) & (dims.KDim < nlev - 3),
+        (dims.KHalfDim >= maximum(2, end_index_of_damping_layer - 2)) & (dims.KHalfDim < nlev - 3),
         _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
             ddqz_z_half=ddqz_z_half,
             contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
@@ -182,8 +186,8 @@ def _compute_contravariant_corrected_w_and_cfl(
         ),
         (
             contravariant_corrected_w_at_cells_on_half_levels,
-            broadcast(False, (dims.CellDim, dims.KDim)),
-            broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+            broadcast(False, (dims.CellDim, dims.KHalfDim)),
+            broadcast(vpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
         ),
     )
 
@@ -192,24 +196,24 @@ def _compute_contravariant_corrected_w_and_cfl(
 
 @gtx.field_operator
 def _compute_advective_vertical_wind_tendency(
-    vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    w: fa.CellKField[ta.wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    cfl_clipping: fa.CellKField[bool],
+    vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
+    cfl_clipping: fa.CellKHalfField[bool],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     owner_mask: fa.CellField[bool],
     scalfac_exdiff: ta.wpfloat,
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
-) -> fa.CellKField[ta.vpfloat]:
+) -> fa.CellKHalfField[ta.vpfloat]:
     vertical_wind_advective_tendency = concat_where(
-        1 <= dims.KDim,
+        1 <= dims.KHalfDim,
         _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
             contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
         ),
@@ -217,7 +221,7 @@ def _compute_advective_vertical_wind_tendency(
     )
 
     vertical_wind_advective_tendency = concat_where(
-        1 <= dims.KDim,
+        1 <= dims.KHalfDim,
         _add_interpolated_horizontal_advection_of_w(
             e_bln_c_s,
             horizontal_advection_of_w_at_edges_on_half_levels,
@@ -245,11 +249,11 @@ def _compute_advective_vertical_wind_tendency(
 
 @gtx.field_operator
 def _compute_advection_in_corrector_vertical_momentum(
-    vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    w: fa.CellKField[ta.wpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
+    vn_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
@@ -257,7 +261,7 @@ def _compute_advection_in_corrector_vertical_momentum(
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     owner_mask: fa.CellField[bool],
@@ -266,7 +270,7 @@ def _compute_advection_in_corrector_vertical_momentum(
     dtime: ta.wpfloat,
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
-) -> tuple[fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat]]:
+) -> tuple[fa.CellKHalfField[ta.vpfloat], fa.CellKField[ta.vpfloat], fa.CellKHalfField[ta.vpfloat]]:
     #: intermediate variable horizontal_advection_of_w_at_edges_on_half_levels is originally declared as z_v_grad_w in ICON
     horizontal_advection_of_w_at_edges_on_half_levels = _compute_horizontal_advection_of_w(
         w=w,
@@ -325,13 +329,13 @@ def _compute_advection_in_corrector_vertical_momentum(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_advection_in_corrector_vertical_momentum(
-    vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
+    vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    vertical_cfl: fa.CellKField[ta.vpfloat],
-    w: fa.CellKField[ta.wpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    vertical_cfl: fa.CellKHalfField[ta.vpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
+    vn_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
@@ -339,7 +343,7 @@ def compute_advection_in_corrector_vertical_momentum(
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     owner_mask: fa.CellField[bool],
@@ -417,10 +421,20 @@ def compute_advection_in_corrector_vertical_momentum(
             contravariant_corrected_w_at_cells_on_model_levels,
             vertical_cfl,
         ),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+        domain=(
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+        ),
     )
 
 
@@ -428,9 +442,9 @@ def compute_advection_in_corrector_vertical_momentum(
 def _interpolate_contravariant_correction_to_cells_on_half_levels(
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    wgtfac_c: fa.CellKField[ta.vpfloat],
+    wgtfac_c: fa.CellKHalfField[ta.vpfloat],
     nflatlev: gtx.int32,
-) -> fa.CellKField[ta.vpfloat]:
+) -> fa.CellKHalfField[ta.vpfloat]:
     contravariant_correction_at_cells_model_levels = _interpolate_to_cell_center(
         contravariant_correction_at_edges_on_model_levels, e_bln_c_s
     )
@@ -439,11 +453,11 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
     )
 
     contravariant_correction_at_cells_on_half_levels = concat_where(
-        dims.KDim >= nflatlev + 1,
+        dims.KHalfDim >= nflatlev + 1,
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
         ),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )
 
     return contravariant_correction_at_cells_on_half_levels
@@ -451,15 +465,15 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
 
 @gtx.field_operator
 def _compute_advection_in_predictor_vertical_momentum(
-    vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
-    w: fa.CellKField[ta.wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.wpfloat],
+    vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    wgtfac_c: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    wgtfac_c: fa.CellKHalfField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     owner_mask: fa.CellField[bool],
@@ -471,10 +485,10 @@ def _compute_advection_in_predictor_vertical_momentum(
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
 ) -> tuple[
+    fa.CellKHalfField[ta.vpfloat],
+    fa.CellKHalfField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
+    fa.CellKHalfField[ta.vpfloat],
 ]:
     contravariant_correction_at_cells_on_half_levels = _interpolate_contravariant_correction_to_cells_on_half_levels(
         contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
@@ -532,18 +546,18 @@ def _compute_advection_in_predictor_vertical_momentum(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_advection_in_predictor_vertical_momentum(
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+    vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    vertical_cfl: fa.CellKField[ta.vpfloat],
-    w: fa.CellKField[ta.wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.wpfloat],
+    vertical_cfl: fa.CellKHalfField[ta.vpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    wgtfac_c: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    wgtfac_c: fa.CellKHalfField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     owner_mask: fa.CellField[bool],
@@ -621,8 +635,22 @@ def compute_advection_in_predictor_vertical_momentum(
             contravariant_corrected_w_at_cells_on_model_levels,
             vertical_cfl,
         ),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+        domain=(
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+        ),
     )

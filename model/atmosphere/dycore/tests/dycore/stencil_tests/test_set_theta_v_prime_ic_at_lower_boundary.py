@@ -36,7 +36,8 @@ def set_theta_v_prime_ic_at_lower_boundary_numpy(
         interpolant=z_rth_pr,
         interpolation_to_surface=z_theta_v_pr_ic,
     )
-    theta_v_ic[:, 3:] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3:]
+    nlev = z_rth_pr.shape[1]
+    theta_v_ic[:, 3:nlev] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3:nlev]
     return (z_theta_v_pr_ic, theta_v_ic)
 
 
@@ -68,9 +69,9 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_theta_v_pr_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_ref_ic = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        z_theta_v_pr_ic = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        theta_v_ic = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
 
         return dict(
             wgtfacq_c=wgtfacq_c,

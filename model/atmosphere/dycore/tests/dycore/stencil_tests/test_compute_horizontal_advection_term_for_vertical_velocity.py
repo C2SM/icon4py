@@ -86,14 +86,14 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn_ie = random_field(grid, dims.EdgeDim, dims.KHalfDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_vt_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        z_vt_ie = random_field(grid, dims.EdgeDim, dims.KHalfDim, dtype=vpfloat)
         inv_primal_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         tangent_orientation = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        z_w_v = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
-        z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_w_v = random_field(grid, dims.VertexDim, dims.KHalfDim, dtype=vpfloat)
+        z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KHalfDim, dtype=vpfloat)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
@@ -111,5 +111,5 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

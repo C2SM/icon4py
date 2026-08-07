@@ -38,9 +38,11 @@ class TestUpdateDensityExnerWind(StencilTest):
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
+        nlev = rho_now.shape[1]
         rho_new = rho_now + dtime * grf_tend_rho
         exner_new = theta_v_now + dtime * grf_tend_thv
-        w_new = w_now + dtime * grf_tend_w
+        w_new = np.zeros_like(w_now)
+        w_new[:, :nlev] = w_now[:, :nlev] + dtime * grf_tend_w[:, :nlev]
         return dict(rho_new=rho_new, exner_new=exner_new, w_new=w_new)
 
     @pytest.fixture
@@ -49,12 +51,12 @@ class TestUpdateDensityExnerWind(StencilTest):
         grf_tend_rho = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         theta_v_now = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         grf_tend_thv = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        w_now = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        grf_tend_w = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w_now = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        grf_tend_w = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
         rho_new = zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         exner_new = zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        w_new = zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w_new = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
 
         return dict(
             rho_now=rho_now,

@@ -430,13 +430,15 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+            grid, dims.CellDim, dims.KHalfDim
         )
         rho_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
+            grid, dims.CellDim, dims.KHalfDim, low=1.0e-5
         )
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
         )
         exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
         current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
@@ -445,7 +447,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
         exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
+            grid, dims.CellDim, dims.KHalfDim, low=1.0e-5
         )
         perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
@@ -453,7 +455,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         exner_tendency_due_to_slow_physics = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, low=1.0e-5)
         rayleigh_damping_factor = data_alloc.random_field(grid, dims.KDim)
         reference_exner_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-5

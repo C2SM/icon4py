@@ -14,7 +14,7 @@ from icon4py.model.common.dimension import KDim
 
 @gtx.field_operator
 def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-arguments]
-    vect_a: fa.KField[float],
+    vect_a: fa.KHalfField[float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,
@@ -33,7 +33,7 @@ def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-argument
 
     bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
     aqdr = df32 / dz32 - bqdr * dz32
-    zf = 0.5 * (vect_a + vect_a(KDim + 1))
+    zf = 0.5 * (vect_a(KDim - 0.5) + vect_a(KDim + 0.5))
     zero = broadcast(0.0, (KDim,))
 
     dzlin = minimum(broadcast(dz21, (KDim,)), maximum(zero, zf - hdiff_smag_z))
@@ -44,7 +44,7 @@ def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-argument
 
 @gtx.program
 def en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-arguments]
-    vect_a: fa.KField[float],
+    vect_a: fa.KHalfField[float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,

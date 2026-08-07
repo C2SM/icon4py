@@ -736,7 +736,9 @@ class Diffusion:
 
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
-        self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
+        self.diff_multfac_n2w = data_alloc.zero_field(
+            self._grid, dims.KHalfDim, allocator=allocator
+        )
         self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.enh_smag_fac = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.u_vert = data_alloc.zero_field(
@@ -755,10 +757,7 @@ class Diffusion:
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
-        # TODO(halungge): this is KHalfDim
-        self.vertical_index = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        )
+        self.vertical_index = data_alloc.index_field(self._grid, dims.KHalfDim, allocator=allocator)
         self.horizontal_cell_index = data_alloc.index_field(
             self._grid, dims.CellDim, allocator=allocator
         )
@@ -766,7 +765,7 @@ class Diffusion:
             self._grid, dims.EdgeDim, allocator=allocator
         )
         self.w_tmp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
         )
         self.theta_v_tmp = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator

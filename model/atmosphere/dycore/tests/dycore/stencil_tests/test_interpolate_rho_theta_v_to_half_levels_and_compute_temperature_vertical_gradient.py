@@ -87,33 +87,31 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         exner_w_explicit_weight_parameter = np.expand_dims(
             exner_w_explicit_weight_parameter, axis=-1
         )
-        koffset_current_rho = np.roll(current_rho, shift=1, axis=1)
-        koffset_next_rho = np.roll(next_rho, shift=1, axis=1)
-        koffset_current_theta_v = np.roll(current_theta_v, shift=1, axis=1)
-        koffset_next_theta_v = np.roll(next_theta_v, shift=1, axis=1)
-        koffset_reference_theta_at_cells_on_model_levels = np.roll(
-            reference_theta_at_cells_on_model_levels, shift=1, axis=1
-        )
-        koffset_perturbed_exner_at_cells_on_model_levels = np.roll(
-            perturbed_exner_at_cells_on_model_levels, shift=1, axis=1
-        )
+
+        def lower(a: np.ndarray) -> np.ndarray:
+            """model level k-1, read at half level k"""
+            return np.concatenate([a[:, :1], a], axis=1)
+
+        def upper(a: np.ndarray) -> np.ndarray:
+            """model level k, read at half level k"""
+            return np.concatenate([a, a[:, -1:]], axis=1)
 
         back_trajectory_w_at_cells_on_half_levels = (
             -(w - contravariant_correction_at_cells_on_half_levels) * dtime * 0.5 / ddqz_z_half
         )
-        time_averaged_rho_kup = (
-            rhotheta_explicit_weight_parameter * koffset_current_rho
-            + rhotheta_implicit_weight_parameter * koffset_next_rho
-        )
-        time_averaged_theta_v_kup = (
-            rhotheta_explicit_weight_parameter * koffset_current_theta_v
-            + rhotheta_implicit_weight_parameter * koffset_next_theta_v
-        )
-        time_averaged_rho = (
+        time_averaged_rho_kup = lower(
             rhotheta_explicit_weight_parameter * current_rho
             + rhotheta_implicit_weight_parameter * next_rho
         )
-        time_averaged_theta_v = (
+        time_averaged_theta_v_kup = lower(
+            rhotheta_explicit_weight_parameter * current_theta_v
+            + rhotheta_implicit_weight_parameter * next_theta_v
+        )
+        time_averaged_rho = upper(
+            rhotheta_explicit_weight_parameter * current_rho
+            + rhotheta_implicit_weight_parameter * next_rho
+        )
+        time_averaged_theta_v = upper(
             rhotheta_explicit_weight_parameter * current_theta_v
             + rhotheta_implicit_weight_parameter * next_theta_v
         )
@@ -123,11 +121,11 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             + back_trajectory_w_at_cells_on_half_levels
             * (time_averaged_rho_kup - time_averaged_rho)
         )
-        time_averaged_perturbed_theta_v_kup = (
-            time_averaged_theta_v_kup - koffset_reference_theta_at_cells_on_model_levels
+        time_averaged_perturbed_theta_v_kup = time_averaged_theta_v_kup - lower(
+            reference_theta_at_cells_on_model_levels
         )
-        time_averaged_perturbed_theta_v = (
-            time_averaged_theta_v - reference_theta_at_cells_on_model_levels
+        time_averaged_perturbed_theta_v = time_averaged_theta_v - upper(
+            reference_theta_at_cells_on_model_levels
         )
         perturbed_theta_v_at_cells_on_half_levels_full = (
             wgtfac_c * time_averaged_perturbed_theta_v
@@ -143,8 +141,8 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             exner_w_explicit_weight_parameter
             * theta_v_at_cells_on_half_levels_full
             * (
-                koffset_perturbed_exner_at_cells_on_model_levels
-                - perturbed_exner_at_cells_on_model_levels
+                lower(perturbed_exner_at_cells_on_model_levels)
+                - upper(perturbed_exner_at_cells_on_model_levels)
             )
             / ddqz_z_half
             + perturbed_theta_v_at_cells_on_half_levels_full
@@ -185,16 +183,16 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+            grid, dims.CellDim, dims.KHalfDim
         )
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         next_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         next_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
         reference_theta_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )
@@ -203,16 +201,22 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             grid, dims.CellDim, dims.KDim
         )
         ddz_of_reference_exner_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+            grid, dims.CellDim, dims.KHalfDim
         )
-        rho_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        rho_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim)
         perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
         )
         theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
         )
-        nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KHalfDim
+        )
 
         dtime = 0.9
         rhotheta_explicit_weight_parameter = 0.25

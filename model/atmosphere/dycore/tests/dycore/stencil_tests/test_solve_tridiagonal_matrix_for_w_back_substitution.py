@@ -27,12 +27,12 @@ def solve_tridiagonal_matrix_for_w_back_substitution_numpy(
     z_q: np.ndarray,
     w: np.ndarray,
 ) -> np.ndarray:
-    rng = np.random.default_rng()
-    w_new = rng.random(w.shape, dtype=w.dtype)
-    last_k_level = w.shape[1] - 1
+    # the surface half level is set elsewhere; the backward sweep runs over [1, nlev)
+    w_new = np.copy(w)
+    nlev = w.shape[1] - 1
 
-    w_new[:, last_k_level] = w[:, last_k_level]
-    for k in reversed(range(1, last_k_level)):
+    w_new[:, nlev - 1] = w[:, nlev - 1]
+    for k in reversed(range(1, nlev - 1)):
         w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
     w_new[:, 0] = w[:, 0]
     return w_new
@@ -55,8 +55,8 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_q = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
         h_start = 0
         h_end = gtx.int32(grid.num_cells)
         v_start = 1

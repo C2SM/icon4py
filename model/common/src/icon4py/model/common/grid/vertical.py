@@ -159,9 +159,9 @@ class VerticalGrid:
     """
 
     config: VerticalGridConfig
-    vct_a: dataclasses.InitVar[fa.KField[ta.wpfloat]]
+    vct_a: dataclasses.InitVar[fa.KHalfField[ta.wpfloat]]
     vct_b: dataclasses.InitVar[fa.KField[ta.wpfloat] | None]
-    _vct_a: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
+    _vct_a: fa.KHalfField[ta.wpfloat] = dataclasses.field(init=False)
     _vct_b: fa.KField[ta.wpfloat] | None = dataclasses.field(init=False)
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
@@ -252,7 +252,7 @@ class VerticalGrid:
         return self.size(domain.dim)
 
     @property
-    def interface_physical_height(self) -> fa.KField[ta.wpfloat]:
+    def interface_physical_height(self) -> fa.KHalfField[ta.wpfloat]:
         return self._vct_a
 
     @functools.cached_property
@@ -271,7 +271,7 @@ class VerticalGrid:
         return self.index(Domain(dims.KDim, Zone.DAMPING))
 
     @property
-    def vct_a(self) -> fa.KField:
+    def vct_a(self) -> fa.KHalfField:
         return self._vct_a
 
     @property
@@ -360,8 +360,8 @@ def _read_vct_a_and_vct_b_from_file(
         ) from err
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
-    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator), gtx.as_field(
-        (dims.KDim,), vct_b, allocator=allocator
+    return gtx.as_field((dims.KHalfDim,), vct_a, allocator=allocator), gtx.as_field(
+        (dims.KHalfDim,), vct_b, allocator=allocator
     )
 
 
@@ -549,8 +549,8 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
             f" Warning. vct_a[0], {vct_a[0]}, is not equal to model top height, {vertical_config.model_top_height}, of vertical configuration. Please consider changing the vertical setting."
         )
 
-    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator), gtx.as_field(
-        (dims.KDim,), vct_b, allocator=allocator
+    return gtx.as_field((dims.KHalfDim,), vct_a, allocator=allocator), gtx.as_field(
+        (dims.KHalfDim,), vct_b, allocator=allocator
     )
 
 

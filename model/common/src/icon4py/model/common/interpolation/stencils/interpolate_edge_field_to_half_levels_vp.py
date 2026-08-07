@@ -8,15 +8,15 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat
 
 
 @gtx.field_operator
 def _interpolate_edge_field_to_half_levels_vp(
-    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     interpolant: fa.EdgeKField[ta.vpfloat],
-) -> fa.EdgeKField[ta.vpfloat]:
+) -> fa.EdgeKHalfField[ta.vpfloat]:
     """
     Interpolate a EdgeDim variable of floating precision from full levels to half levels.
     The return variable also has floating precision.
@@ -28,17 +28,17 @@ def _interpolate_edge_field_to_half_levels_vp(
     Returns:
         EdgeDim variables at half levels
     """
-    interpolation_to_half_levels_vp = wgtfac_e * interpolant + (
+    interpolation_to_half_levels_vp = wgtfac_e * interpolant(KHalfDim + 0.5) + (
         vpfloat("1.0") - wgtfac_e
-    ) * interpolant(KDim - 1)
+    ) * interpolant(KHalfDim - 0.5)
     return interpolation_to_half_levels_vp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_edge_field_to_half_levels_vp(
-    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     interpolant: fa.EdgeKField[ta.vpfloat],
-    interpolation_to_half_levels_vp: fa.EdgeKField[ta.vpfloat],
+    interpolation_to_half_levels_vp: fa.EdgeKHalfField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -50,6 +50,6 @@ def interpolate_edge_field_to_half_levels_vp(
         out=interpolation_to_half_levels_vp,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

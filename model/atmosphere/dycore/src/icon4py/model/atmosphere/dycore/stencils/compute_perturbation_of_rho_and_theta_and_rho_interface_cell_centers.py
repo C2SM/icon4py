@@ -12,26 +12,28 @@ from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_th
     _compute_perturbation_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
 def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
-    wgtfac_c: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKHalfField[vpfloat],
     rho: fa.CellKField[wpfloat],
     rho_ref_mc: fa.CellKField[vpfloat],
     theta_v: fa.CellKField[wpfloat],
     theta_ref_mc: fa.CellKField[vpfloat],
 ) -> tuple[
-    fa.CellKField[wpfloat],
+    fa.CellKHalfField[wpfloat],
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_08."""
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
-    rho_ic = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(KDim - 1)
+    rho_ic = wgtfac_c_wp * rho(KHalfDim + 0.5) + (wpfloat("1.0") - wgtfac_c_wp) * rho(
+        KHalfDim - 0.5
+    )
     z_rth_pr_1, z_rth_pr_2 = _compute_perturbation_of_rho_and_theta(
         rho=rho, rho_ref_mc=rho_ref_mc, theta_v=theta_v, theta_ref_mc=theta_ref_mc
     )
@@ -40,12 +42,12 @@ def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
-    wgtfac_c: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKHalfField[vpfloat],
     rho: fa.CellKField[wpfloat],
     rho_ref_mc: fa.CellKField[vpfloat],
     theta_v: fa.CellKField[wpfloat],
     theta_ref_mc: fa.CellKField[vpfloat],
-    rho_ic: fa.CellKField[wpfloat],
+    rho_ic: fa.CellKHalfField[wpfloat],
     z_rth_pr_1: fa.CellKField[vpfloat],
     z_rth_pr_2: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
@@ -60,8 +62,18 @@ def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
         theta_v=theta_v,
         theta_ref_mc=theta_ref_mc,
         out=(rho_ic, z_rth_pr_1, z_rth_pr_2),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+        domain=(
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+        ),
     )

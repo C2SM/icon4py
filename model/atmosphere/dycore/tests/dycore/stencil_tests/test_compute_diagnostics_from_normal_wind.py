@@ -320,9 +320,9 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             grid, dims.EdgeDim, dims.KDim
         )
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KHalfDim)
         ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)

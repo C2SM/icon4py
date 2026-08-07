@@ -246,22 +246,20 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, allocator),
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
         ),
         perturbed_exner_at_cells_on_model_levels=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KDim, allocator=allocator
         ),
         rho_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
         ),
         exner_tendency_due_to_slow_physics=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KDim, allocator=allocator
         ),
         grf_tend_rho=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         grf_tend_thv=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        grf_tend_w=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
+        grf_tend_w=data_alloc.zero_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
         mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
             mesh, dims.EdgeDim, dims.KDim, allocator=allocator
         ),
@@ -286,7 +284,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
             mesh, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         ),
         contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
         ),
         rho_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         normal_wind_iau_increment=data_alloc.zero_field(
@@ -301,18 +299,14 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     )
 
     prognostic_state_nnow = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
     )
     prognostic_state_nnew = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),

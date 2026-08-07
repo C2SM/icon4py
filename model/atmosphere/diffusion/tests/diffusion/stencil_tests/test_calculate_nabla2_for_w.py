@@ -47,9 +47,9 @@ class TestCalculateNabla2ForW(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        w = constant_field(grid, 1.0, dims.CellDim, dims.KDim)
+        w = constant_field(grid, 1.0, dims.CellDim, dims.KHalfDim)
         geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
-        z_nabla2_c = zero_field(grid, dims.CellDim, dims.KDim)
+        z_nabla2_c = zero_field(grid, dims.CellDim, dims.KHalfDim)
 
         return dict(
             w=w,
@@ -58,5 +58,5 @@ class TestCalculateNabla2ForW(StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

@@ -15,18 +15,18 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _add_extra_diffusion_for_w_con_approaching_cfl(
-    cfl_clipping: fa.CellKField[bool],
+    cfl_clipping: fa.CellKHalfField[bool],
     owner_mask: fa.CellField[bool],
-    z_w_con_c: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    z_w_con_c: fa.CellKHalfField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], ta.wpfloat],
-    w: fa.CellKField[ta.wpfloat],
-    ddt_w_adv: fa.CellKField[ta.vpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
+    ddt_w_adv: fa.CellKHalfField[ta.vpfloat],
     scalfac_exdiff: ta.wpfloat,
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
-) -> fa.CellKField[ta.vpfloat]:
+) -> fa.CellKHalfField[ta.vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_18."""
     z_w_con_c_wp, ddqz_z_half_wp, ddt_w_adv_wp, cfl_w_limit_wp = astype(
         (z_w_con_c, ddqz_z_half, ddt_w_adv, cfl_w_limit), wpfloat
@@ -53,14 +53,14 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def add_extra_diffusion_for_w_con_approaching_cfl(
-    cfl_clipping: fa.CellKField[bool],
+    cfl_clipping: fa.CellKHalfField[bool],
     owner_mask: fa.CellField[bool],
-    z_w_con_c: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
+    z_w_con_c: fa.CellKHalfField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], ta.wpfloat],
-    w: fa.CellKField[ta.wpfloat],
-    ddt_w_adv: fa.CellKField[ta.vpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
+    ddt_w_adv: fa.CellKHalfField[ta.vpfloat],
     scalfac_exdiff: ta.wpfloat,
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
@@ -84,6 +84,6 @@ def add_extra_diffusion_for_w_con_approaching_cfl(
         out=ddt_w_adv,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

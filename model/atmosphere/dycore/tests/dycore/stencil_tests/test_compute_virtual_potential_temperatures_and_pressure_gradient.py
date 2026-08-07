@@ -34,20 +34,24 @@ def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
     ddqz_z_half: np.ndarray,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    z_rth_pr_2_offset = np.roll(z_rth_pr_2, axis=1, shift=1)
-    theta_v_offset = np.roll(theta_v, axis=1, shift=1)
-    exner_pr_offset = np.roll(exner_pr, axis=1, shift=1)
     vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
 
-    z_theta_v_pr_ic = wgtfac_c * z_rth_pr_2 + (1.0 - wgtfac_c) * z_rth_pr_2_offset
-    z_theta_v_pr_ic[:, 0] = 0
-    theta_v_ic = wgtfac_c * theta_v + (1 - wgtfac_c) * theta_v_offset
-    theta_v_ic[:, 0] = 0
-    z_th_ddz_exner_c = (
-        vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
-        + z_theta_v_pr_ic * d_exner_dz_ref_ic
+    _nlev = z_rth_pr_2.shape[1]
+    z_theta_v_pr_ic = np.zeros((z_rth_pr_2.shape[0], _nlev + 1))
+    _w = wgtfac_c[:, 1:_nlev]
+    z_theta_v_pr_ic[:, 1:_nlev] = (
+        _w * z_rth_pr_2[:, 1:_nlev] + (1.0 - _w) * z_rth_pr_2[:, 0 : _nlev - 1]
     )
-    z_th_ddz_exner_c[:, 0] = 0
+    theta_v_ic = np.zeros((theta_v.shape[0], _nlev + 1))
+    theta_v_ic[:, 1:_nlev] = _w * theta_v[:, 1:_nlev] + (1 - _w) * theta_v[:, 0 : _nlev - 1]
+    z_th_ddz_exner_c = np.zeros((theta_v.shape[0], _nlev + 1))
+    z_th_ddz_exner_c[:, 1:_nlev] = (
+        vwind_expl_wgt
+        * theta_v_ic[:, 1:_nlev]
+        * (exner_pr[:, 0 : _nlev - 1] - exner_pr[:, 1:_nlev])
+        / ddqz_z_half[:, 1:_nlev]
+        + z_theta_v_pr_ic[:, 1:_nlev] * d_exner_dz_ref_ic[:, 1:_nlev]
+    )
 
     return (
         z_theta_v_pr_ic,
@@ -96,16 +100,16 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
         exner_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        d_exner_dz_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_theta_v_pr_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_th_ddz_exner_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        d_exner_dz_ref_ic = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        ddqz_z_half = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        z_theta_v_pr_ic = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        theta_v_ic = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        z_th_ddz_exner_c = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,

@@ -937,9 +937,8 @@ class SolveNonhydro:
         self.exner_at_cells_on_half_levels = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
-            dims.KDim,
+            dims.KHalfDim,
             dtype=ta.vpfloat,
-            extend={dims.KDim: 1},
             allocator=allocator,
         )
         """
@@ -956,9 +955,8 @@ class SolveNonhydro:
         self.perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
-            dims.KDim,
+            dims.KHalfDim,
             dtype=ta.vpfloat,
-            extend={dims.KDim: 1},
             allocator=allocator,
         )
 

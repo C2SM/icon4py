@@ -23,18 +23,20 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
 def _interpolate_to_half_levels(
-    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     x: fa.EdgeKField[ta.wpfloat],
-) -> fa.EdgeKField[ta.vpfloat]:
+) -> fa.EdgeKHalfField[ta.vpfloat]:
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
-    x_ie_wp = wgtfac_e_wp * x + (wpfloat("1.0") - wgtfac_e_wp) * x(KDim - 1)
-    return concat_where(dims.KDim > 0, astype(x_ie_wp, vpfloat), astype(x, vpfloat))
+    x_ie_wp = wgtfac_e_wp * x(KHalfDim + 0.5) + (wpfloat("1.0") - wgtfac_e_wp) * x(KHalfDim - 0.5)
+    return concat_where(
+        dims.KHalfDim > 0, astype(x_ie_wp, vpfloat), astype(x(KHalfDim + 0.5), vpfloat)
+    )
 
 
 @gtx.field_operator
@@ -48,13 +50,13 @@ def _compute_horizontal_kinetic_energy(
 
 @gtx.field_operator
 def _compute_diagnostics_from_normal_wind(
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
-    w: fa.CellKField[ta.wpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
-    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     ddxt_z_full: fa.EdgeKField[ta.vpfloat],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
@@ -65,11 +67,11 @@ def _compute_diagnostics_from_normal_wind(
     nflatlev: gtx.int32,
 ) -> tuple[
     fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKHalfField[ta.vpfloat],
+    fa.EdgeKHalfField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
-    fa.EdgeKField[ta.vpfloat],
-    fa.EdgeKField[ta.vpfloat],
-    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKHalfField[ta.vpfloat],
 ]:
     tangential_wind = _compute_tangential_wind(vn, rbf_vec_coeff_e)
     horizontal_kinetic_energy_at_edges_on_model_levels = _compute_horizontal_kinetic_energy(
@@ -117,15 +119,15 @@ def _compute_diagnostics_from_normal_wind(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_diagnostics_from_normal_wind(
     tangential_wind: fa.EdgeKField[ta.vpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
+    vn_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
-    w: fa.CellKField[ta.wpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
-    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     ddxt_z_full: fa.EdgeKField[ta.vpfloat],
     wgtfacq_e: fa.EdgeKField[ta.vpfloat],
@@ -206,10 +208,32 @@ def compute_diagnostics_from_normal_wind(
             contravariant_correction_at_edges_on_model_levels,
             horizontal_advection_of_w_at_edges_on_half_levels,
         ),
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
-        },
+        domain=(
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end - 1),
+            },
+        ),
     )
     _extrapolate_at_top(
         wgtfacq_e,
@@ -217,6 +241,6 @@ def compute_diagnostics_from_normal_wind(
         out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_end - 1, vertical_end),
+            dims.KHalfDim: (vertical_end - 1, vertical_end),
         },
     )

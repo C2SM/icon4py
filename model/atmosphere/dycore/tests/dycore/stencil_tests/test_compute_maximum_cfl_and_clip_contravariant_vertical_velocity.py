@@ -73,10 +73,10 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim, dtype=bool)
-        vcfl = zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddqz_z_half = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
+        z_w_con_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
+        cfl_clipping = random_mask(grid, dims.CellDim, dims.KHalfDim, dtype=bool)
+        vcfl = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         cfl_w_limit = ta.vpfloat("5.0")
         dtime = ta.wpfloat("9.0")
 
@@ -90,5 +90,5 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

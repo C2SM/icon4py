@@ -421,7 +421,11 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim
         )
         vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        w = data_alloc.random_field(
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
+        )
         tangential_wind_on_half_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
@@ -429,7 +433,9 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
         )
 
         coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -441,9 +447,9 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
 
-        vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim)
         owner_mask = data_alloc.random_mask(grid, dims.CellDim)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
         area = data_alloc.random_field(grid, dims.CellDim)
         geofac_n2s = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
 
@@ -657,7 +663,11 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             grid, dims.CellDim, dims.KDim
         )
         vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        w = data_alloc.random_field(
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
+        )
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
@@ -665,18 +675,20 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             grid, dims.EdgeDim, dims.KDim
         )
         contravariant_correction_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
         )
 
         coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         coeff2_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
 
-        vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim)
         owner_mask = data_alloc.random_mask(grid, dims.CellDim)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
         area = data_alloc.random_field(grid, dims.CellDim)
         geofac_n2s = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
 

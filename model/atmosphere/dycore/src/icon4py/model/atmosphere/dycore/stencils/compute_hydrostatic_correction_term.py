@@ -10,7 +10,7 @@ from gt4py.next import astype
 from gt4py.next.experimental import as_offset
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2CDim, Koff
+from icon4py.model.common.dimension import E2C, E2CDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -19,7 +19,7 @@ def _compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
     ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,
@@ -30,11 +30,11 @@ def _compute_hydrostatic_correction_term(
     theta_v_0 = theta_v(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)]))
     theta_v_1 = theta_v(E2C[1])(as_offset(Koff, ikoffset[E2CDim(1)]))
 
-    theta_v_ic_0 = theta_v_ic(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)]))
-    theta_v_ic_1 = theta_v_ic(E2C[1])(as_offset(Koff, ikoffset[E2CDim(1)]))
+    theta_v_ic_0 = theta_v_ic(E2C[0])(KDim - 0.5)(as_offset(Koff, ikoffset[E2CDim(0)]))
+    theta_v_ic_1 = theta_v_ic(E2C[1])(KDim - 0.5)(as_offset(Koff, ikoffset[E2CDim(1)]))
 
-    theta_v_ic_p1_0 = theta_v_ic(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)] + 1))
-    theta_v_ic_p1_1 = theta_v_ic(E2C[1])(as_offset(Koff, ikoffset[E2CDim(1)] + 1))
+    theta_v_ic_p1_0 = theta_v_ic(E2C[0])(KDim + 0.5)(as_offset(Koff, ikoffset[E2CDim(0)]))
+    theta_v_ic_p1_1 = theta_v_ic(E2C[1])(KDim + 0.5)(as_offset(Koff, ikoffset[E2CDim(1)]))
 
     inv_ddqz_z_full_0_wp = astype(
         inv_ddqz_z_full(E2C[0])(as_offset(Koff, ikoffset[E2CDim(0)])), wpfloat
@@ -67,7 +67,7 @@ def compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
     ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,

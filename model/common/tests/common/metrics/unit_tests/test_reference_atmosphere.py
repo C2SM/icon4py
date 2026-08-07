@@ -22,6 +22,7 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 from icon4py.model.common.metrics.reference_atmosphere import (
     compute_d2dexdz2_fac_mc,
     compute_reference_atmosphere_cell_fields,
+    compute_reference_atmosphere_cell_fields_on_half_levels,
     compute_reference_atmosphere_edge_fields,
     compute_theta_d_exner_dz_ref_ic,
 )
@@ -105,28 +106,25 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
     exner_ref_ic = data_alloc.zero_field(
         icon_grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         dtype=ta.wpfloat,
         allocator=backend,
     )
     rho_ref_ic = data_alloc.zero_field(
         icon_grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         dtype=ta.wpfloat,
         allocator=backend,
     )
     theta_ref_ic = data_alloc.zero_field(
         icon_grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         dtype=ta.wpfloat,
         allocator=backend,
     )
-    compute_reference_atmosphere_cell_fields.with_backend(backend=backend)(
+    compute_reference_atmosphere_cell_fields_on_half_levels.with_backend(backend=backend)(
         z_height=z_ifc,
         p0ref=constants.P0REF,
         p0sl_bg=constants.SEA_LEVEL_PRESSURE,
@@ -136,9 +134,9 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
         t0sl_bg=constants.T0SL_BG,
         h_scal_bg=constants._H_SCAL_BG,
         del_t_bg=constants.DELTA_TEMPERATURE,
-        exner_ref_mc=exner_ref_ic,
-        rho_ref_mc=rho_ref_ic,
-        theta_ref_mc=theta_ref_ic,
+        exner_ref_ic=exner_ref_ic,
+        rho_ref_ic=rho_ref_ic,
+        theta_ref_ic=theta_ref_ic,
         horizontal_start=gtx.int32(0),
         horizontal_end=gtx.int32(icon_grid.num_cells),
         vertical_start=gtx.int32(0),
@@ -156,11 +154,9 @@ def test_compute_d_exner_dz_ref_ic(
     backend: gtx_typing.Backend | None,
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()
-    theta_ref_ic = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
+    theta_ref_ic = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend)
     d_exner_dz_ref_ic = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
     )
     compute_theta_d_exner_dz_ref_ic.with_backend(backend)(
         z_ifc=z_ifc,

@@ -64,13 +64,13 @@ class TestUpdateMassFluxWeighted(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         r_nsubsteps = wpfloat("10.0")
-        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ic = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
         vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
         vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        w_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_new = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        mass_flx_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_now = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        w_new = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        mass_flx_ic = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
 
         return dict(
             rho_ic=rho_ic,
@@ -84,5 +84,5 @@ class TestUpdateMassFluxWeighted(StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

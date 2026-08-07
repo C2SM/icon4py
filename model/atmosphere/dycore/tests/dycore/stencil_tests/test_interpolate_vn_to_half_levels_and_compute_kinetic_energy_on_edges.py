@@ -25,8 +25,10 @@ from icon4py.model.testing import stencil_tests
 def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_vn_ie_numpy(
     wgtfac_e: np.ndarray, vn: np.ndarray
 ) -> np.ndarray:
-    vn_ie_k_minus_1 = np.roll(vn, shift=1, axis=1)
-    vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_ie_k_minus_1
+    _nlev = vn.shape[1]
+    vn_ie = np.zeros((vn.shape[0], _nlev + 1))
+    _w = wgtfac_e[:, 1:_nlev]
+    vn_ie[:, 1:_nlev] = _w * vn[:, 1:_nlev] + (1.0 - _w) * vn[:, 0 : _nlev - 1]
     vn_ie[:, 0] = vn[:, 0]
     return vn_ie
 
@@ -88,11 +90,11 @@ class TestInterpolateVnToHalfLevelsAndComputeKineticEnergyOnEdges(stencil_tests.
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KHalfDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
-        vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn_ie = random_field(grid, dims.EdgeDim, dims.KHalfDim, dtype=vpfloat)
         z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(

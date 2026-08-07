@@ -24,8 +24,10 @@ from icon4py.model.testing.stencil_tests import StencilTest
 def interpolate_vt_to_interface_edges_numpy(
     wgtfac_e: np.ndarray, vt: np.ndarray, **kwargs: Any
 ) -> np.ndarray:
-    vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
-    z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
+    nlev = vt.shape[1]
+    z_vt_ie = np.zeros((vt.shape[0], nlev + 1))
+    w = wgtfac_e[:, 1:nlev]
+    z_vt_ie[:, 1:nlev] = w * vt[:, 1:nlev] + (1.0 - w) * vt[:, 0 : nlev - 1]
     z_vt_ie[:, 0] = vt[:, 0]
     return z_vt_ie
 
@@ -54,10 +56,10 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KHalfDim, dtype=ta.vpfloat)
         vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
-        z_vt_ie = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_vt_ie = data_alloc.random_field(grid, dims.EdgeDim, dims.KHalfDim, dtype=ta.vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

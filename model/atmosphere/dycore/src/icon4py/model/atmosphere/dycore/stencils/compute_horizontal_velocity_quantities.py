@@ -46,7 +46,7 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     ddxt_z_full: fa.EdgeKField[ta.vpfloat],
-    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     nflatlev: gtx.int32,
 ) -> tuple[
     fa.EdgeKField[ta.wpfloat],
@@ -54,8 +54,8 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
-    fa.EdgeKField[ta.vpfloat],
-    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKHalfField[ta.vpfloat],
+    fa.EdgeKHalfField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
@@ -110,8 +110,8 @@ def compute_horizontal_velocity_quantities_and_fluxes(
     tangential_wind: fa.EdgeKField[ta.vpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
+    vn_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
@@ -123,7 +123,7 @@ def compute_horizontal_velocity_quantities_and_fluxes(
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     ddxt_z_full: fa.EdgeKField[ta.vpfloat],
-    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     wgtfacq_e: fa.EdgeKField[ta.vpfloat],
     nflatlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -199,10 +199,44 @@ def compute_horizontal_velocity_quantities_and_fluxes(
             horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_edges_on_model_levels,
         ),
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
-        },
+        domain=(
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end - 1),
+            },
+        ),
     )
 
     _extrapolate_at_top(
@@ -211,7 +245,7 @@ def compute_horizontal_velocity_quantities_and_fluxes(
         out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_end - 1, vertical_end),
+            dims.KHalfDim: (vertical_end - 1, vertical_end),
         },
     )
 

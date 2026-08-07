@@ -361,26 +361,36 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
         )
         reference_theta_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         d2dexdz2_fac1_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         d2dexdz2_fac2_mc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        wgtfac_c = data_alloc.random_field(
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
+        )
         exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
         perturbed_exner_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )
         ddz_of_reference_exner_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+            grid, dims.CellDim, dims.KHalfDim
         )
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        rho_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KHalfDim
+        )
+        rho_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim)
         exner_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
         )
         time_extrapolation_parameter_for_exner = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
@@ -399,7 +409,9 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim
         )
         theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid,
+            dims.CellDim,
+            dims.KHalfDim,
         )
         inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

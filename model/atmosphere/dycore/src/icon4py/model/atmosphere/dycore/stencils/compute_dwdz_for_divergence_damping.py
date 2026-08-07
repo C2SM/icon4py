@@ -16,14 +16,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full: fa.CellKField[vpfloat],
-    w: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
+    w: fa.CellKHalfField[wpfloat],
+    w_concorr_c: fa.CellKHalfField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_56_63."""
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
     z_dwdz_dd_wp = inv_ddqz_z_full_wp * (
-        (w - w(KDim + 1)) - astype(w_concorr_c - w_concorr_c(KDim + 1), wpfloat)
+        (w(KDim - 0.5) - w(KDim + 0.5))
+        - astype(w_concorr_c(KDim - 0.5) - w_concorr_c(KDim + 0.5), wpfloat)
     )
     return astype(z_dwdz_dd_wp, vpfloat)
 
@@ -31,8 +32,8 @@ def _compute_dwdz_for_divergence_damping(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full: fa.CellKField[vpfloat],
-    w: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
+    w: fa.CellKHalfField[wpfloat],
+    w_concorr_c: fa.CellKHalfField[vpfloat],
     z_dwdz_dd: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

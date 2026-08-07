@@ -45,8 +45,9 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
     z_c = np.zeros_like(z_gamma)
     z_g = np.zeros_like(z_gamma)
 
-    k_size = w.shape[1]
-    for k in range(1, k_size):
+    # z_beta/z_exner_expl live on model levels, so the sweep stops at the last model level
+    nlev = z_beta.shape[1]
+    for k in range(1, nlev):
         z_a[:, k] = -z_gamma[:, k] * z_beta[:, k - 1] * z_alpha[:, k - 1]
         z_c[:, k] = -z_gamma[:, k] * z_beta[:, k] * z_alpha[:, k + 1]
         z_b[:, k] = 1.0 + z_gamma[:, k] * z_alpha[:, k] * (z_beta[:, k - 1] + z_beta[:, k])
@@ -97,20 +98,16 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
     @pytest.fixture
     def input_data(self, grid: base_grid.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_alpha = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
-        )
+        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
+        z_alpha = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         z_beta = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_w_expl = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
-        )
-        z_q = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_w_expl = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        z_q = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         # z_q first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
         z_q.asnumpy()[:, 0] = 0.0
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         # w first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
         w.asnumpy()[:, 0] = 0.0
 

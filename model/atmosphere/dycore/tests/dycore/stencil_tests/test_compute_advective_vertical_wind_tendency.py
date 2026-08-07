@@ -29,11 +29,12 @@ def compute_advective_vertical_wind_tendency_numpy(
     coeff2_dwdz: np.ndarray,
     **kwargs: Any,
 ) -> np.ndarray:
-    ddt_w_adv = np.zeros_like(coeff1_dwdz)
-    ddt_w_adv[:, 1:] = -z_w_con_c[:, 1:] * (
-        w[:, :-2] * coeff1_dwdz[:, 1:]
-        - w[:, 2:] * coeff2_dwdz[:, 1:]
-        + w[:, 1:-1] * (coeff2_dwdz[:, 1:] - coeff1_dwdz[:, 1:])
+    # coeff*_dwdz live on model levels; model level k pairs with half level k
+    nlev = coeff1_dwdz.shape[1]
+    ddt_w_adv = np.zeros((z_w_con_c.shape[0], nlev + 1))
+    c1, c2 = coeff1_dwdz[:, 1:nlev], coeff2_dwdz[:, 1:nlev]
+    ddt_w_adv[:, 1:nlev] = -z_w_con_c[:, 1:nlev] * (
+        w[:, 0 : nlev - 1] * c1 - w[:, 2 : nlev + 1] * c2 + w[:, 1:nlev] * (c2 - c1)
     )
     return ddt_w_adv
 
@@ -59,11 +60,11 @@ class TestComputeAdvectiveVerticalWindTendency(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
+        z_w_con_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
         coeff1_dwdz = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         coeff2_dwdz = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddt_w_adv = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddt_w_adv = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
 
         return dict(
             z_w_con_c=z_w_con_c,

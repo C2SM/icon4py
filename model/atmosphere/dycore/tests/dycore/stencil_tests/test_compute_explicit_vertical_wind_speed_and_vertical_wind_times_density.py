@@ -76,14 +76,14 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        w_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_th_ddz_exner_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_w_expl = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        w_nnow = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        z_th_ddz_exner_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        z_w_expl = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        rho_ic = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
         dtime = wpfloat("5.0")
         cpd = wpfloat("10.0")
 
@@ -101,5 +101,5 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

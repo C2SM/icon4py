@@ -22,10 +22,10 @@ from icon4py.model.testing.stencil_tests import StencilTest
 def calculate_diagnostics_for_turbulence_numpy(
     wgtfac_c: np.ndarray, div: np.ndarray, kh_c: np.ndarray, div_ic, hdef_ic
 ) -> tuple[np.ndarray, np.ndarray]:
-    kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
-    div_offset_1 = np.roll(div, shift=1, axis=1)
-    div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
-    hdef_ic[:, 1:] = ((wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2)[:, 1:]
+    nlev = div.shape[1]
+    w = wgtfac_c[:, 1:nlev]
+    div_ic[:, 1:nlev] = w * div[:, 1:nlev] + (1.0 - w) * div[:, 0 : nlev - 1]
+    hdef_ic[:, 1:nlev] = (w * kh_c[:, 1:nlev] + (1.0 - w) * kh_c[:, 0 : nlev - 1]) ** 2
     return div_ic, hdef_ic
 
 
@@ -51,9 +51,9 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         div = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         kh_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        div_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        hdef_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        div_ic = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        hdef_ic = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         return dict(wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic)

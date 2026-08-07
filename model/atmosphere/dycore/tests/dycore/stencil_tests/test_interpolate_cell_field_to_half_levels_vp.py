@@ -25,11 +25,12 @@ from icon4py.model.testing import stencil_tests
 def interpolate_cell_field_to_half_levels_vp_numpy(
     wgtfac_c: np.ndarray, interpolant: np.ndarray
 ) -> np.ndarray:
-    interpolant_offset_1 = np.roll(interpolant, shift=1, axis=1)
-    interpolation_to_half_levels_vp = (
-        wgtfac_c * interpolant + (1.0 - wgtfac_c) * interpolant_offset_1
+    nlev = interpolant.shape[1]
+    interpolation_to_half_levels_vp = np.zeros((interpolant.shape[0], nlev + 1))
+    w = wgtfac_c[:, 1:nlev]
+    interpolation_to_half_levels_vp[:, 1:nlev] = (
+        w * interpolant[:, 1:nlev] + (1.0 - w) * interpolant[:, 0 : nlev - 1]
     )
-    interpolation_to_half_levels_vp[:, 0] = 0
 
     return interpolation_to_half_levels_vp
 
@@ -54,9 +55,9 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolant = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         interpolation_to_half_levels_vp = zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat
+            grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
         )
 
         return dict(

@@ -88,7 +88,7 @@ def _init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917 [too-man
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-    vect_a: fa.KField[float],
+    vect_a: fa.KHalfField[float],
 ) -> tuple[fa.KField[float], fa.KField[float], fa.KField[float]]:
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
@@ -122,7 +122,7 @@ def init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917 [too-many
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-    vect_a: fa.KField[float],
+    vect_a: fa.KHalfField[float],
     diff_multfac_vn: fa.KField[float],
     smag_limit: fa.KField[float],
     enh_smag_fac: fa.KField[float],
@@ -149,14 +149,15 @@ def init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917 [too-many
 
 @gtx.field_operator
 def _init_nabla2_factor_in_upper_damping_zone(
-    physical_heights: fa.KField[float],
+    physical_heights: fa.KHalfField[float],
     end_index_of_damping_layer: gtx.int32,
     nshift: gtx.int32,
     heights_nrd_shift: float,
     heights_1: float,
-) -> fa.KField[float]:
+) -> fa.KHalfField[float]:
     height_sliced = concat_where(
-        ((1 + nshift) <= dims.KDim) & (dims.KDim < (nshift + end_index_of_damping_layer + 1)),
+        ((1 + nshift) <= dims.KHalfDim)
+        & (dims.KHalfDim < (nshift + end_index_of_damping_layer + 1)),
         physical_heights,
         0.0,
     )
@@ -168,8 +169,8 @@ def _init_nabla2_factor_in_upper_damping_zone(
 
 @gtx.program
 def init_nabla2_factor_in_upper_damping_zone(  # noqa: PLR0917 [too-many-positional-arguments]
-    physical_heights: fa.KField[float],
-    diff_multfac_n2w: fa.KField[float],
+    physical_heights: fa.KHalfField[float],
+    diff_multfac_n2w: fa.KHalfField[float],
     end_index_of_damping_layer: gtx.int32,
     nshift: gtx.int32,
     heights_nrd_shift: float,
@@ -199,5 +200,5 @@ def init_nabla2_factor_in_upper_damping_zone(  # noqa: PLR0917 [too-many-positio
         heights_nrd_shift=heights_nrd_shift,
         heights_1=heights_1,
         out=diff_multfac_n2w,
-        domain={dims.KDim: (vertical_start, vertical_end)},
+        domain={dims.KHalfDim: (vertical_start, vertical_end)},
     )

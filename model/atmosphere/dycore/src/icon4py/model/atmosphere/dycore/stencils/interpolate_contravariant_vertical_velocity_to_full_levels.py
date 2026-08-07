@@ -14,16 +14,16 @@ from icon4py.model.common.type_alias import vpfloat
 
 @gtx.field_operator
 def _interpolate_contravariant_vertical_velocity_to_full_levels(
-    z_w_con_c: fa.CellKField[vpfloat],
+    z_w_con_c: fa.CellKHalfField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
     """Formerly know as _mo_velocity_advection_stencil_15."""
-    z_w_con_c_full_vp = vpfloat("0.5") * (z_w_con_c + z_w_con_c(KDim + 1))
+    z_w_con_c_full_vp = vpfloat("0.5") * (z_w_con_c(KDim - 0.5) + z_w_con_c(KDim + 0.5))
     return z_w_con_c_full_vp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_contravariant_vertical_velocity_to_full_levels(
-    z_w_con_c: fa.CellKField[vpfloat],
+    z_w_con_c: fa.CellKHalfField[vpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

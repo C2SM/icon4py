@@ -8,15 +8,15 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat
 
 
 @gtx.field_operator
 def _interpolate_cell_field_to_half_levels_vp(
-    wgtfac_c: fa.CellKField[ta.vpfloat],
+    wgtfac_c: fa.CellKHalfField[ta.vpfloat],
     interpolant: fa.CellKField[ta.vpfloat],
-) -> fa.CellKField[ta.vpfloat]:
+) -> fa.CellKHalfField[ta.vpfloat]:
     """
     Interpolate a CellDim variable of floating precision from full levels to half levels.
     The return variable also has floating precision.
@@ -28,17 +28,17 @@ def _interpolate_cell_field_to_half_levels_vp(
     Returns:
         CellDim variables at half levels
     """
-    interpolation_to_half_levels_vp = wgtfac_c * interpolant + (
+    interpolation_to_half_levels_vp = wgtfac_c * interpolant(KHalfDim + 0.5) + (
         vpfloat("1.0") - wgtfac_c
-    ) * interpolant(KDim - 1)
+    ) * interpolant(KHalfDim - 0.5)
     return interpolation_to_half_levels_vp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_cell_field_to_half_levels_vp(
-    wgtfac_c: fa.CellKField[ta.vpfloat],
+    wgtfac_c: fa.CellKHalfField[ta.vpfloat],
     interpolant: fa.CellKField[ta.vpfloat],
-    interpolation_to_half_levels_vp: fa.CellKField[ta.vpfloat],
+    interpolation_to_half_levels_vp: fa.CellKHalfField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -50,6 +50,6 @@ def interpolate_cell_field_to_half_levels_vp(
         out=interpolation_to_half_levels_vp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

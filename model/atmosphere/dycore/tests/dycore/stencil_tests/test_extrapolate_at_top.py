@@ -56,7 +56,12 @@ class TestExtrapolateAtTop(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfacq_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vn_ie = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat, extend={dims.KDim: 1})
+        vn_ie = zero_field(
+            grid,
+            dims.EdgeDim,
+            dims.KHalfDim,
+            dtype=vpfloat,
+        )
 
         return dict(
             wgtfacq_e=wgtfacq_e,
