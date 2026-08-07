@@ -137,8 +137,8 @@ def _compute_horizontal_advection_of_rho_and_theta(
     theta_ref_me: fa.EdgeKField[vpfloat],
     perturbed_rho_at_cells_on_model_levels: fa.CellKField[vpfloat],
     perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], wpfloat],
-    geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], wpfloat],
+    geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
+    geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1."""
     (

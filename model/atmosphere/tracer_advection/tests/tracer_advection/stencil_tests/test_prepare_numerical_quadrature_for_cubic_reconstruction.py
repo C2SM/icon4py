@@ -5,7 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 
 import gt4py.next as gtx
 import numpy as np
@@ -39,28 +46,28 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
     @staticmethod
     def _compute_wgt_t_detjac(
         *,
-        wgt_zeta_1,
-        wgt_zeta_2,
-        wgt_eta_1,
-        wgt_eta_2,
-        dbl_eps,
-        p_coords_dreg_v_1_x,
-        p_coords_dreg_v_2_x,
-        p_coords_dreg_v_3_x,
-        p_coords_dreg_v_4_x,
-        p_coords_dreg_v_1_y,
-        p_coords_dreg_v_2_y,
-        p_coords_dreg_v_3_y,
-        p_coords_dreg_v_4_y,
-        zeta_1,
-        zeta_2,
-        zeta_3,
-        zeta_4,
-        eta_1,
-        eta_2,
-        eta_3,
-        eta_4,
-    ):
+        wgt_zeta_1: float,
+        wgt_zeta_2: float,
+        wgt_eta_1: float,
+        wgt_eta_2: float,
+        dbl_eps: float,
+        p_coords_dreg_v_1_x: data_alloc.NDArray,
+        p_coords_dreg_v_2_x: data_alloc.NDArray,
+        p_coords_dreg_v_3_x: data_alloc.NDArray,
+        p_coords_dreg_v_4_x: data_alloc.NDArray,
+        p_coords_dreg_v_1_y: data_alloc.NDArray,
+        p_coords_dreg_v_2_y: data_alloc.NDArray,
+        p_coords_dreg_v_3_y: data_alloc.NDArray,
+        p_coords_dreg_v_4_y: data_alloc.NDArray,
+        zeta_1: float,
+        zeta_2: float,
+        zeta_3: float,
+        zeta_4: float,
+        eta_1: float,
+        eta_2: float,
+        eta_3: float,
+        eta_4: float,
+    ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
         # Compute z_wgt
         z_wgt_1 = 0.0625 * wgt_zeta_1 * wgt_eta_1
         z_wgt_2 = 0.0625 * wgt_zeta_1 * wgt_eta_2
@@ -170,31 +177,40 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
     @staticmethod
     def _compute_z_gauss_points(
         *,
-        p_coords_dreg_v_1_x,
-        p_coords_dreg_v_2_x,
-        p_coords_dreg_v_3_x,
-        p_coords_dreg_v_4_x,
-        p_coords_dreg_v_1_y,
-        p_coords_dreg_v_2_y,
-        p_coords_dreg_v_3_y,
-        p_coords_dreg_v_4_y,
-        shape_func_1_1,
-        shape_func_2_1,
-        shape_func_3_1,
-        shape_func_4_1,
-        shape_func_1_2,
-        shape_func_2_2,
-        shape_func_3_2,
-        shape_func_4_2,
-        shape_func_1_3,
-        shape_func_2_3,
-        shape_func_3_3,
-        shape_func_4_3,
-        shape_func_1_4,
-        shape_func_2_4,
-        shape_func_3_4,
-        shape_func_4_4,
-    ):
+        p_coords_dreg_v_1_x: data_alloc.NDArray,
+        p_coords_dreg_v_2_x: data_alloc.NDArray,
+        p_coords_dreg_v_3_x: data_alloc.NDArray,
+        p_coords_dreg_v_4_x: data_alloc.NDArray,
+        p_coords_dreg_v_1_y: data_alloc.NDArray,
+        p_coords_dreg_v_2_y: data_alloc.NDArray,
+        p_coords_dreg_v_3_y: data_alloc.NDArray,
+        p_coords_dreg_v_4_y: data_alloc.NDArray,
+        shape_func_1_1: float,
+        shape_func_2_1: float,
+        shape_func_3_1: float,
+        shape_func_4_1: float,
+        shape_func_1_2: float,
+        shape_func_2_2: float,
+        shape_func_3_2: float,
+        shape_func_4_2: float,
+        shape_func_1_3: float,
+        shape_func_2_3: float,
+        shape_func_3_3: float,
+        shape_func_4_3: float,
+        shape_func_1_4: float,
+        shape_func_2_4: float,
+        shape_func_3_4: float,
+        shape_func_4_4: float,
+    ) -> tuple[
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+    ]:
         z_gauss_pts_1_x = (
             shape_func_1_1 * p_coords_dreg_v_1_x
             + shape_func_2_1 * p_coords_dreg_v_2_x
@@ -257,19 +273,30 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
     @staticmethod
     def _compute_vector_sums(
         *,
-        wgt_t_detjac_1,
-        wgt_t_detjac_2,
-        wgt_t_detjac_3,
-        wgt_t_detjac_4,
-        z_gauss_pts_1_x,
-        z_gauss_pts_1_y,
-        z_gauss_pts_2_x,
-        z_gauss_pts_2_y,
-        z_gauss_pts_3_x,
-        z_gauss_pts_3_y,
-        z_gauss_pts_4_x,
-        z_gauss_pts_4_y,
-    ):
+        wgt_t_detjac_1: data_alloc.NDArray,
+        wgt_t_detjac_2: data_alloc.NDArray,
+        wgt_t_detjac_3: data_alloc.NDArray,
+        wgt_t_detjac_4: data_alloc.NDArray,
+        z_gauss_pts_1_x: data_alloc.NDArray,
+        z_gauss_pts_1_y: data_alloc.NDArray,
+        z_gauss_pts_2_x: data_alloc.NDArray,
+        z_gauss_pts_2_y: data_alloc.NDArray,
+        z_gauss_pts_3_x: data_alloc.NDArray,
+        z_gauss_pts_3_y: data_alloc.NDArray,
+        z_gauss_pts_4_x: data_alloc.NDArray,
+        z_gauss_pts_4_y: data_alloc.NDArray,
+    ) -> tuple[
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+        data_alloc.NDArray,
+    ]:
         p_quad_vector_sum_1 = wgt_t_detjac_1 + wgt_t_detjac_2 + wgt_t_detjac_3 + wgt_t_detjac_4
         p_quad_vector_sum_2 = (
             wgt_t_detjac_1 * z_gauss_pts_1_x
@@ -342,14 +369,14 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
     def reference(
         cls,
         *,
-        p_coords_dreg_v_1_x: np.ndarray,
-        p_coords_dreg_v_2_x: np.ndarray,
-        p_coords_dreg_v_3_x: np.ndarray,
-        p_coords_dreg_v_4_x: np.ndarray,
-        p_coords_dreg_v_1_y: np.ndarray,
-        p_coords_dreg_v_2_y: np.ndarray,
-        p_coords_dreg_v_3_y: np.ndarray,
-        p_coords_dreg_v_4_y: np.ndarray,
+        p_coords_dreg_v_1_x: data_alloc.NDArray,
+        p_coords_dreg_v_2_x: data_alloc.NDArray,
+        p_coords_dreg_v_3_x: data_alloc.NDArray,
+        p_coords_dreg_v_4_x: data_alloc.NDArray,
+        p_coords_dreg_v_1_y: data_alloc.NDArray,
+        p_coords_dreg_v_2_y: data_alloc.NDArray,
+        p_coords_dreg_v_3_y: data_alloc.NDArray,
+        p_coords_dreg_v_4_y: data_alloc.NDArray,
         shape_func_1_1: float,
         shape_func_2_1: float,
         shape_func_3_1: float,

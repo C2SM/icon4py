@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -32,12 +40,12 @@ class TestVaporXGraupel(StencilTest):
         dvsi: np.ndarray,
         dvsw0: np.ndarray,
         dt: wpfloat,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(exchange_rate=np.full(t.shape, -6.8498666666666675e-13))
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.Grid) -> dict:
         return dict(
             t=data_alloc.constant_field(grid, 278.026, dims.CellDim, dims.KDim, dtype=wpfloat),
             p=data_alloc.constant_field(grid, 95987.1, dims.CellDim, dims.KDim, dtype=wpfloat),

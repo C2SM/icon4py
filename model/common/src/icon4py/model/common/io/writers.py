@@ -118,7 +118,7 @@ class NETCDFWriter:
         return self._vertical_params.interface_physical_height.ndarray.shape[0]
 
     def initialize_dataset(self) -> None:
-        self.dataset = nc.Dataset(  # type: ignore [assignment] # dataset is reassigned here
+        self.dataset = nc.Dataset(  # type: ignore[assignment]  # dataset is reassigned here
             self._file_name,
             "w",
             format="NETCDF4",

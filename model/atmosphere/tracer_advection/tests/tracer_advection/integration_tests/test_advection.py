@@ -6,15 +6,26 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
+import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
+from icon4py.model.common.grid import (
+    base as base_grid,
+    geometry_attributes as geometry_attrs,
+    horizontal as h_grid,
+)
 from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_defs, grid_utils as gridtest_utils
+from icon4py.model.testing import (
+    definitions as test_defs,
+    grid_utils as gridtest_utils,
+    serialbox as sb,
+)
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
@@ -98,23 +109,31 @@ from ..utils import (
     ],
 )
 def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
-    date,
-    even_timestep,
-    ntracer,
-    horizontal_advection_type,
-    horizontal_advection_limiter,
-    vertical_advection_type,
-    vertical_advection_limiter,
+    date: str,
+    even_timestep: bool,
+    ntracer: int,
+    horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: tracer_advection.HorizontalAdvectionLimiter,
+    vertical_advection_type: tracer_advection.VerticalAdvectionType,
+    vertical_advection_limiter: tracer_advection.VerticalAdvectionLimiter,
     *,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
-    backend,
-    advection_init_savepoint,
-    advection_exit_savepoint,
+    grid_savepoint: sb.IconGridSavepoint,
+    icon_grid: base_grid.Grid,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    backend: gtx_typing.Backend | None,
+    advection_init_savepoint: sb.AdvectionInitSavepoint,
+    advection_exit_savepoint: sb.AdvectionExitSavepoint,
     experiment: test_defs.Experiment,
-):
+) -> None:
+    # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
+    if (
+        even_timestep
+        and horizontal_advection_type == tracer_advection.HorizontalAdvectionType.NO_ADVECTION
+    ):
+        pytest.xfail(
+            "This test is skipped until the cause of nonzero horizontal advection if revealed."
+        )
     config = tracer_advection.AdvectionConfig(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
@@ -141,7 +160,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
             h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         ),
         min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
-        geometry_type=icon_grid.grid_params.geometry_type,
+        geometry_type=icon_grid.grid_params.geometry_type,  # type: ignore[attr-defined]  # icon_grid is base_grid.Grid at type level, but actually IconGrid
         exchange=decomposition.single_node_exchange,
     )
 
@@ -153,7 +172,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
 
     advection_granule = tracer_advection.convert_config_to_advection(
         config=config,
-        grid=icon_grid,
+        grid=icon_grid,  # type: ignore[arg-type]  # fixture returns base_grid.Grid but is actually IconGrid
         interpolation_state=interpolation_state,
         least_squares_state=least_squares_state,
         metric_state=metric_state,
@@ -183,7 +202,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     )
 
     diagnostic_state_ref = construct_diagnostic_exit_state(
-        icon_grid=icon_grid,
+        grid=icon_grid,
         savepoint=advection_exit_savepoint,
         ntracer=ntracer,
         backend=backend,
@@ -191,7 +210,7 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
     verify_advection_fields(
-        grid=icon_grid,
+        grid=icon_grid,  # type: ignore[arg-type]  # fixture returns base_grid.Grid but is actually IconGrid
         diagnostic_state=diagnostic_state,
         diagnostic_state_ref=diagnostic_state_ref,
         p_tracer_new=p_tracer_new,

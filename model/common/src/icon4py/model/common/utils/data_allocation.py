@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 try:
-    import cupy as xp  # type: ignore[import-not-found]
+    import cupy as xp  # type: ignore[import-not-found]  # optional dependency without stubs
 except ImportError:
     import numpy as xp
 
@@ -101,7 +101,7 @@ def as_field(
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
     data = field.asnumpy() if embedded_on_host else field.ndarray
-    return gtx.as_field(field.domain, data=data, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+    return gtx.as_field(field.domain, data=data, allocator=allocator)  # type: ignore[arg-type]  # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def random_field(
@@ -118,7 +118,7 @@ def random_field(
     )
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore[arg-type]  # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def random_sign(
@@ -132,7 +132,7 @@ def random_sign(
     arr = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dims, extend=extend))
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore[arg-type]  # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def random_mask(
@@ -151,7 +151,7 @@ def random_mask(
     arr = flat_arr.reshape(shape)
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore[arg-type]  # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def zero_field(
@@ -174,7 +174,7 @@ def constant_field(
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
-        np.full(shape=tuple(map(lambda x: grid.size[x], dims)), fill_value=value, dtype=dtype),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+        np.full(shape=tuple(map(lambda x: grid.size[x], dims)), fill_value=value, dtype=dtype),  # type: ignore[arg-type]  # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
         allocator=allocator,
     )
 

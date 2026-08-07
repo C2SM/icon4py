@@ -38,7 +38,7 @@ from icon4py.model.common.utils import device_utils
 # TODO(havogt): make similar to icon4py driver structure
 
 
-def get_args():
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-o", metavar="output_file", dest="output_file", help="output filename", default="output.nc"
@@ -71,7 +71,7 @@ def _muphys_step_separate(
     pi: fa.CellKField[ta.wpfloat],  # Precipitation of ice
     pg: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
     pre: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
-):
+) -> None:
     # In-place update ok since saturation_adjustment is fully point-wise,
     # but not recommended. TODO
     saturation_adjustment_program(
@@ -117,7 +117,9 @@ def setup_muphys(
     *,
     single_program: bool = False,
     scheme: config.MuphysScheme = config.MuphysScheme.KOKKOS_MUPHYS,
-):
+) -> Callable[..., None]:
+    # GT4Py programs update their output fields in place; the returned callable is called
+    # for side effects only.
     # the GT4Py operators branch on a plain bool (the DSL has no match statement)
     match scheme:
         case config.MuphysScheme.AES_GRAUPEL:
@@ -126,7 +128,6 @@ def setup_muphys(
             use_aes_graupel = False
         case _:
             raise ValueError(f"unknown muphys scheme: {scheme}")
-
     if single_program:
         # TODO(havogt): make an option in gt4py for thread-safety?
         with utils.recursion_limit(10**5):
@@ -184,7 +185,7 @@ def setup_muphys(
         )
 
 
-def main():
+def main() -> None:
     args = get_args()
 
     backend = model_backends.BACKENDS[args.backend]
@@ -192,7 +193,9 @@ def main():
     dtype = gtx.float32 if ta.precision == "single" else gtx.float64
 
     inp = common.GraupelInput.load(
-        filename=pathlib.Path(args.input_file), allocator=allocator, dtype=dtype
+        filename=pathlib.Path(args.input_file),
+        allocator=allocator,
+        dtype=dtype,  # type: ignore[arg-type]  # dtype is chosen at runtime (single/double); mypy cannot narrow it to the Field dtype TypeVar
     )
 
     use_inout_buffers = True  # Set to True to reuse input buffers for output.
@@ -214,7 +217,7 @@ def main():
     out = common.GraupelOutput.allocate(
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
         allocator=allocator,
-        dtype=dtype,
+        dtype=dtype,  # type: ignore[arg-type]  # dtype is chosen at runtime (single/double); mypy cannot narrow it to the Field dtype TypeVar
         references=references,
     )
 

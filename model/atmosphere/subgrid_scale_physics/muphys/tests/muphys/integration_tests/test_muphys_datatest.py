@@ -119,25 +119,25 @@ def test_muphys_granule(
             exit_savepoint.tend_tracer(tracer_index).asnumpy()
             - init_savepoint.tend_tracer(tracer_index).asnumpy()
         )
-        actual = outputs[name].asnumpy()
+        actual = outputs[name].asnumpy()  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
         test_utils.assert_dallclose(actual[:, jks:], reference[:, jks:], atol=1e-13)
         # above the cloudy region ICON does not run the scheme; the full-column
         # granule must produce (near-)zero tendencies there
         test_utils.assert_dallclose(actual[:, :jks], 0.0, atol=1e-12)
 
     tend_ta_reference = exit_savepoint.tend_ta().asnumpy() - init_savepoint.tend_ta().asnumpy()
-    tend_ta_actual = outputs["tend_temperature"].asnumpy()
+    tend_ta_actual = outputs["tend_temperature"].asnumpy()  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
     test_utils.assert_dallclose(tend_ta_actual[:, jks:], tend_ta_reference[:, jks:], atol=1e-10)
     test_utils.assert_dallclose(tend_ta_actual[:, :jks], 0.0, atol=1e-10)
 
     # surface precip: the granule keeps the surface value in the last level; ICON
     # only stores the aggregated prm_field diagnostics (rsfl = rain,
     # ssfl = ice + snow + graupel, pr = total, ufcs = energy flux)
-    rain = outputs["pr"].asnumpy()[:, -1]
-    ice = outputs["pi"].asnumpy()[:, -1]
-    snow = outputs["ps"].asnumpy()[:, -1]
-    graupel = outputs["pg"].asnumpy()[:, -1]
-    energy_flux = outputs["pre"].asnumpy()[:, -1]
+    rain = outputs["pr"].asnumpy()[:, -1]  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
+    ice = outputs["pi"].asnumpy()[:, -1]  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
+    snow = outputs["ps"].asnumpy()[:, -1]  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
+    graupel = outputs["pg"].asnumpy()[:, -1]  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
+    energy_flux = outputs["pre"].asnumpy()[:, -1]  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
 
     test_utils.assert_dallclose(rain, exit_savepoint.rsfl().asnumpy(), atol=1e-10)
     test_utils.assert_dallclose(ice + snow + graupel, exit_savepoint.ssfl().asnumpy(), atol=1e-10)

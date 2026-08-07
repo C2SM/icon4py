@@ -5,6 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -16,6 +20,10 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
 
 
 class TestCloudToRainAesGraupel(StencilTest):
@@ -31,8 +39,8 @@ class TestCloudToRainAesGraupel(StencilTest):
         qc: np.ndarray,
         qr: np.ndarray,
         nc: np.ndarray,
-        **kwargs,
-    ) -> dict:
+        **kwargs: Any,
+    ) -> dict[str, np.ndarray]:
         # independent numpy reference mirroring ICON mo_aes_graupel.f90 cloud_to_rain;
         # the magic constants are hardcoded PARAMETERs there in the same way
         au_kernel = 9.44e9 / (20.0 * 2.6e-10) * 4.0 * 6.0 / 9.0
@@ -48,7 +56,7 @@ class TestCloudToRainAesGraupel(StencilTest):
         return dict(conversion_rate=rate)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.Grid) -> dict[str, Any]:
         return dict(
             t=data_alloc.constant_field(grid, 267.25, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho=data_alloc.constant_field(grid, 0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -40,7 +42,7 @@ class TestCalculateNabla2ForW(StencilTest):
         *,
         w: np.ndarray,
         geofac_n2s: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w, geofac_n2s)
         return dict(z_nabla2_c=z_nabla2_c)

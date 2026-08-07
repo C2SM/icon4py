@@ -112,11 +112,11 @@ def test_program_provider_exchange(
     )
     arr = field.ndarray
 
-    assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]
+    assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol
     if do_exchange:
         assert xp.all(xp.isin(arr[halo_points], valid_values))
     else:
-        assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]
+        assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol
 
 
 @pytest.mark.datatest
@@ -181,8 +181,8 @@ def test_numpy_provider_exchange(
     )
     arr = field.ndarray
 
-    assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]
+    assert (arr[owned_points] == number).all()  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol
     if do_exchange:
         assert xp.all(xp.isin(arr[halo_points], valid_values))
     else:
-        assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]
+        assert (arr[halo_points] == number).all()  # type: ignore[attr-defined]  # GT4Py NDArrayObject protocol

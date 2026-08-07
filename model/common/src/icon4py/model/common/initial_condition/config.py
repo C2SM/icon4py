@@ -42,7 +42,10 @@ log = logging.getLogger(__name__)
 
 
 type IC_CONFIG = (
-    jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig
+    jw_ic.JablonowskiWilliamsonConfig
+    | gauss_ic.Gauss3DConfig
+    | wk_ic.WeismanKlempConfig
+    | from_file_ic.FromFileConfig
 )
 
 

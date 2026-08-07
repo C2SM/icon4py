@@ -96,9 +96,9 @@ def customize_backend(
     if backend is None or isinstance(backend, gtx_backend.Backend):
         backend_name = backend.name if backend is not None else "embedded"
         log.info(f"Using non-custom backend '{backend_name}' for '{program_name}'.")
-        return backend  # type: ignore[return-value]
+        return backend
 
-    backend_descriptor = (
+    backend_descriptor: model_backends.BackendDescriptor = (
         {"device": backend} if isinstance(backend, model_backends.DeviceType) else backend
     )
     backend_descriptor = get_options(program_name, **backend_descriptor)
@@ -156,15 +156,15 @@ def setup_program(
         static_args_program.compile(
             **dict_values_to_list(horizontal_sizes),
             **dict_values_to_list(vertical_sizes),
-            **variants,
+            **variants,  # type: ignore[arg-type]  # GT4Py compile uses dynamic **kwargs that mypy cannot verify
             **dict_values_to_list(bound_static_args),
             offset_provider=offset_provider,
         )
 
     return functools.partial(
         static_args_program,
-        **constant_args,
-        **horizontal_sizes,
-        **vertical_sizes,
+        **constant_args,  # type: ignore[arg-type]  # GT4Py Program.__call__ uses dynamic **kwargs that mypy cannot verify
+        **horizontal_sizes,  # type: ignore[arg-type]  # GT4Py Program.__call__ uses dynamic **kwargs that mypy cannot verify
+        **vertical_sizes,  # type: ignore[arg-type]  # GT4Py Program.__call__ uses dynamic **kwargs that mypy cannot verify
         offset_provider=offset_provider,
     )

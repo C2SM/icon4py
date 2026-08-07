@@ -75,6 +75,7 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
         f"rank={process_props.rank}/{process_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
     config = experiment.config.diffusion
+    assert config is not None
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     _log.info(
         f"rank={process_props.rank}/{process_props.comm_size}:  setup: using {process_props.comm_name} with {process_props.comm_size} nodes"

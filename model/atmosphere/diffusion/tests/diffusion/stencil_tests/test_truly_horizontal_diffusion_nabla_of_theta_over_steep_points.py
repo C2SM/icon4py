@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest
@@ -28,7 +31,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     vcoef: np.ndarray,
     theta_v: np.ndarray,
     z_temp: np.ndarray,
-    **kwargs,
+    **kwargs: Any,
 ) -> np.ndarray:
     c2e2c = connectivities[dims.C2E2CDim]
     full_shape = vcoef.shape
@@ -72,7 +75,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         vcoef: np.ndarray,
         theta_v: np.ndarray,
         z_temp: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
             connectivities=connectivities,
@@ -87,12 +90,12 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         return dict(z_temp=z_temp)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid) -> dict:
         zd_vertoffset = zero_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            zd_vertoffset[:, :, k] = rng.integers(
+            zd_vertoffset[:, :, k] = rng.integers(  # type: ignore[index]  # NDArrayObject Protocol limitation
                 low=0 - k,
                 high=grid.num_levels - k - 1,
                 size=(zd_vertoffset.ndarray.shape[0], zd_vertoffset.ndarray.shape[1]),

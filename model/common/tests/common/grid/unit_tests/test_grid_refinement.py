@@ -36,6 +36,7 @@ def test_is_local_area_grid_for_grid_files(
     grid = grid_utils.get_grid_manager_from_identifier(
         grid_file, 1, True, model_backends.get_allocator(backend)
     ).grid
+    assert grid.refinement_control is not None, "refinement_control should be present for this grid"
     refinement_field = grid.refinement_control[dim]
     limited_area = refinement.is_limited_area_grid(refinement_field.ndarray)
     assert isinstance(limited_area, bool)
@@ -156,6 +157,7 @@ def test_compute_domain_bounds_for_limited_area_grid(
     refinement_field = grid.refinement_control
     decomposition_info = grid_manager.decomposition_info
 
+    assert refinement_field is not None, "refinement_control should be present for this grid"
     start_index, end_index = refinement.compute_domain_bounds(
         dim, refinement_field, decomposition_info=decomposition_info
     )
@@ -188,6 +190,7 @@ def test_compute_domain_bounds_for_global_grid(
     grid = grid_manager.grid
     refinement_fields = grid.refinement_control
     decomposition_info = grid_manager.decomposition_info
+    assert refinement_fields is not None, "refinement_control should be present for this grid"
     start_index, end_index = refinement.compute_domain_bounds(
         dim, refinement_fields, decomposition_info
     )

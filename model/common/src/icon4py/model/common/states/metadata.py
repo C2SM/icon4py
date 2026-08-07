@@ -38,7 +38,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         standard_name="z_ifc_sliced",
         long_name="z_ifc_sliced",
         units="m",
-        dims=(dims.CellDim),
+        dims=(dims.CellDim,),
         icon_var_name="z_ifc_sliced",
         dtype=ta.wpfloat,
     ),

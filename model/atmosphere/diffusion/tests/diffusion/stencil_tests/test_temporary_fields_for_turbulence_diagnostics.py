@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -31,7 +33,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
         e_bln_c_s: np.ndarray,
         geofac_div: np.ndarray,
         diff_multfac_smag: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         c2e = connectivities[dims.C2EDim]
 
@@ -48,7 +50,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
         return dict(div=div, kh_c=kh_c)
 
     @pytest.fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(self, grid: base.Grid) -> dict:
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
 

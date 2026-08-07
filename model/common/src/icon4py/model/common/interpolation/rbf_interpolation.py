@@ -266,7 +266,7 @@ def _kernel(
     kernel: InterpolationKernel,
     lengths: data_alloc.NDArray,
     scale: ta.wpfloat,
-):
+) -> data_alloc.NDArray:
     match kernel:
         case InterpolationKernel.GAUSSIAN:
             return _gaussian(lengths, scale)
@@ -331,10 +331,10 @@ def _compute_rbf_interpolation_coeffs(
     # Pad edge normals and centers with a dummy zero for easier vectorized
     # computation. This may produce nans (e.g. arc length between (0,0,0) and
     # another point on the sphere), but these don't hurt the computation.
-    def pad(f):
+    def pad(f: data_alloc.NDArray) -> data_alloc.NDArray:
         return array_ns.pad(f, (0, 1), mode="constant", constant_values=0.0)
 
-    def index_offset(f):
+    def index_offset(f: data_alloc.NDArray) -> data_alloc.NDArray:
         return f[rbf_offset]
 
     edge_normal = array_ns.stack(
@@ -460,14 +460,14 @@ def _compute_rbf_interpolation_coeffs(
             sol = array_ns.linalg.solve(mat_batch, rhs_batch[..., array_ns.newaxis]).squeeze(-1)
             rbf_vec_coeff[j][group_idx + horizontal_start, :nv] = sol
 
-    rbf_vec_coeff = tuple(rbf_vec_coeff)
+    rbf_vec_coeff_t = tuple(rbf_vec_coeff)
 
     # Normalize coefficients
     for j in range(num_zonal_meridional_components):
-        rbf_vec_coeff[j][horizontal_start:horizontal_end] /= array_ns.sum(
-            nxnx[j] * rbf_vec_coeff[j][horizontal_start:horizontal_end], axis=1
+        rbf_vec_coeff_t[j][horizontal_start:horizontal_end] /= array_ns.sum(
+            nxnx[j] * rbf_vec_coeff_t[j][horizontal_start:horizontal_end], axis=1
         )[:, array_ns.newaxis]
-    return rbf_vec_coeff
+    return rbf_vec_coeff_t
 
 
 def _compute_rbf_interpolation_coeffs_dispatch(
@@ -512,7 +512,10 @@ def _compute_rbf_interpolation_coeffs_dispatch(
             edge_normal_x=data_alloc.as_numpy(edge_normal_x),
             edge_normal_y=data_alloc.as_numpy(edge_normal_y),
             edge_normal_z=data_alloc.as_numpy(edge_normal_z),
-            uv=tuple(tuple(data_alloc.as_numpy(component) for component in pair) for pair in uv),
+            uv=tuple(
+                tuple(data_alloc.as_numpy(component) for component in pair)  # type: ignore[misc]  # mypy infers wrong nested tuple type for variadic tuple
+                for pair in uv
+            ),
             rbf_offset=data_alloc.as_numpy(rbf_offset),
             rbf_kernel=rbf_kernel,
             geometry_type=geometry_type,
@@ -570,7 +573,7 @@ def compute_rbf_interpolation_coeffs_cell(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-) -> tuple[data_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, ...]:
     array_ns = data_alloc.array_namespace(cell_center_lat)
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
@@ -665,7 +668,7 @@ def compute_rbf_interpolation_coeffs_vertex(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, ...]:
     array_ns = data_alloc.array_namespace(vertex_lat)
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)

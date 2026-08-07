@@ -5,17 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 import functools
 import logging
 import pathlib
-from types import ModuleType
-from typing import Literal
+from types import ModuleType, TracebackType
+from typing import Literal, cast
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition,
@@ -73,22 +75,28 @@ class GridManager:
         self._decomposition_info: decomposition.DecompositionInfo | None = None
         self._geometry: GeometryDict = {}
         self._coordinates: CoordinateDict = {}
-        self._reader = None
+        self._reader: gridfile.GridFile | None = None
 
-    def open(self):
+    def open(self) -> None:
         """Open the gridfile resource for reading."""
         self._reader = gridfile.GridFile(self._file_name, self._offset_transformation)
         self._reader.open()
 
-    def close(self):
+    def close(self) -> None:
         """close the gridfile resource."""
+        assert self._reader is not None, "reader must be opened"
         self._reader.close()
 
-    def __enter__(self):
+    def __enter__(self) -> GridManager:
         self.open()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         self.close()
         if exc_type is not None:
             _log.debug(
@@ -111,9 +119,15 @@ class GridManager:
 
         if not self._reader:
             self.open()
+        assert self._reader is not None, "GridManager must be opened before use"
 
-        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
-            geometry_type = icon.GeometryType(geometry_type)
+        if allocator is None:
+            # None selects the embedded backend; resolve to the default CPU
+            # allocator so downstream methods (typed Allocator) work correctly.
+            allocator = model_backends.get_allocator(None)
+
+        if attr := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
+            geometry_type = icon.GeometryType(attr)
         else:
             geometry_type = icon.GeometryType.ICOSAHEDRON
 
@@ -134,14 +148,16 @@ class GridManager:
         allocator: gtx_typing.Allocator,
         geometry_type: icon.GeometryType,
     ) -> CoordinateDict:
+        assert self._decomposition_info is not None, "decomposition_info must be set"
+        assert self._reader is not None, "reader must be opened"
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
-        coordinates = {
+        coordinates: dict[gtx.Dimension, dict[str, gtx.Field]] = {
             dims.CellDim: {
                 "lat": gtx.as_field(
                     (dims.CellDim,),
-                    self._reader.variable(
+                    self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                         gridfile.CoordinateName.CELL_LATITUDE, indices=my_cell_indices
                     ),
                     dtype=ta.wpfloat,
@@ -149,7 +165,7 @@ class GridManager:
                 ),
                 "lon": gtx.as_field(
                     (dims.CellDim,),
-                    self._reader.variable(
+                    self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                         gridfile.CoordinateName.CELL_LONGITUDE, indices=my_cell_indices
                     ),
                     dtype=ta.wpfloat,
@@ -159,7 +175,7 @@ class GridManager:
             dims.EdgeDim: {
                 "lat": gtx.as_field(
                     (dims.EdgeDim,),
-                    self._reader.variable(
+                    self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                         gridfile.CoordinateName.EDGE_LATITUDE, indices=my_edge_indices
                     ),
                     dtype=ta.wpfloat,
@@ -167,7 +183,7 @@ class GridManager:
                 ),
                 "lon": gtx.as_field(
                     (dims.EdgeDim,),
-                    self._reader.variable(
+                    self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                         gridfile.CoordinateName.EDGE_LONGITUDE, indices=my_edge_indices
                     ),
                     dtype=ta.wpfloat,
@@ -177,7 +193,7 @@ class GridManager:
             dims.VertexDim: {
                 "lat": gtx.as_field(
                     (dims.VertexDim,),
-                    self._reader.variable(
+                    self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                         gridfile.CoordinateName.VERTEX_LATITUDE, indices=my_vertex_indices
                     ),
                     allocator=allocator,
@@ -185,7 +201,7 @@ class GridManager:
                 ),
                 "lon": gtx.as_field(
                     (dims.VertexDim,),
-                    self._reader.variable(
+                    self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                         gridfile.CoordinateName.VERTEX_LONGITUDE, indices=my_vertex_indices
                     ),
                     allocator=allocator,
@@ -197,106 +213,108 @@ class GridManager:
         if geometry_type == icon.GeometryType.TORUS:
             coordinates[dims.CellDim]["x"] = gtx.as_field(
                 (dims.CellDim,),
-                self._reader.variable(gridfile.CoordinateName.CELL_X, indices=my_cell_indices),
+                self._reader.variable(gridfile.CoordinateName.CELL_X, indices=my_cell_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.CellDim]["y"] = gtx.as_field(
                 (dims.CellDim,),
-                self._reader.variable(gridfile.CoordinateName.CELL_Y, indices=my_cell_indices),
+                self._reader.variable(gridfile.CoordinateName.CELL_Y, indices=my_cell_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.CellDim]["z"] = gtx.as_field(
                 (dims.CellDim,),
-                self._reader.variable(gridfile.CoordinateName.CELL_Z, indices=my_cell_indices),
+                self._reader.variable(gridfile.CoordinateName.CELL_Z, indices=my_cell_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.EdgeDim]["x"] = gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.CoordinateName.EDGE_X, indices=my_edge_indices),
+                self._reader.variable(gridfile.CoordinateName.EDGE_X, indices=my_edge_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.EdgeDim]["y"] = gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.CoordinateName.EDGE_Y, indices=my_edge_indices),
+                self._reader.variable(gridfile.CoordinateName.EDGE_Y, indices=my_edge_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.EdgeDim]["z"] = gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.CoordinateName.EDGE_Z, indices=my_edge_indices),
+                self._reader.variable(gridfile.CoordinateName.EDGE_Z, indices=my_edge_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.VertexDim]["x"] = gtx.as_field(
                 (dims.VertexDim,),
-                self._reader.variable(gridfile.CoordinateName.VERTEX_X, indices=my_vertex_indices),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_X, indices=my_vertex_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.VertexDim]["y"] = gtx.as_field(
                 (dims.VertexDim,),
-                self._reader.variable(gridfile.CoordinateName.VERTEX_Y, indices=my_vertex_indices),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_Y, indices=my_vertex_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 dtype=ta.wpfloat,
                 allocator=allocator,
             )
             coordinates[dims.VertexDim]["z"] = gtx.as_field(
                 (dims.VertexDim,),
-                self._reader.variable(gridfile.CoordinateName.VERTEX_Z, indices=my_vertex_indices),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_Z, indices=my_vertex_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 dtype=ta.wpfloat,
                 allocator=allocator,
             )
 
-        return coordinates
+        return cast(CoordinateDict, coordinates)
 
     def _read_geometry_fields(
         self,
         allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
+        assert self._decomposition_info is not None, "decomposition_info must be set"
+        assert self._reader is not None, "reader must be opened"
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
-            gridfile.GeometryName.CELL_AREA.value: gtx.as_field(
+            gridfile.GeometryName.CELL_AREA: gtx.as_field(
                 (dims.CellDim,),
-                self._reader.variable(gridfile.GeometryName.CELL_AREA, indices=my_cell_indices),
+                self._reader.variable(gridfile.GeometryName.CELL_AREA, indices=my_cell_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 allocator=allocator,
             ),
             # TODO(halungge): easily computed from a neighbor_sum V2C over the cell areas?
-            gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
+            gridfile.GeometryName.DUAL_AREA: gtx.as_field(
                 (dims.VertexDim,),
-                self._reader.variable(gridfile.GeometryName.DUAL_AREA, indices=my_vertex_indices),
+                self._reader.variable(gridfile.GeometryName.DUAL_AREA, indices=my_vertex_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 allocator=allocator,
             ),
-            gridfile.GeometryName.EDGE_LENGTH.value: gtx.as_field(
+            gridfile.GeometryName.EDGE_LENGTH: gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.EDGE_LENGTH, indices=my_edge_indices),
+                self._reader.variable(gridfile.GeometryName.EDGE_LENGTH, indices=my_edge_indices),  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                 allocator=allocator,
             ),
-            gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
+            gridfile.GeometryName.DUAL_EDGE_LENGTH: gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(
+                self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                     gridfile.GeometryName.DUAL_EDGE_LENGTH, indices=my_edge_indices
                 ),
                 allocator=allocator,
             ),
-            gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
+            gridfile.GeometryName.EDGE_CELL_DISTANCE: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
-                self._reader.variable(
+                self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                     gridfile.GeometryName.EDGE_CELL_DISTANCE,
                     transpose=True,
                     indices=my_edge_indices,
                 ),
                 allocator=allocator,
             ),
-            gridfile.GeometryName.EDGE_VERTEX_DISTANCE.value: gtx.as_field(
+            gridfile.GeometryName.EDGE_VERTEX_DISTANCE: gtx.as_field(
                 (dims.EdgeDim, dims.E2VDim),
-                self._reader.variable(
+                self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                     gridfile.GeometryName.EDGE_VERTEX_DISTANCE,
                     transpose=True,
                     indices=my_edge_indices,
@@ -304,25 +322,25 @@ class GridManager:
                 allocator=allocator,
             ),
             # TODO(halungge): recompute from coordinates? field in gridfile contains NaN on boundary edges
-            gridfile.GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
+            gridfile.GeometryName.TANGENT_ORIENTATION: gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(
+                self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                     gridfile.GeometryName.TANGENT_ORIENTATION, indices=my_edge_indices
                 ),
                 allocator=allocator,
             ),
-            gridfile.GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
+            gridfile.GeometryName.CELL_NORMAL_ORIENTATION: gtx.as_field(
                 (dims.CellDim, dims.C2EDim),
-                self._reader.variable(
+                self._reader.variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                     gridfile.GeometryName.CELL_NORMAL_ORIENTATION,
                     transpose=True,
                     indices=my_cell_indices,
                 ),
                 allocator=allocator,
             ),
-            gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
+            gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX: gtx.as_field(
                 (dims.VertexDim, dims.V2EDim),
-                self._reader.int_variable(
+                self._reader.int_variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                     gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
                     transpose=True,
                     apply_offset=False,
@@ -347,6 +365,8 @@ class GridManager:
         Returns:
             dict[gtx.Dimension, gtx.Field]: A dictionary containing the refinement control fields for each dimension.
         """
+        assert self._reader is not None, "reader must be opened"
+        assert self._decomposition_info is not None, "decomposition_info must be set"
         refinement_control_names = {
             dims.CellDim: gridfile.GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: gridfile.GridRefinementName.CONTROL_EDGES,
@@ -355,7 +375,7 @@ class GridManager:
         refinement_control_fields = {
             dim: gtx.as_field(
                 (dim,),
-                self._reader.int_variable(
+                self._reader.int_variable(  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject
                     name,
                     indices=self._decomposition_info.global_index(dim),
                     transpose=False,
@@ -365,7 +385,7 @@ class GridManager:
             )
             for dim, name in refinement_control_names.items()
         }
-        return refinement_control_fields
+        return cast(dict[gtx.Dimension, gtx.Field], refinement_control_fields)
 
     @property
     def file_path(self) -> str:
@@ -374,6 +394,7 @@ class GridManager:
 
     @property
     def grid(self) -> icon.IconGrid:
+        assert self._grid is not None, "grid has not been constructed yet"
         return self._grid
 
     @property
@@ -386,11 +407,12 @@ class GridManager:
 
     @property
     def decomposition_info(self) -> decomposition.DecompositionInfo:
+        assert self._decomposition_info is not None, "decomposition_info has not been set yet"
         return self._decomposition_info
 
     def _construct_decomposed_grid(
         self,
-        allocator: gtx_typing.Allocator | None,
+        allocator: gtx_typing.Allocator,
         keep_skip_values: bool,
         geometry_type: icon.GeometryType,
         decomposer: decomp.Decomposer,
@@ -404,6 +426,7 @@ class GridManager:
         on process_props.
 
         """
+        assert self._reader is not None, "reader must be opened"
         xp = data_alloc.import_array_ns(allocator)
         ## FULL GRID PROPERTIES
         cell_refinement = xp.asarray(
@@ -435,7 +458,9 @@ class GridManager:
         halo_constructor = halo.get_halo_constructor(
             process_props=process_props,
             full_grid_size=global_size,
-            connectivities=global_neighbor_tables,
+            connectivities=cast(
+                dict[gtx.FieldOffset | str, data_alloc.NDArray], global_neighbor_tables
+            ),
             allocator=allocator,
         )
 
@@ -465,7 +490,7 @@ class GridManager:
         )
 
         self._grid = icon.icon_grid(
-            id_=self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
+            id_=str(self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)),
             allocator=allocator,
             config=grid_config,
             neighbor_tables=neighbor_tables,
@@ -480,6 +505,9 @@ class GridManager:
         neighbor_tables_global: dict[gtx.FieldOffset, data_alloc.NDArray],
     ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
         if self.decomposition_info.is_distributed():
+            assert self._decomposition_info is not None, (
+                "decomposition_info must be set by __call__"
+            )
             return {
                 k: halo.global_to_local(
                     self._decomposition_info.global_index(k.source),
@@ -490,12 +518,16 @@ class GridManager:
         else:
             return neighbor_tables_global
 
-    def _construct_grid_params(self, geometry_type: icon.GeometryType):
-        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
-        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
-        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
-        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
+    def _construct_grid_params(self, geometry_type: icon.GeometryType) -> icon.GridParams:
+        assert self._reader is not None, "reader must be opened"
+        grid_root = int(self._reader.attribute(gridfile.MandatoryPropertyName.ROOT))
+        grid_level = int(self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL))
+        sphere_radius_attr = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
+        sphere_radius = float(sphere_radius_attr) if sphere_radius_attr is not None else None
+        domain_length_attr = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
+        domain_length = float(domain_length_attr) if domain_length_attr is not None else None
+        domain_height_attr = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
+        domain_height = float(domain_height_attr) if domain_height_attr is not None else None
 
         match geometry_type:
             case icon.GeometryType.ICOSAHEDRON:
@@ -506,6 +538,8 @@ class GridManager:
                     ),
                 )
             case icon.GeometryType.TORUS:
+                assert domain_length is not None, "domain_length must not be None for torus grid"
+                assert domain_height is not None, "domain_height must not be None for torus grid"
                 return icon.GridParams(
                     icon.TorusParams(
                         domain_length=domain_length,
@@ -520,6 +554,7 @@ class GridManager:
         As the grid file contains the _full_ (non-distributed) grid, these are the sizes of prior to distribution.
 
         """
+        assert self._reader is not None, "reader must be opened"
         num_cells = self._reader.dimension(gridfile.DynamicDimension.CELL_NAME)
         num_edges = self._reader.dimension(gridfile.DynamicDimension.EDGE_NAME)
         num_vertices = self._reader.dimension(gridfile.DynamicDimension.VERTEX_NAME)
@@ -532,13 +567,17 @@ class GridManager:
         self,
         field: gridfile.GridFileName,
         indices: data_alloc.NDArray | None = None,
-        transpose=True,
-        apply_offset=True,
+        transpose: bool = True,
+        apply_offset: bool = True,
         array_ns: ModuleType = np,
-    ):
+    ) -> data_alloc.NDArray:
+        assert self._reader is not None, "reader must be opened"
         return array_ns.asarray(
             self._reader.int_variable(
-                field, indices=indices, transpose=transpose, apply_offset=apply_offset
+                field,  # type: ignore[arg-type]  # GridFileName is a FieldName subclass
+                indices=indices,
+                transpose=transpose,
+                apply_offset=apply_offset,
             )
         )
 
@@ -762,7 +801,7 @@ def _construct_butterfly_cells(
     return c2e2c2e2c
 
 
-def _patch_with_dummy_lastline(ar):
+def _patch_with_dummy_lastline(ar: data_alloc.NDArray) -> data_alloc.NDArray:
     """
     Patch an array for easy access with another offset containing invalid indices (-1).
 

@@ -60,7 +60,7 @@ def config_dataclass_from_dict[T](cls: type[T], source: dict[str, Any]) -> T:
     Fortran→Python name translation is driven by the required ``fortran_name_map``
     class variable: ``{fortran_key: python_field_name}``.
     """
-    name_map: dict[str, str] = cls.fortran_name_map  # type: ignore[attr-defined]
-    known_fields = {f.name for f in dataclasses.fields(cls)}  # type: ignore[arg-type]
+    name_map: dict[str, str] = cls.fortran_name_map  # type: ignore[attr-defined]  # class attribute provided by caller subclasses
+    known_fields = {f.name for f in dataclasses.fields(cls)}  # type: ignore[arg-type]  # caller guarantees cls is a dataclass
     kwargs = _translate_fields(source, name_map, known_fields)
     return cls(**kwargs)

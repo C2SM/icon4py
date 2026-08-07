@@ -127,11 +127,11 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     divdamp_z4: gtx.float64,
     nflat_gradp: gtx.int32,
     backend: gtx.int32,
-):
+) -> None:
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    xp = c_lin_e.array_ns
+    xp = data_alloc.array_namespace(c_lin_e.ndarray)
     on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
@@ -348,11 +348,11 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     idyn_timestep: gtx.int32,
     is_iau_active: bool,
     iau_wgt_dyn: gtx.float64,
-):
+) -> None:
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 
-    xp = rho_now.array_ns
+    xp = data_alloc.array_namespace(rho_now.ndarray)
 
     if vn_incr is None:
         vn_incr = granule.dummy_field_factory("vn_incr", domain=vn_now.domain, dtype=vn_now.dtype)

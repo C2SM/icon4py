@@ -58,9 +58,9 @@ def compute_c_lin_e(
 @gtx.field_operator
 def compute_geofac_div(
     primal_edge_length: fa.EdgeField[ta.wpfloat],
-    edge_orientation: gtx.Field[[dims.CellDim, dims.C2EDim], ta.wpfloat],
+    edge_orientation: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     area: fa.CellField[ta.wpfloat],
-) -> gtx.Field[[dims.CellDim, dims.C2EDim], ta.wpfloat]:
+) -> gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat]:
     """
     Compute geometrical factor for divergence.
 
@@ -78,10 +78,10 @@ def compute_geofac_div(
 @gtx.field_operator
 def compute_geofac_rot(
     dual_edge_length: fa.EdgeField[ta.wpfloat],
-    edge_orientation: gtx.Field[[dims.VertexDim, dims.V2EDim], ta.wpfloat],
+    edge_orientation: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat],
     dual_area: fa.VertexField[ta.wpfloat],
     owner_mask: fa.VertexField[bool],
-) -> gtx.Field[[dims.VertexDim, dims.V2EDim], ta.wpfloat]:
+) -> gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat]:
     """
     Compute geometrical factor for curl.
 
@@ -458,7 +458,10 @@ def _force_mass_conservation_to_c_bln_avg(
     array_ns = data_alloc.array_namespace(c2e2c0)
 
     def _compute_local_weights(
-        c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx
+        c_bln_avg: data_alloc.NDArray,
+        cell_areas: data_alloc.NDArray,
+        c2e2c0: data_alloc.NDArray,
+        inverse_neighbor_idx: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
         """
         Compute the total weight which each local point contributes to the sum.
@@ -1278,8 +1281,8 @@ def compute_lsq_coeffs(
     cell_lon: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
-    domain_length: float,
-    domain_height: float,
+    domain_length: float | None,
+    domain_height: float | None,
     grid_sphere_radius: float,
     lsq_dim_unk: int,
     lsq_dim_c: int,
@@ -1314,6 +1317,7 @@ def compute_lsq_coeffs(
         case icon_grid.GeometryType.TORUS:
             # On the torus a neighbour may sit across a periodic boundary, so take the
             # periodic image of each neighbour closest to the cell centre.
+            assert domain_length is not None and domain_height is not None
             cells = slice(start_idx, min_rlcell_int)
             neighbors = c2e2c[cells, :lsq_dim_c]
             center_x = cell_center_x[cells, array_ns.newaxis]

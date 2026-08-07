@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -30,12 +38,12 @@ class TestTFromInternalEnergy(StencilTest):
         qice: np.ndarray,
         rho: np.ndarray,
         dz: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(temperature=np.full(u.shape, 255.75599999999997))
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.Grid) -> dict:
         return dict(
             u=data_alloc.constant_field(
                 grid, 38265357.270336017, dims.CellDim, dims.KDim, dtype=wpfloat

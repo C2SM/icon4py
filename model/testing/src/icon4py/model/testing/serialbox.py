@@ -800,6 +800,9 @@ class MetricSavepoint(IconSavepoint):
     def scalfac_dd3d(self):
         return self._get_field("scalfac_dd3d", dims.KDim)
 
+    def scaling_factor_for_3d_divdamp(self):
+        return self.scalfac_dd3d()
+
     def theta_ref_ic(self):
         return self._get_field("theta_ref_ic", dims.CellDim, dims.KDim)
 

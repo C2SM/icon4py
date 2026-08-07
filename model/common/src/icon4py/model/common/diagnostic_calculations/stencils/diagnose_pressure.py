@@ -12,13 +12,13 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.constants import PhysicsConstants
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
+@gtx.scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))  # type: ignore[call-overload]  # GT4Py scan_operator init type stubs don't accept tuple values
 def _scan_pressure(
     state: tuple[ta.wpfloat, ta.wpfloat, bool],
     ddqz_z_full: ta.wpfloat,
     virtual_temperature: ta.wpfloat,
     surface_pressure: ta.wpfloat,
-):
+) -> tuple[ta.wpfloat, ta.wpfloat, bool]:
     pressure_interface = (
         surface_pressure * exp(-PhysicsConstants.grav_o_rd * ddqz_z_full / virtual_temperature)
         if state[2]

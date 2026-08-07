@@ -129,9 +129,9 @@ def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
 
 
 def get_fixture_value(name: str, item: pytest.Item) -> Any:
-    if name in item.fixturenames:  # type: ignore[attr-defined]
+    if name in item.fixturenames:  # type: ignore[attr-defined]  # pytest internal attribute
         # Get the fixture value using the item's fixture manager
-        return item._request.getfixturevalue(name)  # type: ignore[attr-defined]
+        return item._request.getfixturevalue(name)  # type: ignore[attr-defined]  # pytest internal attribute
 
     return None
 
