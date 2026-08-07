@@ -17,6 +17,7 @@ import itertools
 import json
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -28,8 +29,6 @@ from typing import TYPE_CHECKING, Annotated
 
 import f90nml
 import typer
-
-from icon4py.model.common.utils import fortran_config
 
 
 if TYPE_CHECKING:
@@ -204,7 +203,16 @@ def cleanup_exp_output(
 def run_command(
     cmd: list[str], check: bool = True, cwd: pathlib.Path | None = None
 ) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, check=check, text=True, capture_output=True, cwd=cwd)
+    result = subprocess.run(cmd, check=False, text=True, capture_output=True, cwd=cwd)
+    if check and result.returncode != 0:
+        # 'CalledProcessError' reports the exit status but not the captured output, and
+        # the output is the part that says what went wrong.
+        details = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(
+            f"Command '{shlex.join(cmd)}' failed with exit status {result.returncode}"
+            + (f":\n{details}" if details else " and printed nothing.")
+        )
+    return result
 
 
 def log_status(message: str) -> None:
@@ -439,6 +447,10 @@ def copy_ser_data(
     dest_dir.mkdir(parents=True, exist_ok=True)
     # Copy ser_data folder
     shutil.copytree(src_dir, dest_dir / test_defs.SERIALIZED_DATA_SUBDIR)
+
+    from icon4py.model.common.utils import (  # noqa: PLC0415 [import-outside-top-level]
+        fortran_config,
+    )
 
     # Translate to json and copy NAMELIST_ICON_output_atm
     nml = f90nml.read(exp_dir / fortran_config.NAMELIST_ATM_FNAME)
