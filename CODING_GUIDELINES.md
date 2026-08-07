@@ -20,6 +20,61 @@ TODO: we should add a doc folder (separate for `tools` and `model`? separate for
 Remember that important design decisions should be properly documented for future reference and to share the knowledge with other developers. We decided to use lightweight _Architecture Decision Records_ (ADRs) for this purpose. The full list of ADRs and documentation for writing new ones can be found in [docs/functional/architecture/Index.md](docs/functional/architecture/Index.md).
 -->
 
+## Shared code and generic naming
+
+Code that is not specific to a single model component belongs in `model/common`, and code that lives there must be named after the operation it performs, not after the caller that happens to use it. When a generic operation carries a caller-specific name, the next component does not find it and ports the same Fortran expression again: `dycore/compute_tangential_wind` and `tracer_advection/compute_edge_tangential` are the same `neighbor_sum` over `E2C2E`, written twice.
+
+### Does it belong in `model/common`?
+
+Describe in one sentence what the code does. If the sentence only needs
+
+- grid entities (cell, edge, vertex, level) and dimensions, and
+- mathematical operations (gradient, divergence, curl, interpolation, average, copy, tendency),
+
+then the code is generic and belongs in `model/common`. If the sentence needs a named prognostic or diagnostic field (`vn`, `theta_v`, `exner`, a tracer) or a numerical scheme (Smagorinsky, PPM, FFSL, divergence damping), it is component-specific and stays in the component.
+
+For example `tracer_advection/compute_tendency` computes `(new - old) / dtime`. Nothing in that sentence is a tracer, so the stencil belongs in `model/common`.
+
+This does not contradict the YAGNI item above: do not _generalise_ code speculatively so that it might be shared one day. But code that is _already_ generic should be placed and named generically from the start, because moving it later also means moving its tests and coordinating stencil renames with [icon-exclaim](https://github.com/C2SM/icon-exclaim).
+
+Where to put it inside `model/common`:
+
+| Content                                                      | Location                   |
+| ------------------------------------------------------------ | -------------------------- |
+| differential operators and algebra on fields                 | `math/`                    |
+| cell/edge/vertex and full/half level interpolation           | `interpolation/`           |
+| allocation, copies, index manipulation                       | `utils/`                   |
+| thermodynamic and other diagnostic quantities                | `diagnostic_calculations/` |
+| physical constants                                           | `constants.py`             |
+| configuration enums and options shared by several components | `model_options.py`         |
+
+### Naming
+
+A generic name states **what the operation does** and **which grid entities it acts on**. It must not encode:
+
+- the caller's argument or output variable names: `diffusion/calculate_nabla2_for_z` is named after the Fortran temporary `z_nabla2_e`, while the stencil computes a coefficient-weighted normal gradient of a cell field onto edges;
+- Fortran temporary prefixes (`z_`, `p_`, `opt_`) or Fortran module names (`mo_intp_rbf_rbf_vec_interpol_cell`);
+- the floating point precision (`_wp`, `_vp`), which is already part of the signature;
+- the physical meaning of an operand that the mathematics does not depend on.
+
+Use the swap test: replace an input with an unrelated field of the same type. If the code still works but the name no longer reads correctly, the name is too specific.
+
+Generic does not mean meaningless: name the operation, not placeholders. `add_fields` is a generic name, `compute_a_plus_b` is not.
+
+| Too specific                                                         | Generic                                      |
+| -------------------------------------------------------------------- | -------------------------------------------- |
+| `compute_tangential_wind`, `compute_edge_tangential`                 | `interpolate_normal_to_tangential_on_edges`  |
+| `calculate_nabla2_for_z`                                             | `compute_weighted_normal_gradient_on_edges`  |
+| `copy_cell_kdim_field_to_vp`                                         | `copy_cell_field`                            |
+| `init_cell_kdim_field_with_zero_wp`, `init_constant_cell_kdim_field` | `set_cell_field_to_constant`                 |
+| `mo_intp_rbf_rbf_vec_interpol_cell`                                  | `interpolate_edge_vector_to_cell_center_rbf` |
+
+The same applies outside stencils: shared enums, options and dictionaries are named after what they configure, not after the component that introduced them.
+
+### Existing code
+
+Do not open repository-wide renaming pull requests. Rename and move opportunistically, while you are already modifying a file, and keep one move per pull request so that the diff stays reviewable. Names under `stencil_tests/` are consumed by [icon-exclaim](https://github.com/C2SM/icon-exclaim), so coordinate before renaming them.
+
 ## Code Style
 
 We follow the [Google Python Style Guide][google-style-guide] with a few minor changes (mentioned below). Since the best way to remember something is to understand the reasons behind it, make sure you go through the style guide at least once, paying special attention to the discussions in the _Pros_, _Cons_, and _Decision_ subsections.
