@@ -19,7 +19,11 @@ def test_inputs_cover_input_and_surface_flux_states():
 
 
 def test_outputs_cover_tendencies_and_diagnostics():
-    tendency_keys = {f.name for f in dataclasses.fields(tmx_states.TmxTendencyState)}
+    # Contract tendency keys are the AES-style ``tend_*`` names; each maps onto a
+    # ``ddt_*`` field of the granule's TmxTendencyState via TENDENCY_GRANULE_PORTS.
+    tendency_keys = set(tmx_data.TENDENCY_GRANULE_PORTS)
+    granule_tendency_fields = {f.name for f in dataclasses.fields(tmx_states.TmxTendencyState)}
+    assert set(tmx_data.TENDENCY_GRANULE_PORTS.values()) == granule_tendency_fields
     diagnostic_keys = {
         "km",
         "kh",

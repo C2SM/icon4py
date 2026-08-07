@@ -369,9 +369,9 @@ class TmxState(PhysicsState):
 
         Apply order (must match brief):
         1. Moisture tracers: qv/qc/qi += ddt * dt  (qr/qs/qg untouched — TMX does not diffuse them)
-        2. ddt_temperature → new_temperature → Tv tendency → update exner + theta_v (muphys path)
-        3. Project (ddt_u, ddt_v) → _ddt_vn via compute_vn_from_uv, then vn += dt * _ddt_vn
-        4. w += dt * ddt_w  (KDim+1 half-levels)
+        2. tend_temperature → new_temperature → Tv tendency → update exner + theta_v (muphys path)
+        3. Project (tend_u, tend_v) → _ddt_vn via compute_vn_from_uv, then vn += dt * _ddt_vn
+        4. w += dt * tend_w  (KDim+1 half-levels)
         5. Store 8 diagnostics as attributes
         """
         assert self._tracers is not None, "gather_from_prognostic must be called first"
@@ -383,16 +383,16 @@ class TmxState(PhysicsState):
             self._apply_tendency(
                 field_a=tracer,
                 coeff=ta.wpfloat(dt),
-                field_b=outputs[f"ddt_{name}"],
+                field_b=outputs[f"tend_{name}"],
                 output_field=tracer,
             )
 
-        # 2. ddt_temperature → exner/theta_v (verbatim muphys scatter step 2)
-        # 2a. new_temperature = temperature + ddt_temperature * dt
+        # 2. tend_temperature → exner/theta_v (verbatim muphys scatter step 2)
+        # 2a. new_temperature = temperature + tend_temperature * dt
         self._apply_tendency(
             field_a=self.temperature,
             coeff=ta.wpfloat(dt),
-            field_b=outputs["ddt_temperature"],
+            field_b=outputs["tend_temperature"],
             output_field=self._new_te,
         )
         # 2b. Tv tendency: uses updated tracers (post step-1) and new temperature
@@ -418,10 +418,10 @@ class TmxState(PhysicsState):
             theta_v=prognostic.theta_v,
         )
 
-        # 3. Project wind tendencies (ddt_u, ddt_v) onto edge normals, then apply
+        # 3. Project wind tendencies (tend_u, tend_v) onto edge normals, then apply
         self._compute_vn_from_uv(
-            u=outputs["ddt_u"],
-            v=outputs["ddt_v"],
+            u=outputs["tend_u"],
+            v=outputs["tend_v"],
             vn=self._ddt_vn,
         )
         self._apply_tendency_vn(
@@ -435,7 +435,7 @@ class TmxState(PhysicsState):
         self._apply_tendency_w(
             field_a=prognostic.w,
             coeff=ta.wpfloat(dt),
-            field_b=outputs["ddt_w"],
+            field_b=outputs["tend_w"],
             output_field=prognostic.w,
         )
 

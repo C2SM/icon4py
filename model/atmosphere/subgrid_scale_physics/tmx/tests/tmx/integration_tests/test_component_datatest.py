@@ -117,7 +117,7 @@ def test_tmx_component_reproduces_exit_savepoint(
         num_levels=icon_grid.num_levels,
     )
     # The dict view must reference the persistent buffers directly (no copies)
-    assert outputs["ddt_temperature"] is comp._tendency_state.ddt_temperature
+    assert outputs["tend_temperature"] is comp._tendency_state.ddt_temperature
 
     # Second call with the same inputs: verify the reused buffers are cleanly overwritten
     outputs = comp(state_dict, time_step)

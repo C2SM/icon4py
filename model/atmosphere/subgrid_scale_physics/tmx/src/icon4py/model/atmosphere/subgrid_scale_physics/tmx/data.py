@@ -39,13 +39,13 @@ INPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
 }
 
 OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
-    "ddt_temperature": data.TENDENCY_CF_ATTRIBUTES["temperature"],
-    "ddt_qv": data.TENDENCY_CF_ATTRIBUTES["qv"],
-    "ddt_qc": data.TENDENCY_CF_ATTRIBUTES["qc"],
-    "ddt_qi": data.TENDENCY_CF_ATTRIBUTES["qi"],
-    "ddt_u": data.tendency_of(data.DIAGNOSTIC_CF_ATTRIBUTES["eastward_wind"]),
-    "ddt_v": data.tendency_of(data.DIAGNOSTIC_CF_ATTRIBUTES["northward_wind"]),
-    "ddt_w": data.tendency_of(data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"]),
+    "tend_temperature": data.TENDENCY_CF_ATTRIBUTES["temperature"],
+    "tend_qv": data.TENDENCY_CF_ATTRIBUTES["qv"],
+    "tend_qc": data.TENDENCY_CF_ATTRIBUTES["qc"],
+    "tend_qi": data.TENDENCY_CF_ATTRIBUTES["qi"],
+    "tend_u": data.tendency_of(data.DIAGNOSTIC_CF_ATTRIBUTES["eastward_wind"]),
+    "tend_v": data.tendency_of(data.DIAGNOSTIC_CF_ATTRIBUTES["northward_wind"]),
+    "tend_w": data.tendency_of(data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"]),
     "km": dict(standard_name="mass_weighted_turbulent_viscosity", units="kg m-1 s-1"),
     "kh": dict(standard_name="mass_weighted_turbulent_diffusivity", units="kg m-1 s-1"),
     "heating": dict(standard_name="turbulent_heating_rate", units="W m-2"),
@@ -58,4 +58,13 @@ OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     "int_energy_vi_tend": dict(
         standard_name="tendency_of_vertically_integrated_internal_energy", units="W m-2"
     ),
+}
+
+
+# The wrapper contract speaks the AES ``tend%`` naming (shared with muphys); the
+# granule's ``TmxTendencyState`` keeps upstream's ``ddt_*`` port names. This map is
+# the component adapter's contract-key -> granule-field translation.
+# TODO (Yilu): later on we can also rename inside the granule
+TENDENCY_GRANULE_PORTS: dict[str, str] = {
+    f"tend_{name}": f"ddt_{name}" for name in ("temperature", "qv", "qc", "qi", "u", "v", "w")
 }

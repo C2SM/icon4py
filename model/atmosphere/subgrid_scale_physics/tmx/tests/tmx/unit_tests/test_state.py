@@ -123,13 +123,13 @@ def _tmx_outputs(grid, *, ddt_u=0.0, ddt_v=0.0, ddt_w=0.0, ddt_qv=0.0):
         _ddt_w.ndarray[:] = ddt_w
 
     out = {
-        "ddt_temperature": ck(0.0),
-        "ddt_qv": ck(ddt_qv),
-        "ddt_qc": ck(0.0),
-        "ddt_qi": ck(0.0),
-        "ddt_u": ck(ddt_u),
-        "ddt_v": ck(ddt_v),
-        "ddt_w": _ddt_w,
+        "tend_temperature": ck(0.0),
+        "tend_qv": ck(ddt_qv),
+        "tend_qc": ck(0.0),
+        "tend_qi": ck(0.0),
+        "tend_u": ck(ddt_u),
+        "tend_v": ck(ddt_v),
+        "tend_w": _ddt_w,
         "km": ck(0.0),
         "kh": ck(0.0),
         "heating": ck(0.0),

@@ -107,12 +107,21 @@ class TmxComponent:
             grid, allocator=allocator
         )
 
-        # Pre-compute output field names from dataclass introspection so __call__
-        # does not repeat the mapping logic.
+        # Pre-compute the output mapping so __call__ does not repeat it. Tendencies
+        # need a name translation (contract ``tend_*`` -> granule ``ddt_*``, see
+        # ``tmx_data.TENDENCY_GRANULE_PORTS``); diagnostics share their names with
+        # ``TmxDiagnosticState`` and are picked by field membership.
         _tendency_names = {f.name for f in dataclasses.fields(tmx_states.TmxTendencyState)}
         _diagnostic_names = {f.name for f in dataclasses.fields(tmx_states.TmxDiagnosticState)}
         _output_keys = set(tmx_data.OUTPUTS_PROPERTIES)
-        self._tendency_output_keys = _output_keys & _tendency_names
+        self._tendency_outputs = {
+            key: port
+            for key, port in tmx_data.TENDENCY_GRANULE_PORTS.items()
+            if key in _output_keys
+        }
+        missing = set(self._tendency_outputs.values()) - _tendency_names
+        if missing:
+            raise ValueError(f"granule ports not on TmxTendencyState: {sorted(missing)}")
         self._diagnostic_output_keys = _output_keys & _diagnostic_names
 
     def __call__(
@@ -164,6 +173,8 @@ class TmxComponent:
         )
 
         return {
-            **{k: getattr(self._tendency_state, k) for k in self._tendency_output_keys},
+            **{
+                k: getattr(self._tendency_state, port) for k, port in self._tendency_outputs.items()
+            },
             **{k: getattr(self._diagnostic_state, k) for k in self._diagnostic_output_keys},
         }

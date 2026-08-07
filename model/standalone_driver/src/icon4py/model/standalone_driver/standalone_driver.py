@@ -357,8 +357,7 @@ class Icon4pyDriver:
             )
 
         prognostic_states.swap()
-        # tracers are advanced once per time step, so they swap here and not with every
-        # dynamics substep (nnow_rcf/nnew_rcf vs nnow/nnew in ICON)
+        # tracers are updated once per time step, so they swap here and not with every dynamics substep
         tracers.swap()
 
     def _update_time_levels_for_velocity_tendencies(

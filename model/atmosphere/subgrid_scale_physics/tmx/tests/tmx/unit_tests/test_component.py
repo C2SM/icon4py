@@ -63,4 +63,4 @@ def test_call_runs_granule_and_returns_output_contract():
     out = comp(_input_dict(grid), datetime.datetime(2008, 9, 1))
     assert fake.calls == [300.0]
     assert set(out) == set(tmx_data.OUTPUTS_PROPERTIES)
-    assert out["ddt_qv"] is comp._tendency_state.ddt_qv
+    assert out["tend_qv"] is comp._tendency_state.ddt_qv
