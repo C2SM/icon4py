@@ -10,6 +10,8 @@
 
 from __future__ import annotations
 
+import types
+
 import numpy as np
 import pytest
 from inspect_savepoints import ArchiveExplorer, SavepointRef, summarize
@@ -41,20 +43,10 @@ def test_summarize_excludes_non_finite_values_from_the_range():
     assert stats.n_nonfinite == 2
 
 
-class _FakeSerializer:
-    """Returns a prepared array per (savepoint, field), like serialbox does."""
-
-    def __init__(self, arrays: dict[tuple[int, str], np.ndarray]) -> None:
-        self._arrays = arrays
-
-    def read(self, field: str, savepoint: int) -> np.ndarray:
-        return self._arrays[(savepoint, field)]
-
-
 def _explorer(arrays: dict[tuple[int, str], np.ndarray]) -> ArchiveExplorer:
     # '__init__' opens a real archive; 'diff_stats' only needs these two attributes.
     explorer = object.__new__(ArchiveExplorer)
-    explorer._serializer = _FakeSerializer(arrays)
+    explorer._serializer = types.SimpleNamespace(read=lambda field, sp: arrays[(sp, field)])
     explorer._raw = (0, 1)
     return explorer
 

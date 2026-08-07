@@ -253,9 +253,7 @@ def _report_serialized_data_provenance(terminalreporter):
         terminalreporter.line(f"  {archive:<44} {revision}")
 
 
-# 'optionalhook' because the archives are downloaded in the xdist workers while the
-# summary is rendered on the controller, but this plugin is loaded for every session
-# in the repository, including those without xdist installed.
+# 'optionalhook': this plugin loads in every session, including ones without xdist.
 @pytest.hookimpl(optionalhook=True)
 def pytest_testnodedown(node, error):
     provenance.seen.update(getattr(node, "workeroutput", {}).get("icon4py_provenance", {}))
