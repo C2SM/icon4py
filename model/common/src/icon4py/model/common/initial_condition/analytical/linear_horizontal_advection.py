@@ -54,7 +54,7 @@ class VelocityField(int, enum.Enum):
 
 
 @dataclasses.dataclass
-class LinearAdvectionConfig:
+class LinearHorizontalAdvectionConfig:
     tracer_profile: typing.Annotated[
         TracerProfile,
         common_conf_opt.ConfigOption(
@@ -110,7 +110,6 @@ def _prepare_torus_quadratic_quadrature(
     Prepare three-point second-order-accuracy quadrature rule on torus grids.
     Triangular cells must be uniform to guarantee second-order accuracy.
     Args:
-        grid: IconGrid that entails a torus grid
         vertex_x: array that contains the vertex x-coordinates
         vertex_y: array that contains the vertex y-coordinates
         cell_center_x: array that contains the cell center x-coordinates
@@ -233,13 +232,13 @@ def _construct_idealized_tracer(
             radius = (domain_length + domain_height) / 8.0
             vertex_tracer = array_ns.where(dx**2 + dy**2 <= radius**2, 1.0, 0.0)
         case _:
-            raise NotImplementedError(f"Initial conditions {tracer_profile} not implemented.")
+            raise NotImplementedError(f"Initial tracer profile {tracer_profile} not implemented.")
     tracer[:, :] = array_ns.sum(weights * vertex_tracer, axis=0)[:, None]
 
 
-def linear_advection(
+def linear_horizontal_advection(
     *,
-    config: LinearAdvectionConfig,
+    config: LinearHorizontalAdvectionConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
@@ -247,12 +246,12 @@ def linear_advection(
     adv_prep_adv_state: adv_states.AdvectionPrepAdvState,
 ) -> None:
     """
-    Initial condition for the idealized advection test case.
+    Initial condition for the idealized horizontal advection test case.
 
     """
     if tracer_state_now.qv is None:
         raise ValueError(
-            "The initial condition for the linear advection test case requires the 'qv' to be active."
+            "The initial condition for the linear horizontal advection test case requires the 'qv' to be active."
         )
 
     geometry = static_fields.geometry
@@ -328,7 +327,6 @@ def construct_reference_tracer(
     reference_tracer = array_ns.tile(array_ns.zeros_like(cell_center_x)[:, None], (1, num_levels))
     match velocity_field:
         case VelocityField.CONSTANT:
-            # linearly shifted ICs
             u, v = _compute_idealized_velocity_field(
                 velocity_field=velocity_field,
                 domain_length=grid.grid_params.domain_length,
