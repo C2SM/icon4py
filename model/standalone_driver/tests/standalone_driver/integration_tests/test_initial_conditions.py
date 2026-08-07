@@ -36,13 +36,15 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "vn": (3.2e-13, 0.0),
         "w": (1.5e-17, 0.0),
     },
-    # No 'qv' yet: the tracers arrive with C2SM/icon4py#1301.
     test_defs.Experiments.EXCLAIM_APE_AES: {
         "rho": (6.4e-15, 1.3e-14),
         "exner": (2.2e-15, 3.8e-15),
         "theta_v": (2.2e-12, 3.8e-15),
         "vn": (3.2e-13, 0.0),
         "w": (0.0, 0.0),
+        # qv agrees with ICON only to round-off (~2e-14 max abs on qv~1e-2): the IC
+        # uses the iterative qv_from_relative_humidity solve.
+        "qv": (1e-13, 0.0),
     },
     test_defs.Experiments.GAUSS3D: {
         "rho": (1.2e-15, 3e-15),
