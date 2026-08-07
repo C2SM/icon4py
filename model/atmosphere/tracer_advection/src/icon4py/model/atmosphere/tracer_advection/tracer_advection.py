@@ -42,6 +42,7 @@ from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.states import adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
@@ -150,7 +151,7 @@ class Advection(ABC):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -209,7 +210,7 @@ class NoAdvection(Advection):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -318,7 +319,7 @@ class GodunovSplittingAdvection(Advection):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -483,24 +484,6 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 edge_params=edge_params,
                 cell_params=cell_params,
                 backend=backend,
-            )
-        case HorizontalAdvectionType.BROKEN_LINEAR_2ND_ORDER:
-            tracer_flux = tracer_advection_horizontal.BrokenSecondOrderMiura(
-                grid=grid,
-                least_squares_state=least_squares_state,
-                horizontal_limiter=horizontal_limiter,
-                backend=backend,
-            )
-            horizontal_advection = tracer_advection_horizontal.SemiLagrangian(
-                tracer_flux=tracer_flux,
-                grid=grid,
-                interpolation_state=interpolation_state,
-                least_squares_state=least_squares_state,
-                metric_state=metric_state,
-                edge_params=edge_params,
-                cell_params=cell_params,
-                backend=backend,
-                exchange=exchange,
             )
         case _:
             raise NotImplementedError("Unknown horizontal tracer_advection type.")

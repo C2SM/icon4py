@@ -27,6 +27,7 @@ from icon4py.model.common.grid import base as base_grid, horizontal as h_grid, i
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.common.states import (
+    adv_states,
     diagnostic_state as diagnostics,
     nonhydro_states,
     prognostic_state as prognostics,
@@ -64,7 +65,7 @@ class DriverStates(NamedTuple):
     solve_nonhydro_diagnostic: nonhydro_states.DiagnosticStateNonHydro | None
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
     tracer_advection_diagnostic: tracer_advection_states.AdvectionDiagnosticState | None
-    prep_tracer_advection_prognostic: tracer_advection_states.AdvectionPrepAdvState | None
+    prep_tracer_advection_prognostic: adv_states.AdvectionPrepAdvState | None
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     tracers: common_utils.TimeStepPair[tracer_states.TracerState]
     diagnostic: diagnostics.DiagnosticState
@@ -225,7 +226,7 @@ def initialize_prep_tracer_advection(
     *,
     tracer_advection_enabled: bool,
     prep_adv: dycore_states.PrepAdvection | None,
-) -> tracer_advection_states.AdvectionPrepAdvState | None:
+) -> adv_states.AdvectionPrepAdvState | None:
     """Build the tracer-advection prep state, sharing the dycore's accumulated buffers.
 
     Tracer advection reads the velocities/mass fluxes that the dycore accumulates over
@@ -237,12 +238,12 @@ def initialize_prep_tracer_advection(
     if not tracer_advection_enabled:
         return None
     if prep_adv is not None:
-        return tracer_advection_states.AdvectionPrepAdvState(
+        return adv_states.AdvectionPrepAdvState(
             vn_traj=prep_adv.vn_traj,
             mass_flx_me=prep_adv.mass_flx_me,
             mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
         )
-    return tracer_advection_states.AdvectionPrepAdvState(
+    return adv_states.AdvectionPrepAdvState(
         vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
         mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
         # vertical mass flux at cell half levels: one more level than KDim, like the

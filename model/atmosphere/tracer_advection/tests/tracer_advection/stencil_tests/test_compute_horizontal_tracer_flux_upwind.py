@@ -24,13 +24,14 @@ class TestComputeHorizontalTracerFluxUpwind(stencil_tests.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_cc: np.array,
-        p_mass_flx_e: np.array,
-        p_vn: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
+        p_cc: np.ndarray,
+        p_mass_flx_e: np.ndarray,
+        p_vn: np.ndarray,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         p_out_e = np.where(p_vn > 0.0, p_cc[e2c][:, 0], p_cc[e2c][:, 1]) * p_mass_flx_e
         return dict(p_out_e=p_out_e)
 

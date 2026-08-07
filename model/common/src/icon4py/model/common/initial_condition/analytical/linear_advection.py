@@ -11,24 +11,16 @@ from __future__ import annotations
 import dataclasses
 import enum
 import logging
-import numpy as np
 from typing import TYPE_CHECKING, ClassVar
 
-from icon4py.model.common.grid import (
-    geometry_attributes as geometry_meta,
-    icon as icon_grid,
-)
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid
 from icon4py.model.common.math import distance_array_ns
+from icon4py.model.common.states import adv_states, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
-from icon4py.model.common.states import tracer_states
-
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.states import static_fields
 
 log = logging.getLogger(__name__)
@@ -62,18 +54,16 @@ class VelocityField(int, enum.Enum):
 
 @dataclasses.dataclass
 class LinearAdvectionConfig:
-    #: initial tracer profile
     tracer_profle: TracerProfile
-    #: velocity field
     velocity_field: VelocityField
-    #: cfl number
     cfl_number: float
 
     fortran_name_map: ClassVar[dict[str, str]] = {}
 
 
 def compute_max_velocity(
-    velocity_field: VelocityField,
+    *,
+    velocity_field: VelocityField | None,
     domain_length: float,
     domain_height: float,
 ) -> float:
@@ -83,35 +73,32 @@ def compute_max_velocity(
         case VelocityField.CONSTANT | VelocityField.VORTEX_2D:
             vel_max = (domain_length**2 + domain_height**2) ** 0.5
         case _:
-            raise NotImplementedError(
-                f"Velocity field {velocity_field} not implemented."
-            )
+            raise NotImplementedError(f"Velocity field {velocity_field} not implemented.")
     return vel_max
 
 
-def _get_torus_dimensions(domain_size: float):
-    return 0.5 * domain_size, 0.5 * domain_size, domain_size, domain_size
-
-
 def _prepare_torus_quadratic_quadrature(
+    *,
     vertex_x: data_alloc.NDArray,
     vertex_y: data_alloc.NDArray,
     cell_center_x: data_alloc.NDArray,
     cell_center_y: data_alloc.NDArray,
     c2v_connectivity: data_alloc.NDArray,
-    min_edge_length: float,
-):
+    domain_length: float,
+    domain_height: float,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Prepare three-point quadrature rule on torus grids.
 
     Args:
-        grid: input argument, IconGrid that entails a torus grid
-        vertex_x: input argument, array that contains the vertex x-coordinates
-        vertex_y: input argument, array that contains the vertex y-coordinates
-        cell_center_x: input argument, array that contains the cell center x-coordinates
-        cell_center_y: input argument, array that contains the cell center y-coordinates
-        c2v_connectivity: input argument, array that contains the cell-to-vertex connectivity
-        min_edge_length: input argument, the smallest edge length in the grid
+        grid: IconGrid that entails a torus grid
+        vertex_x: array that contains the vertex x-coordinates
+        vertex_y: array that contains the vertex y-coordinates
+        cell_center_x: array that contains the cell center x-coordinates
+        cell_center_y: array that contains the cell center y-coordinates
+        c2v_connectivity: array that contains the cell-to-vertex connectivity
+        domain_length: length of the torus domain in x-direction
+        domain_height: length of the torus domain in y-direction
 
     Usage:
         The return values of this function are meant to be used for setting cell averages on torus grids.
@@ -132,43 +119,49 @@ def _prepare_torus_quadratic_quadrature(
     c2v_x = vertex_x[c2v_connectivity]
     c2v_y = vertex_y[c2v_connectivity]
 
+    cell_to_vertex_dis_x = c2v_x - cell_center_x[:, None]
+    cell_to_vertex_dis_y = c2v_y - cell_center_y[:, None]
+
+    c2v_x = array_ns.where(
+        array_ns.abs(cell_to_vertex_dis_x) > 0.5 * domain_length,
+        c2v_x - array_ns.sign(cell_to_vertex_dis_x) * domain_length,
+        c2v_x,
+    )
+    c2v_y = array_ns.where(
+        array_ns.abs(cell_to_vertex_dis_y) > 0.5 * domain_height,
+        c2v_y - array_ns.sign(cell_to_vertex_dis_y) * domain_height,
+        c2v_y,
+    )
+
     nodes[0, :, :] = array_ns.matmul(alpha, c2v_x.T)
     nodes[1, :, :] = array_ns.matmul(alpha, c2v_y.T)
-
-    # revert to cell centers for degenerate triangles at the domain boundary due to periodicity
-    node_x_diff = c2v_x - array_ns.roll(c2v_x, 1, axis=1)
-    node_y_diff = c2v_y - array_ns.roll(c2v_y, 1, axis=1)
-    node_dist_max = array_ns.max(array_ns.sqrt(node_x_diff**2 + node_y_diff**2), axis=1)
-    mask = node_dist_max > 2.0 * min_edge_length
-    weights[:, mask] = 1 / n_points
-    nodes[:, :, mask] = array_ns.stack((cell_center_x[None, mask], cell_center_y[None, mask]))
 
     return weights, nodes
 
 
 def _compute_idealized_velocity_field(
+    *,
     velocity_field: VelocityField,
     domain_length: float,
     domain_height: float,
-):
+) -> tuple[float, float]:
     match velocity_field:
         case VelocityField.CONSTANT:
             u, v = domain_length, domain_height
         case _:
-            raise NotImplementedError(
-                f"Velocity field {velocity_field} not implemented."
-            )
+            raise NotImplementedError(f"Velocity field {velocity_field} not implemented.")
     return u, v
 
 
 def _construct_idealized_prep_adv(
+    *,
     velocity_field: VelocityField,
-    prep_adv_state: tracer_advection_states.AdvectionPrepAdvState,
+    prep_adv_state: adv_states.AdvectionPrepAdvState,
     primal_normal_x: data_alloc.NDArray,
     primal_normal_y: data_alloc.NDArray,
     domain_length: float,
     domain_height: float,
-) -> tracer_advection_states.AdvectionPrepAdvState:
+) -> None:
     # we assume that the airmass is constant 1.0, the mass flux equals the velocity
     # impose 2D velocity field at time n+1/2 as required by the numerical scheme
     u, v = _compute_idealized_velocity_field(
@@ -181,12 +174,13 @@ def _construct_idealized_prep_adv(
     vn_traj = prep_adv_state.vn_traj.ndarray
     mass_flx_me = prep_adv_state.mass_flx_me.ndarray
     mass_flx_ic = prep_adv_state.mass_flx_ic.ndarray
-    vn_traj[:,:] = vn[None, :]
-    mass_flx_me[:,:] = vn[None, :]
-    mass_flx_ic[:,:] = 0.0
+    vn_traj[:, :] = vn[None, :]
+    mass_flx_me[:, :] = vn[None, :]
+    mass_flx_ic[:, :] = 0.0
 
 
 def _construct_idealized_tracer(
+    *,
     tracer_profile: TracerProfile,
     tracer: data_alloc.NDArray,
     domain_center_x: float,
@@ -195,17 +189,19 @@ def _construct_idealized_tracer(
     domain_height: float,
     weights: data_alloc.NDArray,
     nodes: data_alloc.NDArray,
-):
+) -> None:
     array_ns = data_alloc.array_namespace(nodes)
-    # impose tracer IC at the horizontal grid center
-    dx, dy = distance_array_ns.minimum_image_separation(
-        x=nodes[0, :, :],
-        y=nodes[1, :, :],
-        reference_x=domain_center_x,
-        reference_y=domain_center_y,
-        domain_extent_x=domain_length,
-        domain_extent_y=domain_height,
-    )
+    dx = array_ns.zeros_like(nodes[0, :, :])
+    dy = array_ns.zeros_like(nodes[1, :, :])
+    for i in range(nodes.shape[1]):
+        dx[i, :], dy[i, :] = distance_array_ns.minimum_image_separation(
+            x=nodes[0, i, :],
+            y=nodes[1, i, :],
+            reference_x=domain_center_x,
+            reference_y=domain_center_y,
+            domain_extent_x=domain_length,
+            domain_extent_y=domain_height,
+        )
     match tracer_profile:
         case TracerProfile.GAUSSIAN_2D:
             decay_factor = ((domain_length + domain_height) / 2.0) ** (-1.65)
@@ -218,19 +214,17 @@ def _construct_idealized_tracer(
             radius = (domain_length + domain_height) / 8.0
             vertex_tracer = array_ns.where(dx**2 + dy**2 <= radius**2, 1.0, 0.0)
         case _:
-            raise NotImplementedError(
-                f"Initial conditions {test_config.initial_conditions} not implemented."
-            )
-    tracer[:,:] = array_ns.sum(weights * vertex_tracer, axis=0)[:, array_ns.newaxis]
+            raise NotImplementedError(f"Initial conditions {tracer_profile} not implemented.")
+    tracer[:, :] = array_ns.sum(weights * vertex_tracer, axis=0)[:, None]
 
 
-def linear_advection(  # noqa: PLR0915 [too-many-statements]
+def linear_advection(
     *,
     config: LinearAdvectionConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     tracer_state_now: tracer_states.TracerState,
-    adv_prep_adv_state: tracer_advection_states.AdvectionPrepAdvState,
+    adv_prep_adv_state: adv_states.AdvectionPrepAdvState,
 ) -> None:
     """
     Initial condition for the idealized advection test case.
@@ -245,16 +239,17 @@ def linear_advection(  # noqa: PLR0915 [too-many-statements]
     vertex_y = geometry.get(geometry_meta.VERTEX_Y).ndarray
     cell_center_x = geometry.get(geometry_meta.CELL_CENTER_X).ndarray
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
-    min_edge_length = geometry.get(geometry_meta.EDGE_LENGTH).ndarray.min()
-    (
-        domain_center_x,
-        domain_center_y,
-        domain_length,
-        domain_height,
-    ) = _get_torus_dimensions(grid.grid_params.domain_length)
+    domain_center_x = 0.5 * grid.grid_params.domain_length
+    domain_center_y = 0.5 * grid.grid_params.domain_height
 
     weights, nodes = _prepare_torus_quadratic_quadrature(
-        grid, vertex_x, vertex_y, cell_center_x, cell_center_y, min_edge_length
+        vertex_x=vertex_x,
+        vertex_y=vertex_y,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        c2v_connectivity=grid.connectivities[dims.C2VDim].ndarray,
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
     )
 
     _construct_idealized_prep_adv(
@@ -271,56 +266,63 @@ def linear_advection(  # noqa: PLR0915 [too-many-statements]
         tracer=tracer_state_now.qv.ndarray,
         domain_center_x=domain_center_x,
         domain_center_y=domain_center_y,
-        domain_length=domain_length,
-        domain_height=domain_height,
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
         weights=weights,
         nodes=nodes,
     )
 
 
-def construct_reference_tracer_numpy(
-    test_config,
-    icon_grid,
-    x_center,
-    y_center,
-    x_range,
-    y_range,
-    edges_center_x,
-    edges_center_y,
-    node_x,
-    node_y,
-    integration_time,
-    weights,
-    nodes,
+def construct_reference_tracer(
+    *,
+    velocity_field: VelocityField,
+    tracer_profile: TracerProfile,
+    grid: icon_grid.IconGrid,
+    static_fields: static_fields.StaticFieldFactories,
+    integration_time: float,
 ) -> data_alloc.NDArray:
-    match test_config.velocity_field:
+    geometry = static_fields.geometry
+    vertex_x = geometry.get(geometry_meta.VERTEX_X).ndarray
+    vertex_y = geometry.get(geometry_meta.VERTEX_Y).ndarray
+    cell_center_x = geometry.get(geometry_meta.CELL_CENTER_X).ndarray
+    cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
+    domain_center_x = 0.5 * grid.grid_params.domain_length
+    domain_center_y = 0.5 * grid.grid_params.domain_height
+
+    weights, nodes = _prepare_torus_quadratic_quadrature(
+        vertex_x=vertex_x,
+        vertex_y=vertex_y,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        c2v_connectivity=grid.connectivities[dims.C2VDim].ndarray,
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
+    )
+
+    reference_tracer = data_alloc.zeros_like(cell_center_x)
+
+    match velocity_field:
         case VelocityField.CONSTANT:
             # linearly shifted ICs
             u, v = _compute_idealized_velocity_field(
-                test_config, x_range, y_range, edges_center_x, edges_center_y, time, time_end
+                velocity_field=velocity_field,
+                domain_length=grid.grid_params.domain_length,
+                domain_height=grid.grid_params.domain_height,
             )
-            x = nodes[0, :, :] - (x_center + u * time)
-            y = nodes[1, :, :] - (y_center + v * time)
-            tracer = array_ns.sum(
-                weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
-            )
-        case VelocityField.VORTEX_2D:
-            # ICs
-            x = nodes[0, :, :] - x_center
-            y = nodes[1, :, :] - y_center
-            tracer = array_ns.sum(
-                weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
-            )
-        case VelocityField.INCREASING_2D:
-            # shifted and deformed ICs
-            et = array_ns.exp(time)
-            emt = array_ns.exp(-time)
-            x = -emt * (-x_range + x_range * et - x_range * time - nodes[0, :, :]) - x_center
-            y = -y_range + y_range * et - y_range * et * time + nodes[1, :, :] * et - y_center
-            tracer = array_ns.sum(
-                weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
+            end_center_x = domain_center_x + u * integration_time
+            end_center_y = domain_center_y + v * integration_time
+            _construct_idealized_tracer(
+                tracer_profile=tracer_profile,
+                tracer=reference_tracer,
+                domain_center_x=end_center_x,
+                domain_center_y=end_center_y,
+                domain_length=grid.grid_params.domain_length,
+                domain_height=grid.grid_params.domain_height,
+                weights=weights,
+                nodes=nodes,
             )
         case _:
             raise NotImplementedError(
-                f"Exact solution with velocity field {test_config.velocity_field} not implemented."
+                f"Exact solution with velocity field {velocity_field} not implemented."
             )
+    return reference_tracer

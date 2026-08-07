@@ -33,7 +33,7 @@ def compute_horizontal_tracer_flux_upwind(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_horizontal_tracer_flux_upwind(
         p_cc,
         p_mass_flx_e,

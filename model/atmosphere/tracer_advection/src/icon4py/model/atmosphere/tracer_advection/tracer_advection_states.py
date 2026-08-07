@@ -43,20 +43,6 @@ class AdvectionDiagnosticState:
 
 
 @dataclasses.dataclass(frozen=True)
-class AdvectionPrepAdvState:
-    """Represents the prepare tracer_advection state needed in tracer_advection."""
-
-    #: horizontal velocity at edges for computation of backward trajectories averaged over dynamics substeps [m/s]
-    vn_traj: fa.EdgeKField[ta.wpfloat]
-
-    #: mass flux at full level edges averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_me: fa.EdgeKField[ta.wpfloat]
-
-    #: mass flux at half level centers averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_ic: fa.CellKHalfField[ta.wpfloat]
-
-
-@dataclasses.dataclass(frozen=True)
 class AdvectionInterpolationState:
     """Represents the interpolation state needed in tracer_advection."""
 
@@ -134,28 +120,3 @@ def initialize_advection_diagnostic_state(
             dtype=ta.wpfloat,
         ),
     )
-
-
-def initialize_advection_prep_adv_state(
-    grid: icon_grid.IconGrid,
-    allocator: gtx_typing.Allocator,
-) -> AdvectionPrepAdvState:
-    kwargs: dict[str, gtx.Field] = {}
-    for field in dataclasses.fields(AdvectionPrepAdvState):
-        type_hint = field.type
-        assert isinstance(type_hint, str)
-        if "Edge" in type_hint:
-            horizontal_dim = dims.EdgeDim
-        elif "Cell" in type_hint:
-            horizontal_dim = dims.CellDim
-        else:
-            raise NotImplementedError(f"Unsupported field type hint: {type_hint}")
-        # 'CellKHalfField' is currently an alias for the same 'KDim'-based field as
-        # "half level" variant is only distinguishable by name, not by its resolved dims.
-        extend = {dims.KDim: 1} if "KHalf" in type_hint else None
-        kwargs[field.name] = data_alloc.zero_field(
-            grid, horizontal_dim, dims.KDim, extend=extend, allocator=allocator, dtype=ta.wpfloat
-        )
-    return AdvectionPrepAdvState(**kwargs)
-
-
