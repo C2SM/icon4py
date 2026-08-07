@@ -27,6 +27,7 @@ from icon4py.model.common.grid import base as base_grid, horizontal as h_grid, i
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.common.states import (
+    adv_states,
     diagnostic_state as diagnostics,
     nonhydro_states,
     prognostic_state as prognostics,
@@ -64,7 +65,7 @@ class DriverStates(NamedTuple):
     solve_nonhydro_diagnostic: nonhydro_states.DiagnosticStateNonHydro | None
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
     tracer_advection_diagnostic: tracer_advection_states.AdvectionDiagnosticState | None
-    prep_tracer_advection_prognostic: tracer_advection_states.AdvectionPrepAdvState | None
+    prep_tracer_advection_prognostic: adv_states.AdvectionPrepAdvState | None
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     tracers: common_utils.TimeStepPair[tracer_states.TracerState]
     diagnostic: diagnostics.DiagnosticState
@@ -219,35 +220,35 @@ class TimerCollection:
                 )
 
 
-def initialize_prep_tracer_advection(
+def link_prep_adv_to_dycore(
     grid: base_grid.Grid,
     allocator: gtx_typing.Allocator | None,
     *,
-    tracer_advection_enabled: bool,
-    prep_adv: dycore_states.PrepAdvection | None,
-) -> tracer_advection_states.AdvectionPrepAdvState | None:
-    """Build the tracer-advection prep state, sharing the dycore's accumulated buffers.
-
-    Tracer advection reads the velocities/mass fluxes that the dycore accumulates over
-    the dynamics substeps (``lprep_adv``), so it must reference the dycore's
-    ``PrepAdvection`` buffers (ICON's ``mass_flx_ic`` is the vertical mass flux at cell
-    half levels). Without a dycore there is nothing accumulating them, so fall back to
-    zero fields.
+    adv_prep_adv_state: adv_states.AdvectionPrepAdvState | None,
+    solve_nonhydro_enabled: bool,
+) -> dycore_states.PrepAdvection | None:
     """
-    if not tracer_advection_enabled:
+    Build the tracer-advection prep adv state for dycore.
+    If tracer advection is enabled, both tracer-advection and dycore prep adv state share the same buffer.
+    """
+    if not solve_nonhydro_enabled:
         return None
-    if prep_adv is not None:
-        return tracer_advection_states.AdvectionPrepAdvState(
-            vn_traj=prep_adv.vn_traj,
-            mass_flx_me=prep_adv.mass_flx_me,
-            mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+    if adv_prep_adv_state is not None:
+        return dycore_states.PrepAdvection(
+            vn_traj=adv_prep_adv_state.vn_traj,
+            mass_flx_me=adv_prep_adv_state.mass_flx_me,
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=adv_prep_adv_state.mass_flx_ic,
+            dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
+                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            ),
         )
-    return tracer_advection_states.AdvectionPrepAdvState(
+    return dycore_states.PrepAdvection(
         vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
         mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-        # vertical mass flux at cell half levels: one more level than KDim, like the
-        # dycore's dynamical_vertical_mass_flux_at_cells_on_half_levels it stands in for
-        mass_flx_ic=data_alloc.zero_field(
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+        ),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         ),
     )
@@ -265,6 +266,7 @@ def assemble_driver_states(
     diagnostic_state: diagnostics.DiagnosticState,
     experiment_config: driver_config.ExperimentConfig,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
+    adv_prep_adv_state: adv_states.AdvectionPrepAdvState | None,
 ) -> DriverStates:
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
@@ -310,10 +312,11 @@ def assemble_driver_states(
         if diffusion_enabled
         else None
     )
-    prep_adv = (
-        dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
-        if solve_nonhydro_enabled
-        else None
+    prep_adv = link_prep_adv_to_dycore(
+        grid=grid,
+        allocator=allocator,
+        adv_prep_adv_state=adv_prep_adv_state,
+        solve_nonhydro_enabled=solve_nonhydro_enabled,
     )
     tracer_advection_diagnostic_state = (
         tracer_advection_states.initialize_advection_diagnostic_state(
@@ -322,17 +325,11 @@ def assemble_driver_states(
         if tracer_advection_enabled
         else None
     )
-    prep_tracer_adv = initialize_prep_tracer_advection(
-        grid,
-        allocator,
-        tracer_advection_enabled=tracer_advection_enabled,
-        prep_adv=prep_adv,
-    )
 
     return DriverStates(
         prep_advection_prognostic=prep_adv,
         solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
-        prep_tracer_advection_prognostic=prep_tracer_adv,
+        prep_tracer_advection_prognostic=adv_prep_adv_state,
         tracer_advection_diagnostic=tracer_advection_diagnostic_state,
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,

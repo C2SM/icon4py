@@ -42,6 +42,7 @@ from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.states import adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
@@ -60,6 +61,8 @@ class HorizontalAdvectionType(Enum):
 
     #: no horizontal tracer advection
     NO_ADVECTION = 0
+    #: 1st order upwind
+    UPWIND_1ST_ORDER = 1
     #: 2nd order MIURA with linear reconstruction
     LINEAR_2ND_ORDER = 2
 
@@ -148,7 +151,7 @@ class Advection(ABC):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -207,7 +210,7 @@ class NoAdvection(Advection):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -316,7 +319,7 @@ class GodunovSplittingAdvection(Advection):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -458,6 +461,13 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
         case HorizontalAdvectionType.NO_ADVECTION:
             horizontal_advection = tracer_advection_horizontal.NoAdvection(
                 grid=grid, backend=backend
+            )
+        case HorizontalAdvectionType.UPWIND_1ST_ORDER:
+            horizontal_advection = tracer_advection_horizontal.FirstOrderUpwind(
+                grid=grid,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                backend=backend,
             )
         case HorizontalAdvectionType.LINEAR_2ND_ORDER:
             tracer_flux = tracer_advection_horizontal.SecondOrderMiura(

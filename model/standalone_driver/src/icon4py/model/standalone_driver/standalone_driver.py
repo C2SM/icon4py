@@ -44,6 +44,7 @@ from icon4py.model.common.interpolation import interpolation_attributes as intp_
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
+    adv_states,
     diagnostic_state as diagnostics,
     nonhydro_states,
     prognostic_state as prognostics,
@@ -279,7 +280,7 @@ class Icon4pyDriver:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         tracers: common_utils.TimeStepPair[tracer_states.TracerState],
         prep_adv: dycore_states.PrepAdvection | None,
-        tracer_prep_adv: tracer_advection_states.AdvectionPrepAdvState | None,
+        tracer_prep_adv: adv_states.AdvectionPrepAdvState | None,
     ) -> None:
         # Airmass (rho * dz) is tracer advection's density<->mixing-ratio conversion
         # factor: computed from rho at the beginning of the time step and from the rho
@@ -820,6 +821,13 @@ def run_driver(
         if icon4py_driver.config.nonhydrostatic is not None
         else None
     )
+    adv_prep_adv_state = (
+        adv_states.initialize_advection_prep_adv_state(
+            grid=icon4py_driver.grid, allocator=allocator
+        )
+        if icon4py_driver.config.tracer_advection is not None
+        else None
+    )
     initial_condition.create(
         config=icon4py_driver.config.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
@@ -828,6 +836,7 @@ def run_driver(
         prognostic_state_now=prognostic_state_now,
         tracer_state_now=tracer_state_now,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+        adv_prep_adv_state=adv_prep_adv_state,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
@@ -846,6 +855,7 @@ def run_driver(
         diagnostic_state=diagnostic_state,
         experiment_config=icon4py_driver.config,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+        adv_prep_adv_state=adv_prep_adv_state,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,

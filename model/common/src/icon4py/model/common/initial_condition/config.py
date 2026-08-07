@@ -19,6 +19,8 @@ from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
+    linear_horizontal_advection as lin_hor_adv_ic,
+    linear_vertical_advection as lin_ver_adv_ic,
     weisman_klemp as wk_ic,
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
@@ -32,6 +34,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
     from icon4py.model.common.states import (
+        adv_states,
         nonhydro_states,
         prognostic_state as prognostics,
         static_fields,
@@ -42,7 +45,12 @@ log = logging.getLogger(__name__)
 
 
 type IC_CONFIG = (
-    jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig
+    jw_ic.JablonowskiWilliamsonConfig
+    | gauss_ic.Gauss3DConfig
+    | wk_ic.WeismanKlempConfig
+    | lin_hor_adv_ic.LinearHorizontalAdvectionConfig
+    | lin_ver_adv_ic.LinearVerticalAdvectionConfig
+    | from_file_ic.FromFileConfig
 )
 
 
@@ -51,8 +59,10 @@ config_io.register_config_union(
     {
         "jablonowski_williamson": jw_ic.JablonowskiWilliamsonConfig,
         "gauss_3d": gauss_ic.Gauss3DConfig,
-        "from_file": from_file_ic.FromFileConfig,
         "weissman_klemp": wk_ic.WeismanKlempConfig,
+        "lin_hor_adv": lin_hor_adv_ic.LinearHorizontalAdvectionConfig,
+        "lin_ver_adv": lin_ver_adv_ic.LinearVerticalAdvectionConfig,
+        "from_file": from_file_ic.FromFileConfig,
     },
 )
 
@@ -112,7 +122,9 @@ class InitialConditionConfig:
                     wk_ic.WeismanKlempConfig, testcase_nml
                 )
             case name:
-                raise ValueError(f"Unknown or missing test case name: {name!r}")
+                raise ValueError(
+                    f"Unknown or missing test case name read from Fortran namelist: {name!r}"
+                )
 
         return cls(config=config)
 
@@ -126,6 +138,7 @@ def create(
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
+    adv_prep_adv_state: adv_states.AdvectionPrepAdvState | None,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
@@ -170,6 +183,24 @@ def create(
                 tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
+            )
+        case lin_hor_adv_ic.LinearHorizontalAdvectionConfig():
+            lin_hor_adv_ic.linear_horizontal_advection(
+                config=config.config,
+                grid=grid,
+                static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
+                adv_prep_adv_state=adv_prep_adv_state,
+            )
+        case lin_ver_adv_ic.LinearVerticalAdvectionConfig():
+            lin_ver_adv_ic.linear_vertical_advection(
+                config=config.config,
+                vertical_config=vertical_config,
+                static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
+                adv_prep_adv_state=adv_prep_adv_state,
             )
         case from_file_ic.FromFileConfig():
             if config.config.is_restart:
