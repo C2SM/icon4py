@@ -19,7 +19,19 @@ The `program` name should start with a verb.
 Commonly used verbs are accumulate, add, apply, compute, copy, correct, extrapolate, interpolate, return, set, and
 solve.
 The verb can be followed by more describing words.
-If possible one should not use the names of variables that are part of the signature already as describing words.
+
+The describing words must state what the stencil computes and on which grid entities, and must not repeat the names of the variables in the signature.
+In particular, a stencil name must not contain:
+
+- the caller's argument or output variable names, for example `calculate_nabla2_for_z`, named after the Fortran temporary `z_nabla2_e`;
+- Fortran temporary prefixes (`z_`, `p_`, `opt_`) or Fortran module names, for example `mo_intp_rbf_rbf_vec_interpol_cell`;
+- the floating point precision (`_wp`, `_vp`), which is already part of the signature;
+- the physical meaning of an operand that the mathematics does not depend on.
+
+To check a name, replace an input with an unrelated field of the same type: if the stencil still works but the name no longer reads correctly, the name is too specific.
+
+A stencil whose name passes this check is usually generic enough to belong in `model/common`.
+See the section on shared code and generic naming in [CODING_GUIDELINES.md](../CODING_GUIDELINES.md) for where to place it.
 
 ## Example
 
