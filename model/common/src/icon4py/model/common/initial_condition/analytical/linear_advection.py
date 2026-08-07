@@ -10,22 +10,22 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import logging
+import typing
 from typing import TYPE_CHECKING, ClassVar
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid
 from icon4py.model.common.math import distance_array_ns
-from icon4py.model.common.states import adv_states, tracer_states
+from icon4py.model.common.metrics import metrics_attributes as metrics_meta
+from icon4py.model.common.states import adv_states, prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
     from icon4py.model.common.states import static_fields
 
-log = logging.getLogger(__name__)
 
-
+@config_io.register_enum
 class TracerProfile(int, enum.Enum):
     """
     Initial tracer profile for idealized advection test cases.
@@ -39,6 +39,7 @@ class TracerProfile(int, enum.Enum):
     CIRCLE_2D = 3
 
 
+@config_io.register_enum
 class VelocityField(int, enum.Enum):
     """
     Velocity field for idealized advection test cases.
@@ -54,9 +55,27 @@ class VelocityField(int, enum.Enum):
 
 @dataclasses.dataclass
 class LinearAdvectionConfig:
-    tracer_profle: TracerProfile
-    velocity_field: VelocityField
-    cfl_number: float
+    tracer_profile: typing.Annotated[
+        TracerProfile,
+        common_conf_opt.ConfigOption(
+            description="Initial tracer profile.",
+            icon_equivalent=None,
+        ),
+    ] = TracerProfile.GAUSSIAN_2D
+    velocity_field: typing.Annotated[
+        VelocityField,
+        common_conf_opt.ConfigOption(
+            description="Velocity field for transporting the tracer.",
+            icon_equivalent=None,
+        ),
+    ] = VelocityField.CONSTANT
+    cfl_number: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Maximum CFL number for determination of the time step.",
+            icon_equivalent=None,
+        ),
+    ] = 0.8
 
     fortran_name_map: ClassVar[dict[str, str]] = {}
 
@@ -88,8 +107,8 @@ def _prepare_torus_quadratic_quadrature(
     domain_height: float,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
-    Prepare three-point quadrature rule on torus grids.
-
+    Prepare three-point second-order-accuracy quadrature rule on torus grids.
+    Triangular cells must be uniform to guarantee second-order accuracy.
     Args:
         grid: IconGrid that entails a torus grid
         vertex_x: array that contains the vertex x-coordinates
@@ -165,17 +184,17 @@ def _construct_idealized_prep_adv(
     # we assume that the airmass is constant 1.0, the mass flux equals the velocity
     # impose 2D velocity field at time n+1/2 as required by the numerical scheme
     u, v = _compute_idealized_velocity_field(
-        velocity_field,
-        domain_length,
-        domain_height,
+        velocity_field=velocity_field,
+        domain_length=domain_length,
+        domain_height=domain_height,
     )
     vn = u * primal_normal_x + v * primal_normal_y
 
     vn_traj = prep_adv_state.vn_traj.ndarray
     mass_flx_me = prep_adv_state.mass_flx_me.ndarray
     mass_flx_ic = prep_adv_state.mass_flx_ic.ndarray
-    vn_traj[:, :] = vn[None, :]
-    mass_flx_me[:, :] = vn[None, :]
+    vn_traj[:, :] = vn[:, None]
+    mass_flx_me[:, :] = vn[:, None]
     mass_flx_ic[:, :] = 0.0
 
 
@@ -223,6 +242,7 @@ def linear_advection(
     config: LinearAdvectionConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
+    prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
     adv_prep_adv_state: adv_states.AdvectionPrepAdvState,
 ) -> None:
@@ -234,20 +254,24 @@ def linear_advection(
         raise ValueError(
             "The initial condition for the linear advection test case requires the 'qv' to be active."
         )
+
     geometry = static_fields.geometry
+    metrics = static_fields.metrics
     vertex_x = geometry.get(geometry_meta.VERTEX_X).ndarray
     vertex_y = geometry.get(geometry_meta.VERTEX_Y).ndarray
     cell_center_x = geometry.get(geometry_meta.CELL_CENTER_X).ndarray
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
-    domain_center_x = 0.5 * grid.grid_params.domain_length
-    domain_center_y = 0.5 * grid.grid_params.domain_height
+    domain_center_x = vertex_x.min() + 0.5 * grid.grid_params.domain_length
+    domain_center_y = vertex_y.min() + 0.5 * grid.grid_params.domain_height
+
+    prognostic_state_now.rho.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray
 
     weights, nodes = _prepare_torus_quadratic_quadrature(
         vertex_x=vertex_x,
         vertex_y=vertex_y,
         cell_center_x=cell_center_x,
         cell_center_y=cell_center_y,
-        c2v_connectivity=grid.connectivities[dims.C2VDim].ndarray,
+        c2v_connectivity=grid.connectivities["C2V"].ndarray,
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
     )
@@ -255,14 +279,14 @@ def linear_advection(
     _construct_idealized_prep_adv(
         velocity_field=config.velocity_field,
         prep_adv_state=adv_prep_adv_state,
-        primal_normal_x=geometry.get(geometry_meta.PRIMAL_NORMAL_X).ndarray,
-        primal_normal_y=geometry.get(geometry_meta.PRIMAL_NORMAL_Y).ndarray,
-        edge_center_x=geometry.get(geometry_meta.EDGE_CENTER_X).ndarray,
-        edge_center_y=geometry.get(geometry_meta.EDGE_CENTER_Y).ndarray,
+        primal_normal_x=geometry.get(geometry_meta.EDGE_NORMAL_U).ndarray,
+        primal_normal_y=geometry.get(geometry_meta.EDGE_NORMAL_V).ndarray,
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
     )
 
     _construct_idealized_tracer(
-        tracer_profile=config.tracer_profle,
+        tracer_profile=config.tracer_profile,
         tracer=tracer_state_now.qv.ndarray,
         domain_center_x=domain_center_x,
         domain_center_y=domain_center_y,
@@ -280,27 +304,28 @@ def construct_reference_tracer(
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     integration_time: float,
+    num_levels: int,
 ) -> data_alloc.NDArray:
     geometry = static_fields.geometry
     vertex_x = geometry.get(geometry_meta.VERTEX_X).ndarray
     vertex_y = geometry.get(geometry_meta.VERTEX_Y).ndarray
     cell_center_x = geometry.get(geometry_meta.CELL_CENTER_X).ndarray
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
-    domain_center_x = 0.5 * grid.grid_params.domain_length
-    domain_center_y = 0.5 * grid.grid_params.domain_height
+    domain_center_x = 0.5 * grid.grid_params.domain_length - vertex_x.min()
+    domain_center_y = 0.5 * grid.grid_params.domain_height - vertex_y.min()
 
     weights, nodes = _prepare_torus_quadratic_quadrature(
         vertex_x=vertex_x,
         vertex_y=vertex_y,
         cell_center_x=cell_center_x,
         cell_center_y=cell_center_y,
-        c2v_connectivity=grid.connectivities[dims.C2VDim].ndarray,
+        c2v_connectivity=grid.connectivities["C2V"].ndarray,
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
     )
 
-    reference_tracer = data_alloc.zeros_like(cell_center_x)
-
+    array_ns = data_alloc.array_namespace(cell_center_x)
+    reference_tracer = array_ns.tile(array_ns.zeros_like(cell_center_x)[:, None], (1, num_levels))
     match velocity_field:
         case VelocityField.CONSTANT:
             # linearly shifted ICs
@@ -309,8 +334,14 @@ def construct_reference_tracer(
                 domain_length=grid.grid_params.domain_length,
                 domain_height=grid.grid_params.domain_height,
             )
-            end_center_x = domain_center_x + u * integration_time
-            end_center_y = domain_center_y + v * integration_time
+            end_center_x = (
+                vertex_x.min()
+                + (domain_center_x + u * integration_time) % grid.grid_params.domain_length
+            )
+            end_center_y = (
+                vertex_y.min()
+                + (domain_center_y + v * integration_time) % grid.grid_params.domain_height
+            )
             _construct_idealized_tracer(
                 tracer_profile=tracer_profile,
                 tracer=reference_tracer,

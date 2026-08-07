@@ -50,6 +50,17 @@ def absolutetime_from_iconformat(value: str) -> time.AbsoluteTime:
     return time.AbsoluteTime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+def _recursive_replace(instance: Any, overrides: dict[str, Any]) -> Any:
+    """Recursively apply nested dict overrides to a (possibly nested) dataclass instance."""
+    replacements: dict[str, Any] = {}
+    for key, value in overrides.items():
+        if isinstance(value, dict):
+            replacements[key] = _recursive_replace(getattr(instance, key), value)
+        else:
+            replacements[key] = value
+    return dataclasses.replace(instance, **replacements)
+
+
 def relativetime_from_iconformat(dtime: float, modeltimestep: str) -> time.RelativeTime:
     return (
         relativetime_from_iso8601(modeltimestep)
@@ -351,7 +362,7 @@ class ExperimentConfig:
         for key, value in overrides.items():
             current = getattr(self, key)
             if isinstance(value, dict):
-                replacements[key] = dataclasses.replace(current, **value)
+                replacements[key] = _recursive_replace(current, value)
             else:
                 replacements[key] = value
         return dataclasses.replace(self, **replacements)

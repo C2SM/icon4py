@@ -10,30 +10,26 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
-
 
 def create_mpl_triangulation(
     *,
-    grid: icon_grid.IconGrid,
-    node_x: data_alloc.NDArray,
-    node_y: data_alloc.NDArray,
+    c2v_connectivity: np.ndarray,
+    node_x: np.ndarray,
+    node_y: np.ndarray,
     length_max: float,
 ) -> mpl.tri.Triangulation:
     """
     Create a matplotlib triangulation object for torus grids.
 
     Args:
-        grid: IconGrid that entails a torus grid
+        c2v_connectivity: array that contains the cell-to-vertex connectivity
         node_x: array that contains the vertex x-coordinates
         node_y: array that contains the vertex y-coordinates
         length_max: maximum edge length to plot
 
     """
     # create a matplotlib triangulation from the grid connectivity
-    face_node_connectivity = grid.connectivities["C2V"].asnumpy()
-    tri = mpl.tri.Triangulation(node_x, node_y, triangles=face_node_connectivity)
+    tri = mpl.tri.Triangulation(node_x, node_y, triangles=c2v_connectivity)
 
     # remove triangles with edge length smaller greater than some max length
     # note: this is necessary to avoid plotting artifacts due to the periodicity of torus grids
@@ -69,7 +65,7 @@ def finalize_plot(
 def plot_mpl_triangulation(
     *,
     tri: mpl.tri.Triangulation,
-    values: data_alloc.NDArray,
+    values: np.ndarray,
 ) -> tuple[mpl.figure.Figure, mpl.axes.Axes]:
     """
     Plot values on a matplotlib triangulation.
@@ -84,10 +80,10 @@ def plot_mpl_triangulation(
 
     tpc = ax.tripcolor(tri, values, edgecolor="none", shading="flat", cmap="viridis")
     cbar = fig.colorbar(tpc, ax=ax)
-    cbar.formatter.set_powerlimits((0, 0))
-    cbar.formatter.set_useMathText(True)
+    cbar.formatter.set_powerlimits((0, 0)) # type: ignore[attr-defined]
+    cbar.formatter.set_useMathText(True) # type: ignore[attr-defined]
 
-    ax.grid("both")
+    ax.grid("both") # type: ignore[arg-type]
     ax.set_xlabel("$x$")
     ax.set_ylabel("$y$")
 
@@ -96,10 +92,10 @@ def plot_mpl_triangulation(
 
 def plot_torus_plane(
     *,
-    grid: icon_grid.IconGrid,
-    node_x: data_alloc.NDArray,
-    node_y: data_alloc.NDArray,
-    values: data_alloc.NDArray,
+    c2v_connectivity: np.ndarray,
+    node_x: np.ndarray,
+    node_y: np.ndarray,
+    values: np.ndarray,
     length_max: float,
     out_file: str = "",
 ) -> None:
@@ -107,7 +103,7 @@ def plot_torus_plane(
     Plot a single horizontal plane for torus grids.
 
     Args:
-        grid: IconGrid that entails a torus grid
+        c2v_connectivity: array that contains the cell-to-vertex connectivity
         node_x: array that contains the vertex x-coordinates
         node_y: array that contains the vertex y-coordinates
         values: array that contains the horizontal values on a single level to plot
@@ -116,7 +112,7 @@ def plot_torus_plane(
 
     """
     tri = create_mpl_triangulation(
-        grid=grid,
+        c2v_connectivity=c2v_connectivity,
         node_x=node_x,
         node_y=node_y,
         length_max=length_max,
@@ -171,7 +167,7 @@ def plot_convergence(
                 ls="--" if len(linestyles) == 0 else linestyles[i],
                 c="black",
                 lw=1.0,
-                label=(r"$p=%s$") % str(order),
+                label=rf"$p={order}$",
                 zorder=1.9,
             )
 

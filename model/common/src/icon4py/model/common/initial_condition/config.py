@@ -186,6 +186,7 @@ def create(
                 config=config.config,
                 grid=grid,
                 static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
                 tracer_state_now=tracer_state_now,
                 adv_prep_adv_state=adv_prep_adv_state,
             )

@@ -2,7 +2,7 @@ geometry: {}
 metrics: {}
 interpolation: {}
 vertical_grid:
-  num_levels: 2
+  num_levels: 5
   model_top_height: 1000.0
   lowest_layer_thickness: 0.0
 topography:
@@ -11,9 +11,8 @@ topography:
 initial_condition:
   config:
     type: linear_adv
-    tracer_profle: CIRCLE_2D
-    velocity_field: CONSTANT
-    cfl_number: 0.01
+    velocity_field: constant
+    cfl_number: 0.2
 prescribed_tendencies:
   data_path:
 driver:
@@ -24,14 +23,14 @@ driver:
   start_of_timestepping: 0001-01-01T00:00:00
   end_of_simulation:
     type: relative
-    value: 1
+    value: 0.5
 nonhydrostatic:
 diffusion:
 tracer_config:
   qv: true
 tracer_advection:
   horizontal_advection_type: linear_2nd_order
-  horizontal_advection_limiter: no_limiter
+  horizontal_advection_limiter: positive_definite
   vertical_advection_type: no_advection
   vertical_advection_limiter: no_limiter
 graupel:

@@ -855,6 +855,7 @@ def run_driver(
         diagnostic_state=diagnostic_state,
         experiment_config=icon4py_driver.config,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+        adv_prep_adv_state=adv_prep_adv_state,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,

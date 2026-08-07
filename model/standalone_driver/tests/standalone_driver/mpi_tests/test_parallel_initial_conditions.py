@@ -165,6 +165,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         diagnostic_state=single_rank_diagnostic,
         experiment_config=single_rank_icon4py_driver.config,
         solve_nonhydro_diagnostic_state=single_rank_dycore_diagnostic,
+        adv_prep_adv_state=single_rank_adv_prep_adv_state,
     )
 
     multi_rank_config = experiment.config.with_overrides(
@@ -227,6 +228,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         diagnostic_state=multi_rank_diagnostic,
         experiment_config=multi_rank_icon4py_driver.config,
         solve_nonhydro_diagnostic_state=multi_rank_dycore_diagnostic,
+        adv_prep_adv_state=multi_rank_adv_prep_adv_state,
     )
 
     fields_to_check: list[tuple[str, object, object]] = [
