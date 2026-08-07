@@ -16,7 +16,7 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.standalone_driver import config as driver_config
-from icon4py.model.testing import data_handling, definitions as test_defs, serialbox
+from icon4py.model.testing import data_handling, definitions as test_defs, provenance, serialbox
 
 
 logger = logging.getLogger(__name__)
@@ -130,6 +130,10 @@ def download_experiment(
     uri = get_experiment_archive_url(root_url, archive_path)
     destination_path = get_datapath_for_experiment(experiment_description, processor_props)
     data_handling.download_test_data(destination_path.parent, uri)
+    provenance.record(
+        get_ranked_experiment_name_with_version(experiment_description, comm_size),
+        destination_path.parent,
+    )
 
 
 def create_experiment_configuration(
