@@ -590,6 +590,25 @@ def preflight(*, settings: SerializationSettings, allow_dirty: bool = False) -> 
         )
 
 
+def print_next_steps(*, settings: SerializationSettings) -> None:
+    """Print what still has to be done by hand, with the paths filled in.
+
+    This repeats docs/testdata_generation.md on purpose: a campaign ends in a terminal
+    on the cluster, which is not where the runbook is.
+    """
+    runbook = settings.icon4py_repo_dir / "docs" / "testdata_generation.md"
+    print(
+        f"""
+Next:
+  test    ICON4PY_TEST_DATA_PATH={settings.experiments_dir} ICON4PY_ENABLE_TESTDATA_DOWNLOAD=0 \\
+            uv run --group test --frozen pytest --datatest-only --backend=gtfn_cpu model/common
+  upload  cd {settings.output_root} && aws --profile cscs-icon4py s3 sync . \\
+            s3://testdata/experiments/ --exclude "*" --include "*.tar.gz"
+  docs    {runbook}
+"""
+    )
+
+
 @cli.command()
 def run_serialization(
     dry_run: Annotated[
@@ -658,6 +677,7 @@ def run_serialization(
         raise typer.Exit(code=1)
 
     log_status(f"All {total_tasks} tasks completed successfully!")
+    print_next_steps(settings=settings)
 
 
 if __name__ == "__main__":
