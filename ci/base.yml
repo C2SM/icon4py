@@ -53,6 +53,9 @@ variables:
       dotenv: build.env
   variables:
     DOCKERFILE: ci/docker/venv.Dockerfile
+    # TODO: Diagnostic change to force a fresh venv image build. Revert to
+    # `if-not-exists` before merging.
+    CSCS_REBUILD_POLICY: always
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=$BASE_IMAGE", "ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS"]'
 
 .build_venv_aarch64:
