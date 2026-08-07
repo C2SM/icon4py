@@ -185,6 +185,36 @@ PRECIPITATION_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     ),
 )
 
+# CF attributes of surface turbulent-flux quantities (the atmosphere-surface
+# exchange: produced by a surface scheme, consumed as boundary conditions by
+# turbulent mixing; also relevant to the future land coupling and output).
+SURFACE_FLUX_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
+    surface_evapotranspiration_flux=dict(
+        standard_name="surface_evapotranspiration_flux",
+        long_name="surface evapotranspiration mass flux",
+        units="kg m-2 s-1",
+        kind="diagnostic",
+    ),
+    surface_upward_sensible_heat_flux=dict(
+        standard_name="surface_upward_sensible_heat_flux",
+        long_name="surface upward sensible heat flux",
+        units="W m-2",
+        kind="diagnostic",
+    ),
+    surface_downward_eastward_stress=dict(
+        standard_name="surface_downward_eastward_stress",
+        long_name="zonal surface wind stress",
+        units="N m-2",
+        kind="diagnostic",
+    ),
+    surface_downward_northward_stress=dict(
+        standard_name="surface_downward_northward_stress",
+        long_name="meridional surface wind stress",
+        units="N m-2",
+        kind="diagnostic",
+    ),
+)
+
 
 def tendency_of(base: model.FieldMetaData) -> model.FieldMetaData:
     """Derive generic tendency metadata for ``base`` (CF ``tendency_of_<name>``).

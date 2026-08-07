@@ -39,9 +39,6 @@ class TmxComponent:
     to those buffers, not copies.
     """
 
-    # TODO (Yilu): inherit the Component protocol once it is formalized
-    # (deferred to a separate PR).
-
     inputs_properties = tmx_data.INPUTS_PROPERTIES
     outputs_properties = tmx_data.OUTPUTS_PROPERTIES
 
