@@ -12,7 +12,6 @@ import datetime
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_driver import (
-    ForcingMode,
     PhysicsDriver,
     PhysicsProcess,
 )
@@ -30,13 +29,6 @@ def test_field_metadata_accepts_kind() -> None:
         "kind": "tendency",
     }
     assert meta["kind"] == "tendency"
-
-
-def test_forcing_mode_values() -> None:
-    assert ForcingMode.DIAGNOSTIC.value == 0
-    assert ForcingMode.APPLY.value == 1
-    assert ForcingMode.DIAGNOSTIC is not ForcingMode.APPLY
-    assert len(ForcingMode) == 2
 
 
 _T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
@@ -138,7 +130,6 @@ def test_physics_process_construction() -> None:
     assert proc.component is not None
     assert proc.state is state
     assert proc.time_control.enable_process
-    assert proc.forcing_mode is ForcingMode.APPLY
 
 
 @dataclasses.dataclass
