@@ -156,7 +156,7 @@ class ExperimentDescription:
     name: str
     long_name: str
     grid: GridDescription
-    version: int = 6
+    version: int
 
 
 @dataclasses.dataclass
@@ -191,29 +191,35 @@ class Experiments:
         name="exclaim_ape_R02B04",
         long_name="EXCLAIM Aquaplanet experiment",
         grid=Grids.R02B04_GLOBAL,
+        version=6,
     )
     EXCLAIM_APE_AES: Final = ExperimentDescription(
         name="exclaim_ape_aesPhys",
         long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
         grid=Grids.R02B04_GLOBAL,
+        version=7,
     )
     MCH_CH_R04B09: Final = ExperimentDescription(
         name="exclaim_ch_r04b09_dsl",
         long_name="Regional setup used by EXCLAIM to validate the icon-exclaim.",
         grid=Grids.MCH_CH_R04B09_DSL,
+        version=6,
     )
     JW: Final = ExperimentDescription(
         name="exclaim_nh35_tri_jws",
         long_name="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
+        version=6,
     )
     GAUSS3D: Final = ExperimentDescription(
         name="exclaim_gauss3d",
         long_name="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
+        version=6,
     )
     WEISMAN_KLEMP_TORUS: Final = ExperimentDescription(
         name="exclaim_nh_weisman_klemp",
         long_name="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
+        version=6,
     )
