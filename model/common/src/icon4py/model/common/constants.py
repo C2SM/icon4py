@@ -75,10 +75,10 @@ LATENT_HEAT_FOR_FUSION: Final[ta.wpfloat] = (
 #: Triple point of water at 611hPa [K]
 WATER_TRIPLE_POINT_TEMPERATURE: Final[ta.wpfloat] = 273.16
 
-#: Tetens formula constants for the saturation vapour pressure, called c1es, c3les,
-#: c4les, c3ies and c4ies in ICON (mo_lookup_tables_constants.f90).
-#: e_sat = TETENS_P0 * exp(A * (T - tmelt) / (T - B)), with the *_WATER coefficients
-#: over liquid water and the *_ICE coefficients over ice.
+# Tetens formula constants for the saturation vapour pressure, called c1es, c3les,
+# c4les, c3ies and c4ies in ICON (mo_lookup_tables_constants.f90).
+# e_sat = TETENS_P0 * exp(A * (T - tmelt) / (T - B)), with the *_WATER coefficients
+# over liquid water and the *_ICE coefficients over ice.
 TETENS_P0: Final[ta.wpfloat] = 610.78
 TETENS_A_WATER: Final[ta.wpfloat] = 17.269
 TETENS_B_WATER: Final[ta.wpfloat] = 35.86
@@ -97,7 +97,6 @@ STRATOSPHERE_PRESSURE_THRESHOLD: Final[ta.wpfloat] = 10000.0
 
 # Stratospheric specific-humidity cap [kg/kg].
 STRATOSPHERIC_QV_CAP: Final[ta.wpfloat] = 5.0e-6
-
 
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0

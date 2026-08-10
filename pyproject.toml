@@ -424,8 +424,8 @@ icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
 icon4py-atmosphere-muphys = {workspace = true}
-icon4py-atmosphere-tmx = {workspace = true}
 icon4py-atmosphere-physics-driver = {workspace = true}
+icon4py-atmosphere-tmx = {workspace = true}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
 # dace = {index = "gridtools"}
