@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2CDim
+from icon4py.model.common.dimension import E2C
 from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss_method import (
     cell_horizontal_gradients_by_green_gauss_method,
 )
@@ -31,28 +31,29 @@ def _compute_backward_trajectory_from_edge_center(
     lvn_pos = where(p_vn >= wpfloat("0.0"), True, False)
 
     z_ntdistv_bary_1 = -(
-        p_vn * p_dthalf + where(lvn_pos, pos_on_tplane_e_1[E2CDim(0)], pos_on_tplane_e_1[E2CDim(1)])
+        p_vn * p_dthalf
+        + where(lvn_pos, pos_on_tplane_e_1[dims.E2CDim(0)], pos_on_tplane_e_1[dims.E2CDim(1)])
     )
 
     z_ntdistv_bary_2 = -(
         astype(p_vt, wpfloat) * p_dthalf
-        + where(lvn_pos, pos_on_tplane_e_2[E2CDim(0)], pos_on_tplane_e_2[E2CDim(1)])
+        + where(lvn_pos, pos_on_tplane_e_2[dims.E2CDim(0)], pos_on_tplane_e_2[dims.E2CDim(1)])
     )
 
     p_distv_bary_1 = where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_1[E2CDim(0)]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[E2CDim(0)],
-        z_ntdistv_bary_1 * primal_normal_cell_1[E2CDim(1)]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[E2CDim(1)],
+        z_ntdistv_bary_1 * primal_normal_cell_1[dims.E2CDim(0)]
+        + z_ntdistv_bary_2 * dual_normal_cell_1[dims.E2CDim(0)],
+        z_ntdistv_bary_1 * primal_normal_cell_1[dims.E2CDim(1)]
+        + z_ntdistv_bary_2 * dual_normal_cell_1[dims.E2CDim(1)],
     )
 
     p_distv_bary_2 = where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_2[E2CDim(0)]
-        + z_ntdistv_bary_2 * dual_normal_cell_2[E2CDim(0)],
-        z_ntdistv_bary_1 * primal_normal_cell_2[E2CDim(1)]
-        + z_ntdistv_bary_2 * dual_normal_cell_2[E2CDim(1)],
+        z_ntdistv_bary_1 * primal_normal_cell_2[dims.E2CDim(0)]
+        + z_ntdistv_bary_2 * dual_normal_cell_2[dims.E2CDim(0)],
+        z_ntdistv_bary_1 * primal_normal_cell_2[dims.E2CDim(1)]
+        + z_ntdistv_bary_2 * dual_normal_cell_2[dims.E2CDim(1)],
     )
 
     return p_distv_bary_1, p_distv_bary_2

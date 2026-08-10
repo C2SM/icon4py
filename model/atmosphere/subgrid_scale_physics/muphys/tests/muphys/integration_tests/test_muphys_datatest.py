@@ -120,15 +120,24 @@ def test_muphys_granule(
             - init_savepoint.tend_tracer(tracer_index).asnumpy()
         )
         actual = outputs[name].asnumpy()  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
-        test_utils.assert_dallclose(actual[:, jks:], reference[:, jks:], atol=1e-13)
+        test_utils.assert_dallclose(
+            actual[:, jks:], reference[:, jks:], atol=1e-13, err_msg=f"{name} in cloud"
+        )
         # above the cloudy region ICON does not run the scheme; the full-column
         # granule must produce (near-)zero tendencies there
-        test_utils.assert_dallclose(actual[:, :jks], 0.0, atol=1e-12)
+        test_utils.assert_dallclose(actual[:, :jks], 0.0, atol=1e-12, err_msg=f"{name} above cloud")
 
     tend_ta_reference = exit_savepoint.tend_ta().asnumpy() - init_savepoint.tend_ta().asnumpy()
     tend_ta_actual = outputs["tend_temperature"].asnumpy()  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
-    test_utils.assert_dallclose(tend_ta_actual[:, jks:], tend_ta_reference[:, jks:], atol=1e-10)
-    test_utils.assert_dallclose(tend_ta_actual[:, :jks], 0.0, atol=1e-10)
+    test_utils.assert_dallclose(
+        tend_ta_actual[:, jks:],
+        tend_ta_reference[:, jks:],
+        atol=1e-10,
+        err_msg="tend_temperature in cloud",
+    )
+    test_utils.assert_dallclose(
+        tend_ta_actual[:, :jks], 0.0, atol=1e-10, err_msg="tend_temperature above cloud"
+    )
 
     # surface precip: the granule keeps the surface value in the last level; ICON
     # only stores the aggregated prm_field diagnostics (rsfl = rain,
@@ -139,9 +148,21 @@ def test_muphys_granule(
     graupel = outputs["pg"].asnumpy()[:, -1]  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
     energy_flux = outputs["pre"].asnumpy()[:, -1]  # type: ignore[attr-defined]  # DataField protocol lacks asnumpy; concrete field at runtime
 
-    test_utils.assert_dallclose(rain, exit_savepoint.rsfl().asnumpy(), atol=1e-10)
-    test_utils.assert_dallclose(ice + snow + graupel, exit_savepoint.ssfl().asnumpy(), atol=1e-10)
     test_utils.assert_dallclose(
-        rain + ice + snow + graupel, exit_savepoint.pr().asnumpy(), atol=1e-10
+        rain, exit_savepoint.rsfl().asnumpy(), atol=1e-10, err_msg="rsfl (rain)"
     )
-    test_utils.assert_dallclose(energy_flux, exit_savepoint.ufcs().asnumpy(), atol=1e-10)
+    test_utils.assert_dallclose(
+        ice + snow + graupel,
+        exit_savepoint.ssfl().asnumpy(),
+        atol=1e-10,
+        err_msg="ssfl (ice + snow + graupel)",
+    )
+    test_utils.assert_dallclose(
+        rain + ice + snow + graupel,
+        exit_savepoint.pr().asnumpy(),
+        atol=1e-10,
+        err_msg="pr (total precipitation)",
+    )
+    test_utils.assert_dallclose(
+        energy_flux, exit_savepoint.ufcs().asnumpy(), atol=1e-10, err_msg="ufcs (energy flux)"
+    )

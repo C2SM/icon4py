@@ -12,7 +12,6 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2CDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -184,14 +183,14 @@ def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
     # get triangle edge 1 (A1V3)
     tri_line1_p1_lon = astype(arrival_pts_1_lon_dsl, wpfloat)
     tri_line1_p1_lat = astype(arrival_pts_1_lat_dsl, wpfloat)
-    tri_line1_p2_lon = where(lvn_pos, ptr_v3_lon[E2CDim(0)], ptr_v3_lon[E2CDim(1)])
-    tri_line1_p2_lat = where(lvn_pos, ptr_v3_lat[E2CDim(0)], ptr_v3_lat[E2CDim(1)])
+    tri_line1_p2_lon = where(lvn_pos, ptr_v3_lon[dims.E2CDim(0)], ptr_v3_lon[dims.E2CDim(1)])
+    tri_line1_p2_lat = where(lvn_pos, ptr_v3_lat[dims.E2CDim(0)], ptr_v3_lat[dims.E2CDim(1)])
 
     # get triangle edge 2 (A2V3)
     tri_line2_p1_lon = astype(arrival_pts_2_lon_dsl, wpfloat)
     tri_line2_p1_lat = astype(arrival_pts_2_lat_dsl, wpfloat)
-    tri_line2_p2_lon = where(lvn_pos, ptr_v3_lon[E2CDim(0)], ptr_v3_lon[E2CDim(1)])
-    tri_line2_p2_lat = where(lvn_pos, ptr_v3_lat[E2CDim(0)], ptr_v3_lat[E2CDim(1)])
+    tri_line2_p2_lon = where(lvn_pos, ptr_v3_lon[dims.E2CDim(0)], ptr_v3_lon[dims.E2CDim(1)])
+    tri_line2_p2_lat = where(lvn_pos, ptr_v3_lat[dims.E2CDim(0)], ptr_v3_lat[dims.E2CDim(1)])
 
     # Create first mask does departure-line segment intersects with A1V3
     lintersect_line1 = lintersect(
