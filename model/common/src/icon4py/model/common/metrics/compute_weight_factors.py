@@ -10,7 +10,6 @@ import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.math.vertical_operations import with_boundaries_on_half_levels_on_cells
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -22,9 +21,9 @@ def _compute_wgtfac_c(
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     return with_boundaries_on_half_levels_on_cells(
-        top=(z_ifc(KDim + 1) - z_ifc) / (z_ifc(KDim + 2) - z_ifc),
-        interior=(z_ifc(KDim - 1) - z_ifc) / (z_ifc(KDim - 1) - z_ifc(KDim + 1)),
-        bottom=(z_ifc(KDim - 1) - z_ifc) / (z_ifc(KDim - 2) - z_ifc),
+        top=(z_ifc(dims.KDim + 1) - z_ifc) / (z_ifc(dims.KDim + 2) - z_ifc),
+        interior=(z_ifc(dims.KDim - 1) - z_ifc) / (z_ifc(dims.KDim - 1) - z_ifc(dims.KDim + 1)),
+        bottom=(z_ifc(dims.KDim - 1) - z_ifc) / (z_ifc(dims.KDim - 2) - z_ifc),
         nlev=nlev,
     )
 
