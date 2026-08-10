@@ -391,9 +391,10 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
     # stencil 35,36, 37,38
+    # ICON's z_vt_ie stores only nlev levels, so the bottom half level has no reference
     assert test_utils.dallclose(
         solve_nonhydro.intermediate_fields.tangential_wind_on_half_levels.asnumpy()[
-            edge_start_lateral_boundary_level_5:, :
+            edge_start_lateral_boundary_level_5:, :-1
         ],
         sp_exit.z_vt_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=2e-14,

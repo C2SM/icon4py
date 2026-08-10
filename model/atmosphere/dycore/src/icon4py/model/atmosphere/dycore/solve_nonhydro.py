@@ -40,7 +40,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_ter
     compute_hydrostatic_correction_term,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    init_cell_kdim_field_with_zero_wp,
+    init_cell_khalf_field_with_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
@@ -763,9 +763,9 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._init_cell_kdim_field_with_zero_wp = setup_program(
+        self._init_cell_khalf_field_with_zero_wp = setup_program(
             backend=backend,
-            program=init_cell_kdim_field_with_zero_wp,
+            program=init_cell_khalf_field_with_zero_wp,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary,
                 "horizontal_end": self._end_cell_lateral_boundary_level_4,
@@ -1502,7 +1502,7 @@ class SolveNonhydro:
                     log.debug(
                         "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
                     )
-                    self._init_cell_kdim_field_with_zero_wp(
+                    self._init_cell_khalf_field_with_zero_wp(
                         field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                     )
                 self._update_mass_flux_weighted(

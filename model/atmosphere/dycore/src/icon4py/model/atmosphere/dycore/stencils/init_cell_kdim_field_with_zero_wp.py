@@ -24,6 +24,23 @@ def _init_cell_khalf_field_with_zero_wp() -> fa.CellKHalfField[wpfloat]:
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def init_cell_khalf_field_with_zero_wp(
+    field_with_zero_wp: fa.CellKHalfField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _init_cell_khalf_field_with_zero_wp(
+        out=field_with_zero_wp,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_cell_kdim_field_with_zero_wp(
     field_with_zero_wp: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
