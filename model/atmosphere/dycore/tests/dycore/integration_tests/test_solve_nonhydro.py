@@ -991,7 +991,7 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
     )
     temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
@@ -1173,7 +1173,7 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     rhotheta_implicit_weight_parameter = sp_init.wgt_nnew_rth()
 
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
     )
 
     cell_domain = h_grid.domain(dims.CellDim)

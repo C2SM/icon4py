@@ -100,9 +100,9 @@ class IntermediateFields:
     """
     Declared as z_kin_hor_e in ICON.
     """
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.anyfloat]
+    tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.anyfloat]
     """
-    Declared as z_vt_ie in ICON. Tangential wind at edge on k-half levels. NOTE THAT IT ONLY HAS nlev LEVELS because it is only used for computing horizontal advection of w and thus level nlevp1 is not needed because w[nlevp1-1] is diagnostic.
+    Declared as z_vt_ie in ICON. Tangential wind at edge on k-half levels. The bottom half level is never computed: it is only used for the horizontal advection of w, and w[nlevp1-1] is diagnostic.
     """
     horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.anyfloat]
     """
@@ -137,7 +137,7 @@ class IntermediateFields:
                 grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             tangential_wind_on_half_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, allocator=allocator
+                grid, dims.EdgeDim, dims.KHalfDim, allocator=allocator
             ),
         )
 
@@ -942,7 +942,7 @@ class SolveNonhydro:
         Declared as z_dexner_dz_c_1 in ICON.
         """
         self.nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_th_ddz_exner_c in ICON. theta' dpi0/dz + theta (1 - eta_impl) dpi'/dz.
@@ -1011,7 +1011,7 @@ class SolveNonhydro:
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
         self.rayleigh_damping_factor = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.KHalfDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as z_raylfac in ICON.
