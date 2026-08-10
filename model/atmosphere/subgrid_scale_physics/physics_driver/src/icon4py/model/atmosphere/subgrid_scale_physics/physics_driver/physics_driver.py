@@ -84,6 +84,10 @@ class PhysicsDriver:
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
     ) -> None:
+        # 'simulation_current_datetime' is the end of the step being integrated (ICON's 'datetime_new');
+        # processes are scheduled on the step-start date, per 'datetime = datetime_new - dt'
+        # in mo_interface_iconam_aes.f90.
+        step_start_datetime = simulation_current_datetime - dtime
         for process in self._processes:
             tc = process.time_control
             tc.validate_interval(dtime)
@@ -91,14 +95,14 @@ class PhysicsDriver:
             state.gather_from_prognostic(prognostic, tracers)
             if not tc.enable_process:
                 continue
-            if not tc.is_in_window(simulation_current_datetime):
+            if not tc.is_in_window(step_start_datetime):
                 # outside the process window: no forcing
                 continue
             # Compute on a firing (active) step, and also on the first in-window step -- when
             # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
-            if tc.is_active(simulation_current_datetime) or process.name not in self._recycle_cache:
+            if tc.is_active(step_start_datetime) or process.name not in self._recycle_cache:
                 # compute
-                outputs = process.component(state.as_component_input(), simulation_current_datetime)
+                outputs = process.component(state.as_component_input(), step_start_datetime)
                 self._recycle_cache[process.name] = outputs
             else:
                 # recycle
