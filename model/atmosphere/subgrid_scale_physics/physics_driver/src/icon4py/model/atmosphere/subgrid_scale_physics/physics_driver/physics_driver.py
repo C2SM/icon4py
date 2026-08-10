@@ -84,8 +84,9 @@ class PhysicsDriver:
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
     ) -> None:
-        # 'datetime = datetime_new - dt' in mo_interface_iconam_aes.f90: the processes are
-        # scheduled on the date at the beginning of the step being integrated.
+        # 'simulation_current_datetime' is the end of the step being integrated (ICON's 'datetime_new');
+        # processes are scheduled on the step-start date, per 'datetime = datetime_new - dt'
+        # in mo_interface_iconam_aes.f90.
         step_start_datetime = simulation_current_datetime - dtime
         for process in self._processes:
             tc = process.time_control
