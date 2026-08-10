@@ -11,24 +11,11 @@ from __future__ import annotations
 import copy
 import dataclasses
 import pathlib
-from typing import TYPE_CHECKING, Any, Final
+from typing import Final
 
-from icon4py.model.atmosphere.advection import advection as tracer_advection
-from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
-    single_moment_six_class_gscp_graupel as graupel,
-)
-from icon4py.model.common import topography
-from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
-from icon4py.model.common.interpolation import interpolation_factory
-from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states import tracer_state
-from icon4py.model.standalone_driver import config as driver_config, initial_condition
+from icon4py.model.common.grid import icon as icon_grid
+from icon4py.model.standalone_driver import config as driver_config
 from icon4py.model.testing import config
-
-
-if TYPE_CHECKING:
-    from icon4py.model.atmosphere.diffusion import diffusion
-    from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
@@ -47,7 +34,7 @@ def grids_path() -> pathlib.Path:
     return config.TEST_DATA_PATH.joinpath(GRID_DATA_DIR)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class GridDescription:
     name: str
     description: str
@@ -164,47 +151,23 @@ class Grids:
     )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ExperimentDescription:
     name: str
     long_name: str
     grid: GridDescription
-    version: int = 5
-
-
-@dataclasses.dataclass
-class ExperimentConfig:
-    # NOTE: This has a duplicate in standalone_driver/config.py to avoid circular imports.
-    metrics: metrics_factory.MetricsConfig
-    interpolation: interpolation_factory.InterpolationConfig
-    vertical_grid: v_grid.VerticalGridConfig
-    topography: topography.TopographyConfig
-    initial_condition: initial_condition.InitialConditionConfig
-    driver: driver_config.DriverConfig
-    nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
-    diffusion: diffusion.DiffusionConfig | None = None
-    tracer_config: tracer_state.TracerConfig | None = None
-    tracer_advection: tracer_advection.AdvectionConfig | None = None
-    graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
-
-    def with_overrides(self, **overrides: Any) -> ExperimentConfig:
-        replacements: dict[str, Any] = {}
-        for key, value in overrides.items():
-            current = getattr(self, key)
-            if isinstance(value, dict):
-                replacements[key] = dataclasses.replace(current, **value)
-            else:
-                replacements[key] = value
-        return dataclasses.replace(self, **replacements)
+    version: int
 
 
 @dataclasses.dataclass
 class Experiment:
     description: ExperimentDescription
-    _config: ExperimentConfig
+    _config: driver_config.ExperimentConfig
 
     def __init__(
-        self, experiment_description: ExperimentDescription, experiment_config: ExperimentConfig
+        self,
+        experiment_description: ExperimentDescription,
+        experiment_config: driver_config.ExperimentConfig,
     ) -> None:
         self.description = experiment_description
         self._config = experiment_config
@@ -218,7 +181,7 @@ class Experiment:
         return self.description.grid
 
     @property
-    def config(self) -> ExperimentConfig:
+    def config(self) -> driver_config.ExperimentConfig:
         # Return a deep copy so that tests cannot mutate the shared cached config.
         return copy.deepcopy(self._config)
 
@@ -228,6 +191,13 @@ class Experiments:
         name="exclaim_ape_R02B04",
         long_name="EXCLAIM Aquaplanet experiment",
         grid=Grids.R02B04_GLOBAL,
+        version=6,
+    )
+    EXCLAIM_APE_AES: Final = ExperimentDescription(
+        name="exclaim_ape_aesPhys",
+        long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
+        grid=Grids.R02B04_GLOBAL,
+        version=7,
     )
     EXCLAIM_APE_AES: Final = ExperimentDescription(
         name="exclaim_ape_aesPhys",
@@ -239,19 +209,23 @@ class Experiments:
         name="exclaim_ch_r04b09_dsl",
         long_name="Regional setup used by EXCLAIM to validate the icon-exclaim.",
         grid=Grids.MCH_CH_R04B09_DSL,
+        version=6,
     )
     JW: Final = ExperimentDescription(
         name="exclaim_nh35_tri_jws",
         long_name="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
+        version=6,
     )
     GAUSS3D: Final = ExperimentDescription(
         name="exclaim_gauss3d",
         long_name="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
+        version=6,
     )
     WEISMAN_KLEMP_TORUS: Final = ExperimentDescription(
         name="exclaim_nh_weisman_klemp",
         long_name="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
+        version=6,
     )

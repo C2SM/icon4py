@@ -15,7 +15,8 @@ import pytest
 from icon4py.model.common import model_backends, topography
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.topography.analytical import jablonowski_williamson as jw_topo
-from icon4py.model.testing import definitions, grid_utils, test_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions as test_defs, grid_utils, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
@@ -35,9 +36,9 @@ if TYPE_CHECKING:
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 def test_jablonowski_williamson_topography(
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
     topography_savepoint: sb.TopographySavepoint,
 ) -> None:
@@ -53,9 +54,10 @@ def test_jablonowski_williamson_topography(
         config=config, grid_manager=gm, backend=backend, exchange=decomp_defs.single_node_exchange
     )
 
-    topo_c_ref = topography_savepoint.topo_c().asnumpy()
+    topo_c_ref = topography_savepoint.topo_c()
 
-    assert test_utils.dallclose(
-        topo_c,
-        topo_c_ref,
+    test_utils.assert_dallclose(
+        data_alloc.as_numpy(topo_c),
+        data_alloc.as_numpy(topo_c_ref),
+        err_msg="topo_c",
     )

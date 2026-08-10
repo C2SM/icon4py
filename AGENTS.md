@@ -8,19 +8,18 @@ Always read the CODING_GUIDELINES.md document first and follow it.
 
 ## Monorepo structure
 
-uv workspace with 11 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
+uv workspace with 10 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
 
 ```
 model/
   atmosphere/
-    advection/          # icon4py.model.atmosphere.advection
+    tracer_advection/          # icon4py.model.atmosphere.tracer_advection
     diffusion/          # icon4py.model.atmosphere.diffusion
     dycore/             # icon4py.model.atmosphere.dycore
     subgrid_scale_physics/
       microphysics/     # icon4py.model.atmosphere.subgrid_scale_physics.microphysics
       muphys/           # icon4py.model.atmosphere.subgrid_scale_physics.muphys
   common/               # icon4py.model.common  ← shared code, all model packages depend on this
-  driver/               # icon4py.model.driver  ← depends on diffusion, dycore, common, testing
   standalone_driver/    # icon4py.model.standalone_driver
   testing/              # icon4py.model.testing ← pytest plugin, fixtures, serialbox helpers
 tools/                  # icon4py.tools ← Fortran integration (py2fgen CLI), independent of model
@@ -132,15 +131,15 @@ uv run --group test --frozen pytest -n0 <paths>
 
 Registered by `icon4py.model.testing.pytest_hooks` (auto-loaded via `addopts`):
 
-| Option                            | Description                                                                                                               |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `--datatest-only`                 | Run only `@pytest.mark.datatest` tests                                                                                    |
-| `--datatest-skip`                 | Skip all datatests                                                                                                        |
-| `--backend <name>`                | GT4Py backend (default: roundtrip; others: gtfn_cpu, gtfn_gpu, embedded)                                                  |
-| `--grid <name>`                   | Grid to use                                                                                                               |
-| `--enable-mixed-precision`        | Switch from double to mixed-precision                                                                                     |
-| `--level {any,unit,integration}`  | Run only tests matching the given level. Unmarked tests are implicitly treated as `unit`. `any` (default) runs all tests. |
-| `--skip-stenciltest-verification` | Skip verification of StencilTest against reference outputs                                                                |
+| Option                                      | Description                                                                       |
+| ------------------------------------------- | --------------------------------------------------------------------------------- |
+| `--datatest-only`                           | Run only `@pytest.mark.datatest` tests                                            |
+| `--datatest-skip`                           | Skip all datatests                                                                |
+| `--backend <name>`                          | GT4Py backend (default: roundtrip; others: gtfn_cpu, gtfn_gpu, embedded)          |
+| `--grid <name>`                             | Grid to use                                                                       |
+| `--enable-mixed-precision`                  | Switch from double to mixed-precision                                             |
+| `--level {any,unit,integration,validation}` | Filter by `@pytest.mark.level` marker. `any` (default) excludes validation tests. |
+| `--skip-stenciltest-verification`           | Skip verification of StencilTest against reference outputs                        |
 
 ### Test directory convention
 
@@ -186,3 +185,17 @@ uv run --group test --frozen nox -s 'test_common(datatest=False)'
 ```
 
 Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks).
+
+## Triggering CSCS CI
+
+When a PR needs validation with CSCS CI, prefer the smallest useful subset.
+
+See `.github/workflows/mandatory_and_optional_test_reminder.yml` for the authoritative guidance. Key points:
+
+- Default development pipeline: `cscs-ci run default`.
+- Narrow it with variables when testing a fix, e.g.:
+  - `cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit`
+  - `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSIONS=model`
+- The `cscs/merge` pipeline runs automatically on the merge queue; do not trigger it manually. It runs as a dummy pipeline on PR pushes and runs no tests.
+- Some pipelines, especially those running on the normal slrum partition, can in the worst case take hours to schedule (when cluster is busy) and run (see SLURM_TIMELIMIT in the CSCS CI configs). Keep this in mind when waiting for jobs to finish. Test jobs may also need to populate GT4Py caches which can take long.
+- CSCS CI configs are in the ci/ subdirectory. The CI runs using GitLab runners and the configuration is the same as for regular GitLab pipelines.

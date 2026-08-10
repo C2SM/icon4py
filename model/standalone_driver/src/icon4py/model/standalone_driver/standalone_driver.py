@@ -19,10 +19,20 @@ from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import dimension as dims, model_backends, topography, type_alias as ta
+from icon4py.model.atmosphere.dycore.stencils import compute_airmass
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
+from icon4py.model.common import (
+    dimension as dims,
+    initial_condition,
+    model_backends,
+    model_options,
+    prescribed_tendencies,
+    time,
+    topography,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry_attributes as geom_attr,
@@ -35,7 +45,10 @@ from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    nonhydro_states,
     prognostic_state as prognostics,
+    static_fields,
+    tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
@@ -44,7 +57,6 @@ from icon4py.model.standalone_driver import (
     driver_io,
     driver_states,
     driver_utils,
-    initial_condition,
 )
 
 
@@ -59,12 +71,14 @@ class Icon4pyDriver:
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
         decomposition_info: decomposition_defs.DecompositionInfo,
-        static_field_factories: driver_states.StaticFieldFactories,
+        static_field_factories: static_fields.StaticFieldFactories,
         granules: driver_utils.Granules,
+        model_time_variables: driver_states.ModelTimeVariables,
         vertical_grid_config: v_grid.VerticalGridConfig,
         exchange: decomposition_defs.ExchangeRuntime,
         global_reductions: decomposition_defs.Reductions,
         io_monitor: common_io.IOMonitor | None = None,
+        tendencies: prescribed_tendencies.PrescribedTendencies | None = None,
     ):
         self.config = config
         self.io_monitor = io_monitor
@@ -74,12 +88,13 @@ class Icon4pyDriver:
         self.static_field_factories = static_field_factories
         self.granules = granules
         self.vertical_grid_config = vertical_grid_config
-        self.model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
+        self.model_time_variables = model_time_variables
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
         self.exchange = exchange
         self.global_reductions = global_reductions
+        self.tendencies = tendencies
 
         driver_utils.display_driver_setup_in_log_file(
             config=self.config.driver,
@@ -111,10 +126,38 @@ class Icon4pyDriver:
         """Reuses its scratch/output buffers across output steps (allocated once)."""
         return driver_io.DiagnosticsComputer(grid=self.grid, backend=self.backend)
 
+    @functools.cached_property
+    def _compute_airmass(self) -> Callable[..., None]:
+        """Airmass program (``rho * ddqz_z_full * deepatmo_t1mc``) with its static inputs bound.
+
+        ``deepatmo_t1mc`` (ICON's ``deepatmo_vol_mc``) is 1 in the shallow atmosphere, which
+        is the only mode the dycore supports; see the matching factors that tracer advection
+        gets in ``driver_utils.initialize_granules``.
+        """
+        return model_options.setup_program(
+            program=compute_airmass.compute_airmass,
+            backend=self.backend,
+            constant_args={
+                "ddqz_z_full_in": self.static_field_factories.metrics.get(metrics_attr.DDQZ_Z_FULL),
+                "deepatmo_t1mc_in": data_alloc.constant_field(
+                    self.grid, 1.0, dims.KDim, allocator=self._allocator
+                ),
+            },
+            horizontal_sizes={
+                "horizontal_start": gtx.int32(0),
+                "horizontal_end": gtx.int32(self.grid.num_cells),
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self.grid.num_levels),
+            },
+            offset_provider={},
+        )
+
     def _store_output(
         self,
         prognostic_state: prognostics.PrognosticState,
-        simulation_current_datetime: driver_config.AbsoluteTime,
+        simulation_current_datetime: time.AbsoluteTime,
     ) -> None:
         """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
 
@@ -138,12 +181,12 @@ class Icon4pyDriver:
     def time_integration(
         self,
         ds: driver_states.DriverStates,
-        do_prep_adv: bool,
     ) -> None:
         diffusion_diagnostic_state = ds.diffusion_diagnostic
         solve_nonhydro_diagnostic_state = ds.solve_nonhydro_diagnostic
         tracer_advection_diagnostic_state = ds.tracer_advection_diagnostic
         prognostic_states = ds.prognostics
+        tracers = ds.tracers
         prep_adv = ds.prep_advection_prognostic
         tracer_prep_adv = ds.prep_tracer_advection_prognostic
 
@@ -163,11 +206,16 @@ class Icon4pyDriver:
                     prognostic_states.current, self.model_time_variables.simulation_current_datetime
                 )
 
+            self._diffuse_before_time_loop(diffusion_diagnostic_state, prognostic_states.current)
+
             for time_step in range(self.model_time_variables.n_time_steps):
-                if self.config.driver.profiling_stats is not None:
-                    if not self.config.driver.profiling_stats.skip_first_timestep or time_step > 0:
+                if self.config.driver.profiling_options is not None:
+                    if (
+                        not self.config.driver.profiling_options.skip_first_timestep
+                        or time_step > 0
+                    ):
                         gtx_config.COLLECT_METRICS_LEVEL = (
-                            self.config.driver.profiling_stats.gt4py_metrics_level
+                            self.config.driver.profiling_options.gt4py_metrics_level
                         )
 
                 log.info(
@@ -178,13 +226,21 @@ class Icon4pyDriver:
 
                 self.model_time_variables.advance_simulation_datetime()
 
+                if self.tendencies is not None:
+                    assert solve_nonhydro_diagnostic_state is not None
+                    # the savepoints are stamped with the date of the end of their time step
+                    self.tendencies.update(
+                        diagnostic_state_nh=solve_nonhydro_diagnostic_state,
+                        at_datetime=self.model_time_variables.simulation_current_datetime,
+                    )
+
                 self._integrate_one_time_step(
                     diffusion_diagnostic_state=diffusion_diagnostic_state,
                     solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
                     tracer_advection_diagnostic_state=tracer_advection_diagnostic_state,
                     prognostic_states=prognostic_states,
+                    tracers=tracers,
                     prep_adv=prep_adv,
-                    do_prep_adv=do_prep_adv,
                     tracer_prep_adv=tracer_prep_adv,
                 )
                 device_utils.sync(self.backend)
@@ -208,23 +264,32 @@ class Icon4pyDriver:
 
         self.timer_collection.show_timer_report()
         if (
-            self.config.driver.profiling_stats is not None
-            and self.config.driver.profiling_stats.gt4py_metrics_level > gtx_metrics.DISABLED
+            self.config.driver.profiling_options is not None
+            and self.config.driver.profiling_options.gt4py_metrics_level > gtx_metrics.DISABLED
         ):
             print(gtx_metrics.dumps())
-            gtx_metrics.dump_json(self.config.driver.profiling_stats.gt4py_metrics_output_file)
+            gtx_metrics.dump_json(self.config.driver.profiling_options.gt4py_metrics_output_file)
 
     def _integrate_one_time_step(
         self,
         *,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro | None,
-        tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState | None,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
+        tracer_advection_diagnostic_state: tracer_advection_states.AdvectionDiagnosticState | None,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
+        tracers: common_utils.TimeStepPair[tracer_states.TracerState],
         prep_adv: dycore_states.PrepAdvection | None,
-        do_prep_adv: bool,
-        tracer_prep_adv: advection_states.AdvectionPrepAdvState | None,
+        tracer_prep_adv: tracer_advection_states.AdvectionPrepAdvState | None,
     ) -> None:
+        # Airmass (rho * dz) is tracer advection's density<->mixing-ratio conversion
+        # factor: computed from rho at the beginning of the time step and from the rho
+        # the dynamics leaves behind, as ICON does around its substep loop.
+        if tracer_advection_diagnostic_state is not None:
+            self._compute_airmass(
+                rho_in=prognostic_states.current.rho,
+                airmass_out=tracer_advection_diagnostic_state.airmass_now,
+            )
+
         if self.config.nonhydrostatic is not None:
             assert solve_nonhydro_diagnostic_state is not None
             assert prep_adv is not None
@@ -233,7 +298,18 @@ class Icon4pyDriver:
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
-                do_prep_adv,
+            )
+
+        if tracer_advection_diagnostic_state is not None:
+            # the dynamics leaves the updated rho in 'next'; without it rho is unchanged
+            rho_after_dynamics = (
+                prognostic_states.next.rho
+                if self.config.nonhydrostatic is not None
+                else prognostic_states.current.rho
+            )
+            self._compute_airmass(
+                rho_in=rho_after_dynamics,
+                airmass_out=tracer_advection_diagnostic_state.airmass_new,
             )
 
         if self.granules.diffusion is not None:
@@ -259,8 +335,8 @@ class Icon4pyDriver:
         if self.granules.tracer_advection is not None:
             assert tracer_advection_diagnostic_state is not None
             assert tracer_prep_adv is not None
-            for tracer_current in prognostic_states.current.tracer.active_fields():
-                tracer_next_field = getattr(prognostic_states.next.tracer, tracer_current.name)
+            for tracer_current in tracers.current.active_fields():
+                tracer_next_field = getattr(tracers.next, tracer_current.name)
                 assert tracer_next_field is not None, (
                     f"tracer '{tracer_current.name}' active in current state but missing in next state"
                 )
@@ -272,11 +348,22 @@ class Icon4pyDriver:
                     dtime=self.model_time_variables.dtime_in_seconds,
                 )
 
+        if self.granules.physics is not None:
+            self.granules.physics.run(
+                prognostic=prognostic_states.next,
+                tracers=tracers.next,
+                dtime=self.config.driver.dtime,
+                simulation_current_datetime=self.model_time_variables.simulation_current_datetime,
+            )
+
         prognostic_states.swap()
+        # tracers are advanced once per time step, so they swap here and not with every
+        # dynamics substep (nnow_rcf/nnew_rcf vs nnow/nnew in ICON)
+        tracers.swap()
 
     def _update_time_levels_for_velocity_tendencies(
         self,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: nonhydro_states.DiagnosticStateNonHydro,
         at_first_substep: bool,
         at_initial_timestep: bool,
     ) -> None:
@@ -315,12 +402,12 @@ class Icon4pyDriver:
 
     def _do_dyn_substepping(
         self,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        do_prep_adv: bool,
     ) -> None:
-        # TODO(OngChia): compute airmass for prognostic_state here
+        # updated once per time step, and not cached: it decreases with the elapsed time
+        second_order_divdamp_factor = self._second_order_divdamp_factor()
 
         timer_solve_nh = (
             self.timer_collection.timers[driver_states.DriverTimers.SOLVE_NH_FIRST_STEP.value]
@@ -342,11 +429,11 @@ class Icon4pyDriver:
                     diagnostic_state_nh=solve_nonhydro_diagnostic_state,
                     prognostic_states=prognostic_states,
                     prep_adv=prep_adv,
-                    second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
+                    second_order_divdamp_factor=second_order_divdamp_factor,
                     dtime=self.model_time_variables.substep_timestep,
                     ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
                     at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
-                    lprep_adv=do_prep_adv,
+                    lprep_adv=self.config.driver.do_prep_adv,
                     at_first_substep=self._is_first_substep(dyn_substep),
                     at_last_substep=self._is_last_substep(dyn_substep),
                 )
@@ -355,14 +442,12 @@ class Icon4pyDriver:
                 prognostic_states.swap()
         self._compute_total_mass_and_energy(prognostic_states.next)
 
-        # TODO(OngChia): compute airmass for prognostic_state here
-
     # watch_mode is true if step is <= 1 or cfl already near or exceeding threshold.
     # omit spinup feature and the option that if the model starts from IFS or COSMO data
     # horizontal cfl is not ported
     def _adjust_ndyn_substeps_var(
         self,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
     ) -> None:
         global_max_vertical_cfl = self.global_reductions.max(
             self._xp.asarray(
@@ -454,38 +539,73 @@ class Icon4pyDriver:
             0.0, self._allocator
         )
 
-    def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
-        if self.config.driver.apply_extra_second_order_divdamp:
-            assert self.config.nonhydrostatic is not None
-            fourth_order_divdamp_factor = self.config.nonhydrostatic.fourth_order_divdamp_factor
-            if (
-                self.model_time_variables.elapsed_time_in_seconds
-                <= driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
-            ):
-                return (
-                    driver_constants.ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP
-                    * fourth_order_divdamp_factor
-                )
-            elif (
-                self.model_time_variables.elapsed_time_in_seconds
-                <= driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP
-            ):
-                return (
-                    driver_constants.ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP
-                    * fourth_order_divdamp_factor
-                    * (
-                        self.model_time_variables.elapsed_time_in_seconds
-                        - driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
-                    )
-                    / (
-                        driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP
-                        - driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
-                    )
-                )
-            else:
-                return ta.wpfloat("0.0")
-        else:
+    def _diffuse_before_time_loop(
+        self,
+        diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState | None,
+        prognostic_state: prognostics.PrognosticState,
+    ) -> None:
+        """
+        Extra diffusion call before the first time step.
+
+        For real-data runs, perform an extra diffusion call before the first time step
+        because no other filtering of the interpolated velocity field is done. It is
+        called on the current state, with the model time step, and not for a restart.
+        """
+        if (
+            not self.config.driver.diffuse_before_time_loop
+            or not self.model_time_variables.is_first_step_in_simulation
+        ):
+            return
+
+        assert diffusion_diagnostic_state is not None
+        assert self.granules.diffusion is not None
+        log.info("running diffusion to filter the initial state, before the time loop")
+        self.granules.diffusion.run(
+            diffusion_diagnostic_state,
+            prognostic_state,
+            self.model_time_variables.dtime_in_seconds,
+            initial_run=True,
+        )
+
+    def _second_order_divdamp_factor(self) -> ta.wpfloat:
+        """
+        Second order divergence damping factor (divdamp_fac_o2) for the current time step.
+
+        mo_nh_stepping.f90, in the time loop, before integrate_nh:
+
+            IF (divdamp_order==24) THEN
+              elapsed_time_global = (REAL(jstep,wp)-0.5_wp)*dtime
+              IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase) THEN
+                CALL update_spinup_damping(elapsed_time_global)
+              ELSE
+                divdamp_fac_o2 = 0._wp
+              ENDIF
+            ENDIF
+        """
+        assert self.config.nonhydrostatic is not None
+        fourth_order_divdamp_factor = self.config.nonhydrostatic.fourth_order_divdamp_factor
+        if (
+            self.config.nonhydrostatic.divdamp_order
+            != dycore_states.DivergenceDampingOrder.COMBINED
+        ):
+            # divdamp_fac_o2 is only updated at runtime for divdamp_order = 24. Otherwise it
+            # keeps the value it is initialized with in mo_nonhydrostatic_nml.f90: divdamp_fac.
+            return fourth_order_divdamp_factor
+
+        elapsed_time_in_seconds = self.model_time_variables.elapsed_time_at_step_midpoint_in_seconds
+        spinup_cutoff = driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP + (
+            0.5 * self.model_time_variables.dtime_in_seconds
+        )
+        if (
+            not self.config.driver.apply_extra_second_order_divdamp
+            or elapsed_time_in_seconds > spinup_cutoff
+        ):
             return ta.wpfloat("0.0")
+
+        return driver_utils.spinup_second_order_divdamp_factor(
+            elapsed_time_in_seconds=elapsed_time_in_seconds,
+            fourth_order_divdamp_factor=fourth_order_divdamp_factor,
+        )
 
     def _compute_statistics(
         self, current_dyn_substep: int, prognostic_states: prognostics.PrognosticState
@@ -494,7 +614,7 @@ class Icon4pyDriver:
         Compute relevant statistics of prognostic variables at the beginning of every time step. The statistics include:
         absolute maximum value of rho, vn, and w, as well as the levels at which their maximum value is found.
         """
-        if self.config.driver.enable_statistics_output:
+        if self.config.driver.enable_statistics_logging:
             # TODO (Chia Rui): Do global max when multinode is ready
             rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
                 prognostic_states.rho,
@@ -523,7 +643,7 @@ class Icon4pyDriver:
     def _compute_total_mass_and_energy(
         self, prognostic_states: prognostics.PrognosticState
     ) -> None:
-        if self.config.driver.enable_statistics_output:
+        if self.config.driver.enable_statistics_logging:
             rho_ndarray = prognostic_states.rho.ndarray
             cell_area_ndarray = self.static_field_factories.geometry.get(
                 geom_attr.CELL_AREA
@@ -541,7 +661,7 @@ class Icon4pyDriver:
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
     ) -> None:
-        if self.config.driver.enable_statistics_output:
+        if self.config.driver.enable_statistics_logging:
             rho_ndarray = prognostic_states.rho.ndarray
             vn_ndarray = prognostic_states.vn.ndarray
             w_ndarray = prognostic_states.w.ndarray
@@ -601,11 +721,15 @@ def initialize_driver(
         vertical_grid=vertical_grid,
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
+        process_props=process_props,
         exchange=exchange,
         global_reductions=global_reductions,
+        geometry_config=config.geometry,
         interpolation_config=config.interpolation,
         metrics_config=config.metrics,
     )
+
+    model_time_variables = driver_states.ModelTimeVariables(config=config.driver)
 
     log.info("initializing granules")
     granules = driver_utils.initialize_granules(
@@ -613,6 +737,7 @@ def initialize_driver(
         grid=grid_manager.grid,
         vertical_grid=vertical_grid,
         static_field_factories=static_field_factories,
+        model_time_variables=model_time_variables,
         exchange=exchange,
         owner_mask=gtx.as_field(
             (dims.CellDim,),
@@ -645,9 +770,20 @@ def initialize_driver(
         decomposition_info=decomposition_info,
         static_field_factories=static_field_factories,
         granules=granules,
+        model_time_variables=model_time_variables,
         vertical_grid_config=config.vertical_grid,
         exchange=exchange,
         global_reductions=global_reductions,
+        tendencies=(
+            prescribed_tendencies.PrescribedTendencies(
+                config=config.prescribed_tendencies,
+                grid=grid_manager.grid,
+                backend=backend,
+                rank=exchange.my_rank(),
+            )
+            if config.prescribed_tendencies.data_path is not None
+            else None
+        ),
         io_monitor=io_monitor,
     )
 
@@ -671,7 +807,18 @@ def run_driver(
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
         allocator=allocator,
+    )
+    tracer_state_now = tracer_states.initialize_tracer_state(
+        grid=icon4py_driver.grid,
+        allocator=allocator,
         tracer_config=icon4py_driver.config.tracer_config,
+    )
+    solve_nonhydro_diagnostic_state = (
+        nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
+            grid=icon4py_driver.grid, allocator=allocator
+        )
+        if icon4py_driver.config.nonhydrostatic is not None
+        else None
     )
     initial_condition.create(
         config=icon4py_driver.config.initial_condition,
@@ -679,6 +826,8 @@ def run_driver(
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
+        tracer_state_now=tracer_state_now,
+        solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
@@ -693,13 +842,15 @@ def run_driver(
         exchange=icon4py_driver.exchange,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,
+        tracer_state_now=tracer_state_now,
         diagnostic_state=diagnostic_state,
         experiment_config=icon4py_driver.config,
+        solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,
         granules=icon4py_driver.granules,
         states=ds,
     )
-    icon4py_driver.time_integration(ds, do_prep_adv=False)
+    icon4py_driver.time_integration(ds)
     return ds, icon4py_driver

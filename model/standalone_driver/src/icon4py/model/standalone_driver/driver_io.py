@@ -26,7 +26,7 @@ from typing import Any, Final
 import gt4py.next as gtx
 import xarray as xr
 
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, time, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.diagnostic_calculations import pressure as pressure_diagnostics
 from icon4py.model.common.diagnostic_calculations.stencils import diagnose_temperature
@@ -154,8 +154,7 @@ class DiagnosticsComputer:
         self._pressure = _zero_full()
         # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
         # in-place buffer fills below would not type-check against the precise Field type.
-        self._pressure_ifc: Any = _zero_interface()
-        self._surface_pressure_k = _zero_interface()
+        self._pressure_on_cells_half_levels: Any = _zero_interface()
         self._surface_pressure: Any = data_alloc.zero_field(
             grid, dims.CellDim, dtype=ta.wpfloat, allocator=backend
         )
@@ -216,10 +215,9 @@ class DiagnosticsComputer:
             exner=prognostic_state.exner,
             virtual_temperature=self._virtual_temperature,
             ddqz_z_full=ddqz_z_full,
-            surface_pressure_k=self._surface_pressure_k,
             surface_pressure=self._surface_pressure,
             pressure=self._pressure,
-            pressure_ifc=self._pressure_ifc,
+            pressure_on_cells_half_levels=self._pressure_on_cells_half_levels,
         )
 
         return {
@@ -260,7 +258,7 @@ def create_io_monitor(
     vertical_grid: v_grid.VerticalGrid,
     dtime: datetime.timedelta,
     variables: list[str] | None = None,
-    output_interval: common_io.OutputInterval = common_io.NumTimeSteps(1),
+    output_interval: common_io.OutputInterval = time.NumTimeSteps(1),
     process_props: decomposition_defs.ProcessProperties | None = None,
 ) -> common_io.IOMonitor:
     """Build a single-node ``IOMonitor`` with one field group holding all output fields.

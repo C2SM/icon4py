@@ -86,7 +86,7 @@ def main(
         process_props=process_props,
     )
 
-    config = driver_config.read_config(config_file_path)
+    config = driver_config.read_experiment_config_from_fortran(config_file_path)
     driver_overrides: dict[str, object] = {"enable_output": enable_output}
     if output_path is not None:
         driver_overrides["output_path"] = output_path

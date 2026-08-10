@@ -9,7 +9,10 @@ import enum
 
 import gt4py.next as gtx
 
+from icon4py.model.common.config import config_io
 
+
+@config_io.register_enum
 class LiquidAutoConversionType(gtx.int32, enum.Enum):
     """
     Options for computing liquid auto conversion rate
@@ -21,6 +24,7 @@ class LiquidAutoConversionType(gtx.int32, enum.Enum):
     SEIFERT_BEHENG = 1
 
 
+@config_io.register_enum
 class SnowInterceptParameterization(gtx.int32, enum.Enum):
     """
     Options for deriving snow intercept parameter

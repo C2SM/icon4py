@@ -47,19 +47,19 @@ def diagnose_pressure_surface_to_top(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
-    surface_pressure_k: fa.CellKField[ta.wpfloat],
     surface_pressure: fa.CellField[ta.wpfloat],
     pressure: fa.CellKField[ta.wpfloat],
-    pressure_ifc: fa.CellKField[ta.wpfloat],
+    pressure_on_cells_half_levels: fa.CellKField[ta.wpfloat],
 ) -> None:
     """Diagnose the hydrostatic pressure into caller-provided buffers.
 
     Args:
         grid, backend: grid and gt4py backend.
         exner, virtual_temperature, ddqz_z_full: input cell-K fields.
-        surface_pressure_k, pressure_ifc: K-extended (``nlev+1``) work/output buffers.
         surface_pressure: cell field receiving the surface pressure.
         pressure: cell-K field receiving the full-level pressure.
+        pressure_on_cells_half_levels: K-extended (``nlev+1``) output buffer for
+            pressure on cell half-levels; also receives the diagnosed surface pressure.
     """
     num_levels = grid.num_levels
     cell_domain = h_grid.domain(dims.CellDim)
@@ -69,7 +69,7 @@ def diagnose_pressure_surface_to_top(
         exner=exner,
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,
-        surface_pressure=surface_pressure_k,
+        surface_pressure=pressure_on_cells_half_levels,
         horizontal_start=0,
         horizontal_end=horizontal_end,
         vertical_start=num_levels,
@@ -77,15 +77,15 @@ def diagnose_pressure_surface_to_top(
         offset_provider={},
     )
     # surface pressure lives at the bottom interface; extract it as a cell field
-    surface_pressure.ndarray[:] = surface_pressure_k.ndarray[:, num_levels]
-    pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
+    surface_pressure.ndarray[:] = pressure_on_cells_half_levels.ndarray[:, num_levels]
+    pressure_on_cells_half_levels.ndarray[:, -1] = surface_pressure.ndarray
 
     diagnose_pressure_stencil.diagnose_pressure.with_backend(backend)(
         ddqz_z_full=ddqz_z_full,
         virtual_temperature=virtual_temperature,
         surface_pressure=surface_pressure,
         pressure=pressure,
-        pressure_ifc=pressure_ifc,
+        pressure_ifc=pressure_on_cells_half_levels,
         horizontal_start=0,
         horizontal_end=horizontal_end,
         vertical_start=0,
@@ -108,16 +108,13 @@ def diagnose_pressure_surface_to_top_ndarray(
     Convenience wrapper around :func:`diagnose_pressure_surface_to_top` for one-shot callers
     (e.g. initial-condition setup) that do not keep their own buffers.
     """
-    surface_pressure_k = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator, dtype=ta.wpfloat
-    )
     surface_pressure = data_alloc.zero_field(
         grid, dims.CellDim, allocator=allocator, dtype=ta.wpfloat
     )
     pressure = data_alloc.zero_field(
         grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
-    pressure_ifc = data_alloc.zero_field(
+    pressure_on_cells_half_levels = data_alloc.zero_field(
         grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator, dtype=ta.wpfloat
     )
     diagnose_pressure_surface_to_top(
@@ -126,9 +123,8 @@ def diagnose_pressure_surface_to_top_ndarray(
         exner=exner,
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,
-        surface_pressure_k=surface_pressure_k,
         surface_pressure=surface_pressure,
         pressure=pressure,
-        pressure_ifc=pressure_ifc,
+        pressure_on_cells_half_levels=pressure_on_cells_half_levels,
     )
     return pressure.ndarray
