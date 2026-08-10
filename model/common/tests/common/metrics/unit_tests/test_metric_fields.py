@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
