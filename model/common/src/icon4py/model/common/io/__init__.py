@@ -57,8 +57,10 @@ Field groups are stored in the same file and share a common setting of
 - `nc_title` (optional): Title attribute of the generated files (netcdf and zarr).
 - `nc_comment` (optional): Comment attribute of the generated files (netcdf and zarr).
 
-As we have no general handling of configuration files in `ICON4Py` yet, the configuration needs to
-be instantiated as Python dataclasses for now. A valid configuration could look like this:
+The configuration is instantiated as Python dataclasses; `backend` and `mode` take enum
+members, their value strings are only converted at the config-file boundary
+(`common.config.config_io`, where the IO enums are registered). A valid configuration
+could look like this:
 
 ```python
 import datetime

@@ -7,8 +7,10 @@ the grid and model state, and runs the time integration. Which granules are
 active (diffusion, solve_nonhydro, tracer advection, microphysics) is determined
 by the provided configuration rather than being hardcoded.
 
-It supports both single-node and distributed (MPI) runs. IO output is currently
-single-node only and is therefore disabled for MPI runs.
+It supports both single-node and distributed (MPI) runs, including distributed
+output: in MPI runs the ranks write either through the root rank (`gather` mode)
+or each into its own block of a shared store (`distributed` mode, the default;
+see `icon4py.model.common.io`).
 
 ## Installation
 
@@ -30,6 +32,17 @@ icon4py-standalone-driver \
     --icon4py-backend gtfn_cpu \
     --output-path $ICON4PY_ROOT/output_path \
     --enable-output
+```
+
+A distributed (MPI) run with output only differs in the launcher:
+
+```bash
+mpirun -np 4 icon4py-standalone-driver \
+    --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
+    --config-file-path $CONFIG_FOLDER \
+    --icon4py-backend gtfn_cpu \
+    --output-path $ICON4PY_ROOT/output_path \
+    --enable-output --output-backend zarr --output-mode distributed
 ```
 
 ## Configuration directory
@@ -74,5 +87,11 @@ Of course you can write the necessary configuration files manually or start by s
 - `--print-distributed-debug-msg`: print debug logging messages from all MPI
   ranks (only effective when `--log-level debug` is set).
 - `--enable-output/--no-enable-output`: write prognostic and diagnostic fields
-  to output. Defaults to `--no-enable-output`. Disabled automatically in MPI
-  runs.
+  to output. Defaults to `--no-enable-output`. Works in single-node and MPI runs
+  alike (output is collective in MPI runs).
+- `--output-backend`: file format of the output, `zarr` (default) or `netcdf`.
+- `--output-mode`: how the ranks of an MPI run write the output: `distributed`
+  (default; every rank writes its own block of a shared store) or `gather`
+  (owned entries are collected and written by the root rank). Distributed
+  netCDF requires an MPI-parallel netCDF4 installation (checked at startup, see
+  `icon4py.model.common.io`); zarr is parallel with any installation.

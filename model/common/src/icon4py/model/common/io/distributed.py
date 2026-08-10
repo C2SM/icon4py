@@ -245,13 +245,17 @@ class GatherDistribution:
         for dim, dim_name in HORIZONTAL_DIM_NAMES.items():
             owned_global_index = _owned_global_index(self._decomposition_info, dim)
             entry_counts = mpi_decomposition.allgather_entry_counts(
-                process_props, owned_global_index.shape[0]
+                process_props, owned_global_index.shape[0], array_ns=np
             )
-            insert_index = mpi_decomposition.check_owned_indices_partition(
-                process_props, dim_name, owned_global_index, entry_counts
+            global_size = int(entry_counts.sum())
+            insert_index = mpi_decomposition.gather_entries(
+                process_props, owned_global_index, entry_counts=entry_counts
+            )
+            mpi_decomposition.check_global_index_partition(
+                process_props, dim_name, insert_index, global_size
             )
             self._entry_counts[dim_name] = entry_counts
-            self._global_size[dim_name] = int(entry_counts.sum())
+            self._global_size[dim_name] = global_size
             if insert_index is not None:
                 self._insert_index[dim_name] = insert_index
 
@@ -298,7 +302,7 @@ class RankBlockDistribution:
     At capture steps there is no data communication: ``prepare`` only strips halos
     (the copy this makes also detaches the output from the live model state).
     Construction gathers the owned global indices once to validate that the owner
-    masks partition the global grid (``mpi_decomposition.check_owned_indices_partition``)
+    masks partition the global grid (``mpi_decomposition.check_global_index_partition``)
     and converts the decomposition info to host buffers once
     (``DecompositionInfo.as_host``). The store's horizontal axes are padded to a
     uniform block size per rank; consumers recover the global order from the store's
@@ -329,13 +333,20 @@ class RankBlockDistribution:
             # ``RankBlock`` is frozen; keep the array it hands out immutable too
             owned_global_index.setflags(write=False)
             count = owned_global_index.shape[0]
-            entry_counts = mpi_decomposition.allgather_entry_counts(process_props, count)
-            mpi_decomposition.check_owned_indices_partition(
-                process_props, dim_name, owned_global_index, entry_counts
+            entry_counts = mpi_decomposition.allgather_entry_counts(
+                process_props, count, array_ns=np
+            )
+            global_size = int(entry_counts.sum())
+            # the gather serves only the partition check: rank-block output never
+            # reassembles the global field
+            gathered_index = mpi_decomposition.gather_entries(
+                process_props, owned_global_index, entry_counts=entry_counts
+            )
+            mpi_decomposition.check_global_index_partition(
+                process_props, dim_name, gathered_index, global_size
             )
             max_count = int(entry_counts.max())
             size = (max_count + block_alignment - 1) // block_alignment * block_alignment
-            global_size = int(entry_counts.sum())
             padded_size = size * process_props.comm_size
             if padded_size > global_size:
                 log.info(

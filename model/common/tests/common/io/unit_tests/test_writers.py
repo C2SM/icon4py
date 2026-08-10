@@ -17,6 +17,7 @@ import xarray as xr
 import zarr
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
 from icon4py.model.common.io import (
     cf_utils,
@@ -62,6 +63,8 @@ def initialized_writer(
         ),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
         horizontal_chunk_size=horizontal_chunk_size,
+        rank_blocks=None,
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     writer.initialize_dataset()
     return writer, grid
@@ -84,7 +87,7 @@ def test_initialize_writer_vertical_model_levels(test_path, random_name):
     assert vertical.units == "1"
     assert vertical.dimensions == (writers.MODEL_LEVEL,)
     assert vertical.long_name == "model full level index"
-    assert vertical.standard_name == cf_utils.LEVEL_STANDARD_NAME
+    assert vertical.standard_name == metadata.LEVEL_STANDARD_NAME
     assert vertical.datatype == np.int32
     assert len(vertical) == grid.num_levels
     assert np.all(vertical == np.arange(grid.num_levels))
@@ -204,6 +207,7 @@ def initialized_zarr_writer(
         rank_blocks=rank_blocks,
         horizontal_chunk_size=horizontal_chunk_size,
         horizontal_shard_size=horizontal_shard_size,
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     writer.initialize_dataset()
     return writer, store_path
@@ -281,6 +285,8 @@ def test_zarr_writer_refuses_to_overwrite(test_path: pathlib.Path, random_name: 
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
         ),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        rank_blocks=None,
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     with pytest.raises(FileExistsError):
         duplicate.initialize_dataset()
@@ -490,6 +496,7 @@ def test_zarr_writer_rejects_chunks_crossing_rank_blocks(
             global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
             rank_blocks=_single_rank_block(10),
             horizontal_chunk_size=4,
+            process_props=decomposition_defs.SingleNodeProcessProperties(),
         )
 
 
@@ -535,6 +542,7 @@ def initialized_netcdf_rank_block_writer(
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
         rank_blocks=rank_blocks,
         horizontal_chunk_size=horizontal_chunk_size,
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     writer.initialize_dataset()
     return writer, file_path
@@ -739,6 +747,7 @@ def test_netcdf_writer_rejects_chunks_crossing_rank_blocks(
             global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
             rank_blocks=_single_rank_block(10),
             horizontal_chunk_size=4,
+            process_props=decomposition_defs.SingleNodeProcessProperties(),
         )
 
 
@@ -874,6 +883,7 @@ def test_zarr_writer_rejects_shards_crossing_rank_blocks(
             rank_blocks=_single_rank_block(24),
             horizontal_chunk_size=8,
             horizontal_shard_size=16,
+            process_props=decomposition_defs.SingleNodeProcessProperties(),
         )
 
 
@@ -893,6 +903,8 @@ def test_zarr_writer_rejects_shard_without_dividing_chunk(
             global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
             horizontal_chunk_size=3,
             horizontal_shard_size=8,
+            rank_blocks=None,
+            process_props=decomposition_defs.SingleNodeProcessProperties(),
         )
 
 

@@ -125,6 +125,9 @@ class FieldGroupIOConfig(Config):
 
     """
 
+    #: Stem of the group's files: the rollover counter and the backend's extension are
+    #: appended (``<stem>_0001.zarr`` / ``.nc``, see ``generate_name``). An extension
+    #: belonging to a different backend than the group's is rejected.
     filename: str
     variables: list[str]
     #: Output schedule: either a number of model steps (``int``) or a simulation-time
@@ -132,12 +135,12 @@ class FieldGroupIOConfig(Config):
     #: Defaults to every step.
     output_interval: OutputInterval = time.NumTimeSteps(1)
     timesteps_per_file: int = 10
-    #: File format of the group's files; the matching value string is also accepted.
+    #: File format of the group's files. Value strings are converted at the
+    #: config-file boundary only (``common.config.config_io``).
     backend: OutputBackend = OutputBackend.ZARR
-    #: Write strategy of distributed runs (see ``OutputMode``); the matching value
-    #: string is also accepted. Distributed netCDF needs an MPI-parallel netCDF4
-    #: installation in multi-rank runs (checked when the writer is created, see
-    #: ``netcdf_writers.NETCDFWriter``).
+    #: Write strategy of distributed runs (see ``OutputMode``). Distributed netCDF
+    #: needs an MPI-parallel netCDF4 installation in multi-rank runs (checked when
+    #: the writer is created, see ``netcdf_writers.NETCDFWriter``).
     mode: OutputMode = OutputMode.DISTRIBUTED
     #: Entries per chunk along the horizontal (cell/edge/vertex) axes. Default (None):
     #: one chunk per rank block in distributed mode; otherwise the whole axis (zarr)
@@ -151,20 +154,18 @@ class FieldGroupIOConfig(Config):
     nc_comment: str = "ICON inspired code in Python and GT4Py"
 
     def __post_init__(self) -> None:
-        try:
-            object.__setattr__(self, "backend", OutputBackend(self.backend))
-        except ValueError as err:
+        if not isinstance(self.backend, OutputBackend):
             raise exceptions.InvalidConfigError(
-                f"Invalid output 'backend': {self.backend!r}; "
-                f"valid values are: {', '.join(b.value for b in OutputBackend)}."
-            ) from err
-        try:
-            object.__setattr__(self, "mode", OutputMode(self.mode))
-        except ValueError as err:
+                f"Invalid output 'backend': {self.backend!r}; must be an "
+                f"'OutputBackend' member (strings are converted at the config-file "
+                f"boundary only, see 'common.config.config_io')."
+            )
+        if not isinstance(self.mode, OutputMode):
             raise exceptions.InvalidConfigError(
-                f"Invalid output 'mode': {self.mode!r}; "
-                f"valid values are: {', '.join(m.value for m in OutputMode)}."
-            ) from err
+                f"Invalid output 'mode': {self.mode!r}; must be an 'OutputMode' "
+                f"member (strings are converted at the config-file boundary only, "
+                f"see 'common.config.config_io')."
+            )
         self.validate()
 
     @property
@@ -209,6 +210,18 @@ class FieldGroupIOConfig(Config):
             raise exceptions.InvalidConfigError(
                 f"Filename may not be an absolute path: {self.filename}."
             )
+        # the file extension is derived from the backend (``generate_name``); an
+        # extension of a *different* backend in the configured name signals a
+        # backend/filename mix-up (e.g. the backend changed but the filename did not)
+        for backend, suffix in FILE_SUFFIXES.items():
+            if backend is not self.backend and self.filename.endswith(suffix):
+                raise exceptions.InvalidConfigError(
+                    f"Invalid output 'filename': '{self.filename}' carries the "
+                    f"'{suffix}' extension of the '{backend.value}' backend, but the "
+                    f"group's backend is '{self.backend.value}' (files are named "
+                    f"'<stem>_0001{FILE_SUFFIXES[self.backend]}'). Drop or fix the "
+                    f"extension."
+                )
 
     def validate(self) -> None:
         # bool is a subclass of int, but is not a valid interval
@@ -278,8 +291,8 @@ class IOMonitor(monitor.Monitor):
         grid_file_name: pathlib.Path,
         grid_id: uuid.UUID,
         dtime: time.RelativeTime,
-        process_props: decomposition.ProcessProperties | None = None,
-        decomposition_info: decomposition.DecompositionInfo | None = None,
+        process_props: decomposition.ProcessProperties,
+        decomposition_info: decomposition.DecompositionInfo | None,
     ):
         self.config = config
         # ``grid_file_name`` is the source grid NetCDF, used solely to regenerate the UGRID
@@ -288,11 +301,7 @@ class IOMonitor(monitor.Monitor):
         # TODO(kotsaloscv): build the UGRID topology from ``Grid``/``GridGeometry`` so the
         # monitor no longer needs the source file path at all.
         self._grid_file = grid_file_name
-        self._process_props = (
-            process_props
-            if process_props is not None
-            else decomposition.SingleNodeProcessProperties()
-        )
+        self._process_props = process_props
         self._decomposition_info = decomposition_info
         self._horizontal_size = horizontal_size
         self._distributions: dict[tuple[OutputMode, int], distributed.OutputDistribution] = {}
@@ -456,7 +465,7 @@ class FieldGroupMonitor(monitor.Monitor):
         distribution: distributed.OutputDistribution,
         grid_id: uuid.UUID,
         dtime: time.RelativeTime,
-        process_props: decomposition.ProcessProperties | None = None,
+        process_props: decomposition.ProcessProperties,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
         calendar: str = cf_utils.DEFAULT_CALENDAR,
         output_path: pathlib.Path = pathlib.Path(__file__).parent,
@@ -465,11 +474,7 @@ class FieldGroupMonitor(monitor.Monitor):
         self._time_properties = writers.TimeProperties(time_units, calendar)
         self._vertical_size = vertical
         self._distribution = distribution
-        self._process_props = (
-            process_props
-            if process_props is not None
-            else decomposition.SingleNodeProcessProperties()
-        )
+        self._process_props = process_props
         # TODO(halungge): 'history' is actually the path to the binary in ICON, not the
         #   output path
         history = output_path.absolute().as_posix() + " " + dt.datetime.now().isoformat()

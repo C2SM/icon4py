@@ -262,8 +262,8 @@ def create_io_monitor(
     output_interval: common_io.OutputInterval = time.NumTimeSteps(1),
     output_backend: common_io.OutputBackend = common_io.OutputBackend.ZARR,
     output_mode: common_io.OutputMode = common_io.OutputMode.DISTRIBUTED,
-    process_props: decomposition_defs.ProcessProperties | None = None,
-    decomposition_info: decomposition_defs.DecompositionInfo | None = None,
+    process_props: decomposition_defs.ProcessProperties,
+    decomposition_info: decomposition_defs.DecompositionInfo | None,
 ) -> common_io.IOMonitor:
     """Build an ``IOMonitor`` with one field group holding all output fields.
 

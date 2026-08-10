@@ -21,6 +21,7 @@ import zarr
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils, distributed, writers
+from icon4py.model.common.states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -64,8 +65,8 @@ class ZarrWriter:
         horizontal: base.HorizontalGridSize,
         time_properties: writers.TimeProperties,
         global_attrs: writers.GlobalFileAttributes,
-        rank_blocks: dict[str, distributed.RankBlock] | None = None,
-        process_props: decomposition.ProcessProperties | None = None,
+        rank_blocks: dict[str, distributed.RankBlock] | None,
+        process_props: decomposition.ProcessProperties,
         horizontal_chunk_size: int | None = None,
         horizontal_shard_size: int | None = None,
     ):
@@ -91,11 +92,7 @@ class ZarrWriter:
             if alignment is not None:
                 label = "shard" if horizontal_shard_size is not None else "chunk"
                 distributed.check_chunks_align_with_blocks(rank_blocks, alignment, label)
-        self._process_props = (
-            process_props
-            if process_props is not None
-            else decomposition.SingleNodeProcessProperties()
-        )
+        self._process_props = process_props
         self._group: zarr.Group | None = None
         # The append count doubles as the time index of the next slice. It is kept
         # locally (identical on all ranks: in rank-block mode append is called once per
@@ -185,7 +182,7 @@ class ZarrWriter:
                 dimension_names=[writers.MODEL_LEVEL],
             )
             levels[:] = np.arange(self.num_levels, dtype=np.int32)
-            levels.attrs.update(writers.LEVEL_ATTRIBUTES)
+            levels.attrs.update(metadata.LEVEL_ATTRIBUTES)
 
             half_levels = group.create_array(
                 writers.MODEL_HALF_LEVEL,
@@ -194,7 +191,7 @@ class ZarrWriter:
                 dimension_names=[writers.MODEL_HALF_LEVEL],
             )
             half_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
-            half_levels.attrs.update(writers.HALF_LEVEL_ATTRIBUTES)
+            half_levels.attrs.update(metadata.HALF_LEVEL_ATTRIBUTES)
 
             heights = group.create_array(
                 "height",
@@ -203,7 +200,7 @@ class ZarrWriter:
                 dimension_names=[writers.MODEL_HALF_LEVEL],
             )
             heights[:] = data_alloc.as_numpy(self._vertical_params.interface_physical_height)
-            heights.attrs.update(writers.HEIGHT_ATTRIBUTES)
+            heights.attrs.update(metadata.HEIGHT_ATTRIBUTES)
 
             if self._rank_blocks is not None:
                 for dim_name, block in self._rank_blocks.items():

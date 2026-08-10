@@ -225,7 +225,7 @@ def test_create_io_monitor_builds_single_field_group(
             grid_file_name: pathlib.Path,
             grid_id: uuid.UUID,
             dtime: datetime.timedelta,
-            process_props: decomposition_defs.ProcessProperties | None,
+            process_props: decomposition_defs.ProcessProperties,
             decomposition_info: decomposition_defs.DecompositionInfo | None,
         ) -> None:
             recorded["config"] = config
@@ -240,6 +240,8 @@ def test_create_io_monitor_builds_single_field_group(
         grid=grid,
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
         dtime=datetime.timedelta(seconds=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
+        decomposition_info=None,
     )
 
     config = recorded["config"]
@@ -282,6 +284,8 @@ def test_create_io_monitor_has_no_separate_diagnostic_group(
         grid=grid,
         vertical_grid=None,  # type: ignore[arg-type] # not used by the recorder
         dtime=datetime.timedelta(seconds=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
+        decomposition_info=None,
     )
 
     groups = recorded["config"].field_groups

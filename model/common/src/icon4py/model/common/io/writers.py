@@ -24,9 +24,9 @@ from typing import Final, Protocol, Required, Self, TypedDict
 import numpy as np
 import xarray as xr
 
-import icon4py.model.common.states.metadata
 from icon4py.model.common.grid import base
 from icon4py.model.common.io import cf_utils
+from icon4py.model.common.states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -112,40 +112,19 @@ def horizontal_axis_sizes(horizontal: base.HorizontalGridSize) -> dict[str, int]
 
 # ------------------------------------------------------------------------------------
 # Coordinate attributes, shared between the writers so the file formats stay identical
+# (the static per-axis attribute dicts live in ``common.states.metadata``)
 # ------------------------------------------------------------------------------------
 
 
 def time_attributes(time_properties: TimeProperties) -> dict[str, str]:
     return {
         "units": time_properties.units,
-        "axis": cf_utils.COARDS_TIME_COORDINATE_NAME,
+        "axis": metadata.COARDS_TIME_COORDINATE_NAME,
         "calendar": time_properties.calendar,
         "standard_name": TIME,
         "long_name": TIME,
     }
 
-
-LEVEL_ATTRIBUTES: Final[dict[str, str]] = {
-    "units": "1",
-    "positive": "down",
-    "long_name": "model full level index",
-    "standard_name": cf_utils.LEVEL_STANDARD_NAME,
-}
-
-HALF_LEVEL_ATTRIBUTES: Final[dict[str, str]] = {
-    "units": "1",
-    "positive": "down",
-    "long_name": "model half level index",
-    "standard_name": icon4py.model.common.states.metadata.INTERFACE_LEVEL_STANDARD_NAME,
-}
-
-HEIGHT_ATTRIBUTES: Final[dict[str, str]] = {
-    "units": "m",
-    "positive": "up",
-    "axis": cf_utils.COARDS_VERTICAL_COORDINATE_NAME,
-    "long_name": "height value of half levels without topography",
-    "standard_name": icon4py.model.common.states.metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME,
-}
 
 #: CF/UGRID attributes carried from a field's DataArray onto its file variable.
 DATA_VARIABLE_ATTRIBUTES: Final[tuple[str, ...]] = (

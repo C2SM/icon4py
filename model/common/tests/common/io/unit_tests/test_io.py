@@ -21,6 +21,7 @@ import zarr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import distributed, netcdf_writers, ugrid, writers
 from icon4py.model.common.io.io import (
@@ -90,6 +91,8 @@ def test_io_monitor_create_output_path(test_path: pathlib.Path) -> None:
         grid_file_name=test_io_utils.grid_file,
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
         dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
+        decomposition_info=None,
     )
     assert monitor.path.exists()
     assert monitor.path.is_dir()
@@ -115,6 +118,8 @@ def test_io_monitor_write_ugrid_file(test_path: pathlib.Path) -> None:
         grid_file_name=test_io_utils.grid_file,
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
         dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
+        decomposition_info=None,
     )
     ugrid_file = monitor.path.iterdir().__next__().absolute()
     assert "ugrid.nc" in ugrid_file.name
@@ -165,6 +170,8 @@ def test_io_monitor_write_and_read_ugrid_dataset(
         grid_file_name=test_io_utils.grid_file,
         grid_id=uuid.UUID(grid.id),
         dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
+        decomposition_info=None,
     )
     current_time = dt.datetime.fromisoformat("2024-01-01T12:00:00")
     for _ in range(3):
@@ -216,6 +223,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
         grid_id=uuid.UUID(grid.id),
         output_path=test_path,
         dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     current_time = dt.datetime.fromisoformat("2024-01-01T12:00:00")
     for _ in range(4):
@@ -336,6 +344,7 @@ def create_field_group_monitor(
         grid_id=uuid.UUID(grid.id),
         output_path=test_path,
         dtime=dtime,
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     return config, group_monitor
 
@@ -383,7 +392,7 @@ def test_fieldgroup_config_validate_filename(
 
 def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path: pathlib.Path) -> None:
     config = FieldGroupIOConfig(
-        filename="vars/prognostics.nc",
+        filename="vars/prognostics",
         output_interval=time.NumTimeSteps(1),
         variables=["exner_function", "air_density"],
     )
@@ -396,6 +405,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path: pa
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
         output_path=test_path,
         dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     assert group_monitor.output_path == test_path.joinpath("vars")
     assert group_monitor.output_path.exists()
@@ -473,6 +483,7 @@ def test_fieldgroup_monitor_wires_rank_blocks_into_netcdf_writer(
         grid_id=uuid.UUID(grid.id),
         output_path=test_path,
         dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     group_monitor.store(
         test_io_utils.model_state(grid), dt.datetime.fromisoformat("2024-01-01T00:00:00")
@@ -490,7 +501,7 @@ def test_fieldgroup_monitor_wires_rank_blocks_into_netcdf_writer(
 
 def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path: pathlib.Path) -> None:
     config = FieldGroupIOConfig(
-        filename="vars/prognostics.nc",
+        filename="vars/prognostics",
         output_interval=time.NumTimeSteps(1),
         variables=["exner_function", "air_density", "foo"],
     )
@@ -503,6 +514,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path: pathlib.
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
         output_path=test_path,
         dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
         group_monitor.store(
@@ -551,23 +563,32 @@ def test_fieldgroup_monitor_interval_shorter_than_dtime_raises(test_path: pathli
         )
 
 
-def test_fieldgroup_config_accepts_backend_and_mode_value_strings() -> None:
-    config = FieldGroupIOConfig(
-        filename="a.nc",
-        variables=["air_density"],
-        backend="netcdf",  # type: ignore[arg-type]
-        mode="gather",  # type: ignore[arg-type]
-    )
-    assert config.backend is OutputBackend.NETCDF
-    assert config.mode is OutputMode.GATHER
+@pytest.mark.parametrize(
+    "filename, backend",
+    [("a.nc", OutputBackend.ZARR), ("a.zarr", OutputBackend.NETCDF)],
+)
+def test_fieldgroup_config_rejects_extension_of_other_backend(
+    filename: str, backend: OutputBackend
+) -> None:
+    """The file extension is derived from the backend; a foreign one is a mix-up."""
+    with pytest.raises(errors.InvalidConfigError, match="extension"):
+        FieldGroupIOConfig(filename=filename, variables=["air_density"], backend=backend)
 
 
-def test_fieldgroup_config_rejects_unknown_backend() -> None:
-    with pytest.raises(errors.InvalidConfigError, match="hdf5"):
+def test_fieldgroup_config_rejects_backend_and_mode_strings() -> None:
+    """The config takes enum members only; strings belong to the config-file boundary."""
+    with pytest.raises(errors.InvalidConfigError, match="OutputBackend"):
         FieldGroupIOConfig(
             filename="a.nc",
             variables=["air_density"],
-            backend="hdf5",  # type: ignore[arg-type]  # invalid on purpose
+            backend="netcdf",  # type: ignore[arg-type]  # invalid on purpose
+        )
+    with pytest.raises(errors.InvalidConfigError, match="OutputMode"):
+        FieldGroupIOConfig(
+            filename="a.nc",
+            variables=["air_density"],
+            backend=OutputBackend.NETCDF,
+            mode="gather",  # type: ignore[arg-type]  # invalid on purpose
         )
 
 
@@ -616,14 +637,12 @@ def test_fieldgroup_config_rejects_shard_not_multiple_of_chunk() -> None:
 
 
 def test_fieldgroup_config_block_alignment_is_shard_then_chunk_then_one() -> None:
-    default = FieldGroupIOConfig(filename="a.nc", variables=["air_density"])
+    default = FieldGroupIOConfig(filename="a", variables=["air_density"])
     assert default.block_alignment == 1
-    chunked = FieldGroupIOConfig(
-        filename="a.nc", variables=["air_density"], horizontal_chunk_size=4
-    )
+    chunked = FieldGroupIOConfig(filename="a", variables=["air_density"], horizontal_chunk_size=4)
     assert chunked.block_alignment == 4
     sharded = FieldGroupIOConfig(
-        filename="a.nc",
+        filename="a",
         variables=["air_density"],
         horizontal_chunk_size=4,
         horizontal_shard_size=8,
@@ -656,6 +675,7 @@ def test_fieldgroup_monitor_wires_chunking_into_zarr_writer(test_path: pathlib.P
         grid_id=uuid.UUID(grid.id),
         output_path=test_path,
         dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
     group_monitor.store(
         test_io_utils.model_state(grid), dt.datetime.fromisoformat("2024-01-01T00:00:00")
@@ -719,12 +739,14 @@ def test_io_monitor_ugrid_failure_raises_runtime_error(test_path: pathlib.Path) 
             grid_file_name=test_path / "does_not_exist.nc",
             grid_id=uuid.UUID(test_io_utils.simple_grid.id),
             dtime=time.RelativeTime(hours=1),
+            process_props=decomposition_defs.SingleNodeProcessProperties(),
+            decomposition_info=None,
         )
 
 
 def test_io_config_time_properties_reach_field_group_monitors(test_path: pathlib.Path) -> None:
     config = IOConfig(
-        field_groups=[FieldGroupIOConfig(filename="t.nc", variables=["air_density"])],
+        field_groups=[FieldGroupIOConfig(filename="t", variables=["air_density"])],
         output_path=str(test_path / "output"),
         time_units="hours since 2000-01-01",
         calendar="standard",
@@ -736,6 +758,8 @@ def test_io_config_time_properties_reach_field_group_monitors(test_path: pathlib
         grid_file_name=test_io_utils.grid_file,
         grid_id=uuid.UUID(test_io_utils.simple_grid.id),
         dtime=time.RelativeTime(hours=1),
+        process_props=decomposition_defs.SingleNodeProcessProperties(),
+        decomposition_info=None,
     )
     assert monitor._group_monitors[0]._time_properties == writers.TimeProperties(
         "hours since 2000-01-01", "standard"

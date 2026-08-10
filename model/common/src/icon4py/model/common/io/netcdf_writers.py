@@ -21,6 +21,7 @@ import xarray as xr
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils, distributed, writers
+from icon4py.model.common.states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -136,8 +137,8 @@ class NETCDFWriter:
         horizontal: base.HorizontalGridSize,
         time_properties: writers.TimeProperties,
         global_attrs: writers.GlobalFileAttributes,
-        rank_blocks: dict[str, distributed.RankBlock] | None = None,
-        process_props: decomposition.ProcessProperties | None = None,
+        rank_blocks: dict[str, distributed.RankBlock] | None,
+        process_props: decomposition.ProcessProperties,
         horizontal_chunk_size: int | None = None,
     ):
         self._file_name = str(file_name)
@@ -150,11 +151,7 @@ class NETCDFWriter:
         self._horizontal_chunk_size = horizontal_chunk_size
         if rank_blocks is not None and horizontal_chunk_size is not None:
             distributed.check_chunks_align_with_blocks(rank_blocks, horizontal_chunk_size, "chunk")
-        self._process_props = (
-            process_props
-            if process_props is not None
-            else decomposition.SingleNodeProcessProperties()
-        )
+        self._process_props = process_props
         self.dataset: nc.Dataset | None = None
         if self._is_distributed():
             reason = missing_parallel_support()
@@ -291,13 +288,13 @@ class NETCDFWriter:
             times.set_collective(True)
         # create vertical coordinates:
         levels = self.dataset.createVariable(writers.MODEL_LEVEL, np.int32, (writers.MODEL_LEVEL,))
-        levels.setncatts(writers.LEVEL_ATTRIBUTES)
+        levels.setncatts(metadata.LEVEL_ATTRIBUTES)
         half_levels = self.dataset.createVariable(
             writers.MODEL_HALF_LEVEL, np.int32, (writers.MODEL_HALF_LEVEL,)
         )
-        half_levels.setncatts(writers.HALF_LEVEL_ATTRIBUTES)
+        half_levels.setncatts(metadata.HALF_LEVEL_ATTRIBUTES)
         heights = self.dataset.createVariable("height", np.float64, (writers.MODEL_HALF_LEVEL,))
-        heights.setncatts(writers.HEIGHT_ATTRIBUTES)
+        heights.setncatts(metadata.HEIGHT_ATTRIBUTES)
         if self._is_root():
             # fixed-size coordinates, identical on all ranks: one writer suffices
             levels[:] = np.arange(self.num_levels, dtype=np.int32)
