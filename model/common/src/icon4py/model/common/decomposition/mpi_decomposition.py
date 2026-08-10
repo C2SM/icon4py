@@ -246,8 +246,12 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
     def _create_pattern(self, horizontal_dim: gtx.Dimension) -> DomainDescriptor:
         assert horizontal_dim.kind == gtx.DimensionKind.HORIZONTAL
 
-        global_halo_idx = self._decomposition_info.global_index(
-            horizontal_dim, decomp_defs.DecompositionInfo.EntryType.HALO
+        # as_numpy: the halo generator takes host indices, but the decomposition
+        # arrays live on device for GPU backends
+        global_halo_idx = data_alloc.as_numpy(
+            self._decomposition_info.global_index(
+                horizontal_dim, decomp_defs.DecompositionInfo.EntryType.HALO
+            )
         )
         halo_generator = HaloGenerator.from_gids(global_halo_idx)
         log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
