@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Unit tests for the pure numpy derivations in static_fields.py.
+"""Unit tests for the TMX static-field derivations (formulas in compute_weight_factors).
 
 These tests exercise individual analytic computations on small synthetic
 column data, requiring no serialized ICON savepoint or GT4Py backend.
@@ -30,6 +30,38 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import static_fields
 from icon4py.model.common import constants
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.metrics import compute_weight_factors as weight_factors
+
+
+# The derived-metric formulas moved to common/metrics/compute_weight_factors.py
+# (registered in the metrics factory); these adapters keep the property tests'
+# call shapes and exercise the exact production functions.
+def _cells_to_edges(cell_field, c_lin_e, e2c):
+    return weight_factors.compute_inv_ddqz_z_half_e(
+        e2c=e2c,
+        inv_ddqz_z_half=cell_field,
+        c_lin_e=c_lin_e,
+        exchange=decomposition.single_node_exchange,
+    )
+
+
+def _cells_to_verts(cell_field, cells_aw_verts, v2c):
+    return weight_factors.compute_inv_ddqz_z_half_v(
+        v2c=v2c,
+        inv_ddqz_z_half=cell_field,
+        cells_aw_verts=cells_aw_verts,
+        exchange=decomposition.single_node_exchange,
+    )
+
+
+def _wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c):
+    return weight_factors.compute_wgtfacq1_e(
+        e2c=e2c,
+        wgtfacq1_c=wgtfacq1_c,
+        c_lin_e=c_lin_e,
+        exchange=decomposition.single_node_exchange,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +113,7 @@ class TestWgtfacq1C:
         """Result must be (ncells, 3)."""
         ncells, nlev = 5, 90
         z_ifc = _make_z_ifc(ncells, nlev)
-        result = static_fields.compute_wgtfacq1_c(z_ifc)
+        result = weight_factors.compute_wgtfacq1_c(z_ifc)
         assert result.shape == (ncells, 3)
 
     def test_quadratic_extrapolation_property(self) -> None:
@@ -98,7 +130,7 @@ class TestWgtfacq1C:
         ncells, nlev = 6, 30
         z_ifc = _make_z_ifc_nonuniform(ncells, nlev)
 
-        weights = static_fields.compute_wgtfacq1_c(z_ifc)  # (ncells, 3): [w1, w2, w3]
+        weights = weight_factors.compute_wgtfacq1_c(z_ifc)  # (ncells, 3): [w1, w2, w3]
 
         # Sample points (signed distances from top interface) — same definitions
         # as in the Fortran source; negative because heights decrease downward.
@@ -129,7 +161,7 @@ class TestWgtfacq1C:
         """w1 + w2 + w3 == 1 by construction."""
         ncells, nlev = 8, 90
         z_ifc = _make_z_ifc(ncells, nlev)
-        result = static_fields.compute_wgtfacq1_c(z_ifc)
+        result = weight_factors.compute_wgtfacq1_c(z_ifc)
         np.testing.assert_allclose(result.sum(axis=1), 1.0, rtol=1.0e-14)
 
     def test_uniform_column_uses_linear_weights(self) -> None:
@@ -139,7 +171,7 @@ class TestWgtfacq1C:
         # Uniform spacing: dz = 200 m, 91 interfaces from 18000 m to 0 m
         nlev = 90
         z_ifc = _make_z_ifc(ncells, nlev)  # already linearly spaced
-        result = static_fields.compute_wgtfacq1_c(z_ifc)
+        result = weight_factors.compute_wgtfacq1_c(z_ifc)
         assert np.all(np.isfinite(result)), "NaN or Inf in result for uniform column"
         np.testing.assert_allclose(result.sum(axis=1), 1.0, rtol=1.0e-14)
 
@@ -147,7 +179,7 @@ class TestWgtfacq1C:
         """Sum-to-one holds for power-law stretched columns too."""
         ncells, nlev = 5, 40
         z_ifc = _make_z_ifc_nonuniform(ncells, nlev)
-        result = static_fields.compute_wgtfacq1_c(z_ifc)
+        result = weight_factors.compute_wgtfacq1_c(z_ifc)
         np.testing.assert_allclose(result.sum(axis=1), 1.0, rtol=1.0e-14)
 
 
@@ -162,14 +194,14 @@ class TestGeopot:
     def test_shape(self) -> None:
         ncells, nlev = 3, 90
         z_ifc = _make_z_ifc(ncells, nlev)
-        result = static_fields.compute_geopot_agl_ifc(z_ifc)
+        result = weight_factors.compute_geopot_agl_ifc(z_ifc)
         assert result.shape == z_ifc.shape
 
     def test_values(self) -> None:
         """geopot_agl_ifc == grav * (z_ifc - z_ifc[:, -1:])."""
         ncells, nlev = 5, 20
         z_ifc = _make_z_ifc(ncells, nlev)
-        result = static_fields.compute_geopot_agl_ifc(z_ifc)
+        result = weight_factors.compute_geopot_agl_ifc(z_ifc)
         expected = constants.GRAV * (z_ifc - z_ifc[:, -1:])
         np.testing.assert_allclose(result, expected, rtol=1.0e-14)
 
@@ -177,14 +209,14 @@ class TestGeopot:
         """The surface interface (last column) must be zero."""
         ncells, nlev = 4, 90
         z_ifc = _make_z_ifc(ncells, nlev)
-        result = static_fields.compute_geopot_agl_ifc(z_ifc)
+        result = weight_factors.compute_geopot_agl_ifc(z_ifc)
         np.testing.assert_allclose(result[:, -1], 0.0, atol=1.0e-10)
 
     def test_monotone_from_top(self) -> None:
         """Geopotential above ground must be non-negative and decreasing toward surface."""
         ncells, nlev = 2, 10
         z_ifc = _make_z_ifc(ncells, nlev)
-        result = static_fields.compute_geopot_agl_ifc(z_ifc)
+        result = weight_factors.compute_geopot_agl_ifc(z_ifc)
         assert np.all(result >= 0.0), "geopot_agl_ifc must be non-negative"
 
     def test_nonzero_terrain(self) -> None:
@@ -196,7 +228,7 @@ class TestGeopot:
                 [4500.0, 3500.0, 2500.0, 1500.0, 500.0],
             ]
         )  # shape (2, 5), ground at z_ifc[:, -1] = [1000, 500]
-        result = static_fields.compute_geopot_agl_ifc(z_ifc)
+        result = weight_factors.compute_geopot_agl_ifc(z_ifc)
         expected = constants.GRAV * (z_ifc - z_ifc[:, -1:])
         np.testing.assert_allclose(result, expected, rtol=1.0e-14)
         np.testing.assert_allclose(result[:, -1], 0.0, atol=1.0e-10)
@@ -213,7 +245,7 @@ class TestInvReciprocal:
     def test_values(self) -> None:
         """1 / arr gives the element-wise reciprocal."""
         arr = np.array([[2.0, 4.0, 8.0], [1.0, 0.5, 0.25]])
-        result = static_fields.compute_inv_reciprocal(arr)
+        result = weight_factors.compute_inv_ddqz_z_half(arr)
         expected = np.array([[0.5, 0.25, 0.125], [1.0, 2.0, 4.0]])
         np.testing.assert_allclose(result, expected, rtol=1.0e-14)
 
@@ -221,14 +253,14 @@ class TestInvReciprocal:
         """arr * compute_inv_reciprocal(arr) == 1 for positive arrays."""
         rng = np.random.default_rng(42)
         arr = rng.uniform(0.1, 1000.0, size=(10, 91))
-        inv_arr = static_fields.compute_inv_reciprocal(arr)
+        inv_arr = weight_factors.compute_inv_ddqz_z_half(arr)
         np.testing.assert_allclose(arr * inv_arr, 1.0, rtol=1.0e-13)
 
     def test_ddqz_z_half_reciprocal(self) -> None:
         """Specific case: inv_ddqz_z_half = 1 / ddqz_z_half (element-wise)."""
         ncells, nlev = 3, 5
         ddqz_z_half = np.linspace(50.0, 200.0, (nlev + 1) * ncells).reshape(ncells, nlev + 1)
-        inv_ddqz_z_half = static_fields.compute_inv_reciprocal(ddqz_z_half)
+        inv_ddqz_z_half = weight_factors.compute_inv_ddqz_z_half(ddqz_z_half)
         np.testing.assert_allclose(
             inv_ddqz_z_half,
             1.0 / ddqz_z_half,
@@ -264,7 +296,7 @@ class TestCellsToEdges:
         e2c = np.array([[0, 1], [1, 2], [2, 3]], dtype=int)  # (3, 2)
         c_lin_e = np.array([[0.4, 0.6], [0.5, 0.5], [0.3, 0.7]])  # (3, 2)
 
-        result = static_fields.cells_to_edges(cell_field, c_lin_e, e2c)
+        result = _cells_to_edges(cell_field, c_lin_e, e2c)
 
         # Hand-computed:
         # Edge 0: 0.4*[1,2] + 0.6*[3,4] = [0.4+1.8, 0.8+2.4] = [2.2, 3.2]
@@ -280,8 +312,8 @@ class TestCellsToEdges:
         e2c_backward = np.array([[1, 0]], dtype=int)
         c_lin_e = np.array([[0.3, 0.7]])  # asymmetric
 
-        fwd = static_fields.cells_to_edges(cell_field, c_lin_e, e2c_forward)
-        bwd = static_fields.cells_to_edges(cell_field, c_lin_e, e2c_backward)
+        fwd = _cells_to_edges(cell_field, c_lin_e, e2c_forward)
+        bwd = _cells_to_edges(cell_field, c_lin_e, e2c_backward)
 
         # expected 0.3*1 + 0.7*5 = 3.8 (fwd) and 0.3*5 + 0.7*1 = 2.2 (bwd)
         np.testing.assert_allclose(fwd, [[3.8]], rtol=1.0e-14)
@@ -293,7 +325,7 @@ class TestCellsToEdges:
         e2c = np.array([[0, -1]], dtype=int)  # boundary edge; skip neighbor at index -1
         c_lin_e = np.array([[1.0, 0.0]])  # weight 0 on skip neighbor
 
-        result = static_fields.cells_to_edges(cell_field, c_lin_e, e2c)
+        result = _cells_to_edges(cell_field, c_lin_e, e2c)
         # 1.0*cell[0] + 0.0*cell[-1] = 10.0  (cell[-1] = cell[1] = 20.0, but weight = 0)
         np.testing.assert_allclose(result, [[10.0]], rtol=1.0e-14)
 
@@ -303,7 +335,7 @@ class TestCellsToEdges:
         cell_field = np.ones((ncells, nlev))
         e2c = np.zeros((nedges, 2), dtype=int)
         c_lin_e = np.ones((nedges, 2)) * 0.5
-        result = static_fields.cells_to_edges(cell_field, c_lin_e, e2c)
+        result = _cells_to_edges(cell_field, c_lin_e, e2c)
         assert result.shape == (nedges, nlev)
 
 
@@ -335,7 +367,7 @@ class TestCellsToVerts:
             ]
         )  # (3, 3)
 
-        result = static_fields.cells_to_verts(cell_field, cells_aw_verts, v2c)
+        result = _cells_to_verts(cell_field, cells_aw_verts, v2c)
 
         # Hand-computed:
         # Vertex 0: 1/3*[1,2] + 1/3*[3,4] + 1/3*[5,6] = [3.0, 4.0]
@@ -351,8 +383,8 @@ class TestCellsToVerts:
         v2c_backward = np.array([[1, 0]], dtype=int)
         cells_aw_verts = np.array([[0.25, 0.75]])  # asymmetric
 
-        fwd = static_fields.cells_to_verts(cell_field, cells_aw_verts, v2c_forward)
-        bwd = static_fields.cells_to_verts(cell_field, cells_aw_verts, v2c_backward)
+        fwd = _cells_to_verts(cell_field, cells_aw_verts, v2c_forward)
+        bwd = _cells_to_verts(cell_field, cells_aw_verts, v2c_backward)
 
         # expected 0.25*2 + 0.75*8 = 6.5 (fwd) and 0.25*8 + 0.75*2 = 3.5 (bwd)
         np.testing.assert_allclose(fwd, [[6.5]], rtol=1.0e-14)
@@ -364,7 +396,7 @@ class TestCellsToVerts:
         cell_field = np.ones((ncells, nlev))
         v2c = np.zeros((nverts, v2c_size), dtype=int)
         cells_aw_verts = np.ones((nverts, v2c_size)) / v2c_size
-        result = static_fields.cells_to_verts(cell_field, cells_aw_verts, v2c)
+        result = _cells_to_verts(cell_field, cells_aw_verts, v2c)
         assert result.shape == (nverts, nlev)
 
 
@@ -389,7 +421,7 @@ class TestWgtfacq1E:
         e2c = np.array([[0, 1], [1, 2]], dtype=int)  # (2, 2)
         c_lin_e = np.array([[0.4, 0.6], [0.7, 0.3]])  # (2, 2)
 
-        result = static_fields.compute_wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c)
+        result = _wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c)
 
         # Edge 0: 0.4*[0.6,0.3,0.1] + 0.6*[0.5,0.3,0.2]
         #       = [0.24+0.30, 0.12+0.18, 0.04+0.12] = [0.54, 0.30, 0.16]
@@ -405,8 +437,8 @@ class TestWgtfacq1E:
         e2c_backward = np.array([[1, 0]], dtype=int)
         c_lin_e = np.array([[0.3, 0.7]])
 
-        fwd = static_fields.compute_wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c_forward)
-        bwd = static_fields.compute_wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c_backward)
+        fwd = _wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c_forward)
+        bwd = _wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c_backward)
 
         # expected 0.3*[1,0,0] + 0.7*[0,0,1] = [0.3, 0.0, 0.7] (fwd)
         # and 0.3*[0,0,1] + 0.7*[1,0,0] = [0.7, 0.0, 0.3] (bwd)
@@ -419,7 +451,7 @@ class TestWgtfacq1E:
         wgtfacq1_c = np.ones((ncells, 3))
         e2c = np.zeros((nedges, 2), dtype=int)
         c_lin_e = np.ones((nedges, 2)) * 0.5
-        result = static_fields.compute_wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c)
+        result = _wgtfacq1_e(wgtfacq1_c, c_lin_e, e2c)
         assert result.shape == (nedges, 3)
 
 

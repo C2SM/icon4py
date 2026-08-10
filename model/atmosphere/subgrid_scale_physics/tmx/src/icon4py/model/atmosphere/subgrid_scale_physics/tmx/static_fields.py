@@ -8,8 +8,10 @@
 
 """Build TmxMetricState and TmxInterpolationState from field-factory sources.
 
-Each scalar derivation is exposed as a pure numpy function (array in, array
-out) so it can be unit-tested without a real grid or field factory.
+The derived metric fields (inv_ddqz_z_half*, geopot_agl_ifc, wgtfacq1_*) are
+computed and cached by the metrics factory (numpy formulas in
+``common/metrics/compute_weight_factors.py``); this module only fetches and
+assembles.
 
 Convention for wgtfacq coefficient order
 -----------------------------------------
@@ -27,9 +29,9 @@ The metrics factory stores bottom-extrapolation coefficients in *DSL order*
 The conversion between the two is a column reversal (``[:, ::-1]``),
 mirroring ``flip_back`` in the integration-test utilities.
 
-Top-boundary coefficients (``wgtfacq1_c``, ``wgtfacq1_e``) are always built
-in Fortran coefficient order (k=0 → w1 for the topmost full level = level 0).
-They are NOT available from the metrics factory and must be derived here.
+Top-boundary coefficients (``wgtfacq1_c``, ``wgtfacq1_e``) are stored by the
+metrics factory in Fortran coefficient order already (k=0 → w1 for the topmost
+full level = level 0); no conversion is needed for them.
 """
 
 from __future__ import annotations
@@ -40,7 +42,7 @@ import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
-from icon4py.model.common import constants, dimension as dims, model_backends
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
@@ -51,113 +53,6 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.common.states import factory as states_factory
-
-
-# ---------------------------------------------------------------------------
-# Pure numpy derivations (individually testable)
-# ---------------------------------------------------------------------------
-
-
-def compute_inv_reciprocal(arr: np.ndarray) -> np.ndarray:
-    """Return element-wise 1/arr (generic reciprocal helper)."""
-    return 1.0 / arr
-
-
-def compute_geopot_agl_ifc(z_ifc: np.ndarray) -> np.ndarray:
-    """Geopotential above ground level at cell-center interface levels.
-
-    Args:
-        z_ifc: geometric height at cell interface levels, shape (ncells, nlev+1).
-               The last column (index nlev) is the ground (z=surface height).
-
-    Returns:
-        grav * (z_ifc - z_ifc[:, -1:]), shape (ncells, nlev+1) [m²/s²].
-    """
-    return constants.GRAV * (z_ifc - z_ifc[:, -1:])
-
-
-def compute_wgtfacq1_c(z_ifc: np.ndarray) -> np.ndarray:
-    """Quadratic extrapolation coefficients to the top interface level (cells).
-
-    Implements mo_vertical_grid.f90:953-967 (0-based numpy indexing).
-    The formula uses the three topmost interface heights z_ifc[:, 0..3].
-
-    Returns:
-        Array of shape (ncells, 3) in *Fortran coefficient order*:
-        col 0 = w1 (multiplies full level 0, the topmost),
-        col 1 = w2 (multiplies full level 1),
-        col 2 = w3 (multiplies full level 2).
-    """
-    z1 = 0.5 * (z_ifc[:, 1] - z_ifc[:, 0])
-    z2 = 0.5 * (z_ifc[:, 1] + z_ifc[:, 2]) - z_ifc[:, 0]
-    z3 = 0.5 * (z_ifc[:, 2] + z_ifc[:, 3]) - z_ifc[:, 0]
-    w3 = z1 * z2 / ((z2 - z3) * (z1 - z3))
-    w2 = (z1 - w3 * (z1 - z3)) / (z1 - z2)
-    w1 = 1.0 - (w2 + w3)
-    return np.stack([w1, w2, w3], axis=1)  # (ncells, 3), Fortran order
-
-
-def compute_wgtfacq1_e(
-    wgtfacq1_c: np.ndarray,
-    c_lin_e: np.ndarray,
-    e2c: np.ndarray,
-) -> np.ndarray:
-    """Interpolate top-boundary quadratic coefficients from cells to edges.
-
-    Mirrors ``compute_wgtfacq_e_dsl`` (mo_vertical_grid.f90:989-1014)
-    for the top-boundary block (z_aux_c[:, 4:6, :] in Fortran 1-indexed).
-
-    Args:
-        wgtfacq1_c: (ncells, 3) in Fortran coefficient order (see module doc).
-        c_lin_e:    (nedges, 2) linear interpolation weights cell→edge.
-        e2c:        (nedges, 2) E2C connectivity table (skip values = -1).
-
-    Returns:
-        (nedges, 3) in Fortran coefficient order.
-
-    Note: skip-value neighbors (e2c == -1) have zero c_lin_e weight in the
-    standard ICON interpolation setup, so the corresponding row of
-    ``wgtfacq1_c[-1]`` is multiplied by 0 and does not affect the result.
-    """
-    # gathering wgtfacq1_c over e2c gives shape (nedges, 2, 3); weighting by c_lin_e
-    # and summing over the local dimension reduces it to (nedges, 3)
-    return np.einsum("ej,ejk->ek", c_lin_e, wgtfacq1_c[e2c])
-
-
-def cells_to_edges(
-    cell_field: np.ndarray,
-    c_lin_e: np.ndarray,
-    e2c: np.ndarray,
-) -> np.ndarray:
-    """Linearly interpolate a (ncells, nlev) cell field to (nedges, nlev).
-
-    Args:
-        cell_field: (ncells, nlev_or_nlev+1)
-        c_lin_e:    (nedges, 2)
-        e2c:        (nedges, 2) connectivity (skip values = -1, weight = 0)
-
-    Returns:
-        (nedges, nlev_or_nlev+1)
-    """
-    return np.einsum("ej,ejk->ek", c_lin_e, cell_field[e2c])
-
-
-def cells_to_verts(
-    cell_field: np.ndarray,
-    cells_aw_verts: np.ndarray,
-    v2c: np.ndarray,
-) -> np.ndarray:
-    """Area-weighted interpolation of a (ncells, nlev) cell field to (nverts, nlev).
-
-    Args:
-        cell_field:     (ncells, nlev_or_nlev+1)
-        cells_aw_verts: (nverts, v2c_size)  area-weighting coefficients
-        v2c:            (nverts, v2c_size) connectivity (skip values = -1, weight = 0)
-
-    Returns:
-        (nverts, nlev_or_nlev+1)
-    """
-    return np.einsum("vj,vjk->vk", cells_aw_verts, cell_field[v2c])
 
 
 def dsl_to_fortran_order(arr: np.ndarray) -> np.ndarray:
@@ -184,9 +79,9 @@ def build_tmx_static_states(
 ) -> tuple[tmx_states.TmxMetricState, tmx_states.TmxInterpolationState]:
     """Construct TmxMetricState and TmxInterpolationState from field factories.
 
-    All numpy derivations (inv_ddqz_z_half*, geopot_agl_ifc, wgtfacq1_*) are
-    performed once at init time; the results are wrapped as GT4Py fields with
-    ``gtx.as_field(..., allocator=backend)``.
+    Everything is fetched from the factory sources (derived metric fields are
+    registered in the metrics factory); the only local work is the wgtfacq
+    DSL→Fortran column reorder.
 
     Args:
         grid:                  The icon grid (used for E2C / V2C connectivities).
@@ -208,7 +103,6 @@ def build_tmx_static_states(
     ddqz_z_full = metrics_source.get(metrics_attributes.DDQZ_Z_FULL)
     inv_ddqz_z_full = metrics_source.get(metrics_attributes.INV_DDQZ_Z_FULL)
     ddqz_z_half = metrics_source.get(metrics_attributes.DDQZ_Z_HALF)
-    ddqz_z_full_e = metrics_source.get(metrics_attributes.DDQZ_Z_FULL_E)
     wgtfac_c = metrics_source.get(metrics_attributes.WGTFAC_C)
     wgtfac_e = metrics_source.get(metrics_attributes.WGTFAC_E)
     z_mc = metrics_source.get(metrics_attributes.Z_MC)
@@ -233,50 +127,17 @@ def build_tmx_static_states(
     edge_cell_length = geometry_source.get(geometry_attributes.EDGE_CELL_DISTANCE)
 
     # ------------------------------------------------------------------
-    # 2. Get connectivity tables (numpy) for interpolation derivations
+    # 2. Derived metric fields — computed and cached by the metrics factory
+    #    (registered in metrics_factory.py; numpy formulas in
+    #    common/metrics/compute_weight_factors.py)
     # ------------------------------------------------------------------
-    e2c_arr = grid.get_connectivity(dims.E2C.value).ndarray  # (nedges, 2)
-    v2c_arr = grid.get_connectivity(dims.V2C.value).ndarray  # (nverts, v2c_size)
-
-    c_lin_e_arr = c_lin_e.asnumpy()  # (nedges, 2)
-    cells_aw_verts_arr = cells_aw_verts.asnumpy()  # (nverts, v2c_size)
-
-    # ------------------------------------------------------------------
-    # 3. Derived metric fields
-    # ------------------------------------------------------------------
-
-    # --- 3a. inv_ddqz_z_half ---
-    inv_ddqz_z_half_arr = compute_inv_reciprocal(ddqz_z_half.asnumpy())
-    inv_ddqz_z_half = gtx.as_field(
-        (dims.CellDim, dims.KDim), inv_ddqz_z_half_arr, allocator=allocator
-    )
-
-    # --- 3b. inv_ddqz_z_full_e ---
-    inv_ddqz_z_full_e_arr = compute_inv_reciprocal(ddqz_z_full_e.asnumpy())
-    inv_ddqz_z_full_e = gtx.as_field(
-        (dims.EdgeDim, dims.KDim), inv_ddqz_z_full_e_arr, allocator=allocator
-    )
-
-    # --- 3c. inv_ddqz_z_half_e  (cells→edges, E2C, c_lin_e) ---
-    # Note: skip-value E2C entries (e2c=-1) contribute 0 because c_lin_e
-    # sets coefficient 0 for the missing neighbor at lateral boundaries.
-    inv_ddqz_z_half_e_arr = cells_to_edges(inv_ddqz_z_half_arr, c_lin_e_arr, e2c_arr)
-    inv_ddqz_z_half_e = gtx.as_field(
-        (dims.EdgeDim, dims.KDim), inv_ddqz_z_half_e_arr, allocator=allocator
-    )
-
-    # --- 3d. inv_ddqz_z_half_v  (cells→vertices, V2C, cells_aw_verts) ---
-    inv_ddqz_z_half_v_arr = cells_to_verts(inv_ddqz_z_half_arr, cells_aw_verts_arr, v2c_arr)
-    inv_ddqz_z_half_v = gtx.as_field(
-        (dims.VertexDim, dims.KDim), inv_ddqz_z_half_v_arr, allocator=allocator
-    )
-
-    # --- 3e. geopot_agl_ifc ---
-    z_ifc_arr = z_ifc.asnumpy()
-    geopot_agl_ifc_arr = compute_geopot_agl_ifc(z_ifc_arr)
-    geopot_agl_ifc = gtx.as_field(
-        (dims.CellDim, dims.KDim), geopot_agl_ifc_arr, allocator=allocator
-    )
+    inv_ddqz_z_half = metrics_source.get(metrics_attributes.INV_DDQZ_Z_HALF)
+    inv_ddqz_z_full_e = metrics_source.get(metrics_attributes.INV_DDQZ_Z_FULL_E)
+    inv_ddqz_z_half_e = metrics_source.get(metrics_attributes.INV_DDQZ_Z_HALF_E)
+    inv_ddqz_z_half_v = metrics_source.get(metrics_attributes.INV_DDQZ_Z_HALF_V)
+    geopot_agl_ifc = metrics_source.get(metrics_attributes.GEOPOT_AGL_IFC)
+    wgtfacq1_c = metrics_source.get(metrics_attributes.WGTFACQ1_C)
+    wgtfacq1_e = metrics_source.get(metrics_attributes.WGTFACQ1_E)
 
     # --- 3f. wgtfacq_c/wgtfacq_e: DSL → Fortran order ---
     wgtfacq_c = gtx.as_field(
@@ -289,14 +150,6 @@ def build_tmx_static_states(
         dsl_to_fortran_order(wgtfacq_e_dsl_arr),
         allocator=allocator,
     )
-
-    # --- 3g. wgtfacq1_c (top-boundary, derived from z_ifc) ---
-    wgtfacq1_c_arr = compute_wgtfacq1_c(z_ifc_arr)  # (ncells, 3) Fortran order
-    wgtfacq1_c = gtx.as_field((dims.CellDim, dims.KDim), wgtfacq1_c_arr, allocator=allocator)
-
-    # --- 3h. wgtfacq1_e (cell→edge interpolation of wgtfacq1_c) ---
-    wgtfacq1_e_arr = compute_wgtfacq1_e(wgtfacq1_c_arr, c_lin_e_arr, e2c_arr)
-    wgtfacq1_e = gtx.as_field((dims.EdgeDim, dims.KDim), wgtfacq1_e_arr, allocator=allocator)
 
     # ------------------------------------------------------------------
     # 4. Assemble output states
