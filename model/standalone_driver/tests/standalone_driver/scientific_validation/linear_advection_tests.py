@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pathlib
+from typing import Final
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -24,15 +25,44 @@ from icon4py.model.common.initial_condition.analytical import (
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
-from icon4py.model.testing import config as test_config, definitions as test_defs, plot_utils
+from icon4py.model.testing import config as test_config, plot_utils, torus_grid_generator
 
 from ..fixtures import *  # noqa: F403
 
 
-_FIRST_ORDER = 1.0
-_FIRST_ORDER_TOL = 0.5
-_ZERO_ORDER = 0.0
-_ZERO_ORDER_TOL = 0.5
+_FIRST_ORDER: Final = 1.0
+_SECOND_ORDER: Final = 2.0
+_ORDER_TOL: Final = 0.5
+
+# 12 rows by 10 columns of 100 m edges: domain_length = 1000 m and
+# domain_height = 12 * 100 * sqrt(3)/2 = 1039.2304845413264 m. Refining multiplies the row and
+# column counts and divides the edge length, so every level of the family discretises the same
+# continuous problem. Only a power of two keeps both extents bit-identical, a factor of 3 or 5
+# perturbs them in the last ulp. The downloaded TORUS_1000X1000_* grids did not have that
+# property at all: their domain_height was fitted to the requested extent and therefore varied
+# with the resolution.
+_BASE_TORUS_ROWS: Final = 12
+_BASE_TORUS_COLS: Final = 10
+_BASE_TORUS_EDGE_LENGTH: Final = 100.0
+_REFINEMENT_FACTORS: Final = tuple(2**exponent for exponent in range(4))
+
+
+def _order_range(order: float) -> tuple[float, float]:
+    return (order - _ORDER_TOL, order + _ORDER_TOL)
+
+
+def _generate_torus_grid(*, refinement_factor: int, out_dir: pathlib.Path) -> pathlib.Path:
+    """Write the base torus grid refined by 'refinement_factor', see '_REFINEMENT_FACTORS'."""
+    n_rows = _BASE_TORUS_ROWS * refinement_factor
+    n_cols = _BASE_TORUS_COLS * refinement_factor
+    edge_length = _BASE_TORUS_EDGE_LENGTH / refinement_factor
+    return torus_grid_generator.generate_torus_grid(
+        n_rows=n_rows,
+        n_cols=n_cols,
+        edge_length=edge_length,
+        # the stem is the label of the per-grid plots
+        out_file=out_dir / f"torus_{n_rows}x{n_cols}_res{edge_length:g}m.nc",
+    )
 
 
 def _compute_relative_errors(
@@ -51,42 +81,33 @@ def _compute_relative_errors(
     return error_l1, error_linf
 
 
-@pytest.mark.datatest
+# The scheme of 'experiment_configs/linear_horizontal_advection.yaml' is second order
+# ('linear_2nd_order'), and the one-dimensional profile attains it in both norms on the generated
+# grid family. The two-dimensional profile does not, and the reason is the initial condition
+# rather than the scheme: '_construct_idealized_tracer' evaluates the Gaussian on the minimum
+# image separation, so the profile is only C0 on the torus and has a slope kink on the half
+# domain line. GAUSSIAN_2D is wide enough to still be at 6.6% of its peak there, against 1.5e-4
+# for GAUSSIAN_1D_X, and the kink radiates a dispersive wake that stalls the maximum norm and
+# drags L1 down to the measured 1.7. Summing the Gaussian over its periodic images instead
+# restores second order in both norms; until that lands, the L1 band below is thin by ~0.2 on
+# its lower side. The limiter is not involved: at CFL 0.2 its multiplicative factor is 1.
 @pytest.mark.level("validation")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_case, tracer_profile, grid_description, l1_acceptable_range, linf_acceptable_range, enable_plot",
+    "experiment_case, tracer_profile, l1_acceptable_range, linf_acceptable_range, enable_plot",
     [
         (
             "linear_horizontal_advection",
             linear_horizontal_advection.TracerProfile.GAUSSIAN_2D,
-            (
-                test_defs.Grids.TORUS_1000X1000_100M,
-                test_defs.Grids.TORUS_1000X1000_50M,
-                test_defs.Grids.TORUS_1000X1000_25M,
-                test_defs.Grids.TORUS_1000X1000_12M,
-                # test_defs.Grids.TORUS_1000X1000_6M,
-                # test_defs.Grids.TORUS_1000X1000_3M,
-                # test_defs.Grids.TORUS_1000X1000_1M,
-            ),
-            [_FIRST_ORDER - _FIRST_ORDER_TOL, _FIRST_ORDER + _FIRST_ORDER_TOL],
-            [_FIRST_ORDER - _FIRST_ORDER_TOL, _FIRST_ORDER + _FIRST_ORDER_TOL],
+            _order_range(_SECOND_ORDER),
+            _order_range(_FIRST_ORDER),
             True,
         ),
         (
             "linear_horizontal_advection",
             linear_horizontal_advection.TracerProfile.GAUSSIAN_1D_X,
-            (
-                test_defs.Grids.TORUS_1000X1000_100M,
-                test_defs.Grids.TORUS_1000X1000_50M,
-                test_defs.Grids.TORUS_1000X1000_25M,
-                test_defs.Grids.TORUS_1000X1000_12M,
-                # test_defs.Grids.TORUS_1000X1000_6M,
-                # test_defs.Grids.TORUS_1000X1000_3M,
-                # test_defs.Grids.TORUS_1000X1000_1M,
-            ),
-            [_FIRST_ORDER - _FIRST_ORDER_TOL, _FIRST_ORDER + _FIRST_ORDER_TOL],
-            [_ZERO_ORDER - _ZERO_ORDER_TOL, _ZERO_ORDER + _ZERO_ORDER_TOL],
+            _order_range(_SECOND_ORDER),
+            _order_range(_SECOND_ORDER),
             True,
         ),
     ],
@@ -95,7 +116,6 @@ def test_horizontal_advection_convergence(
     *,
     experiment_case: str,
     tracer_profile: linear_horizontal_advection.TracerProfile,
-    grid_description: tuple[test_defs.GridDescription, ...],
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
     enable_plot: bool,
@@ -105,16 +125,13 @@ def test_horizontal_advection_convergence(
 ) -> None:
     allocator = model_backends.get_allocator(backend)
 
-    import pathlib
-
-    base_path = pathlib.Path("/capstor/scratch/cscs/cong/icon4py/testdata/grids/")
-    grid_file_paths = []
-    for i in range(len(grid_description)):
-        grid_file_paths.append(
-            base_path.joinpath(grid_description[i].name, f"{grid_description[i].name}.nc")
-        )
-        print(grid_file_paths[i])
-    # grid_file_paths = (grid_utils._download_grid_file(grid) for grid in grid_description)
+    # Generate the grid family instead of downloading it: only a generated family is
+    # guaranteed to keep the domain extents fixed while the resolution changes, which is what
+    # the convergence rate is measured against.
+    grid_file_paths = [
+        _generate_torus_grid(refinement_factor=factor, out_dir=tmp_path)
+        for factor in _REFINEMENT_FACTORS
+    ]
     error_l1: list[float] = []
     error_linf: list[float] = []
     mean_edge_length: list[float] = []
@@ -162,14 +179,6 @@ def test_horizontal_advection_convergence(
             * grid_manager.geometry_fields[gridfile.GeometryName.EDGE_LENGTH].asnumpy().mean()
             / vel_max,
             integration_time,
-        )
-        print(
-            "debugging num of steps: ",
-            integration_time / dtime,
-            int(integration_time / dtime),
-            dtime,
-            integration_time,
-            int(integration_time / dtime) * dtime,
         )
         experiment_config = experiment_config.with_overrides(
             driver={"dtime": time.RelativeTime(seconds=dtime)},
@@ -336,23 +345,21 @@ def test_horizontal_advection_convergence(
     assert linf_acceptable_range[0] <= p_linf <= linf_acceptable_range[1]
 
 
-@pytest.mark.datatest
 @pytest.mark.level("validation")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_case, tracer_profile, grid_description, num_levels, l1_acceptable_range, linf_acceptable_range, enable_plot",
+    "experiment_case, tracer_profile, num_levels, l1_acceptable_range, linf_acceptable_range, enable_plot",
     [
         (
             "linear_vertical_advection",
-            test_defs.Grids.TORUS_1000X1000_100M,
             linear_vertical_advection.TracerProfile.GAUSSIAN_1D,
             (
                 100,
                 200,
                 400,
             ),
-            [_FIRST_ORDER - _FIRST_ORDER_TOL, _FIRST_ORDER + _FIRST_ORDER_TOL],
-            [_FIRST_ORDER - _FIRST_ORDER_TOL, _FIRST_ORDER + _FIRST_ORDER_TOL],
+            _order_range(_FIRST_ORDER),
+            _order_range(_FIRST_ORDER),
             True,
         ),
     ],
@@ -360,8 +367,7 @@ def test_horizontal_advection_convergence(
 def test_vertical_advection_convergence(
     *,
     experiment_case: str,
-    tracer_profile: linear_horizontal_advection.TracerProfile,
-    grid_description: test_defs.GridDescription,
+    tracer_profile: linear_vertical_advection.TracerProfile,
     num_levels: tuple[int, ...],
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
@@ -372,11 +378,9 @@ def test_vertical_advection_convergence(
 ) -> None:
     allocator = model_backends.get_allocator(backend)
 
-    import pathlib
-
-    base_path = pathlib.Path("/capstor/scratch/cscs/cong/icon4py/testdata/grids/")
-    grid_path = base_path.joinpath(grid_description.name, f"{grid_description.name}.nc")
-    # grid_file_paths = (grid_utils._download_grid_file(grid) for grid in grid_description)
+    # the horizontal mesh only carries the vertical profile here, so the coarsest member of the
+    # convergence family is enough
+    grid_path = _generate_torus_grid(refinement_factor=1, out_dir=tmp_path)
     error_l1: list[float] = []
     error_linf: list[float] = []
     mean_edge_length: list[float] = []
@@ -423,14 +427,6 @@ def test_vertical_advection_convergence(
             / num_lev
             / w_max,
             integration_time,
-        )
-        print(
-            "debugging num of steps: ",
-            integration_time / dtime,
-            int(integration_time / dtime),
-            dtime,
-            integration_time,
-            int(integration_time / dtime) * dtime,
         )
         experiment_config = experiment_config.with_overrides(
             driver={"dtime": time.RelativeTime(seconds=dtime)},
