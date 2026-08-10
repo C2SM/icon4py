@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -31,7 +30,7 @@ def _interpolate_cell_field_to_half_levels_vp(
     """
     interpolation_to_half_levels_vp = wgtfac_c * interpolant + (
         vpfloat("1.0") - wgtfac_c
-    ) * interpolant(KDim - 1)
+    ) * interpolant(dims.KDim - 1)
     return interpolation_to_half_levels_vp
 
 
@@ -53,7 +52,7 @@ def _interpolate_cell_field_to_half_levels_wp(
     """
     interpolation_to_half_levels_wp = wgtfac_c * interpolant + (
         wpfloat("1.0") - wgtfac_c
-    ) * interpolant(KDim - 1)
+    ) * interpolant(dims.KDim - 1)
     return interpolation_to_half_levels_wp
 
 
@@ -64,7 +63,7 @@ def _interpolate_cell_field_to_half_levels_with_surface_value_vp(
     surface_value: fa.CellKField[ta.vpfloat],
     surface_level: gtx.int32,
 ) -> fa.CellKField[ta.vpfloat]:
-    """Interior linear interpolation to half levels for ``KDim < surface_level - 1``,
+    """Interior linear interpolation to half levels for ``dims.KDim < surface_level - 1``,
     caller-supplied ``surface_value`` at the surface."""
     return concat_where(
         dims.KDim < surface_level - 1,
@@ -81,7 +80,7 @@ def _interpolate_cell_field_to_half_levels_with_surface_value_wp(
     surface_value: fa.CellKField[ta.wpfloat],
     surface_level: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
-    """Interior linear interpolation to half levels for ``KDim < surface_level - 1``,
+    """Interior linear interpolation to half levels for ``dims.KDim < surface_level - 1``,
     caller-supplied ``surface_value`` at the surface."""
     return concat_where(
         dims.KDim < surface_level - 1,
