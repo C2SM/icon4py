@@ -168,7 +168,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         global_halo_idx = self._decomposition_info.global_index(
             horizontal_dim, decomp_defs.DecompositionInfo.EntryType.HALO
         )
-        halo_generator = HaloGenerator.from_gids(global_halo_idx)
+        halo_generator = HaloGenerator.from_gids(global_halo_idx.tolist())
         log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
         pattern = make_pattern(
             self._context,
