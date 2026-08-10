@@ -239,7 +239,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
             mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
         ),
     )
 

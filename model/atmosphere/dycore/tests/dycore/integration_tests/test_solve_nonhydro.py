@@ -270,9 +270,10 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         ],
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
+    # ICON's z_th_ddz_exner_c stores only nlev levels, so the bottom half level has no reference
     assert test_utils.dallclose(
         solve_nonhydro.nonhydro_buoy_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_3:, 1:
+            cell_start_lateral_boundary_level_3:, 1:-1
         ],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_3:, 1:],
         rtol=2.0e-12,
@@ -488,7 +489,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         mass_flx_me=init_savepoint.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=init_savepoint.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
         ),
     )
 
@@ -681,7 +682,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
         ),
     )
 
@@ -801,7 +802,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
         ),
     )
 
