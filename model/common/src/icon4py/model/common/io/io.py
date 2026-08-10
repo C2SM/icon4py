@@ -20,6 +20,7 @@ from typing import Any, Final, TypeAlias
 
 from icon4py.model.common import exceptions, time
 from icon4py.model.common.components import monitor
+from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGrid
@@ -43,6 +44,7 @@ log = logging.getLogger(__name__)
 OutputInterval: TypeAlias = time.RelativeTime | time.NumTimeSteps  # noqa: UP040
 
 
+@config_io.register_enum
 class OutputBackend(enum.StrEnum):
     """File format an output field group is written in."""
 
@@ -50,6 +52,7 @@ class OutputBackend(enum.StrEnum):
     ZARR = "zarr"
 
 
+@config_io.register_enum
 class OutputMode(enum.StrEnum):
     """How the ranks of a distributed run write an output field group.
 

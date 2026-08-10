@@ -10,16 +10,19 @@
 
 import dataclasses
 import datetime
+import pathlib
+import textwrap
 
 import pytest
 
 import icon4py.model.common.exceptions as errors
+from icon4py.model.common.config import config_io
 from icon4py.model.common.io import io as common_io, netcdf_writers
 from icon4py.model.standalone_driver import config as driver_config, driver_states
 
 
 def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
-    # fortran dumps the whole namelist, so the variables the driver reads are always
+    # fortran dumps the whole namelist, so the variables the driver read_yaml_strs are always
     # present. Here they only need a value when the test does not care about it.
     atm_dict = {
         "nonhydrostatic_nml": {"vcfl_threshold": 0.85, "ndyn_substeps": 5},
@@ -165,3 +168,47 @@ def test_driver_config_accepts_distributed_netcdf_on_any_installation(
     )
     assert config.output_backend is common_io.OutputBackend.NETCDF
     assert config.output_mode is common_io.OutputMode.DISTRIBUTED
+
+
+def test_io_roundtrip_cls_cls() -> None:
+    conf = config_io.read_yaml_str(
+        textwrap.dedent(
+            """
+            geometry: {}
+            metrics: {}
+            interpolation: {}
+            vertical_grid:
+                num_levels: 10
+            topography:
+                config:
+                    type: jablonowski_williamson
+            initial_condition:
+                config:
+                    type: jablonowski_williamson
+            prescribed_tendencies: {}
+            driver:
+                experiment_name: foo
+                profiling_options:
+                dtime: 10
+                start_of_simulation: 2020-01-01T00:00:00
+                start_of_timestepping: 2020-01-01T00:00:00
+                end_of_simulation:
+                    type: numsteps
+                    value: 5
+            """
+        ),
+        driver_config.ExperimentConfig,
+    )
+    assert conf.driver.experiment_name == "foo"
+    assert (
+        config_io.read_yaml_str(config_io.write_yaml_str(conf), driver_config.ExperimentConfig)
+        == conf
+    )
+
+
+def test_io_roundtrip_str_str() -> None:
+    config_str = (pathlib.Path(__file__).parent / "data" / "test_config.yml").read_text()
+    roundtrip_str = config_io.write_yaml_str(
+        config_io.read_yaml_str(config_str, driver_config.ExperimentConfig)
+    )
+    assert roundtrip_str == config_str
