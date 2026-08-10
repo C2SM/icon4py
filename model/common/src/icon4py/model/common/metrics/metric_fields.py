@@ -154,7 +154,9 @@ def _compute_scaling_factor_for_3d_divdamp(
 ) -> fa.KField[wpfloat]:
     scaling_factor_for_3d_divdamp = broadcast(1.0, (dims.KDim,))
     if divdamp_type == 32:
-        zf = 0.5 * (vct_a(dims.KDim - 0.5) + vct_a(dims.KDim + 0.5))  # nshift_total assumed to be 0
+        zf = 0.5 * (
+            vct_a(dims.KDim - 0.5) + vct_a(dims.KDim + 0.5)
+        )  # depends on nshift_total, assumed to be always 0
         scaling_factor_for_3d_divdamp = where(
             zf >= divdamp_trans_end, 0.0, scaling_factor_for_3d_divdamp
         )
