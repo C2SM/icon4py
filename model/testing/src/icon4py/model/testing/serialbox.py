@@ -789,7 +789,7 @@ class MetricSavepoint(IconSavepoint):
             )
 
     def rayleigh_w(self):
-        return self._get_field("rayleigh_w", dims.KDim)
+        return self._get_field("rayleigh_w", dims.KHalfDim)
 
     def rho_ref_mc(self):
         return self._get_field("rho_ref_mc", dims.CellDim, dims.KDim)
@@ -1400,7 +1400,7 @@ class NonHydroInitVerticallyImplicitSolverSavepoint(IconSavepoint):
         return self._get_field("exner_now", dims.CellDim, dims.KDim)
 
     def z_raylfac(self):
-        return self._get_field("z_raylfac", dims.KDim)
+        return self._get_field("z_raylfac", dims.KHalfDim)
 
     def rho(self):
         return self._get_field("rho_now", dims.CellDim, dims.KDim)

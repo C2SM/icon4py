@@ -456,7 +456,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, low=1.0e-5)
-        rayleigh_damping_factor = data_alloc.random_field(grid, dims.KDim)
+        rayleigh_damping_factor = data_alloc.random_field(grid, dims.KHalfDim)
         reference_exner_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-5
         )
