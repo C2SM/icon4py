@@ -17,7 +17,10 @@ from icon4py.model.common import model_backends, time
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, gridfile
-from icon4py.model.common.initial_condition.analytical import linear_horizontal_advection, linear_vertical_advection
+from icon4py.model.common.initial_condition.analytical import (
+    linear_horizontal_advection,
+    linear_vertical_advection,
+)
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
@@ -185,6 +188,15 @@ def test_horizontal_advection_convergence(
         )
         simulated_tracer = ds.tracers.current.qv.ndarray
 
+        # the driver takes floor(integration_time / dtime) steps, so the model stops short of
+        # the nominal integration time by up to one dtime. As dtime is proportional to the mesh
+        # spacing, comparing against the reference at the nominal time would add an O(h) phase
+        # error to the measured error and destroy the convergence rate.
+        simulated_time = (
+            icon4py_driver.model_time_variables.n_time_steps
+            * icon4py_driver.model_time_variables.dtime_in_seconds
+        )
+
         assert (
             type(experiment_config.initial_condition.config)
             is linear_horizontal_advection.LinearHorizontalAdvectionConfig
@@ -193,7 +205,7 @@ def test_horizontal_advection_convergence(
             config=experiment_config.initial_condition.config,
             grid=grid_manager.grid,
             static_fields=icon4py_driver.static_field_factories,
-            integration_time=integration_time,
+            integration_time=simulated_time,
             num_levels=experiment_config.vertical_grid.num_levels,
         )
 
@@ -335,7 +347,9 @@ def test_horizontal_advection_convergence(
             test_defs.Grids.TORUS_1000X1000_100M,
             linear_vertical_advection.TracerProfile.GAUSSIAN_1D,
             (
-                100, 200, 400,
+                100,
+                200,
+                400,
             ),
             [_FIRST_ORDER - _FIRST_ORDER_TOL, _FIRST_ORDER + _FIRST_ORDER_TOL],
             [_FIRST_ORDER - _FIRST_ORDER_TOL, _FIRST_ORDER + _FIRST_ORDER_TOL],
@@ -405,7 +419,8 @@ def test_vertical_advection_convergence(
                 )
         dtime = min(
             experiment_config.initial_condition.config.cfl_number
-            * experiment_config.vertical_grid.model_top_height / num_lev
+            * experiment_config.vertical_grid.model_top_height
+            / num_lev
             / w_max,
             integration_time,
         )
@@ -434,6 +449,13 @@ def test_vertical_advection_convergence(
         )
         simulated_tracer = ds.tracers.current.qv.ndarray
 
+        # see the comment in test_horizontal_advection_convergence: the reference must be
+        # evaluated at the time the model actually reached, not the nominal one
+        simulated_time = (
+            icon4py_driver.model_time_variables.n_time_steps
+            * icon4py_driver.model_time_variables.dtime_in_seconds
+        )
+
         assert (
             type(experiment_config.initial_condition.config)
             is linear_vertical_advection.LinearVerticalAdvectionConfig
@@ -442,7 +464,7 @@ def test_vertical_advection_convergence(
             velocity_field=experiment_config.initial_condition.config.velocity_field,
             tracer_profile=experiment_config.initial_condition.config.tracer_profile,
             static_fields=icon4py_driver.static_field_factories,
-            integration_time=integration_time,
+            integration_time=simulated_time,
             num_levels=experiment_config.vertical_grid.num_levels,
         )
 
