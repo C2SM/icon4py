@@ -35,19 +35,21 @@ from ..utils import diff_multfac_vn_numpy, smag_limit_numpy, verify_diffusion_fi
 grid_functionality: collections.defaultdict[str, dict[str, Any]] = collections.defaultdict(dict)
 
 
-def get_grid_for_experiment(experiment: test_defs.Experiment, backend: gtx_typing.Backend) -> Any:
+def get_grid_for_experiment(
+    experiment: test_defs.Experiment, backend: gtx_typing.Backend
+) -> icon.IconGrid:
     return _get_or_initialize(experiment, backend, "grid")
 
 
 def get_edge_geometry_for_experiment(
     experiment: test_defs.Experiment, backend: gtx_typing.Backend
-) -> Any:
+) -> grid_states.EdgeParams:
     return _get_or_initialize(experiment, backend, "edge_geometry")
 
 
 def get_cell_geometry_for_experiment(
     experiment: test_defs.Experiment, backend: gtx_typing.Backend
-) -> Any:
+) -> grid_states.CellParams:
     return _get_or_initialize(experiment, backend, "cell_geometry")
 
 
