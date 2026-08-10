@@ -128,7 +128,7 @@ class MetricStateNonHydro:
     """Dataclass containing metric fields needed in dynamical core (SolveNonhydro)."""
 
     mask_prog_halo_c: fa.CellKField[bool]
-    rayleigh_w: fa.KField[ta.wpfloat]
+    rayleigh_w: fa.KHalfField[ta.wpfloat]
 
     wgtfac_c: fa.CellKHalfField[ta.vpfloat]
     wgtfacq_c: fa.CellKField[ta.vpfloat]
