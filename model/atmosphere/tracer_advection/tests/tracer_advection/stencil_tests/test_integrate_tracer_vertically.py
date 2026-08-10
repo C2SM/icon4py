@@ -62,9 +62,7 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
     def input_data(self, grid: base.Grid) -> dict:
         tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_tracer_v = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
-        )
+        p_mflx_tracer_v = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
         deepatmo_divzl = data_alloc.random_field(grid, dims.KDim)
         deepatmo_divzu = data_alloc.random_field(grid, dims.KDim)
         rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

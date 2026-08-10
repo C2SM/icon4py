@@ -51,7 +51,7 @@ class TestLimitVerticalParabolaSemiMonotonically(stencil_tests.StencilTest):
     def input_data(self, grid: base.Grid) -> dict:
         l_limit = data_alloc.random_mask(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_face = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
         p_face_up = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         p_face_low = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(

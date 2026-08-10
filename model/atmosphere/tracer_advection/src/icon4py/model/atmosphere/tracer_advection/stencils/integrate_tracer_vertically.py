@@ -19,7 +19,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 def _integrate_tracer_vertically_a(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
-    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+    p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
@@ -28,7 +28,10 @@ def _integrate_tracer_vertically_a(
     tracer_new = (
         tracer_now * rhodz_now
         + p_dtime
-        * (p_mflx_tracer_v(dims.KDim + 1) * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)
+        * (
+            p_mflx_tracer_v(dims.KDim + 0.5) * deepatmo_divzl
+            - p_mflx_tracer_v(dims.KDim - 0.5) * deepatmo_divzu
+        )
     ) / rhodz_new
 
     return tracer_new
@@ -38,7 +41,7 @@ def _integrate_tracer_vertically_a(
 def _integrate_tracer_vertically(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
-    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+    p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
@@ -72,7 +75,7 @@ def _integrate_tracer_vertically(
 def integrate_tracer_vertically(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
-    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+    p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],

@@ -84,7 +84,7 @@ class BoundaryConditions(abc.ABC):
     @abc.abstractmethod
     def run(
         self,
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
     ) -> None:
@@ -115,7 +115,7 @@ class NoFluxCondition(BoundaryConditions):
 
     def run(
         self,
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
     ) -> None:
@@ -167,7 +167,7 @@ class VerticalLimiter(abc.ABC):
         self,
         *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_face: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_face: fa.CellKHalfField[ta.wpfloat],
         p_face_up: fa.CellKField[ta.wpfloat],
         p_face_low: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
@@ -221,7 +221,7 @@ class NoLimiter(VerticalLimiter):
         self,
         *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_face: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_face: fa.CellKHalfField[ta.wpfloat],
         p_face_up: fa.CellKField[ta.wpfloat],
         p_face_low: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
@@ -323,7 +323,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
         self,
         *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_face: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_face: fa.CellKHalfField[ta.wpfloat],
         p_face_up: fa.CellKField[ta.wpfloat],
         p_face_low: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
@@ -372,7 +372,7 @@ class VerticalAdvection(abc.ABC):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool = False,
     ) -> None:
@@ -452,7 +452,7 @@ class NoAdvection(VerticalAdvection):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool = False,
     ) -> None:
@@ -484,7 +484,7 @@ class FiniteVolume(VerticalAdvection):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool = False,
     ) -> None:
@@ -518,7 +518,7 @@ class FiniteVolume(VerticalAdvection):
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None: ...
@@ -531,7 +531,7 @@ class FiniteVolume(VerticalAdvection):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None: ...
@@ -621,7 +621,7 @@ class FirstOrderUpwind(FiniteVolume):
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None:
@@ -656,7 +656,7 @@ class FirstOrderUpwind(FiniteVolume):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None:
@@ -718,14 +718,14 @@ class PiecewiseParabolicMethod(FiniteVolume):
             self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=allocator
         )  # TODO(dastrm): should be KHalfDim
         self._z_cfl = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        )  # TODO(dastrm): should be KHalfDim
+            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
+        )
         self._z_slope = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
         self._z_face = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        )  # TODO(dastrm): should be KHalfDim
+            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
+        )
         self._z_face_up = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
@@ -897,7 +897,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None:
@@ -1077,7 +1077,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
         even_timestep: bool,
     ) -> None:

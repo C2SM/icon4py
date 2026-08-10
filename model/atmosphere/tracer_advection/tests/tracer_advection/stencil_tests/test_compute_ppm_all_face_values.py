@@ -54,7 +54,7 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_face_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_face = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        p_face = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim)
         slev = gtx.int32(1)
         slevp1 = gtx.int32(2)
         elev = grid.num_levels - 2

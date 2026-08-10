@@ -25,7 +25,13 @@ outslice = (slice(None), slice(1, None))
 
 class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
     PROGRAM = compute_vertical_tracer_flux_upwind
-    OUTPUTS = (stencil_tests.Output("p_upflux", refslice=outslice, gtslice=outslice),)
+    OUTPUTS = (
+        stencil_tests.Output(
+            "p_upflux",
+            refslice=(slice(None), slice(1, -1)),
+            gtslice=(slice(None), slice(1, -1)),
+        ),
+    )
 
     @staticmethod
     def reference(
@@ -34,10 +40,10 @@ class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
         p_mflx_contra_v: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        p_upflux = p_cc.copy()
-        p_upflux[:, 1:] = (
-            np.where(p_mflx_contra_v[:, 1:] >= 0.0, p_cc[:, 1:], p_cc[:, :-1])
-            * p_mflx_contra_v[:, 1:]
+        p_upflux = np.zeros_like(p_mflx_contra_v)
+        p_upflux[:, 1:-1] = (
+            np.where(p_mflx_contra_v[:, 1:-1] >= 0.0, p_cc[:, 1:], p_cc[:, :-1])
+            * p_mflx_contra_v[:, 1:-1]
         )
         return dict(p_upflux=p_upflux)
 
@@ -45,10 +51,10 @@ class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+            grid, dims.CellDim, dims.KHalfDim
         )  # TODO(dastrm): should be KHalfDim
         p_upflux = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim
+            grid, dims.CellDim, dims.KHalfDim
         )  # TODO(dastrm): should be KHalfDim
         return dict(
             p_cc=p_cc,
