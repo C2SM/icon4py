@@ -37,6 +37,7 @@ class TracerProfile(int, enum.Enum):
     BOX_1D = 2
 
 
+@config_io.register_enum
 class VelocityField(int, enum.Enum):
     """
     Velocity field for idealized advection test cases.
@@ -81,38 +82,20 @@ class LinearVerticalAdvectionConfig:
 
 
 def compute_max_velocity(
+    *,
     velocity_field: VelocityField,
+    z_ifc: data_alloc.NDArray,
     model_top_height: float,
 ) -> float:
     # note: as we need vel_max at time n+1/2 and vel_max is needed for the time step, we have a chicken-and-egg problem
     # instead of doing a fixed-point iteration, we simply estimate an upper bound for vel_max
 
-    match velocity_field:
-        case (
-            VelocityField.CONSTANT
-            | VelocityField.SPATIAL_PARABOLA
-            | VelocityField.SPATIAL_SIN
-        ):
-            vel_max = model_top_height
-        case _:
-            raise NotImplementedError(
-                f"Velocity field {velocity_field} not implemented."
-            )
-    return vel_max
-
-
-def _compute_idealized_velocity_field(
-    *,
-    velocity_field: VelocityField,
-    domain_length: float,
-    domain_height: float,
-) -> tuple[float, float]:
-    match velocity_field:
-        case VelocityField.CONSTANT:
-            u, v = domain_length, domain_height
-        case _:
-            raise NotImplementedError(f"Velocity field {velocity_field} not implemented.")
-    return u, v
+    w = _compute_idealized_velocity_field(
+        velocity_field=velocity_field,
+        z_ifc=z_ifc,
+        model_top_height=model_top_height,
+    )
+    return data_alloc.array_namespace(w).max(data_alloc.array_namespace(w).abs(w))
 
 
 def _compute_idealized_velocity_field(
@@ -243,44 +226,44 @@ def construct_reference_tracer(
     z_ifc = metrics.get(metrics_meta.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
     array_ns = data_alloc.array_namespace(z_mc)
     reference_tracer = array_ns.tile(array_ns.zeros_like(z_mc)[:, None], (1, num_levels))
-    match velocity_field:
-        case VelocityField.CONSTANT:
-            w_mc = _compute_idealized_velocity_field(
-                velocity_field=velocity_field,
-                model_top_height=model_top_height,
-                z_ifc=z_ifc,
-            )
-            tracer = _construct_idealized_tracer(
-                tracer_profile=config.tracer_profile,
-                tracer=tracer_state_now.qv.ndarray,
-                z_mc=z_mc,
-                z_ifc=z_ifc,
-                center_z=vertical_config.model_top_height / 2.0,
-                model_top_height=vertical_config.model_top_height,
-            )
-                # test_config, z_mc - (z_center + w_mc * time), z_range)
-            # Simpson's 1/3 rule
-            w_ifc = _compute_idealized_velocity_field(
-                test_config, z_range, z_ifc, time, time_end
-            )
-            tracer_ifc = get_idealized_ICs(
-                test_config, z_ifc - (z_center + w_ifc * time), z_range
-            )
-            tracer = (tracer_ifc[:-1] + 4.0 * tracer + tracer_ifc[1:]) / 6.0
-        case VelocityField.SPATIAL_PARABOLA:
-            # shifted and deformed ICs
-            w_mc = _compute_idealized_velocity_field(test_config, z_range, z_mc, time, time_end)
-            z = z_range * z_mc / (z_range + time * z_mc)
-            fac = (z_range / np.abs(z_range + time * z_mc)) ** 2
-            tracer = fac * get_idealized_ICs(test_config, z - z_center, z_range)
-            # Simpson's 1/3 rule
-            z = z_range * z_ifc / (z_range + time * z_ifc)
-            fac = (z_range / np.abs(z_range + time * z_ifc)) ** 2
-            tracer_ifc = fac * get_idealized_ICs(test_config, z - z_center, z_range)
-            tracer = (tracer_ifc[:-1] + 4.0 * tracer + tracer_ifc[1:]) / 6.0
-        case _:
-            raise NotImplementedError(
-                f"Exact solution with velocity field {velocity_field} not implemented."
-            )
+    # match velocity_field:
+    #     case VelocityField.CONSTANT:
+    #         w_mc = _compute_idealized_velocity_field(
+    #             velocity_field=velocity_field,
+    #             model_top_height=model_top_height,
+    #             z_ifc=z_ifc,
+    #         )
+    #         tracer = _construct_idealized_tracer(
+    #             tracer_profile=config.tracer_profile,
+    #             tracer=tracer_state_now.qv.ndarray,
+    #             z_mc=z_mc,
+    #             z_ifc=z_ifc,
+    #             center_z=vertical_config.model_top_height / 2.0,
+    #             model_top_height=vertical_config.model_top_height,
+    #         )
+    #             # test_config, z_mc - (z_center + w_mc * time), z_range)
+    #         # Simpson's 1/3 rule
+    #         w_ifc = _compute_idealized_velocity_field(
+    #             test_config, z_range, z_ifc, time, time_end
+    #         )
+    #         tracer_ifc = get_idealized_ICs(
+    #             test_config, z_ifc - (z_center + w_ifc * time), z_range
+    #         )
+    #         tracer = (tracer_ifc[:-1] + 4.0 * tracer + tracer_ifc[1:]) / 6.0
+    #     case VelocityField.SPATIAL_PARABOLA:
+    #         # shifted and deformed ICs
+    #         w_mc = _compute_idealized_velocity_field(test_config, z_range, z_mc, time, time_end)
+    #         z = z_range * z_mc / (z_range + time * z_mc)
+    #         fac = (z_range / np.abs(z_range + time * z_mc)) ** 2
+    #         tracer = fac * get_idealized_ICs(test_config, z - z_center, z_range)
+    #         # Simpson's 1/3 rule
+    #         z = z_range * z_ifc / (z_range + time * z_ifc)
+    #         fac = (z_range / np.abs(z_range + time * z_ifc)) ** 2
+    #         tracer_ifc = fac * get_idealized_ICs(test_config, z - z_center, z_range)
+    #         tracer = (tracer_ifc[:-1] + 4.0 * tracer + tracer_ifc[1:]) / 6.0
+    #     case _:
+    #         raise NotImplementedError(
+    #             f"Exact solution with velocity field {velocity_field} not implemented."
+    #         )
 
     return reference_tracer

@@ -61,6 +61,10 @@ def _compute_relative_errors(
                 test_defs.Grids.TORUS_1000X1000_100M,
                 test_defs.Grids.TORUS_1000X1000_50M,
                 test_defs.Grids.TORUS_1000X1000_25M,
+                test_defs.Grids.TORUS_1000X1000_12M,
+                # test_defs.Grids.TORUS_1000X1000_6M,
+                # test_defs.Grids.TORUS_1000X1000_3M,
+                # test_defs.Grids.TORUS_1000X1000_1M,
             ),
             [_FIRST_ORDER - _FIRST_ORDER_TOL, _FIRST_ORDER + _FIRST_ORDER_TOL],
             [_FIRST_ORDER - _FIRST_ORDER_TOL, _FIRST_ORDER + _FIRST_ORDER_TOL],
@@ -68,11 +72,15 @@ def _compute_relative_errors(
         ),
         (
             "linear_horizontal_advection",
-            linear_horizontal_advection.TracerProfile.CIRCLE_2D,
+            linear_horizontal_advection.TracerProfile.GAUSSIAN_1D_X,
             (
                 test_defs.Grids.TORUS_1000X1000_100M,
                 test_defs.Grids.TORUS_1000X1000_50M,
                 test_defs.Grids.TORUS_1000X1000_25M,
+                test_defs.Grids.TORUS_1000X1000_12M,
+                # test_defs.Grids.TORUS_1000X1000_6M,
+                # test_defs.Grids.TORUS_1000X1000_3M,
+                # test_defs.Grids.TORUS_1000X1000_1M,
             ),
             [_FIRST_ORDER - _FIRST_ORDER_TOL, _FIRST_ORDER + _FIRST_ORDER_TOL],
             [_ZERO_ORDER - _ZERO_ORDER_TOL, _ZERO_ORDER + _ZERO_ORDER_TOL],
@@ -182,8 +190,7 @@ def test_horizontal_advection_convergence(
             is linear_horizontal_advection.LinearHorizontalAdvectionConfig
         )
         reference_tracer = linear_horizontal_advection.construct_reference_tracer(
-            velocity_field=experiment_config.initial_condition.config.velocity_field,
-            tracer_profile=experiment_config.initial_condition.config.tracer_profile,
+            config=experiment_config.initial_condition.config,
             grid=grid_manager.grid,
             static_fields=icon4py_driver.static_field_factories,
             integration_time=integration_time,
@@ -197,6 +204,12 @@ def test_horizontal_advection_convergence(
             vertex_y = icon4py_driver.static_field_factories.geometry.get(
                 geometry_meta.VERTEX_Y
             ).asnumpy()
+            edge_x = icon4py_driver.static_field_factories.geometry.get(
+                geometry_meta.EDGE_CENTER_X
+            ).asnumpy()
+            edge_y = icon4py_driver.static_field_factories.geometry.get(
+                geometry_meta.EDGE_CENTER_Y
+            ).asnumpy()
             assert experiment_config.tracer_advection is not None
             adv_type_name = (
                 experiment_config.tracer_advection.horizontal_advection_type.name.lower()
@@ -207,12 +220,24 @@ def test_horizontal_advection_convergence(
                 is linear_horizontal_advection.LinearHorizontalAdvectionConfig
             )
             initial_tracer = linear_horizontal_advection.construct_reference_tracer(
-                velocity_field=experiment_config.initial_condition.config.velocity_field,
-                tracer_profile=experiment_config.initial_condition.config.tracer_profile,
+                config=experiment_config.initial_condition.config,
                 grid=grid_manager.grid,
                 static_fields=icon4py_driver.static_field_factories,
                 integration_time=0.0,
                 num_levels=experiment_config.vertical_grid.num_levels,
+            )
+            plot_utils.plot_torus_scatter(
+                node_x=edge_x,
+                node_y=edge_y,
+                values=ds.prep_tracer_advection_prognostic.vn_traj.asnumpy()[:, 0],
+                c2v_connectivity=grid_manager.grid.connectivities["C2V"].asnumpy(),
+                vertex_x=vertex_x,
+                vertex_y=vertex_y,
+                length_max=2
+                * icon4py_driver.static_field_factories.geometry.get(
+                    geometry_meta.MEAN_EDGE_LENGTH, states_factory.RetrievalType.SCALAR
+                ),
+                out_file=f"grid_{grid_name}_prof_{tracer_profile}_adv_{adv_type_name}_vn.pdf",
             )
             plot_utils.plot_torus_plane(
                 c2v_connectivity=grid_manager.grid.connectivities["C2V"].asnumpy(),

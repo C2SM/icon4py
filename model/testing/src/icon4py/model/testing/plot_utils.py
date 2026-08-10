@@ -90,6 +90,87 @@ def plot_mpl_triangulation(
     return fig, ax
 
 
+def plot_mpl_scatter(
+    *,
+    node_x: np.ndarray,
+    node_y: np.ndarray,
+    values: np.ndarray,
+    mesh_tri: mpl.tri.Triangulation | None = None,
+) -> tuple[mpl.figure.Figure, mpl.axes.Axes]:
+    """
+    Scatter plot of values at given point locations, e.g. edge midpoints on a torus grid.
+
+    Args:
+        node_x: array that contains the point x-coordinates
+        node_y: array that contains the point y-coordinates
+        values: array that contains the values at the point locations
+        mesh_tri: optional matplotlib triangulation whose edges are overlaid on the scatter plot
+
+    """
+    fig, ax = plt.subplots()
+    ax.set_axisbelow(True)
+
+    if mesh_tri is not None:
+        ax.triplot(mesh_tri, color="black", linewidth=0.5, zorder=1.9)
+
+    sc = ax.scatter(node_x, node_y, c=values, cmap="viridis", zorder=2.0)
+    cbar = fig.colorbar(sc, ax=ax)
+    cbar.formatter.set_powerlimits((0, 0))  # type: ignore[attr-defined]
+    cbar.formatter.set_useMathText(True)  # type: ignore[attr-defined]
+
+    ax.grid("both")  # type: ignore[arg-type]
+    ax.set_xlabel("$x$")
+    ax.set_ylabel("$y$")
+
+    return fig, ax
+
+
+def plot_torus_scatter(
+    *,
+    node_x: np.ndarray,
+    node_y: np.ndarray,
+    values: np.ndarray,
+    c2v_connectivity: np.ndarray | None = None,
+    vertex_x: np.ndarray | None = None,
+    vertex_y: np.ndarray | None = None,
+    length_max: float | None = None,
+    out_file: str = "",
+) -> None:
+    """
+    Scatter plot of values at given point locations for torus grids, e.g. edge-located fields.
+
+    Args:
+        node_x: array that contains the point x-coordinates
+        node_y: array that contains the point y-coordinates
+        values: array that contains the values at the point locations
+        c2v_connectivity: optional cell-to-vertex connectivity used to overlay the mesh triangle
+            edges; if given, 'vertex_x', 'vertex_y' and 'length_max' must also be given
+        vertex_x: array that contains the vertex x-coordinates, required if 'c2v_connectivity' is given
+        vertex_y: array that contains the vertex y-coordinates, required if 'c2v_connectivity' is given
+        length_max: maximum edge length to plot, required if 'c2v_connectivity' is given
+        out_file: passed to savefig if present, else plot is shown instead
+
+    """
+    mesh_tri = None
+    if c2v_connectivity is not None:
+        assert vertex_x is not None and vertex_y is not None and length_max is not None, (
+            "vertex_x, vertex_y and length_max must be given if c2v_connectivity is given"
+        )
+        mesh_tri = create_mpl_triangulation(
+            c2v_connectivity=c2v_connectivity,
+            node_x=vertex_x,
+            node_y=vertex_y,
+            length_max=length_max,
+        )
+    fig, _ = plot_mpl_scatter(
+        node_x=node_x,
+        node_y=node_y,
+        values=values,
+        mesh_tri=mesh_tri,
+    )
+    finalize_plot(fig=fig, out_file=out_file)
+
+
 def plot_torus_plane(
     *,
     c2v_connectivity: np.ndarray,

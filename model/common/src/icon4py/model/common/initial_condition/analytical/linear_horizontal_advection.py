@@ -37,6 +37,9 @@ class TracerProfile(int, enum.Enum):
     GAUSSIAN_2D_OFFCENTER = 2
     #: two-dimensional discontinuous circle
     CIRCLE_2D = 3
+    #: one-dimensional smooth Gaussian curve
+    GAUSSIAN_1D_X = 4
+    GAUSSIAN_1D_Y = 5
 
 
 @config_io.register_enum
@@ -45,12 +48,16 @@ class VelocityField(int, enum.Enum):
     Velocity field for idealized advection test cases.
     """
 
-    #: constant velocity field
+    #: constant velocity field in x and y directions
     CONSTANT = 1
+    #: constant velocity field in x direction, zero velocity in y direction
+    CONSTANT_X = 2
+    #: constant velocity field in y direction, zero velocity in x direction
+    CONSTANT_Y = 3
     #: two-dimensional divergence-free swirling velocity field
-    VORTEX_2D = 2
+    VORTEX_2D = 4
     #: two-dimensional increasingly deformational field
-    INCREASING_2D = 3
+    INCREASING_2D = 5
 
 
 @dataclasses.dataclass
@@ -76,6 +83,13 @@ class LinearHorizontalAdvectionConfig:
             icon_equivalent=None,
         ),
     ] = 0.8
+    initial_center: typing.Annotated[
+        tuple[float, float],
+        common_conf_opt.ConfigOption(
+            description="Initial center of the tracer profile.",
+            icon_equivalent=None,
+        ),
+    ] = (0.5, 0.5)
 
     fortran_name_map: ClassVar[dict[str, str]] = {}
 
@@ -88,12 +102,12 @@ def compute_max_velocity(
 ) -> float:
     # note: as we need vel_max at time n+1/2 and vel_max is needed for the time step, we have a chicken-and-egg problem
     # instead of doing a fixed-point iteration, we simply estimate an upper bound for vel_max
-    match velocity_field:
-        case VelocityField.CONSTANT | VelocityField.VORTEX_2D:
-            vel_max = (domain_length**2 + domain_height**2) ** 0.5
-        case _:
-            raise NotImplementedError(f"Velocity field {velocity_field} not implemented.")
-    return vel_max
+    u, v = _compute_idealized_velocity_field(
+        velocity_field=velocity_field,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    return (u**2 + v**2) ** 0.5
 
 
 def _prepare_torus_quadratic_quadrature(
@@ -166,6 +180,10 @@ def _compute_idealized_velocity_field(
     match velocity_field:
         case VelocityField.CONSTANT:
             u, v = domain_length, domain_height
+        case VelocityField.CONSTANT_X:
+            u, v = domain_length, 0.0
+        case VelocityField.CONSTANT_Y:
+            u, v = 0.0, domain_height
         case _:
             raise NotImplementedError(f"Velocity field {velocity_field} not implemented.")
     return u, v
@@ -231,6 +249,12 @@ def _construct_idealized_tracer(
         case TracerProfile.CIRCLE_2D:
             radius = (domain_length + domain_height) / 8.0
             vertex_tracer = array_ns.where(dx**2 + dy**2 <= radius**2, 1.0, 0.0)
+        case TracerProfile.GAUSSIAN_1D_X:
+            decay_factor = (domain_length / 2.0) ** (-1.65)
+            vertex_tracer = array_ns.exp(-decay_factor * (dx**2))
+        case TracerProfile.GAUSSIAN_1D_Y:
+            decay_factor = (domain_height / 2.0) ** (-1.65)
+            vertex_tracer = array_ns.exp(-decay_factor * (dy**2))
         case _:
             raise NotImplementedError(f"Initial tracer profile {tracer_profile} not implemented.")
     tracer[:, :] = array_ns.sum(weights * vertex_tracer, axis=0)[:, None]
@@ -287,8 +311,8 @@ def linear_horizontal_advection(
     _construct_idealized_tracer(
         tracer_profile=config.tracer_profile,
         tracer=tracer_state_now.qv.ndarray,
-        domain_center_x=domain_center_x,
-        domain_center_y=domain_center_y,
+        domain_center_x=config.initial_center[0] * grid.grid_params.domain_length + vertex_x.min(),
+        domain_center_y=config.initial_center[1] * grid.grid_params.domain_height + vertex_y.min(),
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
         weights=weights,
@@ -298,8 +322,7 @@ def linear_horizontal_advection(
 
 def construct_reference_tracer(
     *,
-    velocity_field: VelocityField,
-    tracer_profile: TracerProfile,
+    config: LinearHorizontalAdvectionConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     integration_time: float,
@@ -310,8 +333,8 @@ def construct_reference_tracer(
     vertex_y = geometry.get(geometry_meta.VERTEX_Y).ndarray
     cell_center_x = geometry.get(geometry_meta.CELL_CENTER_X).ndarray
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
-    domain_center_x = 0.5 * grid.grid_params.domain_length - vertex_x.min()
-    domain_center_y = 0.5 * grid.grid_params.domain_height - vertex_y.min()
+    domain_center_x = config.initial_center[0] * grid.grid_params.domain_length - vertex_x.min()
+    domain_center_y = config.initial_center[1] * grid.grid_params.domain_height - vertex_y.min()
 
     weights, nodes = _prepare_torus_quadratic_quadrature(
         vertex_x=vertex_x,
@@ -325,33 +348,27 @@ def construct_reference_tracer(
 
     array_ns = data_alloc.array_namespace(cell_center_x)
     reference_tracer = array_ns.tile(array_ns.zeros_like(cell_center_x)[:, None], (1, num_levels))
-    match velocity_field:
-        case VelocityField.CONSTANT:
-            u, v = _compute_idealized_velocity_field(
-                velocity_field=velocity_field,
-                domain_length=grid.grid_params.domain_length,
-                domain_height=grid.grid_params.domain_height,
-            )
-            end_center_x = (
-                vertex_x.min()
-                + (domain_center_x + u * integration_time) % grid.grid_params.domain_length
-            )
-            end_center_y = (
-                vertex_y.min()
-                + (domain_center_y + v * integration_time) % grid.grid_params.domain_height
-            )
-            _construct_idealized_tracer(
-                tracer_profile=tracer_profile,
-                tracer=reference_tracer,
-                domain_center_x=end_center_x,
-                domain_center_y=end_center_y,
-                domain_length=grid.grid_params.domain_length,
-                domain_height=grid.grid_params.domain_height,
-                weights=weights,
-                nodes=nodes,
-            )
-        case _:
-            raise NotImplementedError(
-                f"Exact solution with velocity field {velocity_field} not implemented."
-            )
+    u, v = _compute_idealized_velocity_field(
+        velocity_field=config.velocity_field,
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
+    )
+    end_center_x = (
+        vertex_x.min()
+        + (domain_center_x + u * integration_time) % grid.grid_params.domain_length
+    )
+    end_center_y = (
+        vertex_y.min()
+        + (domain_center_y + v * integration_time) % grid.grid_params.domain_height
+    )
+    _construct_idealized_tracer(
+        tracer_profile=config.tracer_profile,
+        tracer=reference_tracer,
+        domain_center_x=end_center_x,
+        domain_center_y=end_center_y,
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
+        weights=weights,
+        nodes=nodes,
+    )
     return reference_tracer
