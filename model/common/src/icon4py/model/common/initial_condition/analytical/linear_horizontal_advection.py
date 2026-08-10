@@ -171,6 +171,29 @@ def _prepare_torus_quadratic_quadrature(
     return weights, nodes
 
 
+def _compute_tracer_center(
+    *,
+    initial_center: tuple[float, float],
+    origin_x: float,
+    origin_y: float,
+    domain_length: float,
+    domain_height: float,
+    displacement_x: float = 0.0,
+    displacement_y: float = 0.0,
+) -> tuple[float, float]:
+    """
+    Center of the tracer profile after being displaced, wrapped back into the torus domain.
+
+    ``initial_center`` is given as a fraction of the domain extent, relative to the domain
+    origin ``(origin_x, origin_y)``, which is not necessarily at zero. Shared by the initial
+    condition and the analytical reference so that the two cannot drift apart.
+    """
+    return (
+        origin_x + (initial_center[0] * domain_length + displacement_x) % domain_length,
+        origin_y + (initial_center[1] * domain_height + displacement_y) % domain_height,
+    )
+
+
 def _compute_idealized_velocity_field(
     *,
     velocity_field: VelocityField,
@@ -284,8 +307,6 @@ def linear_horizontal_advection(
     vertex_y = geometry.get(geometry_meta.VERTEX_Y).ndarray
     cell_center_x = geometry.get(geometry_meta.CELL_CENTER_X).ndarray
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
-    domain_center_x = vertex_x.min() + 0.5 * grid.grid_params.domain_length
-    domain_center_y = vertex_y.min() + 0.5 * grid.grid_params.domain_height
 
     prognostic_state_now.rho.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray
 
@@ -308,11 +329,18 @@ def linear_horizontal_advection(
         domain_height=grid.grid_params.domain_height,
     )
 
+    center_x, center_y = _compute_tracer_center(
+        initial_center=config.initial_center,
+        origin_x=vertex_x.min(),
+        origin_y=vertex_y.min(),
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
+    )
     _construct_idealized_tracer(
         tracer_profile=config.tracer_profile,
         tracer=tracer_state_now.qv.ndarray,
-        domain_center_x=config.initial_center[0] * grid.grid_params.domain_length + vertex_x.min(),
-        domain_center_y=config.initial_center[1] * grid.grid_params.domain_height + vertex_y.min(),
+        domain_center_x=center_x,
+        domain_center_y=center_y,
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
         weights=weights,
@@ -333,8 +361,6 @@ def construct_reference_tracer(
     vertex_y = geometry.get(geometry_meta.VERTEX_Y).ndarray
     cell_center_x = geometry.get(geometry_meta.CELL_CENTER_X).ndarray
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
-    domain_center_x = config.initial_center[0] * grid.grid_params.domain_length - vertex_x.min()
-    domain_center_y = config.initial_center[1] * grid.grid_params.domain_height - vertex_y.min()
 
     weights, nodes = _prepare_torus_quadratic_quadrature(
         vertex_x=vertex_x,
@@ -353,13 +379,14 @@ def construct_reference_tracer(
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
     )
-    end_center_x = (
-        vertex_x.min()
-        + (domain_center_x + u * integration_time) % grid.grid_params.domain_length
-    )
-    end_center_y = (
-        vertex_y.min()
-        + (domain_center_y + v * integration_time) % grid.grid_params.domain_height
+    end_center_x, end_center_y = _compute_tracer_center(
+        initial_center=config.initial_center,
+        origin_x=vertex_x.min(),
+        origin_y=vertex_y.min(),
+        domain_length=grid.grid_params.domain_length,
+        domain_height=grid.grid_params.domain_height,
+        displacement_x=u * integration_time,
+        displacement_y=v * integration_time,
     )
     _construct_idealized_tracer(
         tracer_profile=config.tracer_profile,
