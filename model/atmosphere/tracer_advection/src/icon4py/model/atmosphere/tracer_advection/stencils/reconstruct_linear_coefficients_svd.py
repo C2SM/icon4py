@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E2C, C2E2CDim
+from icon4py.model.common.dimension import C2E2C
 
 
 # TODO(dastrm): this stencil has no test
@@ -28,8 +28,8 @@ def _reconstruct_linear_coefficients_svd(
     fa.CellKField[ta.wpfloat],
 ]:
     p_coeff_1_dsl = p_cc
-    p_coeff_2_dsl = neighbor_sum(lsq_pseudoinv_1 * (p_cc(C2E2C) - p_cc), axis=C2E2CDim)
-    p_coeff_3_dsl = neighbor_sum(lsq_pseudoinv_2 * (p_cc(C2E2C) - p_cc), axis=C2E2CDim)
+    p_coeff_2_dsl = neighbor_sum(lsq_pseudoinv_1 * (p_cc(C2E2C) - p_cc), axis=dims.C2E2CDim)
+    p_coeff_3_dsl = neighbor_sum(lsq_pseudoinv_2 * (p_cc(C2E2C) - p_cc), axis=dims.C2E2CDim)
     return p_coeff_1_dsl, p_coeff_2_dsl, p_coeff_3_dsl
 
 

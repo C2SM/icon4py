@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -22,15 +21,15 @@ def _compute_advective_vertical_wind_tendency(
 ) -> fa.CellKHalfField[vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_16."""
     z_w_con_c_wp = astype(z_w_con_c, wpfloat)
-    coeff1_dwdz_at_half_levels = coeff1_dwdz(KHalfDim + 0.5)
-    coeff2_dwdz_at_half_levels = coeff2_dwdz(KHalfDim + 0.5)
+    coeff1_dwdz_at_half_levels = coeff1_dwdz(dims.KHalfDim + 0.5)
+    coeff2_dwdz_at_half_levels = coeff2_dwdz(dims.KHalfDim + 0.5)
     coeff1_dwdz_wp, coeff2_dwdz_wp = astype(
         (coeff1_dwdz_at_half_levels, coeff2_dwdz_at_half_levels), wpfloat
     )
 
     ddt_w_adv_wp = -z_w_con_c_wp * (
-        w(KHalfDim - 1) * coeff1_dwdz_wp
-        - w(KHalfDim + 1) * coeff2_dwdz_wp
+        w(dims.KHalfDim - 1) * coeff1_dwdz_wp
+        - w(dims.KHalfDim + 1) * coeff2_dwdz_wp
         + w * astype(coeff2_dwdz_at_half_levels - coeff1_dwdz_at_half_levels, wpfloat)
     )
     return astype(ddt_w_adv_wp, vpfloat)

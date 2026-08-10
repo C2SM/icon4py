@@ -8,7 +8,6 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -28,9 +27,9 @@ def _interpolate_edge_field_to_half_levels_vp(
     Returns:
         EdgeDim variables at half levels
     """
-    interpolation_to_half_levels_vp = wgtfac_e * interpolant(KHalfDim + 0.5) + (
+    interpolation_to_half_levels_vp = wgtfac_e * interpolant(dims.KHalfDim + 0.5) + (
         vpfloat("1.0") - wgtfac_e
-    ) * interpolant(KHalfDim - 0.5)
+    ) * interpolant(dims.KHalfDim - 0.5)
     return interpolation_to_half_levels_vp
 
 

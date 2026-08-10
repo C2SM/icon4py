@@ -23,7 +23,6 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -33,9 +32,11 @@ def _interpolate_to_half_levels(
     x: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKHalfField[ta.vpfloat]:
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
-    x_ie_wp = wgtfac_e_wp * x(KHalfDim + 0.5) + (wpfloat("1.0") - wgtfac_e_wp) * x(KHalfDim - 0.5)
+    x_ie_wp = wgtfac_e_wp * x(dims.KHalfDim + 0.5) + (wpfloat("1.0") - wgtfac_e_wp) * x(
+        dims.KHalfDim - 0.5
+    )
     return concat_where(
-        dims.KHalfDim > 0, astype(x_ie_wp, vpfloat), astype(x(KHalfDim + 0.5), vpfloat)
+        dims.KHalfDim > 0, astype(x_ie_wp, vpfloat), astype(x(dims.KHalfDim + 0.5), vpfloat)
     )
 
 

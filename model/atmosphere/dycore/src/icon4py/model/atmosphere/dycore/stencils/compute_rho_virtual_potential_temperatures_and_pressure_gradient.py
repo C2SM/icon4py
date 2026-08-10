@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -42,23 +41,25 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     )
 
     z_w_backtraj_wp = -(w - w_concorr_c_wp) * dtime * wpfloat("0.5") / ddqz_z_half_wp
-    z_rho_tavg_m1_wp = wgt_nnow_rth * rho_now(KHalfDim - 0.5) + wgt_nnew_rth * rho_var(
-        KHalfDim - 0.5
+    z_rho_tavg_m1_wp = wgt_nnow_rth * rho_now(dims.KHalfDim - 0.5) + wgt_nnew_rth * rho_var(
+        dims.KHalfDim - 0.5
     )
-    z_theta_tavg_m1_wp = wgt_nnow_rth * theta_now(KHalfDim - 0.5) + wgt_nnew_rth * theta_var(
-        KHalfDim - 0.5
+    z_theta_tavg_m1_wp = wgt_nnow_rth * theta_now(dims.KHalfDim - 0.5) + wgt_nnew_rth * theta_var(
+        dims.KHalfDim - 0.5
     )
-    z_rho_tavg_wp = wgt_nnow_rth * rho_now(KHalfDim + 0.5) + wgt_nnew_rth * rho_var(KHalfDim + 0.5)
-    z_theta_tavg_wp = wgt_nnow_rth * theta_now(KHalfDim + 0.5) + wgt_nnew_rth * theta_var(
-        KHalfDim + 0.5
+    z_rho_tavg_wp = wgt_nnow_rth * rho_now(dims.KHalfDim + 0.5) + wgt_nnew_rth * rho_var(
+        dims.KHalfDim + 0.5
+    )
+    z_theta_tavg_wp = wgt_nnow_rth * theta_now(dims.KHalfDim + 0.5) + wgt_nnew_rth * theta_var(
+        dims.KHalfDim + 0.5
     )
     rho_ic_wp = (
         wgtfac_c_wp * z_rho_tavg_wp
         + (wpfloat("1.0") - wgtfac_c_wp) * z_rho_tavg_m1_wp
         + z_w_backtraj_wp * (z_rho_tavg_m1_wp - z_rho_tavg_wp)
     )
-    z_theta_v_pr_mc_m1_wp = z_theta_tavg_m1_wp - astype(theta_ref_mc(KHalfDim - 0.5), wpfloat)
-    z_theta_v_pr_mc_wp = z_theta_tavg_wp - astype(theta_ref_mc(KHalfDim + 0.5), wpfloat)
+    z_theta_v_pr_mc_m1_wp = z_theta_tavg_m1_wp - astype(theta_ref_mc(dims.KHalfDim - 0.5), wpfloat)
+    z_theta_v_pr_mc_wp = z_theta_tavg_wp - astype(theta_ref_mc(dims.KHalfDim + 0.5), wpfloat)
 
     z_theta_v_pr_mc_vp, z_theta_v_pr_mc_m1_vp = astype(
         (z_theta_v_pr_mc_wp, z_theta_v_pr_mc_m1_wp), vpfloat
@@ -73,7 +74,7 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
         + z_w_backtraj_wp * (z_theta_tavg_m1_wp - z_theta_tavg_wp)
     )
     z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic_wp * (
-        exner_pr(KHalfDim - 0.5) - exner_pr(KHalfDim + 0.5)
+        exner_pr(dims.KHalfDim - 0.5) - exner_pr(dims.KHalfDim + 0.5)
     ) / astype(ddqz_z_half, wpfloat) + astype(z_theta_v_pr_ic_vp * d_exner_dz_ref_ic, wpfloat)
     return (
         rho_ic_wp,

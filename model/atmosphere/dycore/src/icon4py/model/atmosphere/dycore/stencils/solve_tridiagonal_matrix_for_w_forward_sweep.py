@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -60,11 +59,15 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
     z_gamma_vp = astype(dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half_wp, vpfloat)
-    z_a = (vpfloat("0.0") - z_gamma_vp) * z_beta(KHalfDim - 0.5) * z_alpha(KHalfDim - 1)
-    z_c = (vpfloat("0.0") - z_gamma_vp) * z_beta(KHalfDim + 0.5) * z_alpha(KHalfDim + 1)
-    z_b = vpfloat("1.0") + z_gamma_vp * z_alpha * (z_beta(KHalfDim - 0.5) + z_beta(KHalfDim + 0.5))
+    z_a = (vpfloat("0.0") - z_gamma_vp) * z_beta(dims.KHalfDim - 0.5) * z_alpha(dims.KHalfDim - 1)
+    z_c = (vpfloat("0.0") - z_gamma_vp) * z_beta(dims.KHalfDim + 0.5) * z_alpha(dims.KHalfDim + 1)
+    z_b = vpfloat("1.0") + z_gamma_vp * z_alpha * (
+        z_beta(dims.KHalfDim - 0.5) + z_beta(dims.KHalfDim + 0.5)
+    )
     z_gamma_wp = astype(z_gamma_vp, wpfloat)
-    w_prep = z_w_expl - z_gamma_wp * (z_exner_expl(KHalfDim - 0.5) - z_exner_expl(KHalfDim + 0.5))
+    w_prep = z_w_expl - z_gamma_wp * (
+        z_exner_expl(dims.KHalfDim - 0.5) - z_exner_expl(dims.KHalfDim + 0.5)
+    )
     z_q_res, w_res = tridiagonal_forward_sweep_for_w(a=z_a, b=z_b, c=z_c, d=w_prep)
     return z_q_res, w_res
 

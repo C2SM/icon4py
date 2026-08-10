@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -23,8 +22,8 @@ def _compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
     z_dwdz_dd_wp = inv_ddqz_z_full_wp * (
-        (w(KDim - 0.5) - w(KDim + 0.5))
-        - astype(w_concorr_c(KDim - 0.5) - w_concorr_c(KDim + 0.5), wpfloat)
+        (w(dims.KDim - 0.5) - w(dims.KDim + 0.5))
+        - astype(w_concorr_c(dims.KDim - 0.5) - w_concorr_c(dims.KDim + 0.5), wpfloat)
     )
     return astype(z_dwdz_dd_wp, vpfloat)
 

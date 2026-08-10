@@ -20,7 +20,6 @@ from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_press
     _extrapolate_temporally_exner_pressure,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim, KHalfDim
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_with_surface_value_vp,
     _interpolate_cell_field_to_half_levels_with_surface_value_wp,
@@ -40,8 +39,8 @@ def _calculate_nonhydro_buoy_at_cells_on_half_levels(
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
 ) -> fa.CellKHalfField[ta.wpfloat]:
     return exner_w_explicit_weight_parameter * theta_v_at_cells_on_half_levels * (
-        perturbed_exner_at_cells_on_model_levels(KHalfDim - 0.5)
-        - perturbed_exner_at_cells_on_model_levels(KHalfDim + 0.5)
+        perturbed_exner_at_cells_on_model_levels(dims.KHalfDim - 0.5)
+        - perturbed_exner_at_cells_on_model_levels(dims.KHalfDim + 0.5)
     ) / ddqz_z_half + astype(
         perturbed_theta_v_at_cells_on_half_levels * ddz_of_reference_exner_at_cells_on_half_levels,
         wpfloat,
@@ -150,8 +149,8 @@ def _compute_perturbed_quantities_and_interpolation(
         )
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = -vpfloat("0.5") * (
             (
-                perturbed_theta_v_at_cells_on_half_levels(KDim - 0.5)
-                - perturbed_theta_v_at_cells_on_half_levels(KDim + 0.5)
+                perturbed_theta_v_at_cells_on_half_levels(dims.KDim - 0.5)
+                - perturbed_theta_v_at_cells_on_half_levels(dims.KDim + 0.5)
             )
             * d2dexdz2_fac1_mc
             + perturbed_theta_v_at_cells_on_model_levels * d2dexdz2_fac2_mc
@@ -389,18 +388,18 @@ def _compute_interpolation_and_nonhydro_buoy(
     )
 
     time_averaged_rho = rhotheta_explicit_weight_parameter * current_rho(
-        KHalfDim + 0.5
-    ) + rhotheta_implicit_weight_parameter * next_rho(KHalfDim + 0.5)
+        dims.KHalfDim + 0.5
+    ) + rhotheta_implicit_weight_parameter * next_rho(dims.KHalfDim + 0.5)
     time_averaged_rho_kup = rhotheta_explicit_weight_parameter * current_rho(
-        KHalfDim - 0.5
-    ) + rhotheta_implicit_weight_parameter * next_rho(KHalfDim - 0.5)
+        dims.KHalfDim - 0.5
+    ) + rhotheta_implicit_weight_parameter * next_rho(dims.KHalfDim - 0.5)
 
     time_averaged_theta_v = rhotheta_explicit_weight_parameter * current_theta_v(
-        KHalfDim + 0.5
-    ) + rhotheta_implicit_weight_parameter * next_theta_v(KHalfDim + 0.5)
+        dims.KHalfDim + 0.5
+    ) + rhotheta_implicit_weight_parameter * next_theta_v(dims.KHalfDim + 0.5)
     time_averaged_theta_v_kup = rhotheta_explicit_weight_parameter * current_theta_v(
-        KHalfDim - 0.5
-    ) + rhotheta_implicit_weight_parameter * next_theta_v(KHalfDim - 0.5)
+        dims.KHalfDim - 0.5
+    ) + rhotheta_implicit_weight_parameter * next_theta_v(dims.KHalfDim - 0.5)
 
     rho_at_cells_on_half_levels = (
         wgtfac_c_wp * time_averaged_rho
@@ -409,10 +408,10 @@ def _compute_interpolation_and_nonhydro_buoy(
     )
 
     time_averaged_perturbed_theta_v_kup = time_averaged_theta_v_kup - astype(
-        reference_theta_at_cells_on_model_levels(KHalfDim - 0.5), wpfloat
+        reference_theta_at_cells_on_model_levels(dims.KHalfDim - 0.5), wpfloat
     )
     time_averaged_perturbed_theta_v = time_averaged_theta_v - astype(
-        reference_theta_at_cells_on_model_levels(KHalfDim + 0.5), wpfloat
+        reference_theta_at_cells_on_model_levels(dims.KHalfDim + 0.5), wpfloat
     )
 
     time_averaged_perturbed_theta_v_vp, time_averaged_perturbed_theta_v_kup_vp = astype(
@@ -433,8 +432,8 @@ def _compute_interpolation_and_nonhydro_buoy(
         exner_w_explicit_weight_parameter
         * theta_v_at_cells_on_half_levels
         * (
-            perturbed_exner_at_cells_on_model_levels(KHalfDim - 0.5)
-            - perturbed_exner_at_cells_on_model_levels(KHalfDim + 0.5)
+            perturbed_exner_at_cells_on_model_levels(dims.KHalfDim - 0.5)
+            - perturbed_exner_at_cells_on_model_levels(dims.KHalfDim + 0.5)
         )
         / astype(ddqz_z_half, wpfloat)
         + astype(

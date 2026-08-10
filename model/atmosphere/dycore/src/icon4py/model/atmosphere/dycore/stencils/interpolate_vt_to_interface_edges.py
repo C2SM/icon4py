@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -21,9 +20,9 @@ def _interpolate_vt_to_interface_edges(
     """Formerly known as _mo_velocity_advection_stencil_03."""
     wgtfac_e_wp, vt_wp = astype((wgtfac_e, vt), wpfloat)
 
-    z_vt_ie_wp = astype(wgtfac_e * vt(KHalfDim + 0.5), wpfloat) + (
+    z_vt_ie_wp = astype(wgtfac_e * vt(dims.KHalfDim + 0.5), wpfloat) + (
         wpfloat("1.0") - wgtfac_e_wp
-    ) * vt_wp(KHalfDim - 0.5)
+    ) * vt_wp(dims.KHalfDim - 0.5)
 
     return astype(z_vt_ie_wp, vpfloat)
 

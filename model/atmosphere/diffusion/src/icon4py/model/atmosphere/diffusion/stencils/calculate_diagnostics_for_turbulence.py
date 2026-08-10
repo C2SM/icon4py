@@ -9,8 +9,7 @@
 import gt4py.next as gtx
 from gt4py.next import astype
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import KHalfDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -23,12 +22,12 @@ def _calculate_diagnostics_for_turbulence(
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
     div_wp, kh_c_wp = astype((div, kh_c), wpfloat)
 
-    div_ic_wp = astype(wgtfac_c * div(KHalfDim + 0.5), wpfloat) + (
+    div_ic_wp = astype(wgtfac_c * div(dims.KHalfDim + 0.5), wpfloat) + (
         wpfloat("1.0") - wgtfac_c_wp
-    ) * div_wp(KHalfDim - 0.5)
-    hdef_ic_wp = astype(wgtfac_c * kh_c(KHalfDim + 0.5), wpfloat) + (
+    ) * div_wp(dims.KHalfDim - 0.5)
+    hdef_ic_wp = astype(wgtfac_c * kh_c(dims.KHalfDim + 0.5), wpfloat) + (
         wpfloat("1.0") - wgtfac_c_wp
-    ) * kh_c_wp(KHalfDim - 0.5)
+    ) * kh_c_wp(dims.KHalfDim - 0.5)
     hdef_ic_wp = hdef_ic_wp * hdef_ic_wp
 
     return astype((div_ic_wp, hdef_ic_wp), vpfloat)

@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KHalfDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -25,8 +24,8 @@ def _compute_horizontal_kinetic_energy(
     """Formerly known as _mo_solve_nonhydro_stencil_37 or _mo_velocity_advection_stencil_05."""
     # TODO(): This stencil doesn't only do what the name implies. It also
     # assigns to vn_ie_wp and z_vt_ie_vp. These things should be separated.
-    vn_ie_wp = vn(KHalfDim + 0.5)
-    z_vt_ie_vp = vt(KHalfDim + 0.5)
+    vn_ie_wp = vn(dims.KHalfDim + 0.5)
+    z_vt_ie_vp = vt(dims.KHalfDim + 0.5)
     z_kin_hor_e_wp = wpfloat("0.5") * (vn * vn + astype(vt * vt, wpfloat))
     return astype(vn_ie_wp, vpfloat), z_vt_ie_vp, astype(z_kin_hor_e_wp, vpfloat)
 

@@ -22,7 +22,6 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import KDim, KHalfDim
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_vp,
 )
@@ -44,10 +43,10 @@ def _interpolate_contravariant_vertical_velocity_to_full_levels(
         dims.KDim < nlev - 1,
         vpfloat("0.5")
         * (
-            contravariant_corrected_w_at_cells_on_half_levels(KDim - 0.5)
-            + contravariant_corrected_w_at_cells_on_half_levels(KDim + 0.5)
+            contravariant_corrected_w_at_cells_on_half_levels(dims.KDim - 0.5)
+            + contravariant_corrected_w_at_cells_on_half_levels(dims.KDim + 0.5)
         ),
-        vpfloat("0.5") * contravariant_corrected_w_at_cells_on_half_levels(KDim - 0.5),
+        vpfloat("0.5") * contravariant_corrected_w_at_cells_on_half_levels(dims.KDim - 0.5),
     )
 
 
@@ -88,15 +87,15 @@ def _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
     contravariant_corrected_w_at_cells_on_half_levels_wp = astype(
         contravariant_corrected_w_at_cells_on_half_levels, wpfloat
     )
-    coeff1_dwdz_at_half_levels = coeff1_dwdz(KHalfDim + 0.5)
-    coeff2_dwdz_at_half_levels = coeff2_dwdz(KHalfDim + 0.5)
+    coeff1_dwdz_at_half_levels = coeff1_dwdz(dims.KHalfDim + 0.5)
+    coeff2_dwdz_at_half_levels = coeff2_dwdz(dims.KHalfDim + 0.5)
     coeff1_dwdz_wp, coeff2_dwdz_wp = astype(
         (coeff1_dwdz_at_half_levels, coeff2_dwdz_at_half_levels), wpfloat
     )
 
     vertical_wind_advective_tendency_wp = -contravariant_corrected_w_at_cells_on_half_levels_wp * (
-        w(KHalfDim - 1) * coeff1_dwdz_wp
-        - w(KHalfDim + 1) * coeff2_dwdz_wp
+        w(dims.KHalfDim - 1) * coeff1_dwdz_wp
+        - w(dims.KHalfDim + 1) * coeff2_dwdz_wp
         + w * astype(coeff2_dwdz_at_half_levels - coeff1_dwdz_at_half_levels, wpfloat)
     )
     return astype(vertical_wind_advective_tendency_wp, vpfloat)
