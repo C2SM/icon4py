@@ -65,7 +65,9 @@ def backend_config() -> backend_cfg.BackendConfig | None:
 
 
 @pytest.fixture(scope="session")
-def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
+def backend(
+    request: pytest.FixtureRequest, backend_config: backend_cfg.BackendConfig | None
+) -> gtx_typing.Backend | None:
     """
     Fixture to provide a GT4Py backend for the tests.
 
@@ -79,11 +81,6 @@ def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
     spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
     assert isinstance(spec, str), "Backend spec must be a string"
     backend_like = _get_backend_like(spec)
-    backend_config = (
-        request.getfixturevalue("backend_config")
-        if "backend_config" in request.fixturenames
-        else None
-    )
     # We create a generic concrete backend (no program specific customization).
     return model_options.customize_backend(None, backend_like, backend_config=backend_config)
 
