@@ -130,11 +130,7 @@ class _Lattice:
 
     Indices are 1-based, as in the grid file. Entities come in two families: 'vertex',
     'right_edge', 'top_right_edge' and 'top_right_cell' live on rows [0, n_rows), while
-    'down_right_edge' and 'down_right_cell' live on rows [1, n_rows]. Both are periodic in the
-    column and sheared in the row: row y is staggered y*edge_length/2 to the right, so after
-    n_rows rows the stagger is exactly n_rows/2 whole columns and moving up n_rows rows lands on
-    the same lattice point as moving right n_rows/2 columns (mo_create_torus_grid.f90:598-604,
-    :687-693, :712-717, :733-738). That shear is why n_rows must be even.
+    'down_right_edge' and 'down_right_cell' live on rows [1, n_rows].
     """
 
     def __init__(self, n_rows: int, n_cols: int) -> None:
