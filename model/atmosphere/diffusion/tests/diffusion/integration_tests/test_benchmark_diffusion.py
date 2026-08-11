@@ -8,14 +8,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common import constants, model_backends, model_options
+from icon4py.model.common import backend_configuration as backend_cfg, model_backends
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -32,7 +32,7 @@ from icon4py.model.testing.fixtures.benchmark import (
     interpolation_field_source,
     metrics_field_source,
 )
-from icon4py.model.testing.fixtures.datatest import backend_config as backend_cfg, backend_like
+from icon4py.model.testing.fixtures.datatest import backend_config, backend_like
 from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 
 

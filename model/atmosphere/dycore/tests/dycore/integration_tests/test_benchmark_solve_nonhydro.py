@@ -9,19 +9,18 @@
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import gt4py.next as gtx
 import pytest
-
-
-if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import model_backends, utils as common_utils
+from icon4py.model.common import (
+    backend_configuration as backend_cfg,
+    model_backends,
+    utils as common_utils,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -31,14 +30,14 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory, nonhydro_states, prognostic_state as prognostics
+from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
     interpolation_field_source,
     metrics_field_source,
 )
-from icon4py.model.testing.fixtures.datatest import backend_config as backend_cfg, backend_like
+from icon4py.model.testing.fixtures.datatest import backend_config, backend_like
 from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 
 
