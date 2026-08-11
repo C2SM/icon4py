@@ -24,11 +24,13 @@ The intentional differences are:
   'order_vertex_connectivity' is not called for a torus
   (mo_create_torus_grid.f90:378-385); the distributed MPI-M grid files are
   counter-clockwise.
-- Latitudes are a linear function of the cartesian y coordinate. The Fortran offsets the
-  latitude of an up-pointing cell by 2/3 of a row but its cartesian y by only 1/3
-  (mo_create_torus_grid.f90:860-861, against :881-882 which uses -1/3 for both), so its 'clat'
-  is not the image of 'cell_circumcenter_cartesian_y' under any single map. The distributed
-  MPI-M grid files are linear, so this follows the files rather than the source.
+- 'clat' is the image of 'cell_circumcenter_cartesian_y' under a single linear map. The Fortran
+  offsets the latitude of an up-pointing cell by 2/3 of a row while offsetting its cartesian y
+  by 1/3 (mo_create_torus_grid.f90:860 against :861), so every second cell is given a latitude
+  that does not match its position. The factor is a bug rather than a convention: it should be
+  1/3, as the down-pointing branch already uses -1/3 for both (:881-882) and as both branches
+  do for the longitude (:864-865, :885-886). The cartesian coordinates are correct in the
+  Fortran; only 'clat' is affected.
 """
 
 import math
