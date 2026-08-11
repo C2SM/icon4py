@@ -45,14 +45,19 @@ def _make_prognostic_state(
 ) -> prognostics.PrognosticState:
     # Constructed directly (instead of `initialize_prognostic_state`) so it works with
     # the generic `simple_grid`.
-    def _cell_k(extend: dict[gtx.Dimension, int] | None = None) -> gtx.Field:
+    def _cell_k() -> gtx.Field:
         return data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend=extend, allocator=allocator
+            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+        )
+
+    def _cell_khalf() -> gtx.Field:
+        return data_alloc.zero_field(
+            grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat, allocator=allocator
         )
 
     return prognostics.PrognosticState(
         rho=_cell_k(),
-        w=_cell_k(extend={dims.KDim: 1}),
+        w=_cell_khalf(),
         vn=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         ),
