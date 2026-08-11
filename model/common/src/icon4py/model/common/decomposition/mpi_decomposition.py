@@ -155,7 +155,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         # if those ids are not different for all domain descriptors the system might deadlock
         # if two parallel exchanges with the same domain id are done
         domain_desc = DomainDescriptor(
-            self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
+            self._domain_id_gen(), data_alloc.as_numpy(all_global), data_alloc.as_numpy(local_halo)
         )
         log.debug(
             f"domain descriptor for dim='{dim.value}' with properties {self._domain_descriptor_info(domain_desc)} created"
@@ -168,7 +168,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         global_halo_idx = self._decomposition_info.global_index(
             horizontal_dim, decomp_defs.DecompositionInfo.EntryType.HALO
         )
-        halo_generator = HaloGenerator.from_gids(global_halo_idx.tolist())
+        halo_generator = HaloGenerator.from_gids(data_alloc.as_numpy(global_halo_idx))
         log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
         pattern = make_pattern(
             self._context,
