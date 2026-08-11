@@ -236,7 +236,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         mass_flx_me=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
@@ -272,16 +272,12 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
             data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            data_alloc.zero_field(
-                mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-            ),
-            data_alloc.zero_field(
-                mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-            ),
+            data_alloc.zero_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+            data_alloc.zero_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
         ),
         tangential_wind=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         vn_on_half_levels=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.EdgeDim, dims.KHalfDim, allocator=allocator
         ),
         contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
