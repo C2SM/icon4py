@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pathlib
+from collections.abc import Callable
 from typing import Final
 
 import gt4py.next.typing as gtx_typing
@@ -26,7 +27,7 @@ from icon4py.model.common.metrics import metrics_attributes as metrics_meta
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
-from icon4py.model.testing import config as test_config, plot_utils, torus_grid_generator
+from icon4py.model.testing import config as test_config, plot_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -35,8 +36,8 @@ _FIRST_ORDER = 1.0
 _SECOND_ORDER = 2.0
 _TOL = 0.4
 
-# 12 rows by 10 columns of 100 m edges: domain_length = 1000 m and
-# domain_height = 12 * 100 * sqrt(3)/2 = 1039.2304845413264 m. Refining multiplies the row and
+# 24 rows by 20 columns of 100 m edges: domain_length = 2000 m and
+# domain_height = 24 * 100 * sqrt(3)/2 = 2078.460969082653 m. Refining multiplies the row and
 # column counts and divides the edge length, so every level of the family discretises the same
 # continuous problem. Only a power of two keeps both extents bit-identical, a factor of 3 or 5
 # perturbs them in the last ulp. The downloaded TORUS_1000X1000_* grids did not have that
@@ -46,20 +47,6 @@ _BASE_TORUS_ROWS: Final = 24
 _BASE_TORUS_COLS: Final = 20
 _BASE_TORUS_EDGE_LENGTH: Final = 100.0
 _REFINEMENT_FACTORS: Final = tuple(2**exponent for exponent in range(4))
-
-
-def _generate_torus_grid(*, refinement_factor: int, out_dir: pathlib.Path) -> pathlib.Path:
-    """Write the base torus grid refined by 'refinement_factor', see '_REFINEMENT_FACTORS'."""
-    n_rows = _BASE_TORUS_ROWS * refinement_factor
-    n_cols = _BASE_TORUS_COLS * refinement_factor
-    edge_length = _BASE_TORUS_EDGE_LENGTH / refinement_factor
-    return torus_grid_generator.generate_torus_grid(
-        n_rows=n_rows,
-        n_cols=n_cols,
-        edge_length=edge_length,
-        # the stem is the label of the per-grid plots
-        out_file=out_dir / f"torus_{n_rows}x{n_cols}_res{edge_length:g}m.nc",
-    )
 
 
 def _compute_relative_errors(
@@ -140,6 +127,7 @@ def test_horizontal_advection_convergence(
     linf_acceptable_range: tuple[float, float],
     enable_plot: bool,
     tmp_path: pathlib.Path,
+    generate_torus_grid: Callable[..., pathlib.Path],
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -149,7 +137,11 @@ def test_horizontal_advection_convergence(
     # guaranteed to keep the domain extents fixed while the resolution changes, which is what
     # the convergence rate is measured against.
     grid_file_paths = [
-        _generate_torus_grid(refinement_factor=factor, out_dir=tmp_path)
+        generate_torus_grid(
+            n_rows=_BASE_TORUS_ROWS * factor,
+            n_cols=_BASE_TORUS_COLS * factor,
+            edge_length=_BASE_TORUS_EDGE_LENGTH / factor,
+        )
         for factor in _REFINEMENT_FACTORS
     ]
 
@@ -407,12 +399,17 @@ def test_vertical_advection_convergence(
     linf_acceptable_range: tuple[float, float],
     enable_plot: bool,
     tmp_path: pathlib.Path,
+    generate_torus_grid: Callable[..., pathlib.Path],
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
 
-    grid_path = _generate_torus_grid(refinement_factor=1, out_dir=tmp_path)
+    grid_path = generate_torus_grid(
+        n_rows=_BASE_TORUS_ROWS,
+        n_cols=_BASE_TORUS_COLS,
+        edge_length=_BASE_TORUS_EDGE_LENGTH,
+    )
     error_l1: list[float] = []
     error_linf: list[float] = []
 
