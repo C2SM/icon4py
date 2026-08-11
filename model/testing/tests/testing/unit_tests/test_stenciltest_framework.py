@@ -168,6 +168,32 @@ class TestInputDataFixture:
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
             stencil_tests.input_data_fixture(input_data)
 
+    def test_rejects_a_call_hidden_in_a_nested_function(self):
+        """A scan of only the fixture's own code object would miss this."""
+
+        def input_data(self, grid):
+            def build():
+                return data_alloc.zero_field(grid, dims.CellDim)
+
+            return {"a": build()}
+
+        with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
+            stencil_tests.input_data_fixture(input_data)
+
+    def test_rejects_a_call_hidden_in_a_comprehension(self):
+        def input_data(self, grid):
+            return {"a": [data_alloc.zero_field(grid, dims.CellDim) for _ in range(1)]}
+
+        with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
+            stencil_tests.input_data_fixture(input_data)
+
+    def test_is_skipped_when_no_source_is_available(self):
+        """Dynamically generated fixtures cannot be inspected; they must not blow up."""
+        namespace: dict = {}
+        exec("def input_data(self, grid):\n    return {}", namespace)
+
+        assert stencil_tests.input_data_fixture(namespace["input_data"]) is not None
+
     def test_rejects_data_allocation_from_an_enclosing_scope(self):
         module = data_alloc
 

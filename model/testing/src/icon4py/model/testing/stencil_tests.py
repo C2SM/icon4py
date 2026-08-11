@@ -25,12 +25,13 @@ is identifiable in pytest output.
 
 from __future__ import annotations
 
+import ast
 import contextlib
 import dataclasses
-import dis
 import functools
 import inspect
 import os
+import textwrap
 import types
 from collections.abc import Callable, Generator, Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias, cast
@@ -100,20 +101,25 @@ def _reject_direct_data_allocation(func: types.FunctionType) -> None:
     Only the wrapper has the grid and the backend's allocator bound, so a direct call would
     silently allocate on the wrong device.
 
-    Globals are read from the `LOAD_GLOBAL` opcodes instead of from
-    `inspect.getclosurevars(func).globals`: the latter resolves every name in `co_names`,
-    which includes attribute names, and so mistakes a fixture's own `self.data_alloc` for a
-    module global named `data_alloc`. Whether it does is CPython-version dependent, which
-    made this check fail on some interpreters only.
+    The names `func` reads are collected from its AST, where an attribute access is an
+    `ast.Attribute` and therefore never mistaken for a name. Note that
+    `inspect.getclosurevars(func).globals` cannot be used instead: it resolves every name in
+    `co_names`, attribute names included, so a fixture's own `self.data_alloc` matches a
+    module global named `data_alloc` (whether it does is CPython-version dependent). Reading
+    the AST also covers nested functions and comprehensions.
     """
-    global_ns = func.__globals__
-    referenced = [
-        global_ns[instruction.argval]
-        for instruction in dis.get_instructions(func)
-        if instruction.opname == "LOAD_GLOBAL" and instruction.argval in global_ns
-    ]
-    referenced += inspect.getclosurevars(func).nonlocals.values()
-    if any(ref is data_allocation for ref in referenced):
+    try:
+        source = inspect.getsource(func)
+    except OSError:  # no source available, e.g. a dynamically generated function
+        return
+
+    referenced = {
+        node.id
+        for node in ast.walk(ast.parse(textwrap.dedent(source)))
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+    }
+    scopes = (func.__globals__, inspect.getclosurevars(func).nonlocals)
+    if any(scope.get(name) is data_allocation for name in referenced for scope in scopes):
         raise TypeError(
             "The 'input_data_fixture' should not call 'data_allocation' functions directly. "
             "Use `self.data_alloc` inside the fixture to access data allocation functions instead."
