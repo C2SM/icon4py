@@ -25,6 +25,16 @@ def copy_field(old_f: fa.CellKField[float], new_f: fa.CellKField[float]) -> None
 
 
 @gtx.field_operator
+def _identity_c_khalf(field: fa.CellKHalfField[float]) -> fa.CellKHalfField[float]:
+    return field
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def copy_khalf_field(old_f: fa.CellKHalfField[float], new_f: fa.CellKHalfField[float]) -> None:
+    _identity_c_khalf(old_f, out=new_f)
+
+
+@gtx.field_operator
 def _identity_e_k(field: fa.EdgeKField[float]) -> fa.EdgeKField[float]:
     return field
 

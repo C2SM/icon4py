@@ -25,6 +25,7 @@ import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
+    copy_khalf_field,
     init_diffusion_local_fields_for_regular_timestep,
     scale_k,
     setup_fields_for_initial_step,
@@ -692,6 +693,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.copy_field = setup_program(backend=backend, program=copy_field)
+        self.copy_khalf_field = setup_program(backend=backend, program=copy_khalf_field)
         self.scale_k = setup_program(backend=backend, program=scale_k)
         self.setup_fields_for_initial_step = setup_program(
             backend=backend, program=setup_fields_for_initial_step
@@ -947,7 +949,7 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
-        self.copy_field(prognostic_state.w, self.w_tmp)
+        self.copy_khalf_field(prognostic_state.w, self.w_tmp)
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             w_old=self.w_tmp,
