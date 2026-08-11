@@ -125,12 +125,43 @@ _DIMENSIONS: Final[dict[str, tuple[str, ...]]] = {
 
 
 class _Lattice:
-    """
+    r"""
     The integer (column, row) lattice of the torus and the index formulas.
 
     Indices are 1-based, as in the grid file. Entities come in two families: 'vertex',
     'right_edge', 'top_right_edge' and 'top_right_cell' live on rows [0, n_rows), while
     'down_right_edge' and 'down_right_cell' live on rows [1, n_rows].
+
+    Vertex numbering and the row stagger, for n_rows=4, n_cols=4. Indices grow fastest with
+    the row, so a column of the lattice is a contiguous block. Each row sits half an edge
+    length to the right of the one below it, which is why the mesh only closes in y after
+    n_rows rows AND a shift of n_rows/2 columns, and hence why n_rows must be even:
+
+            x=0         1         2         3      (wraps to x=0)
+                                                          .
+        y=3        4 ________ 8 ________ 12 _______ 16 ___.
+                  /         /          /          /       .
+        y=2      3 ________ 7 ________ 11 _______ 15 ______ 3
+                /         /          /          /
+        y=1    2 ________ 6 ________ 10 _______ 14 ______ 2
+              /         /          /          /
+        y=0  1 ________ 5 ________ 9 ________ 13 ______ 1
+
+    Row y=4 would land on row y=0 displaced by n_rows/2 = 2 columns, so vertex(0, 4) is
+    vertex(2, 0) = 9. That is what '_low' and '_high' fold: stepping off the top of the
+    lattice adds n_rows/2 to the column, stepping off the bottom subtracts it.
+
+    The three edge families and the two cell families around one vertex, drawn between
+    rows y and y+1. Every edge is named after the direction it leaves 'v(x, y)' in:
+
+              v(x,y+1)      v(x+1,y+1)          right_edge(x, y):      v(x,y) -> v(x+1,y)
+                  ._________.                   top_right_edge(x, y):  v(x,y) -> v(x,y+1)
+                 / \  down / \                  down_right_edge(x, y): v(x,y) -> v(x+1,y-1)
+        top_right   \ (x,y+1) \
+               /  up \       / \                up cells point up, apex on the row above;
+              / (x,y) \     /   \               down cells point down, apex on the row below
+             ._________._________.
+          v(x,y)     v(x+1,y)
     """
 
     def __init__(self, n_rows: int, n_cols: int) -> None:
@@ -188,7 +219,46 @@ class _Lattice:
 
 
 def _build_connectivity(lattice: _Lattice) -> dict[str, np.ndarray]:
-    """The eight connectivities and the three orientation fields, 1-based and (neighbours, entities)."""
+    r"""
+    The eight connectivities and the three orientation fields, 1-based and (neighbours, entities).
+
+    Slot order within a cell. 'edge_of_cell[k]' spans 'vertex_of_cell[k]' and
+    'vertex_of_cell[k+1]', and 'neighbor_cell_index[k]' is the cell across 'edge_of_cell[k]'.
+    'orientation_of_normal[k]' is +1 exactly where this cell is 'adjacent_cell_of_edge[0]' of
+    that edge, i.e. where the stored normal points out of the cell; the two families therefore
+    have different sign patterns:
+
+           up_cell(x, y)                        down_cell(x, y)
+
+                 V2                          V0 _________E2________ V2
+                 /\                             \                  /
+            E2  /  \  E1                     E0  \                /  E1
+               /    \                             \              /
+          V0  /__E0__\  V1                         \____________/
+                                                         V1
+
+      V = [ v(x,y), v(x+1,y), v(x,y+1) ]     V = [ v(x,y), v(x+1,y-1), v(x+1,y) ]
+      E = [ right(x,y),                      E = [ down_right(x,y),
+            down_right(x,y+1),                     top_right(x+1,y-1),
+            top_right(x,y) ]                       right(x,y) ]
+      orientation_of_normal = [-1,-1,+1]     orientation_of_normal = [+1,-1,+1]
+
+    Slot order around a vertex, counter-clockwise from east. The Fortran leaves these in edge
+    creation order, see the module docstring. 'vertices_of_vertex[k]' is the far endpoint of
+    'edges_of_vertex[k]', and 'cells_of_vertex[k]' is the cell between edges k and k+1:
+
+              v(x-1,y+1)     v(x,y+1)         k  edges_of_vertex        edge_orientation
+                       \     /                0  right(x, y)                  +1
+                        \   /                 1  top_right(x, y)              +1
+        v(x-1,y) ------ v(x,y) ------ v(x+1,y)  2  down_right(x-1, y+1)       +1
+                        /   \                 3  right(x-1, y)                -1
+                       /     \                4  top_right(x, y-1)            -1
+                v(x,y-1)     v(x+1,y-1)       5  down_right(x, y)             -1
+
+    The orientation is +1 on the first three because this vertex is 'edge_vertices[0]' of
+    those edges and -1 on the last three because it is 'edge_vertices[1]'
+    (mo_create_torus_grid.f90:1115, :1121). It is therefore the same column for every vertex.
+    """
     # 'y' runs over the rows of the low family, [0, n_rows), 'y_up' over those of the high
     # family, [1, n_rows]; 'up_cell' and 'down_cell' are the up- and down-pointing triangles.
     # The Fortran's 'down_cell' and 'top_cell' helpers (mo_create_torus_grid.f90:746, :763) are
