@@ -15,10 +15,16 @@ to provide workspace memory for transient SDFG arrays
 caches a single aligned slab per device and reuses it across every compiled
 program; :func:`make_custom_dace_backend <icon4py.model.common.model_backends.make_custom_dace_backend>`
 installs it by default.
+
+The size and alignment of the workspace are configurable per experiment via
+:class:`WorkspaceConfig` (see :func:`workspace_config_from_env` for an
+environment-variable based default).
 """
 
 from __future__ import annotations
 
+import dataclasses
+import os
 from collections.abc import Iterable
 from types import ModuleType
 from typing import ClassVar, Final
@@ -29,11 +35,40 @@ from gt4py.next.program_processors.runners.dace import transformations as gtx_tr
 from icon4py.model.common.utils import data_allocation
 
 
-# TODO(edopao): make these configurable via environment variables or model options
-_WORKSPACE_SIZE: Final[int] = (
-    256 * 1024 * 1024
-)  # Max workspace size per device for ICON4Py programs
-_WORKSPACE_ALIGNMENT: Final[int] = 256  # Matches DaCe's default transient-storage alignment
+_DEFAULT_ALIGNMENT: Final[int] = 256  # Matches DaCe's default transient-storage alignment
+
+
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class WorkspaceConfig:
+    """External DaCe workspace sizing, configurable per experiment."""
+
+    #: Workspace size in bytes, per device.
+    size: int
+    #: Base-pointer alignment in bytes. Must be a positive power of two.
+    alignment: int
+
+    def __post_init__(self) -> None:
+        if self.size <= 0:
+            raise ValueError(f"'size' must be positive, got {self.size}.")
+        if self.alignment <= 0 or (self.alignment & (self.alignment - 1)) != 0:
+            raise ValueError(f"'alignment' must be a positive power of two, got {self.alignment}.")
+
+
+def workspace_config_from_env() -> WorkspaceConfig | None:
+    """Build a :class:`WorkspaceConfig` from environment variables.
+
+    Reads ``ICON4PY_DACE_WORKSPACE_SIZE`` and (optionally)
+    ``ICON4PY_DACE_WORKSPACE_ALIGNMENT``. Returns ``None`` when ``size`` is not
+    set. When ``alignment`` is not set, :data:`_DEFAULT_ALIGNMENT` is used.
+    """
+    size = os.environ.get("ICON4PY_DACE_WORKSPACE_SIZE")
+    if size is None:
+        return None
+    alignment = os.environ.get("ICON4PY_DACE_WORKSPACE_ALIGNMENT")
+    return WorkspaceConfig(
+        size=int(size),
+        alignment=int(alignment) if alignment is not None else _DEFAULT_ALIGNMENT,
+    )
 
 
 def _array_namespace_for(device: gtx.DeviceType) -> ModuleType:
@@ -51,6 +86,15 @@ def _array_namespace_for(device: gtx.DeviceType) -> ModuleType:
     return np
 
 
+def _array_base_ptr(buf: data_allocation.NDArray) -> int:
+    """Return the base pointer of `buf` from its array interface."""
+    interface = getattr(buf, "__cuda_array_interface__", None) or getattr(
+        buf, "__array_interface__", None
+    )
+    assert interface is not None, "allocated buffer exposes no array interface"
+    return int(interface["data"][0])
+
+
 def _aligned_slab(nbytes: int, alignment: int, device: gtx.DeviceType) -> data_allocation.NDArray:
     """Allocate a `nbytes`-byte buffer whose base pointer is `alignment`-aligned.
 
@@ -61,11 +105,7 @@ def _aligned_slab(nbytes: int, alignment: int, device: gtx.DeviceType) -> data_a
     """
     xp = _array_namespace_for(device)
     buf = xp.empty(nbytes + alignment, dtype=xp.uint8)
-    interface = getattr(buf, "__cuda_array_interface__", None) or getattr(
-        buf, "__array_interface__", None
-    )
-    assert interface is not None, "allocated buffer exposes no array interface"
-    ptr = int(interface["data"][0])
+    ptr = _array_base_ptr(buf)
     offset = (-ptr) % alignment
     return buf[offset : offset + nbytes]
 
@@ -76,7 +116,8 @@ class IconWorkspaceAllocator:
     Exactly one instance exists per process (enforced by `__new__`); all DaCe
     backends share it via the module-level `ICON_WORKSPACE_ALLOCATOR`. It keeps
     a single private workspace slab per device in `_workspace_slabs`, reused
-    across every compiled program.
+    across every compiled program. On a cache hit the slab's size and base-
+    pointer alignment are validated against the values passed to `allocate`.
     """
 
     _instance: ClassVar[IconWorkspaceAllocator | None] = None
@@ -88,19 +129,32 @@ class IconWorkspaceAllocator:
         return cls._instance
 
     def allocate(
-        self, devices: gtx.DeviceType | Iterable[gtx.DeviceType]
+        self,
+        devices: gtx.DeviceType | Iterable[gtx.DeviceType],
+        *,
+        config: WorkspaceConfig,
     ) -> gtx_transformations.ExternalWorkspace:
-        wsp = {}
         if isinstance(devices, gtx.DeviceType):
             devices = [devices]
+        wsp = {}
         for dev in devices:
-            if (cached := self._workspace_slabs.get(dev)) is None:
-                slab = _aligned_slab(_WORKSPACE_SIZE, _WORKSPACE_ALIGNMENT, dev)
+            if (cached := self._workspace_slabs.get(dev)) is not None:
+                if cached.nbytes != config.size:
+                    raise ValueError(
+                        f"Workspace size mismatch for {dev!s}: cached slab has "
+                        f"{cached.nbytes} bytes but 'allocate' was called with "
+                        f"size={config.size}."
+                    )
+                if (_array_base_ptr(cached) % config.alignment) != 0:
+                    raise ValueError(
+                        f"Workspace alignment mismatch for {dev!s}: cached slab base "
+                        f"pointer is not {config.alignment}-aligned."
+                    )
+                wsp[dev] = cached
+            else:
+                slab = _aligned_slab(config.size, config.alignment, dev)
                 self._workspace_slabs[dev] = slab
                 wsp[dev] = slab
-            else:
-                wsp[dev] = cached
-
         return wsp
 
     def deallocate(self, wsp: gtx_transformations.ExternalWorkspace) -> None:
