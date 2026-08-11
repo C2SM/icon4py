@@ -32,7 +32,7 @@ from icon4py.model.testing.fixtures.benchmark import (
     interpolation_field_source,
     metrics_field_source,
 )
-from icon4py.model.testing.fixtures.datatest import backend_like
+from icon4py.model.testing.fixtures.datatest import backend_config as backend_cfg, backend_like
 from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 
 
@@ -46,6 +46,7 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend_like: model_backends.BackendLike,
+    backend_config: backend_cfg.BackendConfig | None,
     benchmark: Any,
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)
