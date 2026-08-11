@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next import exp, sqrt
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
@@ -33,7 +34,7 @@ def _scan_pressure(
 
 
 @gtx.field_operator
-def _diagnose_pressure(
+def _diagnose_pressure_on_model_levels(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
@@ -47,10 +48,25 @@ def _diagnose_pressure(
         virtual_temperature: air virtual temperature [K]
         surface_pressure: surface air pressure [Pa]
     Returns:
-        pressure at full levels, pressure at half levels (excluding surface level)
+        pressure at full levels, pressure at the bounding upper interface of each level
     """
     pressure, pressure_ifc, _ = _scan_pressure(ddqz_z_full, virtual_temperature, surface_pressure)
     return pressure, pressure_ifc
+
+
+@gtx.field_operator
+def _pressure_on_half_levels(
+    pressure_ifc_on_model_levels: fa.CellKField[ta.wpfloat],
+    surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
+    nlev: gtx.int32,
+) -> fa.CellKHalfField[ta.wpfloat]:
+    # The scan runs on KDim, so the staggering happens here rather than inside it: a scan
+    # whose axis differs from its output dimension is rejected by the embedded backend.
+    return concat_where(
+        dims.KHalfDim == nlev,
+        surface_pressure,
+        pressure_ifc_on_model_levels(dims.KHalfDim + 0.5),
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -59,19 +75,30 @@ def diagnose_pressure(
     virtual_temperature: fa.CellKField[ta.wpfloat],
     surface_pressure: fa.CellField[ta.wpfloat],
     pressure: fa.CellKField[ta.wpfloat],
-    pressure_ifc: fa.CellKField[ta.wpfloat],
+    pressure_ifc_on_model_levels: fa.CellKField[ta.wpfloat],
+    pressure_ifc: fa.CellKHalfField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _diagnose_pressure(
+    _diagnose_pressure_on_model_levels(
         ddqz_z_full,
         virtual_temperature,
         surface_pressure,
-        out=(pressure, pressure_ifc),
+        out=(pressure, pressure_ifc_on_model_levels),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+    _pressure_on_half_levels(
+        pressure_ifc_on_model_levels,
+        surface_pressure,
+        vertical_end,
+        out=pressure_ifc,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end + 1),
         },
     )

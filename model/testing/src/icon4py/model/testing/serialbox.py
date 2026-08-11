@@ -1805,7 +1805,7 @@ class IconDiagnosticsInitSavepoint(IconSavepoint):
         return self._get_field("exner_pr", dims.CellDim, dims.KDim)
 
     def pressure_ifc(self):
-        return self._get_field("pressure_ifc", dims.CellDim, dims.KDim)
+        return self._get_field("pressure_ifc", dims.CellDim, dims.KHalfDim)
 
     def pressure_sfc(self):
         return self._get_field("pressure_sfc", dims.CellDim)
@@ -1943,7 +1943,7 @@ class IconSatadExitSavepoint(IconSavepoint):
         return self._get_field("pressure", dims.CellDim, dims.KDim)
 
     def pressure_ifc(self):
-        return self._get_field("pressure_ifc", dims.CellDim, dims.KDim)
+        return self._get_field("pressure_ifc", dims.CellDim, dims.KHalfDim)
 
     def pressure_sfc(self):
         return self._get_field("pressure_sfc", dims.CellDim)

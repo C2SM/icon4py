@@ -59,7 +59,7 @@ class TestDiagnoseSurfacePressure(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat
         )
         surface_pressure = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend={dims.KDim: 1}
+            grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat
         )
 
         return dict(
