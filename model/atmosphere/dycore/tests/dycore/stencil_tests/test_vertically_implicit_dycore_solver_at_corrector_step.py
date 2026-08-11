@@ -183,7 +183,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
                 w_nnow=current_w[:, :n_lev],
                 ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency[:, :n_lev],
                 ddt_w_adv_ntl2=corrector_vertical_wind_advective_tendency[:, :n_lev],
-                z_th_ddz_exner_c=nonhydro_buoy_at_cells_on_half_levels,
+                z_th_ddz_exner_c=nonhydro_buoy_at_cells_on_half_levels[:, :n_lev],
                 rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                 vwind_expl_wgt=exner_w_explicit_weight_parameter,
@@ -277,7 +277,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
                 vwind_impl_wgt=exner_w_implicit_weight_parameter,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
-                ddqz_z_half=ddqz_z_half,
+                ddqz_z_half=ddqz_z_half[:, :n_lev],
                 z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
                 z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
                 z_w_expl=w_explicit_term,
@@ -308,7 +308,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
                 & (vert_idx < (end_index_of_damping_layer + 1)),
                 apply_rayleigh_damping_mechanism_numpy(
                     connectivities=connectivities,
-                    z_raylfac=rayleigh_damping_factor,
+                    z_raylfac=rayleigh_damping_factor[:n_lev],
                     w=next_w[:, :n_lev],
                 ),
                 next_w[:, :n_lev],
@@ -422,12 +422,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
-        current_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        current_w = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim)
         predictor_vertical_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid, dims.CellDim, dims.KHalfDim
         )
         corrector_vertical_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid, dims.CellDim, dims.KHalfDim
         )
         nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KHalfDim
@@ -461,13 +461,13 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim, low=1.0e-5
         )
 
-        next_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        next_w = data_alloc.zero_field(grid, dims.CellDim, dims.KHalfDim)
         next_rho = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
         next_exner = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
         next_theta_v = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
         exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            grid, dims.CellDim, dims.KHalfDim
         )
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KHalfDim
