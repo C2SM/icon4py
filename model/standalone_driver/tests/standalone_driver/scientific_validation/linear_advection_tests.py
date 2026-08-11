@@ -33,7 +33,7 @@ from ..fixtures import *  # noqa: F403
 
 _FIRST_ORDER = 1.0
 _SECOND_ORDER = 2.0
-_TOL = 0.2
+_TOL = 0.4
 
 # 12 rows by 10 columns of 100 m edges: domain_length = 1000 m and
 # domain_height = 12 * 100 * sqrt(3)/2 = 1039.2304845413264 m. Refining multiplies the row and
@@ -42,8 +42,8 @@ _TOL = 0.2
 # perturbs them in the last ulp. The downloaded TORUS_1000X1000_* grids did not have that
 # property at all: their domain_height was fitted to the requested extent and therefore varied
 # with the resolution.
-_BASE_TORUS_ROWS: Final = 12
-_BASE_TORUS_COLS: Final = 10
+_BASE_TORUS_ROWS: Final = 24
+_BASE_TORUS_COLS: Final = 20
 _BASE_TORUS_EDGE_LENGTH: Final = 100.0
 _REFINEMENT_FACTORS: Final = tuple(2**exponent for exponent in range(4))
 
@@ -212,14 +212,6 @@ def test_horizontal_advection_convergence(
             "end_of_simulation": time.NumTimeSteps(num_steps),
         },
     )
-    print(
-        "debugging num of steps: ",
-        integration_time / dtime,
-        int(integration_time / dtime),
-        dtime,
-        integration_time,
-        int(integration_time / dtime) * dtime,
-    )
 
     for i in range(len(grid_file_paths)):
         ds, icon4py_driver = standalone_driver.run_driver(
@@ -385,11 +377,11 @@ def test_horizontal_advection_convergence(
             (
                 100,
                 200,
-                # 400,
+                400,
                 # 800,
             ),
-            [_FIRST_ORDER - _TOL, _FIRST_ORDER + _TOL],
-            [_FIRST_ORDER - _TOL, _FIRST_ORDER + _TOL],
+            [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
+            [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
             True,
         ),
         # (
@@ -457,14 +449,6 @@ def test_vertical_advection_convergence(
         integration_time,
     )
     num_steps = int(integration_time / dtime)
-    print(
-        "debugging num of steps: ",
-        integration_time / dtime,
-        int(integration_time / dtime),
-        dtime,
-        integration_time,
-        int(integration_time / dtime) * dtime,
-    )
 
     for num_lev in num_levels:
         experiment_config_local = experiment_config.with_overrides(

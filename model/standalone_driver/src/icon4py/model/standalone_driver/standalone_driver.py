@@ -341,10 +341,6 @@ class Icon4pyDriver:
                 assert tracer_next_field is not None, (
                     f"tracer '{tracer_current.name}' active in current state but missing in next state"
                 )
-                array_ns = data_alloc.array_namespace(tracer_current.field.ndarray)
-                # for k in range(tracer_prep_adv.mass_flx_ic.ndarray.shape[1]):
-                #     print(f"z_mc w = {array_ns.mean(tracer_prep_adv.mass_flx_ic.ndarray[:, k])}")
-                # breakpoint()
                 self.granules.tracer_advection.run(
                     diagnostic_state=tracer_advection_diagnostic_state,
                     prep_adv=tracer_prep_adv,

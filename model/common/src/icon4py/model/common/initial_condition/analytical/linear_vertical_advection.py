@@ -201,7 +201,6 @@ def linear_vertical_advection(
     _construct_idealized_prep_adv(
         velocity_field=config.velocity_field,
         prep_adv_state=adv_prep_adv_state,
-        z_ifc=z_ifc,
         model_top_height=vertical_config.model_top_height,
     )
 
