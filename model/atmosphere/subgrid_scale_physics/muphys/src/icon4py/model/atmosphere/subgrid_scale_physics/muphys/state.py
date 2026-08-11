@@ -142,6 +142,9 @@ class State(PhysicsState):
 
         # INTERNAL
         self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
+        self._pressure_ifc_on_model_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=backend
+        )
         self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._precip_diagnostics: dict[str, fa.CellKField[ta.wpfloat]] | None = None
 
@@ -194,7 +197,7 @@ class State(PhysicsState):
             virtual_temperature=self.tv,
             surface_pressure=surface_pressure,
             pressure=self.p,
-            pressure_ifc_on_model_levels=self._new_te,
+            pressure_ifc_on_model_levels=self._pressure_ifc_on_model_levels,
             pressure_ifc=self.pressure_on_cells_half_levels,
         )
 
