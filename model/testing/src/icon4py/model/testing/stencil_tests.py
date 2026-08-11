@@ -205,6 +205,7 @@ class StencilTest:
     @pytest.fixture
     def _configured_program(
         self,
+        request: pytest.FixtureRequest,
         backend_like: model_backends.BackendLike,
         static_variant: Sequence[str],
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
@@ -216,7 +217,14 @@ class StencilTest:
                 f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
             )
         static_args = {name: [input_data[name]] for name in static_variant}
-        backend = model_options.customize_backend(self.PROGRAM, backend_like)
+        backend_config = (
+            request.getfixturevalue("backend_config")
+            if "backend_config" in request.fixturenames
+            else None
+        )
+        backend = model_options.customize_backend(
+            self.PROGRAM, backend_like, backend_config=backend_config
+        )
         program = self.PROGRAM.with_backend(backend)
         if backend is not None:
             if isinstance(program, FieldOperator):
