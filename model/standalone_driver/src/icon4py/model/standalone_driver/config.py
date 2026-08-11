@@ -286,7 +286,7 @@ class DriverConfig:
     backend_config: typing.Annotated[
         backend_cfg.BackendConfig | None,
         common_conf_opt.ConfigOption(
-            description="External DaCe workspace. None disables the external workspace.",
+            description="Backend configuration. None uses the default configuration.",
             icon_equivalent=None,
         ),
     ] = dataclasses.field(default_factory=backend_cfg.backend_config_from_env)
