@@ -9,27 +9,21 @@
 """
 Generator for doubly periodic (plane torus) triangular ICON grids.
 
-This is a partial port of the MPI-M GridGenerator, 'mo_create_torus_grid.f90', restricted to
-what the icon4py grid reader consumes. The index and orientation logic follows the Fortran.
+This is a partial port of the MPI-M GridGenerator, 'mo_create_torus_grid.f90'.
+The index and orientation logic follows the Fortran.
 The intentional differences are:
 
-- 'fit_resolution' (mo_create_torus_grid.f90:260-324) is not ported. It turns a requested
-  domain extent into row and column counts and adjusts the domain height while doing so, which
-  makes two grids of different resolution discretise slightly different domains. Taking
-  (n_rows, n_cols, edge_length) directly means that (2*n_rows, 2*n_cols, edge_length/2) is the
-  exact bisection of a grid, with bit-identical extents.
-- The domain origin is (0, 0) rather than the Fortran's centred (-length/2, -height/2)
-  (mo_create_torus_grid.f90:308-310), so that vertex_x.min() and vertex_y.min() are exactly
-  0.0. icon4py's analytical initial conditions use those minima as the domain origin.
+- The domain origin is (0, 0) rather than the Fortran's centred (-length/2,
+  -height/2).
 - Coordinates are wrapped with a plain periodic modulo instead of 'get_x'
-  (mo_create_torus_grid.f90:1075-1085), which divides by the half extent but subtracts the full
-  one and so places coordinates outside the domain box. The minimum image convention icon4py
-  uses on a torus ('common/math/distance.py') shifts by at most one period and therefore
-  requires all coordinates to lie within a single period.
-- The vertex-side connectivities ('edges_of_vertex', 'cells_of_vertex', 'vertices_of_vertex'
-  and hence 'edge_orientation') are ordered counter-clockwise. The Fortran leaves them in edge
-  creation order because 'order_vertex_connectivity' is not called for a torus
-  (mo_create_torus_grid.f90:378-385); the distributed MPI-M grid files are counter-clockwise.
+  (mo_create_torus_grid.f90:1075-1085), which divides by the half extent but
+  subtracts the full one and so places coordinates outside the domain box.
+- The vertex-side connectivities ('edges_of_vertex', 'cells_of_vertex',
+  'vertices_of_vertex' and hence 'edge_orientation') are ordered
+  counter-clockwise. The Fortran leaves them in edge creation order because
+  'order_vertex_connectivity' is not called for a torus
+  (mo_create_torus_grid.f90:378-385); the distributed MPI-M grid files are
+  counter-clockwise.
 - Latitudes are a linear function of the cartesian y coordinate. The Fortran offsets the
   latitude of an up-pointing cell by 2/3 of a row but its cartesian y by only 1/3
   (mo_create_torus_grid.f90:860-861, against :881-882 which uses -1/3 for both), so its 'clat'
@@ -129,7 +123,7 @@ _DIMENSIONS: Final[dict[str, tuple[str, ...]]] = {
 
 class _Lattice:
     """
-    The integer (column, row) lattice of the torus and the Fortran's index formulas.
+    The integer (column, row) lattice of the torus and the index formulas.
 
     Indices are 1-based, as in the grid file. Entities come in two families: 'vertex',
     'right_edge', 'top_right_edge' and 'top_right_cell' live on rows [0, n_rows), while
@@ -472,8 +466,7 @@ def generate_torus_grid(
 
     The domain is 'n_cols * edge_length' wide and 'n_rows * edge_length * sqrt(3)/2' high, with
     its lower left corner at (0, 0). Doubling 'n_rows' and 'n_cols' while halving 'edge_length'
-    bisects the mesh and leaves both extents bit-identical, which is what makes a family of
-    these grids usable for a convergence study.
+    bisects the mesh and leaves both extents bit-identical.
 
     Args:
         n_rows: number of rows, even and at least 4
