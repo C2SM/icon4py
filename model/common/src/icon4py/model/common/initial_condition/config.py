@@ -197,7 +197,7 @@ def create(
             lin_ver_adv_ic.linear_vertical_advection(
                 config=config.config,
                 vertical_config=vertical_config,
-                static_fields=static_fields,
+                metrics=static_fields.metrics,
                 prognostic_state_now=prognostic_state_now,
                 tracer_state_now=tracer_state_now,
                 adv_prep_adv_state=adv_prep_adv_state,

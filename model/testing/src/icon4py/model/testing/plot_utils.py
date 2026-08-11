@@ -80,10 +80,10 @@ def plot_mpl_triangulation(
 
     tpc = ax.tripcolor(tri, values, edgecolor="none", shading="flat", cmap="viridis")
     cbar = fig.colorbar(tpc, ax=ax)
-    cbar.formatter.set_powerlimits((0, 0)) # type: ignore[attr-defined]
-    cbar.formatter.set_useMathText(True) # type: ignore[attr-defined]
+    cbar.formatter.set_powerlimits((0, 0))  # type: ignore[attr-defined]
+    cbar.formatter.set_useMathText(True)  # type: ignore[attr-defined]
 
-    ax.grid("both") # type: ignore[arg-type]
+    ax.grid("both")  # type: ignore[arg-type]
     ax.set_xlabel("$x$")
     ax.set_ylabel("$y$")
 
@@ -203,6 +203,40 @@ def plot_torus_plane(
         values=values,
     )
     finalize_plot(fig=fig, out_file=out_file)
+
+
+def plot_1d(
+    *,
+    x: np.ndarray,
+    y: np.ndarray,
+    x_axis_label: str = "",
+    y_axis_label: str = "",
+    out_file: str = "",
+) -> None:
+    """
+    Plot a 1D profile.
+
+    Args:
+        x: array that contains the x-coordinates
+        y: array that contains the y-coordinates
+        label_name: label of plotting curve
+        out_file: passed to savefig if present, else plot is shown instead
+
+    """
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_axisbelow(True)
+    ax.plot(x, y, color="blue", lw=1.0)
+
+    ax.grid(True, which="both", ls=":", lw=0.25)
+    ax.legend()
+    ax.set_xlabel(x_axis_label)
+    ax.set_ylabel(y_axis_label)
+
+    if out_file != "":
+        fig.savefig(out_file, bbox_inches="tight")
+    else:
+        plt.show()
+    plt.close(fig)
 
 
 def plot_convergence(

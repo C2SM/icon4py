@@ -11,8 +11,10 @@ topography:
 initial_condition:
   config:
     type: lin_hor_adv
+    tracer_profile: circle_2d
     velocity_field: constant
     cfl_number: 0.2
+    initial_center: [0.5, 0.5]
 prescribed_tendencies:
   data_path:
 driver:
@@ -23,7 +25,7 @@ driver:
   start_of_timestepping: 0001-01-01T00:00:00
   end_of_simulation:
     type: relative
-    value: 0.5
+    value: 1.0
 nonhydrostatic:
 diffusion:
 tracer_config:

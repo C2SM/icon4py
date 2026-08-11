@@ -2,7 +2,7 @@ geometry: {}
 metrics: {}
 interpolation: {}
 vertical_grid:
-  num_levels: 5
+  num_levels: 100
   model_top_height: 10000.0
   lowest_layer_thickness: 0.0
 topography:
@@ -11,8 +11,11 @@ topography:
 initial_condition:
   config:
     type: lin_ver_adv
-    velocity_field: constant
+    tracer_profile: box
+    velocity_field: constant_positive
     cfl_number: 0.2
+    initial_center: 0.25
+    decay_radius: 0.2
 prescribed_tendencies:
   data_path:
 driver:
@@ -23,7 +26,7 @@ driver:
   start_of_timestepping: 0001-01-01T00:00:00
   end_of_simulation:
     type: relative
-    value: 0.5
+    value: 0.4
 nonhydrostatic:
 diffusion:
 tracer_config:

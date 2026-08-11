@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import math
 import typing
 from typing import TYPE_CHECKING, ClassVar
 
@@ -35,11 +36,12 @@ class TracerProfile(int, enum.Enum):
     GAUSSIAN_2D = 1
     #: two-dimensional smooth off-centered Gaussian curve
     GAUSSIAN_2D_OFFCENTER = 2
+    #: one-dimensional smooth Gaussian curve in x direction
+    GAUSSIAN_1D_X = 3
+    #: one-dimensional smooth Gaussian curve in y direction
+    GAUSSIAN_1D_Y = 4
     #: two-dimensional discontinuous circle
-    CIRCLE_2D = 3
-    #: one-dimensional smooth Gaussian curve
-    GAUSSIAN_1D_X = 4
-    GAUSSIAN_1D_Y = 5
+    CIRCLE_2D = 5
 
 
 @config_io.register_enum
@@ -86,17 +88,24 @@ class LinearHorizontalAdvectionConfig:
     initial_center: typing.Annotated[
         tuple[float, float],
         common_conf_opt.ConfigOption(
-            description="Initial center of the tracer profile.",
+            description="Initial center of the tracer profile relative to the model domain size in x and y directions.",
             icon_equivalent=None,
         ),
     ] = (0.5, 0.5)
+    decay_radius: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Decay radius for the Gaussian tracer profile (0.001 fraction), relative to the model domain size.",
+            icon_equivalent=None,
+        ),
+    ] = 0.25
 
     fortran_name_map: ClassVar[dict[str, str]] = {}
 
 
 def compute_max_velocity(
     *,
-    velocity_field: VelocityField | None,
+    velocity_field: VelocityField,
     domain_length: float,
     domain_height: float,
 ) -> float:
@@ -185,8 +194,7 @@ def _compute_tracer_center(
     Center of the tracer profile after being displaced, wrapped back into the torus domain.
 
     ``initial_center`` is given as a fraction of the domain extent, relative to the domain
-    origin ``(origin_x, origin_y)``, which is not necessarily at zero. Shared by the initial
-    condition and the analytical reference so that the two cannot drift apart.
+    origin ``(origin_x, origin_y)``, which is not necessarily at zero.
     """
     return (
         origin_x + (initial_center[0] * domain_length + displacement_x) % domain_length,
@@ -200,6 +208,17 @@ def _compute_idealized_velocity_field(
     domain_length: float,
     domain_height: float,
 ) -> tuple[float, float]:
+    """
+    Create an idealized velocity field for the linear horizontal advection test case.
+
+    Args:
+        velocity_field: velocity field type
+        domain_length: domain size in x-direction
+        domain_height: domain size in y-direction
+
+    Returns:
+        tuple[float, float]: velocity components (u, v) in x and y directions
+    """
     match velocity_field:
         case VelocityField.CONSTANT:
             u, v = domain_length, domain_height
@@ -240,15 +259,32 @@ def _construct_idealized_prep_adv(
 
 def _construct_idealized_tracer(
     *,
-    tracer_profile: TracerProfile,
+    config: LinearHorizontalAdvectionConfig,
     tracer: data_alloc.NDArray,
-    domain_center_x: float,
-    domain_center_y: float,
+    tracer_center_x: float,
+    tracer_center_y: float,
     domain_length: float,
     domain_height: float,
     weights: data_alloc.NDArray,
     nodes: data_alloc.NDArray,
 ) -> None:
+    """
+    Create an idealized tracer profile on a torus grid, given the center of the tracer and
+    the domain size. When the tracer profile is Gaussian, the decay factor is chosen such
+    that the Gaussian decays to 1.e-3 at the decay radius from the center.
+    Otherwise, the tracer profile is a discontinuous circle with radius equal to 1/4 of
+    the average domain size.
+
+    Args:
+        tracer_profile: tracer profile type
+        tracer: array to store the tracer values
+        tracer_center_x: tracer center x-coordinate
+        tracer_center_y: tracer center y-coordinate
+        domain_length: domain size in x-direction
+        domain_height: domain size in y-direction
+        weights: quadrature weights
+        nodes: quadrature nodes
+    """
     array_ns = data_alloc.array_namespace(nodes)
     dx = array_ns.zeros_like(nodes[0, :, :])
     dy = array_ns.zeros_like(nodes[1, :, :])
@@ -256,30 +292,40 @@ def _construct_idealized_tracer(
         dx[i, :], dy[i, :] = distance_array_ns.minimum_image_separation(
             x=nodes[0, i, :],
             y=nodes[1, i, :],
-            reference_x=domain_center_x,
-            reference_y=domain_center_y,
+            reference_x=tracer_center_x,
+            reference_y=tracer_center_y,
             domain_extent_x=domain_length,
             domain_extent_y=domain_height,
         )
-    match tracer_profile:
+    match config.tracer_profile:
         case TracerProfile.GAUSSIAN_2D:
-            decay_factor = ((domain_length + domain_height) / 2.0) ** (-1.65)
+            decay_factor = (
+                -1.0
+                / (config.decay_radius * min(domain_length, domain_height)) ** (2)
+                * math.log(1e-3)
+            )
             vertex_tracer = array_ns.exp(-decay_factor * (dx**2 + dy**2))
         case TracerProfile.GAUSSIAN_2D_OFFCENTER:
+            decay_factor = (
+                -1.0
+                / (config.decay_radius * min(domain_length, domain_height)) ** (2)
+                * math.log(1e-3)
+            )
             dy -= domain_height / 4
-            decay_factor = ((domain_length + domain_height) / 2.0) ** (-1.5)
             vertex_tracer = array_ns.exp(-decay_factor * (dx**2 + dy**2))
         case TracerProfile.CIRCLE_2D:
             radius = (domain_length + domain_height) / 8.0
             vertex_tracer = array_ns.where(dx**2 + dy**2 <= radius**2, 1.0, 0.0)
         case TracerProfile.GAUSSIAN_1D_X:
-            decay_factor = (domain_length / 2.0) ** (-1.65)
+            decay_factor = -1.0 / (config.decay_radius * domain_length) ** (2) * math.log(1e-3)
             vertex_tracer = array_ns.exp(-decay_factor * (dx**2))
         case TracerProfile.GAUSSIAN_1D_Y:
-            decay_factor = (domain_height / 2.0) ** (-1.65)
+            decay_factor = -1.0 / (config.decay_radius * domain_height) ** (2) * math.log(1e-3)
             vertex_tracer = array_ns.exp(-decay_factor * (dy**2))
         case _:
-            raise NotImplementedError(f"Initial tracer profile {tracer_profile} not implemented.")
+            raise NotImplementedError(
+                f"Initial tracer profile {config.tracer_profile} not implemented."
+            )
     tracer[:, :] = array_ns.sum(weights * vertex_tracer, axis=0)[:, None]
 
 
@@ -337,10 +383,10 @@ def linear_horizontal_advection(
         domain_height=grid.grid_params.domain_height,
     )
     _construct_idealized_tracer(
-        tracer_profile=config.tracer_profile,
+        config=config,
         tracer=tracer_state_now.qv.ndarray,
-        domain_center_x=center_x,
-        domain_center_y=center_y,
+        tracer_center_x=center_x,
+        tracer_center_y=center_y,
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
         weights=weights,
@@ -389,10 +435,10 @@ def construct_reference_tracer(
         displacement_y=v * integration_time,
     )
     _construct_idealized_tracer(
-        tracer_profile=config.tracer_profile,
+        config=config,
         tracer=reference_tracer,
-        domain_center_x=end_center_x,
-        domain_center_y=end_center_y,
+        tracer_center_x=end_center_x,
+        tracer_center_y=end_center_y,
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
         weights=weights,
