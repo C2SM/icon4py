@@ -168,7 +168,10 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         global_halo_idx = self._decomposition_info.global_index(
             horizontal_dim, decomp_defs.DecompositionInfo.EntryType.HALO
         )
-        halo_generator = HaloGenerator.from_gids(global_halo_idx)
+        # ghex >= 0.9.0 only accepts a host Sequence[int] here, so a device array
+        # has to be brought back to the host first (same as in
+        # _create_domain_descriptor above).
+        halo_generator = HaloGenerator.from_gids(global_halo_idx.tolist())
         log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
         pattern = make_pattern(
             self._context,
