@@ -46,30 +46,38 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     k = np.arange(nlevp1)[np.newaxis, :]
     k_nlev = k[:, :-1]
 
+    vn_ie, z_kin_hor_e = interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
+        wgtfac_e, vn, tangential_wind
+    )
     vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels = np.where(
         k_nlev >= 1,
-        interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
-            wgtfac_e, vn, tangential_wind
-        ),
+        (vn_ie[:, :-1], z_kin_hor_e),
         (vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels),
     )
 
-    tangential_wind_on_half_levels = np.where(
+    tangential_wind_on_half_levels[:, :-1] = np.where(
         k_nlev >= 1,
-        interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind),
-        tangential_wind_on_half_levels,
+        interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind)[:, :-1],
+        tangential_wind_on_half_levels[:, :-1],
     )
 
+    vn_ie_at_top, tangential_wind_on_half_levels_at_top, z_kin_hor_e_at_top = (
+        compute_horizontal_kinetic_energy_numpy(vn, tangential_wind)
+    )
     (
         vn_on_half_levels[:, :-1],
-        tangential_wind_on_half_levels,
+        tangential_wind_on_half_levels[:, :-1],
         horizontal_kinetic_energy_at_edges_on_model_levels,
     ) = np.where(
         k_nlev == 0,
-        compute_horizontal_kinetic_energy_numpy(vn, tangential_wind),
+        (
+            vn_ie_at_top[:, :-1],
+            tangential_wind_on_half_levels_at_top[:, :-1],
+            z_kin_hor_e_at_top,
+        ),
         (
             vn_on_half_levels[:, :-1],
-            tangential_wind_on_half_levels,
+            tangential_wind_on_half_levels[:, :-1],
             horizontal_kinetic_energy_at_edges_on_model_levels,
         ),
     )
@@ -284,10 +292,8 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        vn_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
-        )
+        tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KHalfDim)
+        vn_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KHalfDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim
         )

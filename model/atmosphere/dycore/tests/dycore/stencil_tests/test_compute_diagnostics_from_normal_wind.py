@@ -84,15 +84,15 @@ def compute_diagnostics_from_normal_wind_numpy(
         horizontal_kinetic_energy_at_edges_on_model_levels,
     )
 
-    vn_on_half_levels[:, : nlevp1 - 1] = (
+    vn_on_half_levels = (
         interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_vn_ie_numpy(wgtfac_e, vn)
     )
 
     if not skip_compute_predictor_vertical_advection:
-        tangential_wind_on_half_levels = np.where(
+        tangential_wind_on_half_levels[:, : nlevp1 - 1] = np.where(
             k_nlev >= vertical_start,
-            interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind),
-            tangential_wind_on_half_levels,
+            interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind)[:, : nlevp1 - 1],
+            tangential_wind_on_half_levels[:, : nlevp1 - 1],
         )
 
     contravariant_correction_at_edges_on_model_levels = np.where(
@@ -105,19 +105,19 @@ def compute_diagnostics_from_normal_wind_numpy(
         w_at_vertices = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
             connectivities, w, c_intp
         )
-        horizontal_advection_of_w_at_edges_on_half_levels = np.where(
+        horizontal_advection_of_w_at_edges_on_half_levels[:, : nlevp1 - 1] = np.where(
             k_nlev >= vertical_start,
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
                 connectivities=connectivities,
-                vn_ie=vn_on_half_levels[:, : nlevp1 - 1],
+                vn_ie=vn_on_half_levels,
                 inv_dual_edge_length=inv_dual_edge_length,
                 w=w,
                 z_vt_ie=tangential_wind_on_half_levels,
                 inv_primal_edge_length=inv_primal_edge_length,
                 tangent_orientation=tangent_orientation,
                 z_w_v=w_at_vertices,
-            ),
-            horizontal_advection_of_w_at_edges_on_half_levels,
+            )[:, : nlevp1 - 1],
+            horizontal_advection_of_w_at_edges_on_half_levels[:, : nlevp1 - 1],
         )
 
     vn_on_half_levels[:, -1] = extrapolate_to_surface_numpy(wgtfacq_e, vn)
@@ -306,13 +306,11 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         self, grid: base.Grid, request: pytest.FixtureRequest
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
+            grid, dims.EdgeDim, dims.KHalfDim
         )
         tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        tangential_wind_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        vn_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
-        )
+        tangential_wind_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KHalfDim)
+        vn_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KHalfDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
