@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
-from icon4py.model.common import dace_workspace, model_backends
+from icon4py.model.common import backend_configuration as backend_cfg, model_backends
 
 
 log = logging.getLogger(__name__)
@@ -28,19 +28,20 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
 def get_dace_options(
     program_name: str,
     *,
-    workspace_config: dace_workspace.WorkspaceConfig | None = None,
+    backend_config: backend_cfg.BackendConfig | None = None,
     **backend_descriptor: Any,
 ) -> model_backends.BackendDescriptor:
     device = backend_descriptor.get("device")
     optimization_args = backend_descriptor.get("optimization_args", {})
     optimization_hooks = optimization_args.get("optimization_hooks", {})
 
-    if device == model_backends.DeviceType.ROCM and workspace_config is not None:
+    if device == model_backends.DeviceType.ROCM and backend_config is not None:
         # The workspace memory allows to avoid the overhead of runtime allocations,
         # which are expensive in the AMD runtime.
-        backend_descriptor["external_workspace"] = dace_workspace.ICON_WORKSPACE_ALLOCATOR.allocate(
+        backend_descriptor["external_workspace"] = backend_cfg.ICON_WORKSPACE_ALLOCATOR.allocate(
             device,
-            config=workspace_config,
+            size=backend_config.workspace_size,
+            alignment=backend_config.workspace_alignment,
         )
         optimization_args["transient_memory_mode"] = (
             gtx_transformations.TransientMemoryMode.EXTERNAL
@@ -91,7 +92,7 @@ def get_gtfn_options(
 def get_options(
     program_name: str,
     *,
-    workspace_config: dace_workspace.WorkspaceConfig | None = None,
+    backend_config: backend_cfg.BackendConfig | None = None,
     **backend_descriptor: Any,
 ) -> model_backends.BackendDescriptor:
     if "backend_factory" not in backend_descriptor:
@@ -99,7 +100,7 @@ def get_options(
         backend_descriptor["backend_factory"] = model_backends.make_custom_dace_backend
     if backend_descriptor["backend_factory"] == model_backends.make_custom_dace_backend:
         backend_descriptor = get_dace_options(
-            program_name, workspace_config=workspace_config, **backend_descriptor
+            program_name, backend_config=backend_config, **backend_descriptor
         )
     if backend_descriptor["backend_factory"] == model_backends.make_custom_gtfn_backend:
         backend_descriptor = get_gtfn_options(program_name, **backend_descriptor)
@@ -113,7 +114,7 @@ def customize_backend(
     | model_backends.DeviceType
     | model_backends.BackendDescriptor
     | None,
-    workspace_config: dace_workspace.WorkspaceConfig | None = None,
+    backend_config: backend_cfg.BackendConfig | None = None,
 ) -> gtx_typing.Backend | None:
     program_name = program.__name__ if program is not None else ""
     if backend is None or isinstance(backend, gtx_backend.Backend):
@@ -125,7 +126,7 @@ def customize_backend(
         {"device": backend} if isinstance(backend, model_backends.DeviceType) else backend
     )
     backend_descriptor = get_options(
-        program_name, workspace_config=workspace_config, **backend_descriptor
+        program_name, backend_config=backend_config, **backend_descriptor
     )
     backend_descriptor["device"] = backend_descriptor.get(
         "device", model_backends.CPU
@@ -152,11 +153,11 @@ def setup_program(
     horizontal_sizes: dict[str, gtx.int32] | None = None,
     vertical_sizes: dict[str, gtx.int32] | None = None,
     offset_provider: gtx_typing.OffsetProvider | None = None,
-    workspace_config: dace_workspace.WorkspaceConfig | None = None,
+    backend_config: backend_cfg.BackendConfig | None = None,
 ) -> Callable[..., None]:
     """
     This function processes arguments to the GT4Py program. It
-    - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', "vertical_sizes');
+    - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', "vertical_sizes");
     - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile').
     Args:
         - backend: GT4Py backend,
@@ -166,7 +167,7 @@ def setup_program(
         - horizontal_sizes: horizontal domain bounds,
         - vertical_sizes: vertical domain bounds,
         - offset_provider: GT4Py offset_provider,
-        - workspace_config: external DaCe workspace sizing, or `None` to disable.
+        - backend_config: external DaCe workspace sizing, or `None` to disable.
     """
     constant_args = {} if constant_args is None else constant_args
     variants = {} if variants is None else variants
@@ -174,7 +175,7 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    backend = customize_backend(program, backend, workspace_config=workspace_config)
+    backend = customize_backend(program, backend, backend_config=backend_config)
 
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend)

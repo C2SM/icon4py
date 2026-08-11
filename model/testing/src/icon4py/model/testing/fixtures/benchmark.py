@@ -31,6 +31,7 @@ from icon4py.model.common.topography.analytical import jablonowski_williamson as
     scope="session",
 )
 def geometry_field_source(
+    request: pytest.FixtureRequest,
     grid_manager: gm.GridManager | None,
     backend_like: model_backends.BackendLike,
 ) -> Generator[grid_geometry.GridGeometry, None, None]:
@@ -38,7 +39,14 @@ def geometry_field_source(
         pytest.skip("Incomplete grid Information for test, are you running with `simple_grid`?")
     mesh = grid_manager.grid
 
-    generic_concrete_backend = model_options.customize_backend(None, backend_like)
+    backend_config = (
+        request.getfixturevalue("backend_config")
+        if "backend_config" in request.fixturenames
+        else None
+    )
+    generic_concrete_backend = model_options.customize_backend(
+        None, backend_like, backend_config=backend_config
+    )
     decomposition_info = grid_manager.decomposition_info
 
     geometry_field_source = grid_geometry.GridGeometry(
@@ -59,13 +67,21 @@ def geometry_field_source(
     scope="session",
 )
 def interpolation_field_source(
+    request: pytest.FixtureRequest,
     grid_manager: gm.GridManager,
     geometry_field_source: grid_geometry.GridGeometry,
     backend_like: model_backends.BackendLike,
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory, None, None]:
     mesh = grid_manager.grid
 
-    generic_concrete_backend = model_options.customize_backend(None, backend_like)
+    backend_config = (
+        request.getfixturevalue("backend_config")
+        if "backend_config" in request.fixturenames
+        else None
+    )
+    generic_concrete_backend = model_options.customize_backend(
+        None, backend_like, backend_config=backend_config
+    )
     decomposition_info = grid_manager.decomposition_info
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
@@ -84,6 +100,7 @@ def interpolation_field_source(
     scope="session",
 )
 def metrics_field_source(
+    request: pytest.FixtureRequest,
     grid_manager: gm.GridManager,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
@@ -92,7 +109,14 @@ def metrics_field_source(
     mesh = grid_manager.grid
 
     allocator = model_backends.get_allocator(backend_like)
-    generic_concrete_backend = model_options.customize_backend(None, backend_like)
+    backend_config = (
+        request.getfixturevalue("backend_config")
+        if "backend_config" in request.fixturenames
+        else None
+    )
+    generic_concrete_backend = model_options.customize_backend(
+        None, backend_like, backend_config=backend_config
+    )
     decomposition_info = grid_manager.decomposition_info
 
     vertical_config = v_grid.VerticalGridConfig(

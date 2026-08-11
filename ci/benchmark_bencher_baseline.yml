@@ -14,4 +14,4 @@ benchmark_bencher_granules_baseline_aarch64:
   variables:
     NOX_SESSION: "__bencher_baseline_CI-${PYVERSION_SHORT}"
     TEST_SELECTION: "${GRANULE_TEST_SELECTION}"
-    ICON4PY_DACE_WORKSPACE_SIZE: 419430400  # 400 MB
+    ICON4PY_BACKEND_WORKSPACE_SIZE: 419430400  # 400 MB

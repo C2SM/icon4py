@@ -27,7 +27,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
-    dace_workspace,
+    backend_configuration as backend_cfg,
     initial_condition,
     prescribed_tendencies,
     time,
@@ -283,13 +283,13 @@ class DriverConfig:
             icon_equivalent=None,
         ),
     ] = False
-    dace_workspace: typing.Annotated[
-        dace_workspace.WorkspaceConfig | None,
+    backend_config: typing.Annotated[
+        backend_cfg.BackendConfig | None,
         common_conf_opt.ConfigOption(
             description="External DaCe workspace. None disables the external workspace.",
             icon_equivalent=None,
         ),
-    ] = dataclasses.field(default_factory=dace_workspace.workspace_config_from_env)
+    ] = dataclasses.field(default_factory=backend_cfg.backend_config_from_env)
 
     def __post_init__(self) -> None:
         if self.start_of_timestepping < self.start_of_simulation:

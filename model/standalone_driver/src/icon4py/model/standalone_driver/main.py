@@ -90,7 +90,7 @@ def main(
     backend = model_options.customize_backend(
         program=None,
         backend=driver_utils.get_backend_from_name(icon4py_backend),
-        workspace_config=config.driver.dace_workspace,
+        backend_config=config.driver.backend_config,
     )
     allocator = model_backends.get_allocator(backend)
 

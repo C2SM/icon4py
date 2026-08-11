@@ -17,7 +17,7 @@ program; :func:`make_custom_dace_backend <icon4py.model.common.model_backends.ma
 installs it by default.
 
 The size and alignment of the workspace are configurable per experiment via
-:class:`WorkspaceConfig` (see :func:`workspace_config_from_env` for an
+:class:`BackendConfig` (see :func:`backend_config_from_env` for an
 environment-variable based default).
 """
 
@@ -39,35 +39,42 @@ _DEFAULT_ALIGNMENT: Final[int] = 256  # Matches DaCe's default transient-storage
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
-class WorkspaceConfig:
+class BackendConfig:
     """External DaCe workspace sizing, configurable per experiment."""
 
     #: Workspace size in bytes, per device.
-    size: int
+    workspace_size: int
     #: Base-pointer alignment in bytes. Must be a positive power of two.
-    alignment: int
+    workspace_alignment: int
 
     def __post_init__(self) -> None:
-        if self.size <= 0:
-            raise ValueError(f"'size' must be positive, got {self.size}.")
-        if self.alignment <= 0 or (self.alignment & (self.alignment - 1)) != 0:
-            raise ValueError(f"'alignment' must be a positive power of two, got {self.alignment}.")
+        if self.workspace_size <= 0:
+            raise ValueError(f"'workspace_size' must be positive, got {self.workspace_size}.")
+        if (
+            self.workspace_alignment <= 0
+            or (self.workspace_alignment & (self.workspace_alignment - 1)) != 0
+        ):
+            raise ValueError(
+                f"'workspace_alignment' must be a positive power of two, got {self.workspace_alignment}."
+            )
 
 
-def workspace_config_from_env() -> WorkspaceConfig | None:
-    """Build a :class:`WorkspaceConfig` from environment variables.
+def backend_config_from_env() -> BackendConfig | None:
+    """Build a :class:`BackendConfig` from environment variables.
 
-    Reads ``ICON4PY_DACE_WORKSPACE_SIZE`` and (optionally)
-    ``ICON4PY_DACE_WORKSPACE_ALIGNMENT``. Returns ``None`` when ``size`` is not
-    set. When ``alignment`` is not set, :data:`_DEFAULT_ALIGNMENT` is used.
+    Reads ``ICON4PY_BACKEND_WORKSPACE_SIZE`` and (optionally)
+    ``ICON4PY_BACKEND_WORKSPACE_ALIGNMENT``. Returns ``None`` when
+    ``ICON4PY_BACKEND_WORKSPACE_SIZE`` is not set. When
+    ``ICON4PY_BACKEND_WORKSPACE_ALIGNMENT`` is not set, :data:`_DEFAULT_ALIGNMENT`
+    is used.
     """
-    size = os.environ.get("ICON4PY_DACE_WORKSPACE_SIZE")
+    size = os.environ.get("ICON4PY_BACKEND_WORKSPACE_SIZE")
     if size is None:
         return None
-    alignment = os.environ.get("ICON4PY_DACE_WORKSPACE_ALIGNMENT")
-    return WorkspaceConfig(
-        size=int(size),
-        alignment=int(alignment) if alignment is not None else _DEFAULT_ALIGNMENT,
+    alignment = os.environ.get("ICON4PY_BACKEND_WORKSPACE_ALIGNMENT")
+    return BackendConfig(
+        workspace_size=int(size),
+        workspace_alignment=int(alignment) if alignment is not None else _DEFAULT_ALIGNMENT,
     )
 
 
@@ -132,27 +139,28 @@ class IconWorkspaceAllocator:
         self,
         devices: gtx.DeviceType | Iterable[gtx.DeviceType],
         *,
-        config: WorkspaceConfig,
+        size: int,
+        alignment: int = _DEFAULT_ALIGNMENT,
     ) -> gtx_transformations.ExternalWorkspace:
         if isinstance(devices, gtx.DeviceType):
             devices = [devices]
         wsp = {}
         for dev in devices:
             if (cached := self._workspace_slabs.get(dev)) is not None:
-                if cached.nbytes != config.size:
+                if cached.nbytes != size:
                     raise ValueError(
                         f"Workspace size mismatch for {dev!s}: cached slab has "
                         f"{cached.nbytes} bytes but 'allocate' was called with "
-                        f"size={config.size}."
+                        f"size={size}."
                     )
-                if (_array_base_ptr(cached) % config.alignment) != 0:
+                if (_array_base_ptr(cached) % alignment) != 0:
                     raise ValueError(
                         f"Workspace alignment mismatch for {dev!s}: cached slab base "
-                        f"pointer is not {config.alignment}-aligned."
+                        f"pointer is not {alignment}-aligned."
                     )
                 wsp[dev] = cached
             else:
-                slab = _aligned_slab(config.size, config.alignment, dev)
+                slab = _aligned_slab(size, alignment, dev)
                 self._workspace_slabs[dev] = slab
                 wsp[dev] = slab
         return wsp

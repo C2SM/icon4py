@@ -14,7 +14,7 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import backend_configuration as backend_cfg, model_backends, model_options
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs
 
@@ -54,6 +54,17 @@ def backend_like(request: pytest.FixtureRequest) -> model_backends.BackendLike:
 
 
 @pytest.fixture(scope="session")
+def backend_config() -> backend_cfg.BackendConfig | None:
+    """Provide a :class:`~icon4py.model.common.backend_configuration.BackendConfig` for tests.
+
+    Defaults to :func:`~icon4py.model.common.backend_configuration.backend_config_from_env`,
+    so the workspace is active when ``ICON4PY_BACKEND_WORKSPACE_SIZE`` is set (e.g. in CI)
+    and ``None`` otherwise.
+    """
+    return backend_cfg.backend_config_from_env()
+
+
+@pytest.fixture(scope="session")
 def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
     """
     Fixture to provide a GT4Py backend for the tests.
@@ -65,12 +76,16 @@ def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
     """
     # TODO(havogt): eventually all tests should support `backend_like`,
     # then `backend_like` should probably be renamed to `backend`.
-
     spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
     assert isinstance(spec, str), "Backend spec must be a string"
     backend_like = _get_backend_like(spec)
+    backend_config = (
+        request.getfixturevalue("backend_config")
+        if "backend_config" in request.fixturenames
+        else None
+    )
     # We create a generic concrete backend (no program specific customization).
-    return model_options.customize_backend(None, backend_like)
+    return model_options.customize_backend(None, backend_like, backend_config=backend_config)
 
 
 @pytest.fixture

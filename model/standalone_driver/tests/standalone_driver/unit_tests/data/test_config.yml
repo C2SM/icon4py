@@ -84,7 +84,7 @@ driver:
   ndyn_substeps: 5
   enable_statistics_logging: false
   enable_output: false
-  dace_workspace:
+  backend_config:
 nonhydrostatic:
 diffusion:
 tracer_config:
