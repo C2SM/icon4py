@@ -125,10 +125,11 @@ class FieldGroupIOConfig(Config):
 
     """
 
-    #: Stem of the group's files: the rollover counter and the backend's extension are
-    #: appended (``<stem>_0001.zarr`` / ``.nc``, see ``generate_name``). An extension
-    #: belonging to a different backend than the group's is rejected.
-    filename: str
+    #: Base name of the group's files, without an extension; may carry a relative
+    #: subdirectory prefix. The rollover counter and the backend's extension are
+    #: appended (``<basename>_0001.zarr`` / ``.nc``, see ``generate_name``), so the
+    #: name is independent of the configured backend.
+    basename: str
     variables: list[str]
     #: Output schedule: either a number of model steps (``int``) or a simulation-time
     #: delta (``datetime.timedelta``, must be a multiple of the model time step).
@@ -203,25 +204,22 @@ class FieldGroupIOConfig(Config):
                 f"a multiple of 'horizontal_chunk_size' ({self.horizontal_chunk_size})."
             )
 
-    def _validate_filename(self) -> None:
-        if not self.filename:
-            raise exceptions.InvalidConfigError("Output filename is missing.")
-        if self.filename.startswith("/"):
+    def _validate_basename(self) -> None:
+        if not self.basename:
+            raise exceptions.InvalidConfigError("Output basename is missing.")
+        if self.basename.startswith("/"):
             raise exceptions.InvalidConfigError(
-                f"Filename may not be an absolute path: {self.filename}."
+                f"Basename may not be an absolute path: {self.basename}."
             )
-        # the file extension is derived from the backend (``generate_name``); an
-        # extension of a *different* backend in the configured name signals a
-        # backend/filename mix-up (e.g. the backend changed but the filename did not)
-        for backend, suffix in FILE_SUFFIXES.items():
-            if backend is not self.backend and self.filename.endswith(suffix):
-                raise exceptions.InvalidConfigError(
-                    f"Invalid output 'filename': '{self.filename}' carries the "
-                    f"'{suffix}' extension of the '{backend.value}' backend, but the "
-                    f"group's backend is '{self.backend.value}' (files are named "
-                    f"'<stem>_0001{FILE_SUFFIXES[self.backend]}'). Drop or fix the "
-                    f"extension."
-                )
+        # the file extension is derived from the backend (``generate_name``), so a
+        # configured extension would silently end up inside the stem
+        # (``a.nc_0001.zarr``); reject it to keep the basename backend-independent
+        if any(self.basename.endswith(suffix) for suffix in FILE_SUFFIXES.values()):
+            raise exceptions.InvalidConfigError(
+                f"Invalid output 'basename': '{self.basename}' carries a file "
+                f"extension; the extension is appended from the backend (files are "
+                f"named '<basename>_0001{FILE_SUFFIXES[self.backend]}')."
+            )
 
     def validate(self) -> None:
         # bool is a subclass of int, but is not a valid interval
@@ -243,7 +241,7 @@ class FieldGroupIOConfig(Config):
         if not self.variables:
             raise exceptions.InvalidConfigError("No variables provided for output.")
         self._validate_horizontal_chunking()
-        self._validate_filename()
+        self._validate_basename()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -434,16 +432,15 @@ class IOMonitor(monitor.Monitor):
                 if not seconds:
                     continue
                 log.info(
-                    f"output timings of group '{m.config.filename}', phase '{phase}' on "
+                    f"output timings of group '{m.config.basename}', phase '{phase}' on "
                     f"rank {self._process_props.rank}: total {sum(seconds):.6f} s, mean "
                     f"{statistics.mean(seconds):.6f} s over {len(seconds)} capture(s)"
                 )
 
 
-def generate_name(fname: str, counter: int, suffix: str) -> str:
+def generate_name(basename: str, counter: int, suffix: str) -> str:
     """File name numbered by the rollover counter, e.g. ``output_0001.zarr``."""
-    stem = fname.split(".", maxsplit=1)[0]
-    return f"{stem}_{counter:0>4}{suffix}"
+    return f"{basename}_{counter:0>4}{suffix}"
 
 
 class FieldGroupMonitor(monitor.Monitor):
@@ -494,7 +491,7 @@ class FieldGroupMonitor(monitor.Monitor):
             "uuidOfHGrid": grid_id,
         }
         self._field_names = config.variables
-        self._handle_output_path(output_path, config.filename)
+        self._handle_output_path(output_path, config.basename)
         self._output_interval_steps = _interval_in_steps(config.output_interval, dtime)
         self._step_counter = 0
         self._file_counter = 0
@@ -506,17 +503,17 @@ class FieldGroupMonitor(monitor.Monitor):
     def output_path(self) -> pathlib.Path:
         return self._output_path
 
-    def _handle_output_path(self, output_path: pathlib.Path, filename: str) -> None:
-        file = output_path.joinpath(filename).absolute()
+    def _handle_output_path(self, output_path: pathlib.Path, basename: str) -> None:
+        file = output_path.joinpath(basename).absolute()
         path = file.parent
         path.mkdir(parents=True, exist_ok=True)
         self._output_path = path
-        self._file_name_pattern = file.name
+        self._file_basename = file.name
 
     def _next_file_path(self) -> pathlib.Path:
         """Path of the file numbered by the current file counter."""
         filename = generate_name(
-            self._file_name_pattern, self._file_counter, FILE_SUFFIXES[self.config.backend]
+            self._file_basename, self._file_counter, FILE_SUFFIXES[self.config.backend]
         )
         return self._output_path.joinpath(filename)
 

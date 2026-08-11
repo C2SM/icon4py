@@ -39,7 +39,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 #: File-name stub for the output file (a counter + the backend's suffix, ``.nc`` or
 #: ``.zarr``, is appended).
-DEFAULT_OUTPUT_FILENAME: Final[str] = "icon4py_output"
+DEFAULT_OUTPUT_BASENAME: Final[str] = "icon4py_output"
 
 
 # --------------------------------------------------------------------------------------
@@ -277,7 +277,7 @@ def create_io_monitor(
     field_groups = [
         common_io.FieldGroupIOConfig(
             output_interval=output_interval,
-            filename=DEFAULT_OUTPUT_FILENAME,
+            basename=DEFAULT_OUTPUT_BASENAME,
             variables=output_variables,
             backend=output_backend,
             mode=output_mode,

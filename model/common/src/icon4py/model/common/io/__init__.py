@@ -45,7 +45,7 @@ The IO module is configurable and can be configured with:
 Field groups are stored in the same file and share a common setting of
 
 - `output_interval`: the output schedule, given as either a positive integer N (write every N model steps, i.e. every N calls to `store`) or a `datetime.timedelta` (a simulation-time delta, e.g. `timedelta(hours=2)`, must be a multiple of the model time step). A time delta is normalized to a number of steps using the model time step, so the schedule is always evaluated in steps. Defaults to every step.
-- `filename`: File name to be used for the datafile, it may contain a _relative_ path which is appended to the `output_path` . Files will be appended with a counter for roll over (see `timesteps_per_file`).
+- `basename`: Base name of the datafiles, without an extension (the backend's extension and a roll-over counter are appended, see `timesteps_per_file`); it may contain a _relative_ path which is appended to the `output_path`.
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
 - `variables`: List of variables names to be output. Variable names are the CF names used as keys in the model state (see [data.py](../states/data.py)).
 - `backend` (default="zarr"): File format of the group, `"netcdf"` or `"zarr"`.
@@ -67,7 +67,7 @@ import datetime
 
 prognostic_group = FieldGroupIOConfig(
     output_interval=datetime.timedelta(hours=2),
-    filename="icon4py_prognostics",
+    basename="icon4py_prognostics",
     timesteps_per_file=12,
     variables=["air_density", "exner_function", "upward_air_velocity"],
     nc_title="prognostics from my experiment",
@@ -76,7 +76,7 @@ prognostic_group = FieldGroupIOConfig(
 
 wind_group = FieldGroupIOConfig(
     output_interval=1,
-    filename="icon4py_diagnostics",
+    basename="icon4py_diagnostics",
     timesteps_per_file=24,
     variables=["eastward_wind", "northward_wind"],
     nc_comment="Writing additional wind fields data from icon4py",

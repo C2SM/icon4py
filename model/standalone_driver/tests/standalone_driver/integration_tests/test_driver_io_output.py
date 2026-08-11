@@ -100,7 +100,7 @@ def test_standalone_driver_writes_output(
     # single data file: all prognostic AND diagnostic fields together. Two time slices:
     # the initial state (always written) plus the one integrated step.
     suffix = common_io.FILE_SUFFIXES[output_backend]
-    output_file = _find_one(tmp_path, f"{driver_io.DEFAULT_OUTPUT_FILENAME}_*{suffix}")
+    output_file = _find_one(tmp_path, f"{driver_io.DEFAULT_OUTPUT_BASENAME}_*{suffix}")
     with _open_output(output_file, output_backend) as ds:
         assert ds.attrs["Conventions"] == "CF-1.7"
         for name in driver_io.DEFAULT_OUTPUT_VARIABLES:

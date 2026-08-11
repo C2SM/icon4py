@@ -131,7 +131,7 @@ def create_monitor(
     horizontal_shard_size: int | None = None,
 ) -> common_io.FieldGroupMonitor:
     config = common_io.FieldGroupIOConfig(
-        filename="synthetic_output",
+        basename="synthetic_output",
         variables=list(VARIABLES),
         output_interval=common_time.NumTimeSteps(1),
         timesteps_per_file=2,  # forces a file rollover at the third capture step

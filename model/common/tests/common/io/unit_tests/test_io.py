@@ -51,8 +51,8 @@ backend = None
 @pytest.mark.parametrize(
     "name, suffix, expected",
     [
-        ("output.nc", ".nc", "output_0002.nc"),
-        ("outxxput_20220101.xc", ".nc", "outxxput_20220101_0002.nc"),
+        ("output", ".nc", "output_0002.nc"),
+        ("outxxput_20220101", ".nc", "outxxput_20220101_0002.nc"),
         ("output_20220101T000000_x", ".zarr", "output_20220101T000000_x_0002.zarr"),
     ],
 )
@@ -154,7 +154,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(
     field_configs = [
         FieldGroupIOConfig(
             output_interval=time.NumTimeSteps(1),
-            filename="icon4py_dummy_output",
+            basename="icon4py_dummy_output",
             variables=variables,
             # uxarray reads the data back together with the ugrid file: netCDF only
             backend=OutputBackend.NETCDF,
@@ -206,10 +206,10 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
     )
 
     state = test_io_utils.model_state(grid)
-    filename_stub = "icon4py_dummy_output"
+    basename_stub = "icon4py_dummy_output"
     config = FieldGroupIOConfig(
         output_interval=time.NumTimeSteps(1),
-        filename=filename_stub,
+        basename=basename_stub,
         variables=["air_density", "exner_function", "upward_air_velocity"],
         timesteps_per_file=1,
         # the test pins the netCDF file-roll naming (``..._000N.nc``)
@@ -230,7 +230,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path: pathlib.Path) -> 
         monitor.store(state, current_time)
         current_time = current_time + dt.timedelta(hours=1)
     assert len([f for f in monitor.output_path.iterdir() if f.is_file()]) == 4
-    expected_name = re.compile(filename_stub + "_\\d{4}.nc")
+    expected_name = re.compile(basename_stub + "_\\d{4}.nc")
     for f in monitor.output_path.iterdir():
         if f.is_file():
             assert expected_name.match(f.name)
@@ -319,7 +319,7 @@ def create_field_group_monitor(
     dtime: time.RelativeTime = time.RelativeTime(hours=1),
 ) -> tuple[FieldGroupIOConfig, FieldGroupMonitor]:
     config = FieldGroupIOConfig(
-        filename="test_empty.nc",
+        basename="test_empty",
         output_interval=output_interval,
         variables=["exner_function", "air_density"],
         # the tests built on this helper count plain files: netCDF (zarr stores are
@@ -350,40 +350,40 @@ def create_field_group_monitor(
 
 
 @pytest.mark.parametrize(
-    "filename, output_interval, variables, message",
+    "basename, output_interval, variables, message",
     [
         (
             "",
             1,
             ["exner_function", "air_density"],
-            "Output filename is missing.",
+            "Output basename is missing.",
         ),
         (
-            "/vars/prognostics.nc",
+            "/vars/prognostics",
             1,
             ["exner_function", "air_density"],
             "absolute path",
         ),
         (
-            "vars/prognostics.nc",
+            "vars/prognostics",
             1,
             [],
             "No variables provided for output.",
         ),
         (
-            "vars/prognostics.nc",
+            "vars/prognostics",
             0,
             ["air_density, exner_function"],
             "Output interval must be positive",
         ),
     ],
 )
-def test_fieldgroup_config_validate_filename(
-    filename: str, output_interval: OutputInterval, variables: list[str], message: str
+def test_fieldgroup_config_validate_basename(
+    basename: str, output_interval: OutputInterval, variables: list[str], message: str
 ) -> None:
     with pytest.raises(errors.InvalidConfigError) as err:
         FieldGroupIOConfig(
-            filename=filename,
+            basename=basename,
             output_interval=output_interval,
             variables=variables,
         )
@@ -392,7 +392,7 @@ def test_fieldgroup_config_validate_filename(
 
 def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path: pathlib.Path) -> None:
     config = FieldGroupIOConfig(
-        filename="vars/prognostics",
+        basename="vars/prognostics",
         output_interval=time.NumTimeSteps(1),
         variables=["exner_function", "air_density"],
     )
@@ -410,7 +410,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path: pa
     assert group_monitor.output_path == test_path.joinpath("vars")
     assert group_monitor.output_path.exists()
     assert group_monitor.output_path.is_dir()
-    assert "prognostics" in group_monitor._file_name_pattern
+    assert "prognostics" in group_monitor._file_basename
 
 
 class _SingleRankBlockDistribution:
@@ -464,7 +464,7 @@ def test_fieldgroup_monitor_wires_rank_blocks_into_netcdf_writer(
     monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: None)
     grid = test_io_utils.simple_grid
     config = FieldGroupIOConfig(
-        filename="rank_block.nc",
+        basename="rank_block",
         output_interval=time.NumTimeSteps(1),
         variables=["exner_function", "air_density"],
         backend=OutputBackend.NETCDF,
@@ -501,7 +501,7 @@ def test_fieldgroup_monitor_wires_rank_blocks_into_netcdf_writer(
 
 def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path: pathlib.Path) -> None:
     config = FieldGroupIOConfig(
-        filename="vars/prognostics",
+        basename="vars/prognostics",
         output_interval=time.NumTimeSteps(1),
         variables=["exner_function", "air_density", "foo"],
     )
@@ -527,7 +527,7 @@ def test_fieldgroup_config_rejects_invalid_interval() -> None:
     # a string interval is no longer supported: only int (steps) or timedelta
     with pytest.raises(errors.InvalidConfigError, match="must be of type"):
         FieldGroupIOConfig(
-            filename="a.nc",
+            basename="a",
             variables=["air_density"],
             output_interval="1 HOUR",  # type: ignore[arg-type]
         )
@@ -564,28 +564,33 @@ def test_fieldgroup_monitor_interval_shorter_than_dtime_raises(test_path: pathli
 
 
 @pytest.mark.parametrize(
-    "filename, backend",
-    [("a.nc", OutputBackend.ZARR), ("a.zarr", OutputBackend.NETCDF)],
+    "basename, backend",
+    [
+        ("a.nc", OutputBackend.ZARR),
+        ("a.zarr", OutputBackend.NETCDF),
+        ("a.nc", OutputBackend.NETCDF),
+        ("a.zarr", OutputBackend.ZARR),
+    ],
 )
-def test_fieldgroup_config_rejects_extension_of_other_backend(
-    filename: str, backend: OutputBackend
+def test_fieldgroup_config_rejects_basename_with_extension(
+    basename: str, backend: OutputBackend
 ) -> None:
-    """The file extension is derived from the backend; a foreign one is a mix-up."""
+    """The extension is appended from the backend; a configured one would nest."""
     with pytest.raises(errors.InvalidConfigError, match="extension"):
-        FieldGroupIOConfig(filename=filename, variables=["air_density"], backend=backend)
+        FieldGroupIOConfig(basename=basename, variables=["air_density"], backend=backend)
 
 
 def test_fieldgroup_config_rejects_backend_and_mode_strings() -> None:
     """The config takes enum members only; strings belong to the config-file boundary."""
     with pytest.raises(errors.InvalidConfigError, match="OutputBackend"):
         FieldGroupIOConfig(
-            filename="a.nc",
+            basename="a",
             variables=["air_density"],
             backend="netcdf",  # type: ignore[arg-type]  # invalid on purpose
         )
     with pytest.raises(errors.InvalidConfigError, match="OutputMode"):
         FieldGroupIOConfig(
-            filename="a.nc",
+            basename="a",
             variables=["air_density"],
             backend=OutputBackend.NETCDF,
             mode="gather",  # type: ignore[arg-type]  # invalid on purpose
@@ -599,7 +604,7 @@ def test_fieldgroup_config_rejects_invalid_horizontal_chunking(
 ) -> None:
     with pytest.raises(errors.InvalidConfigError, match="positive integer"):
         FieldGroupIOConfig(
-            filename="a.nc",
+            basename="a",
             variables=["air_density"],
             **{field: value},  # type: ignore[arg-type]  # invalid on purpose
         )
@@ -608,7 +613,7 @@ def test_fieldgroup_config_rejects_invalid_horizontal_chunking(
 def test_fieldgroup_config_rejects_shard_for_netcdf() -> None:
     with pytest.raises(errors.InvalidConfigError, match="'zarr' backend"):
         FieldGroupIOConfig(
-            filename="a.nc",
+            basename="a",
             variables=["air_density"],
             backend=OutputBackend.NETCDF,
             mode=OutputMode.GATHER,
@@ -620,7 +625,7 @@ def test_fieldgroup_config_rejects_shard_for_netcdf() -> None:
 def test_fieldgroup_config_rejects_shard_without_chunk() -> None:
     with pytest.raises(errors.InvalidConfigError, match="requires 'horizontal_chunk_size'"):
         FieldGroupIOConfig(
-            filename="a.nc",
+            basename="a",
             variables=["air_density"],
             horizontal_shard_size=8,
         )
@@ -629,7 +634,7 @@ def test_fieldgroup_config_rejects_shard_without_chunk() -> None:
 def test_fieldgroup_config_rejects_shard_not_multiple_of_chunk() -> None:
     with pytest.raises(errors.InvalidConfigError, match="not a multiple"):
         FieldGroupIOConfig(
-            filename="a.nc",
+            basename="a",
             variables=["air_density"],
             horizontal_chunk_size=4,
             horizontal_shard_size=10,
@@ -637,12 +642,12 @@ def test_fieldgroup_config_rejects_shard_not_multiple_of_chunk() -> None:
 
 
 def test_fieldgroup_config_block_alignment_is_shard_then_chunk_then_one() -> None:
-    default = FieldGroupIOConfig(filename="a", variables=["air_density"])
+    default = FieldGroupIOConfig(basename="a", variables=["air_density"])
     assert default.block_alignment == 1
-    chunked = FieldGroupIOConfig(filename="a", variables=["air_density"], horizontal_chunk_size=4)
+    chunked = FieldGroupIOConfig(basename="a", variables=["air_density"], horizontal_chunk_size=4)
     assert chunked.block_alignment == 4
     sharded = FieldGroupIOConfig(
-        filename="a",
+        basename="a",
         variables=["air_density"],
         horizontal_chunk_size=4,
         horizontal_shard_size=8,
@@ -654,7 +659,7 @@ def test_fieldgroup_monitor_wires_chunking_into_zarr_writer(test_path: pathlib.P
     """Pin that the configured chunk/shard sizes reach the store layout."""
     grid = test_io_utils.simple_grid
     config = FieldGroupIOConfig(
-        filename="chunked.zarr",
+        basename="chunked",
         output_interval=time.NumTimeSteps(1),
         variables=["air_density"],
         backend=OutputBackend.ZARR,
@@ -700,7 +705,7 @@ def test_fieldgroup_config_accepts_distributed_netcdf_on_any_installation(
     """
     monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: "<serial build>")
     config = FieldGroupIOConfig(
-        filename="a.nc",
+        basename="a",
         variables=["air_density"],
         backend=OutputBackend.NETCDF,
         mode=OutputMode.DISTRIBUTED,
@@ -746,7 +751,7 @@ def test_io_monitor_ugrid_failure_raises_runtime_error(test_path: pathlib.Path) 
 
 def test_io_config_time_properties_reach_field_group_monitors(test_path: pathlib.Path) -> None:
     config = IOConfig(
-        field_groups=[FieldGroupIOConfig(filename="t", variables=["air_density"])],
+        field_groups=[FieldGroupIOConfig(basename="t", variables=["air_density"])],
         output_path=str(test_path / "output"),
         time_units="hours since 2000-01-01",
         calendar="standard",
@@ -814,10 +819,10 @@ def test_io_monitor_builds_alignment_aware_rank_block_distributions(
     )
     config = IOConfig(
         field_groups=[
-            FieldGroupIOConfig(filename="a.zarr", **sharded),  # type: ignore[arg-type]
-            FieldGroupIOConfig(filename="b.zarr", **sharded),  # type: ignore[arg-type]
+            FieldGroupIOConfig(basename="a", **sharded),  # type: ignore[arg-type]
+            FieldGroupIOConfig(basename="b", **sharded),  # type: ignore[arg-type]
             FieldGroupIOConfig(
-                filename="c.zarr",
+                basename="c",
                 variables=["air_density"],
                 backend=OutputBackend.ZARR,
                 mode=OutputMode.DISTRIBUTED,

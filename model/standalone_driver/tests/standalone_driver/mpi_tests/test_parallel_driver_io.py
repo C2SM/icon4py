@@ -110,7 +110,7 @@ def _open_single_output(
     output_path: pathlib.Path, output_backend: common_io.OutputBackend
 ) -> xr.Dataset:
     suffix = common_io.FILE_SUFFIXES[output_backend]
-    matches = sorted(output_path.rglob(f"{driver_io.DEFAULT_OUTPUT_FILENAME}_*{suffix}"))
+    matches = sorted(output_path.rglob(f"{driver_io.DEFAULT_OUTPUT_BASENAME}_*{suffix}"))
     assert len(matches) == 1, f"expected exactly one output under {output_path}, got {matches}"
     match output_backend:
         case common_io.OutputBackend.NETCDF:
