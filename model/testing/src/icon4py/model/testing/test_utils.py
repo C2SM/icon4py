@@ -18,7 +18,7 @@ import numpy.testing as np_testing
 import numpy.typing as npt
 import pytest
 
-from icon4py.model.common import model_options
+from icon4py.model.common import backend_configuration as backend_cfg, model_options
 from icon4py.model.testing import config
 
 
@@ -142,8 +142,9 @@ def get_backend_fixture_value(item: pytest.Item) -> gtx_typing.Backend | None:
         return backend
     backend_like = get_fixture_value("backend_like", item)
     if backend_like is not None:
-        backend_config = get_fixture_value("backend_config", item)
-        return model_options.customize_backend(None, backend_like, backend_config=backend_config)
+        return model_options.customize_backend(
+            None, backend_like, backend_config=backend_cfg.backend_config_from_env()
+        )
     return None
 
 

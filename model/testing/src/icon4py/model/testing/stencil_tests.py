@@ -28,7 +28,7 @@ from gt4py.next import (
 from gt4py.next.ffront.decorator import FieldOperator
 from gt4py.next.instrumentation import hooks as gtx_hooks, metrics as gtx_metrics
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import backend_configuration as backend_cfg, model_backends, model_options
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
 from icon4py.model.testing import test_utils
@@ -216,7 +216,9 @@ class StencilTest:
                 f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
             )
         static_args = {name: [input_data[name]] for name in static_variant}
-        backend = model_options.customize_backend(self.PROGRAM, backend_like)
+        backend = model_options.customize_backend(
+            self.PROGRAM, backend_like, backend_config=backend_cfg.backend_config_from_env()
+        )
         program = self.PROGRAM.with_backend(backend)
         if backend is not None:
             if isinstance(program, FieldOperator):

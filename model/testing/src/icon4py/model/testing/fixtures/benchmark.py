@@ -13,7 +13,12 @@ import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.common import model_backends, model_options, topography
+from icon4py.model.common import (
+    backend_configuration as backend_cfg,
+    model_backends,
+    model_options,
+    topography,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -38,7 +43,9 @@ def geometry_field_source(
         pytest.skip("Incomplete grid Information for test, are you running with `simple_grid`?")
     mesh = grid_manager.grid
 
-    generic_concrete_backend = model_options.customize_backend(None, backend_like)
+    generic_concrete_backend = model_options.customize_backend(
+        None, backend_like, backend_config=backend_cfg.backend_config_from_env()
+    )
     decomposition_info = grid_manager.decomposition_info
 
     geometry_field_source = grid_geometry.GridGeometry(
@@ -65,7 +72,9 @@ def interpolation_field_source(
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory, None, None]:
     mesh = grid_manager.grid
 
-    generic_concrete_backend = model_options.customize_backend(None, backend_like)
+    generic_concrete_backend = model_options.customize_backend(
+        None, backend_like, backend_config=backend_cfg.backend_config_from_env()
+    )
     decomposition_info = grid_manager.decomposition_info
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
@@ -92,7 +101,9 @@ def metrics_field_source(
     mesh = grid_manager.grid
 
     allocator = model_backends.get_allocator(backend_like)
-    generic_concrete_backend = model_options.customize_backend(None, backend_like)
+    generic_concrete_backend = model_options.customize_backend(
+        None, backend_like, backend_config=backend_cfg.backend_config_from_env()
+    )
     decomposition_info = grid_manager.decomposition_info
 
     vertical_config = v_grid.VerticalGridConfig(
