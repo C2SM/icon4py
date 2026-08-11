@@ -49,21 +49,24 @@ def verify_full_run_fields(
     # magnitude, but a plain relative tolerance blows up on near-zero entries
     # (e.g. tendencies crossing zero, v-wind on a zonally symmetric aquaplanet),
     # hence the per-field absolute floor. Each atol is the largest deviation
-    # measured on the v06 archive (gtfn_cpu and embedded, both serialized
-    # timesteps), rounded up to one significant digit with ~20% of headroom.
-    # RTOL is set from the largest relative deviation away from zero, reached by
-    # km/kh (2.1e-12); it is above the double-precision default of assert_dallclose.
+    # measured on the v08 archive (embedded, gtfn_cpu, gtfn_gpu, dace_cpu and
+    # dace_gpu, both serialized timesteps), rounded up to one significant digit
+    # with ~20% of headroom. The v06 values were an order of magnitude tighter
+    # because most of that archive was zero-filled; v08 carries real values.
+    # RTOL is above the double-precision default of assert_dallclose but below
+    # the largest relative deviation away from zero (km/kh, 3.9e-11), so those
+    # fields are covered by their atol rather than by RTOL.
     # final tendencies and Stage F diagnostics
     fields = (
         (tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
-        (tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv", 2.0e-19),
-        (tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc", 0.0),
-        (tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi", 0.0),
-        (tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua", 1.0e-16),
+        (tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv", 3.0e-18),
+        (tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc", 6.0e-19),
+        (tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi", 8.0e-22),
+        (tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua", 2.0e-16),
         (tendency_state.ddt_v, exit_savepoint.tend_va(), "tend_va", 4.0e-17),
-        (tendency_state.ddt_w, exit_savepoint.tend_wa(), "tend_wa", 6.0e-19),
-        (diagnostic_state.heating, exit_savepoint.heating(), "heating", 7.0e-13),
-        (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), "dissip_ke", 7.0e-13),
+        (tendency_state.ddt_w, exit_savepoint.tend_wa(), "tend_wa", 2.0e-17),
+        (diagnostic_state.heating, exit_savepoint.heating(), "heating", 9.0e-13),
+        (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), "dissip_ke", 9.0e-13),
     )
     for actual, desired, name, atol in fields:
         test_utils.assert_dallclose(
@@ -76,7 +79,7 @@ def verify_full_run_fields(
 
     # Stage G vertically integrated diagnostics (2D)
     integrals = (
-        (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), "cptgzvi", 3.0e-6),
+        (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), "cptgzvi", 4.0e-6),
         (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), "dissip_ke_vi", 3.0e-12),
         (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), "int_energy_vi", 3.0e-6),
         (
@@ -100,8 +103,8 @@ def verify_full_run_fields(
     # (km_sfc/kh_sfc from mo_vdf_diag_smag.f90, out of scope of the
     # atmosphere-only port; the granule writes zero there)
     for actual, desired, name, atol in (
-        (diagnostic_state.km, exit_savepoint.km(), "km", 5.0e-12),
-        (diagnostic_state.kh, exit_savepoint.kh(), "kh", 2.0e-11),
+        (diagnostic_state.km, exit_savepoint.km(), "km", 1.0e-10),
+        (diagnostic_state.kh, exit_savepoint.kh(), "kh", 3.0e-10),
     ):
         test_utils.assert_dallclose(
             actual.asnumpy()[:, : num_levels - 1],
