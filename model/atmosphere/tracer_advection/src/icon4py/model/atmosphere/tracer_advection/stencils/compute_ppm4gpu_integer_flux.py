@@ -19,28 +19,48 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _sum_neighbor_contributions_all(
-    mask1: fa.CellKField[bool],
-    mask2: fa.CellKField[bool],
-    js: fa.CellKField[ta.wpfloat],
+    mask1: fa.CellKHalfField[bool],
+    mask2: fa.CellKHalfField[bool],
+    js: fa.CellKHalfField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKHalfField[ta.wpfloat]:
     js_gt0 = js >= 0.0
     js_gt1 = js >= 1.0
     js_gt2 = js >= 2.0
     js_gt3 = js >= 3.0
     js_gt4 = js >= 4.0
 
-    prod_p0 = where(mask1 & js_gt0, p_cc * p_cellmass_now, 0.0)
-    prod_p1 = where(mask1 & js_gt1, p_cc(dims.KDim + 1) * p_cellmass_now(dims.KDim + 1), 0.0)
-    prod_p2 = where(mask1 & js_gt2, p_cc(dims.KDim + 2) * p_cellmass_now(dims.KDim + 2), 0.0)
-    prod_p3 = where(mask1 & js_gt3, p_cc(dims.KDim + 3) * p_cellmass_now(dims.KDim + 3), 0.0)
-    prod_p4 = where(mask1 & js_gt4, p_cc(dims.KDim + 4) * p_cellmass_now(dims.KDim + 4), 0.0)
-    prod_m0 = where(mask2 & js_gt0, p_cc(dims.KDim - 1) * p_cellmass_now(dims.KDim - 1), 0.0)
-    prod_m1 = where(mask2 & js_gt1, p_cc(dims.KDim - 2) * p_cellmass_now(dims.KDim - 2), 0.0)
-    prod_m2 = where(mask2 & js_gt2, p_cc(dims.KDim - 3) * p_cellmass_now(dims.KDim - 3), 0.0)
-    prod_m3 = where(mask2 & js_gt3, p_cc(dims.KDim - 4) * p_cellmass_now(dims.KDim - 4), 0.0)
-    prod_m4 = where(mask2 & js_gt4, p_cc(dims.KDim - 5) * p_cellmass_now(dims.KDim - 5), 0.0)
+    prod_p0 = where(
+        mask1 & js_gt0, p_cc(dims.KHalfDim + 0.5) * p_cellmass_now(dims.KHalfDim + 0.5), 0.0
+    )
+    prod_p1 = where(
+        mask1 & js_gt1, p_cc(dims.KHalfDim + 1.5) * p_cellmass_now(dims.KHalfDim + 1.5), 0.0
+    )
+    prod_p2 = where(
+        mask1 & js_gt2, p_cc(dims.KHalfDim + 2.5) * p_cellmass_now(dims.KHalfDim + 2.5), 0.0
+    )
+    prod_p3 = where(
+        mask1 & js_gt3, p_cc(dims.KHalfDim + 3.5) * p_cellmass_now(dims.KHalfDim + 3.5), 0.0
+    )
+    prod_p4 = where(
+        mask1 & js_gt4, p_cc(dims.KHalfDim + 4.5) * p_cellmass_now(dims.KHalfDim + 4.5), 0.0
+    )
+    prod_m0 = where(
+        mask2 & js_gt0, p_cc(dims.KHalfDim - 0.5) * p_cellmass_now(dims.KHalfDim - 0.5), 0.0
+    )
+    prod_m1 = where(
+        mask2 & js_gt1, p_cc(dims.KHalfDim - 1.5) * p_cellmass_now(dims.KHalfDim - 1.5), 0.0
+    )
+    prod_m2 = where(
+        mask2 & js_gt2, p_cc(dims.KHalfDim - 2.5) * p_cellmass_now(dims.KHalfDim - 2.5), 0.0
+    )
+    prod_m3 = where(
+        mask2 & js_gt3, p_cc(dims.KHalfDim - 3.5) * p_cellmass_now(dims.KHalfDim - 3.5), 0.0
+    )
+    prod_m4 = where(
+        mask2 & js_gt4, p_cc(dims.KHalfDim - 4.5) * p_cellmass_now(dims.KHalfDim - 4.5), 0.0
+    )
 
     prod_jks = (
         prod_p0
@@ -61,12 +81,12 @@ def _sum_neighbor_contributions_all(
 def _compute_ppm4gpu_integer_flux(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
-    z_cfl: fa.CellKField[ta.wpfloat],
-    p_upflux: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
+    z_cfl: fa.CellKHalfField[ta.wpfloat],
+    p_upflux: fa.CellKHalfField[ta.wpfloat],
+    k: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKHalfField[ta.wpfloat]:
     js = floor(abs(z_cfl)) - 1.0
 
     z_cfl_pos = z_cfl > 0.0
@@ -94,9 +114,9 @@ def _compute_ppm4gpu_integer_flux(
 def compute_ppm4gpu_integer_flux(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
-    z_cfl: fa.CellKField[ta.wpfloat],
-    p_upflux: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
+    z_cfl: fa.CellKHalfField[ta.wpfloat],
+    p_upflux: fa.CellKHalfField[ta.wpfloat],
+    k: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
@@ -115,6 +135,6 @@ def compute_ppm4gpu_integer_flux(
         out=p_upflux,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

@@ -19,27 +19,27 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _sum_neighbor_contributions(
-    mask1: fa.CellKField[bool],
-    mask2: fa.CellKField[bool],
-    js: fa.CellKField[ta.wpfloat],
+    mask1: fa.CellKHalfField[bool],
+    mask2: fa.CellKHalfField[bool],
+    js: fa.CellKHalfField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKHalfField[ta.wpfloat]:
     js_eq0 = js == 0.0
     js_eq1 = js == 1.0
     js_eq2 = js == 2.0
     js_eq3 = js == 3.0
     js_eq4 = js == 4.0
 
-    p_cc_p0 = where(mask1 & js_eq0, p_cc, 0.0)
-    p_cc_p1 = where(mask1 & js_eq1, p_cc(dims.KDim + 1), 0.0)
-    p_cc_p2 = where(mask1 & js_eq2, p_cc(dims.KDim + 2), 0.0)
-    p_cc_p3 = where(mask1 & js_eq3, p_cc(dims.KDim + 3), 0.0)
-    p_cc_p4 = where(mask1 & js_eq4, p_cc(dims.KDim + 4), 0.0)
-    p_cc_m0 = where(mask2 & js_eq0, p_cc(dims.KDim - 1), 0.0)
-    p_cc_m1 = where(mask2 & js_eq1, p_cc(dims.KDim - 2), 0.0)
-    p_cc_m2 = where(mask2 & js_eq2, p_cc(dims.KDim - 3), 0.0)
-    p_cc_m3 = where(mask2 & js_eq3, p_cc(dims.KDim - 4), 0.0)
-    p_cc_m4 = where(mask2 & js_eq4, p_cc(dims.KDim - 5), 0.0)
+    p_cc_p0 = where(mask1 & js_eq0, p_cc(dims.KHalfDim + 0.5), 0.0)
+    p_cc_p1 = where(mask1 & js_eq1, p_cc(dims.KHalfDim + 1.5), 0.0)
+    p_cc_p2 = where(mask1 & js_eq2, p_cc(dims.KHalfDim + 2.5), 0.0)
+    p_cc_p3 = where(mask1 & js_eq3, p_cc(dims.KHalfDim + 3.5), 0.0)
+    p_cc_p4 = where(mask1 & js_eq4, p_cc(dims.KHalfDim + 4.5), 0.0)
+    p_cc_m0 = where(mask2 & js_eq0, p_cc(dims.KHalfDim - 0.5), 0.0)
+    p_cc_m1 = where(mask2 & js_eq1, p_cc(dims.KHalfDim - 1.5), 0.0)
+    p_cc_m2 = where(mask2 & js_eq2, p_cc(dims.KHalfDim - 2.5), 0.0)
+    p_cc_m3 = where(mask2 & js_eq3, p_cc(dims.KHalfDim - 3.5), 0.0)
+    p_cc_m4 = where(mask2 & js_eq4, p_cc(dims.KHalfDim - 4.5), 0.0)
 
     p_cc_jks = (
         p_cc_p0
@@ -60,13 +60,13 @@ def _sum_neighbor_contributions(
 def _compute_ppm4gpu_fractional_flux(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
-    z_cfl: fa.CellKField[ta.wpfloat],
+    z_cfl: fa.CellKHalfField[ta.wpfloat],
     z_delta_q: fa.CellKField[ta.wpfloat],
     z_a1: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
+    k: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKHalfField[ta.wpfloat]:
     js = floor(abs(z_cfl))
     z_cflfrac = abs(z_cfl) - js
     z_cflfrac_nonzero = z_cflfrac != 0.0
@@ -104,11 +104,11 @@ def _compute_ppm4gpu_fractional_flux(
 def compute_ppm4gpu_fractional_flux(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
-    z_cfl: fa.CellKField[ta.wpfloat],
+    z_cfl: fa.CellKHalfField[ta.wpfloat],
     z_delta_q: fa.CellKField[ta.wpfloat],
     z_a1: fa.CellKField[ta.wpfloat],
-    p_upflux: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
+    p_upflux: fa.CellKHalfField[ta.wpfloat],
+    k: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
@@ -128,6 +128,6 @@ def compute_ppm4gpu_fractional_flux(
         out=p_upflux,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

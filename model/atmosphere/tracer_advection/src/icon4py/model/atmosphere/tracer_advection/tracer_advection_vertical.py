@@ -716,7 +716,10 @@ class PiecewiseParabolicMethod(FiniteVolume):
         allocator = model_backends.get_allocator(self._backend)
         self._k_field = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=allocator
-        )  # TODO(dastrm): should be KHalfDim
+        )
+        self._k_half_field = data_alloc.index_field(
+            self._grid, dims.KHalfDim, dtype=gtx.int32, allocator=allocator
+        )
         self._z_cfl = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
         )
@@ -763,7 +766,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=compute_ppm4gpu_courant_number,
             constant_args={
-                "k": self._k_field,
+                "k": self._k_half_field,
                 "slevp1_ti": self._slevp1_ti,
                 "nlev": self._nlev,
                 "dbl_eps": constants.DBL_EPS,
@@ -840,7 +843,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=compute_ppm4gpu_fractional_flux,
             constant_args={
-                "k": self._k_field,
+                "k": self._k_half_field,
                 "slev": self._slev,
             },
             vertical_sizes={
@@ -853,7 +856,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=compute_ppm4gpu_integer_flux,
             constant_args={
-                "k": self._k_field,
+                "k": self._k_half_field,
                 "slev": self._slev,
             },
             vertical_sizes={
