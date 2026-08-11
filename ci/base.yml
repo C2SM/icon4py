@@ -14,8 +14,6 @@ variables:
   PYVERSION: 3.13.13
   PYVERSION_SHORT: 3.13
   ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
-  # TODO: Remove
-  CSCS_REBUILD_POLICY: "always"
 
 # Base image build step with SHA256 checksum for caching
 .build_baseimage:
@@ -52,6 +50,8 @@ variables:
     reports:
       dotenv: build.env
   variables:
+    # TODO: Remove
+    CSCS_REBUILD_POLICY: "always"
     DOCKERFILE: ci/docker/venv.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=$BASE_IMAGE", "ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS"]'
 
