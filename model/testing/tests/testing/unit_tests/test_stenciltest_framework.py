@@ -1,0 +1,431 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""
+Unit tests for the `StencilTest` machinery itself.
+
+The conventions enforced by `stencil_tests` are what keep ~200 stencil test suites
+consistent, so the enforcement is tested here rather than only implicitly through those
+suites (where a hole in a check simply goes unnoticed).
+"""
+
+import inspect
+
+import gt4py.next as gtx
+import numpy as np
+import pytest
+from gt4py.next import common as gtx_common
+
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import simple
+
+# Deliberately imported at module scope: `input_data_fixture` must reject fixtures that
+# *call* this module while still accepting fixtures that merely use `self.data_alloc`.
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import stencil_tests
+
+
+# -- helpers ---------------------------------------------------------------------------
+
+
+def valid_reference():
+    """A `reference` implementation following the convention."""
+
+    def reference(grid, **kwargs):
+        return {}
+
+    return reference
+
+
+def valid_input_data():
+    """An `input_data` fixture function following the convention."""
+
+    def input_data(self, grid):
+        return {}
+
+    return input_data
+
+
+def make_suite(**namespace):
+    """A minimal valid `StencilTest` subclass, with `namespace` merged into its body."""
+    body = {
+        "reference": stencil_tests.static_reference(valid_reference()),
+        "input_data": stencil_tests.input_data_fixture(valid_input_data()),
+        **namespace,
+    }
+    # Not named `Test...`: these are created inside tests and must not be collected.
+    return type("Suite", (stencil_tests.StencilTest,), body)
+
+
+def cell_field(values):
+    return gtx.as_field((dims.CellDim,), np.asarray(values, dtype=np.float64))
+
+
+@pytest.fixture
+def grid():
+    return simple.simple_grid()
+
+
+# -- static_reference ------------------------------------------------------------------
+
+
+class TestStaticReference:
+    def test_returns_marked_staticmethod(self):
+        marked = stencil_tests.static_reference(valid_reference())
+
+        assert isinstance(marked, staticmethod)
+        assert getattr(marked, "__stencil_test_reference__", False)
+
+    def test_accepts_an_existing_staticmethod(self):
+        marked = stencil_tests.static_reference(staticmethod(valid_reference()))
+
+        assert isinstance(marked, staticmethod)
+        assert getattr(marked, "__stencil_test_reference__", False)
+
+    def test_does_not_wrap_twice(self):
+        once = stencil_tests.static_reference(valid_reference())
+
+        assert stencil_tests.static_reference(once) is once
+
+    def test_rejects_non_function(self):
+        with pytest.raises(TypeError, match="must be a regular function or a staticmethod"):
+            stencil_tests.static_reference(object())
+
+    def test_rejects_wrong_name(self):
+        def not_reference(grid, **kwargs): ...
+
+        with pytest.raises(ValueError, match="must be named 'reference'"):
+            stencil_tests.static_reference(not_reference)
+
+    def test_rejects_wrong_first_parameter(self):
+        def reference(connectivities, **kwargs): ...
+
+        with pytest.raises(ValueError, match=r"must be 'reference\(grid, \.\.\.\)'"):
+            stencil_tests.static_reference(reference)
+
+    def test_rejects_empty_signature(self):
+        """Regression: this used to raise `IndexError` while checking the convention."""
+
+        def reference(): ...
+
+        with pytest.raises(ValueError, match=r"must be 'reference\(grid, \.\.\.\)'"):
+            stencil_tests.static_reference(reference)
+
+
+# -- input_data_fixture ----------------------------------------------------------------
+
+
+class TestInputDataFixture:
+    def test_returns_marked_class_scoped_fixture(self):
+        fixture = stencil_tests.input_data_fixture(valid_input_data())
+
+        assert getattr(fixture, "__stencil_test_input_fixture__", False)
+        assert fixture._fixture_function_marker.scope == "class"
+
+    def test_forwards_keyword_arguments_to_pytest_fixture(self):
+        fixture = stencil_tests.input_data_fixture(params=[1, 2], scope="function")(
+            valid_input_data()
+        )
+        marker = fixture._fixture_function_marker
+
+        assert getattr(fixture, "__stencil_test_input_fixture__", False)
+        assert marker.params == (1, 2)
+        assert marker.scope == "function"  # an explicit scope wins over the default
+
+    def test_rejects_non_function(self):
+        with pytest.raises(TypeError, match="must be a regular function"):
+            stencil_tests.input_data_fixture(object())
+
+    def test_rejects_wrong_name(self):
+        def not_input_data(self, grid): ...
+
+        with pytest.raises(ValueError, match="must be named 'input_data'"):
+            stencil_tests.input_data_fixture(not_input_data)
+
+    @pytest.mark.parametrize(
+        "func",
+        [
+            pytest.param(lambda self: None, id="missing_grid"),
+            pytest.param(lambda grid, self: None, id="swapped"),
+            pytest.param(lambda self, request, grid: None, id="request_before_grid"),
+        ],
+    )
+    def test_rejects_wrong_leading_parameters(self, func):
+        func.__name__ = "input_data"
+
+        with pytest.raises(ValueError, match=r"must be 'input_data\(self, grid, \.\.\.\)'"):
+            stencil_tests.input_data_fixture(func)
+
+    def test_rejects_direct_data_allocation_call(self):
+        def input_data(self, grid):
+            return {"a": data_alloc.zero_field(grid, dims.CellDim)}
+
+        with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
+            stencil_tests.input_data_fixture(input_data)
+
+    def test_rejects_data_allocation_from_an_enclosing_scope(self):
+        module = data_alloc
+
+        def input_data(self, grid):
+            return {"a": module.zero_field(grid, dims.CellDim)}
+
+        with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
+            stencil_tests.input_data_fixture(input_data)
+
+    def test_accepts_allocation_through_the_wrapper(self):
+        """
+        Regression: `self.data_alloc` must not be mistaken for the `data_alloc` global.
+
+        `inspect.getclosurevars().globals` resolves every name in `co_names`, attribute
+        names included, so on some CPython versions this fixture was rejected purely
+        because this module happens to bind `data_alloc`.
+        """
+
+        def input_data(self, grid):
+            return {"a": self.data_alloc.zero_field(dims.CellDim)}
+
+        assert stencil_tests.input_data_fixture(input_data) is not None
+
+
+# -- StencilTest.__init_subclass__ -----------------------------------------------------
+
+
+class TestSuiteConventions:
+    def test_attaches_a_test_function_named_after_the_subclass(self):
+        suite = make_suite()
+
+        assert "test_Suite" in vars(suite)
+        assert vars(suite)["test_Suite"] is stencil_tests.test_and_benchmark
+
+    def test_rejects_missing_reference(self):
+        with pytest.raises(TypeError, match="does not implement the required 'reference'"):
+
+            class Suite(stencil_tests.StencilTest):
+                input_data = stencil_tests.input_data_fixture(valid_input_data())
+
+    def test_rejects_missing_input_data(self):
+        with pytest.raises(TypeError, match="does not implement the required 'input_data'"):
+
+            class Suite(stencil_tests.StencilTest):
+                reference = stencil_tests.static_reference(valid_reference())
+
+    def test_rejects_undecorated_reference(self):
+        with pytest.raises(TypeError, match="must be decorated with '@static_reference'"):
+
+            class Suite(stencil_tests.StencilTest):
+                reference = staticmethod(valid_reference())
+                input_data = stencil_tests.input_data_fixture(valid_input_data())
+
+    def test_rejects_undecorated_input_data(self):
+        with pytest.raises(TypeError, match="must be decorated with '@input_data_fixture'"):
+
+            class Suite(stencil_tests.StencilTest):
+                reference = stencil_tests.static_reference(valid_reference())
+                input_data = pytest.fixture(valid_input_data())
+
+    def test_accepts_members_inherited_from_another_suite(self):
+        """Regression: the members were looked up in `cls.__dict__`, raising `KeyError`."""
+        base = make_suite()
+
+        derived = type("Derived", (base,), {})
+
+        assert "test_Derived" in vars(derived)
+
+    def test_static_variant_is_empty_without_static_params(self):
+        suite = make_suite()
+
+        fixture = inspect.getattr_static(suite, "static_variant").__func__
+        assert fixture._fixture_function_marker.params is None
+        assert fixture._get_wrapped_function()() == ()
+
+    def test_static_variant_is_parametrized_from_static_params(self):
+        static_params = {"none": (), "domain": ("horizontal_start",)}
+
+        suite = make_suite(STATIC_PARAMS=static_params)
+
+        marker = inspect.getattr_static(suite, "static_variant").__func__._fixture_function_marker
+        assert list(marker.params) == list(static_params.items())
+        assert marker.scope == "class"
+
+
+# -- Output ----------------------------------------------------------------------------
+
+
+class TestOutput:
+    def test_defaults_select_the_whole_field(self):
+        out = stencil_tests.Output("field")
+
+        assert out.refslice == (slice(None),)
+        assert out.gtslice == (slice(None),)
+
+    def test_is_hashable_and_comparable(self):
+        assert stencil_tests.Output("a") == stencil_tests.Output("a")
+        assert len({stencil_tests.Output("a"), stencil_tests.Output("a")}) == 1
+
+
+# -- connectivities_asnumpy ------------------------------------------------------------
+
+
+class StubGrid:
+    """Minimal stand-in exposing only what the connectivities view uses."""
+
+    def __init__(self, connectivities):
+        self.connectivities = connectivities
+
+    def get_connectivity(self, offset):
+        return self.connectivities[offset if isinstance(offset, str) else offset.value]
+
+
+class TestConnectivitiesAsNumpy:
+    def test_lookup_by_name_and_by_field_offset_agree(self, grid):
+        view = stencil_tests.connectivities_asnumpy(grid)
+
+        assert isinstance(view[dims.E2C], np.ndarray)
+        np.testing.assert_array_equal(view[dims.E2C], view["E2C"])
+        np.testing.assert_array_equal(view[dims.E2C], grid.get_connectivity("E2C").asnumpy())
+
+    def test_iteration_and_length_cover_the_neighbor_tables(self, grid):
+        view = stencil_tests.connectivities_asnumpy(grid)
+
+        expected = {
+            key
+            for key, connectivity in grid.connectivities.items()
+            if gtx_common.is_neighbor_table(connectivity)
+        }
+        assert set(view) == expected
+        assert len(view) == len(expected)
+
+    def test_non_neighbor_table_entries_are_skipped(self, grid):
+        stub = StubGrid({**dict(grid.connectivities), "Koff": dims.KDim})
+        view = stencil_tests.connectivities_asnumpy(stub)
+
+        assert "Koff" not in set(view)
+        assert len(view) == len(set(view))
+        with pytest.raises(TypeError, match="is not a neighbor table"):
+            view["Koff"]
+
+
+# -- DataAllocationWrapper -------------------------------------------------------------
+
+
+class TestDataAllocationWrapper:
+    @pytest.fixture
+    def wrapper(self, grid):
+        return stencil_tests.DataAllocationWrapper(grid=grid, allocator=None)
+
+    def test_binds_the_grid(self, wrapper, grid):
+        assert wrapper.zero_field(dims.CellDim).shape == (grid.num_cells,)
+        assert wrapper.random_field(dims.EdgeDim, dims.KDim).shape == (
+            grid.num_edges,
+            grid.num_levels,
+        )
+
+    def test_forwards_keyword_arguments(self, wrapper, grid):
+        field = wrapper.zero_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+
+        assert field.shape == (grid.num_cells, grid.num_levels + 1)
+        assert np.all(field.asnumpy() == 0.0)
+        assert np.all(wrapper.constant_field(3.5, dims.CellDim).asnumpy() == 3.5)
+
+    def test_random_field_respects_bounds(self, wrapper):
+        values = wrapper.random_field(dims.CellDim, low=2.0, high=3.0).asnumpy()
+
+        assert np.all((values >= 2.0) & (values < 3.0))
+
+    def test_connectivity_field_returns_a_plain_field(self, wrapper, grid):
+        """
+        Regression: dropping `allocate_data` also dropped the conversion it performed.
+
+        A raw `NeighborTable` cannot be passed as a program argument, so stencils that
+        consume a connectivity as data need it re-allocated as an ordinary field.
+        """
+        field = wrapper.connectivity_field("E2C")
+
+        assert isinstance(field, gtx.Field)
+        assert not gtx_common.is_neighbor_table(field)
+        np.testing.assert_array_equal(field.asnumpy(), grid.get_connectivity("E2C").asnumpy())
+
+    def test_signatures_stay_in_sync_with_data_allocation(self):
+        """The wrapper duplicates the wrapped signatures, so guard against drift."""
+        for name in (
+            "constant_field",
+            "index_field",
+            "random_field",
+            "random_mask",
+            "random_sign",
+            "zero_field",
+        ):
+            wrapped = [
+                param
+                for param in inspect.signature(getattr(data_alloc, name)).parameters.values()
+                if param.name not in ("grid", "allocator")
+            ]
+            method = [
+                param
+                for param in inspect.signature(
+                    getattr(stencil_tests.DataAllocationWrapper, name)
+                ).parameters.values()
+                if param.name != "self"
+            ]
+            assert wrapped == method, f"'{name}' has drifted from 'data_allocation.{name}'"
+
+
+# -- StencilTest.verify_data -----------------------------------------------------------
+
+
+class TestVerifyData:
+    def test_passes_when_the_output_matches(self):
+        suite = make_suite(OUTPUTS=("out",))()
+
+        suite.verify_data(
+            input_data={"out": cell_field([1.0, 2.0, 3.0])},
+            reference_outputs={"out": np.array([1.0, 2.0, 3.0])},
+        )
+
+    def test_fails_and_names_the_output(self):
+        suite = make_suite(OUTPUTS=("out",))()
+
+        with pytest.raises(AssertionError, match="Verification failed for 'out'"):
+            suite.verify_data(
+                input_data={"out": cell_field([1.0, 2.0, 3.0])},
+                reference_outputs={"out": np.array([1.0, 2.0, 9.0])},
+            )
+
+    def test_honours_the_output_slices(self):
+        out = stencil_tests.Output("out", refslice=(slice(1, None),), gtslice=(slice(1, None),))
+        suite = make_suite(OUTPUTS=(out,))()
+
+        # the excluded leading entry differs, the compared tail does not
+        suite.verify_data(
+            input_data={"out": cell_field([42.0, 2.0, 3.0])},
+            reference_outputs={"out": np.array([-1.0, 2.0, 3.0])},
+        )
+
+    def test_verifies_every_element_of_a_tuple_output(self):
+        suite = make_suite(OUTPUTS=("out",))()
+        fields = (cell_field([1.0, 2.0]), cell_field([3.0, 4.0]))
+
+        suite.verify_data(
+            input_data={"out": fields},
+            reference_outputs={"out": (np.array([1.0, 2.0]), np.array([3.0, 4.0]))},
+        )
+
+        with pytest.raises(AssertionError, match=r"Verification failed for 'out\[1\]'"):
+            suite.verify_data(
+                input_data={"out": fields},
+                reference_outputs={"out": (np.array([1.0, 2.0]), np.array([3.0, 9.0]))},
+            )
+
+    def test_rejects_a_tuple_output_of_the_wrong_length(self):
+        suite = make_suite(OUTPUTS=("out",))()
+
+        with pytest.raises(ValueError):
+            suite.verify_data(
+                input_data={"out": (cell_field([1.0]), cell_field([2.0]))},
+                reference_outputs={"out": (np.array([1.0]),)},
+            )
