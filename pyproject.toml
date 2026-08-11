@@ -417,6 +417,9 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
+# pinned to a revision of a fork; swap for a version bound once
+# https://github.com/ofuhrer/icon-grid-generator/pull/2 is merged and released
+icon-grid-generator = {git = "https://github.com/jcanton/icon-grid-generator", rev = "c7271a3a37437efe9f0b04cfd4a28338e3bdafbd"}
 icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
