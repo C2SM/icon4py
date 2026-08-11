@@ -247,6 +247,7 @@ def test_horizontal_advection_convergence(
                 integration_time=0.0,
                 num_levels=experiment_config.vertical_grid.num_levels,
             )
+            assert ds.prep_tracer_advection_prognostic is not None
             plot_utils.plot_torus_scatter(
                 node_x=edge_x,
                 node_y=edge_y,
@@ -406,8 +407,15 @@ def test_vertical_advection_convergence(
             type(experiment_config.initial_condition.config)
             is linear_vertical_advection.LinearVerticalAdvectionConfig
         )
+        # the time step is needed before the driver exists, so take the half level heights from
+        # the vertical grid rather than from the metric fields. The topography is flat, so the
+        # two agree; only the velocity fields that vary with height read the values at all.
+        vertical_grid = driver_utils.create_vertical_grid(
+            vertical_grid_config=experiment_config.vertical_grid, allocator=allocator
+        )
         w_max = linear_vertical_advection.compute_max_velocity(
             velocity_field=experiment_config.initial_condition.config.velocity_field,
+            z_ifc=vertical_grid.interface_physical_height.ndarray,
             model_top_height=experiment_config.vertical_grid.model_top_height,
         )
         match experiment_config.driver.end_of_simulation:
@@ -459,7 +467,9 @@ def test_vertical_advection_convergence(
         reference_tracer = linear_vertical_advection.construct_reference_tracer(
             velocity_field=experiment_config.initial_condition.config.velocity_field,
             tracer_profile=experiment_config.initial_condition.config.tracer_profile,
-            static_fields=icon4py_driver.static_field_factories,
+            metrics=icon4py_driver.static_field_factories.metrics,
+            center_z=experiment_config.vertical_grid.model_top_height / 2.0,
+            model_top_height=experiment_config.vertical_grid.model_top_height,
             integration_time=simulated_time,
             num_levels=experiment_config.vertical_grid.num_levels,
         )
@@ -476,15 +486,12 @@ def test_vertical_advection_convergence(
                 experiment_config.tracer_advection.horizontal_advection_type.name.lower()
             )
             grid_name = grid_path.stem
-            assert (
-                type(experiment_config.initial_condition.config)
-                is linear_horizontal_advection.LinearHorizontalAdvectionConfig
-            )
-            initial_tracer = linear_horizontal_advection.construct_reference_tracer(
+            initial_tracer = linear_vertical_advection.construct_reference_tracer(
                 velocity_field=experiment_config.initial_condition.config.velocity_field,
                 tracer_profile=experiment_config.initial_condition.config.tracer_profile,
-                grid=grid_manager.grid,
-                static_fields=icon4py_driver.static_field_factories,
+                metrics=icon4py_driver.static_field_factories.metrics,
+                center_z=experiment_config.vertical_grid.model_top_height / 2.0,
+                model_top_height=experiment_config.vertical_grid.model_top_height,
                 integration_time=0.0,
                 num_levels=experiment_config.vertical_grid.num_levels,
             )

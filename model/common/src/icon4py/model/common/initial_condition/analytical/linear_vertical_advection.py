@@ -14,7 +14,7 @@ import typing
 from typing import TYPE_CHECKING, ClassVar
 
 from icon4py.model.common.config import config_io, options as common_conf_opt
-from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta
 from icon4py.model.common.states import adv_states, prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -116,9 +116,7 @@ def _compute_idealized_velocity_field(
         case VelocityField.SPATIAL_SIN:
             w = model_top_height * array_ns.sin(array_ns.pi * z_ifc / model_top_height)
         case _:
-            raise NotImplementedError(
-                f"Velocity field {velocity_field} not implemented."
-            )
+            raise NotImplementedError(f"Velocity field {velocity_field} not implemented.")
     return w
 
 
@@ -135,11 +133,11 @@ def _construct_idealized_prep_adv(
         model_top_height=model_top_height,
         z_ifc=z_ifc,
     )
-    
+
     vn_traj = prep_adv_state.vn_traj.ndarray
     mass_flx_me = prep_adv_state.mass_flx_me.ndarray
     mass_flx_ic = prep_adv_state.mass_flx_ic.ndarray
-    
+
     vn_traj[:, :] = 0.0
     mass_flx_me[:, :] = 0.0
     mass_flx_ic[:, :] = w[None, :]
@@ -155,6 +153,7 @@ def _construct_idealized_tracer(
 ) -> None:
     # impose tracer ICs at the horizontal grid center
     array_ns = data_alloc.array_namespace(z_mc)
+
     def _compute_tracer(dz: data_alloc.NDArray) -> data_alloc.NDArray:
         match tracer_profile:
             case TracerProfile.GAUSSIAN_1D:
@@ -167,10 +166,11 @@ def _construct_idealized_tracer(
                 raise NotImplementedError(
                     f"Initial tracer profile {tracer_profile} not implemented."
                 )
+
     # Simpson's 1/3 rule
     tracer_mc = _compute_tracer(z_mc - center_z)
     tracer_ifc = _compute_tracer(z_ifc - center_z)
-    tracer[:,:] = (tracer_ifc[:,:-1] + 4.0 * tracer_mc + tracer_ifc[:,1:]) / 6.0
+    tracer[:, :] = (tracer_ifc[:, :-1] + 4.0 * tracer_mc + tracer_ifc[:, 1:]) / 6.0
 
 
 def linear_vertical_advection(
@@ -199,6 +199,7 @@ def linear_vertical_advection(
     _construct_idealized_prep_adv(
         velocity_field=config.velocity_field,
         prep_adv_state=adv_prep_adv_state,
+        z_ifc=z_ifc,
         model_top_height=vertical_config.model_top_height,
     )
 
