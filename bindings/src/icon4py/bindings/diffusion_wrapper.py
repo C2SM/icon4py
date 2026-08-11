@@ -149,7 +149,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     diffusion_params = DiffusionParams(config)
 
-    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
+    nlev = wgtfac_c.domain[dims.KHalfDim].unit_range.stop - 1
     cell_k_domain = gtx.domain(
         {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
     )

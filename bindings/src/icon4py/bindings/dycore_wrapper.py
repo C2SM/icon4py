@@ -213,7 +213,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
         nudgecoeff_e=nudgecoeff_e,
     )
 
-    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
+    nlev = wgtfac_c.domain[dims.KHalfDim].unit_range.stop - 1
     if len(wgtfacq_c.domain[dims.KDim].unit_range) != 3:
         raise ValueError(
             f"Expected wgtfacq_c to have a vertical dimension of size 3, but got {len(wgtfacq_c.domain[dims.KDim].unit_range)}."
