@@ -14,6 +14,8 @@ variables:
   PYVERSION: 3.13.13
   PYVERSION_SHORT: 3.13
   ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
+  # TODO: Remove
+  CSCS_REBUILD_POLICY: "always"
 
 # Base image build step with SHA256 checksum for caching
 .build_baseimage:
