@@ -17,24 +17,24 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 
 
 @gtx.field_operator
-def _init_constant_cell_kdim_field(value: ta.wpfloat) -> fa.CellKField[ta.wpfloat]:
-    return broadcast(value, (dims.CellDim, dims.KDim))
+def _init_constant_cell_khalf_field(value: ta.wpfloat) -> fa.CellKHalfField[ta.wpfloat]:
+    return broadcast(value, (dims.CellDim, dims.KHalfDim))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def init_constant_cell_kdim_field(
-    field: fa.CellKField[ta.wpfloat],
+def init_constant_cell_khalf_field(
+    field: fa.CellKHalfField[ta.wpfloat],
     value: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _init_constant_cell_kdim_field(
+    _init_constant_cell_khalf_field(
         value=value,
         out=field,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

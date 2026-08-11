@@ -985,9 +985,6 @@ class SolveNonhydro:
         self.z_theta_v_v = data_alloc.zero_field(
             self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
-        self.k_field = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        )
         self._contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )

@@ -16,26 +16,26 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 
 
 @gtx.field_operator
-def _copy_cell_kdim_field_koff_plus1(
+def _copy_cell_kdim_field_to_khalf(
     field_in: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
-    return field_in(dims.KDim + 1)
+) -> fa.CellKHalfField[ta.wpfloat]:
+    return field_in(dims.KHalfDim + 0.5)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def copy_cell_kdim_field_koff_plus1(
+def copy_cell_kdim_field_to_khalf(
     field_in: fa.CellKField[ta.wpfloat],
-    field_out: fa.CellKField[ta.wpfloat],
+    field_out: fa.CellKHalfField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _copy_cell_kdim_field_koff_plus1(
+    _copy_cell_kdim_field_to_khalf(
         field_in=field_in,
         out=field_out,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

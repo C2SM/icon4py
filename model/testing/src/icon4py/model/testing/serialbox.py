@@ -990,7 +990,7 @@ class AdvectionExitSavepoint(IconSavepoint):
         return self._get_field_component("hfl_tracers", ntracer, (dims.EdgeDim, dims.KDim))
 
     def vfl_tracer(self, ntracer: int):
-        return self._get_field_component("vfl_tracers", ntracer, (dims.CellDim, dims.KDim))
+        return self._get_field_component("vfl_tracers", ntracer, (dims.CellDim, dims.KHalfDim))
 
     def tracer(self, ntracer: int):
         return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
