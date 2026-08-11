@@ -6,6 +6,23 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""
+Base class and helpers for writing GT4Py stencil test suites.
+
+A suite is a subclass of `StencilTest` declaring the program under test plus two members:
+
+- `reference(grid, ...)`, decorated with `@static_reference`: a NumPy implementation
+  computing the expected outputs.
+- `input_data(self, grid, ...)`, decorated with `@input_data_fixture`: a pytest fixture
+  building the program arguments, allocating them through `self.data_alloc` so that they
+  end up on the device the selected backend expects.
+
+Both conventions are enforced in `StencilTest.__init_subclass__`, so a suite that does not
+follow them fails when its module is imported rather than misbehaving at run time.
+`__init_subclass__` also attaches the test function itself, named after the subclass so it
+is identifiable in pytest output.
+"""
+
 from __future__ import annotations
 
 import contextlib
@@ -39,97 +56,111 @@ if TYPE_CHECKING:
 
 _STENCIL_REFERENCE_MARKER: Final = "__stencil_test_reference__"
 _INPUT_DATA_FIXTURE_MARKER: Final = "__stencil_test_input_fixture__"
+_METRICS_KEY_EXTRACTOR: Final = "metrics_id_extractor"
+
+#: Members every `StencilTest` subclass must define, as (name, marker, decorator name).
+_REQUIRED_MEMBERS: Final = (
+    ("reference", _STENCIL_REFERENCE_MARKER, "static_reference"),
+    ("input_data", _INPUT_DATA_FIXTURE_MARKER, "input_data_fixture"),
+)
+
+# TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 1e-6 to
+# cover floating point discrepancies observed in CI tests. Failing CI can be found in
+# https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/5125340235196978/2255149825504673/-/pipelines/2184694383
+# from PR#861. Reason is probably derivatives of random data. Investigate and lower the
+# tolerance back to 1e-7 if possible.
+_RELATIVE_TOLERANCE: Final = 3e-6
 
 
-def _static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
-    """Decorator to mark the `reference` method of a `StencilTest` suite."""
-    if not isinstance(func, (types.FunctionType, staticmethod)):
-        raise TypeError(
-            f"The 'reference' function must be a regular function or staticmethod but got {type(func)}."
-        )
-    if func.__name__ != "reference":
+def _validate_signature(
+    func: types.FunctionType | staticmethod,
+    *,
+    name: str,
+    leading_params: tuple[str, ...],
+    allowed_types: tuple[type, ...],
+    allowed_description: str,
+) -> None:
+    """Check that `func` is named `name` and its signature starts with `leading_params`."""
+    if not isinstance(func, allowed_types):
+        raise TypeError(f"The '{name}' method must be {allowed_description} but got {type(func)}.")
+    if func.__name__ != name:
+        raise ValueError(f"The '{name}' method must be named '{name}' but got '{func.__name__}'.")
+    params = tuple(inspect.signature(func).parameters)
+    if params[: len(leading_params)] != leading_params:
         raise ValueError(
-            f"The 'reference' method must be named 'reference' but got '{func.__name__}'."
+            f"The '{name}' method signature must be '{name}({', '.join(leading_params)}, ...)'"
+            f" but got '{name}{params}'."
         )
-    func_params = tuple(inspect.signature(func).parameters.keys())
-    if func_params[0] != "grid":
-        raise ValueError(
-            f"The 'reference' method signature must be 'reference(grid, ...)' but got"
-            f" '{func.__name__}{func_params}'."
-        )
-    if not isinstance(func, staticmethod):
-        func = staticmethod(func)
-
-    setattr(func, _STENCIL_REFERENCE_MARKER, True)
-
-    return func
 
 
-def _referenced_globals(func: types.FunctionType) -> list[Any]:
+def _reject_direct_data_allocation(func: types.FunctionType) -> None:
     """
-    Values of the module globals that `func` actually loads as globals.
+    Ensure `func` allocates through `self.data_alloc` rather than calling `data_allocation`.
 
-    Deliberately not `inspect.getclosurevars(func).globals`: that resolves every name in
-    `co_names`, which includes attribute names, so a fixture using `self.data_alloc` would
-    match a module global named `data_alloc`. (Whether it does is CPython-version
-    dependent, which made this fail only on some interpreters.) Looking at the actual
-    `LOAD_GLOBAL` opcodes distinguishes a real global reference from an attribute access.
+    Only the wrapper has the grid and the backend's allocator bound, so a direct call would
+    silently allocate on the wrong device.
+
+    Globals are read from the `LOAD_GLOBAL` opcodes instead of from
+    `inspect.getclosurevars(func).globals`: the latter resolves every name in `co_names`,
+    which includes attribute names, and so mistakes a fixture's own `self.data_alloc` for a
+    module global named `data_alloc`. Whether it does is CPython-version dependent, which
+    made this check fail on some interpreters only.
     """
     global_ns = func.__globals__
-    names = {
-        instruction.argval
+    referenced = [
+        global_ns[instruction.argval]
         for instruction in dis.get_instructions(func)
-        if instruction.opname == "LOAD_GLOBAL"
-    }
-    return [global_ns[name] for name in names if name in global_ns]
-
-
-def _input_data_fixture(
-    func: types.FunctionType | None = None, **kwargs: Any
-) -> Any:  # the public alias is `pytest.fixture` under TYPE_CHECKING, see below
-    """
-    Decorator to mark the `input_data` method of a `StencilTest` suite as a pytest fixture.
-
-    Perform some checks on the decorated function and forward all the keyword
-    arguments to `pytest.fixture` for parametrization and scoping (default: "class").
-    """
-    if func is None:
-        return functools.partial(input_data_fixture, **kwargs)
-
-    if not isinstance(func, types.FunctionType):
-        raise TypeError(f"The 'input_data' method must be a regular function but got {type(func)}.")
-    if func.__name__ != "input_data":
-        raise ValueError(
-            f"The 'input_data' method must be named 'input_data' but got '{func.__name__}'."
-        )
-    func_params = tuple(inspect.signature(func).parameters.keys())
-    if func_params[:2] != ("self", "grid"):
-        raise ValueError(
-            f"The 'input_data' method signature must be 'input_data(self, grid, ...)' but got"
-            f" '{func.__name__}{func_params}'."
-        )
-
-    # Check that the `input_data` fixture does not call any `data_allocation` function
-    # directly, so that it only allocates through the `self.data_alloc` wrapper, which
-    # has the backend and grid properly bound.
-    cv = inspect.getclosurevars(func)
-    if any(ref is data_allocation for ref in [*_referenced_globals(func), *cv.nonlocals.values()]):
+        if instruction.opname == "LOAD_GLOBAL" and instruction.argval in global_ns
+    ]
+    referenced += inspect.getclosurevars(func).nonlocals.values()
+    if any(ref is data_allocation for ref in referenced):
         raise TypeError(
             "The 'input_data_fixture' should not call 'data_allocation' functions directly. "
             "Use `self.data_alloc` inside the fixture to access data allocation functions instead."
         )
 
-    kwargs.setdefault("scope", "class")
-    fixt = pytest.fixture(**kwargs)(func)
-    setattr(fixt, _INPUT_DATA_FIXTURE_MARKER, True)
 
-    return fixt
+def _static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
+    """Runtime implementation of the public `static_reference` decorator."""
+    _validate_signature(
+        func,
+        name="reference",
+        leading_params=("grid",),
+        allowed_types=(types.FunctionType, staticmethod),
+        allowed_description="a regular function or a staticmethod",
+    )
+    marked = func if isinstance(func, staticmethod) else staticmethod(func)
+    setattr(marked, _STENCIL_REFERENCE_MARKER, True)
+
+    return marked
+
+
+def _input_data_fixture(func: types.FunctionType | None = None, **kwargs: Any) -> Any:
+    """Runtime implementation of the public `input_data_fixture` decorator."""
+    if func is None:  # called with parentheses: return the actual decorator
+        return functools.partial(_input_data_fixture, **kwargs)
+
+    _validate_signature(
+        func,
+        name="input_data",
+        leading_params=("self", "grid"),
+        allowed_types=(types.FunctionType,),
+        allowed_description="a regular function",
+    )
+    _reject_direct_data_allocation(func)
+
+    kwargs.setdefault("scope", "class")
+    fixture = pytest.fixture(**kwargs)(func)
+    setattr(fixture, _INPUT_DATA_FIXTURE_MARKER, True)
+
+    return fixture
 
 
 if TYPE_CHECKING:
-    # Deliberately a `TypeAlias` and not a PEP 695 `type` statement: type checkers must
-    # see `static_reference` as `staticmethod` itself so decorated methods keep their
-    # descriptor semantics.
+    # Type checkers see the decorators as what they effectively are, so that decorated
+    # members keep their usual typing. `static_reference` is deliberately a `TypeAlias`
+    # rather than a PEP 695 `type` statement: it has to *be* `staticmethod` for the
+    # descriptor semantics to survive.
     static_reference: TypeAlias = staticmethod  # noqa: UP040 [non-pep695-type-alias]
     input_data_fixture: Final = pytest.fixture
 else:
@@ -140,8 +171,11 @@ else:
 @dataclasses.dataclass(frozen=True)
 class DataAllocationWrapper:
     """
-    This wrapper mimics the 'icon4py.model.common.utils.data_allocation' functions,
-    but with 'backend' and `grid` bound in the respective functions.
+    The `icon4py.model.common.utils.data_allocation` constructors with `grid` and
+    `allocator` already bound.
+
+    A `StencilTest` suite reaches this through `self.data_alloc`. See the wrapped module
+    for the meaning of the remaining arguments.
     """
 
     grid: base.Grid
@@ -149,7 +183,7 @@ class DataAllocationWrapper:
 
     def connectivity_field(self, offset: str | gtx.FieldOffset) -> gtx.Field:
         """
-        A connectivity table as a regular field, for stencils that consume it as data.
+        A connectivity table as a regular field, for stencils consuming it as data.
 
         `Grid.get_connectivity` returns a `NeighborTable`, which cannot be passed as a
         program argument; re-allocating it yields a plain field on the right device.
@@ -165,6 +199,7 @@ class DataAllocationWrapper:
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike = ta.wpfloat,
     ) -> gtx.Field:
+        """A field filled with `value`."""
         return data_allocation.constant_field(
             self.grid, value, *dims, dtype=dtype, allocator=self.allocator
         )
@@ -175,6 +210,7 @@ class DataAllocationWrapper:
         extend: dict[gtx.Dimension, int] | None = None,
         dtype: npt.DTypeLike = gtx.int32,
     ) -> gtx.Field:
+        """A field over `dim` holding each element's own index."""
         return data_allocation.index_field(
             grid=self.grid, dim=dim, extend=extend, dtype=dtype, allocator=self.allocator
         )
@@ -187,6 +223,7 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
+        """A field of uniform random values in `[low, high)`."""
         return data_allocation.random_field(
             self.grid,
             *dims,
@@ -203,6 +240,7 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
+        """A field of random booleans, or of `dtype` if given."""
         return data_allocation.random_mask(
             self.grid, *dims, dtype=dtype, allocator=self.allocator, extend=extend
         )
@@ -213,6 +251,7 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike | None = None,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
+        """A field of random values in `{-1, 1}`."""
         return data_allocation.random_sign(
             self.grid, *dims, dtype=dtype, allocator=self.allocator, extend=extend
         )
@@ -223,54 +262,120 @@ class DataAllocationWrapper:
         dtype: npt.DTypeLike = ta.wpfloat,
         extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
+        """A field filled with zeros."""
         return data_allocation.zero_field(
             self.grid, *dims, dtype=dtype, allocator=self.allocator, extend=extend
         )
 
 
-class NumPyGridConnectivitiesView(Mapping[str | gtx.FieldOffset, np.ndarray]):
-    """View on the grid connectivities that allows to access them as numpy arrays."""
+class _NumPyGridConnectivitiesView(Mapping[str | gtx.FieldOffset, np.ndarray]):
+    """Read-only `Mapping` exposing a grid's neighbor tables as NumPy arrays."""
 
-    def __init__(self, grid: base.Grid):
-        self.grid = grid
+    def __init__(self, grid: base.Grid) -> None:
+        self._grid = grid
 
     def __getitem__(self, key: str | gtx.FieldOffset) -> np.ndarray:
-        connectivity = self.grid.get_connectivity(key)
-        if gtx_common.is_neighbor_table(connectivity):
-            return connectivity.asnumpy()
-        else:
+        connectivity = self._grid.get_connectivity(key)
+        if not gtx_common.is_neighbor_table(connectivity):
             raise TypeError(f"Connectivity '{key}' is not a neighbor table.")
+        return connectivity.asnumpy()
 
     def __iter__(self) -> Iterator[str | gtx.FieldOffset]:
         return (
             key
-            for key, connectivity in self.grid.connectivities.items()
+            for key, connectivity in self._grid.connectivities.items()
             if gtx_common.is_neighbor_table(connectivity)
         )
 
     def __len__(self) -> int:
-        return sum(
-            1
-            for connectivity in self.grid.connectivities.values()
-            if gtx_common.is_neighbor_table(connectivity)
-        )
+        return sum(1 for _ in self)
 
 
 def connectivities_asnumpy(grid: base.Grid) -> Mapping[gtx.FieldOffset, np.ndarray]:
-    return cast(Mapping[gtx.FieldOffset, np.ndarray], NumPyGridConnectivitiesView(grid))
+    """
+    A read-only view of `grid`'s neighbor tables as NumPy arrays.
+
+    Entries can be looked up by `FieldOffset`, as the return annotation advertises, or by
+    name. The cast is needed because the underlying mapping is keyed by name and `Mapping`
+    is invariant in its key type, so the honest `Mapping[str | FieldOffset, ...]` would not
+    be accepted where reference helpers ask for `Mapping[FieldOffset, ...]`.
+    """
+    return cast(Mapping[gtx.FieldOffset, np.ndarray], _NumPyGridConnectivitiesView(grid))
 
 
 @dataclasses.dataclass(frozen=True)
 class Output:
+    """
+    An output to verify, optionally comparing only part of it.
+
+    `refslice` selects the region of the reference array and `gtslice` the region of the
+    computed field; both default to the whole field. Use it in `StencilTest.OUTPUTS` in
+    place of a plain name whenever the two do not line up, e.g. because the program only
+    writes an interior sub-domain.
+    """
+
     name: str
-    refslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
-    gtslice: tuple[slice, ...] = dataclasses.field(default_factory=lambda: (slice(None),))
+    refslice: tuple[slice, ...] = (slice(None),)
+    gtslice: tuple[slice, ...] = (slice(None),)
 
 
 class StandardStaticVariants(eve.StrEnum):
+    """Common `StencilTest.STATIC_PARAMS` categories for compile-time specialization."""
+
     NONE = "none"
     COMPILE_TIME_DOMAIN = "compile_time_domain"
     COMPILE_TIME_VERTICAL = "compile_time_vertical"
+
+
+def _collect_compute_samples(
+    configured_program: Callable[..., None],
+    program_kwargs: dict[str, Any],
+    *,
+    iterations_to_skip: int,
+) -> list[Any]:
+    """
+    Run the program once more to recover its metrics key, and return its `compute` samples.
+
+    The leading samples are dropped because they do not measure the benchmarked steady
+    state: they come from the verification run (if any), from pytest-benchmark's
+    calibration round, from the warmup iterations, and from this extra run itself.
+    """
+    metrics_key: str | None = None
+
+    @contextlib.contextmanager
+    def _capture_metrics_key(
+        program: gtx_typing.Program,
+        args: tuple[Any, ...],
+        offset_provider: gtx_common.OffsetProvider,
+        enable_jit: bool,
+        kwargs: dict[str, Any],
+    ) -> Generator[None, None, None]:
+        yield
+        # Collect the key after running the program to make sure it is set
+        nonlocal metrics_key
+        metrics_key = gtx_metrics.get_current_source_key()
+
+    gtx_hooks.program_call_context.register(_capture_metrics_key, name=_METRICS_KEY_EXTRACTOR)
+    try:
+        configured_program(**program_kwargs)
+    finally:
+        gtx_hooks.program_call_context.remove(_METRICS_KEY_EXTRACTOR)
+
+    if metrics_key is None:
+        raise RuntimeError("Metrics key could not be recovered during run.")
+    if not metrics_key.startswith(configured_program.__name__):
+        raise RuntimeError(
+            f"Metrics key ({metrics_key}) does not start with the program name"
+            f" ({configured_program.__name__})"
+        )
+    if len(configured_program._compiled_programs.compiled_programs) != 1:
+        raise RuntimeError("Multiple compiled programs found, cannot extract metrics.")
+
+    samples = gtx_metrics.sources[metrics_key].metrics["compute"].samples
+    if len(samples) <= iterations_to_skip:
+        raise RuntimeError("Not enough samples collected to compute metrics.")
+
+    return samples[iterations_to_skip:]
 
 
 def test_and_benchmark(
@@ -283,26 +388,25 @@ def test_and_benchmark(
     request: pytest.FixtureRequest,
 ) -> None:
     """
-    Test and benchmark the stencil program.
+    Verify the stencil program against its reference, then benchmark it.
 
     Note that it is defined as a standalone function and then attached to the `StencilTest`
     subclasses in order to use a meaningful name for the test in pytest output.
     """
-    skip_stenciltest_verification = request.config.getoption(
-        "skip_stenciltest_verification"
-    )  # skip verification if `--skip-stenciltest-verification` CLI option is set
-    skip_stenciltest_benchmark = benchmark is None or not benchmark.enabled
+    # skip verification if the `--skip-stenciltest-verification` CLI option is set
+    skip_verification = request.config.getoption("skip_stenciltest_verification")
+    skip_benchmark = benchmark is None or not benchmark.enabled
+    program_kwargs: dict[str, Any] = {**input_data, "offset_provider": grid.connectivities}
 
-    if not skip_stenciltest_verification:
+    if not skip_verification:
         reference_outputs = self.reference(
             grid=grid,
             **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
         )
-
-        configured_program(**input_data, offset_provider=grid.connectivities)
+        configured_program(**program_kwargs)
         self.verify_data(input_data=input_data, reference_outputs=reference_outputs)
 
-    if not skip_stenciltest_benchmark:
+    if not skip_benchmark:
         warmup_rounds = int(os.getenv("ICON4PY_STENCIL_TEST_WARMUP_ROUNDS", "1"))
         iterations = int(os.getenv("ICON4PY_STENCIL_TEST_ITERATIONS", "10"))
 
@@ -310,7 +414,7 @@ def test_and_benchmark(
         benchmark.pedantic(
             configured_program,
             args=(),
-            kwargs=dict(**input_data, offset_provider=grid.connectivities),
+            kwargs=program_kwargs,
             rounds=int(
                 os.getenv("ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS", "3")
             ),  # 30 iterations in total should be stable enough
@@ -318,57 +422,12 @@ def test_and_benchmark(
             iterations=iterations,
         )
 
-        # Collect GT4Py runtime metrics if enabled
         if gtx_metrics.is_any_level_enabled():
-            metrics_key = None
-            # Run the program one final time to get the metrics key
-            METRICS_KEY_EXTRACTOR: Final = "metrics_id_extractor"
-
-            @contextlib.contextmanager
-            def _get_metrics_id_program_callback(
-                program: gtx_typing.Program,
-                args: tuple[Any, ...],
-                offset_provider: gtx.common.OffsetProvider,
-                enable_jit: bool,
-                kwargs: dict[str, Any],
-            ) -> Generator[None, None, None]:
-                yield
-                # Collect the key after running the program to make sure it is set
-                nonlocal metrics_key
-                metrics_key = gtx_metrics.get_current_source_key()
-
-            gtx_hooks.program_call_context.register(
-                _get_metrics_id_program_callback, name=METRICS_KEY_EXTRACTOR
+            benchmark.extra_info["gtx_metrics"] = _collect_compute_samples(
+                configured_program,
+                program_kwargs,
+                iterations_to_skip=warmup_rounds * iterations + (2 if skip_verification else 3),
             )
-            configured_program(**input_data, offset_provider=grid.connectivities)
-            gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
-
-            if metrics_key is None:
-                raise RuntimeError("Metrics key could not be recovered during run.")
-            if not metrics_key.startswith(configured_program.__name__):
-                raise RuntimeError(
-                    f"Metrics key ({metrics_key}) does not start with the program name ({configured_program.__name__})"
-                )
-            if len(configured_program._compiled_programs.compiled_programs) != 1:
-                raise RuntimeError("Multiple compiled programs found, cannot extract metrics.")
-
-            metrics_data = gtx_metrics.sources
-            compute_samples = metrics_data[metrics_key].metrics["compute"].samples
-            # exclude:
-            #  - one for validation (if executed)
-            #  - one extra warmup round for calibrating pytest-benchmark
-            #  - warmup iterations
-            #  - one last round to get the metrics key
-            initial_program_iterations_to_skip = warmup_rounds * iterations + (
-                2 if skip_stenciltest_verification else 3
-            )
-
-            if len(compute_samples) <= initial_program_iterations_to_skip:
-                raise RuntimeError("Not enough samples collected to compute metrics.")
-
-            benchmark.extra_info["gtx_metrics"] = compute_samples[
-                initial_program_iterations_to_skip:
-            ]
 
 
 class StencilTest:
@@ -382,13 +441,20 @@ class StencilTest:
         ...     OUTPUTS = ("some_output",)
         ...     STATIC_PARAMS = {"category_a": ["flag0"], "category_b": ["flag0", "flag1"]}
         ...
-        ...     @pytest.fixture
-        ...     def input_data(self):
-        ...         return {"some_input": ..., "some_output": ...}
-        ...
-        ...     @staticmethod
-        ...     def reference(some_input, **kwargs):
+        ...     @static_reference
+        ...     def reference(grid, some_input, **kwargs):
         ...         return dict(some_output=np.asarray(some_input) * 2)
+        ...
+        ...     @input_data_fixture
+        ...     def input_data(self, grid):
+        ...         return {
+        ...             "some_input": self.data_alloc.random_field(dims.CellDim),  # noqa: F821
+        ...             "some_output": self.data_alloc.zero_field(dims.CellDim),  # noqa: F821
+        ...         }
+
+    `reference` must be decorated with `@static_reference` and take `grid` first;
+    `input_data` must be decorated with `@input_data_fixture` and take `(self, grid, ...)`.
+    Both are checked in `__init_subclass__`.
     """
 
     PROGRAM: ClassVar[gtx_typing.Program | gtx_typing.FieldOperator]
@@ -398,6 +464,8 @@ class StencilTest:
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
     input_data: ClassVar[Callable[..., dict[str, Any]]]
 
+    #: Allocation helpers with the grid and the backend's allocator bound; set per class
+    #: by `_bind_data_alloc`.
     data_alloc: DataAllocationWrapper
 
     @pytest.fixture
@@ -408,6 +476,7 @@ class StencilTest:
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         grid: base.Grid,
     ) -> Callable[..., None]:
+        """The program under test, compiled for the selected backend and static variant."""
         unused_static_params = set(static_variant) - set(input_data.keys())
         if unused_static_params:
             raise ValueError(
@@ -428,23 +497,18 @@ class StencilTest:
                     **static_args,  # type: ignore[arg-type]
                 )
 
-        test_func = device_utils.synchronized_function(program, allocator=backend)
-        return test_func
+        return device_utils.synchronized_function(program, allocator=backend)
 
     @pytest.fixture(autouse=True, scope="class")
-    def _instance_setup_fixture(
+    def _bind_data_alloc(
         self, backend_like: model_backends.BackendLike, grid: base.Grid
     ) -> Generator[None, None, None]:
-        """
-        Convenience fixture to provide data allocation functions with backend and grid already bound.
-        """
-        self.data_alloc_wrapper = DataAllocationWrapper(
+        """Expose allocation helpers as `self.data_alloc` for the duration of the class."""
+        self.data_alloc = DataAllocationWrapper(
             grid=grid, allocator=model_backends.get_allocator(backend_like)
         )
         try:
-            self.data_alloc = self.data_alloc_wrapper
             yield
-
         finally:
             del self.data_alloc
 
@@ -453,37 +517,26 @@ class StencilTest:
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         reference_outputs: Mapping[str, np.ndarray | tuple[np.ndarray, ...]],
     ) -> None:
-        for out in self.OUTPUTS:
-            name, refslice, gtslice = (
-                (out.name, out.refslice, out.gtslice)
-                if isinstance(out, Output)
-                else (out, (slice(None),), (slice(None),))
-            )
+        """Compare every entry of `OUTPUTS` against the reference, honouring its slices."""
+        for entry in self.OUTPUTS:
+            out = entry if isinstance(entry, Output) else Output(entry)
+            computed = input_data[out.name]
+            expected = reference_outputs[out.name]
 
-            input_data_name = input_data[name]  # for mypy
-            # TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 1e-6
-            # to cover floating point descripancies observed in CI tests. Failing CI can be found in
-            # https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/5125340235196978/2255149825504673/-/pipelines/2184694383
-            # from PR#861. Reason is probably derivatives of random data. Investigate and lower tolerance back to 1e-7 if possible.
-            relative_tolerance = 3e-6
-            if isinstance(input_data_name, tuple):
-                for i_out_field, out_field in enumerate(input_data_name):
-                    test_utils.assert_dallclose(
-                        out_field.asnumpy()[gtslice],
-                        reference_outputs[name][i_out_field][refslice],
-                        equal_nan=True,
-                        err_msg=f"Verification failed for '{name}[{i_out_field}]'",
-                        rtol=relative_tolerance,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
-                    )
-            else:
-                reference_outputs_name = reference_outputs[name]  # for mypy
-                assert isinstance(reference_outputs_name, np.ndarray)
+            # Normalize the scalar and tuple cases so both are verified the same way.
+            computed_fields = computed if isinstance(computed, tuple) else (computed,)
+            expected_arrays = expected if isinstance(expected, tuple) else (expected,)
+
+            for index, (field, reference) in enumerate(
+                zip(computed_fields, expected_arrays, strict=True)
+            ):
+                label = f"{out.name}[{index}]" if isinstance(computed, tuple) else out.name
                 test_utils.assert_dallclose(
-                    input_data_name.asnumpy()[gtslice],
-                    reference_outputs_name[refslice],
+                    field.asnumpy()[out.gtslice],
+                    reference[out.refslice],
                     equal_nan=True,
-                    err_msg=f"Verification failed for '{name}'",
-                    rtol=relative_tolerance,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
+                    err_msg=f"Verification failed for '{label}'",
+                    rtol=_RELATIVE_TOLERANCE,
                 )
 
     @staticmethod
@@ -498,25 +551,23 @@ class StencilTest:
         return () if variant is None else variant
 
     def __init_subclass__(cls, *args: Any, **kwargs: Any) -> None:
+        """Enforce the suite conventions and attach the test function to the subclass."""
         super().__init_subclass__(*args, **kwargs)
 
-        # Check the conventions for `reference` and `input_data` methods
-        if not hasattr(cls, "reference"):
-            raise TypeError(
-                f"{cls.__name__} StencilTest subclass does not implement a 'reference' method."
-            )
-        if not getattr(cls.__dict__["reference"], _STENCIL_REFERENCE_MARKER, False):
-            raise RuntimeError(
-                f"The 'reference' method of {cls.__name__} must be decorated with '@static_reference'."
-            )
-        if not hasattr(cls, "input_data"):
-            raise TypeError(
-                f"{cls.__name__} StencilTest subclass does not implement an 'input_data' method."
-            )
-        if not getattr(cls.__dict__["input_data"], _INPUT_DATA_FIXTURE_MARKER, False):
-            raise RuntimeError(
-                f"The 'input_data' method of {cls.__name__} must be decorated with '@input_data_fixture'."
-            )
+        for member_name, marker, decorator_name in _REQUIRED_MEMBERS:
+            # `getattr_static` returns the descriptor carrying the marker (a plain
+            # `getattr` would unwrap the staticmethod) and still searches the MRO.
+            member = inspect.getattr_static(cls, member_name, None)
+            if member is None:
+                raise TypeError(
+                    f"'{cls.__name__}' StencilTest subclass does not implement"
+                    f" the required '{member_name}' method."
+                )
+            if not getattr(member, marker, False):
+                raise TypeError(
+                    f"The '{member_name}' method of '{cls.__name__}' must be decorated"
+                    f" with '@{decorator_name}'."
+                )
 
         setattr(cls, f"test_{cls.__name__}", test_and_benchmark)
 
