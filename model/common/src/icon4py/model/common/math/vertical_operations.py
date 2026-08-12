@@ -17,7 +17,6 @@ import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 
 
 @gtx.field_operator
@@ -35,7 +34,7 @@ def average_level_plus1_on_cells(
     Returns: Field[Dims[CellDim, dims.KDim], gtx.float64] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(KDim + 1))
+    return 0.5 * (half_level_field + half_level_field(dims.KDim + 1))
 
 
 @gtx.field_operator
@@ -53,7 +52,7 @@ def average_level_plus1_on_edges(
     Returns: fa.EdgeKField[gtx.float64] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(KDim + 1))
+    return 0.5 * (half_level_field + half_level_field(dims.KDim + 1))
 
 
 @gtx.field_operator
@@ -71,7 +70,7 @@ def difference_level_plus1_on_cells(
     Returns: Field[Dims[CellDim, dims.KDim], gtx.float64] full level field
 
     """
-    return half_level_field - half_level_field(KDim + 1)
+    return half_level_field - half_level_field(dims.KDim + 1)
 
 
 @gtx.field_operator

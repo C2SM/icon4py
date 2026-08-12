@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import maximum, minimum, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E, C2EDim
+from icon4py.model.common.dimension import C2E
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -24,7 +24,7 @@ def _compute_positive_definite_horizontal_multiplicative_flux_factor(
     wp_eps: wpfloat,
 ) -> fa.CellKField[wpfloat]:
     p_m = neighbor_sum(
-        maximum(wpfloat(0.0), p_mflx_tracer_h(C2E) * geofac_div * p_dtime), axis=C2EDim
+        maximum(wpfloat(0.0), p_mflx_tracer_h(C2E) * geofac_div * p_dtime), axis=dims.C2EDim
     )
     r_m = minimum(wpfloat(1.0), (p_cc * p_rhodz_now) / (p_m + wp_eps))
     return r_m

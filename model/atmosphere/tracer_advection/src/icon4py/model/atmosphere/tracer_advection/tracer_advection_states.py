@@ -94,13 +94,13 @@ class AdvectionMetricState:
     because the ICON stencils they feed take them unconditionally.
     """
 
-    #: metrical modification factor for horizontal part of divergence at full levels (KDim)
+    #: metrical modification factor for horizontal part of divergence at full levels (dims.KDim)
     deepatmo_divh: fa.KField[ta.wpfloat]
 
-    #: metrical modification factor for vertical part of divergence at full levels (KDim)
+    #: metrical modification factor for vertical part of divergence at full levels (dims.KDim)
     deepatmo_divzl: fa.KField[ta.wpfloat]
 
-    #: metrical modification factor for vertical part of divergence at full levels (KDim)
+    #: metrical modification factor for vertical part of divergence at full levels (dims.KDim)
     deepatmo_divzu: fa.KField[ta.wpfloat]
 
     #: vertical grid spacing at full levels
@@ -124,7 +124,13 @@ def initialize_advection_diagnostic_state(
         hfl_tracer=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
+        # vertical flux at cell half levels: one more level than KDim
         vfl_tracer=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=allocator,
+            dtype=ta.wpfloat,
         ),
     )

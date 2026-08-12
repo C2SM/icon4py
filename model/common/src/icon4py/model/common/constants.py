@@ -13,6 +13,7 @@ from gt4py.next import float64
 from numpy import finfo as float_info
 
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.config import config_io
 
 
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
@@ -176,6 +177,7 @@ class PhysicsConstants(wpfloat, enum.Enum):
     eps = WP_EPS
 
 
+@config_io.register_enum
 class RayleighType(int, enum.Enum):
     #: classical Rayleigh damping, which makes use of a reference state.
     CLASSIC = 1

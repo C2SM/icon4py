@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import V2C, V2CDim
+from icon4py.model.common.dimension import V2C
 
 
 @gtx.field_operator
@@ -17,7 +17,7 @@ def _compute_cell_2_vertex_interpolation(
     cell_in: fa.CellKField[gtx.float64],
     c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
 ) -> fa.VertexKField[gtx.float64]:
-    vert_out = neighbor_sum(c_int * cell_in(V2C), axis=V2CDim)
+    vert_out = neighbor_sum(c_int * cell_in(V2C), axis=dims.V2CDim)
     return vert_out
 
 

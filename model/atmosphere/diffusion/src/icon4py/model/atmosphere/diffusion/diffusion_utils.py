@@ -11,7 +11,6 @@ from gt4py.next import broadcast, minimum
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 from icon4py.model.common.type_alias import wpfloat
 
@@ -50,12 +49,12 @@ def _setup_smag_limit(diff_multfac_vn: fa.KField[wpfloat]) -> fa.KField[wpfloat]
 def _setup_runtime_diff_multfac_vn(k4: wpfloat, dyn_substeps: wpfloat) -> fa.KField[wpfloat]:
     con = wpfloat(1.0) / wpfloat(128.0)
     dyn = k4 * dyn_substeps / wpfloat(3.0)
-    return broadcast(minimum(con, dyn), (KDim,))
+    return broadcast(minimum(con, dyn), (dims.KDim,))
 
 
 @gtx.field_operator
 def _setup_initial_diff_multfac_vn(k4: wpfloat, hdiff_efdt_ratio: wpfloat) -> fa.KField[wpfloat]:
-    return broadcast(k4 / wpfloat(3.0) * hdiff_efdt_ratio, (KDim,))
+    return broadcast(k4 / wpfloat(3.0) * hdiff_efdt_ratio, (dims.KDim,))
 
 
 @gtx.field_operator

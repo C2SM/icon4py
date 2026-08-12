@@ -52,6 +52,7 @@ ALL_MODEL_SUBPACKAGES = [
     "dycore",
     "microphysics",
     "muphys",
+    "physics_driver",
     "common",
     "standalone_driver",
 ]

@@ -12,7 +12,6 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2CDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -81,22 +80,22 @@ def _compute_ffsl_flux_area_list(
     # Translation of patch 1 and patch 2 in system relative to respective cell
     bf_cc_patch1_lon = where(
         famask_bool,
-        where(lvn_pos, bf_cc_patch1_lon[E2CDim(0)], bf_cc_patch1_lon[E2CDim(1)]),
+        where(lvn_pos, bf_cc_patch1_lon[dims.E2CDim(0)], bf_cc_patch1_lon[dims.E2CDim(1)]),
         wpfloat(0.0),
     )
     bf_cc_patch1_lat = where(
         famask_bool,
-        where(lvn_pos, bf_cc_patch1_lat[E2CDim(0)], bf_cc_patch1_lat[E2CDim(1)]),
+        where(lvn_pos, bf_cc_patch1_lat[dims.E2CDim(0)], bf_cc_patch1_lat[dims.E2CDim(1)]),
         wpfloat(0.0),
     )
     bf_cc_patch2_lon = where(
         famask_bool,
-        where(lvn_pos, bf_cc_patch2_lon[E2CDim(0)], bf_cc_patch2_lon[E2CDim(1)]),
+        where(lvn_pos, bf_cc_patch2_lon[dims.E2CDim(0)], bf_cc_patch2_lon[dims.E2CDim(1)]),
         wpfloat(0.0),
     )
     bf_cc_patch2_lat = where(
         famask_bool,
-        where(lvn_pos, bf_cc_patch2_lat[E2CDim(0)], bf_cc_patch2_lat[E2CDim(1)]),
+        where(lvn_pos, bf_cc_patch2_lat[dims.E2CDim(0)], bf_cc_patch2_lat[dims.E2CDim(1)]),
         wpfloat(0.0),
     )
 

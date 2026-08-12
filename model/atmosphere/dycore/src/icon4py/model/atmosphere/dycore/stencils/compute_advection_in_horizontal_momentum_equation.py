@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl i
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2C2EO, E2V, E2C2EODim, E2CDim, E2VDim, KDim
+from icon4py.model.common.dimension import E2C, E2C2EO, E2V
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
 )
@@ -36,7 +36,7 @@ def _compute_advective_normal_wind_tendency(
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     coriolis_frequency: fa.EdgeField[ta.wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
 ) -> fa.EdgeKField[ta.vpfloat]:
@@ -59,16 +59,18 @@ def _compute_advective_normal_wind_tendency(
 
     horizontal_advection = (
         horizontal_kinetic_energy_at_edges_on_model_levels
-        * (coeff_gradekin[E2CDim(0)] - coeff_gradekin[E2CDim(1)])
-        + coeff_gradekin[E2CDim(1)] * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[1])
-        - coeff_gradekin[E2CDim(0)] * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[0])
+        * (coeff_gradekin[dims.E2CDim(0)] - coeff_gradekin[dims.E2CDim(1)])
+        + coeff_gradekin[dims.E2CDim(1)]
+        * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[1])
+        - coeff_gradekin[dims.E2CDim(0)]
+        * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[0])
     )
 
     vertical_advection = (
         neighbor_sum(
-            c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=E2CDim
+            c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=dims.E2CDim
         )
-        * astype((vn_on_half_levels - vn_on_half_levels(KDim + 1)), wpfloat)
+        * astype((vn_on_half_levels - vn_on_half_levels(dims.KDim + 1)), wpfloat)
         / ddqz_z_full_e_wp
     )
 
@@ -76,7 +78,7 @@ def _compute_advective_normal_wind_tendency(
         coriolis_frequency
         + astype(
             vpfloat("0.5")
-            * neighbor_sum(upward_vorticity_at_vertices_on_model_levels(E2V), axis=E2VDim),
+            * neighbor_sum(upward_vorticity_at_vertices_on_model_levels(E2V), axis=dims.E2VDim),
             wpfloat,
         )
     )
@@ -91,11 +93,11 @@ def _compute_extra_diffusion(
     upward_vorticity_at_vertices_on_model_levels: fa.VertexKField[ta.vpfloat],
     difcoef: fa.EdgeKField[ta.wpfloat],
     area_edge: fa.EdgeField[ta.wpfloat],
-    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], ta.wpfloat],
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    gradient_of_divergence_of_vn = neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
+    gradient_of_divergence_of_vn = neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=dims.E2C2EODim)
 
     gradient_of_vorticity = (
         tangent_orientation
@@ -116,14 +118,14 @@ def _compute_extra_diffusion(
 
 @gtx.field_operator
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask(
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     area_edge: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     upward_vorticity_at_vertices_on_model_levels: fa.VertexKField[ta.vpfloat],
-    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], ta.wpfloat],
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     cfl_w_limit: ta.vpfloat,
@@ -147,7 +149,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
 
     #: intermediate variable contravariant_corrected_w_at_edges_on_model_levels is originally declared as w_con_e in ICON
     contravariant_corrected_w_at_edges_on_model_levels = neighbor_sum(
-        c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=E2CDim
+        c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=dims.E2CDim
     )
     difcoef = scalfac_exdiff * minimum(
         wpfloat("0.85") - cfl_w_limit_wp * dtime,
