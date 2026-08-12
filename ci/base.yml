@@ -50,8 +50,6 @@ variables:
     reports:
       dotenv: build.env
   variables:
-    # TODO: Remove
-    CSCS_REBUILD_POLICY: "always"
     DOCKERFILE: ci/docker/venv.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=$BASE_IMAGE", "ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS"]'
 
