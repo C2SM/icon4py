@@ -13,7 +13,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import filters
 
 
@@ -32,8 +31,11 @@ _TEST_LEVELS = ("any", "unit", "integration", "validation")
 @pytest.fixture(autouse=True)
 def _clear_decomposition_cache():
     yield
-    decomposition.clear_exchange_cache()
-    decomposition.clear_reductions_cache()
+    from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
+        mpi_decomposition,
+    )
+
+    mpi_decomposition.clear_caches()
 
 
 def pytest_configure(config):

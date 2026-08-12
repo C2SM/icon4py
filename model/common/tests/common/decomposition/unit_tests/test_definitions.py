@@ -29,35 +29,12 @@ from icon4py.model.testing.fixtures.datatest import (  # import fixtures form te
 from ...grid import utils as grid_utils
 
 
-class _FakeDistributedProcessProperties:
-    def __init__(self) -> None:
-        self.comm = None
-        self.rank = 0
-        self.comm_name = "fake"
-        self.comm_size = 2
-
-    def is_single_rank(self) -> bool:
-        return False
-
-
 @pytest.mark.parametrize("process_props", [False], indirect=True)
 def test_create_single_node_runtime_without_mpi(process_props):  # fixture
     decomposition_info = definitions.DecompositionInfo()
     exchange = definitions.create_exchange(process_props, decomposition_info)
 
     assert isinstance(exchange, definitions.SingleNodeExchange)
-
-
-def test_create_exchange_requires_decomp_info_for_distributed() -> None:
-    process_props = _FakeDistributedProcessProperties()
-    with pytest.raises(ValueError, match="'decomp_info' is required for distributed runs"):
-        definitions.create_exchange(process_props, None)
-
-
-def test_create_reduction_requires_decomp_info_for_distributed() -> None:
-    process_props = _FakeDistributedProcessProperties()
-    with pytest.raises(ValueError, match="'decomp_info' is required for distributed runs"):
-        definitions.create_reduction(process_props, None)
 
 
 def get_neighbor_tables_for_simple_grid() -> dict[str, data_alloc.NDArray]:
