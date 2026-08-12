@@ -27,7 +27,6 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
 
 def get_dace_options(
     program_name: str,
-    *,
     backend_config: backend_cfg.BackendConfig | None,
     **backend_descriptor: Any,
 ) -> model_backends.BackendDescriptor:
