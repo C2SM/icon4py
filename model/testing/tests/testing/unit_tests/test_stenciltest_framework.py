@@ -219,8 +219,7 @@ class TestInputDataFixture:
 
         This module binds `data_alloc` to `data_allocation`, and every fixture receives the
         wrapper under that same name, so the check has to discount the fixture's own
-        parameters. (It also may not resolve names via `inspect.getclosurevars().globals`,
-        which would match attribute names such as a bare `self.data_alloc`.)
+        parameters.
         """
 
         def input_data(data_alloc):

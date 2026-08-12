@@ -99,17 +99,17 @@ def _validate_signature(
 
 def _reject_direct_data_allocation(func: types.FunctionType) -> None:
     """
-    Ensure `func` allocates through `self.data_alloc` rather than calling `data_allocation`.
+    Ensure `func` allocates through its `data_alloc` argument, not by calling `data_allocation`.
 
     Only the wrapper has the grid and the backend's allocator bound, so a direct call would
     silently allocate on the wrong device.
 
-    The names `func` reads are collected from its AST, where an attribute access is an
-    `ast.Attribute` and therefore never mistaken for a name. Note that
-    `inspect.getclosurevars(func).globals` cannot be used instead: it resolves every name in
-    `co_names`, attribute names included, so a fixture's own `self.data_alloc` matches a
-    module global named `data_alloc` (whether it does is CPython-version dependent). Reading
-    the AST also covers nested functions and comprehensions.
+    The names `func` reads are collected from its AST, which covers nested functions and
+    comprehensions, and which never mistakes an attribute access for a name because that is
+    an `ast.Attribute`. What the AST cannot tell apart is a global from a local, hence the
+    subtraction below. `inspect.getclosurevars(func).globals` is the reverse trade and no
+    better: it sees only the top-level code object, and resolves every name in `co_names`,
+    attribute names included.
     """
     try:
         source = inspect.getsource(func)
@@ -123,7 +123,7 @@ def _reject_direct_data_allocation(func: types.FunctionType) -> None:
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
     }
     # A parameter shadows any global of the same name, `data_alloc` above all: the fixture
-    # receives the wrapper under exactly the name test modules use for the wrapped module.
+    # receives the wrapper under exactly the name test modules bind the wrapped module to.
     definition = tree.body[0]
     if isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef)):
         args = definition.args
@@ -137,7 +137,7 @@ def _reject_direct_data_allocation(func: types.FunctionType) -> None:
     if any(scope.get(name) is data_allocation for name in referenced for scope in scopes):
         raise TypeError(
             "The 'input_data_fixture' should not call 'data_allocation' functions directly. "
-            "Use `self.data_alloc` inside the fixture to access data allocation functions instead."
+            "Use the 'data_alloc' fixture argument to access data allocation functions instead."
         )
 
 
@@ -200,8 +200,8 @@ class DataAllocationWrapper:
     The `icon4py.model.common.utils.data_allocation` constructors with `grid` and
     `allocator` already bound.
 
-    A `StencilTest` suite reaches this through `self.data_alloc`. See the wrapped module
-    for the meaning of the remaining arguments.
+    A `StencilTest` suite receives one as the `data_alloc` argument of its `input_data`
+    fixture. See the wrapped module for the meaning of the remaining arguments.
     """
 
     grid: base.Grid
