@@ -25,16 +25,16 @@ class TorusGridFactory(Protocol):
 def _write_torus_grid(
     *, n_rows: int, n_cols: int, edge_length: float, out_file: pathlib.Path
 ) -> pathlib.Path:
-    # 'icon_periodicity' carries the shear of the y identification in the vertex numbering
-    # rather than in the metric. Without it the coordinates span more than one period and only
-    # reconstruct under a coupled two lattice vector minimum image, whereas icon4py applies a
-    # per axis one; see https://github.com/ofuhrer/icon-grid-generator/issues/1.
+    # 'rectangular' wraps x and y independently, which is what icon4py does on a torus. It is
+    # the default since 0.8.0 but is passed explicitly because the alternative, 'skew', stores
+    # the coordinates on the coupled fundamental domain, where crossing y also shifts x, and
+    # those only reconstruct under a coupled two lattice vector minimum image.
     grid = grid_generator.generate_grid(
         grid_generator.TorusGridSpec(
             nx=n_cols,
             ny=n_rows,
             edge_length=edge_length,
-            icon_periodicity=True,
+            periodic_layout="rectangular",
         )
     )
     grid.to_netcdf(out_file)

@@ -33,10 +33,9 @@ dependencies = [
   "filelock>=3.18.0,<3.20",
   "gt4py==1.1.12",
   # generates the torus grids of the idealized convergence studies, see
-  # 'standalone_driver/tests/.../linear_advection_tests.py'. Pinned to a fork until the
-  # 'icon_periodicity' option of https://github.com/ofuhrer/icon-grid-generator/pull/2 is
-  # released: without it the torus coordinates do not survive a per-axis minimum image.
-  "icon-grid-generator[netcdf]",
+  # 'model/testing/.../fixtures/torus_grids.py'. 0.8.0 is the first release whose torus
+  # coordinates survive a per-axis minimum image, which is what icon4py applies on a torus.
+  "icon-grid-generator[netcdf]>=0.8.0",
   "matplotlib>=3.8.0",
   "numpy>=1.23.3",
   'packaging>=20.0',
