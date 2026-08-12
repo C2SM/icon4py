@@ -15,6 +15,7 @@ suites (where a hole in a check simply goes unnoticed).
 """
 
 import inspect
+import types
 
 import gt4py.next as gtx
 import numpy as np
@@ -314,6 +315,32 @@ class TestSuiteConventions:
         assert fixture._fixture_function_marker.params is None
         assert fixture._get_wrapped_function()() == ()
 
+    @pytest.mark.parametrize(
+        ("param", "expected"),
+        [(("domain", ("horizontal_start",)), ("horizontal_start",)), (("none", None), ())],
+    )
+    def test_static_variant_reads_the_variant_off_the_request(self, param, expected):
+        suite = make_suite(STATIC_PARAMS={"domain": ("horizontal_start",)})
+        variant_of = inspect.getattr_static(suite, "static_variant").__func__
+        request = types.SimpleNamespace(param=param)
+
+        assert variant_of._get_wrapped_function()(request) == expected
+
+    def test_configured_program_rejects_static_params_absent_from_input_data(self):
+        """`STATIC_PARAMS` names arguments of `input_data`; a typo should say so."""
+        build = inspect.getattr_static(
+            stencil_tests.StencilTest, "configured_program"
+        )._get_wrapped_function()
+
+        with pytest.raises(ValueError, match=r"not in 'input_data': \{'typo'\}"):
+            build(
+                stencil_tests.StencilTest(),
+                backend_like=None,
+                static_variant=("typo",),
+                input_data={"real": None},
+                grid=None,
+            )
+
     def test_static_variant_is_parametrized_from_static_params(self):
         static_params = {"none": (), "domain": ("horizontal_start",)}
 
@@ -329,14 +356,11 @@ class TestSuiteConventions:
 
 class TestOutput:
     def test_defaults_select_the_whole_field(self):
+        """`verify_data` wraps a bare name in an `Output`, so the defaults must be no-ops."""
         out = stencil_tests.Output("field")
 
         assert out.refslice == (slice(None),)
         assert out.gtslice == (slice(None),)
-
-    def test_is_hashable_and_comparable(self):
-        assert stencil_tests.Output("a") == stencil_tests.Output("a")
-        assert len({stencil_tests.Output("a"), stencil_tests.Output("a")}) == 1
 
 
 # -- connectivities_asnumpy ------------------------------------------------------------
@@ -398,6 +422,20 @@ class TestDataAllocationWrapper:
     @pytest.fixture
     def wrapper(self, grid):
         return stencil_tests.DataAllocationWrapper(grid=grid, allocator=None)
+
+    @pytest.mark.parametrize(
+        "construct",
+        [
+            pytest.param(lambda w: w.constant_field(1.0, dims.CellDim), id="constant_field"),
+            pytest.param(lambda w: w.index_field(dims.CellDim), id="index_field"),
+            pytest.param(lambda w: w.random_field(dims.CellDim), id="random_field"),
+            pytest.param(lambda w: w.random_mask(dims.CellDim), id="random_mask"),
+            pytest.param(lambda w: w.random_sign(dims.CellDim), id="random_sign"),
+            pytest.param(lambda w: w.zero_field(dims.CellDim), id="zero_field"),
+        ],
+    )
+    def test_every_constructor_binds_the_grid(self, wrapper, grid, construct):
+        assert construct(wrapper).shape == (grid.num_cells,)
 
     def test_binds_the_grid(self, wrapper, grid):
         assert wrapper.zero_field(dims.CellDim).shape == (grid.num_cells,)
@@ -485,6 +523,18 @@ class TestVerifyData:
         suite.verify_data(
             input_data={"out": cell_field([42.0, 2.0, 3.0])},
             reference_outputs={"out": np.array([-1.0, 2.0, 3.0])},
+        )
+
+    def test_applies_each_slice_to_its_own_side(self):
+        """`gtslice` indexes the computed field and `refslice` the reference, not vice versa."""
+        out = stencil_tests.Output("out", refslice=(slice(None, -1),), gtslice=(slice(1, None),))
+        suite = make_suite(OUTPUTS=(out,))()
+
+        # computed[1:] == [1, 2] == reference[:-1]; swapping the two slices compares
+        # [9, 1] against [2, 9] instead, so this fails if they are applied to the wrong side
+        suite.verify_data(
+            input_data={"out": cell_field([9.0, 1.0, 2.0])},
+            reference_outputs={"out": np.array([1.0, 2.0, 9.0])},
         )
 
     def test_verifies_every_element_of_a_tuple_output(self):
