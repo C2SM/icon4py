@@ -196,7 +196,9 @@ class Experiments:
         name="exclaim_ape_aesPhys",
         long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics (TMX turbulent mixing)",
         grid=Grids.R02B04_GLOBAL,
-        version=6,
+        # v08: first archive with the tmx savepoints (tmx-init/entry/exit,
+        # tmx-surface-fluxes); the reference run has graupel AND vdf/tmx active.
+        version=8,
     )
     MCH_CH_R04B09: Final = ExperimentDescription(
         name="exclaim_ch_r04b09_dsl",

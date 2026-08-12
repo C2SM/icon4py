@@ -146,16 +146,22 @@ def test_standalone_driver(
     """End-to-end standalone-driver validation over one time step.
 
     Experiments validate the final prognostic state against the end-of-time-step
-    (``time-step-exit``) savepoint. EXCLAIM_APE_AES additionally runs muphys and also
-    validates the tracers. Exception: MCH_CH_R04B09 compares against the mid-time-step
-    dynamics savepoints, because its reference runs NWP physics + limited-area nudging
-    after the dynamics, which the driver does not (see the comment in the body).
-    Per-field tolerances live in ``_TOLERANCES``.
+    (``time-step-exit``) savepoint. EXCLAIM_APE_AES additionally runs the physics
+    (muphys + tmx, both auto-enabled by the config reader from ``aes_phy_nml`` /
+    ``aes_vdf_nml``) and also validates the tracers. Exception: MCH_CH_R04B09 compares
+    against the mid-time-step dynamics savepoints, because its reference runs NWP
+    physics + limited-area nudging after the dynamics, which the driver does not (see
+    the comment in the body). Per-field tolerances live in ``_TOLERANCES``.
 
-    muphys (EXCLAIM_APE_AES): runs ``MuphysScheme.AES_GRAUPEL`` -- the port of the exact
-    ICON formulation that generated the reference. Graupel is the only *physics*
-    parameterization active, so vn/w/rho/exner/theta_v compare tightly; the tracer
-    comparison carries residuals from gaps not yet ported:
+    EXCLAIM_APE_AES, as of the **v08** reference, runs graupel AND vdf/tmx — vn and w
+    are now actively written by the physics (tmx momentum coupling), unlike the
+    muphys-only v06 era.
+    TODO(Yilu): the EXCLAIM_APE_AES tolerances below are the v06 muphys-only
+    measurements; re-measure on v08 (vn/w in particular).
+
+    muphys: runs ``MuphysScheme.AES_GRAUPEL`` -- the port of the exact ICON
+    formulation that generated the reference. The tracer comparison carries
+    residuals from gaps not yet ported:
 
     - exner / theta_v: recomputed via the exact EOS in ``scatter_to_prognostic``, mirroring
       ICON's phy2dyn coupling (mo_interface_iconam_aes.f90). Measured on v6: exner ~3e-9
@@ -277,15 +283,10 @@ def test_standalone_driver_moist_physics_with_tmx(
 ) -> None:
     """Smoke test: one large time step over EXCLAIM_APE_AES with muphys + TMX enabled.
 
-    TMX is injected into the config with default parameters, which match the
-    aquaplanet namelist values used in the EXCLAIM_APE_AES experiment.
-
-    Config injection: ``TmxConfig()`` (defaults) is used rather than
-    ``TmxConfig.from_fortran_dict(atm_dict)`` because the atm_dict is not
-    surfaced by ``read_experiment_config_from_fortran`` and re-reading it here
-    would duplicate logic.
-    The defaults match the APE aquaplanet namelist for all parameters that
-    affect this smoke test.
+    Both processes are enabled by the config reader itself: muphys from the
+    presence of ``aes_phy_nml``, TMX from ``aes_vdf_nml`` (with ``TmxConfig``
+    parsed positionally from the echoed namelist) — this test exercises the
+    production configuration path end to end.
 
     Assertions:
     - The physics driver has exactly the two registered processes ["muphys", "tmx"].
@@ -301,6 +302,7 @@ def test_standalone_driver_moist_physics_with_tmx(
 
     config = driver_config.read_experiment_config_from_fortran(config_file_path)
     assert config.muphys is not None, "muphys must be enabled for the APE_aes experiment"
+    assert config.tmx is not None, "tmx must be auto-enabled from aes_vdf_nml for APE_aes"
 
     config = config.with_overrides(
         driver={
@@ -310,12 +312,6 @@ def test_standalone_driver_moist_physics_with_tmx(
             ),
         }
     )
-
-    # Inject TMX with default parameters (defaults match the aquaplanet namelist;
-    # use TmxConfig() rather than from_fortran_dict because atm_dict is internal
-    # to read_experiment_config_from_fortran and re-reading it here would
-    # duplicate the loading logic).
-    config = dataclasses.replace(config, tmx=tmx_module.TmxConfig())
 
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,

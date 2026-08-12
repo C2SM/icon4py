@@ -465,6 +465,14 @@ def read_experiment_config_from_fortran(
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
+    # AES vdf/turbulent mixing, gated symmetrically to muphys above: the presence of
+    # the echoed aes_vdf_nml enables TMX, and TmxConfig is parsed positionally from
+    # that namelist (TmxConfig.from_fortran_dict). The v08 exclaim_ape_aesPhys
+    # reference runs graupel AND vdf, so both processes are needed for comparability.
+    tmx_cfg = (
+        tmx_module.TmxConfig.from_fortran_dict(atm_dict) if "aes_vdf_nml" in atm_dict else None
+    )
+
     return ExperimentConfig(
         geometry=geometry_cfg,
         metrics=metrics_cfg,
@@ -477,6 +485,7 @@ def read_experiment_config_from_fortran(
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         muphys=muphys_cfg,
+        tmx=tmx_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
             atm_dict=atm_dict, data_path=config_file_path
