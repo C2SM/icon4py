@@ -49,7 +49,7 @@ from gt4py.next import common as gtx_common, typing as gtx_typing
 from gt4py.next.ffront.decorator import FieldOperator
 from gt4py.next.instrumentation import hooks as gtx_hooks, metrics as gtx_metrics
 
-from icon4py.model.common import model_backends, model_options, type_alias as ta
+from icon4py.model.common import exceptions, model_backends, model_options, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation, device_utils
 from icon4py.model.testing import test_utils
@@ -89,11 +89,24 @@ def _validate_signature(
         raise TypeError(f"The '{name}' method must be {allowed_description} but got {type(func)}.")
     if func.__name__ != name:
         raise ValueError(f"The '{name}' method must be named '{name}' but got '{func.__name__}'.")
-    params = tuple(inspect.signature(func).parameters)
+    signature = inspect.signature(func)
+    params = tuple(signature.parameters)
     if params[: len(leading_params)] != leading_params:
         raise ValueError(
             f"The '{name}' method signature must be '{name}({', '.join(leading_params)}, ...)'"
-            f" but got '{name}{params}'."
+            f" but got '{name}({', '.join(params)})'."
+        )
+    # Both are always passed by name -- `reference` by `test_and_benchmark`, `input_data` by
+    # pytest -- so a positional-only parameter would only fail once the test runs.
+    positional_only = [
+        param
+        for param in leading_params
+        if signature.parameters[param].kind is inspect.Parameter.POSITIONAL_ONLY
+    ]
+    if positional_only:
+        raise ValueError(
+            f"The '{name}' method is called with keyword arguments, so"
+            f" {', '.join(repr(p) for p in positional_only)} cannot be positional-only."
         )
 
 
@@ -133,8 +146,15 @@ def _reject_direct_data_allocation(func: types.FunctionType) -> None:
             if arg is not None
         }
 
+    def is_data_allocation(value: Any) -> bool:
+        # Not just the module: `from ...data_allocation import zero_field` binds the
+        # constructor itself, which allocates on the wrong device just as readily.
+        return value is data_allocation or (
+            inspect.isfunction(value) and value.__module__ == data_allocation.__name__
+        )
+
     scopes = (func.__globals__, inspect.getclosurevars(func).nonlocals)
-    if any(scope.get(name) is data_allocation for name in referenced for scope in scopes):
+    if any(is_data_allocation(scope.get(name)) for name in referenced for scope in scopes):
         raise TypeError(
             "The 'input_data_fixture' should not call 'data_allocation' functions directly. "
             "Use the 'data_alloc' fixture argument to access data allocation functions instead."
@@ -301,9 +321,14 @@ class _NumPyGridConnectivitiesView(Mapping[str | gtx.FieldOffset, np.ndarray]):
         self._grid = grid
 
     def __getitem__(self, key: str | gtx.FieldOffset) -> np.ndarray:
-        connectivity = self._grid.get_connectivity(key)
+        # `KeyError` rather than what the grid raises: `Mapping` builds `get` and `in` on
+        # top of this, and both have to see a missing key as missing rather than as an error.
+        try:
+            connectivity = self._grid.get_connectivity(key)
+        except exceptions.MissingConnectivityError as error:
+            raise KeyError(key) from error
         if not gtx_common.is_neighbor_table(connectivity):
-            raise TypeError(f"Connectivity '{key}' is not a neighbor table.")
+            raise KeyError(f"Connectivity '{key}' is not a neighbor table.")
         return connectivity.asnumpy()
 
     def __iter__(self) -> Iterator[str | gtx.FieldOffset]:

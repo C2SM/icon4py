@@ -118,6 +118,23 @@ class TestStaticReference:
         with pytest.raises(ValueError, match=r"must be 'reference\(grid, \.\.\.\)'"):
             stencil_tests.static_reference(reference)
 
+    def test_rejects_positional_only_grid(self):
+        """`test_and_benchmark` calls `reference(grid=...)`, so positional-only would fail late."""
+
+        def reference(grid, /, **kwargs): ...
+
+        with pytest.raises(ValueError, match="cannot be positional-only"):
+            stencil_tests.static_reference(reference)
+
+    def test_reports_the_actual_signature_readably(self):
+        def reference(connectivities, other, **kwargs): ...
+
+        with pytest.raises(ValueError) as excinfo:
+            stencil_tests.static_reference(reference)
+
+        # expected and actual are rendered the same way, not one joined and one a tuple repr
+        assert "but got 'reference(connectivities, other, kwargs)'" in str(excinfo.value)
+
 
 # -- input_data_fixture ----------------------------------------------------------------
 
@@ -203,6 +220,24 @@ class TestInputDataFixture:
         exec("def input_data(data_alloc):\n    return {}", namespace)
 
         assert stencil_tests.input_data_fixture(namespace["input_data"]) is not None
+
+    def test_rejects_a_directly_imported_constructor(self):
+        """A `from ...data_allocation import zero_field` binds the function, not the module."""
+        zero_field = data_allocation.zero_field
+
+        def input_data(data_alloc, grid):
+            return {"a": zero_field(grid, dims.CellDim)}
+
+        with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
+            stencil_tests.input_data_fixture(input_data)
+
+    def test_rejects_positional_only_data_alloc(self):
+        """pytest injects fixtures by keyword, so positional-only would fail at run time."""
+
+        def input_data(data_alloc, /): ...
+
+        with pytest.raises(ValueError, match="cannot be positional-only"):
+            stencil_tests.input_data_fixture(input_data)
 
     def test_rejects_data_allocation_from_an_enclosing_scope(self):
         module = data_allocation
@@ -342,8 +377,18 @@ class TestConnectivitiesAsNumpy:
 
         assert "Koff" not in set(view)
         assert len(view) == len(set(view))
-        with pytest.raises(TypeError, match="is not a neighbor table"):
+        with pytest.raises(KeyError, match="is not a neighbor table"):
             view["Koff"]
+
+    def test_honours_the_mapping_contract_for_a_missing_key(self, grid):
+        """`get` and `in` are built on `__getitem__`, so it has to raise `KeyError`."""
+        view = stencil_tests.connectivities_asnumpy(grid)
+
+        assert view.get("NoSuchOffset", "default") == "default"
+        assert "NoSuchOffset" not in view
+        assert "E2C" in view
+        with pytest.raises(KeyError):
+            view["NoSuchOffset"]
 
 
 # -- DataAllocationWrapper -------------------------------------------------------------
