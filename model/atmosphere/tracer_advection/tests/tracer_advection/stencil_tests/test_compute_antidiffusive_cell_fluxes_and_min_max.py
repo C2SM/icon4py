@@ -80,20 +80,20 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
-        p_rhodz_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_rhodz_new = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        z_mflx_low = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        z_anti = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        p_rhodz_now = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_rhodz_new = data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_mflx_low = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        z_anti = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_dtime = 5.0
 
-        z_mflx_anti_in = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
-        z_mflx_anti_out = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
-        z_tracer_new_low = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
-        z_tracer_max = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
-        z_tracer_min = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_mflx_anti_in = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_mflx_anti_out = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_tracer_new_low = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_tracer_max = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        z_tracer_min = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
         return dict(
             geofac_div=geofac_div,

@@ -33,13 +33,13 @@ class TestIceToSnowDefault(stencil_tests.StencilTest):
         return dict(conversion_rate=np.full(qi.shape, 0.0))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            qi=self.data_alloc.constant_field(7.95122e-25, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ns=self.data_alloc.constant_field(2.23336e07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            lam=self.data_alloc.constant_field(61911.1, dims.CellDim, dims.KDim, dtype=wpfloat),
-            sticking_eff=self.data_alloc.constant_field(
+            qi=data_alloc.constant_field(7.95122e-25, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ns=data_alloc.constant_field(2.23336e07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            lam=data_alloc.constant_field(61911.1, dims.CellDim, dims.KDim, dtype=wpfloat),
+            sticking_eff=data_alloc.constant_field(
                 0.241568, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            conversion_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

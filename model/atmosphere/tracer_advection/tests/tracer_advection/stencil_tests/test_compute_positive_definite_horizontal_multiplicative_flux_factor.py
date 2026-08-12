@@ -56,12 +56,12 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         return dict(r_m=r_m)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
-        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_rhodz_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_mflx_tracer_h = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        r_m = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_rhodz_now = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_mflx_tracer_h = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        r_m = data_alloc.zero_field(dims.CellDim, dims.KDim)
         p_dtime = np.float64(5)
         dbl_eps = np.float64(1e-9)
         return dict(

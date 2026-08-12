@@ -55,9 +55,11 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(stencil_tests.StencilTest):
         return dict(w=w_new)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_q = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_q = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         h_start = 0
         h_end = gtx.int32(grid.num_cells)
         v_start = 1

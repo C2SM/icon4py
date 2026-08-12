@@ -43,12 +43,12 @@ class TestEdge2CellVectorRBFInterpolation(stencil_tests.StencilTest):
         return dict(p_v_out=p_v_out, p_u_out=p_u_out)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        p_e_in = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        ptr_coeff_1 = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
-        ptr_coeff_2 = self.data_alloc.random_field(dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
-        p_v_out = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        p_u_out = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_e_in = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        ptr_coeff_1 = data_alloc.random_field(dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
+        ptr_coeff_2 = data_alloc.random_field(dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
+        p_v_out = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        p_u_out = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             p_e_in=p_e_in,

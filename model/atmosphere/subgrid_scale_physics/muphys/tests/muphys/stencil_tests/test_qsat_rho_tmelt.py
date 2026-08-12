@@ -30,8 +30,8 @@ class TestQsatRho(stencil_tests.StencilTest):
         return dict(pressure=np.full(rho.shape, 0.0038828182695875113))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            rho=self.data_alloc.constant_field(1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
-            pressure=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
+            pressure=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

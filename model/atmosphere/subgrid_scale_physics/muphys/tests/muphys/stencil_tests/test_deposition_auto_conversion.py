@@ -37,14 +37,12 @@ class TestDepositionAutoConversion(stencil_tests.StencilTest):
         return dict(conversion_rate=np.full(qi.shape, 6.6430804299795412e-08))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            qi=self.data_alloc.constant_field(
+            qi=data_alloc.constant_field(
                 2.02422e-2 + GraupelConsts.qmin, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            m_ice=self.data_alloc.constant_field(1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ice_dep=self.data_alloc.constant_field(
-                2.06276e-05, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
-            conversion_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            m_ice=data_alloc.constant_field(1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ice_dep=data_alloc.constant_field(2.06276e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

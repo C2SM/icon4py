@@ -74,17 +74,17 @@ class TestComputeBarycentricBacktrajectoryAlt(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        p_vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        pos_on_tplane_e_1 = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_2 = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_1 = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_1 = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_2 = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_2 = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
-        p_distv_bary_1 = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        p_distv_bary_2 = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_vt = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        pos_on_tplane_e_1 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        pos_on_tplane_e_2 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_1 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_1 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_2 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_2 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        p_distv_bary_1 = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_distv_bary_2 = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         p_dthalf = 2.0
 
         return dict(

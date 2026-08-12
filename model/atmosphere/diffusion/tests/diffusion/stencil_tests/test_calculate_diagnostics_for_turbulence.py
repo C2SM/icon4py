@@ -50,10 +50,10 @@ class TestCalculateDiagnosticsForTurbulence(stencil_tests.StencilTest):
         return dict(div_ic=div_ic, hdef_ic=hdef_ic)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
-        wgtfac_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        div = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        kh_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        div_ic = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        hdef_ic = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        div = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        kh_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        div_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        hdef_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         return dict(wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic)

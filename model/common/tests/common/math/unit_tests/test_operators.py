@@ -17,7 +17,7 @@ from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_na
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell_k import compute_nabla2_on_cell_k
 from icon4py.model.testing import reference_funcs, stencil_tests
 from icon4py.model.testing.fixtures.datatest import backend_like
-from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
+from icon4py.model.testing.fixtures.stencil_tests import data_alloc, grid, grid_manager
 
 
 @pytest.mark.embedded_remap_error
@@ -38,10 +38,10 @@ class TestNabla2OnCell(stencil_tests.StencilTest):
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        psi_c = self.data_alloc.constant_field(1.0, dims.CellDim)
-        geofac_n2s = self.data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)
-        nabla2_psi_c = self.data_alloc.zero_field(dims.CellDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base_grid.Grid) -> dict:
+        psi_c = data_alloc.constant_field(1.0, dims.CellDim)
+        geofac_n2s = data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)
+        nabla2_psi_c = data_alloc.zero_field(dims.CellDim)
         return dict(
             psi_c=psi_c,
             geofac_n2s=geofac_n2s,
@@ -69,10 +69,10 @@ class TestNabla2OnCellK(stencil_tests.StencilTest):
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        psi_c = self.data_alloc.constant_field(1.0, dims.CellDim, dims.KDim)
-        geofac_n2s = self.data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)
-        nabla2_psi_c = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        psi_c = data_alloc.constant_field(1.0, dims.CellDim, dims.KDim)
+        geofac_n2s = data_alloc.constant_field(2.0, dims.CellDim, dims.C2E2CODim)
+        nabla2_psi_c = data_alloc.zero_field(dims.CellDim, dims.KDim)
         return dict(
             psi_c=psi_c,
             geofac_n2s=geofac_n2s,

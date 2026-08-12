@@ -48,16 +48,14 @@ class TestDiagnoseSurfacePressure(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
         low = 1.0e-2
-        exner = self.data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
-        virtual_temperature = self.data_alloc.random_field(
+        exner = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
+        virtual_temperature = data_alloc.random_field(
             dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat
         )
-        ddqz_z_full = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat
-        )
-        surface_pressure = self.data_alloc.zero_field(
+        ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat)
+        surface_pressure = data_alloc.zero_field(
             dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend={dims.KDim: 1}
         )
 

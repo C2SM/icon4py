@@ -42,10 +42,10 @@ class TestCell2EdgeInterpolation(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        in_field = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        coeff = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
-        out_field = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        in_field = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        coeff = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        out_field = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             in_field=in_field,

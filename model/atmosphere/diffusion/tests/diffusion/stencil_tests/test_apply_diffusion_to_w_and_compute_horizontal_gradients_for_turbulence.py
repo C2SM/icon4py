@@ -124,7 +124,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
         return dict(w=out_w, dwdx=out_dwdx, dwdy=out_dwdy)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
         nrdmax = 13
         cell_domain = h_grid.domain(dims.CellDim)
         interior_idx = grid.start_index(cell_domain(h_grid.Zone.INTERIOR))  # 0 for simple grid
@@ -143,17 +143,17 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
         horizontal_start = _get_start_index_for_w_diffusion()
         horizontal_end = grid.end_index(cell_domain(h_grid.Zone.HALO))
 
-        geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
-        geofac_grg_y = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
-        diff_multfac_n2w = self.data_alloc.random_field(dims.KDim)
-        area = self.data_alloc.random_field(dims.CellDim)
-        geofac_n2s = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
-        w_old = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        geofac_grg_x = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
+        geofac_grg_y = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
+        diff_multfac_n2w = data_alloc.random_field(dims.KDim)
+        area = data_alloc.random_field(dims.CellDim)
+        geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
+        w_old = data_alloc.random_field(dims.CellDim, dims.KDim)
         diff_multfac_w = 5.0
 
-        w = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
-        dwdx = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        dwdy = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        w = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        dwdx = data_alloc.random_field(dims.CellDim, dims.KDim)
+        dwdy = data_alloc.random_field(dims.CellDim, dims.KDim)
 
         return dict(
             area=area,

@@ -122,22 +122,22 @@ class TestApplyDiffusionToVn(stencil_tests.StencilTest):
         return dict(vn=vn)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        u_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim)
-        v_vert = self.data_alloc.random_field(dims.VertexDim, dims.KDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        u_vert = data_alloc.random_field(dims.VertexDim, dims.KDim)
+        v_vert = data_alloc.random_field(dims.VertexDim, dims.KDim)
 
-        primal_normal_vert_v1 = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim)
-        primal_normal_vert_v2 = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim)
+        primal_normal_vert_v1 = data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim)
+        primal_normal_vert_v2 = data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim)
 
-        inv_vert_vert_length = self.data_alloc.random_field(dims.EdgeDim)
-        inv_primal_edge_length = self.data_alloc.random_field(dims.EdgeDim)
+        inv_vert_vert_length = data_alloc.random_field(dims.EdgeDim)
+        inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim)
 
-        area_edge = self.data_alloc.random_field(dims.EdgeDim)
-        kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        z_nabla2_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        diff_multfac_vn = self.data_alloc.random_field(dims.KDim)
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        nudgecoeff_e = self.data_alloc.random_field(dims.EdgeDim)
+        area_edge = data_alloc.random_field(dims.EdgeDim)
+        kh_smag_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        z_nabla2_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        diff_multfac_vn = data_alloc.random_field(dims.KDim)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        nudgecoeff_e = data_alloc.random_field(dims.EdgeDim)
 
         limited_area = grid.limited_area if hasattr(grid, "limited_area") else True
         fac_bdydiff_v = 5.0

@@ -34,14 +34,12 @@ class TestSnowToRainDefault(stencil_tests.StencilTest):
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(265.83, dims.CellDim, dims.KDim, dtype=wpfloat),
-            p=self.data_alloc.constant_field(80134.5, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=self.data_alloc.constant_field(1.04892, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw0=self.data_alloc.constant_field(
-                -0.00258631, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
-            qs=self.data_alloc.constant_field(1.47687e-6, dims.CellDim, dims.KDim, dtype=wpfloat),
-            conversion_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(265.83, dims.CellDim, dims.KDim, dtype=wpfloat),
+            p=data_alloc.constant_field(80134.5, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(1.04892, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw0=data_alloc.constant_field(-0.00258631, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(1.47687e-6, dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

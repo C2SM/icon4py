@@ -44,14 +44,14 @@ class TestComputeFirstVerticalDerivative(stencil_tests.StencilTest):
         return dict(first_vertical_derivative=first_vertical_derivative)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        cell_kdim_field = self.data_alloc.random_field(
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        cell_kdim_field = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )
-        inv_ddqz_z_full = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        first_vertical_derivative = self.data_alloc.zero_field(
-            dims.CellDim, dims.KDim, dtype=vpfloat
-        )
+        inv_ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        first_vertical_derivative = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             cell_kdim_field=cell_kdim_field,

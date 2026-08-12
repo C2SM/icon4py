@@ -33,11 +33,11 @@ class TestCloudToGraupelDefault(stencil_tests.StencilTest):
         return dict(riming_graupel_rate=np.full(t.shape, 0.0))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=self.data_alloc.constant_field(1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
-            qg=self.data_alloc.constant_field(1.03636e-25, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_graupel_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qg=data_alloc.constant_field(1.03636e-25, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_graupel_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

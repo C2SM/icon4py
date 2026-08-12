@@ -48,12 +48,12 @@ class TestCloudToRainAesGraupel(stencil_tests.StencilTest):
         return dict(conversion_rate=rate)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(267.25, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=self.data_alloc.constant_field(0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=self.data_alloc.constant_field(5.52921e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qr=self.data_alloc.constant_field(2.01511e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(267.25, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.constant_field(5.52921e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qr=data_alloc.constant_field(2.01511e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
             nc=100.0,
-            conversion_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -32,10 +32,10 @@ class TestSnowNumberDefault(stencil_tests.StencilTest):
         return dict(number=np.full(t.shape, 8.00e5))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(276.302, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=self.data_alloc.constant_field(1.17797, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=self.data_alloc.constant_field(8.28451e-24, dims.CellDim, dims.KDim, dtype=wpfloat),
-            number=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(276.302, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(1.17797, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(8.28451e-24, dims.CellDim, dims.KDim, dtype=wpfloat),
+            number=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

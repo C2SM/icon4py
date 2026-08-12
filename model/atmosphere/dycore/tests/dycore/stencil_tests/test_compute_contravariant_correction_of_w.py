@@ -59,11 +59,13 @@ class TestComputeContravariantCorrectionOfW(stencil_tests.StencilTest):
         return dict(w_concorr_c=w_concorr_c)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        e_bln_c_s = self.data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=wpfloat)
-        z_w_concorr_me = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        wgtfac_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        w_concorr_c = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=wpfloat)
+        z_w_concorr_me = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        w_concorr_c = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             e_bln_c_s=e_bln_c_s,

@@ -62,11 +62,13 @@ class TestUpdateDynamicalExnerTimeIncrement(stencil_tests.StencilTest):
         return dict(exner_dyn_incr=exner_dyn_incr)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ndyn_substeps_var, dtime = wpfloat("10.0"), wpfloat("12.0")
-        exner = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_exner_phy = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        exner_dyn_incr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddt_exner_phy = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner_dyn_incr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             exner=exner,

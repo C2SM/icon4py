@@ -64,12 +64,14 @@ class TestInitThetaVPrimeIcAtLowerBoundary(stencil_tests.StencilTest):
         return dict(z_theta_v_pr_ic=z_theta_v_pr_ic, theta_v_ic=theta_v_ic)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfacq_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_ref_ic = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_theta_v_pr_ic = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v_ic = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        wgtfacq_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_ref_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_theta_v_pr_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             wgtfacq_c=wgtfacq_c,

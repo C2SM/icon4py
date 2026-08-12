@@ -415,59 +415,55 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         ),
     )
     def input_data(
-        self, grid: base.Grid, request: pytest.FixtureRequest
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
-        mass_flux_at_edges_on_model_levels = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        theta_v_flux_at_edges_on_model_levels = self.data_alloc.random_field(
-            dims.EdgeDim, dims.KDim
-        )
-        current_w = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        predictor_vertical_wind_advective_tendency = self.data_alloc.random_field(
+        geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        mass_flux_at_edges_on_model_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        current_w = data_alloc.random_field(dims.CellDim, dims.KDim)
+        predictor_vertical_wind_advective_tendency = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        corrector_vertical_wind_advective_tendency = self.data_alloc.random_field(
+        corrector_vertical_wind_advective_tendency = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        nonhydro_buoy_at_cells_on_half_levels = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim
-        )
-        rho_at_cells_on_half_levels = self.data_alloc.random_field(
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(dims.CellDim, dims.KDim)
+        rho_at_cells_on_half_levels = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
         )
-        contravariant_correction_at_cells_on_half_levels = self.data_alloc.random_field(
+        contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        exner_w_explicit_weight_parameter = self.data_alloc.random_field(dims.CellDim)
-        current_exner = self.data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
-        current_rho = self.data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
-        current_theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
-        inv_ddqz_z_full = self.data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
-        exner_w_implicit_weight_parameter = self.data_alloc.random_field(dims.CellDim)
-        theta_v_at_cells_on_half_levels = self.data_alloc.random_field(
+        exner_w_explicit_weight_parameter = data_alloc.random_field(dims.CellDim)
+        current_exner = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
+        current_rho = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
+        current_theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
+        inv_ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(dims.CellDim)
+        theta_v_at_cells_on_half_levels = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
         )
-        perturbed_exner_at_cells_on_model_levels = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim
-        )
-        exner_tendency_due_to_slow_physics = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        rho_iau_increment = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        exner_iau_increment = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
-        rayleigh_damping_factor = self.data_alloc.random_field(dims.KDim)
-        reference_exner_at_cells_on_model_levels = self.data_alloc.random_field(
+        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(dims.CellDim, dims.KDim)
+        exner_tendency_due_to_slow_physics = data_alloc.random_field(dims.CellDim, dims.KDim)
+        rho_iau_increment = data_alloc.random_field(dims.CellDim, dims.KDim)
+        exner_iau_increment = data_alloc.random_field(dims.CellDim, dims.KDim)
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
+        rayleigh_damping_factor = data_alloc.random_field(dims.KDim)
+        reference_exner_at_cells_on_model_levels = data_alloc.random_field(
             dims.CellDim, dims.KDim, low=1.0e-5
         )
 
-        next_w = self.data_alloc.zero_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        next_rho = self.data_alloc.constant_field(1.0e-5, dims.CellDim, dims.KDim)
-        next_exner = self.data_alloc.constant_field(1.0e-5, dims.CellDim, dims.KDim)
-        next_theta_v = self.data_alloc.constant_field(1.0e-5, dims.CellDim, dims.KDim)
-        exner_dynamical_increment = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        dynamical_vertical_mass_flux_at_cells_on_half_levels = self.data_alloc.zero_field(
+        next_w = data_alloc.zero_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        next_rho = data_alloc.constant_field(1.0e-5, dims.CellDim, dims.KDim)
+        next_exner = data_alloc.constant_field(1.0e-5, dims.CellDim, dims.KDim)
+        next_theta_v = data_alloc.constant_field(1.0e-5, dims.CellDim, dims.KDim)
+        exner_dynamical_increment = data_alloc.random_field(dims.CellDim, dims.KDim)
+        dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels = self.data_alloc.zero_field(
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.zero_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
 

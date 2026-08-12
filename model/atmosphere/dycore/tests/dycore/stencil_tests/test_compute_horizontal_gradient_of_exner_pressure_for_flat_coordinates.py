@@ -56,10 +56,12 @@ class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(stencil_tes
         return dict(z_gradh_exner=z_gradh_exner)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
-        z_exner_ex_pr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_gradh_exner = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        z_exner_ex_pr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_gradh_exner = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,

@@ -62,11 +62,13 @@ class TestAddAnalysisIncrementsFromDataAssimilation(stencil_tests.StencilTest):
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_exner_expl = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_incr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_rho_expl = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        rho_incr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_exner_expl = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_incr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_rho_expl = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_incr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         iau_wgt_dyn = ta.wpfloat("8.0")
 
         return dict(

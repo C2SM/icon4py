@@ -59,11 +59,11 @@ class TestCalculateNabla2ForZ(stencil_tests.StencilTest):
         return dict(z_nabla2_e=z_nabla2_e)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
-        kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
-        theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_nabla2_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+        kh_smag_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_nabla2_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             kh_smag_e=kh_smag_e,

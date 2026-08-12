@@ -44,9 +44,9 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(stencil_tests.Stencil
         return dict(kh_smag_e=kh_smag_e)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        enh_diffu_3d = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        kh_smag_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        enh_diffu_3d = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             kh_smag_e=kh_smag_e,

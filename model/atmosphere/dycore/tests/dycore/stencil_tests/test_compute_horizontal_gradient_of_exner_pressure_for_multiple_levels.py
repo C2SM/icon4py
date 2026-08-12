@@ -94,13 +94,15 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(stencil_test
         return dict(z_gradh_exner=z_gradh_exner)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
-        z_exner_ex_pr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        zdiff_gradp = self.data_alloc.random_field(
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        z_exner_ex_pr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        zdiff_gradp = data_alloc.random_field(
             dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat
         )
-        ikoffset = self.data_alloc.zero_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
+        ikoffset = data_alloc.zero_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
@@ -110,9 +112,9 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(stencil_test
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
 
-        z_dexner_dz_c_1 = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_dexner_dz_c_2 = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_gradh_exner = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_dexner_dz_c_1 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_dexner_dz_c_2 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_gradh_exner = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,

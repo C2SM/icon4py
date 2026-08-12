@@ -33,11 +33,11 @@ class TestSnowToGraupel(stencil_tests.StencilTest):
         return dict(conversion_rate=np.full(t.shape, 6.2696154545048011e-10))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(265.85, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=self.data_alloc.constant_field(1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=self.data_alloc.constant_field(7.02792e-5, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=self.data_alloc.constant_field(4.44664e-7, dims.CellDim, dims.KDim, dtype=wpfloat),
-            conversion_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(265.85, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.constant_field(7.02792e-5, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(4.44664e-7, dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

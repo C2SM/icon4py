@@ -53,15 +53,15 @@ class TestComputeDwdzForDivergenceDamping(stencil_tests.StencilTest):
         return dict(out=z_dwdz_dd)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        inv_ddqz_z_full = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        w = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat
-        )
-        w_concorr_c = self.data_alloc.random_field(
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        inv_ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
+        w_concorr_c = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )
-        z_dwdz_dd = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_dwdz_dd = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             inv_ddqz_z_full=inv_ddqz_z_full,

@@ -45,10 +45,10 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(stencil_tests.Stenc
         return dict(lvn_sys_pos=lvn_sys_pos)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        tangent_orientation = self.data_alloc.random_field(dims.EdgeDim)
-        lvn_sys_pos = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=bool)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        tangent_orientation = data_alloc.random_field(dims.EdgeDim)
+        lvn_sys_pos = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=bool)
         lcounterclock = True
         return dict(
             p_vn=p_vn,

@@ -38,10 +38,10 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
         return dict(p_tracer_new=p_tracer_new)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        p_tracer_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_grf_tend_tracer = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_tracer_new = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_tracer_now = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_grf_tend_tracer = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_tracer_new = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_dtime = np.float64(5.0)
         return dict(
             p_tracer_now=p_tracer_now,

@@ -31,9 +31,9 @@ class TestQsatRho(stencil_tests.StencilTest):
         return dict(derivative=np.full(t.shape, 0.00030825070286492049))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            qs=self.data_alloc.constant_field(0.00448941, dims.CellDim, dims.KDim, dtype=wpfloat),
-            t=self.data_alloc.constant_field(273.909, dims.CellDim, dims.KDim, dtype=wpfloat),
-            derivative=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(0.00448941, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(273.909, dims.CellDim, dims.KDim, dtype=wpfloat),
+            derivative=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

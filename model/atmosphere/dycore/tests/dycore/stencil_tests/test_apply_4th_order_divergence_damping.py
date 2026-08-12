@@ -59,10 +59,12 @@ class TestApply4thOrderDivergenceDamping(stencil_tests.StencilTest):
         return dict(vn=vn)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        interpolated_fourth_order_divdamp_factor = self.data_alloc.random_field(dims.KDim)
-        z_graddiv2_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        interpolated_fourth_order_divdamp_factor = data_alloc.random_field(dims.KDim)
+        z_graddiv2_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         divdamp_order = 24
         mean_cell_area = 1000.0

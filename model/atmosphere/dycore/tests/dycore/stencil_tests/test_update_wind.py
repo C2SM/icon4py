@@ -36,11 +36,13 @@ class TestUpdateWind(stencil_tests.StencilTest):
         return dict(w_new=w_new)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = wpfloat("10.0")
-        w_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        grf_tend_w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_new = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_now = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        grf_tend_w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_new = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             w_now=w_now,

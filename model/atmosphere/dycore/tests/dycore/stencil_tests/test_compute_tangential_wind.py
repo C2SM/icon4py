@@ -49,10 +49,12 @@ class TestComputeTangentialWind(stencil_tests.StencilTest):
         return dict(vt=vt)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        rbf_vec_coeff_e = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
-        vt = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        rbf_vec_coeff_e = data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
+        vt = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

@@ -43,11 +43,11 @@ class TestSnowNumberAesGraupel(stencil_tests.StencilTest):
         return dict(number=number)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(276.302, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho_s=self.data_alloc.constant_field(
+            t=data_alloc.constant_field(276.302, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho_s=data_alloc.constant_field(
                 1.17797 * 8.28451e-4, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            number=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            number=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

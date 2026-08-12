@@ -68,14 +68,16 @@ class TestComputeAvgVnAndGraddivVnAndVt(stencil_tests.StencilTest):
         return dict(z_vn_avg=z_vn_avg, z_graddiv_vn=z_graddiv_vn, vt=vt)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        e_flx_avg = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        geofac_grdiv = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        rbf_vec_coeff_e = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_vn_avg = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_graddiv_vn = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vt = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        e_flx_avg = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
+        geofac_grdiv = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
+        rbf_vec_coeff_e = data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_vn_avg = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_graddiv_vn = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vt = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             e_flx_avg=e_flx_avg,

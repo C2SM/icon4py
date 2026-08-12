@@ -34,11 +34,11 @@ class TestFallSpeed(stencil_tests.StencilTest):
         return dict(speed=np.full(density.shape, 0.67882452435647411))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            density=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            density=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             prefactor=IndexConsts.prefactor_r,
             offset=IndexConsts.offset_r,
             exponent=IndexConsts.exponent_r,
-            speed=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            speed=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

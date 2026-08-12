@@ -35,12 +35,12 @@ class TestSnowLambda(stencil_tests.StencilTest):
         return dict(riming_snow_rate=np.full(rho.shape, 1.0e10))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            rho=self.data_alloc.constant_field(1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=self.data_alloc.constant_field(
+            rho=data_alloc.constant_field(1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(
                 GraupelConsts.qmin, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            ns=self.data_alloc.constant_field(1.76669e07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_snow_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            ns=data_alloc.constant_field(1.76669e07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_snow_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

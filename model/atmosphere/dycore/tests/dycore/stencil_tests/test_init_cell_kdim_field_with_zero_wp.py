@@ -50,8 +50,10 @@ class TestInitCellKdimFieldWithZeroWp(stencil_tests.StencilTest):
         return dict(field_with_zero_wp=field_with_zero_wp)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        field_with_zero_wp = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        field_with_zero_wp = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             field_with_zero_wp=field_with_zero_wp,

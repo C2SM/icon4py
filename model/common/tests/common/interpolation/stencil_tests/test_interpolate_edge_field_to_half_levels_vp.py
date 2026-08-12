@@ -50,10 +50,10 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
         return dict(interpolation_to_half_levels_vp=interpolation_to_half_levels_vp)
 
     @test_helpers.input_data_fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        interpolant = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        wgtfac_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        interpolation_to_half_levels_vp = self.data_alloc.zero_field(
+    def input_data(data_alloc: test_helpers.DataAllocationWrapper, grid: base_grid.Grid) -> dict:
+        interpolant = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        wgtfac_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        interpolation_to_half_levels_vp = data_alloc.zero_field(
             dims.EdgeDim, dims.KDim, dtype=vpfloat
         )
 

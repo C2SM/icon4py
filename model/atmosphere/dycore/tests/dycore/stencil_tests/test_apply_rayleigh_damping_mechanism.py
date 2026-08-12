@@ -49,9 +49,11 @@ class TestApplyRayleighDampingMechanism(stencil_tests.StencilTest):
         return dict(w=w)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_raylfac = self.data_alloc.random_field(dims.KDim, dtype=wpfloat)
-        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_raylfac = data_alloc.random_field(dims.KDim, dtype=wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             z_raylfac=z_raylfac,

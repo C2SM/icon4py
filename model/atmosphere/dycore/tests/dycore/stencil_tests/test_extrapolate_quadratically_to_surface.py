@@ -54,12 +54,12 @@ class TestInterpolateToSurface(stencil_tests.StencilTest):
         return dict(interpolation_to_surface=interpolation_to_surface)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        interpolant = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        wgtfacq_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        interpolation_to_surface = self.data_alloc.zero_field(
-            dims.CellDim, dims.KDim, dtype=vpfloat
-        )
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        interpolant = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        wgtfacq_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        interpolation_to_surface = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             interpolant=interpolant,

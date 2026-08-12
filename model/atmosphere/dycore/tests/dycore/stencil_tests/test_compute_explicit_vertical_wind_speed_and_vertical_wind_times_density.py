@@ -76,15 +76,17 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(stencil_te
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        w_nnow = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_w_adv_ntl1 = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_th_ddz_exner_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_w_expl = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ic = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        vwind_expl_wgt = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        z_contr_w_fl_l = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        w_nnow = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddt_w_adv_ntl1 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_th_ddz_exner_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_w_expl = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_concorr_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        vwind_expl_wgt = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        z_contr_w_fl_l = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         dtime = wpfloat("5.0")
         cpd = wpfloat("10.0")
 

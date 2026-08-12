@@ -41,9 +41,11 @@ class TestCopyCellKdimFieldToVp(stencil_tests.StencilTest):
         return dict(field_copy=field_copy)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        field = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        field_copy = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        field = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        field_copy = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         return dict(
             field=field,
             field_copy=field_copy,

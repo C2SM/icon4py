@@ -32,8 +32,8 @@ class TestVelScaleFactorIce(stencil_tests.StencilTest):
         return dict(scale_factor=np.full(xrho.shape, 1.1158596098981044))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            xrho=self.data_alloc.constant_field(1.17873, dims.CellDim, dims.KDim, dtype=wpfloat),
-            scale_factor=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            xrho=data_alloc.constant_field(1.17873, dims.CellDim, dims.KDim, dtype=wpfloat),
+            scale_factor=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

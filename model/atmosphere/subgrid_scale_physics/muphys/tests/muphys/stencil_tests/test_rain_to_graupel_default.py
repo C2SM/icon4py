@@ -38,18 +38,16 @@ class TestRainToGraupelDefault(stencil_tests.StencilTest):
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=self.data_alloc.constant_field(1.12442, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
-            qr=self.data_alloc.constant_field(1.34006e-17, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qi=self.data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=self.data_alloc.constant_field(1.02627e-19, dims.CellDim, dims.KDim, dtype=wpfloat),
-            mi=self.data_alloc.constant_field(1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw=self.data_alloc.constant_field(
-                -0.000635669, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
+            t=data_alloc.constant_field(272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(1.12442, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qr=data_alloc.constant_field(1.34006e-17, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi=data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(1.02627e-19, dims.CellDim, dims.KDim, dtype=wpfloat),
+            mi=data_alloc.constant_field(1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw=data_alloc.constant_field(-0.000635669, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt=30.0,
-            conversion_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

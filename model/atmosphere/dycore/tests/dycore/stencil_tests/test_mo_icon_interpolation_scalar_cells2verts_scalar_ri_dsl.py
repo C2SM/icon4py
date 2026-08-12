@@ -52,10 +52,12 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(stencil_tests.StencilT
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        p_cell_in = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        c_intp = self.data_alloc.random_field(dims.VertexDim, dims.V2CDim, dtype=wpfloat)
-        p_vert_out = self.data_alloc.zero_field(dims.VertexDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        p_cell_in = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        c_intp = data_alloc.random_field(dims.VertexDim, dims.V2CDim, dtype=wpfloat)
+        p_vert_out = data_alloc.zero_field(dims.VertexDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             p_cell_in=p_cell_in,

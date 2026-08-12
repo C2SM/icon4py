@@ -133,8 +133,10 @@ class TestComputeHydrostaticCorrectionTerm(stencil_tests.StencilTest):
         return dict(z_hydro_corr=z_hydro_corr)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        ikoffset = self.data_alloc.zero_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        ikoffset = data_alloc.zero_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
@@ -144,16 +146,16 @@ class TestComputeHydrostaticCorrectionTerm(stencil_tests.StencilTest):
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
 
-        theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        zdiff_gradp = self.data_alloc.random_field(
+        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        zdiff_gradp = data_alloc.random_field(
             dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat
         )
-        theta_v_ic = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        inv_ddqz_z_full = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        theta_v_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        inv_ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
         grav_o_cpd = ta.wpfloat("10.0")
 
-        z_hydro_corr = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_hydro_corr = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         z_hydro_corr = gtx.constructors.zeros(
             domain={

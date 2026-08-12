@@ -59,15 +59,15 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(stencil_tests.Ste
         return dict(p_out_e=p_out_e)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        z_lsq_coeff_1 = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        z_lsq_coeff_2 = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        z_lsq_coeff_3 = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        distv_bary_1 = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        distv_bary_2 = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        p_mass_flx_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        p_out_e = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        z_lsq_coeff_1 = data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_lsq_coeff_2 = data_alloc.random_field(dims.CellDim, dims.KDim)
+        z_lsq_coeff_3 = data_alloc.random_field(dims.CellDim, dims.KDim)
+        distv_bary_1 = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        distv_bary_2 = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_mass_flx_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_out_e = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))

@@ -35,11 +35,11 @@ class TestVelScaleFactorSnow(stencil_tests.StencilTest):
         return dict(scale_factor=np.full(xrho.shape, 0.06633230453931642))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            xrho=self.data_alloc.constant_field(1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=self.data_alloc.constant_field(0.882961, dims.CellDim, dims.KDim, dtype=wpfloat),
-            t=self.data_alloc.constant_field(257.101, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=self.data_alloc.constant_field(5.78761e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
-            scale_factor=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            xrho=data_alloc.constant_field(1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(0.882961, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(257.101, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(5.78761e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
+            scale_factor=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -57,14 +57,14 @@ class TestComputeAdvectiveVerticalWindTendency(stencil_tests.StencilTest):
         return dict(ddt_w_adv=ddt_w_adv)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_w_con_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        w = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat
-        )
-        coeff1_dwdz = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        coeff2_dwdz = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddt_w_adv = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_w_con_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
+        coeff1_dwdz = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        coeff2_dwdz = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddt_w_adv = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             z_w_con_c=z_w_con_c,

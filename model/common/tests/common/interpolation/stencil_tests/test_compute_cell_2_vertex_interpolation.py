@@ -43,10 +43,10 @@ class TestComputeCells2VertsInterpolation(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        cell_in = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=types.wpfloat)
-        c_int = self.data_alloc.random_field(dims.VertexDim, dims.V2CDim, dtype=types.wpfloat)
-        vert_out = self.data_alloc.zero_field(dims.VertexDim, dims.KDim, dtype=types.wpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        cell_in = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=types.wpfloat)
+        c_int = data_alloc.random_field(dims.VertexDim, dims.V2CDim, dtype=types.wpfloat)
+        vert_out = data_alloc.zero_field(dims.VertexDim, dims.KDim, dtype=types.wpfloat)
 
         return dict(
             cell_in=cell_in,

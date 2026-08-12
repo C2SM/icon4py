@@ -35,13 +35,13 @@ class TestRainToVaporDefault(stencil_tests.StencilTest):
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(258.542, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=self.data_alloc.constant_field(0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=self.data_alloc.constant_field(8.6157e-5, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qr=self.data_alloc.constant_field(3.01332e-11, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(258.542, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(0.956089, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.constant_field(8.6157e-5, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qr=data_alloc.constant_field(3.01332e-11, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             dt=30.0,
-            conversion_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

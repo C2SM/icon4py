@@ -258,42 +258,30 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(
-        self, grid: base.Grid
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:
-        p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        p_vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        pos_on_tplane_e_1 = self.data_alloc.random_field(
-            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
-        )
-        pos_on_tplane_e_2 = self.data_alloc.random_field(
-            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
-        )
-        primal_normal_cell_1 = self.data_alloc.random_field(
-            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
-        )
-        dual_normal_cell_1 = self.data_alloc.random_field(
-            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
-        )
-        primal_normal_cell_2 = self.data_alloc.random_field(
-            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
-        )
-        dual_normal_cell_2 = self.data_alloc.random_field(
-            dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
-        )
+        p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        p_vt = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        pos_on_tplane_e_1 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        pos_on_tplane_e_2 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        primal_normal_cell_1 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        dual_normal_cell_1 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        primal_normal_cell_2 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        dual_normal_cell_2 = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
         p_dthalf = 2.0
 
-        rho_ref_me = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        theta_ref_me = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        perturbed_rho_at_cells_on_model_levels = self.data_alloc.random_field(
+        rho_ref_me = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        theta_ref_me = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        perturbed_rho_at_cells_on_model_levels = data_alloc.random_field(
             dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
-        perturbed_theta_v_at_cells_on_model_levels = self.data_alloc.random_field(
+        perturbed_theta_v_at_cells_on_model_levels = data_alloc.random_field(
             dims.CellDim, dims.KDim, dtype=ta.vpfloat
         )
-        geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
-        geofac_grg_y = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
-        z_rho_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_theta_v_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        geofac_grg_x = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
+        geofac_grg_y = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
+        z_rho_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        z_theta_v_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             p_vn=p_vn,

@@ -65,12 +65,10 @@ class TestComputePpmSlope(stencil_tests.StencilTest):
         return dict(z_slope=z_slope)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        z_slope = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
-        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        p_cellhgt_mc_now = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim, extend={dims.KDim: 1}
-        )
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        z_slope = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_cc = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
         elev = grid.num_levels - 2
         return dict(

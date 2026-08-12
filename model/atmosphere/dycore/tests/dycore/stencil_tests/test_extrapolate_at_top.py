@@ -52,12 +52,12 @@ class TestExtrapolateAtTop(stencil_tests.StencilTest):
         return dict(vn_ie=vn_ie)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfacq_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vn_ie = self.data_alloc.zero_field(
-            dims.EdgeDim, dims.KDim, dtype=vpfloat, extend={dims.KDim: 1}
-        )
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        wgtfacq_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        vn_ie = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat, extend={dims.KDim: 1})
 
         return dict(
             wgtfacq_e=wgtfacq_e,

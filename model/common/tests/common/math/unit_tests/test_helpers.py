@@ -19,23 +19,23 @@ from icon4py.model.common.math import (
     vector_operations as vector_ops,
     vertical_operations as vertical_ops,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation
 from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
-from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
+from icon4py.model.testing.fixtures.stencil_tests import data_alloc, grid, grid_manager
 
 
 def test_cross_product(backend: gtx_typing.Backend) -> None:
     mesh = simple.simple_grid(allocator=backend)
-    x1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
-    y1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
-    z1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
-    x2 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
-    y2 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
-    z2 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
-    x = data_alloc.zero_field(mesh, dims.EdgeDim, allocator=backend)
-    y = data_alloc.zero_field(mesh, dims.EdgeDim, allocator=backend)
-    z = data_alloc.zero_field(mesh, dims.EdgeDim, allocator=backend)
+    x1 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    y1 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    z1 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    x2 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    y2 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    z2 = data_allocation.random_field(mesh, dims.EdgeDim, allocator=backend)
+    x = data_allocation.zero_field(mesh, dims.EdgeDim, allocator=backend)
+    y = data_allocation.zero_field(mesh, dims.EdgeDim, allocator=backend)
+    z = data_allocation.zero_field(mesh, dims.EdgeDim, allocator=backend)
 
     vector_ops.cross_product_on_edges.with_backend(backend)(
         x1, x2, y1, y2, z1, z2, out=(x, y, z), offset_provider={}
@@ -77,9 +77,9 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
         return dict(average=average)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        input_field = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        result = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        input_field = data_alloc.zero_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        result = data_alloc.random_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
         return dict(
             input_field=input_field,
             average=result,
@@ -112,9 +112,9 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
         return dict(average=res)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        input_field = self.data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        result = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        input_field = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        result = data_alloc.zero_field(dims.CellDim, dims.KDim)
         return dict(
             input_field=input_field,
             average=result,

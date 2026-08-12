@@ -42,12 +42,12 @@ class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
         return dict(p_upflux=p_upflux)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_mflx_contra_v = self.data_alloc.random_field(
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_mflx_contra_v = data_alloc.random_field(
             dims.CellDim, dims.KDim
         )  # TODO(dastrm): should be KHalfDim
-        p_upflux = self.data_alloc.zero_field(
+        p_upflux = data_alloc.zero_field(
             dims.CellDim, dims.KDim
         )  # TODO(dastrm): should be KHalfDim
         return dict(

@@ -52,10 +52,12 @@ class TestComputeGraddiv2OfVn(stencil_tests.StencilTest):
         return dict(z_graddiv2_vn=z_graddiv2_vn)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_graddiv_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        geofac_grdiv = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        z_graddiv2_vn = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_graddiv_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        geofac_grdiv = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
+        z_graddiv2_vn = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             geofac_grdiv=geofac_grdiv,

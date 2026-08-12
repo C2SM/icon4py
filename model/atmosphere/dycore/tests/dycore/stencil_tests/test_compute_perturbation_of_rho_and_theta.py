@@ -52,13 +52,15 @@ class TestComputePerturbationOfRhoAndTheta(stencil_tests.StencilTest):
         return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        rho = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ref_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_ref_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_1 = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        rho = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ref_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_ref_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_1 = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_2 = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             rho=rho,

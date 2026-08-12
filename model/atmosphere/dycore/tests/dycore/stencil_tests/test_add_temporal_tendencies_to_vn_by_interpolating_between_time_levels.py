@@ -78,14 +78,16 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(stencil_test
         return dict(vn_nnew=vn_nnew)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn_nnow = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        ddt_vn_apc_ntl1 = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        ddt_vn_apc_ntl2 = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        ddt_vn_phy = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        z_theta_v_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        z_gradh_exner = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        vn_nnew = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        vn_nnow = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        ddt_vn_apc_ntl1 = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        ddt_vn_apc_ntl2 = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        ddt_vn_phy = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_theta_v_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        z_gradh_exner = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        vn_nnew = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
         wgt_nnow_vel = ta.wpfloat("8.0")
         wgt_nnew_vel = ta.wpfloat("7.0")

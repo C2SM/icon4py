@@ -71,11 +71,13 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(stencil_tests.St
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_w_con_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        cfl_clipping = self.data_alloc.random_mask(dims.CellDim, dims.KDim, dtype=bool)
-        vcfl = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_w_con_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        cfl_clipping = data_alloc.random_mask(dims.CellDim, dims.KDim, dtype=bool)
+        vcfl = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         cfl_w_limit = ta.vpfloat("5.0")
         dtime = ta.wpfloat("9.0")
 

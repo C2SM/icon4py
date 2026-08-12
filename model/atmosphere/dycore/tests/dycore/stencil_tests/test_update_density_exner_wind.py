@@ -43,17 +43,19 @@ class TestUpdateDensityExnerWind(stencil_tests.StencilTest):
         return dict(rho_new=rho_new, exner_new=exner_new, w_new=w_new)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        rho_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        grf_tend_rho = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        theta_v_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        grf_tend_thv = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        w_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        grf_tend_w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        rho_now = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        grf_tend_rho = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        theta_v_now = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        grf_tend_thv = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w_now = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        grf_tend_w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         dtime = ta.wpfloat("5.0")
-        rho_new = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        exner_new = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        w_new = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        rho_new = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner_new = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w_new = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             rho_now=rho_now,

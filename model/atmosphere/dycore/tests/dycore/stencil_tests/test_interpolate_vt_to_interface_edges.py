@@ -52,11 +52,13 @@ class TestInterpolateVtToInterfaceEdges(stencil_tests.StencilTest):
         return dict(z_vt_ie=z_vt_ie)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        wgtfac_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        vt = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
-        z_vt_ie = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_vt_ie = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

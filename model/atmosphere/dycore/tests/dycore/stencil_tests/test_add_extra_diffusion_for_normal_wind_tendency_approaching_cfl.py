@@ -104,20 +104,20 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(stencil_tests.Ste
     OUTPUTS = ("ddt_vn_apc",)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        levelmask = self.data_alloc.random_mask(dims.KDim, extend={dims.KDim: 1})
-        c_lin_e = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
-        z_w_con_c_full = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        ddqz_z_full_e = self.data_alloc.random_field(
-            dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, low=0.0
-        )
-        area_edge = self.data_alloc.random_field(dims.EdgeDim)
-        tangent_orientation = self.data_alloc.random_field(dims.EdgeDim)
-        inv_primal_edge_length = self.data_alloc.random_field(dims.EdgeDim)
-        zeta = self.data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
-        geofac_grdiv = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        ddt_vn_apc = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        levelmask = data_alloc.random_mask(dims.KDim, extend={dims.KDim: 1})
+        c_lin_e = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        z_w_con_c_full = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddqz_z_full_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, low=0.0)
+        area_edge = data_alloc.random_field(dims.EdgeDim)
+        tangent_orientation = data_alloc.random_field(dims.EdgeDim)
+        inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim)
+        zeta = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+        geofac_grdiv = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        ddt_vn_apc = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         cfl_w_limit = ta.vpfloat("4.0")
         scalfac_exdiff = 6.0
         dtime = 2.0

@@ -256,33 +256,33 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         ids=lambda param: f"apply_extra_diffusion_on_vn[{param['apply_extra_diffusion_on_vn']}]",
     )
     def input_data(
-        self, grid: base.Grid, request: pytest.FixtureRequest
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        normal_wind_advective_tendency = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim)
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        horizontal_kinetic_energy_at_edges_on_model_levels = self.data_alloc.random_field(
+        normal_wind_advective_tendency = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
             dims.EdgeDim, dims.KDim
         )
-        tangential_wind = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        coriolis_frequency = self.data_alloc.random_field(dims.EdgeDim)
-        contravariant_corrected_w_at_cells_on_model_levels = self.data_alloc.random_field(
+        tangential_wind = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        coriolis_frequency = data_alloc.random_field(dims.EdgeDim)
+        contravariant_corrected_w_at_cells_on_model_levels = data_alloc.random_field(
             dims.CellDim, dims.KDim
         )
-        vn_on_half_levels = self.data_alloc.random_field(
-            dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
-        )
-        coeff_gradekin = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
-        e_bln_c_s = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
-        c_lin_e = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
-        ddqz_z_full_e = self.data_alloc.random_field(
+        vn_on_half_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        coeff_gradekin = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        c_lin_e = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        ddqz_z_full_e = data_alloc.random_field(
             dims.EdgeDim, dims.KDim, low=0.0
         )  # this makes sure that the simplified stencil produces the same result as the numpy version
-        area_edge = self.data_alloc.random_field(dims.EdgeDim)
-        tangent_orientation = self.data_alloc.random_field(dims.EdgeDim)
-        inv_primal_edge_length = self.data_alloc.random_field(dims.EdgeDim)
-        geofac_grdiv = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
+        area_edge = data_alloc.random_field(dims.EdgeDim)
+        tangent_orientation = data_alloc.random_field(dims.EdgeDim)
+        inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim)
+        geofac_grdiv = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
 
-        geofac_rot = self.data_alloc.random_field(dims.VertexDim, dims.V2EDim)
+        geofac_rot = data_alloc.random_field(dims.VertexDim, dims.V2EDim)
         scalfac_exdiff = 0.6
         dtime = 2.0
         cfl_w_limit = 0.65 / dtime

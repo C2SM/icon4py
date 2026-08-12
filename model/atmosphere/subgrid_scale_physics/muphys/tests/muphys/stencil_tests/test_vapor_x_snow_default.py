@@ -41,27 +41,19 @@ class TestVaporXSnowDefault(stencil_tests.StencilTest):
         return dict(vapor_deposition_rate=np.full(t.shape, 0.0))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(278.748, dims.CellDim, dims.KDim, dtype=wpfloat),
-            p=self.data_alloc.constant_field(95995.5, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=self.data_alloc.constant_field(1.19691, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=self.data_alloc.constant_field(1.25653e-20, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ns=self.data_alloc.constant_field(800000.0, dims.CellDim, dims.KDim, dtype=wpfloat),
-            lam=self.data_alloc.constant_field(1.0e10, dims.CellDim, dims.KDim, dtype=wpfloat),
-            eta=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
-            ice_dep=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw=self.data_alloc.constant_field(
-                -0.00196781, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
-            dvsi=self.data_alloc.constant_field(
-                -0.00229367, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
-            dvsw0=self.data_alloc.constant_field(
-                -0.000110022, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
+            t=data_alloc.constant_field(278.748, dims.CellDim, dims.KDim, dtype=wpfloat),
+            p=data_alloc.constant_field(95995.5, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(1.19691, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(1.25653e-20, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ns=data_alloc.constant_field(800000.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            lam=data_alloc.constant_field(1.0e10, dims.CellDim, dims.KDim, dtype=wpfloat),
+            eta=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            ice_dep=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw=data_alloc.constant_field(-0.00196781, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsi=data_alloc.constant_field(-0.00229367, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw0=data_alloc.constant_field(-0.000110022, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt=30.0,
-            vapor_deposition_rate=self.data_alloc.zero_field(
-                dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
+            vapor_deposition_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -48,10 +48,12 @@ class TestMoMathDivrotRotVertexRiDsl(stencil_tests.StencilTest):
         return dict(rot_vec=rot_vec)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vec_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        geofac_rot = self.data_alloc.random_field(dims.VertexDim, dims.V2EDim, dtype=wpfloat)
-        rot_vec = self.data_alloc.zero_field(dims.VertexDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        vec_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        geofac_rot = data_alloc.random_field(dims.VertexDim, dims.V2EDim, dtype=wpfloat)
+        rot_vec = data_alloc.zero_field(dims.VertexDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vec_e=vec_e,

@@ -96,17 +96,19 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(stencil_tests.S
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        vwind_expl_wgt = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        exner_pr = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        d_exner_dz_ref_ic = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_theta_v_pr_ic = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v_ic = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_th_ddz_exner_c = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_2 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        vwind_expl_wgt = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        exner_pr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        d_exner_dz_ref_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_theta_v_pr_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_th_ddz_exner_c = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,

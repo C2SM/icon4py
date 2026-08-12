@@ -37,17 +37,13 @@ class TestIceDepositionNucleationDefault(stencil_tests.StencilTest):
         return dict(vapor_deposition_rate=np.full(t.shape, 0.0))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
-            qi=self.data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ni=self.data_alloc.constant_field(5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsi=self.data_alloc.constant_field(
-                -0.000618828, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
+            t=data_alloc.constant_field(272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi=data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ni=data_alloc.constant_field(5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsi=data_alloc.constant_field(-0.000618828, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt=30.0,
-            vapor_deposition_rate=self.data_alloc.zero_field(
-                dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
+            vapor_deposition_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -90,8 +90,8 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(stencil_tests.Sten
         return dict(z_temp=z_temp)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
-        zd_vertoffset = self.data_alloc.zero_field(
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+        zd_vertoffset = data_alloc.zero_field(
             dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32
         )
         rng = np.random.default_rng()
@@ -103,12 +103,12 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(stencil_tests.Sten
                 size=(zd_vertoffset.ndarray.shape[0], zd_vertoffset.ndarray.shape[1]),
             )
 
-        zd_diffcoef = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        geofac_n2s_c = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        geofac_n2s_nbh = self.data_alloc.random_field(dims.CellDim, dims.C2E2CDim, dtype=wpfloat)
-        vcoef = self.data_alloc.random_field(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=wpfloat)
-        theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_temp = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        zd_diffcoef = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        geofac_n2s_c = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        geofac_n2s_nbh = data_alloc.random_field(dims.CellDim, dims.C2E2CDim, dtype=wpfloat)
+        vcoef = data_alloc.random_field(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=wpfloat)
+        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_temp = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             zd_vertoffset=zd_vertoffset,

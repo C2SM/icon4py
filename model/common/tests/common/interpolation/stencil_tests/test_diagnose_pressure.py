@@ -53,16 +53,14 @@ class TestDiagnosePressure(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        ddqz_z_full = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim, low=1.0, dtype=ta.wpfloat
-        )
-        virtual_temperature = self.data_alloc.random_field(
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0, dtype=ta.wpfloat)
+        virtual_temperature = data_alloc.random_field(
             dims.CellDim, dims.KDim, low=1.0e-2, dtype=ta.wpfloat
         )
-        surface_pressure = self.data_alloc.random_field(dims.CellDim, low=1.0, dtype=ta.wpfloat)
-        pressure = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        pressure_ifc = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        surface_pressure = data_alloc.random_field(dims.CellDim, low=1.0, dtype=ta.wpfloat)
+        pressure = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        pressure_ifc = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             ddqz_z_full=ddqz_z_full,

@@ -51,11 +51,11 @@ class TestUpdateThetaAndExner(stencil_tests.StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        z_temp = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        area = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        z_temp = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        area = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         rd_o_cvd = vpfloat("5.0")
 
         return dict(

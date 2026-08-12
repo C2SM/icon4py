@@ -364,56 +364,48 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        reference_rho_at_cells_on_model_levels = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim
-        )
-        reference_theta_at_cells_on_model_levels = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim
-        )
-        wgtfacq_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        perturbed_rho_at_cells_on_model_levels = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
-        perturbed_theta_v_at_cells_on_model_levels = self.data_alloc.zero_field(
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        reference_rho_at_cells_on_model_levels = data_alloc.random_field(dims.CellDim, dims.KDim)
+        reference_theta_at_cells_on_model_levels = data_alloc.random_field(dims.CellDim, dims.KDim)
+        wgtfacq_c = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        perturbed_rho_at_cells_on_model_levels = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        reference_theta_at_cells_on_half_levels = self.data_alloc.random_field(
+        reference_theta_at_cells_on_half_levels = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        d2dexdz2_fac1_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        d2dexdz2_fac2_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        wgtfac_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        exner_w_explicit_weight_parameter = self.data_alloc.random_field(dims.CellDim)
-        perturbed_exner_at_cells_on_model_levels = self.data_alloc.zero_field(
+        d2dexdz2_fac1_mc = data_alloc.random_field(dims.CellDim, dims.KDim)
+        d2dexdz2_fac2_mc = data_alloc.random_field(dims.CellDim, dims.KDim)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        exner_w_explicit_weight_parameter = data_alloc.random_field(dims.CellDim)
+        perturbed_exner_at_cells_on_model_levels = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        ddz_of_reference_exner_at_cells_on_half_levels = data_alloc.random_field(
             dims.CellDim, dims.KDim
         )
-        ddz_of_reference_exner_at_cells_on_half_levels = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim
-        )
-        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        nonhydro_buoy_at_cells_on_half_levels = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
-        rho_at_cells_on_half_levels = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
-        time_extrapolation_parameter_for_exner = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim
-        )
-        current_exner = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        reference_exner_at_cells_on_model_levels = self.data_alloc.random_field(
-            dims.CellDim, dims.KDim
-        )
-        temporal_extrapolation_of_perturbed_exner = self.data_alloc.zero_field(
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KDim)
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        rho_at_cells_on_half_levels = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        time_extrapolation_parameter_for_exner = data_alloc.random_field(dims.CellDim, dims.KDim)
+        current_exner = data_alloc.random_field(dims.CellDim, dims.KDim)
+        reference_exner_at_cells_on_model_levels = data_alloc.random_field(dims.CellDim, dims.KDim)
+        temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-            self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
+            dims.CellDim, dims.KDim
         )
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-            self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
+            dims.CellDim, dims.KDim
         )
-        theta_v_at_cells_on_half_levels = self.data_alloc.zero_field(
+        theta_v_at_cells_on_half_levels = data_alloc.zero_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        inv_ddqz_z_full = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        current_rho = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        current_theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        inv_ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim)
+        current_rho = data_alloc.random_field(dims.CellDim, dims.KDim)
+        current_theta_v = data_alloc.random_field(dims.CellDim, dims.KDim)
 
         igradp_method = HorizontalPressureDiscretizationType.TAYLOR_HYDRO
 

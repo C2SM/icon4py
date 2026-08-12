@@ -58,15 +58,17 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(stencil_tests.StencilTest)
         return dict(z_dexner_dz_c_2=z_dexner_dz_c_2)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_theta_v_pr_ic = self.data_alloc.random_field(
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_theta_v_pr_ic = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
         )
-        d2dexdz2_fac1_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        d2dexdz2_fac2_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        d2dexdz2_fac1_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_2 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        d2dexdz2_fac2_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
-        z_dexner_dz_c_2 = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_dexner_dz_c_2 = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             z_theta_v_pr_ic=z_theta_v_pr_ic,

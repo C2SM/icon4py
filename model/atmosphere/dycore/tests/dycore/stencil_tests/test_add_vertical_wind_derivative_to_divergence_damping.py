@@ -72,12 +72,14 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
         return dict(z_graddiv_vn=z_graddiv_vn)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        hmask_dd3d = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
-        scalfac_dd3d = self.data_alloc.random_field(dims.KDim, dtype=ta.wpfloat)
-        inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
-        z_dwdz_dd = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_graddiv_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        hmask_dd3d = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        scalfac_dd3d = data_alloc.random_field(dims.KDim, dtype=ta.wpfloat)
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        z_dwdz_dd = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_graddiv_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             hmask_dd3d=hmask_dd3d,

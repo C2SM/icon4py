@@ -70,13 +70,13 @@ class TestMoMathGradientsGradGreenGaussCellDsl(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(
-        self, grid: base.Grid
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType | gtx.Domain | tuple[gtx.Field, ...]]:
-        scalar_field = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        geofac_grg_y = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        p_grad_1_u = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        p_grad_1_v = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        scalar_field = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        geofac_grg_x = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        geofac_grg_y = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        p_grad_1_u = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        p_grad_1_v = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             scalar_field=scalar_field,

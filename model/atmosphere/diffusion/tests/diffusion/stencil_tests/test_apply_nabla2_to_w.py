@@ -64,11 +64,11 @@ class TestMoApplyNabla2ToW(stencil_tests.StencilTest):
         return dict(w=w)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
-        area = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        z_nabla2_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        geofac_n2s = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+        area = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        z_nabla2_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         return dict(
             area=area,
             z_nabla2_c=z_nabla2_c,

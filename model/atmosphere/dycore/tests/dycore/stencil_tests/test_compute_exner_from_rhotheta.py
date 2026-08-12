@@ -39,12 +39,14 @@ class TestComputeExnerFromRhotheta(stencil_tests.StencilTest):
         return dict(out=(theta_v, exner))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")
-        rho = self.data_alloc.random_field(dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
-        exner = self.data_alloc.random_field(dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
-        theta_v = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho = data_alloc.random_field(dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
+        exner = data_alloc.random_field(dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
+        theta_v = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             rho=rho,

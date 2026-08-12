@@ -44,14 +44,14 @@ class TestApplyNabla2AndNabla4ToVn(stencil_tests.StencilTest):
     OUTPUTS = ("vn",)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
-        area_edge = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
-        kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_nabla2_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_nabla4_e2 = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        diff_multfac_vn = self.data_alloc.random_field(dims.KDim, dtype=wpfloat)
-        nudgecoeff_e = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+        area_edge = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        kh_smag_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_nabla2_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_nabla4_e2 = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        diff_multfac_vn = data_alloc.random_field(dims.KDim, dtype=wpfloat)
+        nudgecoeff_e = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         nudgezone_diff = vpfloat("9.0")
 
         return dict(

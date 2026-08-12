@@ -55,13 +55,15 @@ class TestComputeMassFlux(stencil_tests.StencilTest):
         return dict(mass_fl_e=mass_fl_e, z_theta_v_fl_e=z_theta_v_fl_e)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_rho_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_vn_avg = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ddqz_z_full_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        mass_fl_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_theta_v_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_theta_v_fl_e = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_rho_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_vn_avg = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        ddqz_z_full_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        mass_fl_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_theta_v_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_theta_v_fl_e = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             z_rho_e=z_rho_e,

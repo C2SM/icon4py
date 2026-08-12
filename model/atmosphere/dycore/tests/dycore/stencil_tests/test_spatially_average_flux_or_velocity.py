@@ -56,10 +56,12 @@ class TestSpatiallyAverageFluxOrVelocity(stencil_tests.StencilTest):
         return dict(spatially_averaged_flux_or_velocity=spatially_averaged_flux_or_velocity)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        e_flx_avg = self.data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
-        flux_or_velocity = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        spatially_averaged_flux_or_velocity = self.data_alloc.zero_field(
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        e_flx_avg = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
+        flux_or_velocity = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        spatially_averaged_flux_or_velocity = data_alloc.zero_field(
             dims.EdgeDim, dims.KDim, dtype=wpfloat
         )
 

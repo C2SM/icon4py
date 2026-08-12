@@ -61,11 +61,13 @@ class TestAccumulatePrepAdvFields(stencil_tests.StencilTest):
         return dict(vn_traj=vn_traj, mass_flx_me=mass_flx_me)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        mass_fl_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        mass_flx_me = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_vn_avg = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vn_traj = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        mass_fl_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        mass_flx_me = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_vn_avg = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        vn_traj = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         r_nsubsteps = wpfloat("9.0")
 
         return dict(

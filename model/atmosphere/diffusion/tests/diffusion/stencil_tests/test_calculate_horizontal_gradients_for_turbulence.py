@@ -56,12 +56,12 @@ class TestCalculateHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
         return dict(dwdx=dwdx, dwdy=dwdy)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
-        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        geofac_grg_x = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        geofac_grg_y = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        dwdx = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        dwdy = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        geofac_grg_x = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        geofac_grg_y = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        dwdx = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        dwdy = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             w=w,

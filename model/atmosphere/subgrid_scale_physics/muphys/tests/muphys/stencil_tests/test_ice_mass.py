@@ -31,9 +31,9 @@ class TestIceNumber(stencil_tests.StencilTest):
         return dict(mass=np.full(qi.shape, 1.0e-12))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            qi=self.data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ni=self.data_alloc.constant_field(5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
-            mass=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi=data_alloc.constant_field(2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ni=data_alloc.constant_field(5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
+            mass=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

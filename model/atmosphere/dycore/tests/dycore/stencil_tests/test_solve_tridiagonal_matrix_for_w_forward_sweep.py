@@ -94,22 +94,24 @@ class TestSolveTridiagonalMatrixForWForwardSweep(stencil_tests.StencilTest):
         return dict(z_q=z_q_ref, w=w_ref)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base_grid.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vwind_impl_wgt = self.data_alloc.random_field(dims.CellDim, dtype=ta.wpfloat)
-        theta_v_ic = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_alpha = self.data_alloc.random_field(
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base_grid.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        vwind_impl_wgt = data_alloc.random_field(dims.CellDim, dtype=ta.wpfloat)
+        theta_v_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_alpha = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
         )
-        z_beta = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_exner_expl = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_w_expl = self.data_alloc.random_field(
+        z_beta = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_exner_expl = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_w_expl = data_alloc.random_field(
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        z_q = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_q = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         # z_q first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
         z_q.asnumpy()[:, 0] = 0.0
-        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         # w first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
         w.asnumpy()[:, 0] = 0.0
 

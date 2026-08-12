@@ -60,12 +60,14 @@ class TestExtrapolateTemporallyExnerPressure(stencil_tests.StencilTest):
         return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        exner = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_ref_mc = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        exner_pr = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        exner_exfac = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_exner_ex_pr = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        exner = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner_ref_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner_pr = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner_exfac = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_exner_ex_pr = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             exner_exfac=exner_exfac,

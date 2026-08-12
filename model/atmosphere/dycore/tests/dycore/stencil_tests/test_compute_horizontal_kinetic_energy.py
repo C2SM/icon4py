@@ -44,13 +44,15 @@ class TestComputeHorizontalKineticEnergy(stencil_tests.StencilTest):
         return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        vt = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
-        vn_ie = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_vt_ie = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_kin_hor_e = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn_ie = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_vt_ie = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_kin_hor_e = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

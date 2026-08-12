@@ -23,11 +23,13 @@ from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple
-
-# Deliberately imported at module scope: `input_data_fixture` must reject fixtures that
-# *call* this module while still accepting fixtures that merely use `self.data_alloc`.
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation
 from icon4py.model.testing import stencil_tests
+
+
+# Deliberately also bound under the name a fixture receives the wrapper as: the check must
+# reject a fixture reaching for the module, yet accept a parameter that shadows this name.
+data_alloc = data_allocation
 
 
 # -- helpers ---------------------------------------------------------------------------
@@ -45,7 +47,7 @@ def valid_reference():
 def valid_input_data():
     """An `input_data` fixture function following the convention."""
 
-    def input_data(self, grid):
+    def input_data(data_alloc):
         return {}
 
     return input_data
@@ -121,28 +123,36 @@ class TestStaticReference:
 
 
 class TestInputDataFixture:
-    def test_returns_marked_class_scoped_fixture(self):
+    def test_returns_a_marked_class_scoped_static_fixture(self):
         fixture = stencil_tests.input_data_fixture(valid_input_data())
 
+        # a staticmethod: pytest deprecated class-scoped fixtures defined as instance methods
+        assert isinstance(fixture, staticmethod)
         assert getattr(fixture, "__stencil_test_input_fixture__", False)
-        assert fixture._fixture_function_marker.scope == "class"
+        assert fixture.__func__._fixture_function_marker.scope == "class"
 
     def test_forwards_keyword_arguments_to_pytest_fixture(self):
         fixture = stencil_tests.input_data_fixture(params=[1, 2], scope="function")(
             valid_input_data()
         )
-        marker = fixture._fixture_function_marker
+        marker = fixture.__func__._fixture_function_marker
 
         assert getattr(fixture, "__stencil_test_input_fixture__", False)
         assert marker.params == (1, 2)
         assert marker.scope == "function"  # an explicit scope wins over the default
+
+    def test_accepts_an_existing_staticmethod(self):
+        fixture = stencil_tests.input_data_fixture(staticmethod(valid_input_data()))
+
+        assert isinstance(fixture, staticmethod)
+        assert getattr(fixture, "__stencil_test_input_fixture__", False)
 
     def test_rejects_non_function(self):
         with pytest.raises(TypeError, match="must be a regular function"):
             stencil_tests.input_data_fixture(object())
 
     def test_rejects_wrong_name(self):
-        def not_input_data(self, grid): ...
+        def not_input_data(data_alloc): ...
 
         with pytest.raises(ValueError, match="must be named 'input_data'"):
             stencil_tests.input_data_fixture(not_input_data)
@@ -150,20 +160,20 @@ class TestInputDataFixture:
     @pytest.mark.parametrize(
         "func",
         [
-            pytest.param(lambda self: None, id="missing_grid"),
-            pytest.param(lambda grid, self: None, id="swapped"),
-            pytest.param(lambda self, request, grid: None, id="request_before_grid"),
+            pytest.param(lambda: None, id="no_parameters"),
+            pytest.param(lambda self, data_alloc: None, id="self_first"),
+            pytest.param(lambda grid, data_alloc: None, id="grid_first"),
         ],
     )
     def test_rejects_wrong_leading_parameters(self, func):
         func.__name__ = "input_data"
 
-        with pytest.raises(ValueError, match=r"must be 'input_data\(self, grid, \.\.\.\)'"):
+        with pytest.raises(ValueError, match=r"must be 'input_data\(data_alloc, \.\.\.\)'"):
             stencil_tests.input_data_fixture(func)
 
     def test_rejects_direct_data_allocation_call(self):
-        def input_data(self, grid):
-            return {"a": data_alloc.zero_field(grid, dims.CellDim)}
+        def input_data(data_alloc, grid):
+            return {"a": data_allocation.zero_field(grid, dims.CellDim)}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
             stencil_tests.input_data_fixture(input_data)
@@ -171,9 +181,9 @@ class TestInputDataFixture:
     def test_rejects_a_call_hidden_in_a_nested_function(self):
         """A scan of only the fixture's own code object would miss this."""
 
-        def input_data(self, grid):
+        def input_data(data_alloc, grid):
             def build():
-                return data_alloc.zero_field(grid, dims.CellDim)
+                return data_allocation.zero_field(grid, dims.CellDim)
 
             return {"a": build()}
 
@@ -181,8 +191,8 @@ class TestInputDataFixture:
             stencil_tests.input_data_fixture(input_data)
 
     def test_rejects_a_call_hidden_in_a_comprehension(self):
-        def input_data(self, grid):
-            return {"a": [data_alloc.zero_field(grid, dims.CellDim) for _ in range(1)]}
+        def input_data(data_alloc, grid):
+            return {"a": [data_allocation.zero_field(grid, dims.CellDim) for _ in range(1)]}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
             stencil_tests.input_data_fixture(input_data)
@@ -190,30 +200,31 @@ class TestInputDataFixture:
     def test_is_skipped_when_no_source_is_available(self):
         """Dynamically generated fixtures cannot be inspected; they must not blow up."""
         namespace: dict = {}
-        exec("def input_data(self, grid):\n    return {}", namespace)
+        exec("def input_data(data_alloc):\n    return {}", namespace)
 
         assert stencil_tests.input_data_fixture(namespace["input_data"]) is not None
 
     def test_rejects_data_allocation_from_an_enclosing_scope(self):
-        module = data_alloc
+        module = data_allocation
 
-        def input_data(self, grid):
+        def input_data(data_alloc, grid):
             return {"a": module.zero_field(grid, dims.CellDim)}
 
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
             stencil_tests.input_data_fixture(input_data)
 
-    def test_accepts_allocation_through_the_wrapper(self):
+    def test_accepts_a_parameter_shadowing_the_module_alias(self):
         """
-        Regression: `self.data_alloc` must not be mistaken for the `data_alloc` global.
+        Regression: the `data_alloc` parameter must not be read as the `data_alloc` global.
 
-        `inspect.getclosurevars().globals` resolves every name in `co_names`, attribute
-        names included, so on some CPython versions this fixture was rejected purely
-        because this module happens to bind `data_alloc`.
+        This module binds `data_alloc` to `data_allocation`, and every fixture receives the
+        wrapper under that same name, so the check has to discount the fixture's own
+        parameters. (It also may not resolve names via `inspect.getclosurevars().globals`,
+        which would match attribute names such as a bare `self.data_alloc`.)
         """
 
-        def input_data(self, grid):
-            return {"a": self.data_alloc.zero_field(dims.CellDim)}
+        def input_data(data_alloc):
+            return {"a": data_alloc.zero_field(dims.CellDim)}
 
         assert stencil_tests.input_data_fixture(input_data) is not None
 

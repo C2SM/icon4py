@@ -43,12 +43,12 @@ class TestCloudToSnowAesGraupel(stencil_tests.StencilTest):
         return dict(riming_snow_rate=rate)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(256.571, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=self.data_alloc.constant_field(3.31476e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=self.data_alloc.constant_field(7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ns=self.data_alloc.constant_field(3.37707e07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            lam=self.data_alloc.constant_field(8989.78, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_snow_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(256.571, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.constant_field(3.31476e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs=data_alloc.constant_field(7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ns=data_alloc.constant_field(3.37707e07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            lam=data_alloc.constant_field(8989.78, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_snow_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

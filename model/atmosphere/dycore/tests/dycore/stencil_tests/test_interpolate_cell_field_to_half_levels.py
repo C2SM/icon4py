@@ -64,10 +64,12 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        interpolant = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        wgtfac_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        out = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        interpolant = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        out = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,
@@ -99,10 +101,12 @@ class TestInterpolateToHalfLevelsWp(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        interpolant = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        wgtfac_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        out = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        interpolant = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        out = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,

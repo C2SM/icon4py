@@ -36,11 +36,13 @@ class TestComputeAirmass(stencil_tests.StencilTest):
         return dict(airmass_out=airmass_out)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        rho_in = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddqz_z_full_in = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        deepatmo_t1mc_in = self.data_alloc.random_field(dims.KDim, dtype=wpfloat)
-        airmass_out = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        rho_in = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddqz_z_full_in = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        deepatmo_t1mc_in = data_alloc.random_field(dims.KDim, dtype=wpfloat)
+        airmass_out = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         return dict(
             rho_in=rho_in,
             ddqz_z_full_in=ddqz_z_full_in,

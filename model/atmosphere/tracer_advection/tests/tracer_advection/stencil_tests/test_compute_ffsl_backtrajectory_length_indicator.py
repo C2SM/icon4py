@@ -48,11 +48,11 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
         return dict(opt_famask_dsl=opt_famask_dsl)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        p_vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        p_vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        edge_cell_length = self.data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
-        opt_famask_dsl = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        p_vt = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        edge_cell_length = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        opt_famask_dsl = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_dt = 1.0
 
         return dict(

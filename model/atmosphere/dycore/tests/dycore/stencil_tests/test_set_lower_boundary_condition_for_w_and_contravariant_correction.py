@@ -54,10 +54,12 @@ class TestInitLowerBoundaryConditionForWAndContravariantCorrection(stencil_tests
         return dict(w_nnew=w_nnew, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        w_concorr_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_contr_w_fl_l = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_nnew = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        w_concorr_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_contr_w_fl_l = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_nnew = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             w_nnew=w_nnew,

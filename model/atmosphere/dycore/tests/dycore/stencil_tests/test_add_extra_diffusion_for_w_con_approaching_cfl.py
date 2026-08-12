@@ -111,15 +111,17 @@ class TestAddExtraDiffusionForWConApproachingCfl(stencil_tests.StencilTest):
         return dict(ddt_w_adv=ddt_w_adv)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        cfl_clipping = self.data_alloc.random_mask(dims.CellDim, dims.KDim)
-        owner_mask = self.data_alloc.random_mask(dims.CellDim)
-        z_w_con_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        ddqz_z_half = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        area = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        geofac_n2s = self.data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        w = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        ddt_w_adv = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        cfl_clipping = data_alloc.random_mask(dims.CellDim, dims.KDim)
+        owner_mask = data_alloc.random_mask(dims.CellDim)
+        z_w_con_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        area = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddt_w_adv = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         scalfac_exdiff = wpfloat("10.0")
         cfl_w_limit = vpfloat("3.0")
         dtime = wpfloat("2.0")

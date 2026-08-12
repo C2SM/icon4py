@@ -41,11 +41,13 @@ class TestInitTwoEdgeKdimFieldsWithZeroWp(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        edge_kdim_field_with_zero_wp_1 = self.data_alloc.zero_field(
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        edge_kdim_field_with_zero_wp_1 = data_alloc.zero_field(
             dims.EdgeDim, dims.KDim, dtype=wpfloat
         )
-        edge_kdim_field_with_zero_wp_2 = self.data_alloc.zero_field(
+        edge_kdim_field_with_zero_wp_2 = data_alloc.zero_field(
             dims.EdgeDim, dims.KDim, dtype=wpfloat
         )
 

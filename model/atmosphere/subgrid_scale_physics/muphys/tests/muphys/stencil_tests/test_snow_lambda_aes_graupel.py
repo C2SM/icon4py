@@ -35,11 +35,11 @@ class TestSnowLambdaAesGraupel(stencil_tests.StencilTest):
         return dict(riming_snow_rate=lam)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            rho_s=self.data_alloc.constant_field(
+            rho_s=data_alloc.constant_field(
                 1.12204 * 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            ns=self.data_alloc.constant_field(1.76669e07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_snow_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            ns=data_alloc.constant_field(1.76669e07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_snow_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

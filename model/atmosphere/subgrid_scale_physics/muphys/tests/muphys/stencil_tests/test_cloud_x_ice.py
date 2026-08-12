@@ -33,13 +33,13 @@ class TestCloudXIce(stencil_tests.StencilTest):
         return dict(freezing_rate=np.full(t.shape, -1.5008166666666666e-08))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(
+            t=data_alloc.constant_field(
                 274.15, dims.CellDim, dims.KDim, dtype=wpfloat
             ),  # tmelt + 1.0
-            qc=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
-            qi=self.data_alloc.constant_field(4.50245e-07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi=data_alloc.constant_field(4.50245e-07, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt=30.0,
-            freezing_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            freezing_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

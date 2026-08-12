@@ -13,9 +13,12 @@ A suite is a subclass of `StencilTest` declaring the program under test plus two
 
 - `reference(grid, ...)`, decorated with `@static_reference`: a NumPy implementation
   computing the expected outputs.
-- `input_data(self, grid, ...)`, decorated with `@input_data_fixture`: a pytest fixture
-  building the program arguments, allocating them through `self.data_alloc` so that they
-  end up on the device the selected backend expects.
+- `input_data(data_alloc, ...)`, decorated with `@input_data_fixture`: a pytest fixture
+  building the program arguments, allocating them through `data_alloc` so that they end up
+  on the device the selected backend expects.
+
+Neither takes `self`; both are turned into static methods by their decorator. `data_alloc`
+and `grid` are ordinary fixtures, so a suite requests `grid` only when it needs it.
 
 Both conventions are enforced in `StencilTest.__init_subclass__`, so a suite that does not
 follow them fails when its module is imported rather than misbehaving at run time.
@@ -113,11 +116,23 @@ def _reject_direct_data_allocation(func: types.FunctionType) -> None:
     except OSError:  # no source available, e.g. a dynamically generated function
         return
 
+    tree = ast.parse(textwrap.dedent(source))
     referenced = {
         node.id
-        for node in ast.walk(ast.parse(textwrap.dedent(source)))
+        for node in ast.walk(tree)
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
     }
+    # A parameter shadows any global of the same name, `data_alloc` above all: the fixture
+    # receives the wrapper under exactly the name test modules use for the wrapped module.
+    definition = tree.body[0]
+    if isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        args = definition.args
+        referenced -= {
+            arg.arg
+            for arg in (*args.posonlyargs, *args.args, *args.kwonlyargs, args.vararg, args.kwarg)
+            if arg is not None
+        }
+
     scopes = (func.__globals__, inspect.getclosurevars(func).nonlocals)
     if any(scope.get(name) is data_allocation for name in referenced for scope in scopes):
         raise TypeError(
@@ -141,7 +156,9 @@ def _static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
     return marked
 
 
-def _input_data_fixture(func: types.FunctionType | None = None, **kwargs: Any) -> Any:
+def _input_data_fixture(
+    func: types.FunctionType | staticmethod | None = None, **kwargs: Any
+) -> Any:
     """Runtime implementation of the public `input_data_fixture` decorator."""
     if func is None:  # called with parentheses: return the actual decorator
         return functools.partial(_input_data_fixture, **kwargs)
@@ -149,14 +166,17 @@ def _input_data_fixture(func: types.FunctionType | None = None, **kwargs: Any) -
     _validate_signature(
         func,
         name="input_data",
-        leading_params=("self", "grid"),
-        allowed_types=(types.FunctionType,),
-        allowed_description="a regular function",
+        leading_params=("data_alloc",),
+        allowed_types=(types.FunctionType, staticmethod),
+        allowed_description="a regular function or a staticmethod",
     )
-    _reject_direct_data_allocation(func)
+    plain = cast(types.FunctionType, func.__func__) if isinstance(func, staticmethod) else func
+    _reject_direct_data_allocation(plain)
 
     kwargs.setdefault("scope", "class")
-    fixture = pytest.fixture(**kwargs)(func)
+    # Wrapped in a `staticmethod` because pytest deprecated class-scoped fixtures defined
+    # as instance methods: `self` is a different instance there than in the test.
+    fixture = staticmethod(pytest.fixture(**kwargs)(plain))
     setattr(fixture, _INPUT_DATA_FIXTURE_MARKER, True)
 
     return fixture
@@ -452,14 +472,14 @@ class StencilTest:
         ...         return dict(some_output=np.asarray(some_input) * 2)
         ...
         ...     @input_data_fixture
-        ...     def input_data(self, grid):
+        ...     def input_data(data_alloc):
         ...         return {
-        ...             "some_input": self.data_alloc.random_field(dims.CellDim),  # noqa: F821
-        ...             "some_output": self.data_alloc.zero_field(dims.CellDim),  # noqa: F821
+        ...             "some_input": data_alloc.random_field(dims.CellDim),  # noqa: F821
+        ...             "some_output": data_alloc.zero_field(dims.CellDim),  # noqa: F821
         ...         }
 
     `reference` must be decorated with `@static_reference` and take `grid` first;
-    `input_data` must be decorated with `@input_data_fixture` and take `(self, grid, ...)`.
+    `input_data` must be decorated with `@input_data_fixture` and take `data_alloc` first.
     Both are checked in `__init_subclass__`.
     """
 
@@ -469,10 +489,6 @@ class StencilTest:
 
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
     input_data: ClassVar[Callable[..., dict[str, Any]]]
-
-    #: Allocation helpers with the grid and the backend's allocator bound; set per class
-    #: by `_bind_data_alloc`.
-    data_alloc: DataAllocationWrapper
 
     @pytest.fixture
     def configured_program(
@@ -504,19 +520,6 @@ class StencilTest:
                 )
 
         return device_utils.synchronized_function(program, allocator=backend)
-
-    @pytest.fixture(autouse=True, scope="class")
-    def _bind_data_alloc(
-        self, backend_like: model_backends.BackendLike, grid: base.Grid
-    ) -> Generator[None, None, None]:
-        """Expose allocation helpers as `self.data_alloc` for the duration of the class."""
-        self.data_alloc = DataAllocationWrapper(
-            grid=grid, allocator=model_backends.get_allocator(backend_like)
-        )
-        try:
-            yield
-        finally:
-            del self.data_alloc
 
     def verify_data(
         self,

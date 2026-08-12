@@ -47,15 +47,15 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
         return dict(tracer_new_hor=tracer_new_hor)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        p_mflx_tracer_h = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        deepatmo_divh = self.data_alloc.random_field(dims.KDim)
-        tracer_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        rhodz_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        rhodz_new = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_mflx_tracer_h = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        deepatmo_divh = data_alloc.random_field(dims.KDim)
+        tracer_now = data_alloc.random_field(dims.CellDim, dims.KDim)
+        rhodz_now = data_alloc.random_field(dims.CellDim, dims.KDim)
+        rhodz_new = data_alloc.random_field(dims.CellDim, dims.KDim)
+        geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
         p_dtime = np.float64(5.0)
-        tracer_new_hor = self.data_alloc.zero_field(dims.CellDim, dims.KDim)
+        tracer_new_hor = data_alloc.zero_field(dims.CellDim, dims.KDim)
         return dict(
             p_mflx_tracer_h=p_mflx_tracer_h,
             deepatmo_divh=deepatmo_divh,

@@ -82,12 +82,12 @@ class TestApplyDiffusionToThetaAndExner(stencil_tests.StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
-        kh_smag_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim)
-        inv_dual_edge_length = self.data_alloc.random_field(dims.EdgeDim)
-        theta_v_in = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim)
-        zd_vertoffset = self.data_alloc.zero_field(
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+        kh_smag_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim)
+        theta_v_in = data_alloc.random_field(dims.CellDim, dims.KDim)
+        geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        zd_vertoffset = data_alloc.zero_field(
             dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32
         )
         rng = np.random.default_rng()
@@ -98,13 +98,13 @@ class TestApplyDiffusionToThetaAndExner(stencil_tests.StencilTest):
                 high=grid.num_levels - k - 1,
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
             )
-        zd_diffcoef = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        geofac_n2s_c = self.data_alloc.random_field(dims.CellDim)
-        geofac_n2s_nbh = self.data_alloc.random_field(dims.CellDim, dims.C2E2CDim)
-        vcoef = self.data_alloc.random_field(dims.CellDim, dims.C2E2CDim, dims.KDim)
-        area = self.data_alloc.random_field(dims.CellDim)
-        theta_v = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        exner = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+        zd_diffcoef = data_alloc.random_field(dims.CellDim, dims.KDim)
+        geofac_n2s_c = data_alloc.random_field(dims.CellDim)
+        geofac_n2s_nbh = data_alloc.random_field(dims.CellDim, dims.C2E2CDim)
+        vcoef = data_alloc.random_field(dims.CellDim, dims.C2E2CDim, dims.KDim)
+        area = data_alloc.random_field(dims.CellDim)
+        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim)
+        exner = data_alloc.random_field(dims.CellDim, dims.KDim)
         rd_o_cvd = vpfloat("5.0")
         apply_zdiffusion_t = True
 

@@ -34,14 +34,14 @@ class TestIceToGraupel(stencil_tests.StencilTest):
         return dict(aggregation=np.full(rho.shape, 7.1049436957697864e-19))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            rho=self.data_alloc.constant_field(1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qr=self.data_alloc.constant_field(6.00408e-13, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qg=self.data_alloc.constant_field(1.19022e-18, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qi=self.data_alloc.constant_field(1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
-            sticking_eff=self.data_alloc.constant_field(
+            rho=data_alloc.constant_field(1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qr=data_alloc.constant_field(6.00408e-13, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qg=data_alloc.constant_field(1.19022e-18, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi=data_alloc.constant_field(1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
+            sticking_eff=data_alloc.constant_field(
                 1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            aggregation=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            aggregation=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

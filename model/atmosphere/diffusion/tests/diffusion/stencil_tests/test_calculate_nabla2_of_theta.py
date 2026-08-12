@@ -47,11 +47,11 @@ class TestCalculateNabla2OfTheta(stencil_tests.StencilTest):
         return dict(z_temp=z_temp)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        z_nabla2_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        geofac_div = self.data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        z_nabla2_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
 
-        z_temp = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_temp = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             z_nabla2_e=z_nabla2_e,

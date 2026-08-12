@@ -54,10 +54,12 @@ class TestInterpolateToCellCenter(stencil_tests.StencilTest):
         return dict(interpolation=interpolation)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        interpolant = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        e_bln_c_s = self.data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
-        interpolation = self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        interpolant = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
+        interpolation = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             interpolant=interpolant,

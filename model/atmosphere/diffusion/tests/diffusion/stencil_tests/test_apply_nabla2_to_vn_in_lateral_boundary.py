@@ -33,11 +33,11 @@ class TestApplyNabla2ToVnInLateralBoundary(stencil_tests.StencilTest):
     OUTPUTS = ("vn",)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
         fac_bdydiff_v = wpfloat("5.0")
-        z_nabla2_e = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        area_edge = self.data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_nabla2_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        area_edge = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         return dict(
             fac_bdydiff_v=fac_bdydiff_v,
             z_nabla2_e=z_nabla2_e,

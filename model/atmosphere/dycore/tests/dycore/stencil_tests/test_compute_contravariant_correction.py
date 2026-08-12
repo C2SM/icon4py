@@ -46,12 +46,14 @@ class TestComputeContravariantCorrection(stencil_tests.StencilTest):
         return dict(z_w_concorr_me=z_w_concorr_me)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ddxn_z_full = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        ddxt_z_full = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat, low=0.1)
-        vt = self.data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_w_concorr_me = self.data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        ddxn_z_full = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        ddxt_z_full = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat, low=0.1)
+        vt = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_w_concorr_me = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

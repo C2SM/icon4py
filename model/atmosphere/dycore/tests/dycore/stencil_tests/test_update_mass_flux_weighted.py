@@ -61,15 +61,17 @@ class TestUpdateMassFluxWeighted(stencil_tests.StencilTest):
         return dict(mass_flx_ic=mass_flx_ic)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         r_nsubsteps = wpfloat("10.0")
-        rho_ic = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        vwind_expl_wgt = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        vwind_impl_wgt = self.data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        w_now = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_new = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        mass_flx_ic = self.data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        vwind_expl_wgt = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        vwind_impl_wgt = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        w_now = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_new = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_concorr_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        mass_flx_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             rho_ic=rho_ic,

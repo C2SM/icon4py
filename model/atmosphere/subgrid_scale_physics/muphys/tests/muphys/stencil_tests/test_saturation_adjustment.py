@@ -44,37 +44,37 @@ class TestSaturationAdjustment(stencil_tests.StencilTest):
         )
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base_grid.Grid) -> dict:
         return dict(
-            te=self.data_alloc.constant_field(
+            te=data_alloc.constant_field(
                 273.90911754406039, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             q_in=Q(
-                v=self.data_alloc.constant_field(
+                v=data_alloc.constant_field(
                     4.4913424511676030e-003, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
-                c=self.data_alloc.constant_field(
+                c=data_alloc.constant_field(
                     6.0066941654987605e-013, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
-                r=self.data_alloc.constant_field(
+                r=data_alloc.constant_field(
                     2.5939378002267028e-004, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
-                s=self.data_alloc.constant_field(
+                s=data_alloc.constant_field(
                     3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
-                i=self.data_alloc.constant_field(
+                i=data_alloc.constant_field(
                     3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
-                g=self.data_alloc.constant_field(
+                g=data_alloc.constant_field(
                     3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
                 ),
             ),
-            rho=self.data_alloc.constant_field(
+            rho=data_alloc.constant_field(
                 1.1371657035251757, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            te_out=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
-            qve_out=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
-            qce_out=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            te_out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qve_out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qce_out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             horizontal_start=0,
             horizontal_end=grid.num_cells,
             vertical_start=0,

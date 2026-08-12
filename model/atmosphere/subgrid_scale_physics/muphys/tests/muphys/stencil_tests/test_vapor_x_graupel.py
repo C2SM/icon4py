@@ -37,21 +37,15 @@ class TestVaporXGraupel(stencil_tests.StencilTest):
         return dict(exchange_rate=np.full(t.shape, -6.8498666666666675e-13))
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=self.data_alloc.constant_field(278.026, dims.CellDim, dims.KDim, dtype=wpfloat),
-            p=self.data_alloc.constant_field(95987.1, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=self.data_alloc.constant_field(1.20041, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qg=self.data_alloc.constant_field(2.05496e-11, dims.CellDim, dims.KDim, dtype=wpfloat),
-            dvsw=self.data_alloc.constant_field(
-                -0.00234674, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
-            dvsi=self.data_alloc.constant_field(
-                -0.00261576, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
-            dvsw0=self.data_alloc.constant_field(
-                -0.00076851, dims.CellDim, dims.KDim, dtype=wpfloat
-            ),
+            t=data_alloc.constant_field(278.026, dims.CellDim, dims.KDim, dtype=wpfloat),
+            p=data_alloc.constant_field(95987.1, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho=data_alloc.constant_field(1.20041, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qg=data_alloc.constant_field(2.05496e-11, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw=data_alloc.constant_field(-0.00234674, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsi=data_alloc.constant_field(-0.00261576, dims.CellDim, dims.KDim, dtype=wpfloat),
+            dvsw0=data_alloc.constant_field(-0.00076851, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt=30.0,
-            exchange_rate=self.data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            exchange_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

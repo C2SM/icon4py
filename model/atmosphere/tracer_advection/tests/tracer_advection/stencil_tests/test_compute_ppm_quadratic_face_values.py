@@ -43,10 +43,10 @@ class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
         return dict(p_face=p_face)
 
     @stencil_tests.input_data_fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        p_face = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_cc = self.data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_cellhgt_mc_now = self.data_alloc.random_field(dims.CellDim, dims.KDim)
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        p_face = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
+        p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KDim)
         return dict(
             p_cc=p_cc,
             p_cellhgt_mc_now=p_cellhgt_mc_now,
