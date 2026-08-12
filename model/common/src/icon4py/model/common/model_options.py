@@ -34,7 +34,7 @@ def get_dace_options(
     optimization_args = backend_descriptor.get("optimization_args", {})
     optimization_hooks = optimization_args.get("optimization_hooks", {})
 
-    if device == model_backends.DeviceType.ROCM and backend_config is not None:
+    if backend_config is not None:
         # The workspace memory allows to avoid the overhead of runtime allocations,
         # which are expensive in the AMD runtime.
         backend_descriptor["external_workspace"] = backend_cfg.ICON_WORKSPACE_ALLOCATOR.allocate(
