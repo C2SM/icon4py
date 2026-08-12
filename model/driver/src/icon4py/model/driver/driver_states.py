@@ -110,7 +110,7 @@ class ModelTimeVariables:
 
         if requested_simulation_end_datetime != self.simulation_end_datetime:
             raise ValueError(
-                "The requested end_of_simulation is not an integer number of time steps. Requested: {requested_simulation_end_datetime}, computed: {self.simulation_end_datetime}"
+                f"The requested end_of_simulation is not an integer number of time steps. Requested: {requested_simulation_end_datetime}, computed: {self.simulation_end_datetime}"
             )
 
         self.dtime = config.dtime
