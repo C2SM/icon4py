@@ -28,7 +28,7 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
 def get_dace_options(
     program_name: str,
     *,
-    backend_config: backend_cfg.BackendConfig | None = None,
+    backend_config: backend_cfg.BackendConfig | None,
     **backend_descriptor: Any,
 ) -> model_backends.BackendDescriptor:
     device = backend_descriptor.get("device")
@@ -92,16 +92,14 @@ def get_gtfn_options(
 def get_options(
     program_name: str,
     *,
-    backend_config: backend_cfg.BackendConfig | None = None,
+    backend_config: backend_cfg.BackendConfig | None,
     **backend_descriptor: Any,
 ) -> model_backends.BackendDescriptor:
     if "backend_factory" not in backend_descriptor:
         # here we could set a backend_factory per program
         backend_descriptor["backend_factory"] = model_backends.make_custom_dace_backend
     if backend_descriptor["backend_factory"] == model_backends.make_custom_dace_backend:
-        backend_descriptor = get_dace_options(
-            program_name, backend_config=backend_config, **backend_descriptor
-        )
+        backend_descriptor = get_dace_options(program_name, backend_config, **backend_descriptor)
     if backend_descriptor["backend_factory"] == model_backends.make_custom_gtfn_backend:
         backend_descriptor = get_gtfn_options(program_name, **backend_descriptor)
 
@@ -116,6 +114,7 @@ def customize_backend(
     | None,
     backend_config: backend_cfg.BackendConfig | None = None,
 ) -> gtx_typing.Backend | None:
+    backend_config = backend_config or backend_cfg.backend_config_from_env()
     program_name = program.__name__ if program is not None else ""
     if backend is None or isinstance(backend, gtx_backend.Backend):
         backend_name = backend.name if backend is not None else "embedded"

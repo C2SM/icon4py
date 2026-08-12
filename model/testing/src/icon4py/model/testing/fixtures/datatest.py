@@ -14,7 +14,7 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
-from icon4py.model.common import backend_configuration as backend_cfg, model_backends, model_options
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs
 
@@ -65,13 +65,12 @@ def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
     """
     # TODO(havogt): eventually all tests should support `backend_like`,
     # then `backend_like` should probably be renamed to `backend`.
+
     spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
     assert isinstance(spec, str), "Backend spec must be a string"
     backend_like = _get_backend_like(spec)
     # We create a generic concrete backend (no program specific customization).
-    return model_options.customize_backend(
-        None, backend_like, backend_config=backend_cfg.backend_config_from_env()
-    )
+    return model_options.customize_backend(None, backend_like)
 
 
 @pytest.fixture
