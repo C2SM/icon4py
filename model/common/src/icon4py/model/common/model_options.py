@@ -155,7 +155,7 @@ def setup_program(
 ) -> Callable[..., None]:
     """
     This function processes arguments to the GT4Py program. It
-    - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', "vertical_sizes");
+    - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', 'vertical_sizes');
     - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile').
     Args:
         - backend: GT4Py backend,
