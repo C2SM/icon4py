@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, stencil_tests
+from icon4py.model.testing import stencil_tests
 
 
 @pytest.mark.continuous_benchmarking
@@ -40,6 +40,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         diff_multfac_smag: np.ndarray,
         tangent_orientation: np.ndarray,
         inv_primal_edge_length: np.ndarray,

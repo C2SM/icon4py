@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -20,7 +21,12 @@ class TestQsatRho(StencilTest):
     OUTPUTS = ("pressure",)
 
     @staticmethod
-    def reference(grid, rho: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
+        rho: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(pressure=np.full(rho.shape, 0.0038828182695875113))
 
     @pytest.fixture

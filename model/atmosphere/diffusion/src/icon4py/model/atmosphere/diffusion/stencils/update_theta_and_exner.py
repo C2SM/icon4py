@@ -41,11 +41,11 @@ def update_theta_and_exner(
     vertical_end: gtx.int32,
 ) -> None:
     _update_theta_and_exner(
-        z_temp,
-        area,
-        theta_v,
-        exner,
-        rd_o_cvd,
+        z_temp=z_temp,
+        area=area,
+        theta_v=theta_v,
+        exner=exner,
+        rd_o_cvd=rd_o_cvd,
         out=(theta_v, exner),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

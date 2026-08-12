@@ -38,6 +38,7 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         vec_e: np.ndarray,
         geofac_rot: np.ndarray,
         **kwargs: Any,

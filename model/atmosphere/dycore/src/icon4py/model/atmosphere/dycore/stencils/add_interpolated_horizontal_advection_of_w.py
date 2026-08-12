@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E, C2EDim
+from icon4py.model.common.dimension import C2E
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -21,7 +21,7 @@ def _add_interpolated_horizontal_advection_of_w(
 ) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_17."""
     z_v_grad_w_wp, ddt_w_adv_wp = astype((z_v_grad_w, ddt_w_adv), wpfloat)
-    ddt_w_adv_wp = ddt_w_adv_wp + neighbor_sum(z_v_grad_w_wp(C2E) * e_bln_c_s, axis=C2EDim)
+    ddt_w_adv_wp = ddt_w_adv_wp + neighbor_sum(z_v_grad_w_wp(C2E) * e_bln_c_s, axis=dims.C2EDim)
     return astype(ddt_w_adv_wp, vpfloat)
 
 
@@ -36,9 +36,9 @@ def add_interpolated_horizontal_advection_of_w(
     vertical_end: gtx.int32,
 ) -> None:
     _add_interpolated_horizontal_advection_of_w(
-        e_bln_c_s,
-        z_v_grad_w,
-        ddt_w_adv,
+        e_bln_c_s=e_bln_c_s,
+        z_v_grad_w=z_v_grad_w,
+        ddt_w_adv=ddt_w_adv,
         out=ddt_w_adv,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

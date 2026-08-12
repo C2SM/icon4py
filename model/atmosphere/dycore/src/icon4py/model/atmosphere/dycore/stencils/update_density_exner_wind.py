@@ -51,13 +51,13 @@ def update_density_exner_wind(
     vertical_end: gtx.int32,
 ) -> None:
     _update_density_exner_wind(
-        rho_now,
-        grf_tend_rho,
-        theta_v_now,
-        grf_tend_thv,
-        w_now,
-        grf_tend_w,
-        dtime,
+        rho_now=rho_now,
+        grf_tend_rho=grf_tend_rho,
+        theta_v_now=theta_v_now,
+        grf_tend_thv=grf_tend_thv,
+        w_now=w_now,
+        grf_tend_w=grf_tend_w,
+        dtime=dtime,
         out=(rho_new, exner_new, w_new),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

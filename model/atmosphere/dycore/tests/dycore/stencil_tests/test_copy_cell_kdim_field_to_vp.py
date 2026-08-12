@@ -33,7 +33,10 @@ class TestCopyCellKdimFieldToVp(StencilTest):
 
     @staticmethod
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray], field: np.ndarray, **kwargs: Any
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
+        field: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         field_copy = copy_cell_kdim_field_to_vp_numpy(field)
         return dict(field_copy=field_copy)

@@ -30,10 +30,11 @@ class TestNabla2OnCell(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         psi_c: np.ndarray,
         geofac_n2s: np.ndarray,
         **kwargs: Any,
-    ) -> dict[str, np.ndarray]:
+    ) -> dict:
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
@@ -59,6 +60,7 @@ class TestNabla2OnCellK(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         psi_c: np.ndarray,
         geofac_n2s: np.ndarray,
         **kwargs: Any,

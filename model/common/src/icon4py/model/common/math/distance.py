@@ -26,7 +26,7 @@ from icon4py.model.common.math.vector_operations import dot_product_on_edges
 
 
 @gtx.field_operator
-def arc_length_on_edges(
+def arc_length_on_edges(  # noqa: PLR0917 [too-many-positional-arguments]
     x0: fa.EdgeField[ta.wpfloat],
     x1: fa.EdgeField[ta.wpfloat],
     y0: fa.EdgeField[ta.wpfloat],
@@ -57,7 +57,7 @@ def arc_length_on_edges(
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def diff_on_edges_torus(
+def diff_on_edges_torus(  # noqa: PLR0917 [too-many-positional-arguments]
     x0: fa.EdgeField[ta.wpfloat],
     x1: fa.EdgeField[ta.wpfloat],
     y0: fa.EdgeField[ta.wpfloat],
@@ -99,7 +99,7 @@ def diff_on_edges_torus(
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def distance_on_edges_torus(
+def distance_on_edges_torus(  # noqa: PLR0917 [too-many-positional-arguments]
     x0: fa.EdgeField[ta.wpfloat],
     x1: fa.EdgeField[ta.wpfloat],
     y0: fa.EdgeField[ta.wpfloat],
@@ -125,5 +125,7 @@ def distance_on_edges_torus(
         distance
 
     """
-    xdiff, ydiff = diff_on_edges_torus(x0, x1, y0, y1, domain_length, domain_height)
+    xdiff, ydiff = diff_on_edges_torus(
+        x0=x0, x1=x1, y0=y0, y1=y1, domain_length=domain_length, domain_height=domain_height
+    )
     return sqrt(xdiff**2 + ydiff**2)

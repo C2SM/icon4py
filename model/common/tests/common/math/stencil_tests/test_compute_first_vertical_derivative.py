@@ -34,6 +34,7 @@ class TestComputeFirstVerticalDerivative(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         cell_kdim_field: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
         **kwargs: Any,

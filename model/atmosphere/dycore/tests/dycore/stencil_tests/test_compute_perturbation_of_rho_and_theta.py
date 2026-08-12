@@ -40,6 +40,7 @@ class TestComputePerturbationOfRhoAndTheta(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         rho: np.ndarray,
         rho_ref_mc: np.ndarray,
         theta_v: np.ndarray,

@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl i
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2C2EO, E2V, E2C2EODim, E2CDim, E2VDim, Koff
+from icon4py.model.common.dimension import E2C, E2C2EO, E2V
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
 )
@@ -36,7 +36,7 @@ def _compute_advective_normal_wind_tendency(
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     coriolis_frequency: fa.EdgeField[ta.wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
 ) -> fa.EdgeKField[ta.vpfloat]:
@@ -59,16 +59,18 @@ def _compute_advective_normal_wind_tendency(
 
     horizontal_advection = (
         horizontal_kinetic_energy_at_edges_on_model_levels
-        * (coeff_gradekin[E2CDim(0)] - coeff_gradekin[E2CDim(1)])
-        + coeff_gradekin[E2CDim(1)] * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[1])
-        - coeff_gradekin[E2CDim(0)] * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[0])
+        * (coeff_gradekin[dims.E2CDim(0)] - coeff_gradekin[dims.E2CDim(1)])
+        + coeff_gradekin[dims.E2CDim(1)]
+        * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[1])
+        - coeff_gradekin[dims.E2CDim(0)]
+        * horizontal_kinetic_energy_at_cells_on_model_levels(E2C[0])
     )
 
     vertical_advection = (
         neighbor_sum(
-            c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=E2CDim
+            c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=dims.E2CDim
         )
-        * astype((vn_on_half_levels - vn_on_half_levels(Koff[1])), wpfloat)
+        * astype((vn_on_half_levels - vn_on_half_levels(dims.KDim + 1)), wpfloat)
         / ddqz_z_full_e_wp
     )
 
@@ -76,7 +78,7 @@ def _compute_advective_normal_wind_tendency(
         coriolis_frequency
         + astype(
             vpfloat("0.5")
-            * neighbor_sum(upward_vorticity_at_vertices_on_model_levels(E2V), axis=E2VDim),
+            * neighbor_sum(upward_vorticity_at_vertices_on_model_levels(E2V), axis=dims.E2VDim),
             wpfloat,
         )
     )
@@ -91,11 +93,11 @@ def _compute_extra_diffusion(
     upward_vorticity_at_vertices_on_model_levels: fa.VertexKField[ta.vpfloat],
     difcoef: fa.EdgeKField[ta.wpfloat],
     area_edge: fa.EdgeField[ta.wpfloat],
-    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], ta.wpfloat],
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    gradient_of_divergence_of_vn = neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
+    gradient_of_divergence_of_vn = neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=dims.E2C2EODim)
 
     gradient_of_vorticity = (
         tangent_orientation
@@ -116,14 +118,14 @@ def _compute_extra_diffusion(
 
 @gtx.field_operator
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask(
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     area_edge: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     upward_vorticity_at_vertices_on_model_levels: fa.VertexKField[ta.vpfloat],
-    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], ta.wpfloat],
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     cfl_w_limit: ta.vpfloat,
@@ -147,7 +149,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
 
     #: intermediate variable contravariant_corrected_w_at_edges_on_model_levels is originally declared as w_con_e in ICON
     contravariant_corrected_w_at_edges_on_model_levels = neighbor_sum(
-        c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=E2CDim
+        c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=dims.E2CDim
     )
     difcoef = scalfac_exdiff * minimum(
         wpfloat("0.85") - cfl_w_limit_wp * dtime,
@@ -159,13 +161,13 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
         > astype(cfl_w_limit * ddqz_z_full_e, wpfloat),
         normal_wind_advective_tendency_wp
         + _compute_extra_diffusion(
-            vn,
-            upward_vorticity_at_vertices_on_model_levels,
-            difcoef,
-            area_edge,
-            geofac_grdiv,
-            tangent_orientation,
-            inv_primal_edge_length,
+            vn=vn,
+            upward_vorticity_at_vertices_on_model_levels=upward_vorticity_at_vertices_on_model_levels,
+            difcoef=difcoef,
+            area_edge=area_edge,
+            geofac_grdiv=geofac_grdiv,
+            tangent_orientation=tangent_orientation,
+            inv_primal_edge_length=inv_primal_edge_length,
         ),
         normal_wind_advective_tendency_wp,
     )
@@ -202,35 +204,35 @@ def _compute_advection_in_horizontal_momentum(
     )
 
     normal_wind_advective_tendency = _compute_advective_normal_wind_tendency(
-        horizontal_kinetic_energy_at_edges_on_model_levels,
-        upward_vorticity_at_vertices_on_model_levels,
-        tangential_wind,
-        vn_on_half_levels,
-        contravariant_corrected_w_at_cells_on_model_levels,
-        coriolis_frequency,
-        e_bln_c_s,
-        c_lin_e,
-        coeff_gradekin,
-        ddqz_z_full_e,
+        horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+        upward_vorticity_at_vertices_on_model_levels=upward_vorticity_at_vertices_on_model_levels,
+        tangential_wind=tangential_wind,
+        vn_on_half_levels=vn_on_half_levels,
+        contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
+        coriolis_frequency=coriolis_frequency,
+        e_bln_c_s=e_bln_c_s,
+        c_lin_e=c_lin_e,
+        coeff_gradekin=coeff_gradekin,
+        ddqz_z_full_e=ddqz_z_full_e,
     )
 
     if apply_extra_diffusion_on_vn:
         normal_wind_advective_tendency = concat_where(
             ((maximum(2, end_index_of_damping_layer - 2)) <= dims.KDim) & (dims.KDim < (nlev - 4)),
             _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask(
-                c_lin_e,
-                contravariant_corrected_w_at_cells_on_model_levels,
-                ddqz_z_full_e,
-                area_edge,
-                tangent_orientation,
-                inv_primal_edge_length,
-                upward_vorticity_at_vertices_on_model_levels,
-                geofac_grdiv,
-                vn,
-                normal_wind_advective_tendency,
-                cfl_w_limit,
-                scalfac_exdiff,
-                dtime,
+                c_lin_e=c_lin_e,
+                contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
+                ddqz_z_full_e=ddqz_z_full_e,
+                area_edge=area_edge,
+                tangent_orientation=tangent_orientation,
+                inv_primal_edge_length=inv_primal_edge_length,
+                upward_vorticity_at_vertices_on_model_levels=upward_vorticity_at_vertices_on_model_levels,
+                geofac_grdiv=geofac_grdiv,
+                vn=vn,
+                normal_wind_advective_tendency=normal_wind_advective_tendency,
+                cfl_w_limit=cfl_w_limit,
+                scalfac_exdiff=scalfac_exdiff,
+                dtime=dtime,
             ),
             normal_wind_advective_tendency,
         )
@@ -305,27 +307,27 @@ def compute_advection_in_horizontal_momentum(
     """
 
     _compute_advection_in_horizontal_momentum(
-        vn,
-        horizontal_kinetic_energy_at_edges_on_model_levels,
-        tangential_wind,
-        coriolis_frequency,
-        contravariant_corrected_w_at_cells_on_model_levels,
-        vn_on_half_levels,
-        e_bln_c_s,
-        geofac_rot,
-        coeff_gradekin,
-        c_lin_e,
-        ddqz_z_full_e,
-        area_edge,
-        tangent_orientation,
-        inv_primal_edge_length,
-        geofac_grdiv,
-        cfl_w_limit,
-        scalfac_exdiff,
-        dtime,
-        apply_extra_diffusion_on_vn,
-        vertical_end,
-        end_index_of_damping_layer,
+        vn=vn,
+        horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+        tangential_wind=tangential_wind,
+        coriolis_frequency=coriolis_frequency,
+        contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
+        vn_on_half_levels=vn_on_half_levels,
+        e_bln_c_s=e_bln_c_s,
+        geofac_rot=geofac_rot,
+        coeff_gradekin=coeff_gradekin,
+        c_lin_e=c_lin_e,
+        ddqz_z_full_e=ddqz_z_full_e,
+        area_edge=area_edge,
+        tangent_orientation=tangent_orientation,
+        inv_primal_edge_length=inv_primal_edge_length,
+        geofac_grdiv=geofac_grdiv,
+        cfl_w_limit=cfl_w_limit,
+        scalfac_exdiff=scalfac_exdiff,
+        dtime=dtime,
+        apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
+        nlev=vertical_end,
+        end_index_of_damping_layer=end_index_of_damping_layer,
         out=normal_wind_advective_tendency,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

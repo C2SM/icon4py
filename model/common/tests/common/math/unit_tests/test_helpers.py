@@ -44,9 +44,15 @@ def test_cross_product(backend: gtx_typing.Backend) -> None:
     b = np.column_stack((x2.asnumpy(), y2.asnumpy(), z2.asnumpy()))
     c = np.cross(a, b)
 
-    assert icon4py.model.testing.test_utils.dallclose(c[:, 0], x.asnumpy())
-    assert icon4py.model.testing.test_utils.dallclose(c[:, 1], y.asnumpy())
-    assert icon4py.model.testing.test_utils.dallclose(c[:, 2], z.asnumpy())
+    # The inputs are unseeded, so a component of the cross product occasionally lands near
+    # zero. There the compiled backend's FMA contraction of 'a * b - c * d' shifts one
+    # product by an ulp and the cancellation amplifies it beyond the default
+    # 'rtol = 1e-12, atol = 0.0'. The inputs are in [-1, 1], so the deviation is bounded by
+    # an ulp of 1.0 (2.2e-16 measured) regardless of how small the component gets.
+    atol = 1.0e-15
+    assert icon4py.model.testing.test_utils.dallclose(c[:, 0], x.asnumpy(), atol=atol)
+    assert icon4py.model.testing.test_utils.dallclose(c[:, 1], y.asnumpy(), atol=atol)
+    assert icon4py.model.testing.test_utils.dallclose(c[:, 2], z.asnumpy(), atol=atol)
 
 
 class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
@@ -62,6 +68,7 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         input_field: np.ndarray,
         **kwargs: Any,
     ) -> dict:
@@ -96,6 +103,7 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         input_field: np.ndarray,
         **kwargs: Any,
     ) -> dict:

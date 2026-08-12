@@ -50,6 +50,7 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         ddqz_z_half: np.ndarray,
         z_w_con_c: np.ndarray,
         cfl_w_limit: ta.wpfloat,

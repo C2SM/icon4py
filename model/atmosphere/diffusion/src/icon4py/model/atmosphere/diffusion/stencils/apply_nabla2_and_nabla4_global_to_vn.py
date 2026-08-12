@@ -43,12 +43,12 @@ def apply_nabla2_and_nabla4_global_to_vn(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_nabla2_and_nabla4_global_to_vn(
-        area_edge,
-        kh_smag_e,
-        z_nabla2_e,
-        z_nabla4_e2,
-        diff_multfac_vn,
-        vn,
+        area_edge=area_edge,
+        kh_smag_e=kh_smag_e,
+        z_nabla2_e=z_nabla2_e,
+        z_nabla4_e2=z_nabla4_e2,
+        diff_multfac_vn=diff_multfac_vn,
+        vn=vn,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

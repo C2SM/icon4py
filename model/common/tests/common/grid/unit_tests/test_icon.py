@@ -17,7 +17,7 @@ import pytest
 
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.grid import base, gridfile, horizontal as h_grid, icon
-from icon4py.model.testing import definitions, grid_utils as gridtest_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
     cpu_allocator,
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
     return gridtest_utils.get_grid_manager_from_identifier(
-        definitions.Experiments.MCH_CH_R04B09.grid,
+        test_defs.Experiments.MCH_CH_R04B09.grid,
         num_levels=65,
         keep_skip_values=True,
         allocator=model_backends.get_allocator(None),
@@ -86,12 +86,12 @@ INTERIOR_IDX = {
 
 
 @pytest.fixture(
-    params=[definitions.Experiments.MCH_CH_R04B09],
+    params=[test_defs.Experiments.MCH_CH_R04B09],
     ids=lambda r: r.name,
 )
 def experiment_description(
     request: pytest.FixtureRequest,
-) -> definitions.ExperimentDescription:
+) -> test_defs.ExperimentDescription:
     return request.param
 
 
@@ -183,11 +183,11 @@ def test_grid_size(icon_grid: base_grid.Grid) -> None:
 
 @pytest.mark.parametrize(
     "grid_description",
-    (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL),
+    (test_defs.Grids.MCH_CH_R04B09_DSL, test_defs.Grids.R02B04_GLOBAL),
 )
 @pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.value)
 def test_when_keep_skip_value_then_neighbor_table_matches_config(
-    grid_description: definitions.GridDescription,
+    grid_description: test_defs.GridDescription,
     offset: gtx.FieldOffset,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -207,18 +207,18 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(
 
 @pytest.mark.parametrize(
     "grid_description",
-    (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL),
+    (test_defs.Grids.MCH_CH_R04B09_DSL, test_defs.Grids.R02B04_GLOBAL),
 )
 @pytest.mark.parametrize("dim", (dims.local_dims()))
 def test_when_replace_skip_values_then_only_pentagon_points_remain(
-    grid_description: definitions.GridDescription,
+    grid_description: test_defs.GridDescription,
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
     if dim == dims.V2E2VDim:
         pytest.skip("V2E2VDim is not supported in the current grid configuration.")
-    if dim in (dims.LsqCDim, dims.LsqUnkDim):
-        pytest.skip("LsqCDim and LsqUnkDim are not offset dimensions.")
+    if dim == dims.LsqUnkDim:
+        pytest.skip("LsqUnkDim is not an offset dimension.")
     grid = utils.run_grid_manager(grid_description, keep_skip_values=False, backend=backend).grid
     connectivity = grid.get_connectivity(dim.value)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
@@ -296,7 +296,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
     "grid_description, geometry_type, subdivision, radius, domain_length, domain_height, num_cells",
     [
         (
-            definitions.Grids.R02B04_GLOBAL,
+            test_defs.Grids.R02B04_GLOBAL,
             icon.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=2, level=4),
             constants.EARTH_RADIUS,
@@ -305,7 +305,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
             20480,
         ),
         (
-            definitions.Grids.MCH_OPR_R04B07_DOMAIN01,
+            test_defs.Grids.MCH_OPR_R04B07_DOMAIN01,
             icon.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=4, level=7),
             constants.EARTH_RADIUS,
@@ -314,7 +314,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
             10700,
         ),
         (
-            definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
+            test_defs.Grids.MCH_OPR_R19B08_DOMAIN01,
             icon.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=19, level=8),
             constants.EARTH_RADIUS,
@@ -323,7 +323,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
             44528,
         ),
         (
-            definitions.Grids.MCH_CH_R04B09_DSL,
+            test_defs.Grids.MCH_CH_R04B09_DSL,
             icon.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=4, level=9),
             constants.EARTH_RADIUS,
@@ -332,7 +332,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
             20896,
         ),
         (
-            definitions.Grids.TORUS_100X116_1000M,
+            test_defs.Grids.TORUS_100X116_1000M,
             icon.GeometryType.TORUS,
             None,
             None,
@@ -341,7 +341,7 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
             23200,
         ),
         (
-            definitions.Grids.TORUS_50000x5000,
+            test_defs.Grids.TORUS_50000x5000,
             icon.GeometryType.TORUS,
             None,
             None,
@@ -351,8 +351,8 @@ def test_icosahedron_params_fail(grid_root: int, grid_level: int) -> None:
         ),
     ],
 )
-def test_grid_params_from_grid_manager(
-    grid_description: definitions.GridDescription,
+def test_grid_params_from_grid_manager(  # noqa: PLR0917 [too-many-positional-arguments]
+    grid_description: test_defs.GridDescription,
     backend: gtx_typing.Backend,
     geometry_type: icon.GeometryType,
     subdivision: icon.GridSubdivision,

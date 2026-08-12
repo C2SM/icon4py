@@ -40,6 +40,7 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         inv_ddqz_z_full: np.ndarray,
         w: np.ndarray,
         w_concorr_c: np.ndarray,

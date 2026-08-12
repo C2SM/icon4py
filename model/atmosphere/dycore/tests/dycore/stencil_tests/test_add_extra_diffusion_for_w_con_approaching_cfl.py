@@ -24,6 +24,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
@@ -78,6 +79,7 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         cfl_clipping: np.ndarray,
         owner_mask: np.ndarray,
         z_w_con_c: np.ndarray,
@@ -92,18 +94,18 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
         **kwargs: Any,
     ) -> dict:
         ddt_w_adv = add_extra_diffusion_for_w_con_approaching_cfl_numpy(
-            connectivities,
-            cfl_clipping,
-            owner_mask,
-            z_w_con_c,
-            ddqz_z_half,
-            area,
-            geofac_n2s,
-            w,
-            ddt_w_adv,
-            scalfac_exdiff,
-            cfl_w_limit,
-            dtime,
+            connectivities=connectivities,
+            cfl_clipping=cfl_clipping,
+            owner_mask=owner_mask,
+            z_w_con_c=z_w_con_c,
+            ddqz_z_half=ddqz_z_half,
+            area=area,
+            geofac_n2s=geofac_n2s,
+            w=w,
+            ddt_w_adv=ddt_w_adv,
+            scalfac_exdiff=scalfac_exdiff,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
         )
         return dict(ddt_w_adv=ddt_w_adv)
 

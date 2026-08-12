@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable
-from typing import NamedTuple, TypeAlias, TypeVar
+from typing import NamedTuple
 
 import pytest
 
@@ -19,8 +19,7 @@ from icon4py.model.common.utils import device_utils
 from icon4py.model.testing import test_utils
 
 
-T = TypeVar("T")
-Predicate: TypeAlias = Callable[[T], bool]
+type Predicate[T] = Callable[[T], bool]
 
 
 class ItemFilter(NamedTuple):
@@ -54,10 +53,6 @@ item_marker_filters: dict[str, ItemFilter] = {
         action=functools.partial(
             pytest.xfail, " gt4py _compiled_programs returns error when backend is None."
         ),
-    ),
-    pytest.mark.uses_as_offset.name: ItemFilter(
-        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
-        action=functools.partial(pytest.xfail, "Embedded backend does not support as_offset."),
     ),
     pytest.mark.uses_concat_where.name: ItemFilter(
         condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),

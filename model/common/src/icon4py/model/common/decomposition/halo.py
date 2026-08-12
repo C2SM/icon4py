@@ -169,6 +169,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def _update_owner_mask_by_max_rank_convention(
         self,
+        *,
         cell_to_rank: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
         all_indices: data_alloc.NDArray,
@@ -209,6 +210,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def _set_decomposition_info_dimension(
         self,
+        *,
         decomp_info: defs.DecompositionInfo,
         dim: gtx.Dimension,
         all_indices: data_alloc.NDArray,
@@ -360,7 +362,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         all_cells = self._xp.hstack((owned_cells, first_halo_cells, second_halo_cells))
 
         self._set_decomposition_info_dimension(
-            decomp_info,
+            decomp_info=decomp_info,
             dim=dims.CellDim,
             all_indices=all_cells,
             owner_mask=self._xp.isin(all_cells, owned_cells),
@@ -374,11 +376,11 @@ class IconLikeHaloConstructor(HaloConstructor):
         all_vertices = self._xp.hstack((vertex_on_owned_cells, vertex_second_halo))
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
         vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
-            cell_to_rank,
-            vertex_owner_mask,
-            all_vertices,
-            vertex_on_cutting_line,
-            self._connectivity(dims.V2C),
+            cell_to_rank=cell_to_rank,
+            owner_mask=vertex_owner_mask,
+            all_indices=all_vertices,
+            indices_on_cutting_line=vertex_on_cutting_line,
+            target_connectivity=self._connectivity(dims.V2C),
         )
 
         # Once mask has been updated, some owned cells may now belong to the
@@ -396,10 +398,10 @@ class IconLikeHaloConstructor(HaloConstructor):
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_owner_list)
 
         self._set_decomposition_info_dimension(
-            decomp_info,
-            dims.VertexDim,
-            all_vertices,
-            vertex_owner_mask,
+            decomp_info=decomp_info,
+            dim=dims.VertexDim,
+            all_indices=all_vertices,
+            owner_mask=vertex_owner_mask,
             first_halo_level_mask=(
                 self._xp.logical_not(vertex_owner_mask)
                 & self._xp.isin(all_vertices, vertex_on_cutting_line)
@@ -426,11 +428,11 @@ class IconLikeHaloConstructor(HaloConstructor):
         all_edges = self._xp.hstack((edge_on_owned_cells, edge_second_level, edge_third_level))
         edge_owner_mask = self._xp.isin(all_edges, edge_on_owned_cells)
         edge_owner_mask = self._update_owner_mask_by_max_rank_convention(
-            cell_to_rank,
-            edge_owner_mask,
-            all_edges,
-            edge_on_cutting_line,
-            self._connectivity(dims.E2C),
+            cell_to_rank=cell_to_rank,
+            owner_mask=edge_owner_mask,
+            all_indices=all_edges,
+            indices_on_cutting_line=edge_on_cutting_line,
+            target_connectivity=self._connectivity(dims.E2C),
         )
 
         # Once mask has been updated, some owned cells may now belong to the
@@ -449,7 +451,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         edge_owner_mask = self._xp.isin(all_edges, edge_owner_list)
 
         self._set_decomposition_info_dimension(
-            decomp_info,
+            decomp_info=decomp_info,
             dim=dims.EdgeDim,
             all_indices=all_edges,
             owner_mask=edge_owner_mask,

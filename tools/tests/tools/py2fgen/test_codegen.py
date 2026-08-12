@@ -15,6 +15,7 @@ from icon4py.tools.py2fgen._codegen import (
     BindingsLibrary,
     CHeaderGenerator,
     Func,
+    add_include_guard,
     as_f90_value,
     generate_c_header,
     generate_f90_interface,
@@ -82,7 +83,7 @@ def test_cheader_generation_for_single_function():
     header = CHeaderGenerator.apply(plugin)
     assert (
         header
-        == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1, int on_gpu);"
+        == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1, unsigned char on_gpu);"
     )
 
 
@@ -92,8 +93,15 @@ def test_cheader_for_pointer_args():
     header = CHeaderGenerator.apply(plugin)
     assert (
         header
-        == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two, int on_gpu);"
+        == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two, unsigned char on_gpu);"
     )
+
+
+def test_add_include_guard():
+    guarded = add_include_guard("extern int foo(int a);", "libtest_plugin")
+    assert guarded.startswith("#ifndef LIBTEST_PLUGIN_H\n#define LIBTEST_PLUGIN_H\n")
+    assert guarded.rstrip().endswith("#endif")
+    assert "extern int foo(int a);" in guarded
 
 
 def compare_ignore_whitespace(actual: str, expected: str):
@@ -135,7 +143,7 @@ module libtest_plugin
                            two_size_0, &
                            two_size_1, &
                            on_gpu) bind(c, name="foo_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
          integer(c_int), value, target :: one
@@ -146,7 +154,7 @@ module libtest_plugin
 
          integer(c_int), value :: two_size_1
 
-         logical(c_int), value :: on_gpu
+         logical(c_bool), value :: on_gpu
 
       end function foo_wrapper
 
@@ -155,7 +163,7 @@ module libtest_plugin
                            one_size_1, &
                            two, &
                            on_gpu) bind(c, name="bar_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
 
          type(c_ptr), value, target :: one
@@ -166,7 +174,7 @@ module libtest_plugin
 
          integer(c_int), value, target :: two
 
-         logical(c_int), value :: on_gpu
+         logical(c_bool), value :: on_gpu
 
       end function bar_wrapper
 
@@ -181,9 +189,9 @@ contains
 
       integer(c_int), value, target :: one
 
-      real(c_double), dimension(:, :), target :: two
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: two
 
-      logical(c_int) :: on_gpu
+      logical(c_bool) :: on_gpu
 
       integer(c_int) :: two_size_0
 
@@ -216,11 +224,11 @@ contains
                   rc)
       use, intrinsic :: iso_c_binding
 
-      real(c_float), dimension(:, :), target :: one
+      real(c_float), dimension(:, :), contiguous, intent(inout), target :: one
 
       integer(c_int), value, target :: two
 
-      logical(c_int) :: on_gpu
+      logical(c_bool) :: on_gpu
 
       integer(c_int) :: one_size_0
 
@@ -263,7 +271,7 @@ for callable_name in runtime_config.EXTRA_CALLABLES:
 
 import logging
 from libtest_plugin import ffi
-from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
+from icon4py.tools.py2fgen import _runtime, _conversion
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -337,11 +345,7 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
 
-                    two_arr = (
-                        _conversion.as_array(ffi, two, _definitions.FLOAT64)
-                        if two is not None
-                        else None
-                    )
+                    two_arr = _conversion.as_array(ffi, two) if two is not None else None
                     msg = "shape of two after computation = %s" % str(
                         two_arr.shape if two is not None else "None"
                     )
@@ -417,11 +421,7 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
 
-                    one_arr = (
-                        _conversion.as_array(ffi, one, _definitions.FLOAT32)
-                        if one is not None
-                        else None
-                    )
+                    one_arr = _conversion.as_array(ffi, one) if one is not None else None
                     msg = "shape of one after computation = %s" % str(
                         one_arr.shape if one is not None else "None"
                     )
@@ -445,7 +445,32 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
 def test_c_header(dummy_plugin):
     interface = generate_c_header(dummy_plugin)
     expected = """
-    extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1, int on_gpu);
-    extern int bar_wrapper(float *one, int one_size_0, int one_size_1, int two, int on_gpu);
+    extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1, unsigned char on_gpu);
+    extern int bar_wrapper(float *one, int one_size_0, int one_size_1, int two, unsigned char on_gpu);
     """
     assert compare_ignore_whitespace(interface, expected)
+
+
+def test_bool_param_codegen():
+    bool_func = Func(
+        name="bool_fn",
+        module_name="libtest",
+        args={
+            "flag": py2fgen.ScalarParamDescriptor(dtype=py2fgen.BOOL),
+            "mask": py2fgen.ArrayParamDescriptor(
+                rank=1,
+                dtype=py2fgen.BOOL,
+                memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+                is_optional=False,
+            ),
+        },
+    )
+    plugin = BindingsLibrary(library_name="libtest_plugin", functions=[bool_func])
+
+    header = CHeaderGenerator.apply(plugin)
+    assert "unsigned char flag" in header
+    assert "unsigned char* mask" in header
+
+    interface = generate_f90_interface(plugin)
+    assert "logical(c_bool), value, target :: flag" in interface
+    assert "logical(c_bool), dimension(:), contiguous, intent(inout), target :: mask" in interface

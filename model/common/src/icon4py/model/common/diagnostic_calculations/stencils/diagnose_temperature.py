@@ -47,14 +47,14 @@ def diagnose_virtual_temperature_and_temperature(
     vertical_end: gtx.int32,
 ) -> None:
     _diagnose_virtual_temperature_and_temperature(
-        qv,
-        qc,
-        qi,
-        qr,
-        qs,
-        qg,
-        theta_v,
-        exner,
+        qv=qv,
+        qc=qc,
+        qi=qi,
+        qr=qr,
+        qs=qs,
+        qg=qg,
+        theta_v=theta_v,
+        exner=exner,
         out=(virtual_temperature, temperature),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

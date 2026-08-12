@@ -51,6 +51,7 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         scalar_field: np.ndarray,
         geofac_grg_x: np.ndarray,
         geofac_grg_y: np.ndarray,
@@ -82,6 +83,9 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
             geofac_grg_y=geofac_grg_y,
             out=(p_grad_1_u, p_grad_1_v),
             domain=gtx.domain(
-                {dims.CellDim: gtx.int32(grid.num_cells), dims.KDim: gtx.int32(grid.num_levels)}
+                {
+                    dims.CellDim: gtx.int32(grid.num_cells),
+                    dims.KDim: gtx.int32(grid.num_levels),
+                }
             ),
         )

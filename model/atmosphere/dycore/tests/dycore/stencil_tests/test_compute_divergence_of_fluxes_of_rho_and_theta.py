@@ -44,6 +44,7 @@ class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(stencil_tests.Stenc
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         geofac_div: np.ndarray,
         mass_fl_e: np.ndarray,
         z_theta_v_fl_e: np.ndarray,

@@ -48,11 +48,11 @@ def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-        theta_v,
-        theta_ref_mc,
-        thresh_tdiff,
-        smallest_vpfloat,
-        kh_smag_e,
+        theta_v=theta_v,
+        theta_ref_mc=theta_ref_mc,
+        thresh_tdiff=thresh_tdiff,
+        smallest_vpfloat=smallest_vpfloat,
+        kh_smag_e=kh_smag_e,
         out=kh_smag_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

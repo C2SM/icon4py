@@ -8,8 +8,8 @@
 import gt4py.next as gtx
 from gt4py.next import astype, broadcast
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -24,7 +24,7 @@ def _add_vertical_wind_derivative_to_divergence_damping(
     """Formerly known as _mo_solve_nonhydro_stencil_17."""
     z_graddiv_vn_wp = astype(z_graddiv_vn, wpfloat)
 
-    scalfac_dd3d = broadcast(scalfac_dd3d, (EdgeDim, KDim))
+    scalfac_dd3d = broadcast(scalfac_dd3d, (dims.EdgeDim, dims.KDim))
     z_graddiv_vn_wp = z_graddiv_vn_wp + (
         hmask_dd3d
         * scalfac_dd3d
@@ -47,14 +47,14 @@ def add_vertical_wind_derivative_to_divergence_damping(
     vertical_end: gtx.int32,
 ) -> None:
     _add_vertical_wind_derivative_to_divergence_damping(
-        hmask_dd3d,
-        scalfac_dd3d,
-        inv_dual_edge_length,
-        z_dwdz_dd,
-        z_graddiv_vn,
+        hmask_dd3d=hmask_dd3d,
+        scalfac_dd3d=scalfac_dd3d,
+        inv_dual_edge_length=inv_dual_edge_length,
+        z_dwdz_dd=z_dwdz_dd,
+        z_graddiv_vn=z_graddiv_vn,
         out=z_graddiv_vn,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

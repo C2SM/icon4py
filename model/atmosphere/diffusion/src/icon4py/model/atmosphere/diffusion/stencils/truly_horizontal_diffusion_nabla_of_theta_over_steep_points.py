@@ -10,7 +10,7 @@ from gt4py.next import astype
 from gt4py.next.experimental import as_offset
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2C, C2E2CDim, Koff
+from icon4py.model.common.dimension import C2E2C, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -26,22 +26,31 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
 ) -> fa.CellKField[vpfloat]:
     z_temp_wp = astype(z_temp, wpfloat)
 
-    theta_v_0 = theta_v(C2E2C[0])(as_offset(Koff, zd_vertoffset[C2E2CDim(0)]))
-    theta_v_1 = theta_v(C2E2C[1])(as_offset(Koff, zd_vertoffset[C2E2CDim(1)]))
-    theta_v_2 = theta_v(C2E2C[2])(as_offset(Koff, zd_vertoffset[C2E2CDim(2)]))
+    theta_v_0 = theta_v(C2E2C[0])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(0)]))
+    theta_v_1 = theta_v(C2E2C[1])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(1)]))
+    theta_v_2 = theta_v(C2E2C[2])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(2)]))
 
-    theta_v_0_m1 = theta_v(C2E2C[0])(as_offset(Koff, zd_vertoffset[C2E2CDim(0)] + 1))
-    theta_v_1_m1 = theta_v(C2E2C[1])(as_offset(Koff, zd_vertoffset[C2E2CDim(1)] + 1))
-    theta_v_2_m1 = theta_v(C2E2C[2])(as_offset(Koff, zd_vertoffset[C2E2CDim(2)] + 1))
+    theta_v_0_m1 = theta_v(C2E2C[0])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(0)] + 1))
+    theta_v_1_m1 = theta_v(C2E2C[1])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(1)] + 1))
+    theta_v_2_m1 = theta_v(C2E2C[2])(as_offset(Koff, zd_vertoffset[dims.C2E2CDim(2)] + 1))
 
     sum_tmp = (
         theta_v * geofac_n2s_c
-        + geofac_n2s_nbh[C2E2CDim(0)]
-        * (vcoef[C2E2CDim(0)] * theta_v_0 + (wpfloat("1.0") - vcoef[C2E2CDim(0)]) * theta_v_0_m1)
-        + geofac_n2s_nbh[C2E2CDim(1)]
-        * (vcoef[C2E2CDim(1)] * theta_v_1 + (wpfloat("1.0") - vcoef[C2E2CDim(1)]) * theta_v_1_m1)
-        + geofac_n2s_nbh[C2E2CDim(2)]
-        * (vcoef[C2E2CDim(2)] * theta_v_2 + (wpfloat("1.0") - vcoef[C2E2CDim(2)]) * theta_v_2_m1)
+        + geofac_n2s_nbh[dims.C2E2CDim(0)]
+        * (
+            vcoef[dims.C2E2CDim(0)] * theta_v_0
+            + (wpfloat("1.0") - vcoef[dims.C2E2CDim(0)]) * theta_v_0_m1
+        )
+        + geofac_n2s_nbh[dims.C2E2CDim(1)]
+        * (
+            vcoef[dims.C2E2CDim(1)] * theta_v_1
+            + (wpfloat("1.0") - vcoef[dims.C2E2CDim(1)]) * theta_v_1_m1
+        )
+        + geofac_n2s_nbh[dims.C2E2CDim(2)]
+        * (
+            vcoef[dims.C2E2CDim(2)] * theta_v_2
+            + (wpfloat("1.0") - vcoef[dims.C2E2CDim(2)]) * theta_v_2_m1
+        )
     )
 
     # Note: In the original Fortran code `zd_diffcoef` is implemented as a list,
@@ -66,13 +75,13 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     vertical_end: gtx.int32,
 ) -> None:
     _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-        zd_vertoffset,
-        zd_diffcoef,
-        geofac_n2s_c,
-        geofac_n2s_nbh,
-        vcoef,
-        theta_v,
-        z_temp,
+        zd_vertoffset=zd_vertoffset,
+        zd_diffcoef=zd_diffcoef,
+        geofac_n2s_c=geofac_n2s_c,
+        geofac_n2s_nbh=geofac_n2s_nbh,
+        vcoef=vcoef,
+        theta_v=theta_v,
+        z_temp=z_temp,
         out=z_temp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

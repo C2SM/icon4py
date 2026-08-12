@@ -17,7 +17,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 
 
 @gtx.field_operator
-def _muphys(
+def _muphys(  # noqa: PLR0917 [too-many-positional-arguments]
     last_level: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
@@ -26,6 +26,7 @@ def _muphys(
     q_in: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
+    use_aes_graupel: bool,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     Q,
@@ -43,15 +44,16 @@ def _muphys(
     )
 
     t, q, pflx, pr, ps, pi, pg, pre = graupel(
-        last_level,
-        dz,
-        te,
-        p,
-        rho,
-        Q(v=qve, c=qce, r=q_in.r, s=q_in.s, i=q_in.i, g=q_in.g),
-        dt,
-        qnc,
+        last_level=last_level,
+        dz=dz,
+        te=te,
+        p=p,
+        rho=rho,
+        q=Q(v=qve, c=qce, r=q_in.r, s=q_in.s, i=q_in.i, g=q_in.g),
+        dt=dt,
+        qnc=qnc,
         enable_masking=True,  # TODO(havogt): expose this option when optimizing full muphys
+        use_aes_graupel=use_aes_graupel,
     )
 
     te, qve, qce = _saturation_adjustment(
@@ -60,11 +62,13 @@ def _muphys(
         rho=rho,
     )
 
-    return t, Q(v=qve, c=qce, r=q.r, s=q.s, i=q.i, g=q.g), pflx, pr, ps, pi, pg, pre
+    # return the temperature updated by the final saturation adjustment (as the
+    # Fortran does), consistent with the adjusted qv/qc
+    return te, Q(v=qve, c=qce, r=q.r, s=q.s, i=q.i, g=q.g), pflx, pr, ps, pi, pg, pre
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def muphys_run(
+def muphys_run(  # noqa: PLR0917 [too-many-positional-arguments]
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
@@ -84,16 +88,18 @@ def muphys_run(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
+    use_aes_graupel: bool,
 ) -> None:
     _muphys(
-        vertical_end - 1,
-        dz,
-        te,
-        p,
-        rho,
-        q_in,
-        dt,
-        qnc,
+        last_level=vertical_end - 1,
+        dz=dz,
+        te=te,
+        p=p,
+        rho=rho,
+        q_in=q_in,
+        dt=dt,
+        qnc=qnc,
+        use_aes_graupel=use_aes_graupel,
         out=(t_out, q_out, pflx, pr, ps, pi, pg, pre),
         domain=(
             # t_out

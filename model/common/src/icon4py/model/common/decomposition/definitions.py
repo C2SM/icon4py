@@ -14,7 +14,7 @@ import functools
 import logging
 import warnings
 from enum import Enum
-from typing import Any, ClassVar, Literal, Protocol, TypeAlias, overload, runtime_checkable
+from typing import Any, ClassVar, Literal, Protocol, overload, runtime_checkable
 
 import gt4py.next as gtx
 
@@ -57,7 +57,7 @@ class CudaStreamProtocol(Protocol):
     def __cuda_stream__(self) -> tuple[int, int]: ...
 
 
-StreamLike: TypeAlias = CupyLikeStream | CudaStreamProtocol
+type StreamLike = CupyLikeStream | CudaStreamProtocol
 
 
 @dataclasses.dataclass(frozen=True)

@@ -10,21 +10,24 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.diagnostic_calculations.stencils import (
     calculate_tendency,
     diagnose_pressure,
     diagnose_surface_pressure,
     diagnose_temperature,
+    update_exner_and_theta_v,
 )
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import simple, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
-from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_state as tracers
+from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_states as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -46,8 +49,62 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
+def test_update_exner_and_theta_v(backend: gtx_typing.Backend) -> None:
+    """The physics coupling recomputes exner via the exact EOS and theta_v = Tv/exner.
+
+    Mirrors ICON's mo_interface_iconam_aes.f90:
+        Tv_new    = Tv + dt * dTv/dt
+        exner_new = (rd/p0ref * rho * Tv_new) ** (rd/cpd)
+        theta_v   = Tv_new / exner_new
+    """
+    grid = simple.simple_grid()
+    rho_value, tv_value, tv_tendency_value, dtime = 1.1, 280.0, 0.05, 20.0
+
+    rho = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
+    virtual_temperature = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
+    )
+    virtual_temperature_tendency = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
+    )
+    exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
+    theta_v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
+    rho.ndarray[...] = rho_value
+    virtual_temperature.ndarray[...] = tv_value
+    virtual_temperature_tendency.ndarray[...] = tv_tendency_value
+
+    update_exner_and_theta_v.update_exner_and_theta_v.with_backend(backend)(
+        rho=rho,
+        virtual_temperature=virtual_temperature,
+        virtual_temperature_tendency=virtual_temperature_tendency,
+        dtime=dtime,
+        exner=exner,
+        theta_v=theta_v,
+        horizontal_start=0,
+        horizontal_end=grid.num_cells,
+        vertical_start=0,
+        vertical_end=grid.num_levels,
+        offset_provider={},
+    )
+
+    new_virtual_temperature = tv_value + tv_tendency_value * dtime
+    expected_exner = np.exp(
+        PhysicsConstants.rd_o_cpd
+        * np.log(PhysicsConstants.rd_o_p0ref * rho_value * new_virtual_temperature)
+    )
+    expected_theta_v = new_virtual_temperature / expected_exner
+
+    assert test_utils.dallclose(exner.asnumpy(), expected_exner)
+    assert test_utils.dallclose(theta_v.asnumpy(), expected_theta_v)
+    # EOS consistency: by definition theta_v * exner == Tv_new
+    assert test_utils.dallclose(
+        theta_v.asnumpy() * exner.asnumpy(),
+        np.full_like(theta_v.asnumpy(), new_virtual_temperature),
+    )
+
+
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 def test_diagnose_temperature(
     data_provider: sb.IconSerialDataProvider, icon_grid: base_grid.Grid, backend: gtx_typing.Backend
 ) -> None:
@@ -102,7 +159,7 @@ def test_diagnose_temperature(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 def test_diagnose_meridional_and_zonal_winds(
     data_provider: sb.IconSerialDataProvider,
     interpolation_savepoint: sb.InterpolationSavepoint,
@@ -155,7 +212,7 @@ def test_diagnose_meridional_and_zonal_winds(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 def test_diagnose_surface_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
@@ -184,7 +241,7 @@ def test_diagnose_surface_pressure(
         horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
         vertical_start=icon_grid.num_levels,
         vertical_end=icon_grid.num_levels + 1,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert test_utils.dallclose(
@@ -194,7 +251,7 @@ def test_diagnose_surface_pressure(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 def test_diagnose_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
@@ -244,17 +301,17 @@ def test_diagnose_pressure(
 
 @pytest.mark.parametrize(
     "experiment_description",
-    [definitions.Experiments.WEISMAN_KLEMP_TORUS],
+    [test_defs.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 @pytest.mark.parametrize("location", ["interface-nwp"])
 @pytest.mark.datatest
-def test_diagnostic_update_after_saturation_adjustement(
+def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-many-positional-arguments]
     location: str,
     date: str,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
@@ -346,7 +403,7 @@ def test_diagnostic_update_after_saturation_adjustement(
         horizontal_end=end_cell_local,
         vertical_start=icon_grid.num_levels,
         vertical_end=gtx.int32(icon_grid.num_levels + 1),
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     diagnose_pressure.diagnose_pressure.with_backend(backend)(

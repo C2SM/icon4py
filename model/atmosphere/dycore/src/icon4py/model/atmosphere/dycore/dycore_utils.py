@@ -8,8 +8,7 @@
 import gt4py.next as gtx
 from gt4py.next import abs, broadcast, maximum  # noqa: A004
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -19,7 +18,7 @@ def _scale_k(field: fa.KField[float], factor: float) -> fa.KField[float]:
 
 
 @gtx.program
-def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
+def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]) -> None:
     _scale_k(field, factor, out=scaled_field)
 
 
@@ -30,9 +29,9 @@ def _broadcast_zero_to_three_edge_kdim_fields_wp() -> tuple[
     fa.EdgeKField[wpfloat],
 ]:
     return (
-        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
-        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
-        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
     )
 
 
@@ -61,7 +60,7 @@ def _calculate_fourth_order_divdamp_scaling_coeff(
 
 
 @gtx.field_operator
-def _calculate_divdamp_fields(
+def _calculate_divdamp_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolated_fourth_order_divdamp_factor: fa.KField[float],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
@@ -84,7 +83,7 @@ def _calculate_divdamp_fields(
 
 
 @gtx.program
-def calculate_divdamp_fields(
+def calculate_divdamp_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     interpolated_fourth_order_divdamp_factor: fa.KField[float],
     fourth_order_divdamp_scaling_coeff: fa.KField[float],
     reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[float],
@@ -93,14 +92,14 @@ def calculate_divdamp_fields(
     second_order_divdamp_factor: float,
     max_nudging_coefficient: float,
     dbl_eps: float,
-):
+) -> None:
     _calculate_divdamp_fields(
-        interpolated_fourth_order_divdamp_factor,
-        divdamp_order,
-        mean_cell_area,
-        second_order_divdamp_factor,
-        max_nudging_coefficient,
-        dbl_eps,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        divdamp_order=divdamp_order,
+        mean_cell_area=mean_cell_area,
+        second_order_divdamp_factor=second_order_divdamp_factor,
+        max_nudging_coefficient=max_nudging_coefficient,
+        dbl_eps=dbl_eps,
         out=(
             fourth_order_divdamp_scaling_coeff,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary,

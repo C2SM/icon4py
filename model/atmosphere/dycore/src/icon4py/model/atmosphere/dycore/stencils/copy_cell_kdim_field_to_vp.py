@@ -31,7 +31,7 @@ def copy_cell_kdim_field_to_vp(
     vertical_end: gtx.int32,
 ) -> None:
     _copy_cell_kdim_field_to_vp(
-        field,
+        field=field,
         out=field_copy,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

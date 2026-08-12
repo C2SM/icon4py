@@ -36,9 +36,9 @@ def add_analysis_increments_to_vn(
     vertical_end: gtx.int32,
 ) -> None:
     _add_analysis_increments_to_vn(
-        vn_incr,
-        vn,
-        iau_wgt_dyn,
+        vn_incr=vn_incr,
+        vn=vn,
+        iau_wgt_dyn=iau_wgt_dyn,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

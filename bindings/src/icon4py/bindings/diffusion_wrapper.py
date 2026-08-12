@@ -34,7 +34,10 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
+    DiffusionType,
     ForcingType,
+    SmagorinskyStencilType,
+    TemperatureDiscretizationType,
     TurbulenceShearForcingType,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -60,7 +63,7 @@ granule: DiffusionGranule | None = None
 
 
 @icon4py_export.export
-def diffusion_init(
+def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     theta_ref_mc: fa.CellKField[wpfloat],
     wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
@@ -117,13 +120,13 @@ def diffusion_init(
 
     # Diffusion parameters
     config = DiffusionConfig(
-        diffusion_type=diffusion_type,
-        hdiff_w=hdiff_w,
-        hdiff_vn=hdiff_vn,
-        hdiff_smag_w=hdiff_smag_w,
-        zdiffu_t=zdiffu_t,
-        type_t_diffu=type_t_diffu,
-        type_vn_diffu=type_vn_diffu,
+        diffusion_type=DiffusionType(diffusion_type),
+        apply_to_vertical_wind=hdiff_w,
+        apply_to_horizontal_wind=hdiff_vn,
+        apply_smag_diff_to_vertical_wind=hdiff_smag_w,
+        apply_zdiffusion_t=zdiffu_t,
+        type_t_diffu=TemperatureDiscretizationType(type_t_diffu),
+        type_vn_diffu=SmagorinskyStencilType(type_vn_diffu),
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
@@ -134,9 +137,9 @@ def diffusion_init(
         smagorinski_scaling_height2=smagorinski_scaling_height2,
         smagorinski_scaling_height3=smagorinski_scaling_height3,
         smagorinski_scaling_height4=smagorinski_scaling_height4,
-        hdiff_temp=hdiff_temp,
-        n_substeps=ndyn_substeps,
-        velocity_boundary_diffusion_denom=denom_diffu_v,
+        apply_to_temperature=hdiff_temp,
+        ndyn_substeps=int(ndyn_substeps),
+        velocity_boundary_diffusion_denominator=denom_diffu_v,
         max_nudging_coefficient=nudge_max_coeff,
         shear_type=TurbulenceShearForcingType(itype_sher),
         iforcing=ForcingType(iforcing),
@@ -260,7 +263,7 @@ def diffusion_init(
 
 
 @icon4py_export.export
-def diffusion_run(
+def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn: fa.EdgeKField[wpfloat],
     exner: fa.CellKField[wpfloat],

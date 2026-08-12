@@ -22,7 +22,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def apply_nabla2_and_nabla4_global_to_vn_numpy(
-    area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
+    *, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
 ):
     area_edge = np.expand_dims(area_edge, axis=-1)
     diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
@@ -59,6 +59,7 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         area_edge: np.ndarray,
         kh_smag_e: np.ndarray,
         z_nabla2_e: np.ndarray,
@@ -68,7 +69,12 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
         **kwargs: Any,
     ) -> dict:
         vn = apply_nabla2_and_nabla4_global_to_vn_numpy(
-            area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
+            area_edge=area_edge,
+            kh_smag_e=kh_smag_e,
+            z_nabla2_e=z_nabla2_e,
+            z_nabla4_e2=z_nabla4_e2,
+            diff_multfac_vn=diff_multfac_vn,
+            vn=vn,
         )
         return dict(
             vn=vn,

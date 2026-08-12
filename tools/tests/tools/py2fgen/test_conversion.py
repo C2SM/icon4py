@@ -28,15 +28,6 @@ def ffi():
     return cffi.FFI()
 
 
-@pytest.fixture
-def no_ffi_dummy():
-    """
-    Use to indicate that FFI is not used in the test.
-
-    ... but where an FFI argument is required in the general case."""
-    return None
-
-
 @pytest.fixture(
     params=[
         np,
@@ -86,10 +77,15 @@ def test_unpack_column_major(xp, ctype, rawdata, expected, ffi):
     [
         ("double", np.float64, [1.0, 2.0, 3.0, 4.0], [[1.0, 3.0], [2.0, 4.0]]),
         ("long", np.int64, [1, 2, 3, 4], [[1, 3], [2, 4]]),
-        ("int", np.int32, [-1, 0, -1, 0, 0, -1], [[True, True, False], [False, False, True]]),
+        (
+            "unsigned char",
+            np.bool_,
+            [True, False, True, False, False, True],
+            [[True, True, False], [False, False, True]],
+        ),
     ],
 )
-def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):
+def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):  # noqa: PLR0917 [too-many-positional-arguments]
     expected_result = xp.array(expected)
 
     arr = xp.array(rawdata, dtype=rawdtype)
@@ -98,19 +94,10 @@ def test_as_array(xp, ctype, rawdtype, rawdata, expected, ffi):
         ptr, shape=expected_result.shape, on_gpu=xp != np, is_optional=False
     )
 
-    result = _conversion.as_array(ffi, array_info, test_utils.from_np_dtype(expected_result.dtype))
+    result = _conversion.as_array(ffi, array_info)
 
     assert isinstance(result, xp.ndarray)
     assert xp.array_equal(result, expected_result)
-
-
-def test_int_array_to_bool():
-    testee = np.array([[0, -1, 1], [0, -1, 1]], dtype=np.int32, order="F")
-    expected = np.array([[False, True, True], [False, True, True]], dtype=np.bool_, order="F")
-
-    result = _conversion._int_array_to_bool_array(testee)
-    assert result.flags["F_CONTIGUOUS"]
-    assert np.array_equal(result, expected)
 
 
 def test_default_mapping_hook_array(ffi):
@@ -130,14 +117,12 @@ def test_default_mapping_hook_array(ffi):
     assert isinstance(result, np.ndarray)
 
 
-def test_default_mapping_hook_bool(no_ffi_dummy):
-    bool_mapper = _conversion.default_mapping(
-        None, py2fgen.ScalarParamDescriptor(dtype=py2fgen.BOOL)
-    )
-
-    true_result = bool_mapper(-1, ffi=no_ffi_dummy)
-    assert isinstance(true_result, bool)
-    assert true_result
-    false_result = bool_mapper(0, ffi=no_ffi_dummy)
-    assert isinstance(false_result, bool)
-    assert not false_result
+def test_default_mapping_hook_bool(ffi):
+    # Scalar BOOL is `unsigned char` on the C side, so CFFI delivers a Python `int`
+    # which the mapper converts to `bool`.
+    mapper = _conversion.default_mapping(None, py2fgen.ScalarParamDescriptor(dtype=py2fgen.BOOL))
+    assert mapper is not None
+    assert mapper(0, ffi=ffi) is False
+    assert mapper(1, ffi=ffi) is True
+    # NVHPC writes `.TRUE.` as 0xFF; the mapper must still produce `True`.
+    assert mapper(255, ffi=ffi) is True

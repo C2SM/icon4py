@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2CDim
+from icon4py.model.common.dimension import E2C
 
 
 @gtx.field_operator
@@ -25,7 +25,7 @@ def _cell_2_edge_interpolation(
     multiplication by coeff. This essentially means: the skip value neighbor in the neighbor_sum
     is skipped and coeff needs to be 1 for this Edge index.
     """
-    return neighbor_sum(in_field(E2C) * coeff, axis=E2CDim)
+    return neighbor_sum(in_field(E2C) * coeff, axis=dims.E2CDim)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -39,8 +39,8 @@ def cell_2_edge_interpolation(
     vertical_end: gtx.int32,
 ) -> None:
     _cell_2_edge_interpolation(
-        in_field,
-        coeff,
+        in_field=in_field,
+        coeff=coeff,
         out=out_field,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

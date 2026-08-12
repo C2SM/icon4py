@@ -60,6 +60,7 @@ class TestInterpolateVnToHalfLevelsAndComputeKineticEnergyOnEdges(stencil_tests.
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         wgtfac_e: np.ndarray,
         vn: np.ndarray,
         vt: np.ndarray,
@@ -69,6 +70,7 @@ class TestInterpolateVnToHalfLevelsAndComputeKineticEnergyOnEdges(stencil_tests.
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
+        **kwargs: Any,
     ) -> dict:
         subset = (slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end))
         vn_ie, z_kin_hor_e = vn_ie.copy(), z_kin_hor_e.copy()

@@ -41,6 +41,7 @@ class Experiments:
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "experiment",
     [
@@ -68,7 +69,7 @@ def test_full_muphys(
     )
 
     muphys_program = run_full_muphys.setup_muphys(
-        inp,
+        inp=inp,
         dt=experiment.dt,
         qnc=experiment.qnc,
         backend=backend_like,

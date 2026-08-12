@@ -19,6 +19,7 @@ from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
+    *,
     connectivities: dict[gtx.Dimension, np.ndarray],
     zd_vertoffset: np.ndarray,
     zd_diffcoef: np.ndarray,
@@ -51,12 +52,11 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
         axis=1,
     )
 
-    geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)  # add KDim
+    geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)  # add dims.KDim
     z_temp = z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over)
     return z_temp
 
 
-@pytest.mark.uses_as_offset
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
     OUTPUTS = ("z_temp",)
@@ -64,6 +64,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         zd_vertoffset: np.ndarray,
         zd_diffcoef: np.ndarray,
         geofac_n2s_c: np.ndarray,
@@ -74,14 +75,14 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         **kwargs,
     ) -> dict:
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
-            connectivities,
-            zd_vertoffset,
-            zd_diffcoef,
-            geofac_n2s_c,
-            geofac_n2s_nbh,
-            vcoef,
-            theta_v,
-            z_temp,
+            connectivities=connectivities,
+            zd_vertoffset=zd_vertoffset,
+            zd_diffcoef=zd_diffcoef,
+            geofac_n2s_c=geofac_n2s_c,
+            geofac_n2s_nbh=geofac_n2s_nbh,
+            vcoef=vcoef,
+            theta_v=theta_v,
+            z_temp=z_temp,
         )
         return dict(z_temp=z_temp)
 

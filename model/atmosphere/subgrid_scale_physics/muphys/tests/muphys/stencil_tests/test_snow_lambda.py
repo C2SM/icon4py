@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -23,7 +24,14 @@ class TestSnowLambda(StencilTest):
     OUTPUTS = ("riming_snow_rate",)
 
     @staticmethod
-    def reference(grid, rho: np.ndarray, qs: np.ndarray, ns: np.ndarray, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
+        rho: np.ndarray,
+        qs: np.ndarray,
+        ns: np.ndarray,
+        **kwargs,
+    ) -> dict:
         return dict(riming_snow_rate=np.full(rho.shape, 1.0e10))
 
     @pytest.fixture

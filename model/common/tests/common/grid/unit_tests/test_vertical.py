@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
@@ -70,7 +70,7 @@ def test_damping_layer_calculation(
 
 @pytest.mark.datatest
 def test_damping_layer_calculation_from_icon_input(
-    grid_savepoint: sb.IconGridSavepoint, experiment: definitions.Experiment
+    grid_savepoint: sb.IconGridSavepoint, experiment: test_defs.Experiment
 ) -> None:
     a = grid_savepoint.vct_a()
     b = grid_savepoint.vct_b()
@@ -90,9 +90,7 @@ def test_damping_layer_calculation_from_icon_input(
 
 
 @pytest.mark.datatest
-def test_grid_size(
-    experiment: definitions.Experiment, grid_savepoint: sb.IconGridSavepoint
-) -> None:
+def test_grid_size(experiment: test_defs.Experiment, grid_savepoint: sb.IconGridSavepoint) -> None:
     config = v_grid.VerticalGridConfig(num_levels=grid_savepoint.num(dims.KDim))
     vertical_grid = v_grid.VerticalGrid(
         config=config,
@@ -142,7 +140,7 @@ def configure_vertical_grid(
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, expected_moist_level",
-    [(definitions.Experiments.MCH_CH_R04B09, 0), (definitions.Experiments.EXCLAIM_APE, 25)],
+    [(test_defs.Experiments.MCH_CH_R04B09, 0), (test_defs.Experiments.EXCLAIM_APE, 25)],
 )
 def test_moist_level_calculation(
     grid_savepoint: sb.IconGridSavepoint, expected_moist_level: int
@@ -198,7 +196,7 @@ def test_grid_index_top(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(
@@ -215,7 +213,7 @@ def test_grid_index_damping(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(
@@ -232,7 +230,7 @@ def test_grid_index_moist(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(
@@ -251,13 +249,13 @@ def test_grid_index_flat(
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description",
-    [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
+    [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE],
 )
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_bottom(
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     dim: gtx.Dimension,
     offset: int,
 ) -> None:
@@ -273,13 +271,13 @@ def test_grid_index_bottom(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_above_num_levels(
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     zone: v_grid.Zone,
     dim: gtx.Dimension,
     offset: int,
@@ -297,13 +295,13 @@ def test_grid_index_raises_if_index_above_num_levels(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_below_zero(
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     zone: v_grid.Zone,
     dim: gtx.Dimension,
     offset: int,
@@ -323,7 +321,7 @@ def test_grid_index_raises_if_index_below_zero(
 @pytest.mark.datatest
 def test_vct_a_vct_b_calculation_from_icon_input(
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     vertical_config = experiment.config.vertical_grid
@@ -338,18 +336,18 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 @pytest.mark.parametrize(
     "experiment_description",
     [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.GAUSS3D,
-        definitions.Experiments.EXCLAIM_APE,
+        test_defs.Experiments.MCH_CH_R04B09,
+        test_defs.Experiments.GAUSS3D,
+        test_defs.Experiments.EXCLAIM_APE,
     ],
 )
-def test_compute_vertical_coordinate(
+def test_compute_vertical_coordinate(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     topography_savepoint: sb.TopographySavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     vct_a = grid_savepoint.vct_a()
@@ -367,11 +365,11 @@ def test_compute_vertical_coordinate(
 
     topography = None
     if experiment.description in (
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.GAUSS3D,
+        test_defs.Experiments.MCH_CH_R04B09,
+        test_defs.Experiments.GAUSS3D,
     ):
         topography = topography_savepoint.topo_c()
-    elif experiment.description == definitions.Experiments.EXCLAIM_APE:
+    elif experiment.description == test_defs.Experiments.EXCLAIM_APE:
         topography = data_alloc.zero_field(
             icon_grid, dims.CellDim, allocator=backend, dtype=ta.wpfloat
         )

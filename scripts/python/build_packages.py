@@ -1,4 +1,4 @@
-#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
+#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --only-group scripts python3
 #
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
@@ -135,6 +135,7 @@ def build(
 
 @cli.command()
 def proxy(
+    *,
     version: Annotated[
         str,
         typer.Option("--version", "-V", help="Version string for the proxy packages."),

@@ -27,6 +27,7 @@ class TestComputeAirmass(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        *,
         rho_in: np.ndarray,
         ddqz_z_full_in: np.ndarray,
         deepatmo_t1mc_in: np.ndarray,

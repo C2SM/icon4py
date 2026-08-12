@@ -67,12 +67,12 @@ def update_theta_and_exner_in_halo(
     vertical_end: gtx.int32,
 ) -> None:
     _update_theta_and_exner_in_halo(
-        mask_prog_halo_c,
-        rho_now,
-        rho_new,
-        theta_v_now,
-        exner_now,
-        exner_new,
+        mask_prog_halo_c=mask_prog_halo_c,
+        rho_now=rho_now,
+        rho_new=rho_new,
+        theta_v_now=theta_v_now,
+        exner_now=exner_now,
+        exner_new=exner_new,
         out=(theta_v_new, exner_new),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
