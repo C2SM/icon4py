@@ -34,7 +34,7 @@ from icon4py.model.common.states import (
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.driver import config as driver_config
 
 
 if TYPE_CHECKING:

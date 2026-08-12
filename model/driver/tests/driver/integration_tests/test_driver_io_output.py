@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Integration test for single-node output from the standalone driver.
+"""Integration test for single-node output from the driver.
 
 Runs the Jablonowski-Williamson testcase for one step with output enabled and asserts
 that valid CF/UGRID NetCDF files are produced. It exercises the full ``store -> file``
@@ -23,12 +23,7 @@ import pytest
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.standalone_driver import (
-    config as driver_config,
-    driver_io,
-    driver_utils,
-    standalone_driver,
-)
+from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 
 from ..fixtures import *  # noqa: F403
@@ -43,7 +38,7 @@ def _find_one(directory: pathlib.Path, pattern: str) -> pathlib.Path:
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
-def test_standalone_driver_writes_output(
+def test_driver_writes_output(
     experiment_description: test_defs.ExperimentDescription,
     *,
     download_ser_data: None,
@@ -70,7 +65,7 @@ def test_standalone_driver_writes_output(
         allocator=allocator,
         process_props=process_props,
     )
-    standalone_driver.run_driver(
+    driver.run_driver(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,
