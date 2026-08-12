@@ -278,7 +278,7 @@ class DriverConfig:
         common_conf_opt.ConfigOption(
             description=(
                 "Enable output to file. For now this is only documented in "
-                "'icon4py.model.standalone_driver.driver_io'."
+                "'icon4py.model.driver.driver_io'."
             ),
             icon_equivalent=None,
         ),
@@ -409,7 +409,7 @@ def read_experiment_config_from_fortran(
     # The driver supplies advection's inputs (airmass and the mass fluxes the dycore
     # accumulates over the substeps), and exclaim_ape_aesPhys runs tracer advection:
     # the driver test validates transport+muphys against the end-of-time-step
-    # reference (hydrometeors bit-exact, see the test_standalone_driver docstring).
+    # reference (hydrometeors bit-exact, see the test_driver docstring).
     # The two experiments above stay disabled until their runs are validated the same
     # way (their datatests do not compare tracers yet).
     # TODO (jcanton): this isn't the right place to keep a special case
