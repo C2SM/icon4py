@@ -101,7 +101,7 @@ def test_parallel_diffusion(  # noqa: PLR0917 [too-many-positional-arguments]
         cell_params=cell_geometry,
         exchange=exchange,
         backend=backend,
-        substep_as_float=float(experiment.config.driver.ndyn_substeps),
+        ndyn_substeps=experiment.config.driver.ndyn_substeps,
         max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 

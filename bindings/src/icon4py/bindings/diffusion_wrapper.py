@@ -253,7 +253,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             cell_params=grid_wrapper.grid_state.cell_geometry,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
-            substep_as_float=float(ndyn_substeps),
+            ndyn_substeps=ndyn_substeps,
             max_nudging_coefficient=nudge_max_coeff,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),

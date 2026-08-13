@@ -487,7 +487,7 @@ class Diffusion:
         | model_backends.BackendDescriptor
         | None,
         exchange: decomposition.ExchangeRuntime,
-        substep_as_float: float,
+        ndyn_substeps: int,
         max_nudging_coefficient: float,
     ) -> None:
         self._allocator = model_backends.get_allocator(backend)
@@ -500,6 +500,7 @@ class Diffusion:
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
+        ndyn_substeps_as_float = float(ndyn_substeps)
 
         assert self._cell_params.area is not None
 
@@ -516,11 +517,11 @@ class Diffusion:
         self.nudgezone_diff: float = 0.04 / (max_nudging_coefficient + sys.float_info.epsilon)
         self.bdy_diff: float = 0.015 / (max_nudging_coefficient + sys.float_info.epsilon)
         self.fac_bdydiff_v: float = (
-            math.sqrt(substep_as_float) / config.velocity_boundary_diffusion_denominator
+            math.sqrt(ndyn_substeps_as_float) / config.velocity_boundary_diffusion_denominator
         )
 
-        self.smag_offset: float = 0.25 * params.K4 * substep_as_float
-        self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * substep_as_float)
+        self.smag_offset: float = 0.25 * params.K4 * ndyn_substeps_as_float
+        self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * ndyn_substeps_as_float)
         self._determine_horizontal_domains()
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
@@ -683,7 +684,7 @@ class Diffusion:
 
         self.init_diffusion_local_fields_for_regular_timestep(
             params.K4,
-            substep_as_float,
+            ndyn_substeps_as_float,
             *params.smagorinski_factor,
             *params.smagorinski_height,
             self._vertical_grid.interface_physical_height,
