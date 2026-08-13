@@ -10,7 +10,7 @@ import textwrap
 
 import pytest
 
-from icon4py.model.common import boundaries
+from icon4py.model.common import domain_config
 from icon4py.model.common.config import config_io
 from icon4py.model.common.initial_condition.analytical import jablonowski_williamson as jw_ic
 from icon4py.model.common.topography.analytical import (
@@ -29,7 +29,7 @@ def test_read_minimal() -> None:
                 type: flat
             """
         ),
-        config_cls=boundaries.BoundariesConfig,
+        config_cls=domain_config.DomainConfig,
     )
     assert isinstance(testee.initial_condition, jw_ic.JablonowskiWilliamsonConfig)
     assert isinstance(testee.topography, flat_topo.FlatTopographyConfig)
@@ -48,7 +48,7 @@ def test_read_common_params() -> None:
                 type: jablonowski_williamson
             """,
         ),
-        config_cls=boundaries.BoundariesConfig,
+        config_cls=domain_config.DomainConfig,
     )
     assert isinstance(testee.initial_condition, jw_ic.JablonowskiWilliamsonConfig)
     assert isinstance(testee.topography, jw_topo.JablonowskiWilliamsonConfig)
@@ -71,5 +71,5 @@ def test_read_rejects_unused_params() -> None:
                     type: jablonowski_williamson
                 """
             ),
-            config_cls=boundaries.BoundariesConfig,
+            config_cls=domain_config.DomainConfig,
         )
