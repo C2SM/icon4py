@@ -135,7 +135,7 @@ Registered by `icon4py.model.testing.pytest_hooks` (auto-loaded via `addopts`):
 | ------------------------------------------- | --------------------------------------------------------------------------------- |
 | `--datatest-only`                           | Run only `@pytest.mark.datatest` tests                                            |
 | `--datatest-skip`                           | Skip all datatests                                                                |
-| `--backend <name>`                          | GT4Py backend (default: roundtrip; others: gtfn_cpu, gtfn_gpu, embedded)          |
+| `--backend <name>`                          | GT4Py backend (default: embedded; others: gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu) |
 | `--grid <name>`                             | Grid to use                                                                       |
 | `--enable-mixed-precision`                  | Switch from double to mixed-precision                                             |
 | `--level {any,unit,integration,validation}` | Filter by `@pytest.mark.level` marker. `any` (default) excludes validation tests. |
