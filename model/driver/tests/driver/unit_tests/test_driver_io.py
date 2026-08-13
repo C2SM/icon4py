@@ -31,7 +31,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import driver_io
+from icon4py.model.driver import driver_io
 from icon4py.model.testing.fixtures import backend
 
 
