@@ -319,14 +319,14 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             (tridiagonal_intermediate_result, next_w[:, :n_lev]),
         )
 
-        next_w[:, :n_lev] = np.where(
+        next_w[:] = np.where(
             (start_cell_index_nudging <= horz_idx) & (horz_idx < end_cell_index_local),
             solve_tridiagonal_matrix_for_w_back_substitution_numpy(
                 connectivities=connectivities,
-                z_q=tridiagonal_intermediate_result[:, :n_lev],
-                w=next_w[:, :n_lev],
+                z_q=tridiagonal_intermediate_result,
+                w=next_w,
             ),
-            next_w[:, :n_lev],
+            next_w,
         )
 
         if rayleigh_type == constants.RayleighType.KLEMP:
