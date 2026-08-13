@@ -39,7 +39,7 @@ class AdvectionPrepAdvState:
     mass_flx_me: fa.EdgeKField[ta.wpfloat]
 
     #: mass flux at half level centers averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_ic: fa.CellKHalfField[ta.wpfloat]
+    mass_flx_ic: fa.CellKField[ta.wpfloat]
 
 
 def initialize_advection_prep_adv_state(
