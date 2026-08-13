@@ -408,7 +408,7 @@ def initialize_granules(
             cell_params=cell_geometry,
             backend=backend,
             exchange=exchange,
-            substep_as_float=float(config.driver.ndyn_substeps),
+            ndyn_substeps=config.driver.ndyn_substeps,
             max_nudging_coefficient=config.interpolation.max_nudging_coefficient,
         )
 

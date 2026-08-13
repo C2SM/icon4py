@@ -165,7 +165,7 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
         cell_params=cell_geometry,
         backend=backend_like,
         exchange=decomp_defs.single_node_exchange,
-        substep_as_float=5.0,
+        ndyn_substeps=5,
         max_nudging_coefficient=0.375,
     )
 
