@@ -27,7 +27,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
-    boundaries,
+    domain_config,
     initial_condition,
     prescribed_tendencies,
     time,
@@ -337,7 +337,7 @@ class ExperimentConfig:
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
-    boundaries: boundaries.BoundariesConfig
+    domain: domain_config.DomainConfig
     prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
@@ -351,7 +351,7 @@ class ExperimentConfig:
         # The file-based initial condition needs the clock of the driver to know which
         # savepoint to read: the initial state, or the state of a later time step when
         # restarting. 'with_overrides' rebuilds the config, so the two stay in sync.
-        initial_condition_config = self.boundaries.initial_condition
+        initial_condition_config = self.domain.initial_condition
         if isinstance(initial_condition_config, from_file.FromFileConfig):
             initial_condition_config.start_of_simulation = self.driver.start_of_simulation
             initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
@@ -492,7 +492,7 @@ def read_experiment_config_from_fortran(
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         muphys=muphys_cfg,
-        boundaries=boundaries.BoundariesConfig(
+        domain=domain_config.DomainConfig(
             topography=topography_cfg.config,
             initial_condition=initial_condition_cfg.config,
         ),
