@@ -4,6 +4,10 @@ Branch `port_jsbach` (off `origin/main`). First vertical slice: soil-snow energy
 (SSE). See `sse_port_spec.md` for the verified Fortran requirements and the
 icon4py-knowledge design doc (`personal/jcanton/jsbach-port`) for the overall plan.
 
+> **Restarting on Santis (build ICON + generate golden data + validate loop):** read
+> `JSBACH_SSE_HANDOVER.md` on the icon-nwp branch `serialize_jsbach_sse` — it is the
+> self-contained restart guide (the validation recipe, preconditions, and the loop).
+
 ## Done
 
 Package `icon4py.model.land.jsbach` under a new `model/land/` tree (mirrors the
