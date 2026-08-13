@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import driver_states
+from icon4py.model.driver import driver_states
 
 
 @pytest.fixture

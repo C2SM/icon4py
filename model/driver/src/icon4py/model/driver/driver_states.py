@@ -35,7 +35,7 @@ from icon4py.model.common.states import (
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.driver import config as driver_config
 
 
 if TYPE_CHECKING:
@@ -97,13 +97,23 @@ class ModelTimeVariables:
         match config.end_of_simulation:
             case time.NumTimeSteps() as n:
                 self.n_time_steps = n
-                self.simulation_end_datetime = config.start_of_timestepping + n * config.dtime
+                requested_simulation_end_datetime = config.start_of_timestepping + n * config.dtime
             case time.RelativeTime() as relative:
                 self.n_time_steps = int(relative / config.dtime)
-                self.simulation_end_datetime = config.start_of_timestepping + relative
+                requested_simulation_end_datetime = config.start_of_timestepping + relative
             case time.AbsoluteTime() as absolute:
                 self.n_time_steps = int((absolute - config.start_of_timestepping) / config.dtime)
-                self.simulation_end_datetime = absolute
+                requested_simulation_end_datetime = absolute
+
+        self.simulation_end_datetime = (
+            config.start_of_timestepping + self.n_time_steps * config.dtime
+        )
+
+        if requested_simulation_end_datetime != self.simulation_end_datetime:
+            raise ValueError(
+                f"The requested end_of_simulation is not an integer number of time steps. Requested: {requested_simulation_end_datetime}, computed: {self.simulation_end_datetime}"
+            )
+
         self.dtime = config.dtime
         # measured from the beginning of the simulation, also when restarting (just for consistency with fortran)
         self.elapsed_time_in_seconds = ta.wpfloat(

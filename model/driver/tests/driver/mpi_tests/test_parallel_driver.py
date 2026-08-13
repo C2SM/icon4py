@@ -14,7 +14,7 @@ import pytest
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
-from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
+from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
@@ -70,7 +70,7 @@ _log = logging.getLogger(__file__)
         ),
     ],
 )
-def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many-positional-arguments]
     download_ser_data: None,
     experiment_description: test_defs.ExperimentDescription,
     end_of_simulation: time.EndOfSimulation,
@@ -78,7 +78,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
-    _run_standalone_driver_compare_single_multi_rank(
+    _run_driver_compare_single_multi_rank(
         experiment_description=experiment_description,
         end_of_simulation=end_of_simulation,
         tmp_path=tmp_path,
@@ -87,7 +87,7 @@ def test_standalone_driver_compare_single_multi_rank(  # noqa: PLR0917 [too-many
     )
 
 
-def _run_standalone_driver_compare_single_multi_rank(
+def _run_driver_compare_single_multi_rank(
     experiment_description: test_defs.ExperimentDescription,
     end_of_simulation: time.EndOfSimulation,
     tmp_path: pathlib.Path,
@@ -129,7 +129,7 @@ def _run_standalone_driver_compare_single_multi_rank(
         allocator=allocator,
         process_props=single_rank_process_props,
     )
-    single_rank_ds, _ = standalone_driver.run_driver(
+    single_rank_ds, _ = driver.run_driver(
         config=single_rank_config,
         grid_manager=single_rank_grid_manager,
         process_props=single_rank_process_props,
@@ -148,7 +148,7 @@ def _run_standalone_driver_compare_single_multi_rank(
         allocator=allocator,
         process_props=process_props,
     )
-    multi_rank_ds, multi_rank_driver = standalone_driver.run_driver(
+    multi_rank_ds, multi_rank_driver = driver.run_driver(
         config=multi_rank_config,
         grid_manager=multi_rank_grid_manager,
         process_props=process_props,

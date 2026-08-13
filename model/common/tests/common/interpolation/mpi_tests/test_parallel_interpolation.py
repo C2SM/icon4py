@@ -8,18 +8,25 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import geometry, geometry_attributes, horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
+    rbf_interpolation as rbf,
 )
-from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
+from icon4py.model.testing import (
+    definitions as test_defs,
+    grid_utils as gridtest_utils,
+    parallel_helpers,
+    test_utils,
+)
 
 from ...fixtures import (
     backend,
@@ -48,36 +55,18 @@ if TYPE_CHECKING:
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, intrp_name, rtol, atol, lb_domain",
+    "attrs_name, intrp_name, rtol, atol",
     [
-        (attrs.C_BLN_AVG, "c_bln_avg", 1e-11, 0.0, None),
+        (attrs.C_BLN_AVG, "c_bln_avg", 1e-11, 0.0),
         (
             attrs.E_FLX_AVG,
             "e_flx_avg",
             5e-9,
             1e-10,
-            None,
         ),  # FIXME (halungge): should run with default tolerances
-        (attrs.E_BLN_C_S, "e_bln_c_s", 1e-10, 0.0, None),
-        # pos_on_tplane_e is computed from LATERAL_BOUNDARY_LEVEL_2 on (rows before
-        # stay zero), while the reference carries values on the boundary rows:
-        # compare the computed region only
-        # TODO (Yilu): revert to a full comparison once the interpolation computes the
-        # boundary rows like ICON does (follow-up PR)
-        (
-            attrs.POS_ON_TPLANE_E_X,
-            "pos_on_tplane_e_x",
-            1e-9,
-            1e-8,
-            h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-        ),
-        (
-            attrs.POS_ON_TPLANE_E_Y,
-            "pos_on_tplane_e_y",
-            1e-9,
-            1e-8,
-            h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-        ),
+        (attrs.E_BLN_C_S, "e_bln_c_s", 1e-10, 0.0),
+        (attrs.POS_ON_TPLANE_E_X, "pos_on_tplane_e_x", 1e-9, 1e-8),
+        (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-9, 1e-8),
     ],
 )
 def test_distributed_interpolation_with_custom_tolerance(  # noqa: PLR0917 [too-many-positional-arguments]
@@ -92,15 +81,13 @@ def test_distributed_interpolation_with_custom_tolerance(  # noqa: PLR0917 [too-
     intrp_name: str,
     rtol: float,
     atol: float,
-    lb_domain: h_grid.Domain | None,
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field_ref = field_ref.asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
-    lb = intp_factory.grid.start_index(lb_domain) if lb_domain is not None else 0
-    assert test_utils.dallclose(field[lb:], field_ref[lb:], atol=atol, rtol=rtol), (
+    assert test_utils.dallclose(field, field_ref, atol=atol, rtol=rtol), (
         f"comparison of {attrs_name} failed"
     )
 
@@ -258,3 +245,44 @@ def test_distributed_interpolation_lsq_pseudoinv(  # noqa: PLR0917 [too-many-pos
     field = factory.get(attrs.LSQ_PSEUDOINV).asnumpy()
     assert test_utils.dallclose(field[:, 0, :], field_ref_1, atol=1e-15)
     assert test_utils.dallclose(field[:, 1, :], field_ref_2, atol=1e-15)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "attrs_name, compute_rbf_scale",
+    [
+        (attrs.RBF_SCALE_CELL, rbf.compute_default_rbf_scale_cell),
+        (attrs.RBF_SCALE_EDGE, rbf.compute_default_rbf_scale_edge),
+        (attrs.RBF_SCALE_VERTEX, rbf.compute_default_rbf_scale_vertex),
+    ],
+)
+def test_distributed_interpolation_rbf_scales(  # noqa: PLR0917 [too-many-positional-arguments]
+    process_props: decomp_defs.ProcessProperties,
+    geometry_from_savepoint: geometry.GridGeometry,
+    interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
+    attrs_name: str,
+    compute_rbf_scale: Callable,
+    backend: gtx_typing.Backend | None,
+    experiment: test_defs.Experiment,
+) -> None:
+    parallel_helpers.check_comm_size(process_props)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
+    grid = geometry.grid
+    factory = interpolation_factory_from_savepoint
+    geometry_type = (
+        grid.grid_params.geometry_type
+        if grid.grid_params.geometry_type
+        else pytest.fail("geometry_type cannot be None")
+    )
+    expected = compute_rbf_scale(
+        geometry_type=geometry_type.value,
+        mean_characteristic_length=geometry_from_savepoint.get(
+            geometry_attributes.CHARACTERISTIC_LENGTH
+        ),
+        mean_dual_edge_length=geometry_from_savepoint.get(
+            geometry_attributes.MEAN_DUAL_EDGE_LENGTH
+        ),
+    )
+    assert factory.get(attrs_name) == pytest.approx(expected)

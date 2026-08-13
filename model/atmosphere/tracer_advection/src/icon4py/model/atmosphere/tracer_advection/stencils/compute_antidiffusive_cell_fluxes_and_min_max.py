@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, maximum, minimum, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E, C2EDim
+from icon4py.model.common.dimension import C2E
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -30,9 +30,15 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
-    z_mflx_anti_1 = astype(p_dtime * geofac_div[C2EDim(0)] / p_rhodz_new * z_anti(C2E[0]), vpfloat)
-    z_mflx_anti_2 = astype(p_dtime * geofac_div[C2EDim(1)] / p_rhodz_new * z_anti(C2E[1]), vpfloat)
-    z_mflx_anti_3 = astype(p_dtime * geofac_div[C2EDim(2)] / p_rhodz_new * z_anti(C2E[2]), vpfloat)
+    z_mflx_anti_1 = astype(
+        p_dtime * geofac_div[dims.C2EDim(0)] / p_rhodz_new * z_anti(C2E[0]), vpfloat
+    )
+    z_mflx_anti_2 = astype(
+        p_dtime * geofac_div[dims.C2EDim(1)] / p_rhodz_new * z_anti(C2E[1]), vpfloat
+    )
+    z_mflx_anti_3 = astype(
+        p_dtime * geofac_div[dims.C2EDim(2)] / p_rhodz_new * z_anti(C2E[2]), vpfloat
+    )
 
     z_mflx_anti_in = -1.0 * (
         minimum(0.0, z_mflx_anti_1) + minimum(0.0, z_mflx_anti_2) + minimum(0.0, z_mflx_anti_3)
