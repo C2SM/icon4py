@@ -25,7 +25,7 @@ from icon4py.model.common.initial_condition.analytical import (
 )
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
+from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import config as test_config
 
 from ..fixtures import *  # noqa: F403
@@ -182,7 +182,7 @@ def test_horizontal_advection_convergence(
     )
 
     for i in range(len(grid_file_paths)):
-        ds, icon4py_driver = standalone_driver.run_driver(
+        ds, icon4py_driver = driver.run_driver(
             config=experiment_config,
             grid_manager=grid_managers[i],
             process_props=process_props,
@@ -312,7 +312,7 @@ def test_vertical_advection_convergence(
             process_props=process_props,
         )
 
-        ds, icon4py_driver = standalone_driver.run_driver(
+        ds, icon4py_driver = driver.run_driver(
             config=experiment_config_local,
             grid_manager=grid_manager,
             process_props=process_props,

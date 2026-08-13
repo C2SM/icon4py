@@ -25,7 +25,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import icon as icon_grid
+    from icon4py.model.common.grid import base as base_grid
 
 
 @dataclasses.dataclass(frozen=True)
@@ -43,7 +43,7 @@ class AdvectionPrepAdvState:
 
 
 def initialize_advection_prep_adv_state(
-    grid: icon_grid.IconGrid,
+    grid: base_grid.Grid,
     allocator: gtx_typing.Allocator,
 ) -> AdvectionPrepAdvState:
     vn_traj = data_alloc.zero_field(
