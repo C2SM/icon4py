@@ -2270,8 +2270,11 @@ dependencies = [
   {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-atmosphere-physics-driver"},
   {name = "icon4py-common", extra = ["io"]},
+  {name = "netcdf4"},
+  {name = "numpy"},
   {name = "packaging"},
-  {name = "typer"}
+  {name = "typer"},
+  {name = "zarr"}
 ]
 name = "icon4py-standalone-driver"
 source = {editable = "model/standalone_driver"}
@@ -2286,8 +2289,11 @@ requires-dist = [
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
   {name = "icon4py-atmosphere-physics-driver", editable = "model/atmosphere/subgrid_scale_physics/physics_driver"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
+  {name = "netcdf4", specifier = ">=1.6.1"},
+  {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"},
-  {name = "typer", specifier = ">=0.20.0"}
+  {name = "typer", specifier = ">=0.20.0"},
+  {name = "zarr", specifier = ">=3.0"}
 ]
 
 [[package]]
