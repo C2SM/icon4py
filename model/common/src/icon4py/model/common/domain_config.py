@@ -17,13 +17,13 @@ from icon4py.model.common.topography import config as topo_config
 
 
 @dataclasses.dataclass
-class BoundariesConfig:
+class DomainConfig:
     initial_condition: ic_config.IC_CONFIG
     topography: topo_config.TOPO_CONFIG
 
 
 @config_io.CONV.register_structure_hook
-def structure_boundaries(spec: dict, _: typing.Any) -> BoundariesConfig:
+def structure_domain(spec: dict, _: typing.Any) -> DomainConfig:
     params = spec.pop("params", {})
 
     ic_structurer = typing.cast(
@@ -48,16 +48,16 @@ def structure_boundaries(spec: dict, _: typing.Any) -> BoundariesConfig:
 
     ic = ic_type(**{k: v for k, v in params.items() if k in ic_params})
     topo = topo_type(**{k: v for k, v in params.items() if k in topo_params})
-    return BoundariesConfig(initial_condition=ic, topography=topo)
+    return DomainConfig(initial_condition=ic, topography=topo)
 
 
 @config_io.CONV.register_unstructure_hook
-def unstructure_boundaries(boundaries: BoundariesConfig) -> dict:
+def unstructure_domain(domain: DomainConfig) -> dict:
     ic_spec = config_io.CONV.unstructure(
-        boundaries.initial_condition, unstructure_as=ic_config.IC_CONFIG.__value__
+        domain.initial_condition, unstructure_as=ic_config.IC_CONFIG.__value__
     )
     topo_spec = config_io.CONV.unstructure(
-        boundaries.topography, unstructure_as=topo_config.TOPO_CONFIG.__value__
+        domain.topography, unstructure_as=topo_config.TOPO_CONFIG.__value__
     )
     ic_type = {"type": ic_spec.pop("type")}
     topo_type = {"type": topo_spec.pop("type")}

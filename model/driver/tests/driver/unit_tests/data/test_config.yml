@@ -41,7 +41,7 @@ vertical_grid:
   _SLEVE_minimum_layer_thickness_2: 500.0
   _SLEVE_minimum_relative_layer_thickness_1: 0.3333333333333333
   _SLEVE_minimum_relative_layer_thickness_2: 0.5
-boundaries:
+domain:
   params:
     p_sfc: 100000.0
     baroclinic_amplitude: 1.0
