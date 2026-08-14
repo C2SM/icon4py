@@ -23,8 +23,17 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_monotone_horizonta
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_positive_definite_horizontal_multiplicative_flux_factor import (
     apply_positive_definite_horizontal_multiplicative_flux_factor,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.average_horizontal_flux_subcycling_2 import (
+    average_horizontal_flux_subcycling_2,
+)
+from icon4py.model.atmosphere.tracer_advection.stencils.average_horizontal_flux_subcycling_3 import (
+    average_horizontal_flux_subcycling_3,
+)
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_antidiffusive_cell_fluxes_and_min_max import (
     compute_antidiffusive_cell_fluxes_and_min_max,
+)
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_backtrajectory import (
+    compute_barycentric_backtrajectory,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_backtrajectory_alt import (
     compute_barycentric_backtrajectory_alt,
@@ -50,6 +59,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_trace
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_upwind import (
     compute_horizontal_tracer_flux_upwind,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_intermediate_horizontal_flux_from_linear_coefficients import (
+    compute_intermediate_horizontal_flux_from_linear_coefficients,
+)
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_monotone_horizontal_multiplicative_flux_factors import (
     compute_monotone_horizontal_multiplicative_flux_factors,
 )
@@ -64,6 +76,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field imp
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.init_constant_edge_kdim_field import (
     init_constant_edge_kdim_field,
+)
+from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_density_horizontally import (
+    integrate_tracer_density_horizontally,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
@@ -1580,6 +1595,352 @@ class FirstOrderUpwind(FiniteVolume):
         )
         log.debug("running stencil integrate_tracer_horizontally - end")
 
+        log.debug("horizontal unknowns update - end")
+
+
+class SubcycledSecondOrderMiura(FiniteVolume):
+    """Miura with linear reconstruction, subcycled within one advection step (ihadv_tracer=20).
+
+    Port of upwind_hflux_miura_cycl (mo_advection_hflux.f90 2219-2458). Unlike the other
+    Miura variants this cannot be a 'SemiLagrangianTracerFlux', because each substep
+    advances its own tracer and density before the next reconstruction, so the flux and the
+    update are interleaved. The mass flux is constant over the step, so the tangential
+    velocity, the backtrajectory and the mass flux divergence are computed once.
+
+    The substep flux limiter is always the positive definite one, whatever the configured
+    limiter is: f90 2338-2352 calls hflx_limiter_pd for both ifluxl_sm and ifluxl_m.
+    """
+
+    def __init__(
+        self,
+        *,
+        grid: icon_grid.IconGrid,
+        interpolation_state: tracer_advection_states.AdvectionInterpolationState,
+        least_squares_state: tracer_advection_states.AdvectionLeastSquaresState,
+        metric_state: tracer_advection_states.AdvectionMetricState,
+        edge_params: grid_states.EdgeParams,
+        backend: gtx.typing.Backend | None,
+        exchange: decomposition.ExchangeRuntime,
+        n_substeps: int,
+        limit_substep_flux: bool,
+    ):
+        log.debug("horizontal tracer_advection class init - start")
+
+        if n_substeps not in (2, 3):
+            raise ValueError(
+                "Subcycled advection is implemented for 2 or 3 substeps (the averaging "
+                f"stencils ICON provides), but 'n_substeps' is {n_substeps}."
+            )
+
+        self._grid = grid
+        self._interpolation_state = interpolation_state
+        self._least_squares_state = least_squares_state
+        self._metric_state = metric_state
+        self._edge_params = edge_params
+        self._backend = backend
+        self._exchange = exchange
+        self._n_substeps = n_substeps
+        # f90 2338: the substep limiter is the positive definite one for either setting
+        self._substep_limiter: HorizontalFluxLimiter = (
+            PositiveDefinite(
+                grid=grid,
+                interpolation_state=interpolation_state,
+                backend=backend,
+                exchange=exchange,
+            )
+            if limit_substep_flux
+            else NoLimiter()
+        )
+
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        self._start_cell_lateral_boundary_level_2 = self._grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        self._start_cell_lateral_boundary_level_3 = self._grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+        )
+        self._end_cell_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
+
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        self._start_edge_lateral_boundary_level_2 = self._grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
+
+        allocator = model_backends.get_allocator(self._backend)
+
+        def _cell_field(dtype: type = ta.wpfloat) -> fa.CellKField:
+            return data_alloc.zero_field(
+                self._grid, dims.CellDim, dims.KDim, dtype=dtype, allocator=allocator
+            )
+
+        def _edge_field(dtype: type = ta.wpfloat) -> fa.EdgeKField:
+            return data_alloc.zero_field(
+                self._grid, dims.EdgeDim, dims.KDim, dtype=dtype, allocator=allocator
+            )
+
+        self._z_real_vt = _edge_field()
+        self._p_distv_bary_1 = _edge_field(ta.vpfloat)
+        self._p_distv_bary_2 = _edge_field(ta.vpfloat)
+        self._p_cell_idx = _edge_field(gtx.int32)
+        self._p_cell_rel_idx_dsl = _edge_field(gtx.int32)
+
+        self._p_coeff_1 = _cell_field()
+        self._p_coeff_2 = _cell_field()
+        self._p_coeff_3 = _cell_field()
+
+        # one intermediate flux per substep, averaged into the step flux at the end
+        self._z_tracer_mflx = tuple(_edge_field() for _ in range(self._n_substeps))
+        self._z_rhofluxdiv_c = _cell_field(ta.vpfloat)
+        self._z_fluxdiv_c = _cell_field(ta.vpfloat)
+        # 'now'/'new' double buffers of the substepped tracer and density
+        self._z_tracer = [_cell_field(), _cell_field()]
+        self._z_rho = [_cell_field(), _cell_field()]
+
+        e2c_table = self._grid.get_connectivity("E2C").asnumpy()
+        cell_idx = gtx.as_field(
+            (dims.EdgeDim, dims.E2CDim),
+            e2c_table.astype(gtx.int32),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            allocator=allocator,
+        )
+
+        vertical_sizes = {
+            "vertical_start": gtx.int32(0),
+            "vertical_end": gtx.int32(self._grid.num_levels),
+        }
+        edge_sizes = {
+            "horizontal_start": self._start_edge_lateral_boundary_level_5,
+            "horizontal_end": self._end_edge_halo,
+        }
+
+        self._copy_cell_kdim_field = model_options.setup_program(
+            backend=self._backend,
+            program=copy_cell_kdim_field,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_2,
+                "horizontal_end": self._end_cell_halo,
+            },
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_edge_tangential = model_options.setup_program(
+            backend=self._backend,
+            program=compute_edge_tangential,
+            constant_args={"ptr_coeff": self._interpolation_state.rbf_vec_coeff_e},
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_lateral_boundary_level_2,
+                "horizontal_end": self._end_edge_halo,
+            },
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        # the non-alt variant, because the intermediate flux needs the upwind cell index
+        self._compute_barycentric_backtrajectory = model_options.setup_program(
+            backend=self._backend,
+            program=compute_barycentric_backtrajectory,
+            constant_args={
+                "cell_idx": cell_idx,
+                "pos_on_tplane_e_1": self._interpolation_state.pos_on_tplane_e_1,
+                "pos_on_tplane_e_2": self._interpolation_state.pos_on_tplane_e_2,
+                "primal_normal_cell_1": self._edge_params.primal_normal_cell[0],
+                "dual_normal_cell_1": self._edge_params.dual_normal_cell[0],
+                "primal_normal_cell_2": self._edge_params.primal_normal_cell[1],
+                "dual_normal_cell_2": self._edge_params.dual_normal_cell[1],
+            },
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._reconstruct_linear_coefficients_svd = model_options.setup_program(
+            backend=self._backend,
+            program=reconstruct_linear_coefficients_svd,
+            constant_args={
+                "lsq_pseudoinv_1": self._least_squares_state.lsq_pseudoinv_1,
+                "lsq_pseudoinv_2": self._least_squares_state.lsq_pseudoinv_2,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_2,
+                "horizontal_end": self._end_cell_halo,
+            },
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_intermediate_horizontal_flux_from_linear_coefficients = (
+            model_options.setup_program(
+                backend=self._backend,
+                program=compute_intermediate_horizontal_flux_from_linear_coefficients,
+                horizontal_sizes=edge_sizes,
+                vertical_sizes=vertical_sizes,
+                offset_provider=self._grid.connectivities,
+            )
+        )
+        self._integrate_tracer_density_horizontally = model_options.setup_program(
+            backend=self._backend,
+            program=integrate_tracer_density_horizontally,
+            constant_args={"geofac_div": self._interpolation_state.geofac_div},
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_3,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._average_horizontal_flux_subcycling = model_options.setup_program(
+            backend=self._backend,
+            program=(
+                average_horizontal_flux_subcycling_2
+                if self._n_substeps == 2
+                else average_horizontal_flux_subcycling_3
+            ),
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._integrate_tracer_horizontally = model_options.setup_program(
+            backend=self._backend,
+            program=integrate_tracer_horizontally,
+            constant_args={
+                "deepatmo_divh": self._metric_state.deepatmo_divh,
+                "geofac_div": self._interpolation_state.geofac_div,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_nudging,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+
+        log.debug("horizontal tracer_advection class init - end")
+
+    def _compute_numerical_flux(
+        self,
+        *,
+        prep_adv: adv_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
+        log.debug("horizontal numerical flux computation - start")
+        dtsub = dtime / self._n_substeps
+
+        # the mass flux is constant over the step, so the trajectory is computed once
+        # (f90 uses a btraj_cycl built with z_dthalf_cycl = 0.5 * dtime / nsubsteps)
+        log.debug("running stencil compute_edge_tangential - start")
+        self._compute_edge_tangential(p_vn_in=prep_adv.vn_traj, p_vt_out=self._z_real_vt)
+        log.debug("running stencil compute_edge_tangential - end")
+
+        log.debug("running stencil compute_barycentric_backtrajectory - start")
+        self._compute_barycentric_backtrajectory(
+            p_vn=prep_adv.vn_traj,
+            p_vt=self._z_real_vt,
+            p_cell_idx=self._p_cell_idx,
+            p_cell_rel_idx_dsl=self._p_cell_rel_idx_dsl,
+            p_distv_bary_1=self._p_distv_bary_1,
+            p_distv_bary_2=self._p_distv_bary_2,
+            p_dthalf=0.5 * dtsub,
+        )
+        log.debug("running stencil compute_barycentric_backtrajectory - end")
+
+        # seed the substep state (f90 2196-2198)
+        now, new = 0, 1
+        self._copy_cell_kdim_field(field_in=p_tracer_now, field_out=self._z_tracer[now])
+        self._copy_cell_kdim_field(field_in=rhodz_now, field_out=self._z_rho[now])
+
+        for substep in range(self._n_substeps):
+            log.debug(f"advection substep {substep + 1}/{self._n_substeps} - start")
+
+            self._reconstruct_linear_coefficients_svd(
+                p_cc=self._z_tracer[now],
+                p_coeff_1_dsl=self._p_coeff_1,
+                p_coeff_2_dsl=self._p_coeff_2,
+                p_coeff_3_dsl=self._p_coeff_3,
+            )
+            self._compute_intermediate_horizontal_flux_from_linear_coefficients(
+                z_lsq_coeff_1_dsl=self._p_coeff_1,
+                z_lsq_coeff_2_dsl=self._p_coeff_2,
+                z_lsq_coeff_3_dsl=self._p_coeff_3,
+                distv_bary_1=self._p_distv_bary_1,
+                distv_bary_2=self._p_distv_bary_2,
+                p_mass_flx_e=prep_adv.mass_flx_me,
+                cell_rel_idx_dsl=self._p_cell_rel_idx_dsl,
+                z_tracer_mflx_dsl=self._z_tracer_mflx[substep],
+            )
+            self._substep_limiter.apply_flux_limiter(
+                p_tracer_now=self._z_tracer[now],
+                p_mflx_tracer_h=self._z_tracer_mflx[substep],
+                p_mass_flx_e=prep_adv.mass_flx_me,
+                rhodz_now=self._z_rho[now],
+                rhodz_new=self._z_rho[new],
+                dtime=dtsub,
+            )
+
+            # the last substep only needs its flux (f90 2355)
+            if substep == self._n_substeps - 1:
+                break
+
+            self._integrate_tracer_density_horizontally(
+                p_mass_flx_e=prep_adv.mass_flx_me,
+                z_rhofluxdiv_c=self._z_rhofluxdiv_c,
+                z_tracer_mflx=self._z_tracer_mflx[substep],
+                z_rho_now=self._z_rho[now],
+                z_tracer_now=self._z_tracer[now],
+                z_rhofluxdiv_c_out=self._z_rhofluxdiv_c,
+                z_fluxdiv_c_dsl=self._z_fluxdiv_c,
+                z_rho_new_dsl=self._z_rho[new],
+                z_tracer_new_dsl=self._z_tracer[new],
+                z_dtsub=dtsub,
+                # the mass flux divergence does not change between substeps, so the
+                # stencil recomputes it on the first one only
+                nsub=gtx.int32(substep + 1),
+            )
+            self._exchange.exchange(
+                dims.CellDim, self._z_tracer[new], stream=decomposition.DEFAULT_STREAM
+            )
+            now, new = new, now
+
+            log.debug(f"advection substep {substep + 1}/{self._n_substeps} - end")
+
+        # f90 2470-2500: the step flux is the average of the substep fluxes
+        log.debug("running stencil average_horizontal_flux_subcycling - start")
+        self._average_horizontal_flux_subcycling(
+            **{
+                f"z_tracer_mflx_{substep + 1}_dsl": self._z_tracer_mflx[substep]
+                for substep in range(self._n_substeps)
+            },
+            p_out_e=p_mflx_tracer_h,
+        )
+        log.debug("running stencil average_horizontal_flux_subcycling - end")
+
+        log.debug("horizontal numerical flux computation - end")
+
+    def _update_unknowns(
+        self,
+        *,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_tracer_new: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
+        log.debug("horizontal unknowns update - start")
+        self._integrate_tracer_horizontally(
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            tracer_now=p_tracer_now,
+            rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
+            tracer_new_hor=p_tracer_new,
+            p_dtime=dtime,
+        )
+        log.debug("running stencil integrate_tracer_horizontally - end")
         log.debug("horizontal unknowns update - end")
 
 

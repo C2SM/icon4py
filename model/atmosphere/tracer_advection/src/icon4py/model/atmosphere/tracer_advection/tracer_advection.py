@@ -67,6 +67,8 @@ class HorizontalAdvectionType(Enum):
     LINEAR_2ND_ORDER = 2
     #: 3rd order MIURA with quadratic reconstruction
     QUADRATIC_3RD_ORDER = 3
+    #: 2nd order MIURA with linear reconstruction, subcycled within the advection step
+    LINEAR_2ND_ORDER_SUBCYCLED = 20
     #: 2nd order MIURA with linear reconstruction and WENO candidate blending
     LINEAR_2ND_ORDER_WENO = 102
     #: 3rd order MIURA with quadratic reconstruction and WENO candidate blending
@@ -126,6 +128,8 @@ class AdvectionConfig:
     #: how far the monotonic limiter may over-/undershoot the local range, ICON's beta_fct;
     #: the namelist restricts it to [1, 2)
     monotonic_limiter_boost_factor: float = 1.005
+    #: substeps per advection step for the subcycled schemes, ICON's nadv_substeps
+    n_advection_substeps: int = 3
 
     def __post_init__(self) -> None:
         if not 1.0 <= self.monotonic_limiter_boost_factor < 2.0:
@@ -151,6 +155,7 @@ class AdvectionConfig:
                 fortran_config.list_to_value(transport_nml["itype_vlimit"])
             ),
             monotonic_limiter_boost_factor=transport_nml["beta_fct"],
+            n_advection_substeps=fortran_config.list_to_value(transport_nml["nadv_substeps"]),
             **overrides,
         )
 
@@ -535,6 +540,20 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 edge_params=edge_params,
                 cell_params=cell_params,
                 backend=backend,
+            )
+        case HorizontalAdvectionType.LINEAR_2ND_ORDER_SUBCYCLED:
+            horizontal_advection = tracer_advection_horizontal.SubcycledSecondOrderMiura(
+                grid=grid,
+                interpolation_state=interpolation_state,
+                least_squares_state=least_squares_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                backend=backend,
+                exchange=exchange,
+                n_substeps=config.n_advection_substeps,
+                limit_substep_flux=(
+                    config.horizontal_advection_limiter != HorizontalAdvectionLimiter.NO_LIMITER
+                ),
             )
         case HorizontalAdvectionType.QUADRATIC_3RD_ORDER:
             if quadratic_state is None:

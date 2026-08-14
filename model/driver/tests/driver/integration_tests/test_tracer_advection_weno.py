@@ -128,6 +128,13 @@ def _read_qv_frames(output_dir: pathlib.Path) -> np.ndarray:
             id="miura",
         ),
         pytest.param(
+            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_SUBCYCLED,
+            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            0.72,
+            None,
+            id="miura_subcycled",
+        ),
+        pytest.param(
             tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER,
             tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
             0.45,

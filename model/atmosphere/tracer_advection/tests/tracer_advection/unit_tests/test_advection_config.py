@@ -33,6 +33,7 @@ def _transport_dict(ihadv_tracer: int) -> dict:
             "itype_vlimit": [0],
             # beta_fct is a scalar in the namelist, not a max_dom-sized list
             "beta_fct": 1.005,
+            "nadv_substeps": [3],
         }
     }
 
@@ -43,6 +44,7 @@ def _transport_dict(ihadv_tracer: int) -> dict:
         (0, tracer_advection.HorizontalAdvectionType.NO_ADVECTION),
         (2, tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER),
         (3, tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER),
+        (20, tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_SUBCYCLED),
         (102, tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO),
         (103, tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO),
     ],
