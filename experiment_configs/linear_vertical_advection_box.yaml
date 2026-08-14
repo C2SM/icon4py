@@ -13,9 +13,8 @@ initial_condition:
     type: lin_ver_adv
     tracer_profile: box
     velocity_field: constant_positive
-    cfl_number: 0.2
-    initial_center: 0.25
-    decay_radius: 0.2
+    cfl_number: 0.11
+    initial_center: 0.3
 prescribed_tendencies:
   data_path:
 driver:

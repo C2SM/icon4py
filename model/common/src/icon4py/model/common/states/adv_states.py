@@ -39,12 +39,12 @@ class AdvectionPrepAdvState:
     mass_flx_me: fa.EdgeKField[ta.wpfloat]
 
     #: mass flux at half level centers averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_ic: fa.CellKHalfField[ta.wpfloat]
+    mass_flx_ic: fa.CellKField[ta.wpfloat]
 
 
 def initialize_advection_prep_adv_state(
     grid: base_grid.Grid,
-    allocator: gtx_typing.Allocator | None,
+    allocator: gtx_typing.Allocator,
 ) -> AdvectionPrepAdvState:
     vn_traj = data_alloc.zero_field(
         grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat

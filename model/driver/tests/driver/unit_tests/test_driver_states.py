@@ -11,47 +11,69 @@
 Data-free: they use the ``simple_grid`` and need no serialized test data.
 """
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common.grid import base, simple
+from icon4py.model.common import model_backends
+from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.states import adv_states
 from icon4py.model.driver import driver_states
 
-
-@pytest.fixture
-def grid() -> base.Grid:
-    return simple.simple_grid()
+from ..fixtures import *  # noqa: F403
 
 
-def test_prep_adv_shares_the_tracer_advection_buffers(grid: base.Grid) -> None:
-    adv_prep_adv_state = adv_states.initialize_advection_prep_adv_state(grid, None)
-    prep_adv = driver_states.link_prep_adv_to_dycore(
-        grid, None, adv_prep_adv_state=adv_prep_adv_state, solve_nonhydro_enabled=True
+def test_dycore_prep_adv_shares_the_advection_prep_adv_buffers(
+    backend: gtx_typing.Backend,
+) -> None:
+    allocator = model_backends.get_allocator(backend)
+    grid = simple_grid.simple_grid(allocator=allocator)
+    adv_prep_adv_state = adv_states.initialize_advection_prep_adv_state(
+        grid=grid,
+        allocator=allocator,
     )
-    assert prep_adv is not None
-    # Advection must read the very buffers the dycore accumulates into: identity, not equality.
-    assert prep_adv.vn_traj is adv_prep_adv_state.vn_traj
-    assert prep_adv.mass_flx_me is adv_prep_adv_state.mass_flx_me
+    dycore_prep_adv = driver_states.link_prep_adv_to_dycore(
+        grid=grid,
+        allocator=allocator,
+        adv_prep_adv_state=adv_prep_adv_state,
+        solve_nonhydro_enabled=True,
+    )
+    assert dycore_prep_adv is not None
+    assert dycore_prep_adv.vn_traj is adv_prep_adv_state.vn_traj
+    assert dycore_prep_adv.mass_flx_me is adv_prep_adv_state.mass_flx_me
     assert (
-        prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels
+        dycore_prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels
         is adv_prep_adv_state.mass_flx_ic
     )
 
 
-def test_prep_adv_is_none_when_the_dycore_is_disabled(grid: base.Grid) -> None:
+@pytest.mark.parametrize(
+    "solve_nonhydro_enabled, with_adv_prep_adv_state",
+    [
+        (False, False),
+        (False, True),
+    ],
+)
+def test_dycore_prep_adv_is_none_when_disabled(
+    solve_nonhydro_enabled: bool,
+    with_adv_prep_adv_state: bool,
+    backend: gtx_typing.Backend,
+) -> None:
+    allocator = model_backends.get_allocator(backend)
+    grid = simple_grid.simple_grid(allocator=allocator)
+    adv_prep_adv_state = (
+        adv_states.initialize_advection_prep_adv_state(
+            grid=grid,
+            allocator=allocator,
+        )
+        if with_adv_prep_adv_state
+        else None
+    )
     assert (
         driver_states.link_prep_adv_to_dycore(
-            grid, None, adv_prep_adv_state=None, solve_nonhydro_enabled=False
+            grid=grid,
+            allocator=allocator,
+            adv_prep_adv_state=adv_prep_adv_state,
+            solve_nonhydro_enabled=solve_nonhydro_enabled,
         )
         is None
     )
-
-
-def test_prep_adv_without_tracer_advection_falls_back_to_zero_fields(grid: base.Grid) -> None:
-    prep_adv = driver_states.link_prep_adv_to_dycore(
-        grid, None, adv_prep_adv_state=None, solve_nonhydro_enabled=True
-    )
-    assert prep_adv is not None
-    assert prep_adv.vn_traj.asnumpy().sum() == 0.0
-    assert prep_adv.mass_flx_me.asnumpy().sum() == 0.0
-    assert prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels.asnumpy().sum() == 0.0

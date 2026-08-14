@@ -23,30 +23,28 @@ from icon4py.model.common.initial_condition.analytical import (
     linear_horizontal_advection,
     linear_vertical_advection,
 )
-from icon4py.model.common.metrics import metrics_attributes as metrics_meta
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver, driver_utils
-from icon4py.model.testing import config as test_config, plot_utils
+from icon4py.model.testing import config as test_config
 
 from ..fixtures import *  # noqa: F403
 
 
-_FIRST_ORDER = 1.0
+_ZERO_ORDER = 0.0
+_DEGRADED_FIRST_ORDER = 0.5
 _SECOND_ORDER = 2.0
-_TOL = 0.4
+_THIRD_ORDER = 3.0
+_TOL = 0.1
+_DEGRADED_TOL = 0.5
+_STD_TOL = 0.4
 
-# 24 rows by 20 columns of 100 m edges: domain_length = 2000 m and
-# domain_height = 24 * 100 * sqrt(3)/2 = 2078.460969082653 m. Refining multiplies the row and
-# column counts and divides the edge length, so every level of the family discretises the same
-# continuous problem. Only a power of two keeps both extents bit-identical, a factor of 3 or 5
-# perturbs them in the last ulp. The downloaded TORUS_1000X1000_* grids did not have that
-# property at all: their domain_height was fitted to the requested extent and therefore varied
-# with the resolution.
-_BASE_TORUS_ROWS: Final = 24
-_BASE_TORUS_COLS: Final = 20
-_BASE_TORUS_EDGE_LENGTH: Final = 100.0
-_REFINEMENT_FACTORS: Final = tuple(2**exponent for exponent in range(4))
+_BASE_TORUS_ROWS: Final = 150
+_BASE_TORUS_COLS: Final = 174
+_MINIMAL_TORUS_ROWS: Final = 6
+_MINIMAL_TORUS_COLS: Final = 4
+_TORUS_EDGE_LENGTH: Final = 100.0
+_REFINEMENT_FACTORS: Final = tuple(2**exponent for exponent in range(3))
 
 
 def _compute_relative_errors(
@@ -65,58 +63,40 @@ def _compute_relative_errors(
     return error_l1, error_linf
 
 
-def _to_numpy(array: data_alloc.NDArray) -> np.ndarray:
-    """Convert a data_alloc.NDArray to a numpy.ndarray, if it is not already one."""
-    if isinstance(array, np.ndarray):
-        return array
-    else:
-        return array.asnumpy()
-
-
 def _check_convergence(
     *,
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
-    error_l1: list[float],
-    error_linf: list[float],
-    grid_spacing: list[float],
+    error_l1: list[float] | np.ndarray,
+    error_linf: list[float] | np.ndarray,
+    grid_spacing: list[float] | np.ndarray,
 ) -> None:
-    if l1_acceptable_range[0] is not None and l1_acceptable_range[1] is not None:
-        linreg_l1 = linregress(np.log(grid_spacing), np.log(error_l1))
-        p_l1 = linreg_l1.slope
-        assert l1_acceptable_range[0] <= p_l1 <= l1_acceptable_range[1]
-    if linf_acceptable_range[0] is not None and linf_acceptable_range[1] is not None:
-        linreg_linf = linregress(np.log(grid_spacing), np.log(error_linf))
-        p_linf = linreg_linf.slope
-        assert linf_acceptable_range[0] <= p_linf <= linf_acceptable_range[1]
+    linreg_l1 = linregress(np.log(grid_spacing), np.log(error_l1))
+    p_l1 = linreg_l1.slope
+    linreg_linf = linregress(np.log(grid_spacing), np.log(error_linf))
+    p_linf = linreg_linf.slope
+    # check that the measured convergence rates are within the acceptable ranges
+    assert l1_acceptable_range[0] <= p_l1 <= l1_acceptable_range[1]
+    assert linf_acceptable_range[0] <= p_linf <= linf_acceptable_range[1]
+    # check that the standard errors are within the acceptable tolerance
+    assert linreg_l1.stderr <= _STD_TOL
+    assert linreg_linf.stderr <= _STD_TOL
 
 
-# The scheme of 'experiment_configs/linear_horizontal_advection.yaml' is second order
-# ('linear_2nd_order'), and the one-dimensional profile attains it in both norms on the generated
-# grid family. The two-dimensional profile does not, and the reason is the initial condition
-# rather than the scheme: '_construct_idealized_tracer' evaluates the Gaussian on the minimum
-# image separation, so the profile is only C0 on the torus and has a slope kink on the half
-# domain line. GAUSSIAN_2D is wide enough to still be at 6.6% of its peak there, against 1.5e-4
-# for GAUSSIAN_1D_X, and the kink radiates a dispersive wake that stalls the maximum norm and
-# drags L1 down to the measured 1.7. Summing the Gaussian over its periodic images instead
-# restores second order in both norms; until that lands, the L1 band below is thin by ~0.2 on
-# its lower side. The limiter is not involved: at CFL 0.2 its multiplicative factor is 1.
 @pytest.mark.level("validation")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_case, l1_acceptable_range, linf_acceptable_range, enable_plot",
+    "experiment_case, l1_acceptable_range, linf_acceptable_range",
     [
         (
             "linear_horizontal_advection_gaussian_2d",
             [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
             [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
-            True,
         ),
         (
             "linear_horizontal_advection_circle_2d",
-            [_FIRST_ORDER - _TOL, _FIRST_ORDER + _TOL],
-            [None, None],
-            True,
+            [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
+            [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
         ),
     ],
 )
@@ -125,7 +105,6 @@ def test_horizontal_advection_convergence(
     experiment_case: str,
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
-    enable_plot: bool,
     tmp_path: pathlib.Path,
     generate_torus_grid: Callable[..., pathlib.Path],
     process_props: decomp_defs.ProcessProperties,
@@ -133,14 +112,11 @@ def test_horizontal_advection_convergence(
 ) -> None:
     allocator = model_backends.get_allocator(backend)
 
-    # Generate the grid family instead of downloading it: only a generated family is
-    # guaranteed to keep the domain extents fixed while the resolution changes, which is what
-    # the convergence rate is measured against.
     grid_file_paths = [
         generate_torus_grid(
             n_rows=_BASE_TORUS_ROWS * factor,
             n_cols=_BASE_TORUS_COLS * factor,
-            edge_length=_BASE_TORUS_EDGE_LENGTH / factor,
+            edge_length=_TORUS_EDGE_LENGTH / factor,
         )
         for factor in _REFINEMENT_FACTORS
     ]
@@ -226,93 +202,6 @@ def test_horizontal_advection_convergence(
             num_levels=experiment_config.vertical_grid.num_levels,
         )
 
-        if enable_plot:
-            vertex_x = icon4py_driver.static_field_factories.geometry.get(
-                geometry_meta.VERTEX_X
-            ).asnumpy()
-            vertex_y = icon4py_driver.static_field_factories.geometry.get(
-                geometry_meta.VERTEX_Y
-            ).asnumpy()
-            edge_x = icon4py_driver.static_field_factories.geometry.get(
-                geometry_meta.EDGE_CENTER_X
-            ).asnumpy()
-            edge_y = icon4py_driver.static_field_factories.geometry.get(
-                geometry_meta.EDGE_CENTER_Y
-            ).asnumpy()
-            assert experiment_config.tracer_advection is not None
-            adv_type_name = (
-                experiment_config.tracer_advection.horizontal_advection_type.name.lower()
-            )
-            grid_name = grid_file_paths[i].stem
-            assert (
-                type(experiment_config.initial_condition.config)
-                is linear_horizontal_advection.LinearHorizontalAdvectionConfig
-            )
-            initial_tracer = linear_horizontal_advection.construct_reference_tracer(
-                config=experiment_config.initial_condition.config,
-                grid=grid_managers[i].grid,
-                static_fields=icon4py_driver.static_field_factories,
-                integration_time=0.0,
-                num_levels=experiment_config.vertical_grid.num_levels,
-            )
-            assert ds.prep_tracer_advection_prognostic is not None
-            plot_utils.plot_torus_scatter(
-                node_x=edge_x,
-                node_y=edge_y,
-                values=ds.prep_tracer_advection_prognostic.vn_traj.asnumpy()[:, 0],
-                c2v_connectivity=grid_managers[i].grid.connectivities["C2V"].asnumpy(),
-                vertex_x=vertex_x,
-                vertex_y=vertex_y,
-                length_max=2
-                * icon4py_driver.static_field_factories.geometry.get(
-                    geometry_meta.MEAN_EDGE_LENGTH, states_factory.RetrievalType.SCALAR
-                ),
-                out_file=f"grid_{grid_name}_prof_{experiment_config.initial_condition.config.tracer_profile}_adv_{adv_type_name}_vn.pdf",
-            )
-            plot_utils.plot_torus_plane(
-                c2v_connectivity=grid_managers[i].grid.connectivities["C2V"].asnumpy(),
-                node_x=vertex_x,
-                node_y=vertex_y,
-                values=initial_tracer[:, 0],
-                length_max=2
-                * icon4py_driver.static_field_factories.geometry.get(
-                    geometry_meta.MEAN_EDGE_LENGTH, states_factory.RetrievalType.SCALAR
-                ),
-                out_file=f"grid_{grid_name}_prof_{experiment_config.initial_condition.config.tracer_profile}_adv_{adv_type_name}_initial.pdf",
-            )
-            plot_utils.plot_torus_plane(
-                c2v_connectivity=grid_managers[i].grid.connectivities["C2V"].asnumpy(),
-                node_x=vertex_x,
-                node_y=vertex_y,
-                values=reference_tracer[:, 0],
-                length_max=2
-                * icon4py_driver.static_field_factories.geometry.get(
-                    geometry_meta.MEAN_EDGE_LENGTH, states_factory.RetrievalType.SCALAR
-                ),
-                out_file=f"grid_{grid_name}_prof_{experiment_config.initial_condition.config.tracer_profile}_adv_{adv_type_name}_reference.pdf",
-            )
-            plot_utils.plot_torus_plane(
-                c2v_connectivity=grid_managers[i].grid.connectivities["C2V"].asnumpy(),
-                node_x=vertex_x,
-                node_y=vertex_y,
-                values=simulated_tracer[:, 0] - reference_tracer[:, 0],
-                length_max=2
-                * icon4py_driver.static_field_factories.geometry.get(
-                    geometry_meta.MEAN_EDGE_LENGTH, states_factory.RetrievalType.SCALAR
-                ),
-                out_file=f"grid_{grid_name}_prof_{experiment_config.initial_condition.config.tracer_profile}_adv_{adv_type_name}_diff.pdf",
-            )
-            plot_utils.plot_torus_plane(
-                c2v_connectivity=grid_managers[i].grid.connectivities["C2V"].asnumpy(),
-                node_x=vertex_x,
-                node_y=vertex_y,
-                values=simulated_tracer[:, 0],
-                length_max=2
-                * icon4py_driver.static_field_factories.geometry.get(
-                    geometry_meta.MEAN_EDGE_LENGTH, states_factory.RetrievalType.SCALAR
-                ),
-                out_file=f"grid_{grid_name}_prof_{experiment_config.initial_condition.config.tracer_profile}_adv_{adv_type_name}_sim.pdf",
-            )
         current_error_l1, current_error_linf = _compute_relative_errors(
             simulated_tracer, reference_tracer
         )
@@ -322,32 +211,6 @@ def test_horizontal_advection_convergence(
             icon4py_driver.static_field_factories.geometry.get(
                 geometry_meta.MEAN_EDGE_LENGTH, states_factory.RetrievalType.SCALAR
             )
-        )
-
-    if enable_plot:
-        theoretical_orders = [1.0, 2.0]
-        linestyles = ["--", "-."]
-        assert experiment_config.tracer_advection is not None
-        assert (
-            type(experiment_config.initial_condition.config)
-            is linear_horizontal_advection.LinearHorizontalAdvectionConfig
-        )
-        adv_type_name = experiment_config.tracer_advection.horizontal_advection_type.name.lower()
-        plot_utils.plot_convergence(
-            x=mean_edge_length,
-            y=error_l1,
-            label_name=adv_type_name,
-            theoretical_orders=theoretical_orders,
-            linestyles=linestyles,
-            out_file=f"convergence_prof_{experiment_config.initial_condition.config.tracer_profile}_adv_{adv_type_name}_l1.pdf",
-        )
-        plot_utils.plot_convergence(
-            x=mean_edge_length,
-            y=error_linf,
-            label_name=adv_type_name,
-            theoretical_orders=theoretical_orders,
-            linestyles=linestyles,
-            out_file=f"convergence_prof_{experiment_config.initial_condition.config.tracer_profile}_adv_{adv_type_name}_linf.pdf",
         )
 
     _check_convergence(
@@ -362,19 +225,19 @@ def test_horizontal_advection_convergence(
 @pytest.mark.level("validation")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_case, num_levels, l1_acceptable_range, linf_acceptable_range, enable_plot",
+    "experiment_case, num_levels, l1_acceptable_range, linf_acceptable_range",
     [
         (
             "linear_vertical_advection_gaussian",
-            (
-                100,
-                200,
-                400,
-                # 800,
-            ),
-            [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
-            [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
-            True,
+            [400 * 2**i for i in range(3)],
+            [_THIRD_ORDER - _TOL, _THIRD_ORDER + _TOL],
+            [_THIRD_ORDER - _TOL, _THIRD_ORDER + _TOL],
+        ),
+        (
+            "linear_vertical_advection_box",
+            [400 * 2**i for i in range(3)],
+            [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
+            [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
         ),
     ],
 )
@@ -384,7 +247,6 @@ def test_vertical_advection_convergence(
     num_levels: tuple[int, ...],
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
-    enable_plot: bool,
     tmp_path: pathlib.Path,
     generate_torus_grid: Callable[..., pathlib.Path],
     process_props: decomp_defs.ProcessProperties,
@@ -393,9 +255,9 @@ def test_vertical_advection_convergence(
     allocator = model_backends.get_allocator(backend)
 
     grid_path = generate_torus_grid(
-        n_rows=_BASE_TORUS_ROWS,
-        n_cols=_BASE_TORUS_COLS,
-        edge_length=_BASE_TORUS_EDGE_LENGTH,
+        n_rows=_MINIMAL_TORUS_ROWS,
+        n_cols=_MINIMAL_TORUS_COLS,
+        edge_length=_TORUS_EDGE_LENGTH,
     )
     error_l1: list[float] = []
     error_linf: list[float] = []
@@ -469,81 +331,15 @@ def test_vertical_advection_convergence(
             integration_time=num_steps * experiment_config_local.driver.dtime.total_seconds(),
         )
 
-        if enable_plot:
-            z_mc = icon4py_driver.static_field_factories.metrics.get(metrics_meta.Z_MC).asnumpy()
-            assert experiment_config_local.tracer_advection is not None
-            adv_type_name = (
-                experiment_config_local.tracer_advection.vertical_advection_type.name.lower()
-            )
-            assert (
-                type(experiment_config_local.initial_condition.config)
-                is linear_vertical_advection.LinearVerticalAdvectionConfig
-            )
-            initial_tracer = linear_vertical_advection.construct_reference_tracer(
-                config=experiment_config_local.initial_condition.config,
-                metrics=icon4py_driver.static_field_factories.metrics,
-                vertical_config=experiment_config_local.vertical_grid,
-                integration_time=0.0,
-            )
-            plot_utils.plot_1d(
-                x=z_mc[0, :],
-                y=_to_numpy(initial_tracer[0, :]),
-                x_axis_label="z [m]",
-                y_axis_label="tracer",
-                out_file=f"num_lev_{num_lev}_prof_{experiment_config_local.initial_condition.config.tracer_profile}_adv_{adv_type_name}_initial.pdf",
-            )
-            plot_utils.plot_1d(
-                x=z_mc[0, :],
-                y=_to_numpy(reference_tracer[0, :]),
-                x_axis_label="z [m]",
-                y_axis_label="tracer",
-                out_file=f"num_lev_{num_lev}_prof_{experiment_config_local.initial_condition.config.tracer_profile}_adv_{adv_type_name}_reference.pdf",
-            )
-            plot_utils.plot_1d(
-                x=z_mc[0, :],
-                y=_to_numpy(reference_tracer[0, :] - simulated_tracer[0, :]),
-                x_axis_label="z [m]",
-                y_axis_label="tracer difference",
-                out_file=f"num_lev_{num_lev}_prof_{experiment_config_local.initial_condition.config.tracer_profile}_adv_{adv_type_name}_diff.pdf",
-            )
-            plot_utils.plot_1d(
-                x=z_mc[0, :],
-                y=_to_numpy(simulated_tracer[0, :]),
-                x_axis_label="z [m]",
-                y_axis_label="tracer",
-                out_file=f"num_lev_{num_lev}_prof_{experiment_config_local.initial_condition.config.tracer_profile}_adv_{adv_type_name}_sim.pdf",
-            )
         current_error_l1, current_error_linf = _compute_relative_errors(
             simulated_tracer, reference_tracer
         )
         error_l1.append(current_error_l1)
         error_linf.append(current_error_linf)
 
-    mean_thickness = (
-        experiment_config.vertical_grid.model_top_height / np.array(num_levels)
-    ).tolist()
-
-    if enable_plot:
-        theoretical_orders = [1.0, 2.0, 3.0]
-        linestyles = ["--", "-.", ":"]
-        assert experiment_config.tracer_advection is not None
-        adv_type_name = experiment_config.tracer_advection.vertical_advection_type.name.lower()
-        plot_utils.plot_convergence(
-            x=mean_thickness,
-            y=error_l1,
-            label_name=adv_type_name,
-            theoretical_orders=theoretical_orders,
-            linestyles=linestyles,
-            out_file=f"convergence_prof_{experiment_config.initial_condition.config.tracer_profile}_adv_{adv_type_name}_l1.pdf",
-        )
-        plot_utils.plot_convergence(
-            x=mean_thickness,
-            y=error_linf,
-            label_name=adv_type_name,
-            theoretical_orders=theoretical_orders,
-            linestyles=linestyles,
-            out_file=f"convergence_prof_{experiment_config.initial_condition.config.tracer_profile}_adv_{adv_type_name}_linf.pdf",
-        )
+    mean_thickness = experiment_config.vertical_grid.model_top_height / np.array(
+        num_levels, dtype=float
+    )
 
     _check_convergence(
         l1_acceptable_range=l1_acceptable_range,

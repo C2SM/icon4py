@@ -36,7 +36,6 @@ dependencies = [
   # 'model/testing/.../fixtures/torus_grids.py'. 0.8.0 is the first release whose torus
   # coordinates survive a per-axis minimum image, which is what icon4py applies on a torus.
   "icon-grid-generator[netcdf]>=0.8.0",
-  "matplotlib>=3.8.0",
   "numpy>=1.23.3",
   'packaging>=20.0',
   "pooch>=1.7.0",
