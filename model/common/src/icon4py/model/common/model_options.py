@@ -25,6 +25,14 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
+def _remove_access_node_copies(sdfg: Any) -> None:
+    sdfg.apply_transformations_repeated(
+        gtx_transformations.RemoveAccessNodeCopies(),
+        validate=False,
+        validate_all=False,
+    )
+
+
 def get_dace_options(
     program_name: str, **backend_descriptor: Any
 ) -> model_backends.BackendDescriptor:
@@ -38,11 +46,7 @@ def get_dace_options(
         if gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep not in optimization_hooks:
             # Enable pass that removes access node (next_w) copies for vertically implicit solver programs
             optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
-                lambda sdfg: sdfg.apply_transformations_repeated(
-                    gtx_transformations.RemoveAccessNodeCopies(),
-                    validate=False,
-                    validate_all=False,
-                )
+                _remove_access_node_copies
             )
         if "scan_loop_unrolling" not in optimization_args:
             optimization_args["scan_loop_unrolling"] = True
