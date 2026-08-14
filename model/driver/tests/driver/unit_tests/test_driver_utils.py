@@ -6,13 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Unit tests for ``standalone_driver.driver_utils`` (data-free)."""
+"""Unit tests for ``driver.driver_utils`` (data-free)."""
 
 import itertools
 
 import pytest
 
-from icon4py.model.standalone_driver import driver_utils
+from icon4py.model.driver import driver_utils
 
 
 # MCH_CH_R04B09 has divdamp_fac = 0.004, so the enhanced factor is 8 * 0.004 = 0.032.

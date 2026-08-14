@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E2CO, C2E2CODim
+from icon4py.model.common.dimension import C2E2CO
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -23,7 +23,7 @@ def _compute_nabla2_on_cell(
     Computes the Laplacian (nabla squared) of a scalar field defined on cell
     centres.
     """
-    nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=C2E2CODim)
+    nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=dims.C2E2CODim)
 
     return nabla2_psi_c
 
@@ -37,7 +37,7 @@ def _compute_nabla2_on_cell_k(
     Computes the Laplacian (nabla squared) of a scalar field defined on cell
     centres for all vertical levels.
     """
-    nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=C2E2CODim)
+    nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=dims.C2E2CODim)
 
     return nabla2_psi_c
 

@@ -12,7 +12,6 @@ import datetime
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_driver import (
-    ForcingMode,
     PhysicsDriver,
     PhysicsProcess,
 )
@@ -32,15 +31,10 @@ def test_field_metadata_accepts_kind() -> None:
     assert meta["kind"] == "tendency"
 
 
-def test_forcing_mode_values() -> None:
-    assert ForcingMode.DIAGNOSTIC.value == 0
-    assert ForcingMode.APPLY.value == 1
-    assert ForcingMode.DIAGNOSTIC is not ForcingMode.APPLY
-    assert len(ForcingMode) == 2
-
-
 _T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
 _DT = datetime.timedelta(seconds=300)  # 5-min physics interval
+# 'PhysicsDriver.run' takes the date at the END of the step, so the step starting at
+# '_T0' is passed as '_T0 + _DT'.
 
 
 def _tc(
@@ -138,7 +132,6 @@ def test_physics_process_construction() -> None:
     assert proc.component is not None
     assert proc.state is state
     assert proc.time_control.enable_process
-    assert proc.forcing_mode is ForcingMode.APPLY
 
 
 @dataclasses.dataclass
@@ -231,7 +224,7 @@ def test_run_invokes_components_in_order() -> None:
         prognostic="prog",
         tracers="tracers",
         dtime=datetime.timedelta(seconds=300),
-        simulation_current_datetime=_T0,
+        simulation_current_datetime=_T0 + _DT,
     )
 
     assert comp_a.call_count == 1
@@ -329,7 +322,7 @@ def test_active_call_caches_outputs_and_applies_them() -> None:
         prognostic="prog",
         tracers="tracers",
         dtime=datetime.timedelta(seconds=300),
-        simulation_current_datetime=_T0,
+        simulation_current_datetime=_T0 + _DT,
     )
 
     assert comp.call_count == 1
@@ -358,14 +351,14 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
         prognostic="prog",
         tracers="tracers",
         dtime=_DT,
-        simulation_current_datetime=_T0,
+        simulation_current_datetime=_T0 + _DT,
     )
     # Step 2: in window, but not active (elapsed == _DT, not a multiple of 2*_DT).
     driver.run(
         prognostic="prog",
         tracers="tracers",
         dtime=_DT,
-        simulation_current_datetime=_T0 + _DT,
+        simulation_current_datetime=_T0 + 2 * _DT,
     )
 
     # Component invoked once total (compute step only).
@@ -395,7 +388,7 @@ def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
         prognostic="prog",
         tracers="tracers",
         dtime=_DT,
-        simulation_current_datetime=_T0 + _DT,
+        simulation_current_datetime=_T0 + 2 * _DT,
     )
 
     assert comp.call_count == 1

@@ -30,7 +30,7 @@ from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, KDim
+from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
@@ -56,8 +56,8 @@ def _compute_ddqz_z_half(
 ) -> fa.CellKField[wpfloat]:
     return with_boundaries_on_half_levels_on_cells(
         top=2.0 * (z_ifc - z_mc),
-        interior=z_mc(KDim - 1) - z_mc,
-        bottom=2.0 * (z_mc(KDim - 1) - z_ifc),
+        interior=z_mc(dims.KDim - 1) - z_mc,
+        bottom=2.0 * (z_mc(dims.KDim - 1) - z_ifc),
         nlev=nlev,
     )
 
@@ -155,7 +155,7 @@ def _compute_scaling_factor_for_3d_divdamp(
 ) -> fa.KField[wpfloat]:
     scaling_factor_for_3d_divdamp = broadcast(1.0, (dims.KDim,))
     if divdamp_type == 32:
-        zf = 0.5 * (vct_a + vct_a(KDim + 1))  # depends on nshift_total, assumed to be always 0
+        zf = 0.5 * (vct_a + vct_a(dims.KDim + 1))  # depends on nshift_total, assumed to be always 0
         scaling_factor_for_3d_divdamp = where(
             zf >= divdamp_trans_end, 0.0, scaling_factor_for_3d_divdamp
         )
@@ -272,8 +272,12 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
 def _compute_coeff_dwdz(
     ddqz_z_full: fa.CellKField[wpfloat], z_ifc: fa.CellKField[wpfloat]
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
-    coeff1_dwdz = ddqz_z_full / ddqz_z_full(KDim - 1) / (z_ifc(KDim - 1) - z_ifc(KDim + 1))
-    coeff2_dwdz = ddqz_z_full(KDim - 1) / ddqz_z_full / (z_ifc(KDim - 1) - z_ifc(KDim + 1))
+    coeff1_dwdz = (
+        ddqz_z_full / ddqz_z_full(dims.KDim - 1) / (z_ifc(dims.KDim - 1) - z_ifc(dims.KDim + 1))
+    )
+    coeff2_dwdz = (
+        ddqz_z_full(dims.KDim - 1) / ddqz_z_full / (z_ifc(dims.KDim - 1) - z_ifc(dims.KDim + 1))
+    )
 
     return coeff1_dwdz, coeff2_dwdz
 
@@ -796,9 +800,9 @@ def compute_horizontal_mask_for_3d_divdamp(  # noqa: PLR0917 [too-many-positiona
 @gtx.field_operator
 def _compute_weighted_cell_neighbor_sum(
     field: fa.CellKField[wpfloat],
-    c_bln_avg: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], wpfloat],
+    c_bln_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
 ) -> fa.CellKField[wpfloat]:
-    field_avg = neighbor_sum(field(C2E2CO) * c_bln_avg, axis=C2E2CODim)
+    field_avg = neighbor_sum(field(C2E2CO) * c_bln_avg, axis=dims.C2E2CODim)
     return field_avg
 
 
@@ -806,7 +810,7 @@ def _compute_weighted_cell_neighbor_sum(
 def compute_weighted_cell_neighbor_sum(  # noqa: PLR0917 [too-many-positional-arguments]
     maxslp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
-    c_bln_avg: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], wpfloat],
+    c_bln_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     maxslp_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     maxhgtd_avg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     horizontal_start: gtx.int32,
@@ -905,7 +909,7 @@ def _compute_param(  # noqa: PLR0917 [too-many-positional-arguments]
 def _compute_z_ifc_off_koff(
     z_ifc_off: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
-    n = z_ifc_off(KDim + 1)
+    n = z_ifc_off(dims.KDim + 1)
     return n
 
 
