@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from icon4py.model.common import model_backends
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.states import adv_states
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import driver_states
 
 from ..fixtures import *  # noqa: F403
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 def test_dycore_prep_adv_shares_the_advection_prep_adv_buffers(
     backend: gtx_typing.Backend,
 ) -> None:
-    allocator = data_alloc.get_allocator(backend=backend)
+    allocator = model_backends.get_allocator(backend)
     grid = simple_grid.simple_grid(allocator=allocator)
     adv_prep_adv_state = adv_states.initialize_advection_prep_adv_state(
         grid=grid,
@@ -65,7 +65,7 @@ def test_dycore_prep_adv_is_none_when_disabled(
     with_adv_prep_adv_state: bool,
     backend: gtx_typing.Backend,
 ) -> None:
-    allocator = data_alloc.get_allocator(backend=backend)
+    allocator = model_backends.get_allocator(backend)
     grid = simple_grid.simple_grid(allocator=allocator)
     adv_prep_adv_state = (
         adv_states.initialize_advection_prep_adv_state(
