@@ -217,3 +217,12 @@ class Experiments:
         long_name="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
     )
+    JSBACH_SSE: Final = ExperimentDescription(
+        name="aes_bubble_land_tmx_sse_global",
+        long_name=(
+            "Terra-planet with AES physics and the tmx surface, run to serialize JSBACH's "
+            "soil-snow-energy solve. Synthetic land input (continent-shaped soil provinces "
+            "covering all FAO soil types, varying soil depth, polar snow)."
+        ),
+        grid=Grids.R02B04_GLOBAL,
+    )

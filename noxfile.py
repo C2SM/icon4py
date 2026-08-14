@@ -56,6 +56,7 @@ type ModelSubpackagePath = Literal[
     "atmosphere/subgrid_scale_physics/microphysics",
     "atmosphere/subgrid_scale_physics/muphys",
     "common",
+    "land/jsbach",
     "standalone_driver",
     "testing",
 ]

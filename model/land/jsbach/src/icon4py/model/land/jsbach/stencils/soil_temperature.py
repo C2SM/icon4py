@@ -34,6 +34,11 @@ def _soil_temperature_back_substitution_scan(
     # transition into the current layer (a/b are indexed by their source layer),
     # plus the layer index k.
     t_soil_above, t_soil_acoef_above, t_soil_bcoef_above, k = state
+    # NOTE (FMA contraction): ICON computes this `a + b*c` as a single fused
+    # multiply-add -- nvfortran contracts it on the GPU build -- while GT4Py's
+    # embedded/gtfn backends round the product and the sum separately. The two
+    # differ by ~1 ulp. See docs/fma_contraction.md; validation against ICON
+    # savepoints must allow a few ulp rather than demand bit-equality.
     t_soil = t_soil_top if k == 0 else t_soil_acoef_above + t_soil_bcoef_above * t_soil_above
     return (t_soil, t_soil_acoef, t_soil_bcoef, k + 1)
 
@@ -236,6 +241,12 @@ def _soil_ground_heat_flux(
     """
     zdz1 = zd1 * heat_cond
     zdz2 = dz * vol_heat_cap / delta_time
+    # NOTE (FMA contraction): the inner `a + b*c` is fused by nvfortran in ICON
+    # (mo_sse_process.f90:750). Here the expression cancels -- acoef and t_soil are
+    # both O(300 K) while the flux is O(1 W/m^2) -- so that single fusion shows up
+    # as ~1e-13 relative, far above the ~1e-16 of the other kernels. It is the only
+    # quantity in this slice that is not bit-identical to ICON. See
+    # docs/fma_contraction.md.
     grnd_hflx = zdz1 * (t_soil_acoef + (t_soil_bcoef - 1.0) * t_soil_sl)
     hcap_grnd = zdz2 * delta_time + delta_time * (1.0 - t_soil_bcoef) * zdz1
     return grnd_hflx, hcap_grnd

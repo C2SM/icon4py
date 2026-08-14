@@ -4,9 +4,11 @@ Branch `port_jsbach` (off `origin/main`). First vertical slice: soil-snow energy
 (SSE). See `sse_port_spec.md` for the verified Fortran requirements and the
 icon4py-knowledge design doc (`personal/jcanton/jsbach-port`) for the overall plan.
 
-> **Restarting on Santis (build ICON + generate golden data + validate loop):** read
-> `JSBACH_SSE_HANDOVER.md` on the icon-nwp branch `serialize_jsbach_sse` — it is the
-> self-contained restart guide (the validation recipe, preconditions, and the loop).
+> **The oracle loop is closed.** ICON has been built and run on Santis, and the three
+> ported soil kernels reproduce its savepoints — see *Validated against ICON* below.
+> The restart guide `JSBACH_SSE_HANDOVER.md` (icon-nwp branch `serialize_jsbach_sse`)
+> still describes the recipe; `SANTIS_BUILD_NOTES.md` in the icon-exclaim.porting
+> working tree records how the build, the run and the synthetic land input were done.
 
 ## Done
 
@@ -40,6 +42,32 @@ Convention: field/argument names follow the JSBACH source (e.g. `t_soil_sl`,
 `t_soil_acoef`, `t_srf`), matching the dycore/muphys convention for
 Fortran-validated ports; function names are descriptive; docstrings cross-reference
 the Fortran `file:line`.
+
+## Validated against ICON
+
+`model/land/jsbach/tests/jsbach/integration_tests/test_sse_datatest.py` replays one
+soil-energy step from ICON's savepoints — back substitution with the OLD coefficients,
+forward elimination on the new temperatures, then the ground heat flux — and compares
+against the exit state. It passes on all serialized steps.
+
+The dataset (`Experiments.JSBACH_SSE`, grid `Grids.R02B04_GLOBAL`) comes from
+`exp.aes_bubble_land_tmx_sse_global` on the icon-nwp branch: a global terra-planet with
+AES physics and the tmx surface. Its land input is synthetic — the DKRZ pool land files
+are unreachable from Santis — with continent-shaped soil provinces covering all five FAO
+soil types, soil depths above and below the vertical grid, and polar snow, so the
+comparison spans the branches that matter. `notsea = 1` everywhere is not a choice:
+`aes_bubble_land` is the only idealized ICON testcase that gives JSBACH a land tile, and
+it hardwires `lsmask = 1` (`mo_aes_phy_init.f90:1064`); `APE_aes` hardwires `lsmask = 0`
+with water as the only surface type, so no land input can produce land there.
+
+**The gate is not bit-exactness, and that is a finding rather than a compromise.** On
+`gtfn_cpu` all five compared quantities are bit-identical to ICON; on `embedded` they
+sit a few ulp away, because ICON (nvfortran) and gtfn (g++) both contract `a + b*c` into
+a fused multiply-add and numpy does not. For `grnd_hflx` that single unfused operation
+shows up as ~1e-10 relative, since the expression cancels two O(300 K) terms down to
+O(1 W/m²). See `fma_contraction.md` — it is written up for @muellc, because the
+consequence ("bit-exact against ICON" is a property of the backend, not of the port)
+reaches every Fortran-validated port, not just this one.
 
 ## Snow coefficient build — resolved approach (no new GT4Py capability needed)
 
@@ -98,7 +126,8 @@ one-time setup, not per-step.)
    `calc_thermal_conductivity` (the `l_heat_cap_dyn`/`l_heat_cond_dyn` default path,
    moisture-coupled to HYDRO). Needed for non-bubble experiments; not on the bubble
    validation path.
-4. **Oracle (M1, long pole)** — instrumentation DONE on the icon-nwp branch
+4. ~~**Oracle (M1, long pole)**~~ — **DONE**, see *Validated against ICON* above.
+   Historical note: instrumentation on the icon-nwp branch
    `serialize_jsbach_sse` (off `serialize_tmx_sfc`): `serialize_sse_entry/exit/geometry`
    in `mo_icon4py_verification.f90`, call sites in `update_land`, and the experiment
    `exp.aes_bubble_land_tmx_sse_ser` (`l_freeze=.FALSE.`, serialization on). See that

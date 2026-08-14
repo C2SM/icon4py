@@ -1962,6 +1962,82 @@ class TopographySavepoint(IconSavepoint):
         return self._get_field("smooth_topography", dims.CellDim)
 
 
+class SseSavepoint(IconSavepoint):
+    """Base for the JSBACH soil-snow-energy savepoints.
+
+    JSBACH memory is serialized in ICON's blocked layout, (nproma, nlev, nblks) for
+    3-D fields and (nproma, nblks) for 2-D ones. Only the last block is padded, so
+    flattening the block dimension and trimming to the number of cells recovers the
+    field. `_get_field` would work too whenever nblks == 1, but the block count
+    depends on nproma, which the runscript leaves to ICON.
+    """
+
+    def _get_blocked_field(self, name: str, *dimensions: gtx.Dimension):
+        buffer = self.serializer.read(name, self.savepoint).astype(float)
+        if buffer.ndim == 3:
+            nproma, nlev, nblks = buffer.shape
+            buffer = self.xp.moveaxis(buffer, 1, -1).reshape(nproma * nblks, nlev)
+        else:
+            buffer = buffer.reshape(-1)
+        return self._get_field_from_ndarray(self.xp.ascontiguousarray(buffer), *dimensions)
+
+
+class SseGeometrySavepoint(SseSavepoint):
+    """Static vertical geometry of the `soil_depth_energy` grid (`sse-geometry`)."""
+
+    def nsoil(self) -> int:
+        return int(self.serializer.read("sse_nsoil", self.savepoint)[0])
+
+    def soil_dz(self) -> fa.KField[float]:
+        return self._get_field("sse_soil_dz", dims.KDim)
+
+    def soil_mids(self) -> fa.KField[float]:
+        return self._get_field("sse_soil_mids", dims.KDim)
+
+    def soil_bots(self) -> fa.KField[float]:
+        return self._get_field("sse_soil_bots", dims.KDim)
+
+
+class SseSolveSavepoint(SseSavepoint):
+    """State around JSBACH's soil temperature solve (`sse-solve-entry` / `-exit`).
+
+    The entry savepoint carries the previous step's prognostic state that the back
+    substitution consumes; the exit savepoint carries the new state plus the thermal
+    properties and the surface quantities handed back to the surface energy balance.
+    Accessors for fields the entry savepoint does not write raise on it.
+    """
+
+    def dtime(self) -> float:
+        return self.serializer.read("sse_dtime", self.savepoint)[0]
+
+    def t_soil_sl(self) -> fa.CellKField[float]:
+        return self._get_blocked_field("sse_t_soil_sl", dims.CellDim, dims.KDim)
+
+    def t_soil_acoef(self) -> fa.CellKField[float]:
+        return self._get_blocked_field("sse_t_soil_acoef", dims.CellDim, dims.KDim)
+
+    def t_soil_bcoef(self) -> fa.CellKField[float]:
+        return self._get_blocked_field("sse_t_soil_bcoef", dims.CellDim, dims.KDim)
+
+    def snow_depth_sl(self) -> fa.CellKField[float]:
+        return self._get_blocked_field("sse_snow_depth_sl", dims.CellDim, dims.KDim)
+
+    def vol_heat_cap_sl(self) -> fa.CellKField[float]:
+        return self._get_blocked_field("sse_vol_heat_cap_sl", dims.CellDim, dims.KDim)
+
+    def heat_cond_sl(self) -> fa.CellKField[float]:
+        return self._get_blocked_field("sse_heat_cond_sl", dims.CellDim, dims.KDim)
+
+    def grnd_hflx(self) -> fa.CellField[float]:
+        return self._get_blocked_field("sse_grnd_hflx", dims.CellDim)
+
+    def hcap_grnd(self) -> fa.CellField[float]:
+        return self._get_blocked_field("sse_hcap_grnd", dims.CellDim)
+
+    def t_srf(self) -> fa.CellField[float]:
+        return self._get_blocked_field("seb_t_srf", dims.CellDim)
+
+
 class IconSerialDataProvider:
     def __init__(
         self,
@@ -2116,6 +2192,24 @@ class IconSerialDataProvider:
     def from_topography_savepoint(self) -> TopographySavepoint:
         savepoint = self.serializer.savepoint["smooth-topo-savepoint"].as_savepoint()
         return TopographySavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_sse_geometry_savepoint(self) -> SseGeometrySavepoint:
+        savepoint = self.serializer.savepoint["sse-geometry"].id[1].as_savepoint()
+        return SseGeometrySavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_sse_solve_entry_savepoint(self, date: str) -> SseSolveSavepoint:
+        savepoint = self.serializer.savepoint["sse-solve-entry"].id[1].date[date].as_savepoint()
+        return SseSolveSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_sse_solve_exit_savepoint(self, date: str) -> SseSolveSavepoint:
+        savepoint = self.serializer.savepoint["sse-solve-exit"].id[1].date[date].as_savepoint()
+        return SseSolveSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
