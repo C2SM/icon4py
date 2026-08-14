@@ -40,12 +40,25 @@ _TOL = 0.1
 _DEGRADED_TOL = 0.5
 _STD_TOL = 0.4
 
-_BASE_TORUS_ROWS: Final = 150
-_BASE_TORUS_COLS: Final = 174
+#: the vertical study only needs a horizontal grid to exist, so it takes the smallest one
 _MINIMAL_TORUS_ROWS: Final = 6
 _MINIMAL_TORUS_COLS: Final = 4
-_TORUS_EDGE_LENGTH: Final = 100.0
+_MINIMAL_TORUS_EDGE_LENGTH: Final = 100.0
 _REFINEMENT_FACTORS: Final = tuple(2**exponent for exponent in range(3))
+
+#: (n_rows, n_cols, edge_length) of the coarsest member; the refinement factors bisect it.
+type TorusFamily = tuple[int, int, float]
+
+#: The family the miura ranges below were measured on. Its coarsest member has to resolve the
+#: profile: the circle_2d radius is (domain_length + domain_height) / 8, which is 38 cells
+#: across here, and that is what allows the tight _TOL.
+_TORUS_FAMILY: Final[TorusFamily] = (150, 174, 100.0)
+
+#: The same domain to within a percent, one bisection coarser, for the schemes that cost
+#: several times a miura step. The disc is still 19 cells across at the coarsest and the fit
+#: still spans a 4x refinement range, but the finest member is 214,016 cells rather than
+#: 835,200. 'n_rows' has to stay even at every level, which is why this is not 75 x 87.
+_COARSE_TORUS_FAMILY: Final[TorusFamily] = (76, 88, 200.0)
 
 
 def _compute_relative_errors(
@@ -98,6 +111,7 @@ def _check_convergence(
 
 _MIURA = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER
 _MIURA3 = tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER
+_MIURA_SUBCYCLED = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_SUBCYCLED
 _MIURA_WENO = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO
 _MIURA3_WENO = tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO
 
@@ -107,18 +121,29 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
 @pytest.mark.level("validation")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_case, horizontal_advection_type, l1_acceptable_range, linf_acceptable_range",
+    "experiment_case, horizontal_advection_type, torus_family, "
+    "l1_acceptable_range, linf_acceptable_range",
     [
         pytest.param(
             "linear_horizontal_advection_gaussian_2d",
             _MIURA,
+            _TORUS_FAMILY,
             [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
             [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
             id="gaussian_2d-miura",
         ),
         pytest.param(
             "linear_horizontal_advection_gaussian_2d",
+            _MIURA_SUBCYCLED,
+            _COARSE_TORUS_FAMILY,
+            _MEASURE_ONLY,
+            _MEASURE_ONLY,
+            id="gaussian_2d-miura_subcycled",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_gaussian_2d",
             _MIURA3,
+            _COARSE_TORUS_FAMILY,
             _MEASURE_ONLY,
             _MEASURE_ONLY,
             id="gaussian_2d-miura3",
@@ -126,6 +151,7 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
         pytest.param(
             "linear_horizontal_advection_gaussian_2d",
             _MIURA_WENO,
+            _COARSE_TORUS_FAMILY,
             _MEASURE_ONLY,
             _MEASURE_ONLY,
             id="gaussian_2d-miura_weno",
@@ -133,6 +159,7 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
         pytest.param(
             "linear_horizontal_advection_gaussian_2d",
             _MIURA3_WENO,
+            _COARSE_TORUS_FAMILY,
             _MEASURE_ONLY,
             _MEASURE_ONLY,
             id="gaussian_2d-miura3_weno",
@@ -140,13 +167,23 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
         pytest.param(
             "linear_horizontal_advection_circle_2d",
             _MIURA,
+            _TORUS_FAMILY,
             [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
             [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
             id="circle_2d-miura",
         ),
         pytest.param(
             "linear_horizontal_advection_circle_2d",
+            _MIURA_SUBCYCLED,
+            _COARSE_TORUS_FAMILY,
+            _MEASURE_ONLY,
+            _MEASURE_ONLY,
+            id="circle_2d-miura_subcycled",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_circle_2d",
             _MIURA3,
+            _COARSE_TORUS_FAMILY,
             _MEASURE_ONLY,
             _MEASURE_ONLY,
             id="circle_2d-miura3",
@@ -154,6 +191,7 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
         pytest.param(
             "linear_horizontal_advection_circle_2d",
             _MIURA_WENO,
+            _COARSE_TORUS_FAMILY,
             _MEASURE_ONLY,
             _MEASURE_ONLY,
             id="circle_2d-miura_weno",
@@ -161,6 +199,7 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
         pytest.param(
             "linear_horizontal_advection_circle_2d",
             _MIURA3_WENO,
+            _COARSE_TORUS_FAMILY,
             _MEASURE_ONLY,
             _MEASURE_ONLY,
             id="circle_2d-miura3_weno",
@@ -171,6 +210,7 @@ def test_horizontal_advection_convergence(
     *,
     experiment_case: str,
     horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
+    torus_family: TorusFamily,
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
     tmp_path: pathlib.Path,
@@ -180,11 +220,12 @@ def test_horizontal_advection_convergence(
 ) -> None:
     allocator = model_backends.get_allocator(backend)
 
+    base_rows, base_cols, base_edge_length = torus_family
     grid_file_paths = [
         generate_torus_grid(
-            n_rows=_BASE_TORUS_ROWS * factor,
-            n_cols=_BASE_TORUS_COLS * factor,
-            edge_length=_TORUS_EDGE_LENGTH / factor,
+            n_rows=base_rows * factor,
+            n_cols=base_cols * factor,
+            edge_length=base_edge_length / factor,
         )
         for factor in _REFINEMENT_FACTORS
     ]
@@ -328,7 +369,7 @@ def test_vertical_advection_convergence(
     grid_path = generate_torus_grid(
         n_rows=_MINIMAL_TORUS_ROWS,
         n_cols=_MINIMAL_TORUS_COLS,
-        edge_length=_TORUS_EDGE_LENGTH,
+        edge_length=_MINIMAL_TORUS_EDGE_LENGTH,
     )
     error_l1: list[float] = []
     error_linf: list[float] = []
