@@ -13,13 +13,7 @@ import logging
 import types
 from typing import TYPE_CHECKING, ClassVar
 
-from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
-    field_type_aliases as fa,
-    model_backends,
-    type_alias as ta,
-)
+from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
@@ -27,7 +21,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
+from icon4py.model.common.states import adv_states, prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -58,21 +52,6 @@ class TracerBlobConfig:
         "nh_t0": "t0",
         "nh_brunt_vais": "brunt_vais",
     }
-
-
-@dataclasses.dataclass
-class TracerAdvectionPrescription:
-    """Advection driving fields an IC prescribes when the dycore is disabled.
-
-    The fields alias the driver's advection states (which are otherwise
-    zero-allocated and only filled by a running dycore).
-    """
-
-    vn_traj: fa.EdgeKField[ta.wpfloat]
-    mass_flx_me: fa.EdgeKField[ta.wpfloat]
-    mass_flx_ic: fa.CellKField[ta.wpfloat]
-    airmass_now: fa.CellKField[ta.wpfloat]
-    airmass_new: fa.CellKField[ta.wpfloat]
 
 
 def _init_balanced_base_state(
@@ -163,7 +142,7 @@ def tracer_blob(
     tracer_state_now: tracer_states.TracerState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
-    prescription: TracerAdvectionPrescription,
+    adv_prep_adv_state: adv_states.AdvectionPrepAdvState,
 ) -> None:
     """
     Tracer-advection-only initial condition: constant zonal wind u0 in a
@@ -202,7 +181,6 @@ def tracer_blob(
     metrics = static_fields.metrics
     cell_center_x = geometry.get(geometry_meta.CELL_CENTER_X).ndarray
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
-    ddqz_z_full = metrics.get(metrics_attributes.DDQZ_Z_FULL).ndarray
     ddqz_z_full_e = metrics.get(metrics_attributes.DDQZ_Z_FULL_E).ndarray
     rho_ndarray = prognostic_state_now.rho.ndarray
     vn_ndarray = prognostic_state_now.vn.ndarray
@@ -221,12 +199,10 @@ def tracer_blob(
     dy = (cell_center_y - blob_y + 0.5 * domain_height) % domain_height - 0.5 * domain_height
     qv.ndarray[dx**2 + dy**2 <= blob_radius**2, :] = config.blob_amplitude
 
-    # prescribe the advection driving fields the (disabled) dycore would provide
+    # prescribe the advection driving fields the (disabled) dycore would accumulate;
+    # the driver recomputes the airmass from rho at every step, so it is not set here
     e2c = grid.get_connectivity(dims.E2C).ndarray
     rho_at_edge = 0.5 * (rho_ndarray[e2c[:, 0], :] + rho_ndarray[e2c[:, 1], :])
-    prescription.vn_traj.ndarray[:, :] = vn_ndarray
-    prescription.mass_flx_me.ndarray[:, :] = rho_at_edge * vn_ndarray * ddqz_z_full_e
-    prescription.mass_flx_ic.ndarray[:, :] = 0.0
-    airmass = rho_ndarray * ddqz_z_full
-    prescription.airmass_now.ndarray[:, :] = airmass
-    prescription.airmass_new.ndarray[:, :] = airmass
+    adv_prep_adv_state.vn_traj.ndarray[:, :] = vn_ndarray
+    adv_prep_adv_state.mass_flx_me.ndarray[:, :] = rho_at_edge * vn_ndarray * ddqz_z_full_e
+    adv_prep_adv_state.mass_flx_ic.ndarray[:, :] = 0.0

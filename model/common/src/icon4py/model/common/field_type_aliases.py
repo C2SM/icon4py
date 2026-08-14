@@ -25,3 +25,5 @@ KHalfField: TypeAlias = Field[Dims[dims.KHalfDim], T]  # noqa: UP040
 CellKField: TypeAlias = Field[Dims[dims.CellDim, dims.KDim], T]  # noqa: UP040
 EdgeKField: TypeAlias = Field[Dims[dims.EdgeDim, dims.KDim], T]  # noqa: UP040
 VertexKField: TypeAlias = Field[Dims[dims.VertexDim, dims.KDim], T]  # noqa: UP040
+
+CellKHalfField: TypeAlias = Field[Dims[dims.CellDim, dims.KDim], T]  # noqa: UP040

@@ -1758,6 +1758,23 @@ wheels = [
 
 [[package]]
 dependencies = [
+  {name = "numpy"}
+]
+name = "icon-grid-generator"
+sdist = {url = "https://files.pythonhosted.org/packages/e5/a2/d77d407cccae64c624a591e530522a17f240b068a78053f5025d12f820b8/icon_grid_generator-0.8.1.tar.gz", hash = "sha256:72056f169ee235aafa3377557a043cffa3f950be465fef9c886a31c0abc17c17", size = 1116485, upload-time = "2026-08-12T07:52:07.02Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "0.8.1"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/c2/cf/02b7932d1fb4c9d00a93271258da04a785d227bdd56e1244324836771eb8/icon_grid_generator-0.8.1-py3-none-any.whl", hash = "sha256:35b61c23d9bcb56a7339000cbba8710f62431188293f6d01f258e1ee69b1bd3c", size = 104147, upload-time = "2026-08-12T07:52:05.513Z"}
+]
+
+[package.optional-dependencies]
+netcdf = [
+  {name = "netcdf4"}
+]
+
+[[package]]
+dependencies = [
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
   {name = "icon4py-atmosphere-microphysics"},
@@ -2293,7 +2310,9 @@ requires-dist = [
 dependencies = [
   {name = "filelock"},
   {name = "gt4py"},
+  {name = "icon-grid-generator", extra = ["netcdf"]},
   {name = "icon4py-common", extra = ["io"]},
+  {name = "matplotlib"},
   {name = "numpy"},
   {name = "packaging"},
   {name = "pooch"},
@@ -2308,7 +2327,9 @@ version = "0.3.0"
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
   {name = "gt4py", specifier = "==1.2.0"},
+  {name = "icon-grid-generator", extras = ["netcdf"], specifier = ">=0.8.0"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
+  {name = "matplotlib", specifier = ">=3.8.0"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"},
   {name = "pooch", specifier = ">=1.7.0"},
