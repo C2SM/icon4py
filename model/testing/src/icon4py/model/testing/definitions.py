@@ -194,10 +194,14 @@ class Experiments:
         version=6,
     )
     EXCLAIM_APE_AES: Final = ExperimentDescription(
-        name="exclaim_ape_aesPhys",
-        long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
+        name="exclaim_aesPhys",
+        long_name=(
+            "EXCLAIM AES physics experiment: aqua-planet IC with a land fraction, grown "
+            "one parametrisation at a time (transport, muphys, tmx turbulence, tmx "
+            "surface, JSBACH land)"
+        ),
         grid=Grids.R02B04_GLOBAL,
-        version=7,
+        version=10,
     )
     MCH_CH_R04B09: Final = ExperimentDescription(
         name="exclaim_ch_r04b09_dsl",
@@ -222,14 +226,4 @@ class Experiments:
         long_name="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
         version=6,
-    )
-    JSBACH_SSE: Final = ExperimentDescription(
-        name="aes_bubble_land_tmx_sse_global",
-        long_name=(
-            "Terra-planet with AES physics and the tmx surface, run to serialize JSBACH's "
-            "soil-snow-energy solve. Synthetic land input (continent-shaped soil provinces "
-            "covering all FAO soil types, varying soil depth, polar snow)."
-        ),
-        grid=Grids.R02B04_GLOBAL,
-        version=1,
     )

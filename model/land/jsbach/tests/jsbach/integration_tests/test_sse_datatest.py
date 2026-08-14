@@ -32,12 +32,13 @@ from icon4py.model.testing import definitions as test_defs, test_utils
 from ..fixtures import *  # noqa: F403  [pytest resolves fixtures from this namespace]
 
 
-#: The dates ICON serialized in this experiment (the first, lstart, step is skipped:
-#: its two-time-level back substitution does not run).
+#: The steps ICON serialized in this experiment, minus the first. On the lstart step
+#: JSBACH skips the two-time-level back substitution (the soil state has no previous
+#: coefficients yet), so the entry/exit pair at 00:00:00 is not a solve to compare
+#: against -- the other kernels match there, but t_soil_sl does not.
 SSE_DATES = [
-    "2008-08-01T00:00:30.000",
-    "2008-08-01T00:01:00.000",
-    "2008-08-01T00:01:30.000",
+    "2008-09-01T00:05:00.000",
+    "2008-09-01T00:10:00.000",
 ]
 
 #: ICON is built with nvfortran and `-acc=gpu`, which contracts `a + b*c` into a fused
@@ -60,7 +61,7 @@ def _zeros(num_cells: int, num_levels: int, backend) -> gtx.Field:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JSBACH_SSE])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.EXCLAIM_APE_AES])
 @pytest.mark.parametrize("date", SSE_DATES)
 def test_soil_temperature_solve_matches_icon(
     date: str,
@@ -159,7 +160,7 @@ def test_soil_temperature_solve_matches_icon(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JSBACH_SSE])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.EXCLAIM_APE_AES])
 def test_soil_thermal_grid_matches_icon(*, data_provider) -> None:
     """The host-side vertical geometry must reproduce ICON's soil_depth_energy grid."""
     geometry = data_provider.from_sse_geometry_savepoint()

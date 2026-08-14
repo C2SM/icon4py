@@ -91,13 +91,17 @@ class InitialConditionConfig:
             jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | wk_ic.WeismanKlempConfig
         )  # mypy does not automatically catch type
         match test_name:
-            case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
+            case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes" | "exclaim_aesPhys":
                 log.info("Analytical initial condition for Jablonowski-Williamson test case")
                 config = fortran_config.config_dataclass_from_dict(
                     jw_ic.JablonowskiWilliamsonConfig, testcase_nml
                 )
                 # Only the APE cases rescale qv to a prescribed global moisture content.
-                config.normalize_global_moisture = test_name in ("APE_nwp", "APE_aes")
+                config.normalize_global_moisture = test_name in (
+                    "APE_nwp",
+                    "APE_aes",
+                    "exclaim_aesPhys",
+                )
                 # Fortran resets jw_up to 0 only for jabw_s; other cases keep the default (1.0).
                 if test_name == "jabw_s":
                     config.baroclinic_amplitude = 0.0

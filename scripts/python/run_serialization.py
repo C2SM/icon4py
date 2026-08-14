@@ -77,7 +77,6 @@ class SerializationSettings:
             test_defs.Experiments.EXCLAIM_APE_AES,
             test_defs.Experiments.GAUSS3D,
             test_defs.Experiments.WEISMAN_KLEMP_TORUS,
-            test_defs.Experiments.JSBACH_SSE,
         ]
 
         # Slurm settings
