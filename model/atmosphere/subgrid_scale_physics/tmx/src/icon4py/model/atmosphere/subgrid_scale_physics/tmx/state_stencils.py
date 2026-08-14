@@ -63,7 +63,8 @@ def _compute_cv_air(  # noqa: PLR0917 [too-many-positional-arguments]
     cvd = PhysicsConstants.cvd
     cvv = PhysicsConstants.cvv
     clw = PhysicsConstants.cpl
-    ci = PhysicsConstants.cpi
+    # AES ice heat capacity (mo_physical_constants ci=2106), NOT the graupel-side cpi=2108
+    ci = PhysicsConstants.ci_aes
     qliq = qc + qr
     qice = qi + qs + qg
     qtot = qv + qliq + qice

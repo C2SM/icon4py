@@ -9,8 +9,9 @@
 import datetime
 
 import numpy as np
+import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import data as tmx_data
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import data as tmx_data, static_fields
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.state import TmxState
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple
@@ -167,3 +168,47 @@ def test_scatter_projects_wind_tendency_to_vn():
         prognostic, _tmx_outputs(grid, ddt_u=1e-4), datetime.timedelta(seconds=dt)
     )
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
+
+
+# Moved from test_static_fields.py: covers the wgtfacq DSL->Fortran column
+# reorder still performed by the static_fields bridge.
+class TestDslToFortranOrder:
+    """Unit tests for dsl_to_fortran_order."""
+
+    def test_column_reversal_asymmetric(self) -> None:
+        """[a, b, c] columns become [c, b, a] (reversal catches wrong flip axis)."""
+        a, b, c = 1.0, 2.0, 3.0
+        d, e, f = 4.0, 5.0, 6.0
+        arr = np.array([[a, b, c], [d, e, f]])
+        result = static_fields.dsl_to_fortran_order(arr)
+        expected = np.array([[c, b, a], [f, e, d]])
+        np.testing.assert_array_equal(result, expected)
+
+    def test_wrong_column_count_raises(self) -> None:
+        """AssertionError fires for arrays with != 3 columns."""
+        for ncols in (1, 2, 4, 5):
+            arr_wrong = np.ones((5, ncols))
+            with pytest.raises(AssertionError, match="expected 3 K columns"):
+                static_fields.dsl_to_fortran_order(arr_wrong)
+
+    def test_symmetric_column_unchanged(self) -> None:
+        """[a, b, a] → [a, b, a]: symmetric case is invariant under reversal."""
+        arr = np.array([[1.0, 2.0, 1.0], [3.0, 4.0, 3.0]])
+        result = static_fields.dsl_to_fortran_order(arr)
+        np.testing.assert_array_equal(result, arr)
+
+    def test_double_reversal_is_identity(self) -> None:
+        """Applying the transform twice returns the original array."""
+        rng = np.random.default_rng(0)
+        arr = rng.uniform(size=(4, 3))
+        np.testing.assert_array_equal(
+            static_fields.dsl_to_fortran_order(static_fields.dsl_to_fortran_order(arr)),
+            arr,
+        )
+
+    def test_values_not_equal_to_input_for_asymmetric(self) -> None:
+        """Result differs from input when columns are asymmetric (catches no-op bug)."""
+        arr = np.array([[1.0, 2.0, 3.0]])
+        result = static_fields.dsl_to_fortran_order(arr)
+        with pytest.raises(AssertionError):
+            np.testing.assert_array_equal(result, arr)

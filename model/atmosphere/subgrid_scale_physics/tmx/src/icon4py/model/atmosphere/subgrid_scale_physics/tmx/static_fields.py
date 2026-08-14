@@ -64,6 +64,18 @@ def dsl_to_fortran_order(arr: np.ndarray) -> np.ndarray:
     return arr[:, ::-1]
 
 
+def _half_level_to_granule_kdim(field: gtx.Field, allocator: gtx_typing.Backend) -> gtx.Field:
+    """Re-type a factory half-level field from (H, KHalfDim) to the granule's (H, KDim).
+
+    The field factories type half-level fields on KHalfDim; the tmx granule
+    (like the serialized ICON reference data) types every vertical axis as KDim
+    with nlev+1 entries. Same buffer contents, different vertical dimension tag —
+    without this re-wrap the granule's typed gt4py programs reject the field.
+    """
+    horizontal_dim = field.domain.dims[0]
+    return gtx.as_field((horizontal_dim, dims.KDim), field.asnumpy(), allocator=allocator)
+
+
 # ---------------------------------------------------------------------------
 # Builder function
 # ---------------------------------------------------------------------------
@@ -81,7 +93,8 @@ def build_tmx_static_states(
 
     Everything is fetched from the factory sources (derived metric fields are
     registered in the metrics factory); the only local work is the wgtfacq
-    DSL→Fortran column reorder.
+    DSL→Fortran column reorder and re-typing half-level fields from the
+    factories' KHalfDim to the granule's KDim convention.
 
     Args:
         grid:                  The icon grid (used for E2C / V2C connectivities).
@@ -99,14 +112,23 @@ def build_tmx_static_states(
     # 1. Fetch fields directly from factory sources
     # ------------------------------------------------------------------
 
-    # Metrics: fetched as-is
+    # Metrics: full-level fields fetched as-is; half-level fields re-typed from
+    # the factories' KHalfDim to the granule's KDim convention
     ddqz_z_full = metrics_source.get(metrics_attributes.DDQZ_Z_FULL)
     inv_ddqz_z_full = metrics_source.get(metrics_attributes.INV_DDQZ_Z_FULL)
-    ddqz_z_half = metrics_source.get(metrics_attributes.DDQZ_Z_HALF)
-    wgtfac_c = metrics_source.get(metrics_attributes.WGTFAC_C)
-    wgtfac_e = metrics_source.get(metrics_attributes.WGTFAC_E)
+    ddqz_z_half = _half_level_to_granule_kdim(
+        metrics_source.get(metrics_attributes.DDQZ_Z_HALF), allocator
+    )
+    wgtfac_c = _half_level_to_granule_kdim(
+        metrics_source.get(metrics_attributes.WGTFAC_C), allocator
+    )
+    wgtfac_e = _half_level_to_granule_kdim(
+        metrics_source.get(metrics_attributes.WGTFAC_E), allocator
+    )
     z_mc = metrics_source.get(metrics_attributes.Z_MC)
-    z_ifc = metrics_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL)
+    z_ifc = _half_level_to_granule_kdim(
+        metrics_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL), allocator
+    )
 
     # Factory wgtfacq fields come in DSL order (col0=w3, col1=w2, col2=w1)
     wgtfacq_c_dsl_arr = metrics_source.get(metrics_attributes.WGTFACQ_C).asnumpy()
@@ -131,11 +153,19 @@ def build_tmx_static_states(
     #    (registered in metrics_factory.py; numpy formulas in
     #    common/metrics/compute_weight_factors.py)
     # ------------------------------------------------------------------
-    inv_ddqz_z_half = metrics_source.get(metrics_attributes.INV_DDQZ_Z_HALF)
+    inv_ddqz_z_half = _half_level_to_granule_kdim(
+        metrics_source.get(metrics_attributes.INV_DDQZ_Z_HALF), allocator
+    )
     inv_ddqz_z_full_e = metrics_source.get(metrics_attributes.INV_DDQZ_Z_FULL_E)
-    inv_ddqz_z_half_e = metrics_source.get(metrics_attributes.INV_DDQZ_Z_HALF_E)
-    inv_ddqz_z_half_v = metrics_source.get(metrics_attributes.INV_DDQZ_Z_HALF_V)
-    geopot_agl_ifc = metrics_source.get(metrics_attributes.GEOPOT_AGL_IFC)
+    inv_ddqz_z_half_e = _half_level_to_granule_kdim(
+        metrics_source.get(metrics_attributes.INV_DDQZ_Z_HALF_E), allocator
+    )
+    inv_ddqz_z_half_v = _half_level_to_granule_kdim(
+        metrics_source.get(metrics_attributes.INV_DDQZ_Z_HALF_V), allocator
+    )
+    geopot_agl_ifc = _half_level_to_granule_kdim(
+        metrics_source.get(metrics_attributes.GEOPOT_AGL_IFC), allocator
+    )
     wgtfacq1_c = metrics_source.get(metrics_attributes.WGTFACQ1_C)
     wgtfacq1_e = metrics_source.get(metrics_attributes.WGTFACQ1_E)
 

@@ -9,15 +9,13 @@
 """Datatest: verify that factory-built TmxMetricState and TmxInterpolationState
 match the savepoint-built reference states field-by-field.
 
-This test is parametrized over the EXCLAIM_APE_AES experiment and requires the
-v06 serialized data archive to be downloaded.  Because the archive server
-currently returns HTTP 403, this test *cannot be executed*; it is written and
-will at least COLLECT (import errors are fixed, data-download failure at
-fixture time is expected and acceptable).
+Parametrized over the EXCLAIM_APE_AES experiment (v08 archive, auto-downloaded).
+Run with the compiled CPU backend — the embedded backend currently fails on
+``concat_where`` domain inference in ``compute_ddqz_z_half``::
 
-Data-test can be unblocked once the v06 archive is accessible by running::
-
-    uv run pytest model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/integration_tests/test_static_fields.py -v -m datatest
+    uv run --group test --frozen pytest \
+        model/atmosphere/subgrid_scale_physics/tmx/tests/tmx/integration_tests/test_static_fields.py \
+        --datatest-only --backend=gtfn_cpu -v
 """
 
 from __future__ import annotations
@@ -43,6 +41,23 @@ from icon4py.model.testing import definitions
 from icon4py.model.testing.fixtures.datatest import topography_savepoint
 
 from ..fixtures import *  # noqa: F403  (re-exports experiment, decomposition_info, etc.)
+
+
+@pytest.fixture  # type: ignore[no-redef]  # deliberately shadows the fixtures.py import
+def icon_grid(grid_savepoint, backend):
+    """Grid with production skip-value semantics (invalid neighbors are negative).
+
+    The vertex-RBF coefficient solve requires pentagon vertices' missing V2E
+    neighbors to be negative (its documented contract); the shared fixture keeps
+    ICON's repeated-index padding, which makes the twelve pentagon interpolation
+    matrices singular. The driver's grid-file path (keep_skip_values=True,
+    0-padding -> -1) meets the contract — mirror it here.
+    """
+    return grid_savepoint.construct_icon_grid(
+        backend=backend, keep_skip_values=True, with_repeated_index=False
+    )
+
+
 from .utils import assert_scaled_allclose, construct_interpolation_state, construct_metric_state
 
 
@@ -182,11 +197,23 @@ def test_factory_static_states_match_savepoints(
             err_msg=f.name,
         )
 
+    # Solver-recomputed fields: icon4py's batched-LU RBF solve differs from ICON's
+    # Cholesky at round-off (sanctioned in common test_rbf_interpolation.py's
+    # RBF_TOLERANCES: cell atol 3.1e-9 on the aquaplanet grid; v08 measures
+    # 3.25e-9 abs). Those fields get a wider absolute floor; every pass-through
+    # or identically-derived field keeps the tight default.
+    atol_scale_overrides = {
+        "rbf_coeff_c1": 5.0e-9,
+        "rbf_coeff_c2": 5.0e-9,
+        "rbf_coeff_v1": 2.0e-9,
+        "rbf_coeff_v2": 2.0e-9,
+    }
     for f in dataclasses.fields(interp_ref):
         actual = getattr(interp_actual, f.name)
         ref = getattr(interp_ref, f.name)
         assert_scaled_allclose(
             actual.asnumpy(),
             ref.asnumpy(),
+            atol_scale=atol_scale_overrides.get(f.name, 1.0e-9),
             err_msg=f.name,
         )

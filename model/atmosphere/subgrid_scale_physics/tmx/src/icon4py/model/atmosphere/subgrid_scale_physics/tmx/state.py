@@ -184,7 +184,6 @@ class TmxState(PhysicsState):
             vertical_sizes=full_vertical,
             offset_provider=grid.connectivities,
         )
-        # Scatter programs (Task 5)
         self._apply_tendency = model_options.setup_program(
             program=generic_math_operations.compute_field_a_plus_coeff_times_field_b_on_cell_k,
             backend=backend,

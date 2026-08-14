@@ -50,6 +50,7 @@ def test_compute_cv_air_matches_fortran_formula():
         constants.CVD * (1.0 - qtot)
         + constants.CVV * q["qv"]
         + constants.CPL * (q["qc"] + q["qr"])
-        + constants.SPECIFIC_HEAT_CAPACITY_ICE * (q["qi"] + q["qs"] + q["qg"])
+        # AES ice heat capacity (mo_physical_constants ci=2106), not the graupel cpi=2108
+        + constants.SPECIFIC_HEAT_CAPACITY_ICE_AES * (q["qi"] + q["qs"] + q["qg"])
     )
     test_utils.assert_dallclose(cv_air.asnumpy(), cv * 300.0)

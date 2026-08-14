@@ -56,7 +56,14 @@ CPL = SPECIFIC_HEAT_CAPACITY_LIQUID_WATER
 WATER_DENSITY: Final[ta.wpfloat] = 1.000e3
 
 #: specific heat capacity of ice. Originally expressed as ci in ICON. [J/K/kg]
+#: NOTE: this is the NWP/graupel-side value (gscp tradition); the AES physics
+#: uses 2106.0 (see SPECIFIC_HEAT_CAPACITY_ICE_AES below) — the two coexist in ICON.
 SPECIFIC_HEAT_CAPACITY_ICE: Final[ta.wpfloat] = 2108.0
+
+#: specific heat capacity of ice as used by the AES physics (mo_physical_constants.f90
+#: ``ci = 2106.0``, consumed e.g. by get_cvair / the tmx cv_air computation). [J/K/kg]
+#: Distinct from the 2108.0 NWP/graupel-side value above.
+SPECIFIC_HEAT_CAPACITY_ICE_AES: Final[ta.wpfloat] = 2106.0
 
 #: Melting temperature of ice/snow [K]. Originally expressed as tmelt in ICON.
 MELTING_TEMPERATURE: Final[ta.wpfloat] = 273.15
@@ -158,6 +165,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     cvv = SPECIFIC_HEAT_CAPACITY_VOLUME_WATER_VAPOR
     cpl = SPECIFIC_HEAT_CAPACITY_LIQUID_WATER
     cpi = SPECIFIC_HEAT_CAPACITY_ICE
+    ci_aes = SPECIFIC_HEAT_CAPACITY_ICE_AES
     water_density = WATER_DENSITY
     tmelt = MELTING_TEMPERATURE
     water_triple_point_temperature = WATER_TRIPLE_POINT_TEMPERATURE
