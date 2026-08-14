@@ -1,42 +1,78 @@
-# model driver for Python ICON port
+# Standalone driver for ICON4Py
 
-`icon4py_driver.py` contains a simple python program to run the experimental ICON python port. So far the code mostly draws on serialized ICON data until we increasingly can initialize and run the model independently.
+`main.py` contains a simple Python program to run the experimental ICON4Py port.
 
-Currently, users need serialized data of the pre-computed metric and interpolation coefficients and grid to run the driver.
+The driver reads its configuration from a configuration directory, initializes
+the grid and model state, and runs the time integration. Which granules are
+active (diffusion, solve_nonhydro, tracer advection, microphysics) is determined
+by the provided configuration rather than being hardcoded.
 
-Currently, it does only diffusion and solve_nonhydro (dry atmosphere with no physics). The configuration for the granules and driver is hardcoded in [icon4py_configuration.py](src/icon4py/model/driver/icon4py_configuration.py). Time step, total integration time, number of substeps, and etc. can be configured there.
-
-The code is meant to be changed and enlarged as we port new parts of the model.
-
-It runs single node or parallel versions. For parallel runs the domain has to be decomposed previously through a full ICON run that generates the necessary serialized data. Test data for runs with 1, 2, 4 nodes are available.
+It supports both single-node and distributed (MPI) runs. IO output is currently
+single-node only and is therefore disabled for MPI runs.
 
 ## Installation
 
-See the general instructions in the [README.md](../../README.md) in the base folder of the repository.
+See the general instructions in the [README.md](../../README.md) in the base
+folder of the repository.
 
 ## Usage
 
 ```bash
+# set environment variables (optional but convenient)
 export ICON4PY_ROOT=<path to the icon4py clone>
-icon4py_driver $ICON4PY_ROOT/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data --run_path=$ICON4PY_ROOT/output
+export GRID_FOLDER=<path to the folder holding grids>
+export CONFIG_FOLDER=<path to the configuration directory>
+
+# command line arguments
+icon4py-driver \
+    --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
+    --config-file-path $CONFIG_FOLDER \
+    --icon4py-backend gtfn_cpu \
+    --output-path $ICON4PY_ROOT/output_path \
+    --enable-output
 ```
 
-The driver code runs in parallel, in order to do this you need to install the optional communication libraries with:
+## Configuration directory
 
-```bash
-cd ICON4PY_ROOT
-uv sync --extra distributed  # or `uv sync --extra all` which includes everything
+The driver expects a configuration directory containing the following JSON files:
+
+- `NAMELIST_ICON_output_atm.json`
+- `icon_master.namelist.json`
+- `NAMELIST_expname.json`
+
+These are generated from the corresponding Fortran namelists and describe the
+experiment, the atmosphere setup, and the input parameters.
+
+To generate these from an experiment run with Fortran ICON you can use the [f90nml](https://f90nml.readthedocs.io/en/latest/index.html) Python package to generate the JSON files from the original `NAMELIST` files of the Fortran ICON simulation.
+Once the Fortran ICON simulation has finished, there is a folder generated in `<ICON_ROOT>/<BUILD_TYPE>/experiments/<EXPERIMENT_NAME>` that includes the necessary `NAMELIST` files to configure the `ICON4Py` `driver`.
+Using the following instruction you can export the necessary files to their JSON equivalent format:
 
 ```
-
-then run
-
-```bash
-mpirun -np 2 icon4py_driver $ICON4PY_ROOT/testdata/ser_icondata/mpitask2/mch_ch_r04b09_dsl/ser_data --mpi=True --run_path=$ICON4PY_ROOT/output --grid_root=4 --grid_level=9 --experiment_type=any
+mkdir CONFIG_DIR
+f90nml -g config_nml <ICON_ROOT>/<BUILD_TYPE>/experiments/<EXPERIMENT_NAME>/NAMELIST_ICON_output_atm CONFIG_DIR/NAMELIST_ICON_output_atm.json
+f90nml -g config_nml <ICON_ROOT>/<BUILD_TYPE>/experiments/<EXPERIMENT_NAME>/icon_master.namelist CONFIG_DIR/icon_master.namelist.json
+f90nml -g config_nml <ICON_ROOT>/<BUILD_TYPE>/experiments/<EXPERIMENT_NAME>/NAMELIST_<EXPERIMENT_NAME> CONFIG_DIR/NAMELIST_expname.json
 ```
 
-#### Remarks
+Once the above is done you can provide the `CONFIG_DIR` to the `--config-file-path` of the `icon4py-driver` to configure the simulation the same way as the ICON Fortran one.
 
-- First (required) arg is the folder where the serialized input data is stored. In the example above, the path is where the data is put when downloaded via the unit tests (the url can be found in [datatest_utils.py](../common/src/icon4py/model/common/test_utils/datatest_utils.py). You can also generate your own serialized data and put it in an arbitrary folder.
-- Parallel runs are possible if corresponding data is provided, which is currently available for test with 2 or 4 MPI processes: check [datatest_fixtures.py](../common/src/icon4py/model/common/test_utils/datatest_fixtures.py) for download urls. However, parallel runs are not yet fully tested.
-- Please use the command `icon4py_driver --help` for information on the remaining optional arguments,.
+Of course you can write the necessary configuration files manually or start by some template files and edit them yourself.
+
+### Required options
+
+- `--grid-file-path`: path to the ICON grid file.
+- `--config-file-path`: path to the directory containing the configuration JSON
+  files.
+- `--icon4py-backend`: GT4Py backend for running the driver. Run with
+  `--help` to see the available backends.
+
+### Optional options
+
+- `--output-path`: override the output path from the configuration file.
+- `--log-level`: logging level. Possible values are `notset` (default), `debug`,
+  `info`, `warning`, `error`, `critical`.
+- `--print-distributed-debug-msg`: print debug logging messages from all MPI
+  ranks (only effective when `--log-level debug` is set).
+- `--enable-output/--no-enable-output`: write prognostic and diagnostic fields
+  to output. Defaults to `--no-enable-output`. Disabled automatically in MPI
+  runs.

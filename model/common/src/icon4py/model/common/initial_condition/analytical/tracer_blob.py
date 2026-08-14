@@ -27,7 +27,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -160,6 +160,7 @@ def tracer_blob(
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
+    tracer_state_now: tracer_states.TracerState,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     prescription: TracerAdvectionPrescription,
@@ -177,7 +178,7 @@ def tracer_blob(
     domain_height = grid.grid_params.domain_height
     assert domain_length is not None and domain_height is not None
 
-    qv = prognostic_state_now.tracer.qv
+    qv = tracer_state_now.qv
     if qv is None:
         raise ValueError(
             "The 'tracer_blob' initial condition requires an active qv tracer (ntracer >= 1)."

@@ -1,14 +1,14 @@
 interfaces = []
 exclude = []
 source_roots = [
-    "model/atmosphere/advection/src",
+    "model/atmosphere/tracer_advection/src",
     "model/atmosphere/diffusion/src",
     "model/atmosphere/dycore/src",
     "model/atmosphere/subgrid_scale_physics/microphysics/src",
     "model/atmosphere/subgrid_scale_physics/muphys/src",
-    "model/standalone_driver/src",
-    "model/common/src",
+    "model/atmosphere/subgrid_scale_physics/physics_driver/src",
     "model/driver/src",
+    "model/common/src",
     "model/testing/src",
     "tools/src",
     "bindings/src",
@@ -41,7 +41,11 @@ path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
-path = "icon4py.model.atmosphere.advection"
+path = "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver"
+depends_on = [{ path = "icon4py.model.common" }]
+
+[[modules]]
+path = "icon4py.model.atmosphere.tracer_advection"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
@@ -57,22 +61,16 @@ path = "icon4py.model.atmosphere.subgrid_scale_physics.microphysics"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
-path = "icon4py.model.standalone_driver"
+path = "icon4py.model.driver"
 depends_on = [
+    { path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys" },
+    { path = "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver" },
     { path = "icon4py.model.common" },
 ]
 
 [[modules]]
 path = "icon4py.model.common"
 depends_on = []
-
-[[modules]]
-path = "icon4py.model.driver"
-depends_on = [
-    { path = "icon4py.model.atmosphere.diffusion" },
-    { path = "icon4py.model.atmosphere.dycore" },
-    { path = "icon4py.model.common" },
-]
 
 [[modules]]
 path = "icon4py.model.testing"
