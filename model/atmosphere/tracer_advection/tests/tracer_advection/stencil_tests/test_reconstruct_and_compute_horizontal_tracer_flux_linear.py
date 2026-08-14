@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """The fused reconstruction+flux kernel against the two-stage form it replaces.
 
 This is the half of Andreas Jocksch's 'upwind_hflux_miura_cell' reformulation that carries
@@ -58,17 +66,13 @@ def _domain(grid: base.Grid) -> dict:
     cell_domain = h_grid.domain(dims.CellDim)
     return {
         "edge": {
-            "horizontal_start": grid.start_index(
-                edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
-            ),
+            "horizontal_start": grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)),
             "horizontal_end": gtx.int32(grid.num_edges),
             "vertical_start": gtx.int32(0),
             "vertical_end": gtx.int32(grid.num_levels),
         },
         "cell": {
-            "horizontal_start": grid.start_index(
-                cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-            ),
+            "horizontal_start": grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
             "horizontal_end": gtx.int32(grid.num_cells),
             "vertical_start": gtx.int32(0),
             "vertical_end": gtx.int32(grid.num_levels),

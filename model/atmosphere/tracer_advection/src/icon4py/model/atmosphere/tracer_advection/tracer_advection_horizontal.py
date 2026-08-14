@@ -89,6 +89,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.postprocess_antidiffusiv
 from icon4py.model.atmosphere.tracer_advection.stencils.prepare_gauss_quadrature_quadratic_miura3 import (
     prepare_gauss_quadrature_quadratic_miura3,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_and_compute_horizontal_tracer_flux_linear import (
+    reconstruct_and_compute_horizontal_tracer_flux_linear,
+)
 from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coefficients_svd import (
     reconstruct_linear_coefficients_svd,
 )
@@ -534,50 +537,26 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         )
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
-        # reconstruction fields
-        allocator = model_backends.get_allocator(self._backend)
-        self._p_coeff_1 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator
-        )
-        self._p_coeff_2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator
-        )
-        self._p_coeff_3 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator
-        )
-
-        # stencils
-        self._reconstruct_linear_coefficients_svd = model_options.setup_program(
+        # The reconstruction is fused into the flux, so the three coefficient fields are
+        # never materialised. Bit-identical to running the two stencils in sequence, and
+        # about twice as fast; see
+        # tests/tracer_advection/stencil_tests/test_reconstruct_and_compute_horizontal_tracer_flux_linear.py
+        self._reconstruct_and_compute_horizontal_tracer_flux_linear = model_options.setup_program(
             backend=self._backend,
-            program=reconstruct_linear_coefficients_svd,
+            program=reconstruct_and_compute_horizontal_tracer_flux_linear,
             constant_args={
                 "lsq_pseudoinv_1": self._least_squares_state.lsq_pseudoinv_1,
                 "lsq_pseudoinv_2": self._least_squares_state.lsq_pseudoinv_2,
             },
             horizontal_sizes={
-                "horizontal_start": self._start_cell_lateral_boundary_level_2,
-                "horizontal_end": self._end_cell_halo,
+                "horizontal_start": self._start_edge_lateral_boundary_level_5,
+                "horizontal_end": self._end_edge_halo,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
             offset_provider=self._grid.connectivities,
-        )
-        self._compute_horizontal_tracer_flux_from_linear_coefficients_alt = (
-            model_options.setup_program(
-                backend=self._backend,
-                program=compute_horizontal_tracer_flux_from_linear_coefficients_alt,
-                horizontal_sizes={
-                    "horizontal_start": self._start_edge_lateral_boundary_level_5,
-                    "horizontal_end": self._end_edge_halo,
-                },
-                vertical_sizes={
-                    "vertical_start": gtx.int32(0),
-                    "vertical_end": gtx.int32(self._grid.num_levels),
-                },
-                offset_provider=self._grid.connectivities,
-            )
         )
 
     def compute_tracer_flux(
@@ -595,33 +574,17 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
     ) -> None:
         log.debug("horizontal tracer flux computation - start")
 
-        # linear reconstruction using singular value decomposition
-        log.debug("running stencil reconstruct_linear_coefficients_svd - start")
-        self._reconstruct_linear_coefficients_svd(
+        # linear reconstruction, evaluated at each barycenter, and the flux at each edge
+        log.debug("running stencil reconstruct_and_compute_horizontal_tracer_flux_linear - start")
+        self._reconstruct_and_compute_horizontal_tracer_flux_linear(
             p_cc=p_tracer_now,
-            p_coeff_1_dsl=self._p_coeff_1,
-            p_coeff_2_dsl=self._p_coeff_2,
-            p_coeff_3_dsl=self._p_coeff_3,
-        )
-        log.debug("running stencil reconstruct_linear_coefficients_svd - end")
-
-        # compute reconstructed tracer value at each barycenter and corresponding flux at each edge
-        log.debug(
-            "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - start"
-        )
-        self._compute_horizontal_tracer_flux_from_linear_coefficients_alt(
-            z_lsq_coeff_1=self._p_coeff_1,
-            z_lsq_coeff_2=self._p_coeff_2,
-            z_lsq_coeff_3=self._p_coeff_3,
             distv_bary_1=p_distv_bary_1,
             distv_bary_2=p_distv_bary_2,
             p_mass_flx_e=prep_adv.mass_flx_me,
             p_vn=prep_adv.vn_traj,
             p_out_e=p_mflx_tracer_h,
         )
-        log.debug(
-            "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - end"
-        )
+        log.debug("running stencil reconstruct_and_compute_horizontal_tracer_flux_linear - end")
 
         self._horizontal_limiter.apply_flux_limiter(
             p_tracer_now=p_tracer_now,
