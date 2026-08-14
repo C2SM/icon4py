@@ -279,18 +279,33 @@ def _construct_weno_linear_state(
     )
 
 
-def _construct_weno_quadratic_state(
+@dataclasses.dataclass(frozen=True)
+class _QuadraticReconstructionInputs:
+    """The init-time pieces the two quadratic (miura3) schemes share.
+
+    'state_kwargs' holds the fields both 'AdvectionQuadraticState' and
+    'AdvectionWenoQuadraticState' declare; the schemes differ only in the pseudoinverse.
+    """
+
+    stencil_c9: data_alloc.NDArray
+    lsq_moments: data_alloc.NDArray
+    c2e2c: data_alloc.NDArray
+    c2e2c2e2c: data_alloc.NDArray
+    cell_center_x: data_alloc.NDArray
+    cell_center_y: data_alloc.NDArray
+    domain_length: float
+    domain_height: float
+    state_kwargs: dict[str, Any]
+
+
+def _quadratic_reconstruction_inputs(
     *,
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
     exchange: decomposition_defs.ExchangeRuntime,
     backend: gtx_typing.Backend | None,
-) -> tracer_advection_states.AdvectionWenoQuadraticState:
-    """Init-time quadratic (miura3) WENO state (ihadv_tracer=103).
-
-    27 candidate pseudoinverses on the 9-point stencil scattered onto the
-    C2E2C/C2E2C2E2C slots, torus moments, and the ffsl backtrajectory geometry.
-    """
+) -> _QuadraticReconstructionInputs:
+    """The 9-point stencil, the torus moments and the ffsl backtrajectory geometry."""
     _check_weno_state_supported(grid, exchange)
 
     domain_length = grid.grid_params.domain_length
@@ -316,21 +331,6 @@ def _construct_weno_quadratic_state(
         c2v=c2v,
         domain_length=domain_length,
         domain_height=domain_height,
-    )
-    # (n_cells, 27 candidates, 5 unknowns, 9 stencil rows), Fortran stencil order
-    pseudoinv = weno_least_squares.compute_weno_pseudoinverse_quadratic(
-        stencil_c9=stencil_c9,
-        lsq_moments=lsq_moments,
-        cell_center_x=cell_center_x,
-        cell_center_y=cell_center_y,
-        domain_length=domain_length,
-        domain_height=domain_height,
-    )
-    direct, butterfly = weno_least_squares.scatter_to_offsets(
-        values_fortran_order=pseudoinv,
-        stencil_c9=stencil_c9,
-        c2e2c=c2e2c,
-        c2e2c2e2c=c2e2c2e2c,
     )
 
     # edge-local-frame positions of the E2C cell centers and E2V vertices consumed
@@ -364,47 +364,151 @@ def _construct_weno_quadratic_state(
     def edge_field(values: data_alloc.NDArray) -> gtx.Field:
         return gtx.as_field((dims.EdgeDim,), values, allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
-    lsq_pseudoinv_direct = tuple(
-        tuple(
-            gtx.as_field((dims.CellDim, dims.C2E2CDim), direct[:, cand, unk, :], allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
-            for unk in range(5)
-        )
-        for cand in range(27)
+    return _QuadraticReconstructionInputs(
+        stencil_c9=stencil_c9,
+        lsq_moments=lsq_moments,
+        c2e2c=c2e2c,
+        c2e2c2e2c=c2e2c2e2c,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        domain_length=domain_length,
+        domain_height=domain_height,
+        state_kwargs={
+            "lsq_moments_1": cell_field(lsq_moments[:, 0]),
+            "lsq_moments_2": cell_field(lsq_moments[:, 1]),
+            "lsq_moments_3": cell_field(lsq_moments[:, 2]),
+            "lsq_moments_4": cell_field(lsq_moments[:, 3]),
+            "lsq_moments_5": cell_field(lsq_moments[:, 4]),
+            "pos_on_tplane_e_1_x": edge_field(pos_on_tplane_e_x[:, 0]),
+            "pos_on_tplane_e_2_x": edge_field(pos_on_tplane_e_x[:, 1]),
+            "pos_on_tplane_e_1_y": edge_field(pos_on_tplane_e_y[:, 0]),
+            "pos_on_tplane_e_2_y": edge_field(pos_on_tplane_e_y[:, 1]),
+            "edge_verts_1_x": edge_field(edge_verts_x[:, 0]),
+            "edge_verts_2_x": edge_field(edge_verts_x[:, 1]),
+            "edge_verts_1_y": edge_field(edge_verts_y[:, 0]),
+            "edge_verts_2_y": edge_field(edge_verts_y[:, 1]),
+            "primal_normal_cell_x": geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
+            "primal_normal_cell_y": geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
+            "dual_normal_cell_x": geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
+            "dual_normal_cell_y": geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+            "tangent_orientation": geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
+        },
     )
-    lsq_pseudoinv_butterfly = tuple(
-        tuple(
+
+
+def _construct_quadratic_state(
+    *,
+    grid: icon_grid.IconGrid,
+    geometry_field_source: grid_geometry.GridGeometry,
+    exchange: decomposition_defs.ExchangeRuntime,
+    backend: gtx_typing.Backend | None,
+) -> tracer_advection_states.AdvectionQuadraticState:
+    """Init-time quadratic (miura3) reconstruction state (ihadv_tracer=3).
+
+    The single full-stencil pseudoinverse on the 9-point stencil, scattered onto the
+    C2E2C/C2E2C2E2C slots, plus the shared moments and backtrajectory geometry.
+    """
+    inputs = _quadratic_reconstruction_inputs(
+        grid=grid,
+        geometry_field_source=geometry_field_source,
+        exchange=exchange,
+        backend=backend,
+    )
+
+    # (n_cells, 5 unknowns, 9 stencil rows), Fortran stencil order
+    pseudoinv = weno_least_squares.compute_lsq_pseudoinverse_quadratic(
+        stencil_c9=inputs.stencil_c9,
+        lsq_moments=inputs.lsq_moments,
+        cell_center_x=inputs.cell_center_x,
+        cell_center_y=inputs.cell_center_y,
+        domain_length=inputs.domain_length,
+        domain_height=inputs.domain_height,
+    )
+    # scatter_to_offsets works on a candidate axis; miura3 has exactly one
+    direct, butterfly = weno_least_squares.scatter_to_offsets(
+        values_fortran_order=pseudoinv[:, None, :, :],
+        stencil_c9=inputs.stencil_c9,
+        c2e2c=inputs.c2e2c,
+        c2e2c2e2c=inputs.c2e2c2e2c,
+    )
+
+    return tracer_advection_states.AdvectionQuadraticState(
+        lsq_pseudoinv_direct=tuple(
+            gtx.as_field((dims.CellDim, dims.C2E2CDim), direct[:, 0, unk, :], allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            for unk in range(5)
+        ),
+        lsq_pseudoinv_butterfly=tuple(
             gtx.as_field(
                 (dims.CellDim, dims.C2E2C2E2CDim),
-                butterfly[:, cand, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+                butterfly[:, 0, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
                 allocator=backend,
             )
             for unk in range(5)
-        )
-        for cand in range(27)
+        ),
+        **inputs.state_kwargs,
+    )
+
+
+def _construct_weno_quadratic_state(
+    *,
+    grid: icon_grid.IconGrid,
+    geometry_field_source: grid_geometry.GridGeometry,
+    exchange: decomposition_defs.ExchangeRuntime,
+    backend: gtx_typing.Backend | None,
+) -> tracer_advection_states.AdvectionWenoQuadraticState:
+    """Init-time quadratic (miura3) WENO state (ihadv_tracer=103).
+
+    27 candidate pseudoinverses on the 9-point stencil scattered onto the
+    C2E2C/C2E2C2E2C slots, plus the shared moments and backtrajectory geometry.
+    """
+    inputs = _quadratic_reconstruction_inputs(
+        grid=grid,
+        geometry_field_source=geometry_field_source,
+        exchange=exchange,
+        backend=backend,
+    )
+
+    # (n_cells, 27 candidates, 5 unknowns, 9 stencil rows), Fortran stencil order
+    pseudoinv = weno_least_squares.compute_weno_pseudoinverse_quadratic(
+        stencil_c9=inputs.stencil_c9,
+        lsq_moments=inputs.lsq_moments,
+        cell_center_x=inputs.cell_center_x,
+        cell_center_y=inputs.cell_center_y,
+        domain_length=inputs.domain_length,
+        domain_height=inputs.domain_height,
+    )
+    direct, butterfly = weno_least_squares.scatter_to_offsets(
+        values_fortran_order=pseudoinv,
+        stencil_c9=inputs.stencil_c9,
+        c2e2c=inputs.c2e2c,
+        c2e2c2e2c=inputs.c2e2c2e2c,
     )
 
     return tracer_advection_states.AdvectionWenoQuadraticState(
-        lsq_pseudoinv_direct=lsq_pseudoinv_direct,
-        lsq_pseudoinv_butterfly=lsq_pseudoinv_butterfly,
-        lsq_moments_1=cell_field(lsq_moments[:, 0]),
-        lsq_moments_2=cell_field(lsq_moments[:, 1]),
-        lsq_moments_3=cell_field(lsq_moments[:, 2]),
-        lsq_moments_4=cell_field(lsq_moments[:, 3]),
-        lsq_moments_5=cell_field(lsq_moments[:, 4]),
+        lsq_pseudoinv_direct=tuple(
+            tuple(
+                gtx.as_field(
+                    (dims.CellDim, dims.C2E2CDim),
+                    direct[:, cand, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+                    allocator=backend,
+                )
+                for unk in range(5)
+            )
+            for cand in range(27)
+        ),
+        lsq_pseudoinv_butterfly=tuple(
+            tuple(
+                gtx.as_field(
+                    (dims.CellDim, dims.C2E2C2E2CDim),
+                    butterfly[:, cand, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+                    allocator=backend,
+                )
+                for unk in range(5)
+            )
+            for cand in range(27)
+        ),
         cell_area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        pos_on_tplane_e_1_x=edge_field(pos_on_tplane_e_x[:, 0]),
-        pos_on_tplane_e_2_x=edge_field(pos_on_tplane_e_x[:, 1]),
-        pos_on_tplane_e_1_y=edge_field(pos_on_tplane_e_y[:, 0]),
-        pos_on_tplane_e_2_y=edge_field(pos_on_tplane_e_y[:, 1]),
-        edge_verts_1_x=edge_field(edge_verts_x[:, 0]),
-        edge_verts_2_x=edge_field(edge_verts_x[:, 1]),
-        edge_verts_1_y=edge_field(edge_verts_y[:, 0]),
-        edge_verts_2_y=edge_field(edge_verts_y[:, 1]),
-        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
-        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
-        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
-        tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
+        **inputs.state_kwargs,
     )
 
 
@@ -604,10 +708,19 @@ def initialize_granules(
         deepatmo_shallow_factor = data_alloc.constant_field(
             grid, 1.0, dims.KDim, allocator=model_backends.get_allocator(backend)
         )
-        # the WENO schemes (ihadv_tracer=102/103) need their own init-time coefficients
+        # the quadratic and WENO schemes (ihadv_tracer=3/102/103) need their own
+        # init-time reconstruction coefficients
+        quadratic_state: tracer_advection_states.AdvectionQuadraticState | None = None
         weno_linear_state: tracer_advection_states.AdvectionWenoLinearState | None = None
         weno_quadratic_state: tracer_advection_states.AdvectionWenoQuadraticState | None = None
         match config.tracer_advection.horizontal_advection_type:
+            case tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER:
+                quadratic_state = _construct_quadratic_state(
+                    grid=grid,
+                    geometry_field_source=geometry_field_source,
+                    exchange=exchange,
+                    backend=backend,
+                )
             case tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO:
                 weno_linear_state = _construct_weno_linear_state(
                     grid=grid,
@@ -627,6 +740,7 @@ def initialize_granules(
             grid=grid,
             backend=backend,
             config=config.tracer_advection,
+            quadratic_state=quadratic_state,
             weno_linear_state=weno_linear_state,
             weno_quadratic_state=weno_quadratic_state,
             interpolation_state=tracer_advection_states.AdvectionInterpolationState(

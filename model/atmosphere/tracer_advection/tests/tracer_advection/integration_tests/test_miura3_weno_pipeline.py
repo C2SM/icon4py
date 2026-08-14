@@ -16,7 +16,7 @@ by the cell. It is written from the Fortran, loops and all, independent of
 the gt4py stencils.
 
 The gt4py pipeline under test composes the runtime stencils exactly as the
-ThirdOrderMiuraWeno driver does: reconstruct_quadratic_coefficients_weno_candidate
+ThirdOrderMiuraWeno driver does: reconstruct_quadratic_coefficients_svd
 x27 -> accumulate_weno_candidate_flux_weights x27 ->
 compute_horizontal_tracer_flux_from_weno_coefficients, on the synthetic
 periodic torus patch with REAL candidate pseudoinverses, moments and scatter
@@ -48,8 +48,8 @@ from icon4py.model.atmosphere.tracer_advection.stencils.accumulate_weno_candidat
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_from_weno_coefficients import (
     compute_horizontal_tracer_flux_from_weno_coefficients,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_quadratic_coefficients_weno_candidate import (
-    reconstruct_quadratic_coefficients_weno_candidate,
+from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_quadratic_coefficients_svd import (
+    reconstruct_quadratic_coefficients_svd,
 )
 from icon4py.model.common import dimension as dims
 
@@ -296,7 +296,7 @@ def _run_gt4py_pipeline(
     )
 
     for cand in range(N_CAND):
-        reconstruct_quadratic_coefficients_weno_candidate.with_backend(backend)(
+        reconstruct_quadratic_coefficients_svd.with_backend(backend)(
             p_cc=p_cc_field,
             **{
                 f"lsq_pseudoinv_direct_{u + 1}": gtx.as_field(

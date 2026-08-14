@@ -13,8 +13,8 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_quadratic_coefficients_weno_candidate import (
-    reconstruct_quadratic_coefficients_weno_candidate,
+from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_quadratic_coefficients_svd import (
+    reconstruct_quadratic_coefficients_svd,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -22,7 +22,7 @@ from icon4py.model.testing import stencil_tests
 
 
 class TestReconstructQuadraticCoefficientsWenoCandidate(stencil_tests.StencilTest):
-    PROGRAM = reconstruct_quadratic_coefficients_weno_candidate
+    PROGRAM = reconstruct_quadratic_coefficients_svd
     OUTPUTS = (
         "p_coeff_1_dsl",
         "p_coeff_2_dsl",

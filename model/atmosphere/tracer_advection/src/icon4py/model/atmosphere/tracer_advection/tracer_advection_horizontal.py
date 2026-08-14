@@ -41,6 +41,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ffsl_backtraject
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_from_quadratic_coefficients import (
+    compute_horizontal_tracer_flux_from_quadratic_coefficients,
+)
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_from_weno_coefficients import (
     compute_horizontal_tracer_flux_from_weno_coefficients,
 )
@@ -77,8 +80,8 @@ from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coeff
 from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coefficients_weno_svd import (
     reconstruct_linear_coefficients_weno_svd,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_quadratic_coefficients_weno_candidate import (
-    reconstruct_quadratic_coefficients_weno_candidate,
+from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_quadratic_coefficients_svd import (
+    reconstruct_quadratic_coefficients_svd,
 )
 from icon4py.model.common import (
     constants,
@@ -749,6 +752,280 @@ class SecondOrderMiuraWeno(SemiLagrangianTracerFlux):
         log.debug("horizontal tracer flux computation - end")
 
 
+def _gauss_legendre_o2_quadrature_args() -> dict:
+    """Gauss-Legendre O2 shape functions and weights (init_2D_gauss_quad,
+    mo_advection_config.f90 1084-1136), as constant arguments of the quadrature stencil."""
+    gauss = 1.0 / math.sqrt(3.0)
+    zeta = (-gauss, gauss, gauss, -gauss)
+    eta = (-gauss, -gauss, gauss, gauss)
+    args: dict = {
+        "wgt_zeta_1": 1.0,
+        "wgt_zeta_2": 1.0,
+        "wgt_eta_1": 1.0,
+        "wgt_eta_2": 1.0,
+    }
+    for jg in range(4):
+        args[f"shape_func_1_{jg + 1}"] = 0.25 * (1.0 - zeta[jg]) * (1.0 - eta[jg])
+        args[f"shape_func_2_{jg + 1}"] = 0.25 * (1.0 + zeta[jg]) * (1.0 - eta[jg])
+        args[f"shape_func_3_{jg + 1}"] = 0.25 * (1.0 + zeta[jg]) * (1.0 + eta[jg])
+        args[f"shape_func_4_{jg + 1}"] = 0.25 * (1.0 - zeta[jg]) * (1.0 + eta[jg])
+    return args
+
+
+class ThirdOrderMiura(SemiLagrangianTracerFlux):
+    """Miura-based third-order tracer flux with a quadratic reconstruction (ihadv_tracer=3).
+
+    Port of upwind_hflux_miura3 (mo_advection_hflux.f90 4500-4790) for lsq_high_ord=2,
+    live path only (l_out_edgeval=.FALSE.). It is 'ThirdOrderMiuraWeno' with the
+    27-candidate loop collapsed to the single full-stencil reconstruction, so it shares
+    the geometry, the quadrature and the reconstruction stencil with it and differs only
+    in the last step, which dots the coefficients of the upwind cell with the quadrature
+    vector instead of a smoothness-weighted blend.
+
+    The cubic variant (lsq_high_ord=3) is not implemented: it needs 10 unknowns, the
+    third-order moments and its own quadrature.
+    """
+
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        quadratic_state: tracer_advection_states.AdvectionQuadraticState,
+        backend: gtx.typing.Backend | None,
+        horizontal_limiter: HorizontalFluxLimiter | None = None,
+    ):
+        self._grid = grid
+        self._quadratic_state = quadratic_state
+        self._backend = backend
+        self._horizontal_limiter = horizontal_limiter or NoLimiter()
+
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell_lateral_boundary_level_2 = self._grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        self._end_cell_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
+
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
+
+        allocator = model_backends.get_allocator(self._backend)
+        self._lvn_sys_pos = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, dtype=bool, allocator=allocator
+        )
+        self._p_cell_idx = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=allocator
+        )
+        self._p_cell_rel_idx_dsl = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=allocator
+        )
+        self._p_cell_blk = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=allocator
+        )
+        self._dreg_coords = {
+            f"p_coords_dreg_v_{v}_{c}_dsl": data_alloc.zero_field(
+                self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+            )
+            for v in (1, 2, 3, 4)
+            for c in ("lon", "lat")
+        }
+        self._quad_vector_sums = {
+            f"p_quad_vector_sum_{q}": data_alloc.zero_field(
+                self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+            )
+            for q in (1, 2, 3, 4, 5, 6)
+        }
+        self._p_coeffs = {
+            f"p_coeff_{c}_dsl": data_alloc.zero_field(
+                self._grid, dims.CellDim, dims.KDim, allocator=allocator
+            )
+            for c in (1, 2, 3, 4, 5, 6)
+        }
+
+        e2c_table = self._grid.get_connectivity("E2C").asnumpy()
+        cell_idx = gtx.as_field(
+            (dims.EdgeDim, dims.E2CDim),
+            e2c_table.astype(gtx.int32),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            allocator=allocator,
+        )
+        cell_blk = gtx.as_field(
+            (dims.EdgeDim, dims.E2CDim),
+            (0 * e2c_table).astype(gtx.int32),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            allocator=allocator,
+        )
+
+        edge_sizes = {
+            "horizontal_start": self._start_edge_lateral_boundary_level_5,
+            "horizontal_end": self._end_edge_halo,
+        }
+        vertical_sizes = {
+            "vertical_start": gtx.int32(0),
+            "vertical_end": gtx.int32(self._grid.num_levels),
+        }
+        self._compute_ffsl_backtrajectory_counterclockwise_indicator = model_options.setup_program(
+            backend=self._backend,
+            program=compute_ffsl_backtrajectory_counterclockwise_indicator,
+            constant_args={
+                "tangent_orientation": self._quadratic_state.tangent_orientation,
+                # miura3 calls btraj_dreg with lcounterclock=.TRUE. (f90 4593)
+                "lcounterclock": True,
+            },
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_ffsl_backtrajectory = model_options.setup_program(
+            backend=self._backend,
+            program=compute_ffsl_backtrajectory,
+            constant_args={
+                "cell_idx": cell_idx,
+                "cell_blk": cell_blk,
+                "edge_verts_1_x": self._quadratic_state.edge_verts_1_x,
+                "edge_verts_2_x": self._quadratic_state.edge_verts_2_x,
+                "edge_verts_1_y": self._quadratic_state.edge_verts_1_y,
+                "edge_verts_2_y": self._quadratic_state.edge_verts_2_y,
+                "pos_on_tplane_e_1_x": self._quadratic_state.pos_on_tplane_e_1_x,
+                "pos_on_tplane_e_2_x": self._quadratic_state.pos_on_tplane_e_2_x,
+                "pos_on_tplane_e_1_y": self._quadratic_state.pos_on_tplane_e_1_y,
+                "pos_on_tplane_e_2_y": self._quadratic_state.pos_on_tplane_e_2_y,
+                "primal_normal_cell_x": self._quadratic_state.primal_normal_cell_x,
+                "primal_normal_cell_y": self._quadratic_state.primal_normal_cell_y,
+                "dual_normal_cell_x": self._quadratic_state.dual_normal_cell_x,
+                "dual_normal_cell_y": self._quadratic_state.dual_normal_cell_y,
+            },
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._prepare_gauss_quadrature_quadratic_miura3 = model_options.setup_program(
+            backend=self._backend,
+            program=prepare_gauss_quadrature_quadratic_miura3,
+            constant_args=_gauss_legendre_o2_quadrature_args(),
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._reconstruct_quadratic_coefficients_svd = model_options.setup_program(
+            backend=self._backend,
+            program=reconstruct_quadratic_coefficients_svd,
+            constant_args={
+                "lsq_moments_1": self._quadratic_state.lsq_moments_1,
+                "lsq_moments_2": self._quadratic_state.lsq_moments_2,
+                "lsq_moments_3": self._quadratic_state.lsq_moments_3,
+                "lsq_moments_4": self._quadratic_state.lsq_moments_4,
+                "lsq_moments_5": self._quadratic_state.lsq_moments_5,
+                **{
+                    f"lsq_pseudoinv_direct_{u + 1}": self._quadratic_state.lsq_pseudoinv_direct[u]
+                    for u in range(5)
+                },
+                **{
+                    f"lsq_pseudoinv_butterfly_{u + 1}": (
+                        self._quadratic_state.lsq_pseudoinv_butterfly[u]
+                    )
+                    for u in range(5)
+                },
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_2,
+                "horizontal_end": self._end_cell_halo,
+            },
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_horizontal_tracer_flux_from_quadratic_coefficients = (
+            model_options.setup_program(
+                backend=self._backend,
+                program=compute_horizontal_tracer_flux_from_quadratic_coefficients,
+                horizontal_sizes=edge_sizes,
+                vertical_sizes=vertical_sizes,
+                offset_provider=self._grid.connectivities,
+            )
+        )
+
+    def compute_tracer_flux(
+        self,
+        *,
+        prep_adv: adv_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
+        p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
+        p_vt: fa.EdgeKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
+        # p_distv_bary_* are unused: miura3 integrates over the full departure region
+        log.debug("horizontal tracer flux computation - start")
+
+        log.debug("running stencil compute_ffsl_backtrajectory_counterclockwise_indicator - start")
+        self._compute_ffsl_backtrajectory_counterclockwise_indicator(
+            p_vn=prep_adv.vn_traj,
+            lvn_sys_pos=self._lvn_sys_pos,
+        )
+        log.debug("running stencil compute_ffsl_backtrajectory_counterclockwise_indicator - end")
+
+        # departure regions swept over the full time step (btraj_dreg, f90 4593)
+        log.debug("running stencil compute_ffsl_backtrajectory - start")
+        self._compute_ffsl_backtrajectory(
+            p_vn=prep_adv.vn_traj,
+            p_vt=p_vt,
+            lvn_sys_pos=self._lvn_sys_pos,
+            p_cell_idx=self._p_cell_idx,
+            p_cell_rel_idx_dsl=self._p_cell_rel_idx_dsl,
+            p_cell_blk=self._p_cell_blk,
+            **self._dreg_coords,
+            p_dt=dtime,
+        )
+        log.debug("running stencil compute_ffsl_backtrajectory - end")
+
+        # quadrature vector = departure region area averages of the monomials (f90 4607)
+        log.debug("running stencil prepare_gauss_quadrature_quadratic_miura3 - start")
+        self._prepare_gauss_quadrature_quadratic_miura3(
+            **{
+                f"p_coords_dreg_v_{v}_{xy}": self._dreg_coords[f"p_coords_dreg_v_{v}_{lonlat}_dsl"]
+                for v in (1, 2, 3, 4)
+                for xy, lonlat in (("x", "lon"), ("y", "lat"))
+            },
+            **self._quad_vector_sums,
+        )
+        log.debug("running stencil prepare_gauss_quadrature_quadratic_miura3 - end")
+
+        # conservative quadratic fit per cell (recon_lsq_cell_q_svd, f90 4632)
+        log.debug("running stencil reconstruct_quadratic_coefficients_svd - start")
+        self._reconstruct_quadratic_coefficients_svd(
+            p_cc=p_tracer_now,
+            **self._p_coeffs,
+        )
+        log.debug("running stencil reconstruct_quadratic_coefficients_svd - end")
+
+        log.debug(
+            "running stencil compute_horizontal_tracer_flux_from_quadratic_coefficients - start"
+        )
+        self._compute_horizontal_tracer_flux_from_quadratic_coefficients(
+            **{f"p_coeff_{c}": self._p_coeffs[f"p_coeff_{c}_dsl"] for c in (1, 2, 3, 4, 5, 6)},
+            p_cell_rel_idx_dsl=self._p_cell_rel_idx_dsl,
+            **self._quad_vector_sums,
+            p_mass_flx_e=prep_adv.mass_flx_me,
+            p_out_e=p_mflx_tracer_h,
+        )
+        log.debug(
+            "running stencil compute_horizontal_tracer_flux_from_quadratic_coefficients - end"
+        )
+
+        self._horizontal_limiter.apply_flux_limiter(
+            p_tracer_now=p_tracer_now,
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            p_mass_flx_e=prep_adv.mass_flx_me,
+            rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
+            dtime=dtime,
+        )
+
+        log.debug("horizontal tracer flux computation - end")
+
+
 class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
     """Miura-based third-order tracer flux with quadratic 27-candidate WENO blending (ihadv_tracer=103).
 
@@ -851,23 +1128,6 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
             allocator=allocator,
         )
 
-        # Gauss-Legendre O2 shape functions and weights (init_2D_gauss_quad,
-        # mo_advection_config.f90 1084-1136)
-        gauss = 1.0 / math.sqrt(3.0)
-        zeta = (-gauss, gauss, gauss, -gauss)
-        eta = (-gauss, -gauss, gauss, gauss)
-        quadrature_args: dict = {
-            "wgt_zeta_1": 1.0,
-            "wgt_zeta_2": 1.0,
-            "wgt_eta_1": 1.0,
-            "wgt_eta_2": 1.0,
-        }
-        for jg in range(4):
-            quadrature_args[f"shape_func_1_{jg + 1}"] = 0.25 * (1.0 - zeta[jg]) * (1.0 - eta[jg])
-            quadrature_args[f"shape_func_2_{jg + 1}"] = 0.25 * (1.0 + zeta[jg]) * (1.0 - eta[jg])
-            quadrature_args[f"shape_func_3_{jg + 1}"] = 0.25 * (1.0 + zeta[jg]) * (1.0 + eta[jg])
-            quadrature_args[f"shape_func_4_{jg + 1}"] = 0.25 * (1.0 - zeta[jg]) * (1.0 + eta[jg])
-
         # stencils
         edge_sizes = {
             "horizontal_start": self._start_edge_lateral_boundary_level_5,
@@ -915,7 +1175,7 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         self._prepare_gauss_quadrature_quadratic_miura3 = model_options.setup_program(
             backend=self._backend,
             program=prepare_gauss_quadrature_quadratic_miura3,
-            constant_args=quadrature_args,
+            constant_args=_gauss_legendre_o2_quadrature_args(),
             horizontal_sizes=edge_sizes,
             vertical_sizes=vertical_sizes,
             offset_provider=self._grid.connectivities,
@@ -927,9 +1187,9 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
             vertical_sizes=vertical_sizes,
             offset_provider=self._grid.connectivities,
         )
-        self._reconstruct_quadratic_coefficients_weno_candidate = model_options.setup_program(
+        self._reconstruct_quadratic_coefficients_svd = model_options.setup_program(
             backend=self._backend,
-            program=reconstruct_quadratic_coefficients_weno_candidate,
+            program=reconstruct_quadratic_coefficients_svd,
             constant_args={
                 "lsq_moments_1": self._weno_quadratic_state.lsq_moments_1,
                 "lsq_moments_2": self._weno_quadratic_state.lsq_moments_2,
@@ -1021,7 +1281,7 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         for cand in range(27):
             direct = self._weno_quadratic_state.lsq_pseudoinv_direct[cand]
             butterfly = self._weno_quadratic_state.lsq_pseudoinv_butterfly[cand]
-            self._reconstruct_quadratic_coefficients_weno_candidate(
+            self._reconstruct_quadratic_coefficients_svd(
                 p_cc=p_tracer_now,
                 **{f"lsq_pseudoinv_direct_{u + 1}": direct[u] for u in range(5)},
                 **{f"lsq_pseudoinv_butterfly_{u + 1}": butterfly[u] for u in range(5)},

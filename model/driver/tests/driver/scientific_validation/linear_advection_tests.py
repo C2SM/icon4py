@@ -97,6 +97,7 @@ def _check_convergence(
 
 
 _MIURA = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER
+_MIURA3 = tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER
 _MIURA_WENO = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO
 _MIURA3_WENO = tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO
 
@@ -114,6 +115,13 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
             [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
             [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
             id="gaussian_2d-miura",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_gaussian_2d",
+            _MIURA3,
+            _MEASURE_ONLY,
+            _MEASURE_ONLY,
+            id="gaussian_2d-miura3",
         ),
         pytest.param(
             "linear_horizontal_advection_gaussian_2d",
@@ -135,6 +143,13 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
             [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
             [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
             id="circle_2d-miura",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_circle_2d",
+            _MIURA3,
+            _MEASURE_ONLY,
+            _MEASURE_ONLY,
+            id="circle_2d-miura3",
         ),
         pytest.param(
             "linear_horizontal_advection_circle_2d",

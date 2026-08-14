@@ -65,6 +65,8 @@ class HorizontalAdvectionType(Enum):
     UPWIND_1ST_ORDER = 1
     #: 2nd order MIURA with linear reconstruction
     LINEAR_2ND_ORDER = 2
+    #: 3rd order MIURA with quadratic reconstruction
+    QUADRATIC_3RD_ORDER = 3
     #: 2nd order MIURA with linear reconstruction and WENO candidate blending
     LINEAR_2ND_ORDER_WENO = 102
     #: 3rd order MIURA with quadratic reconstruction and WENO candidate blending
@@ -453,6 +455,7 @@ def _monotonic_limiter_beta_fct(config: AdvectionConfig) -> float:
     which is a strictly monotonic limiter.
     """
     quadratic_reconstruction = {
+        HorizontalAdvectionType.QUADRATIC_3RD_ORDER,
         HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO,
     }
     return (
@@ -473,6 +476,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime,
+    quadratic_state: tracer_advection_states.AdvectionQuadraticState | None = None,
     weno_linear_state: tracer_advection_states.AdvectionWenoLinearState | None = None,
     weno_quadratic_state: tracer_advection_states.AdvectionWenoQuadraticState | None = None,
 ) -> tuple[
@@ -522,6 +526,26 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                     horizontal_limiter=horizontal_limiter,
                     backend=backend,
                 )
+            )
+            horizontal_advection = tracer_advection_horizontal.SemiLagrangian(
+                tracer_flux=tracer_flux,
+                grid=grid,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                cell_params=cell_params,
+                backend=backend,
+            )
+        case HorizontalAdvectionType.QUADRATIC_3RD_ORDER:
+            if quadratic_state is None:
+                raise ValueError(
+                    "Horizontal advection type 'QUADRATIC_3RD_ORDER' requires 'quadratic_state'."
+                )
+            tracer_flux = tracer_advection_horizontal.ThirdOrderMiura(
+                grid=grid,
+                quadratic_state=quadratic_state,
+                horizontal_limiter=horizontal_limiter,
+                backend=backend,
             )
             horizontal_advection = tracer_advection_horizontal.SemiLagrangian(
                 tracer_flux=tracer_flux,
@@ -629,6 +653,7 @@ def convert_config_to_advection(
     backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime,
     even_timestep: bool = False,
+    quadratic_state: tracer_advection_states.AdvectionQuadraticState | None = None,
     weno_linear_state: tracer_advection_states.AdvectionWenoLinearState | None = None,
     weno_quadratic_state: tracer_advection_states.AdvectionWenoQuadraticState | None = None,
 ) -> Advection:
@@ -649,6 +674,7 @@ def convert_config_to_advection(
         cell_params=cell_params,
         backend=backend,
         exchange=exchange,
+        quadratic_state=quadratic_state,
         weno_linear_state=weno_linear_state,
         weno_quadratic_state=weno_quadratic_state,
     )

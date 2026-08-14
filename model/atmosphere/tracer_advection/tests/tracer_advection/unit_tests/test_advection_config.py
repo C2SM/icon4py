@@ -42,6 +42,7 @@ def _transport_dict(ihadv_tracer: int) -> dict:
     [
         (0, tracer_advection.HorizontalAdvectionType.NO_ADVECTION),
         (2, tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER),
+        (3, tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER),
         (102, tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO),
         (103, tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO),
     ],
@@ -60,6 +61,7 @@ def test_from_fortran_dict_maps_horizontal_advection_type(
         # the linear ones get hflx_limiter_mo's own default of 1
         (tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER, 1.0),
         (tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO, 1.0),
+        (tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER, 1.005),
         (tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO, 1.005),
     ],
 )
@@ -80,6 +82,23 @@ def test_monotonic_limiter_boost_factor_is_range_checked(boost_factor: float) ->
             vertical_advection_type=tracer_advection.VerticalAdvectionType.NO_ADVECTION,
             vertical_advection_limiter=tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
             monotonic_limiter_boost_factor=boost_factor,
+        )
+
+
+def test_quadratic_requires_quadratic_state() -> None:
+    # the ValueError is raised before any of the None-passed states are accessed
+    with pytest.raises(ValueError, match="requires 'quadratic_state'"):
+        tracer_advection.convert_config_to_horizontal_vertical_advection(
+            config=_weno_config(tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER),
+            grid=None,
+            interpolation_state=None,
+            least_squares_state=None,
+            metric_state=None,
+            edge_params=None,
+            cell_params=None,
+            backend=None,
+            exchange=decomposition.single_node_exchange,
+            quadratic_state=None,
         )
 
 

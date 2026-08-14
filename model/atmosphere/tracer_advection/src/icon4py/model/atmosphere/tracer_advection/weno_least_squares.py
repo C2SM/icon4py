@@ -341,6 +341,84 @@ def _svd_pseudoinverse(
     return pseudoinv
 
 
+def _quadratic_moment_increments(
+    *,
+    stencil_c9: data_alloc.NDArray,
+    lsq_moments: data_alloc.NDArray,
+    cell_center_x: data_alloc.NDArray,
+    cell_center_y: data_alloc.NDArray,
+    domain_length: float,
+    domain_height: float,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """The stencil offsets and the unweighted design matrix of the quadratic fit.
+
+    f90 2294-2308: A[js, ju] = w[js] * (moments_hat[js, ju] - moments[ju]); the returned
+    'diff' is that difference, without the row weights, which differ per candidate.
+    """
+    array_ns = data_alloc.array_namespace(lsq_moments)
+    z_dist = compute_torus_distance_vectors(
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        neighbor_table=stencil_c9,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    moments_hat = compute_lsq_moments_hat(
+        lsq_moments=lsq_moments, stencil_c9=stencil_c9, z_dist=z_dist
+    )
+    return z_dist, moments_hat - lsq_moments[:, array_ns.newaxis, :]
+
+
+def _full_stencil_pseudoinverse_quadratic(
+    z_dist: data_alloc.NDArray, diff: data_alloc.NDArray
+) -> data_alloc.NDArray:
+    """The standard pseudoinverse over all 9 stencil rows, (n_cells, 5, 9).
+
+    f90 2582-2589 for the WENO scheme; the same matrix miura3 (ihadv_tracer=3 with
+    lsq_high_ord=2) reconstructs from, since it has no candidate sub-stencils.
+    """
+    array_ns = data_alloc.array_namespace(diff)
+    n_cells = diff.shape[0]
+    full_weights = interpolation_fields.compute_lsq_weights_c(z_dist, LSQ_WGT_EXP_QUADRATIC)
+    full_design = full_weights[:, :, array_ns.newaxis] * diff
+    return interpolation_fields.compute_lsq_pseudoinv(
+        cell_owner_mask=array_ns.ones(n_cells, dtype=bool),
+        z_lsq_mat_c=full_design,
+        lsq_weights_c=full_weights,
+        start_idx=0,
+        min_rlcell_int=n_cells,
+        lsq_dim_unk=LSQ_DIM_UNK_QUADRATIC,
+        lsq_dim_c=LSQ_DIM_C_QUADRATIC,
+    )
+
+
+def compute_lsq_pseudoinverse_quadratic(
+    *,
+    stencil_c9: data_alloc.NDArray,
+    lsq_moments: data_alloc.NDArray,
+    cell_center_x: data_alloc.NDArray,
+    cell_center_y: data_alloc.NDArray,
+    domain_length: float,
+    domain_height: float,
+) -> data_alloc.NDArray:
+    """The quadratic reconstruction pseudoinverse of miura3, (n_cells, 5, 9).
+
+    Applied to the unweighted increments z_b = avg(stencil cell) - avg(center), it yields
+    the derivative coefficients [x, y, x^2, y^2, xy] of the conservative quadratic fit.
+    This is the WENO scheme's full-stencil matrix without its l_weights_s correction, so
+    the two cannot drift apart.
+    """
+    z_dist, diff = _quadratic_moment_increments(
+        stencil_c9=stencil_c9,
+        lsq_moments=lsq_moments,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    return _full_stencil_pseudoinverse_quadratic(z_dist, diff)
+
+
 def compute_weno_pseudoinverse_quadratic(
     *,
     stencil_c9: data_alloc.NDArray,
@@ -358,36 +436,21 @@ def compute_weno_pseudoinverse_quadratic(
     full-stencil pseudoinverse subjected to the l_weights_s correction.
     """
     array_ns = data_alloc.array_namespace(lsq_moments)
-    n_cells = stencil_c9.shape[0]
-    z_dist = compute_torus_distance_vectors(
+    z_dist, diff = _quadratic_moment_increments(
+        stencil_c9=stencil_c9,
+        lsq_moments=lsq_moments,
         cell_center_x=cell_center_x,
         cell_center_y=cell_center_y,
-        neighbor_table=stencil_c9,
         domain_length=domain_length,
         domain_height=domain_height,
     )
-    moments_hat = compute_lsq_moments_hat(
-        lsq_moments=lsq_moments, stencil_c9=stencil_c9, z_dist=z_dist
-    )
-    # f90 2294-2308: A[js, ju] = w[js] * (moments_hat[js, ju] - moments[ju])
-    diff = moments_hat - lsq_moments[:, array_ns.newaxis, :]
     candidate_weights = compute_candidate_weights_quadratic(z_dist)
     design = candidate_weights[:, :, :, array_ns.newaxis] * diff[:, array_ns.newaxis, :, :]
     pseudoinv = _svd_pseudoinverse(design, candidate_weights)
 
     # f90 2582-2589: candidates 1-3 are overwritten with the standard
     # full-stencil pseudoinverse (all 9 rows active, full distance weights)
-    full_weights = interpolation_fields.compute_lsq_weights_c(z_dist, LSQ_WGT_EXP_QUADRATIC)
-    full_design = full_weights[:, :, array_ns.newaxis] * diff
-    full_pseudoinv = interpolation_fields.compute_lsq_pseudoinv(
-        cell_owner_mask=array_ns.ones(n_cells, dtype=bool),
-        z_lsq_mat_c=full_design,
-        lsq_weights_c=full_weights,
-        start_idx=0,
-        min_rlcell_int=n_cells,
-        lsq_dim_unk=LSQ_DIM_UNK_QUADRATIC,
-        lsq_dim_c=LSQ_DIM_C_QUADRATIC,
-    )
+    full_pseudoinv = _full_stencil_pseudoinverse_quadratic(z_dist, diff)
     pseudoinv[:, 0:3] = full_pseudoinv[:, array_ns.newaxis, :, :]
 
     # f90 2646-2657: literal port of the interleaved correction loop

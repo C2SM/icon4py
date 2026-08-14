@@ -217,6 +217,47 @@ def test_quadratic_candidates_recover_polynomial(torus_patch):
             )
 
 
+# 3b. the miura3 (non-WENO) pseudoinverse
+def test_quadratic_pseudoinverse_matches_full_stencil_reference(torus_patch):
+    computed = weno.compute_lsq_pseudoinverse_quadratic(
+        stencil_c9=weno.create_stencil_c9(torus_patch.c2e2c, torus_patch.c2v),
+        lsq_moments=_patch_moments(torus_patch),
+        cell_center_x=torus_patch.cell_center_x,
+        cell_center_y=torus_patch.cell_center_y,
+        domain_length=torus_patch.domain_length,
+        domain_height=torus_patch.domain_height,
+    )
+    np.testing.assert_allclose(
+        computed, _full_stencil_pseudoinverse_reference(torus_patch), rtol=1e-12, atol=1e-13
+    )
+
+
+def test_quadratic_pseudoinverse_recovers_polynomial(torus_patch):
+    """The property miura3 rests on: the fit of an exact quadratic is that quadratic."""
+    stencil, z_dist = _patch_stencil_and_distances(torus_patch)
+    pseudoinv = weno.compute_lsq_pseudoinverse_quadratic(
+        stencil_c9=stencil,
+        lsq_moments=_patch_moments(torus_patch),
+        cell_center_x=torus_patch.cell_center_x,
+        cell_center_y=torus_patch.cell_center_y,
+        domain_length=torus_patch.domain_length,
+        domain_height=torus_patch.domain_height,
+    )
+    n_cells = stencil.shape[0]
+
+    rng = np.random.default_rng(7)
+    for _ in range(3):
+        poly, derivative_coeffs = _random_quadratic(rng)
+        z_b = _quadratic_cell_average_increments(torus_patch, stencil, z_dist, poly)
+        recovered = np.einsum("nus,ns->nu", pseudoinv, z_b)
+        np.testing.assert_allclose(
+            recovered,
+            np.broadcast_to(derivative_coeffs, (n_cells, N_UNK)),
+            rtol=1e-10,
+            atol=1e-11,
+        )
+
+
 # 4. l_weights_s correction arithmetic identity
 def test_l_weights_correction_identity(torus_patch):
     pseudoinv = _patch_pseudoinverse(torus_patch)

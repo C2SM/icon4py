@@ -13,15 +13,17 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import C2E2C, C2E2C2E2C, C2E2C2E2CDim, C2E2CDim
 
 
-# Quadratic WENO reconstruction for one of the 27 candidate stencils (mo_advection_hflux.f90
-# 2447-2495). z_b is the increment of the neighbour cell averages relative to the center cell.
-# The candidate pseudoinverse (5 unknowns [x, y, x^2, y^2, xy], f90 index 1..5 -> coeff 2..6) is
-# split by Task 1 into a direct part on C2E2C rows and a butterfly part on C2E2C2E2C rows; unused
-# slots hold 0 so the two neighbour sums together reproduce the Fortran 9-point dot products.
+# Conservative quadratic least-squares reconstruction over the 9-cell stencil
+# (recon_lsq_cell_q_svd; mo_advection_hflux.f90 2447-2495 for one WENO candidate, :4632 for
+# miura3). z_b is the increment of the neighbour cell averages relative to the center cell.
+# The pseudoinverse (5 unknowns [x, y, x^2, y^2, xy], f90 index 1..5 -> coeff 2..6) is split
+# into a direct part on C2E2C rows and a butterfly part on C2E2C2E2C rows; unused slots hold 0
+# so the two neighbour sums together reproduce the Fortran 9-point dot products. The WENO
+# scheme passes one candidate's pseudoinverse per call, miura3 passes the full-stencil one.
 
 
 @gtx.field_operator
-def _reconstruct_quadratic_coefficients_weno_candidate(
+def _reconstruct_quadratic_coefficients_svd(
     p_cc: fa.CellKField[ta.wpfloat],
     lsq_pseudoinv_direct_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
     lsq_pseudoinv_direct_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
@@ -87,7 +89,7 @@ def _reconstruct_quadratic_coefficients_weno_candidate(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def reconstruct_quadratic_coefficients_weno_candidate(
+def reconstruct_quadratic_coefficients_svd(
     p_cc: fa.CellKField[ta.wpfloat],
     lsq_pseudoinv_direct_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
     lsq_pseudoinv_direct_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
@@ -115,7 +117,7 @@ def reconstruct_quadratic_coefficients_weno_candidate(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _reconstruct_quadratic_coefficients_weno_candidate(
+    _reconstruct_quadratic_coefficients_svd(
         p_cc=p_cc,
         lsq_pseudoinv_direct_1=lsq_pseudoinv_direct_1,
         lsq_pseudoinv_direct_2=lsq_pseudoinv_direct_2,
