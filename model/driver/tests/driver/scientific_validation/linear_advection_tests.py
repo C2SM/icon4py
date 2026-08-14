@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 from scipy.stats import linregress
 
+from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomp_defs
@@ -75,34 +76,86 @@ def _check_convergence(
     p_l1 = linreg_l1.slope
     linreg_linf = linregress(np.log(grid_spacing), np.log(error_linf))
     p_linf = linreg_linf.slope
+    # the measured rates are what the study is after, so report them either way
+    print(
+        f"measured convergence: L1 {p_l1:.4f} (stderr {linreg_l1.stderr:.4f}), "
+        f"Linf {p_linf:.4f} (stderr {linreg_linf.stderr:.4f})\n"
+        f"  errors L1:   {[float(e) for e in error_l1]}\n"
+        f"  errors Linf: {[float(e) for e in error_linf]}\n"
+        f"  grid spacing: {[float(h) for h in grid_spacing]}"
+    )
     # check that the measured convergence rates are within the acceptable ranges
-    assert l1_acceptable_range[0] <= p_l1 <= l1_acceptable_range[1]
-    assert linf_acceptable_range[0] <= p_linf <= linf_acceptable_range[1]
+    assert l1_acceptable_range[0] <= p_l1 <= l1_acceptable_range[1], (
+        f"L1 rate {p_l1:.4f} outside {l1_acceptable_range}"
+    )
+    assert linf_acceptable_range[0] <= p_linf <= linf_acceptable_range[1], (
+        f"Linf rate {p_linf:.4f} outside {linf_acceptable_range}"
+    )
     # check that the standard errors are within the acceptable tolerance
     assert linreg_l1.stderr <= _STD_TOL
     assert linreg_linf.stderr <= _STD_TOL
 
 
+_MIURA = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER
+_MIURA_WENO = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO
+_MIURA3_WENO = tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO
+
+_MEASURE_ONLY: Final = [-10.0, 10.0]
+
+
 @pytest.mark.level("validation")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment_case, l1_acceptable_range, linf_acceptable_range",
+    "experiment_case, horizontal_advection_type, l1_acceptable_range, linf_acceptable_range",
     [
-        (
+        pytest.param(
             "linear_horizontal_advection_gaussian_2d",
+            _MIURA,
             [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
             [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
+            id="gaussian_2d-miura",
         ),
-        (
+        pytest.param(
+            "linear_horizontal_advection_gaussian_2d",
+            _MIURA_WENO,
+            _MEASURE_ONLY,
+            _MEASURE_ONLY,
+            id="gaussian_2d-miura_weno",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_gaussian_2d",
+            _MIURA3_WENO,
+            _MEASURE_ONLY,
+            _MEASURE_ONLY,
+            id="gaussian_2d-miura3_weno",
+        ),
+        pytest.param(
             "linear_horizontal_advection_circle_2d",
+            _MIURA,
             [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
             [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
+            id="circle_2d-miura",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_circle_2d",
+            _MIURA_WENO,
+            _MEASURE_ONLY,
+            _MEASURE_ONLY,
+            id="circle_2d-miura_weno",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_circle_2d",
+            _MIURA3_WENO,
+            _MEASURE_ONLY,
+            _MEASURE_ONLY,
+            id="circle_2d-miura3_weno",
         ),
     ],
 )
 def test_horizontal_advection_convergence(
     *,
     experiment_case: str,
+    horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
     tmp_path: pathlib.Path,
@@ -129,7 +182,10 @@ def test_horizontal_advection_convergence(
 
     experiment_config = config_io.read_yaml_str(
         config_path.read_text(), driver_config.ExperimentConfig
-    ).with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
+    ).with_overrides(
+        driver={"output_path": tmp_path / "ci_driver_output"},
+        tracer_advection={"horizontal_advection_type": horizontal_advection_type},
+    )
 
     grid_managers = [
         driver_utils.create_grid_manager(

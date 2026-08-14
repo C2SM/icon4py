@@ -31,6 +31,8 @@ def _transport_dict(ihadv_tracer: int) -> dict:
             "itype_hlimit": [0],
             "ivadv_tracer": [0],
             "itype_vlimit": [0],
+            # beta_fct is a scalar in the namelist, not a max_dom-sized list
+            "beta_fct": 1.005,
         }
     }
 
@@ -49,6 +51,36 @@ def test_from_fortran_dict_maps_horizontal_advection_type(
 ) -> None:
     config = tracer_advection.AdvectionConfig.from_fortran_dict(_transport_dict(ihadv_tracer))
     assert config.horizontal_advection_type == expected
+
+
+@pytest.mark.parametrize(
+    ("horizontal_advection_type", "expected"),
+    [
+        # Fortran passes opt_beta_fct only from the quadratic-reconstruction schemes;
+        # the linear ones get hflx_limiter_mo's own default of 1
+        (tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER, 1.0),
+        (tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO, 1.0),
+        (tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO, 1.005),
+    ],
+)
+def test_monotonic_limiter_beta_fct_depends_on_the_scheme(
+    horizontal_advection_type: tracer_advection.HorizontalAdvectionType, expected: float
+) -> None:
+    config = _weno_config(horizontal_advection_type)
+    assert config.monotonic_limiter_boost_factor == 1.005
+    assert tracer_advection._monotonic_limiter_beta_fct(config) == expected
+
+
+@pytest.mark.parametrize("boost_factor", [0.999, 2.0, 2.5])
+def test_monotonic_limiter_boost_factor_is_range_checked(boost_factor: float) -> None:
+    with pytest.raises(ValueError, match="must be in \\[1, 2\\)"):
+        tracer_advection.AdvectionConfig(
+            horizontal_advection_type=tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            horizontal_advection_limiter=tracer_advection.HorizontalAdvectionLimiter.MONOTONIC,
+            vertical_advection_type=tracer_advection.VerticalAdvectionType.NO_ADVECTION,
+            vertical_advection_limiter=tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
+            monotonic_limiter_boost_factor=boost_factor,
+        )
 
 
 def test_linear_weno_requires_weno_linear_state() -> None:

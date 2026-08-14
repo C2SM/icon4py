@@ -55,6 +55,15 @@ NUM_LEVELS = 10
 U0 = 20.0
 CFL = 0.3
 N_TIME_STEPS = 24
+# How far outside the initial tracer range the field may stray, relative to that range.
+# The linear schemes pass beta_fct = 1 to the limiter, so their bound is round-off. The
+# quadratic ones pass the namelist beta_fct, which widens the permitted range by that
+# factor per step, hence the compounded bound.
+_ROUNDOFF_RANGE_TOLERANCE = 1e-10
+_BETA_FCT_RANGE_TOLERANCE = 1.005**N_TIME_STEPS - 1.0
+# an unlimited scheme has to leave the range by clearly more than round-off, or the
+# monotonic cases would be proving nothing
+_UNLIMITED_RANGE_FLOOR = 1e-3
 
 
 def _translated_disc(
@@ -102,16 +111,50 @@ def _read_qv_frames(output_dir: pathlib.Path) -> np.ndarray:
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "horizontal_advection_type, l2_tolerance",
+    "horizontal_advection_type, horizontal_advection_limiter, l2_tolerance, range_tolerance",
     [
-        (tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO, 0.50),
-        (tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER, 0.72),
-        (tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO, 0.45),
+        pytest.param(
+            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO,
+            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            0.50,
+            None,
+            id="miura_weno",
+        ),
+        pytest.param(
+            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            0.72,
+            None,
+            id="miura",
+        ),
+        pytest.param(
+            tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO,
+            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            0.45,
+            None,
+            id="miura3_weno",
+        ),
+        pytest.param(
+            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionLimiter.MONOTONIC,
+            0.72,
+            _ROUNDOFF_RANGE_TOLERANCE,
+            id="miura-monotonic",
+        ),
+        pytest.param(
+            tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO,
+            tracer_advection.HorizontalAdvectionLimiter.MONOTONIC,
+            0.45,
+            _BETA_FCT_RANGE_TOLERANCE,
+            id="miura3_weno-monotonic",
+        ),
     ],
 )
 def test_tracer_blob_translation(
     horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: tracer_advection.HorizontalAdvectionLimiter,
     l2_tolerance: float,
+    range_tolerance: float | None,
     *,
     tmp_path: pathlib.Path,
     process_props: decomp_defs.ProcessProperties,
@@ -165,7 +208,7 @@ def test_tracer_blob_translation(
         tracer_config=tracer_states.TracerConfig(qv=True),
         tracer_advection=tracer_advection.AdvectionConfig(
             horizontal_advection_type=horizontal_advection_type,
-            horizontal_advection_limiter=tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            horizontal_advection_limiter=horizontal_advection_limiter,
             vertical_advection_type=tracer_advection.VerticalAdvectionType.NO_ADVECTION,
             vertical_advection_limiter=tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
         ),
@@ -223,3 +266,21 @@ def test_tracer_blob_translation(
     l2_error = np.linalg.norm(qv_frames[-1] - reference) / np.linalg.norm(reference)
     print(f"{horizontal_advection_type.name}: relative L2 error vs translated disc = {l2_error}")
     assert l2_error < l2_tolerance
+
+    # The disc is the widest the field ever gets: an unlimited scheme rings around its
+    # edge and leaves that range, the monotonic limiter is there to stop it.
+    initial_range = qv_frames[0].max() - qv_frames[0].min()
+    overshoot = (qv_frames.max() - qv_frames[0].max()) / initial_range
+    undershoot = (qv_frames[0].min() - qv_frames.min()) / initial_range
+    print(
+        f"{horizontal_advection_type.name} + {horizontal_advection_limiter.name}: "
+        f"relative overshoot {overshoot:.3e}, undershoot {undershoot:.3e}"
+    )
+    if range_tolerance is None:
+        assert max(overshoot, undershoot) > _UNLIMITED_RANGE_FLOOR, (
+            "the unlimited scheme is expected to leave the initial range; if it no longer "
+            "does, the monotonic cases below have lost their teeth"
+        )
+    else:
+        assert overshoot <= range_tolerance
+        assert undershoot <= range_tolerance

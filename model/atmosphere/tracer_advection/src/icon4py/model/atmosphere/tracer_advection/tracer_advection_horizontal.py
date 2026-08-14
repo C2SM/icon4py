@@ -17,8 +17,14 @@ from icon4py.model.atmosphere.tracer_advection import tracer_advection_states, w
 from icon4py.model.atmosphere.tracer_advection.stencils.accumulate_weno_candidate_flux_weights import (
     accumulate_weno_candidate_flux_weights,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.apply_monotone_horizontal_multiplicative_flux_factors import (
+    apply_monotone_horizontal_multiplicative_flux_factors,
+)
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_positive_definite_horizontal_multiplicative_flux_factor import (
     apply_positive_definite_horizontal_multiplicative_flux_factor,
+)
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_antidiffusive_cell_fluxes_and_min_max import (
+    compute_antidiffusive_cell_fluxes_and_min_max,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_backtrajectory_alt import (
     compute_barycentric_backtrajectory_alt,
@@ -41,8 +47,14 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_trace
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_upwind import (
     compute_horizontal_tracer_flux_upwind,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_monotone_horizontal_multiplicative_flux_factors import (
+    compute_monotone_horizontal_multiplicative_flux_factors,
+)
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
+)
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_upwind_and_antidiffusive_flux import (
+    compute_upwind_and_antidiffusive_flux,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field import (
     copy_cell_kdim_field,
@@ -52,6 +64,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.init_constant_edge_kdim_
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
+)
+from icon4py.model.atmosphere.tracer_advection.stencils.postprocess_antidiffusive_cell_fluxes_and_min_max import (
+    postprocess_antidiffusive_cell_fluxes_and_min_max,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.prepare_gauss_quadrature_quadratic_miura3 import (
     prepare_gauss_quadrature_quadratic_miura3,
@@ -90,9 +105,12 @@ class HorizontalFluxLimiter(ABC):
     @abstractmethod
     def apply_flux_limiter(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None: ...
 
@@ -102,9 +120,12 @@ class NoLimiter(HorizontalFluxLimiter):
 
     def apply_flux_limiter(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None: ...
 
@@ -185,9 +206,12 @@ class PositiveDefinite(HorizontalFluxLimiter):
 
     def apply_flux_limiter(
         self,
+        *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
         # compute multiplicative flux factor to guarantee no undershoot
@@ -222,6 +246,226 @@ class PositiveDefinite(HorizontalFluxLimiter):
         )
 
 
+class Monotonic(HorizontalFluxLimiter):
+    """Zalesak flux-corrected transport limiter, ported from hflx_limiter_mo.
+
+    The high-order flux is split into a first-order upwind part plus an antidiffusive
+    remainder, and the remainder is scaled down per edge until the low-order solution
+    stays inside the local range of the neighbouring cells, widened by ``beta_fct``.
+    """
+
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        interpolation_state: tracer_advection_states.AdvectionInterpolationState,
+        backend: gtx.typing.Backend | None,
+        exchange: decomposition.ExchangeRuntime,
+        beta_fct: ta.wpfloat,
+    ):
+        self._grid = grid
+        self._interpolation_state = interpolation_state
+        self._backend = backend
+        self._exchange = exchange
+        self._beta_fct = beta_fct
+
+        allocator = model_backends.get_allocator(self._backend)
+
+        cell_domain = h_grid.domain(dims.CellDim)
+        edge_domain = h_grid.domain(dims.EdgeDim)
+
+        # f90 361-378 only repairs the boundary interpolation zone of a limited-area grid
+        self._limited_area = self._grid.limited_area
+
+        def _cell_field(dtype: type) -> fa.CellKField:
+            return data_alloc.zero_field(
+                self._grid, dims.CellDim, dims.KDim, dtype=dtype, allocator=allocator
+            )
+
+        def _edge_field(dtype: type) -> fa.EdgeKField:
+            return data_alloc.zero_field(
+                self._grid, dims.EdgeDim, dims.KDim, dtype=dtype, allocator=allocator
+            )
+
+        self._z_mflx_low = _edge_field(ta.wpfloat)
+        self._z_anti = _edge_field(ta.wpfloat)
+        self._z_mflx_anti_in = _cell_field(ta.vpfloat)
+        self._z_mflx_anti_out = _cell_field(ta.vpfloat)
+        self._z_tracer_new_low = _cell_field(ta.wpfloat)
+        self._z_tracer_max = _cell_field(ta.vpfloat)
+        self._z_tracer_min = _cell_field(ta.vpfloat)
+        # zero-initialization is load-bearing: the r_p/r_m rows below the nudging zone are
+        # never written by the stencil below, and f90 390-397 zeroes exactly those rows
+        self._r_p = _cell_field(ta.wpfloat)
+        self._r_m = _cell_field(ta.wpfloat)
+
+        vertical_sizes = {
+            "vertical_start": gtx.int32(0),
+            "vertical_end": gtx.int32(self._grid.num_levels),
+        }
+
+        # f90 228-262: one halo row deeper than the other advection edge stencils, because
+        # the cell stage below reads the antidiffusive flux of the cells' outermost edges
+        self._compute_upwind_and_antidiffusive_flux = model_options.setup_program(
+            backend=self._backend,
+            program=compute_upwind_and_antidiffusive_flux,
+            horizontal_sizes={
+                "horizontal_start": self._grid.start_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+                ),
+                "horizontal_end": self._grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2)),
+            },
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+
+        # f90 279-350
+        cell_stage_2_sizes = {
+            "horizontal_start": self._grid.start_index(
+                cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+            ),
+            "horizontal_end": self._grid.end_index(cell_domain(h_grid.Zone.HALO)),
+        }
+        self._compute_antidiffusive_cell_fluxes_and_min_max = model_options.setup_program(
+            backend=self._backend,
+            program=compute_antidiffusive_cell_fluxes_and_min_max,
+            constant_args={"geofac_div": self._interpolation_state.geofac_div},
+            horizontal_sizes=cell_stage_2_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+
+        # f90 361-378
+        self._postprocess_antidiffusive_cell_fluxes_and_min_max = (
+            model_options.setup_program(
+                backend=self._backend,
+                program=postprocess_antidiffusive_cell_fluxes_and_min_max,
+                constant_args={
+                    "refin_ctrl": self._grid.refinement_control[dims.CellDim],
+                    # the two boundary-interpolation rows, grf_bdywidth_c - 1 and grf_bdywidth_c
+                    "lo_bound": gtx.int32(3),
+                    "hi_bound": gtx.int32(4),
+                },
+                horizontal_sizes=cell_stage_2_sizes,
+                vertical_sizes=vertical_sizes,
+                offset_provider=self._grid.connectivities,
+            )
+            if self._limited_area
+            else None
+        )
+
+        # f90 405-462
+        self._compute_monotone_horizontal_multiplicative_flux_factors = model_options.setup_program(
+            backend=self._backend,
+            program=compute_monotone_horizontal_multiplicative_flux_factors,
+            constant_args={
+                "beta_fct": self._beta_fct,
+                "r_beta_fct": 1.0 / self._beta_fct,
+                "dbl_eps": constants.DBL_EPS,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._grid.start_index(
+                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
+                ),
+                "horizontal_end": self._grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
+            },
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+
+        # f90 471-525
+        self._apply_monotone_horizontal_multiplicative_flux_factors = model_options.setup_program(
+            backend=self._backend,
+            program=apply_monotone_horizontal_multiplicative_flux_factors,
+            horizontal_sizes={
+                "horizontal_start": self._grid.start_index(edge_domain(h_grid.Zone.NUDGING)),
+                "horizontal_end": self._grid.end_index(edge_domain(h_grid.Zone.HALO)),
+            },
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+
+    def apply_flux_limiter(
+        self,
+        *,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
+        # split the high-order flux into a first-order upwind part and the remainder
+        log.debug("running stencil compute_upwind_and_antidiffusive_flux - start")
+        self._compute_upwind_and_antidiffusive_flux(
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            p_mass_flx_e=p_mass_flx_e,
+            p_cc=p_tracer_now,
+            z_mflx_low=self._z_mflx_low,
+            z_anti=self._z_anti,
+        )
+        log.debug("running stencil compute_upwind_and_antidiffusive_flux - end")
+
+        # the low-order solution and the local range the limited solution must stay in
+        log.debug("running stencil compute_antidiffusive_cell_fluxes_and_min_max - start")
+        self._compute_antidiffusive_cell_fluxes_and_min_max(
+            p_rhodz_now=rhodz_now,
+            p_rhodz_new=rhodz_new,
+            z_mflx_low=self._z_mflx_low,
+            z_anti=self._z_anti,
+            p_cc=p_tracer_now,
+            z_mflx_anti_in=self._z_mflx_anti_in,
+            z_mflx_anti_out=self._z_mflx_anti_out,
+            z_tracer_new_low=self._z_tracer_new_low,
+            z_tracer_max=self._z_tracer_max,
+            z_tracer_min=self._z_tracer_min,
+            p_dtime=dtime,
+        )
+        log.debug("running stencil compute_antidiffusive_cell_fluxes_and_min_max - end")
+
+        if self._postprocess_antidiffusive_cell_fluxes_and_min_max is not None:
+            log.debug("running stencil postprocess_antidiffusive_cell_fluxes_and_min_max - start")
+            self._postprocess_antidiffusive_cell_fluxes_and_min_max(
+                p_cc=p_tracer_now,
+                z_tracer_new_low=self._z_tracer_new_low,
+                z_tracer_max=self._z_tracer_max,
+                z_tracer_min=self._z_tracer_min,
+                z_tracer_new_low_out=self._z_tracer_new_low,
+                z_tracer_max_out=self._z_tracer_max,
+                z_tracer_min_out=self._z_tracer_min,
+            )
+            log.debug("running stencil postprocess_antidiffusive_cell_fluxes_and_min_max - end")
+
+        # per-cell headroom for incoming and outgoing antidiffusive mass
+        log.debug("running stencil compute_monotone_horizontal_multiplicative_flux_factors - start")
+        self._compute_monotone_horizontal_multiplicative_flux_factors(
+            z_tracer_max=self._z_tracer_max,
+            z_tracer_min=self._z_tracer_min,
+            z_mflx_anti_in=self._z_mflx_anti_in,
+            z_mflx_anti_out=self._z_mflx_anti_out,
+            z_tracer_new_low=self._z_tracer_new_low,
+            r_p=self._r_p,
+            r_m=self._r_m,
+        )
+        log.debug("running stencil compute_monotone_horizontal_multiplicative_flux_factors - end")
+
+        log.debug("communication of tracer_advection cell fields: r_m, r_p - start")
+        self._exchange.exchange(
+            dims.CellDim, self._r_m, self._r_p, stream=decomposition.DEFAULT_STREAM
+        )
+        log.debug("communication of tracer_advection cell fields: r_m, r_p - end")
+
+        # every edge takes the smaller of the two headrooms it connects
+        log.debug("running stencil apply_monotone_horizontal_multiplicative_flux_factors - start")
+        self._apply_monotone_horizontal_multiplicative_flux_factors(
+            z_anti=self._z_anti,
+            r_m=self._r_m,
+            r_p=self._r_p,
+            z_mflx_low=self._z_mflx_low,
+            p_mflx_tracer_h=p_mflx_tracer_h,
+        )
+        log.debug("running stencil apply_monotone_horizontal_multiplicative_flux_factors - end")
+
+
 class SemiLagrangianTracerFlux(ABC):
     """Class that defines the horizontal semi-Lagrangian tracer flux."""
 
@@ -236,6 +480,7 @@ class SemiLagrangianTracerFlux(ABC):
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         p_vt: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
         """Compute the tracer flux; p_vt is only consumed by the ffsl-based schemes."""
@@ -327,6 +572,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         p_vt: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("horizontal tracer flux computation - start")
@@ -362,7 +608,9 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self._horizontal_limiter.apply_flux_limiter(
             p_tracer_now=p_tracer_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
+            p_mass_flx_e=prep_adv.mass_flx_me,
             rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
             dtime=dtime,
         )
 
@@ -450,6 +698,7 @@ class SecondOrderMiuraWeno(SemiLagrangianTracerFlux):
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         p_vt: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("horizontal tracer flux computation - start")
@@ -491,7 +740,9 @@ class SecondOrderMiuraWeno(SemiLagrangianTracerFlux):
         self._horizontal_limiter.apply_flux_limiter(
             p_tracer_now=p_tracer_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
+            p_mass_flx_e=prep_adv.mass_flx_me,
             rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
             dtime=dtime,
         )
 
@@ -721,6 +972,7 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         p_vt: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
         # p_distv_bary_* are unused: miura3 integrates over the full departure region
@@ -801,7 +1053,9 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         self._horizontal_limiter.apply_flux_limiter(
             p_tracer_now=p_tracer_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
+            p_mass_flx_e=prep_adv.mass_flx_me,
             rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
             dtime=dtime,
         )
 
@@ -916,6 +1170,7 @@ class FiniteVolume(HorizontalAdvection):
             prep_adv=prep_adv,
             p_tracer_now=p_tracer_now,
             rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
             p_mflx_tracer_h=p_mflx_tracer_h,
             dtime=dtime,
         )
@@ -937,6 +1192,7 @@ class FiniteVolume(HorizontalAdvection):
         prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None: ...
@@ -1019,9 +1275,11 @@ class FirstOrderUpwind(FiniteVolume):
 
     def _compute_numerical_flux(
         self,
+        *,
         prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
@@ -1181,6 +1439,7 @@ class SemiLagrangian(FiniteVolume):
         prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
@@ -1217,6 +1476,7 @@ class SemiLagrangian(FiniteVolume):
             p_distv_bary_2=self._p_distv_bary_2,
             p_vt=self._z_real_vt,
             rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
             dtime=dtime,
         )
 
