@@ -11,6 +11,8 @@
 Data-free: they use the ``simple_grid`` and need no serialized test data.
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import pytest
