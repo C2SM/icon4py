@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.testing import filters, provenance
+from icon4py.model.testing import filters
 
 
 __all__ = [
@@ -243,27 +243,10 @@ def pytest_runtest_makereport(item, call):
                 report.sections.append(("benchmark-extra", tuple([filtered_benchmark_name, info])))
 
 
-def _report_serialized_data_provenance(terminalreporter):
-    """Say which ICON build produced the reference values the session used."""
-    if not provenance.seen:
-        return
-    terminalreporter.ensure_newline()
-    terminalreporter.line(" Serialized test data ", bold=True, blue=True)
-    for archive, revision in sorted(provenance.seen.items()):
-        terminalreporter.line(f"  {archive:<44} {revision}")
-
-
-# 'optionalhook': this plugin loads in every session, including ones without xdist.
-@pytest.hookimpl(optionalhook=True)
-def pytest_testnodedown(node, error):
-    provenance.seen.update(getattr(node, "workeroutput", {}).get("icon4py_provenance", {}))
-
-
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
     """
     Add a custom section to the terminal summary with GT4Py timer metrics from benchmarks.
     """
-    _report_serialized_data_provenance(terminalreporter)
     # Gather gtx_metrics
     benchmark_gtx_metrics = []
     for outcome in ("passed", "failed", "skipped"):
@@ -422,8 +405,3 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     scheduler = getattr(session.config, "_mpi_scheduler", None)
     if scheduler is not None:
         scheduler.finalize()
-
-    # Hand the provenance back to the controller when running under xdist.
-    workeroutput = getattr(session.config, "workeroutput", None)
-    if workeroutput is not None:
-        workeroutput["icon4py_provenance"] = provenance.seen

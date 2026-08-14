@@ -14,8 +14,6 @@ grep -m1 '^ revision:' <archive dir>/LOG.*.o
 #  revision: icon-2026.04-dwd-1.9-136-g1df503335b8726dc445659c21020f4f09d9acc3d
 ```
 
-Datatest runs print the same for every archive they touch, in the terminal summary.
-
 That string is a `git describe`, and git accepts it as a revision. So when a datatest starts
 disagreeing with its reference data:
 
