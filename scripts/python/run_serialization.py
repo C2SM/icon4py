@@ -79,7 +79,8 @@ class SerializationSettings:
             test_defs.Experiments.WEISMAN_KLEMP_TORUS,
         ]
 
-        # Slurm settings
+        # Slurm settings. Leave the account or the uenv empty where the submission is
+        # brokered and those are not the job's to choose.
         SBATCH_PARTITION = "normal"
         SBATCH_TIME = "00:20:00"
         SBATCH_ACCOUNT = "cwd01"
@@ -300,14 +301,18 @@ def update_slurm_variables(script_path: pathlib.Path, *, settings: Serialization
     if not job_name_match:
         raise RuntimeError("Could not find #SBATCH --job-name= line in script")
 
-    # Prepare the new SBATCH lines to insert
-    new_lines = (
-        f"#SBATCH --partition={settings.sbatch_partition}\n"
-        f"#SBATCH --account={settings.sbatch_account}\n"
-        f"#SBATCH --time={settings.sbatch_time}\n"
-        f"#SBATCH --uenv='{settings.sbatch_uenv}'\n"
-        f"#SBATCH --view='{settings.sbatch_uenv_view}'"
-    )
+    # Prepare the new SBATCH lines to insert. A setting left empty is not emitted: on a
+    # site where the submission is brokered, the account and the uenv are the broker's to
+    # decide and naming them in the script is rejected.
+    directives = [f"#SBATCH --partition={settings.sbatch_partition}"]
+    if settings.sbatch_account:
+        directives.append(f"#SBATCH --account={settings.sbatch_account}")
+    directives.append(f"#SBATCH --time={settings.sbatch_time}")
+    if settings.sbatch_uenv:
+        directives.append(f"#SBATCH --uenv='{settings.sbatch_uenv}'")
+    if settings.sbatch_uenv_view:
+        directives.append(f"#SBATCH --view='{settings.sbatch_uenv_view}'")
+    new_lines = "\n".join(directives)
 
     # Remove existing partition, account, time, uenv, and view lines if they exist
     content = re.sub(r"^#SBATCH\s+--partition=.*$\n?", "", content, flags=re.MULTILINE)
