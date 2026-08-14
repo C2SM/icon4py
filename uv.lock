@@ -38,7 +38,7 @@ members = [
   "icon4py-atmosphere-tracer-advection",
   "icon4py-bindings",
   "icon4py-common",
-  "icon4py-standalone-driver",
+  "icon4py-driver",
   "icon4py-testing",
   "icon4py-tools"
 ]
@@ -1765,7 +1765,7 @@ dependencies = [
   {name = "icon4py-atmosphere-physics-driver"},
   {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common"},
-  {name = "icon4py-standalone-driver"}
+  {name = "icon4py-driver"}
 ]
 name = "icon4py"
 source = {editable = "."}
@@ -1884,7 +1884,7 @@ requires-dist = [
   {name = "icon4py-common", extras = ["distributed"], marker = "extra == 'distributed'", editable = "model/common"},
   {name = "icon4py-common", extras = ["io"], marker = "extra == 'io'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
-  {name = "icon4py-standalone-driver", editable = "model/standalone_driver"},
+  {name = "icon4py-driver", editable = "model/driver"},
   {name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing"},
   {name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0"}
 ]
@@ -2270,8 +2270,8 @@ dependencies = [
   {name = "packaging"},
   {name = "typer"}
 ]
-name = "icon4py-standalone-driver"
-source = {editable = "model/standalone_driver"}
+name = "icon4py-driver"
+source = {editable = "model/driver"}
 version = "0.3.0"
 
 [package.metadata]

@@ -24,7 +24,7 @@ export GRID_FOLDER=<path to the folder holding grids>
 export CONFIG_FOLDER=<path to the configuration directory>
 
 # command line arguments
-icon4py-standalone-driver \
+icon4py-driver \
     --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
     --config-file-path $CONFIG_FOLDER \
     --icon4py-backend gtfn_cpu \
@@ -44,7 +44,7 @@ These are generated from the corresponding Fortran namelists and describe the
 experiment, the atmosphere setup, and the input parameters.
 
 To generate these from an experiment run with Fortran ICON you can use the [f90nml](https://f90nml.readthedocs.io/en/latest/index.html) Python package to generate the JSON files from the original `NAMELIST` files of the Fortran ICON simulation.
-Once the Fortran ICON simulation has finished, there is a folder generated in `<ICON_ROOT>/<BUILD_TYPE>/experiments/<EXPERIMENT_NAME>` that includes the necessary `NAMELIST` files to configure the `ICON4Py` `standalone_driver`.
+Once the Fortran ICON simulation has finished, there is a folder generated in `<ICON_ROOT>/<BUILD_TYPE>/experiments/<EXPERIMENT_NAME>` that includes the necessary `NAMELIST` files to configure the `ICON4Py` `driver`.
 Using the following instruction you can export the necessary files to their JSON equivalent format:
 
 ```
@@ -54,7 +54,7 @@ f90nml -g config_nml <ICON_ROOT>/<BUILD_TYPE>/experiments/<EXPERIMENT_NAME>/icon
 f90nml -g config_nml <ICON_ROOT>/<BUILD_TYPE>/experiments/<EXPERIMENT_NAME>/NAMELIST_<EXPERIMENT_NAME> CONFIG_DIR/NAMELIST_expname.json
 ```
 
-Once the above is done you can provide the `CONFIG_DIR` to the `--config-file-path` of the `icon4py-standalone-driver` to configure the simulation the same way as the ICON Fortran one.
+Once the above is done you can provide the `CONFIG_DIR` to the `--config-file-path` of the `icon4py-driver` to configure the simulation the same way as the ICON Fortran one.
 
 Of course you can write the necessary configuration files manually or start by some template files and edit them yourself.
 
