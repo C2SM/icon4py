@@ -410,7 +410,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     params={
                         "grid_sphere_radius": constants.EARTH_RADIUS,
                         "horizontal_start": self.grid.start_index(
-                            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                            edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
                         ),
                     },
                     do_exchange=True,

@@ -14,6 +14,7 @@ import pathlib
 from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common import time
+from icon4py.model.common.config import config_io
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
@@ -40,14 +41,25 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+type IC_CONFIG = (
+    jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig
+)
+
+
+config_io.register_config_union(
+    IC_CONFIG.__value__,
+    {
+        "jablonowski_williamson": jw_ic.JablonowskiWilliamsonConfig,
+        "gauss_3d": gauss_ic.Gauss3DConfig,
+        "from_file": from_file_ic.FromFileConfig,
+        "weissman_klemp": wk_ic.WeismanKlempConfig,
+    },
+)
+
+
 @dataclasses.dataclass
 class InitialConditionConfig:
-    config: (
-        jw_ic.JablonowskiWilliamsonConfig
-        | gauss_ic.Gauss3DConfig
-        | wk_ic.WeismanKlempConfig
-        | from_file_ic.FromFileConfig
-    )
+    config: IC_CONFIG
 
     @classmethod
     def from_fortran_dict(

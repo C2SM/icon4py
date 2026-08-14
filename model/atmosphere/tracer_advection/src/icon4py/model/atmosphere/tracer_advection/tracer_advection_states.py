@@ -124,7 +124,13 @@ def initialize_advection_diagnostic_state(
         hfl_tracer=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
+        # vertical flux at cell half levels: one more level than KDim
         vfl_tracer=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=allocator,
+            dtype=ta.wpfloat,
         ),
     )

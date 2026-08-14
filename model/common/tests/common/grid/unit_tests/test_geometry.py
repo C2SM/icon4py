@@ -253,10 +253,14 @@ def test_primal_normal_cell(
     primal_normal_cell_v = grid_geometry.get(attrs.EDGE_NORMAL_CELL_V)
 
     assert test_utils.dallclose(
-        primal_normal_cell_u.asnumpy(), primal_normal_cell_u_ref, atol=1e-12
+        primal_normal_cell_u.asnumpy(),
+        primal_normal_cell_u_ref,
+        atol=1e-12,
     )
     assert test_utils.dallclose(
-        primal_normal_cell_v.asnumpy(), primal_normal_cell_v_ref, atol=1e-12
+        primal_normal_cell_v.asnumpy(),
+        primal_normal_cell_v_ref,
+        atol=1e-12,
     )
 
 

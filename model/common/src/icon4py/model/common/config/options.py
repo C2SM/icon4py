@@ -25,7 +25,7 @@ class MultipleOptionAnnotationsError(Exception): ...
 class NotRead: ...
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class IconOption:
     """
     Describe how to find the equivalent option in ICON namelists.
@@ -124,7 +124,7 @@ class IconMultiOption:
         )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ConfigOption:
     description: str
     icon_equivalent: IconOption | IconMultiOption | None = None

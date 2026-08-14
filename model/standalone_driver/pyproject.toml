@@ -27,11 +27,13 @@ dependencies = [
   # workspace members
   "icon4py-atmosphere-dycore~=0.3.0",
   "icon4py-atmosphere-diffusion~=0.3.0",
+  "icon4py-atmosphere-physics-driver~=0.3.0",
+  "icon4py-atmosphere-muphys~=0.3.0",
   "icon4py-common[io]~=0.3.0",
   # external dependencies
   "typer>=0.20.0",
   "devtools>=0.12",
-  "gt4py==1.1.12",
+  "gt4py==1.2.0",
   "packaging>=20.0"
 ]
 description = "ICON model driver."

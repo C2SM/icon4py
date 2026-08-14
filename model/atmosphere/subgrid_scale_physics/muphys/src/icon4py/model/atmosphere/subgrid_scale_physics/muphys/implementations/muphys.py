@@ -26,6 +26,7 @@ def _muphys(  # noqa: PLR0917 [too-many-positional-arguments]
     q_in: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
+    use_aes_graupel: bool,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     Q,
@@ -52,6 +53,7 @@ def _muphys(  # noqa: PLR0917 [too-many-positional-arguments]
         dt=dt,
         qnc=qnc,
         enable_masking=True,  # TODO(havogt): expose this option when optimizing full muphys
+        use_aes_graupel=use_aes_graupel,
     )
 
     te, qve, qce = _saturation_adjustment(
@@ -60,7 +62,9 @@ def _muphys(  # noqa: PLR0917 [too-many-positional-arguments]
         rho=rho,
     )
 
-    return t, Q(v=qve, c=qce, r=q.r, s=q.s, i=q.i, g=q.g), pflx, pr, ps, pi, pg, pre
+    # return the temperature updated by the final saturation adjustment (as the
+    # Fortran does), consistent with the adjusted qv/qc
+    return te, Q(v=qve, c=qce, r=q.r, s=q.s, i=q.i, g=q.g), pflx, pr, ps, pi, pg, pre
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -84,6 +88,7 @@ def muphys_run(  # noqa: PLR0917 [too-many-positional-arguments]
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
+    use_aes_graupel: bool,
 ) -> None:
     _muphys(
         last_level=vertical_end - 1,
@@ -94,6 +99,7 @@ def muphys_run(  # noqa: PLR0917 [too-many-positional-arguments]
         q_in=q_in,
         dt=dt,
         qnc=qnc,
+        use_aes_graupel=use_aes_graupel,
         out=(t_out, q_out, pflx, pr, ps, pi, pg, pre),
         domain=(
             # t_out

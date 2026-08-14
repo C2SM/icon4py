@@ -565,8 +565,10 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(normal_vert_wrapper)
 
-        normal_cell = factory.ProgramFieldProvider(
-            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
+        normal_cell = factory.NumpyDataProvider(
+            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center_ndarray,
+            domain=(dims.EdgeDim, dims.E2CDim),
+            fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
             deps={
                 "cell_lat": attrs.CELL_LAT,
                 "cell_lon": attrs.CELL_LON,
@@ -574,28 +576,15 @@ class GridGeometry(factory.FieldSource):
                 "y": attrs.EDGE_NORMAL_Y,
                 "z": attrs.EDGE_NORMAL_Z,
             },
-            fields={
-                "u_cell_1": "u_cell_1",
-                "v_cell_1": "v_cell_1",
-                "u_cell_2": "u_cell_2",
-                "v_cell_2": "v_cell_2",
-            },
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.LOCAL),
+            connectivities={"e2c": dims.E2CDim},
+            params={
+                "horizontal_start": self.grid.start_index(
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
                 )
             },
-            do_exchange=False,
-        )
-        normal_cell_wrapper = SparseFieldProviderWrapper(
-            field_provider=normal_cell,
-            target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
-            fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
-            pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
             do_exchange=True,
         )
-        self.register_provider(normal_cell_wrapper)
+        self.register_provider(normal_cell)
 
         # dual normals: the dual normals are the edge tangents
         tangent_vert = factory.ProgramFieldProvider(
@@ -637,8 +626,11 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(tangent_vert_wrapper)
 
-        tangent_cell = factory.ProgramFieldProvider(
-            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
+        # Same boundary-row treatment as normal_cell above.
+        tangent_cell = factory.NumpyDataProvider(
+            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center_ndarray,
+            domain=(dims.EdgeDim, dims.E2CDim),
+            fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
             deps={
                 "cell_lat": attrs.CELL_LAT,
                 "cell_lon": attrs.CELL_LON,
@@ -646,28 +638,15 @@ class GridGeometry(factory.FieldSource):
                 "y": attrs.EDGE_TANGENT_Y,
                 "z": attrs.EDGE_TANGENT_Z,
             },
-            fields={
-                "u_cell_1": "u_cell_1",
-                "v_cell_1": "v_cell_1",
-                "u_cell_2": "u_cell_2",
-                "v_cell_2": "v_cell_2",
-            },
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.LOCAL),
+            connectivities={"e2c": dims.E2CDim},
+            params={
+                "horizontal_start": self.grid.start_index(
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
                 )
             },
-            do_exchange=False,
-        )
-        tangent_cell_wrapper = SparseFieldProviderWrapper(
-            field_provider=tangent_cell,
-            target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
-            fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
-            pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
             do_exchange=True,
         )
-        self.register_provider(tangent_cell_wrapper)
+        self.register_provider(tangent_cell)
 
     def _register_normals_and_tangents_torus(self) -> None:
         """Register normals and tangents specific to torus geometry."""

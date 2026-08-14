@@ -16,7 +16,12 @@ from gt4py.next import typing as gtx_typing
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
-from icon4py.model.common.grid import icon, states as grid_states, vertical as v_grid
+from icon4py.model.common.grid import (
+    horizontal as h_grid,
+    icon,
+    states as grid_states,
+    vertical as v_grid,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox, test_utils
 
@@ -182,9 +187,11 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         prognostic_states.next.rho.asnumpy(),
     )
 
+    # `rho_ic` is only computed on locally owned cells, the reference contains ICON's halo values.
+    end_cell_local = icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL))
     test_utils.assert_dallclose(
-        savepoint_nonhydro_exit.rho_ic().asnumpy(),
-        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
+        savepoint_nonhydro_exit.rho_ic().asnumpy()[:end_cell_local, :],
+        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy()[:end_cell_local, :],
     )
 
     test_utils.assert_dallclose(

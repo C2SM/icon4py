@@ -17,6 +17,7 @@ from collections.abc import Callable
 
 from gt4py import next as gtx
 
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core import saturation_adjustment
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import (
     common,
@@ -115,14 +116,28 @@ def setup_muphys(
     backend: model_backends.BackendLike,
     *,
     single_program: bool = False,
+    scheme: config.MuphysScheme = config.MuphysScheme.KOKKOS_MUPHYS,
 ):
+    # the GT4Py operators branch on a plain bool (the DSL has no match statement)
+    match scheme:
+        case config.MuphysScheme.AES_GRAUPEL:
+            use_aes_graupel = True
+        case config.MuphysScheme.KOKKOS_MUPHYS:
+            use_aes_graupel = False
+        case _:
+            raise ValueError(f"unknown muphys scheme: {scheme}")
+
     if single_program:
         # TODO(havogt): make an option in gt4py for thread-safety?
         with utils.recursion_limit(10**5):
             muphys_program = model_options.setup_program(
                 backend=backend,
                 program=muphys.muphys_run,
-                constant_args={"dt": ta.wpfloat(dt), "qnc": ta.wpfloat(qnc)},
+                constant_args={
+                    "dt": ta.wpfloat(dt),
+                    "qnc": ta.wpfloat(qnc),
+                    "use_aes_graupel": use_aes_graupel,
+                },
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(0),
                     "horizontal_end": inp.ncells,
@@ -145,6 +160,7 @@ def setup_muphys(
             vertical_start=0,
             vertical_end=inp.nlev,
             enable_masking=True,
+            scheme=scheme,
         )
         with utils.recursion_limit(10**5):  # TODO(havogt): make an option in gt4py?
             saturation_adjustment_program = model_options.setup_program(

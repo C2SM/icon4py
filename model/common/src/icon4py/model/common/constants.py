@@ -11,6 +11,7 @@ import sys
 from typing import Final
 
 from icon4py.model.common import type_alias as ta
+from icon4py.model.common.config import config_io
 
 
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
@@ -174,6 +175,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     eps = DBL_EPS
 
 
+@config_io.register_enum
 class RayleighType(int, enum.Enum):
     #: classical Rayleigh damping, which makes use of a reference state.
     CLASSIC = 1
