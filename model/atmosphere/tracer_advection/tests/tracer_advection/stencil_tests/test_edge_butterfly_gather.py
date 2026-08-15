@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """FFSL's patch1/patch2 gather: reading a cell field through the edge butterfly offset.
 
 ICON identifies the two outer patches of an edge's departure region by ABSOLUTE cell index
@@ -44,7 +52,7 @@ def _gather_butterfly_cell(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def gather_butterfly_cell(
+def gather_butterfly_cell(  # noqa: PLR0917 [too-many-positional-arguments]  # a gtx.program's arguments must stay positional
     p_cc: fa.CellKField[ta.wpfloat],
     slot: fa.EdgeKField[gtx.int32],
     out_e: fa.EdgeKField[ta.wpfloat],
