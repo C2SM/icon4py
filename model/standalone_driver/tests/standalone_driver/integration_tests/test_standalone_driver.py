@@ -101,11 +101,22 @@ def timeloop_diffusion_linit_exit() -> bool:
             "2001-01-01T00:00:04.000",
             "2001-01-01T00:00:04.000",
         ),
-        (
+        pytest.param(
             test_defs.Experiments.EXCLAIM_APE_AES,
             "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
+            marks=pytest.mark.xfail(
+                reason=(
+                    "This experiment gained a land surface in v10, and the driver models "
+                    "neither tmx turbulence nor the tmx surface nor JSBACH land -- its only "
+                    "physics process is muphys. Over ocean the unmodelled surface flux stayed "
+                    "inside atol=6e-07 for one step; over land the drag is far larger and vn "
+                    "moves by ~8 m/s at the lowest level. Remove this once tmx and the surface "
+                    "are wired into the driver."
+                ),
+                strict=True,
+            ),
         ),
         (
             test_defs.Experiments.MCH_CH_R04B09,
@@ -156,6 +167,9 @@ def test_standalone_driver(
       the clipping / vertical-extent items below.
     - negative tracers: ICON clips them (iqneg_d2p/iqneg_p2d); the driver does not.
     - vertical extent: ICON runs graupel on jks_cloudy..nlev; muphys runs the full column.
+    - surface: ICON runs tmx turbulence, the tmx surface and (since v10 of the aesPhys
+      experiment) JSBACH land; the driver runs none of them, so any experiment whose
+      reference feels a surface flux diverges at the lowest levels.
 
     The muphys granule itself is validated in isolation against the aes-graupel savepoints
     in test_muphys_datatest.py.
