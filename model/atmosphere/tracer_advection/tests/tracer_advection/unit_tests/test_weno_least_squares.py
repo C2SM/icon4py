@@ -44,6 +44,47 @@ def _triangle_average(f, vertices: np.ndarray) -> np.ndarray:
     return (f(m01) + f(m12) + f(m20)) / 3.0
 
 
+def _triangle_average_cubic(f, vertices: np.ndarray) -> np.ndarray:
+    """Average of f over triangles via the 4-point Strang-Fix rule, exact for degree <= 3.
+
+    The 3-point midpoint rule above is only exact to degree 2, so the cubic tests need this
+    one. Barycentric points (1/3,1/3,1/3) with weight -27/48 and the three permutations of
+    (3/5,1/5,1/5) with weight 25/48. vertices has shape (..., 3, 2).
+    """
+    v0, v1, v2 = vertices[..., 0, :], vertices[..., 1, :], vertices[..., 2, :]
+    centroid = (v0 + v1 + v2) / 3.0
+    total = -27.0 / 48.0 * f(centroid)
+    for a, b, c in ((0.6, 0.2, 0.2), (0.2, 0.6, 0.2), (0.2, 0.2, 0.6)):
+        total = total + 25.0 / 48.0 * f(a * v0 + b * v1 + c * v2)
+    return total
+
+
+def _random_cubic(rng: np.random.Generator):
+    """Random cubic p(x, y); returns (evaluator, the 9 derivative coefficients).
+
+    The coefficients come back in ICON's moment order,
+    [x, y, x^2, y^2, xy, x^3, y^3, x^2 y, x y^2].
+    """
+    a, b, c, d, e, f, g, h, i, j = rng.uniform(-1.0, 1.0, 10)
+
+    def poly(v: np.ndarray) -> np.ndarray:
+        x, y = v[..., 0], v[..., 1]
+        return (
+            a
+            + b * x
+            + c * y
+            + d * x**2
+            + e * y**2
+            + f * x * y
+            + g * x**3
+            + h * y**3
+            + i * x**2 * y
+            + j * x * y**2
+        )
+
+    return poly, np.array([b, c, d, e, f, g, h, i, j])
+
+
 def _patch_moments(patch: TorusPatch) -> np.ndarray:
     return weno.compute_lsq_moments_torus(
         cell_center_x=patch.cell_center_x,
@@ -255,6 +296,88 @@ def test_quadratic_pseudoinverse_recovers_polynomial(torus_patch):
             np.broadcast_to(derivative_coeffs, (n_cells, N_UNK)),
             rtol=1e-10,
             atol=1e-11,
+        )
+
+
+# 3c. the cubic (lsq_high_ord=3) reconstruction, which FFSL needs
+def _patch_moments_cubic(patch: TorusPatch) -> np.ndarray:
+    return weno.compute_lsq_moments_torus(
+        cell_center_x=patch.cell_center_x,
+        cell_center_y=patch.cell_center_y,
+        vertex_x=patch.vertex_x,
+        vertex_y=patch.vertex_y,
+        c2v=patch.c2v,
+        domain_length=patch.domain_length,
+        domain_height=patch.domain_height,
+        cubic=True,
+    )
+
+
+def test_cubic_moments_extend_the_quadratic_ones(torus_patch):
+    """The cubic set must not reorder the quadratic one, only append to it."""
+    quadratic = _patch_moments(torus_patch)
+    cubic = _patch_moments_cubic(torus_patch)
+    assert cubic.shape == (quadratic.shape[0], 9)
+    np.testing.assert_array_equal(cubic[:, :5], quadratic)
+
+
+def test_cubic_moments_match_quadrature(torus_patch):
+    """The analytic polygon integrals against a quadrature exact for cubics."""
+    moments = _patch_moments_cubic(torus_patch)
+    monomials = (
+        lambda v: v[..., 0],
+        lambda v: v[..., 1],
+        lambda v: v[..., 0] ** 2,
+        lambda v: v[..., 1] ** 2,
+        lambda v: v[..., 0] * v[..., 1],
+        lambda v: v[..., 0] ** 3,
+        lambda v: v[..., 1] ** 3,
+        lambda v: v[..., 0] ** 2 * v[..., 1],
+        lambda v: v[..., 0] * v[..., 1] ** 2,
+    )
+    for unknown, monomial in enumerate(monomials):
+        expected = _triangle_average_cubic(monomial, torus_patch.local_vertices)
+        np.testing.assert_allclose(moments[:, unknown], expected, rtol=1e-10, atol=1e-12)
+
+
+def test_cubic_pseudoinverse_recovers_polynomial(torus_patch):
+    """The property FFSL's cubic reconstruction rests on."""
+    stencil, z_dist = _patch_stencil_and_distances(torus_patch)
+    pseudoinv = weno.compute_lsq_pseudoinverse_cubic(
+        stencil_c9=stencil,
+        lsq_moments=_patch_moments_cubic(torus_patch),
+        cell_center_x=torus_patch.cell_center_x,
+        cell_center_y=torus_patch.cell_center_y,
+        domain_length=torus_patch.domain_length,
+        domain_height=torus_patch.domain_height,
+    )
+    assert pseudoinv.shape == (stencil.shape[0], 9, 9)
+
+    rng = np.random.default_rng(11)
+    for _ in range(3):
+        poly, derivative_coeffs = _random_cubic(rng)
+        avg_center = _triangle_average_cubic(poly, torus_patch.local_vertices)
+        stencil_vertices = torus_patch.local_vertices[stencil] + z_dist[:, :, np.newaxis, :]
+        z_b = _triangle_average_cubic(poly, stencil_vertices) - avg_center[:, np.newaxis]
+
+        recovered = np.einsum("nus,ns->nu", pseudoinv, z_b)
+        np.testing.assert_allclose(
+            recovered,
+            np.broadcast_to(derivative_coeffs, (stencil.shape[0], 9)),
+            rtol=1e-7,
+            atol=1e-8,
+        )
+
+
+def test_cubic_pseudoinverse_rejects_quadratic_moments(torus_patch):
+    with pytest.raises(ValueError, match="needs 9 moments"):
+        weno.compute_lsq_pseudoinverse_cubic(
+            stencil_c9=weno.create_stencil_c9(torus_patch.c2e2c, torus_patch.c2v),
+            lsq_moments=_patch_moments(torus_patch),
+            cell_center_x=torus_patch.cell_center_x,
+            cell_center_y=torus_patch.cell_center_y,
+            domain_length=torus_patch.domain_length,
+            domain_height=torus_patch.domain_height,
         )
 
 

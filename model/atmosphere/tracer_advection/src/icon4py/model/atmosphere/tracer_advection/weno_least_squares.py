@@ -33,6 +33,12 @@ LSQ_DIM_C_QUADRATIC: Final[int] = 9
 LSQ_DIM_UNK_QUADRATIC: Final[int] = 5
 LSQ_WGT_EXP_QUADRATIC: Final[int] = 5
 
+# ICON's lsq_high_set for lsq_high_ord=3 (mo_interpol_config.f90:377-380): 9 unknowns over the
+# same 9-point stencil, so the system is square rather than overdetermined, and unweighted.
+LSQ_DIM_C_CUBIC: Final[int] = 9
+LSQ_DIM_UNK_CUBIC: Final[int] = 9
+LSQ_WGT_EXP_CUBIC: Final[int] = 0
+
 # Zero patterns of the 27 quadratic candidate weight sets (f90 1719-1835): after
 # the `do i = 1, 27` reset to the full distance weights (1719-1721), candidates
 # 4-27 (1-based) zero exactly 4 of the 9 stencil positions (1735-1835);
@@ -240,8 +246,14 @@ def compute_lsq_moments_torus(
     c2v: data_alloc.NDArray,
     domain_length: float,
     domain_height: float,
+    cubic: bool = False,
 ) -> data_alloc.NDArray:
-    """Cell averages of the monomials [x, y, x^2, y^2, xy], (n_cells, 5).
+    """Cell averages of the monomials, (n_cells, 5) or (n_cells, 9) when 'cubic'.
+
+    The ordering is ICON's (mo_intp_coeffs_lsq_bln.f90:888-896), so the cubic set
+    extends the quadratic one rather than reordering it:
+
+        [x, y, x^2, y^2, xy]  +  [x^3, y^3, x^2 y, x y^2]
 
     Port of the torus moments block (f90 1957-2133): analytic polygon line
     integrals over the cell vertices, with the vertices moved to their closest
@@ -276,12 +288,46 @@ def compute_lsq_moments_torus(
     )
 
     # f90 2121-2133
-    moments = array_ns.empty((c2v.shape[0], 5), dtype=ta.wpfloat)
+    moments = array_ns.empty((c2v.shape[0], 9 if cubic else 5), dtype=ta.wpfloat)
     moments[:, 0] = z_rcarea / 6.0 * array_ns.sum(fx * dely, axis=1)
     moments[:, 1] = -z_rcarea / 6.0 * array_ns.sum(fy * delx, axis=1)
     moments[:, 2] = z_rcarea / 12.0 * array_ns.sum(fxx * dely, axis=1)
     moments[:, 3] = -z_rcarea / 12.0 * array_ns.sum(fyy * delx, axis=1)
     moments[:, 4] = z_rcarea / 24.0 * array_ns.sum(fxy * dely, axis=1)
+    if not cubic:
+        return moments
+
+    # third-order integrands, f90 960-1014. fxxx/fyyy are written in the delx/dely form
+    # the Fortran actually uses, not the algebraically equal MAPLE form it quotes beside it.
+    fxxx = 5.0 * dx**4 + 10.0 * dx**3 * delx + 10.0 * dx**2 * delx**2 + 5.0 * dx * delx**3 + delx**4
+    fyyy = 5.0 * dy**4 + 10.0 * dy**3 * dely + 10.0 * dy**2 * dely**2 + 5.0 * dy * dely**3 + dely**4
+    fxxy = (
+        4.0 * dxp**3 * dyp
+        + 3.0 * dx * dxp**2 * dyp
+        + 2.0 * dx**2 * dxp * dyp
+        + dx**3 * dyp
+        + dxp**3 * dy
+        + 2.0 * dx * dxp**2 * dy
+        + 3.0 * dx**2 * dxp * dy
+        + 4.0 * dx**3 * dy
+    )
+    fxyy = (
+        6.0 * dxp**2 * dyp**2
+        + 3.0 * dx * dxp * dyp**2
+        + dx**2 * dyp**2
+        + 3.0 * dxp**2 * dy * dyp
+        + 4.0 * dx * dxp * dy * dyp
+        + 3.0 * dx**2 * dy * dyp
+        + dxp**2 * dy**2
+        + 3.0 * dx * dxp * dy**2
+        + 6.0 * dx**2 * dy**2
+    )
+
+    # f90 1039-1047; note 8 and 9 both contract with dely, unlike the y-only moments above
+    moments[:, 5] = z_rcarea / 20.0 * array_ns.sum(fxxx * dely, axis=1)
+    moments[:, 6] = -z_rcarea / 20.0 * array_ns.sum(fyyy * delx, axis=1)
+    moments[:, 7] = z_rcarea / 60.0 * array_ns.sum(fxxy * dely, axis=1)
+    moments[:, 8] = z_rcarea / 60.0 * array_ns.sum(fxyy * dely, axis=1)
     return moments
 
 
@@ -291,13 +337,15 @@ def compute_lsq_moments_hat(
     stencil_c9: data_alloc.NDArray,
     z_dist: data_alloc.NDArray,
 ) -> data_alloc.NDArray:
-    """Stencil cell moments translated to the center cell frame, (n_cells, 9, 5).
+    """Stencil cell moments translated to the center cell frame, (n_cells, 9, n_unknowns).
 
-    Port of f90 2217-2241: each stencil cell's own moments are shifted by the
+    Port of f90 2217-2241 for the quadratic set and of mo_intp_coeffs_lsq_bln.f90:1111-1170
+    for the cubic one; the unknown count is taken from 'lsq_moments', so passing the cubic
+    moments yields the cubic shifts. Each stencil cell's own moments are shifted by the
     torus-periodic distance vector z_dist from the center cell to that cell.
     """
     array_ns = data_alloc.array_namespace(lsq_moments)
-    moments = lsq_moments[stencil_c9]  # (n_cells, 9, 5)
+    moments = lsq_moments[stencil_c9]  # (n_cells, 9, n_unknowns)
     dx = z_dist[..., 0]
     dy = z_dist[..., 1]
     moments_hat = array_ns.empty(moments.shape, dtype=ta.wpfloat)
@@ -306,6 +354,31 @@ def compute_lsq_moments_hat(
     moments_hat[..., 2] = moments[..., 2] + 2.0 * moments[..., 0] * dx + dx**2
     moments_hat[..., 3] = moments[..., 3] + 2.0 * moments[..., 1] * dy + dy**2
     moments_hat[..., 4] = moments[..., 4] + moments[..., 0] * dy + moments[..., 1] * dx + dx * dy
+    if moments.shape[-1] == 5:
+        return moments_hat
+
+    moments_hat[..., 5] = (
+        moments[..., 5] + 3.0 * moments[..., 2] * dx + 3.0 * moments[..., 0] * dx**2 + dx**3
+    )
+    moments_hat[..., 6] = (
+        moments[..., 6] + 3.0 * moments[..., 3] * dy + 3.0 * moments[..., 1] * dy**2 + dy**3
+    )
+    moments_hat[..., 7] = (
+        moments[..., 7]
+        + moments[..., 2] * dy
+        + 2.0 * moments[..., 4] * dx
+        + 2.0 * moments[..., 0] * dx * dy
+        + moments[..., 1] * dx**2
+        + dx**2 * dy
+    )
+    moments_hat[..., 8] = (
+        moments[..., 8]
+        + moments[..., 3] * dx
+        + 2.0 * moments[..., 4] * dy
+        + 2.0 * moments[..., 1] * dx * dy
+        + moments[..., 0] * dy**2
+        + dx * dy**2
+    )
     return moments_hat
 
 
@@ -341,7 +414,7 @@ def _svd_pseudoinverse(
     return pseudoinv
 
 
-def _quadratic_moment_increments(
+def _moment_increments(
     *,
     stencil_c9: data_alloc.NDArray,
     lsq_moments: data_alloc.NDArray,
@@ -350,10 +423,12 @@ def _quadratic_moment_increments(
     domain_length: float,
     domain_height: float,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    """The stencil offsets and the unweighted design matrix of the quadratic fit.
+    """The stencil offsets and the unweighted design matrix of the fit.
 
     f90 2294-2308: A[js, ju] = w[js] * (moments_hat[js, ju] - moments[ju]); the returned
-    'diff' is that difference, without the row weights, which differ per candidate.
+    'diff' is that difference, without the row weights, which differ per candidate and per
+    reconstruction order. Works for either order: the unknown count comes from
+    'lsq_moments'.
     """
     array_ns = data_alloc.array_namespace(lsq_moments)
     z_dist = compute_torus_distance_vectors(
@@ -392,6 +467,45 @@ def _full_stencil_pseudoinverse_quadratic(
     )
 
 
+def compute_lsq_pseudoinverse_cubic(
+    *,
+    stencil_c9: data_alloc.NDArray,
+    lsq_moments: data_alloc.NDArray,
+    cell_center_x: data_alloc.NDArray,
+    cell_center_y: data_alloc.NDArray,
+    domain_length: float,
+    domain_height: float,
+) -> data_alloc.NDArray:
+    """The cubic reconstruction pseudoinverse, (n_cells, 9, 9).
+
+    'lsq_moments' must be the cubic set (compute_lsq_moments_torus(cubic=True)). Applied to
+    the unweighted increments z_b = avg(stencil cell) - avg(center), it yields the derivative
+    coefficients [x, y, x^2, y^2, xy, x^3, y^3, x^2 y, x y^2] of the conservative cubic fit.
+
+    ICON gives this set wgt_exp = 0, so unlike the quadratic one the rows are unweighted and
+    the 9x9 system is square: the "pseudo" inverse is the plain inverse where the stencil is
+    not degenerate. It is still computed through the SVD, as ICON does with llsq_svd.
+    """
+    if lsq_moments.shape[-1] != LSQ_DIM_UNK_CUBIC:
+        raise ValueError(
+            f"Invalid argument 'lsq_moments': the cubic reconstruction needs "
+            f"{LSQ_DIM_UNK_CUBIC} moments, got {lsq_moments.shape[-1]}; pass the moments "
+            "computed with 'cubic=True'."
+        )
+    array_ns = data_alloc.array_namespace(lsq_moments)
+    _, diff = _moment_increments(
+        stencil_c9=stencil_c9,
+        lsq_moments=lsq_moments,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    # wgt_exp = 0 means every row weight is 1, so the design matrix is 'diff' itself
+    weights = array_ns.ones(diff.shape[:2], dtype=ta.wpfloat)
+    return _svd_pseudoinverse(diff, weights)
+
+
 def compute_lsq_pseudoinverse_quadratic(
     *,
     stencil_c9: data_alloc.NDArray,
@@ -408,7 +522,7 @@ def compute_lsq_pseudoinverse_quadratic(
     This is the WENO scheme's full-stencil matrix without its l_weights_s correction, so
     the two cannot drift apart.
     """
-    z_dist, diff = _quadratic_moment_increments(
+    z_dist, diff = _moment_increments(
         stencil_c9=stencil_c9,
         lsq_moments=lsq_moments,
         cell_center_x=cell_center_x,
@@ -436,7 +550,7 @@ def compute_weno_pseudoinverse_quadratic(
     full-stencil pseudoinverse subjected to the l_weights_s correction.
     """
     array_ns = data_alloc.array_namespace(lsq_moments)
-    z_dist, diff = _quadratic_moment_increments(
+    z_dist, diff = _moment_increments(
         stencil_c9=stencil_c9,
         lsq_moments=lsq_moments,
         cell_center_x=cell_center_x,
