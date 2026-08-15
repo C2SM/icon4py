@@ -119,6 +119,14 @@ def _compute_ffsl_flux_area_list(
     dreg_patch2_4_lat_vmask = dreg_patch2_4_lat_vmask - astype(bf_cc_patch2_lat, vpfloat)
 
     # Which butterfly cell each outer patch lies in, as a slot into the E2C2E2C offset.
+    #
+    # The bf_cc_patch* inputs above pin the same mapping from the other side, which is a
+    # useful cross-check when wiring the rest of FFSL: they come from
+    # pos_on_tplane_c_edge(:,:,side,4:5) (mo_advection_geometry.f90:209), whose last axis is
+    # the shared vertex, so bf_cc_patch1[E2CDim(side)] is the vertex-0 butterfly centre on
+    # that side and bf_cc_patch2[E2CDim(side)] the vertex-1 one. In slot terms:
+    #   bf_cc_patch1[E2CDim(0)] -> slot 0    bf_cc_patch1[E2CDim(1)] -> slot 2
+    #   bf_cc_patch2[E2CDim(0)] -> slot 1    bf_cc_patch2[E2CDim(1)] -> slot 3
     # ICON stores the absolute cell index (butterfly_idx) and picks it with
     # MERGE(butterfly_idx(je,jb,1,p), butterfly_idx(je,jb,2,p), lvn_pos), f90 799-803. Since
     # the slot is 2 * side + vertex, and patch 1 is the vertex-0 wing while patch 2 is the

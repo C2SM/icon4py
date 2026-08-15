@@ -118,6 +118,20 @@ _MIURA3_WENO = tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO
 #: Bands wide enough to assert nothing, for rows whose rate has not been measured yet.
 _MEASURE_ONLY: Final = [-10.0, 10.0]
 
+
+def _measured(rate: float) -> list[float]:
+    """A band around a rate we measured rather than derived from an order argument.
+
+    Most rows here assert a formal order: miura is second order on a smooth profile, miura3
+    third, and a discontinuity converges at a degraded first order in L1 and not at all in
+    L-infinity. Two schemes have no such clean rate on the smooth profile -- WENO blending
+    and subcycling both change the effective order -- so their bands are centred on what
+    was measured, at the width the discontinuous rows already use. They are regression
+    guards, not statements about the schemes.
+    """
+    return [rate - _DEGRADED_TOL, rate + _DEGRADED_TOL]
+
+
 #: miura3 WENO blends 27 candidate reconstructions, each a pair of stencil launches over
 #: every cell, so one row of this study costs roughly two orders of magnitude more than the
 #: single-launch schemes. Measured here: the other three rows finish in minutes each, while
@@ -149,24 +163,24 @@ _MIURA3_WENO_SKIP: Final = (
             "linear_horizontal_advection_gaussian_2d",
             _MIURA_SUBCYCLED,
             _COARSE_TORUS_FAMILY,
-            _MEASURE_ONLY,
-            _MEASURE_ONLY,
+            _measured(2.21),
+            _measured(2.55),
             id="gaussian_2d-miura_subcycled",
         ),
         pytest.param(
             "linear_horizontal_advection_gaussian_2d",
             _MIURA3,
             _COARSE_TORUS_FAMILY,
-            _MEASURE_ONLY,
-            _MEASURE_ONLY,
+            [_THIRD_ORDER - _TOL, _THIRD_ORDER + _TOL],
+            [_THIRD_ORDER - _TOL, _THIRD_ORDER + _TOL],
             id="gaussian_2d-miura3",
         ),
         pytest.param(
             "linear_horizontal_advection_gaussian_2d",
             _MIURA_WENO,
             _COARSE_TORUS_FAMILY,
-            _MEASURE_ONLY,
-            _MEASURE_ONLY,
+            _measured(2.38),
+            _measured(1.31),
             id="gaussian_2d-miura_weno",
         ),
         pytest.param(
