@@ -115,7 +115,20 @@ _MIURA_SUBCYCLED = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_SUB
 _MIURA_WENO = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO
 _MIURA3_WENO = tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO
 
+#: Bands wide enough to assert nothing, for rows whose rate has not been measured yet.
 _MEASURE_ONLY: Final = [-10.0, 10.0]
+
+#: miura3 WENO blends 27 candidate reconstructions, each a pair of stencil launches over
+#: every cell, so one row of this study costs roughly two orders of magnitude more than the
+#: single-launch schemes. Measured here: the other three rows finish in minutes each, while
+#: this one was killed after 20 hours without producing a rate. The scheme is still covered
+#: end to end by the tracer-disc test in
+#: model/driver/tests/driver/integration_tests/test_tracer_advection_weno.py; this row is
+#: kept, and skipped, so the cost is recorded rather than silently dropped.
+_MIURA3_WENO_SKIP: Final = (
+    "miura3 WENO's 27-candidate loop makes a convergence study of it impractical: "
+    "one row ran for 20 hours without finishing. Deselect this mark to run it anyway."
+)
 
 
 @pytest.mark.level("validation")
@@ -163,6 +176,7 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
             _MEASURE_ONLY,
             _MEASURE_ONLY,
             id="gaussian_2d-miura3_weno",
+            marks=pytest.mark.skip(reason=_MIURA3_WENO_SKIP),
         ),
         pytest.param(
             "linear_horizontal_advection_circle_2d",
@@ -176,24 +190,24 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
             "linear_horizontal_advection_circle_2d",
             _MIURA_SUBCYCLED,
             _COARSE_TORUS_FAMILY,
-            _MEASURE_ONLY,
-            _MEASURE_ONLY,
+            [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
+            [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
             id="circle_2d-miura_subcycled",
         ),
         pytest.param(
             "linear_horizontal_advection_circle_2d",
             _MIURA3,
             _COARSE_TORUS_FAMILY,
-            _MEASURE_ONLY,
-            _MEASURE_ONLY,
+            [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
+            [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
             id="circle_2d-miura3",
         ),
         pytest.param(
             "linear_horizontal_advection_circle_2d",
             _MIURA_WENO,
             _COARSE_TORUS_FAMILY,
-            _MEASURE_ONLY,
-            _MEASURE_ONLY,
+            [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
+            [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
             id="circle_2d-miura_weno",
         ),
         pytest.param(
@@ -203,6 +217,7 @@ _MEASURE_ONLY: Final = [-10.0, 10.0]
             _MEASURE_ONLY,
             _MEASURE_ONLY,
             id="circle_2d-miura3_weno",
+            marks=pytest.mark.skip(reason=_MIURA3_WENO_SKIP),
         ),
     ],
 )
