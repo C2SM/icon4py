@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """The butterfly slot that compute_ffsl_flux_area_list emits for the two outer patches.
 
 ICON stores the absolute cell index and selects it with
@@ -38,6 +46,9 @@ _DREG_ARGS = tuple(
         (1, 1.0, 0, 1),
         # vn < 0: side = 1
         (1, -1.0, 2, 3),
+        # vn == 0 goes to side 0: Fortran's lvn_pos is p_vn >= 0, not > 0
+        # (mo_advection_geometry.f90:768)
+        (1, 0.0, 0, 1),
         # no flux area: no patch, whatever the sign
         (0, 1.0, _NO_PATCH, _NO_PATCH),
         (0, -1.0, _NO_PATCH, _NO_PATCH),
@@ -55,9 +66,7 @@ def test_patch_slots_follow_the_vn_sign(
     allocator = model_backends.get_allocator(backend)
 
     def edge_k(value: float = 0.0) -> gtx.Field:
-        return data_alloc.constant_field(
-            grid, value, dims.EdgeDim, dims.KDim, allocator=allocator
-        )
+        return data_alloc.constant_field(grid, value, dims.EdgeDim, dims.KDim, allocator=allocator)
 
     inputs = {
         "famask_int": data_alloc.constant_field(
@@ -65,9 +74,7 @@ def test_patch_slots_follow_the_vn_sign(
         ),
         "p_vn": edge_k(vn),
         **{
-            name: data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.E2CDim, allocator=allocator
-            )
+            name: data_alloc.zero_field(grid, dims.EdgeDim, dims.E2CDim, allocator=allocator)
             for name in (
                 "bf_cc_patch1_lon",
                 "bf_cc_patch1_lat",
