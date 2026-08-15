@@ -568,11 +568,13 @@ def _get_derived_connectivities(
         )
     )
     c2e2c2e2c = _construct_butterfly_cells(c2e2c_table)
+    e2c2e2c = _construct_edge_butterfly_cells(e2c_table, e2v_table, c2e2c_table, c2v_table)
 
     return {
         dims.C2E2CO: c2e2c0,
         dims.C2E2C2E: c2e2c2e,
         dims.C2E2C2E2C: c2e2c2e2c,
+        dims.E2C2E2C: e2c2e2c,
         dims.E2C2V: e2c2v,
         dims.E2C2E: e2c2e,
         dims.E2C2EO: e2c2e0,
@@ -725,6 +727,80 @@ def _construct_triangle_edges(
     array_ns = data_alloc.array_namespace(c2e2c)
     dummy_c2e = _patch_with_dummy_lastline(c2e)
     table = array_ns.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
+    return table
+
+
+def _construct_edge_butterfly_cells(
+    e2c: data_alloc.NDArray,
+    e2v: data_alloc.NDArray,
+    c2e2c: data_alloc.NDArray,
+    c2v: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    r"""Connectivity from an edge to the four cells flanking its two neighbor cells.
+
+    Port of ICON's 'butterfly_idx' (mo_model_domimp_setup.f90:353-443). For edge e0 below,
+    with neighbor cells c0 and c1 and bounding vertices v0 and v1, the four cells are the
+    two neighbors of c0 other than c1, and the two neighbors of c1 other than c0::
+
+                   v1
+                  /  \
+             b01 / c1 \ b11
+                /      \
+               ----e0----
+                \      /
+             b00 \ c0 / b10
+                  \  /
+                   v0
+
+    The slot order is the one ICON assigns, and it is geometric rather than an artefact of
+    loop order: slot = 2 * side + vertex, where 'side' says which of e2c the cell flanks and
+    'vertex' says which of e2v it shares. So slot 0 is (c0, v0), 1 is (c0, v1), 2 is
+    (c1, v0), 3 is (c1, v1). That is what makes it reproducible here and testable.
+
+    Slots with no such cell -- boundary edges, and any edge whose neighbor cell is missing --
+    hold GridFile.INVALID_INDEX. On a fully periodic torus all four always exist.
+
+    Args:
+        e2c: shape (n_edges, 2), edge to neighbor cells
+        e2v: shape (n_edges, 2), edge to bounding vertices
+        c2e2c: shape (n_cells, 3), cell to neighbor cells
+        c2v: shape (n_cells, 3), cell to vertices
+    Returns:
+        ndarray: shape (n_edges, 4), edge to the four flanking cells
+    """
+    array_ns = data_alloc.array_namespace(e2c)
+    invalid = gridfile.GridFile.INVALID_INDEX
+    n_edges = e2c.shape[0]
+    table = array_ns.full((n_edges, 4), invalid, dtype=gtx.int32)
+
+    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
+    dummy_c2v = _patch_with_dummy_lastline(c2v)
+
+    for side in range(2):
+        this_cell = e2c[:, side]
+        other_cell = e2c[:, 1 - side]
+        # the three neighbors of this_cell, with the one across the edge removed
+        candidates = dummy_c2e2c[this_cell]  # (n_edges, 3)
+        is_wing = (
+            (candidates != other_cell[:, array_ns.newaxis])
+            & (candidates != invalid)
+            & (this_cell != invalid)[:, array_ns.newaxis]
+        )
+        for vertex in range(2):
+            shared = e2v[:, vertex]
+            # a wing cell goes in this slot when it has the edge vertex among its own
+            wing_vertices = dummy_c2v[candidates]  # (n_edges, 3, 3)
+            has_vertex = array_ns.any(
+                wing_vertices == shared[:, array_ns.newaxis, array_ns.newaxis], axis=2
+            )
+            match = is_wing & has_vertex
+            # exactly one candidate matches on a well-formed triangular grid; argmax picks
+            # it, and the 'any' guard leaves the slot invalid where none does
+            picked = array_ns.argmax(match, axis=1)
+            found = array_ns.any(match, axis=1)
+            table[:, 2 * side + vertex] = array_ns.where(
+                found, candidates[array_ns.arange(n_edges), picked], invalid
+            )
     return table
 
 

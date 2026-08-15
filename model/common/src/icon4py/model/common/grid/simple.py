@@ -385,6 +385,49 @@ class SimpleGridData:
         )
 
     @functools.cached_property
+    def e2c2e2c_table(self):
+        """The four cells flanking an edge's two neighbor cells.
+
+        Slot order is ICON's, slot = 2 * side + vertex: which of e2c the cell flanks, and
+        which of e2v it shares. Generated with
+        'grid_manager._construct_edge_butterfly_cells' from the tables above and pinned by
+        test_e2c2e2c_table_matches_the_construction, so this literal and the algorithm
+        cannot drift apart the way the hand-written c2e2c2e2c table has.
+        """
+        return self.xp.asarray(
+            [
+                [3, 4, 14, 12],  # 0e
+                [15, 4, 2, 6],  # 1e
+                [0, 6, 17, 5],  # 2e
+                [4, 5, 12, 13],  # 3e
+                [16, 5, 0, 7],  # 4e
+                [15, 3, 1, 7],  # 5e
+                [5, 3, 13, 14],  # 6e
+                [17, 3, 1, 8],  # 7e
+                [16, 4, 2, 8],  # 8e
+                [2, 0, 9, 10],  # 9e
+                [3, 10, 8, 12],  # 10e
+                [6, 12, 5, 11],  # 11e
+                [0, 1, 10, 11],  # 12e
+                [4, 11, 6, 13],  # 13e
+                [3, 9, 7, 13],  # 14e
+                [1, 2, 11, 9],  # 15e
+                [5, 9, 7, 14],  # 16e
+                [4, 10, 8, 14],  # 17e
+                [8, 6, 15, 16],  # 18e
+                [9, 16, 14, 0],  # 19e
+                [12, 0, 11, 17],  # 20e
+                [6, 7, 16, 17],  # 21e
+                [10, 17, 12, 1],  # 22e
+                [9, 15, 13, 1],  # 23e
+                [7, 8, 17, 15],  # 24e
+                [11, 15, 13, 2],  # 25e
+                [10, 16, 14, 2],  # 26e
+            ],
+            dtype=gtx.int32,
+        )
+
+    @functools.cached_property
     def c2e2c2e2c_table(self):
         return self.xp.asarray(
             [
@@ -460,6 +503,7 @@ def simple_grid(
         dims.V2E: simple_grid_data.v2e_table,
         dims.C2E2C2E: simple_grid_data.c2e2c2e_table,
         dims.C2E2C2E2C: simple_grid_data.c2e2c2e2c_table,
+        dims.E2C2E2C: simple_grid_data.e2c2e2c_table,
     }
 
     connectivities = {
