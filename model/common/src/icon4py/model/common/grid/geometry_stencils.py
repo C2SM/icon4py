@@ -12,7 +12,7 @@ from gt4py import next as gtx
 from gt4py.next import sin, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C2V, E2V, EdgeDim
+from icon4py.model.common.dimension import E2C2V, E2V
 from icon4py.model.common.grid import utils as grid_utils
 from icon4py.model.common.math.coordinate_transformations import (
     geographical_to_cartesian_on_edges,
@@ -736,7 +736,7 @@ def compute_edge_area(  # noqa: PLR0917 [too-many-positional-arguments]
         primal_edge_length=primal_edge_length,
         dual_edge_length=dual_edge_length,
         out=area,
-        domain={EdgeDim: (horizontal_start, horizontal_end)},
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
