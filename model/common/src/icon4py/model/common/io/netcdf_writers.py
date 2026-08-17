@@ -236,11 +236,15 @@ class NETCDFWriter:
         """
         assert self._rank_blocks is not None
         block = self._rank_blocks[dim_name]
-        pad_value = (
-            np.nan
-            if np.issubdtype(data.dtype, np.floating)
-            else nc.default_fillvals[f"{data.dtype.kind}{data.dtype.itemsize}"]
-        )
+        if np.issubdtype(data.dtype, np.floating):
+            pad_value = np.nan
+        else:
+            # dtypes without a netCDF default fill value (e.g. bool) read unwritten
+            # entries as the dtype's zero; ``createVariable`` already rejects dtypes
+            # netCDF cannot store, so this branch only guards the padding itself
+            pad_value = nc.default_fillvals.get(
+                f"{data.dtype.kind}{data.dtype.itemsize}", data.dtype.type(0)
+            )
         padded = np.full((*data.shape[:-1], block.size), pad_value, dtype=data.dtype)
         padded[..., : block.count] = data
         return padded

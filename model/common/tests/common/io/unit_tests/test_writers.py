@@ -292,6 +292,58 @@ def test_zarr_writer_refuses_to_overwrite(test_path: pathlib.Path, random_name: 
         duplicate.initialize_dataset()
 
 
+class _ReplayingComm:
+    """Communicator stand-in replaying the root rank's broadcast to a non-root rank."""
+
+    def __init__(self, root_message: str | None) -> None:
+        self._root_message = root_message
+
+    def bcast(self, _obj: object, root: int = 0) -> str | None:
+        return self._root_message
+
+
+class _NonRootProcessProperties:
+    """Rank 1 of a two-rank run; ``comm`` replays what rank 0 broadcast."""
+
+    def __init__(self, comm: _ReplayingComm) -> None:
+        self.comm = comm
+
+    rank = 1
+    comm_name = ""
+    comm_size = 2
+
+    def is_single_rank(self) -> bool:
+        return False
+
+
+def test_zarr_writer_root_failure_reaches_non_root_ranks(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    """A store-creation failure on the root rank raises on the other ranks too.
+
+    Rank-block mode: the root creates the store while the other ranks wait for its
+    verdict. If the root fails (existing store, full disk), the verdict is a message
+    and every rank raises -- instead of the non-root ranks waiting forever for a
+    store that never appears (a hang, not an error). Here rank 1 receives the
+    broadcast the root would have sent after its ``zarr.open_group`` failed.
+    """
+    non_root = zarr_writers.ZarrWriter(
+        file_name=test_path / f"{random_name}.zarr",
+        vertical=_vertical_params(test_io_utils.simple_grid),
+        horizontal=test_io_utils.simple_grid.config.horizontal_config,
+        time_properties=writers.TimeProperties(
+            cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
+        ),
+        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        rank_blocks=_single_rank_block(10),
+        process_props=_NonRootProcessProperties(
+            _ReplayingComm("FileExistsError: store already exists")
+        ),
+    )
+    with pytest.raises(RuntimeError, match=r"failed on the root rank.*store already exists"):
+        non_root.initialize_dataset()
+
+
 def test_zarr_writer_rank_block_writes_padded_block(
     test_path: pathlib.Path, random_name: str
 ) -> None:

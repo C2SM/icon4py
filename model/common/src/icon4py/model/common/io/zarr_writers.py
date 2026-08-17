@@ -11,6 +11,7 @@ import functools
 import logging
 import pathlib
 import types
+import typing
 import warnings
 from typing import Self
 
@@ -44,8 +45,9 @@ class ZarrWriter:
     block of the horizontal axes (see ``distributed.RankBlock``). The horizontal axes
     are chunked so that no chunk (or shard) crosses a rank-block boundary, so
     concurrent writes of different ranks never touch the same chunk file. The root rank
-    performs all store-metadata operations (array creation, time-axis resizing); a
-    single barrier per append orders them before the data writes of all ranks.
+    performs all store-metadata operations (array creation, time-axis resizing); one
+    broadcast per append orders them before the data writes of all ranks and carries
+    a root-side failure to every rank (``_root_step``), so no rank hangs.
     ``global_index_<dim>`` coordinates map store positions to the undecomposed global
     grid; padding positions carry the fill value -1 (data padding reads as NaN for
     floating dtypes and as zero otherwise).
@@ -128,9 +130,34 @@ class ZarrWriter:
     def _is_root(self) -> bool:
         return not self._is_collective() or self._process_props.rank == 0
 
-    def _barrier(self) -> None:
-        if self._is_collective() and not self._process_props.is_single_rank():
-            self._process_props.comm.Barrier()
+    def _root_step(self, step: typing.Callable[[], None], what: str) -> None:
+        """Run a store-metadata step on the root rank, then release the other ranks.
+
+        Root-only store operations (creating the store, resizing arrays) may fail on
+        the root alone -- a full disk, missing permissions, an existing store. The
+        outcome is broadcast so every rank raises together instead of the non-root
+        ranks waiting forever in the barrier that orders those operations before
+        their data writes (compare ``IOMonitor._write_ugrid``). In serial mode the
+        step simply runs (and raises) on the calling process.
+        """
+        failure: Exception | None = None
+        if self._is_root():
+            try:
+                step()
+            except Exception as err:
+                failure = err
+        if not self._is_collective() or self._process_props.is_single_rank():
+            if failure is not None:
+                raise failure
+            return
+        # the broadcast doubles as the barrier: no rank passes before the root is done
+        message = self._process_props.comm.bcast(
+            None if failure is None else f"{type(failure).__name__}: {failure}", root=0
+        )
+        if message is not None:
+            raise RuntimeError(
+                f"{what} '{self._file_name}' failed on the root rank: {message}"
+            ) from failure
 
     def _horizontal_write_range(self, dim_name: str) -> slice:
         if self._rank_blocks is None:
@@ -159,70 +186,7 @@ class ZarrWriter:
         return array
 
     def initialize_dataset(self) -> None:
-        if self._is_root():
-            # mode "w-" refuses to overwrite an existing store; format 3 carries the
-            # dimension names of every array natively (``dimension_names``), which
-            # xarray reads like netCDF dimensions.
-            group = zarr.open_group(self._file_name, mode="w-", zarr_format=3)
-            log.info(f"Creating store {self._file_name}")
-            group.attrs.update({k: str(v) for (k, v) in self.attrs.items()})
-
-            # format 3 requires a fill value on every array (defaulting to the dtype's
-            # zero); unlike a format-2 fill value it is not decoded as a missing-value
-            # marker by xarray, so real coordinate values (e.g. level index 0) are safe
-            times = group.create_array(
-                writers.TIME, shape=(0,), chunks=(1,), dtype="f8", dimension_names=[writers.TIME]
-            )
-            times.attrs.update(writers.time_attributes(self._time_properties))
-
-            levels = group.create_array(
-                writers.MODEL_LEVEL,
-                shape=(self.num_levels,),
-                dtype=np.int32,
-                dimension_names=[writers.MODEL_LEVEL],
-            )
-            levels[:] = np.arange(self.num_levels, dtype=np.int32)
-            levels.attrs.update(metadata.LEVEL_ATTRIBUTES)
-
-            half_levels = group.create_array(
-                writers.MODEL_HALF_LEVEL,
-                shape=(self.num_levels + 1,),
-                dtype=np.int32,
-                dimension_names=[writers.MODEL_HALF_LEVEL],
-            )
-            half_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
-            half_levels.attrs.update(metadata.HALF_LEVEL_ATTRIBUTES)
-
-            heights = group.create_array(
-                "height",
-                shape=(self.num_levels + 1,),
-                dtype=np.float64,
-                dimension_names=[writers.MODEL_HALF_LEVEL],
-            )
-            heights[:] = data_alloc.as_numpy(self._vertical_params.interface_physical_height)
-            heights.attrs.update(metadata.HEIGHT_ATTRIBUTES)
-
-            if self._rank_blocks is not None:
-                for dim_name, block in self._rank_blocks.items():
-                    global_index = group.create_array(
-                        f"{writers.GLOBAL_INDEX_PREFIX}_{dim_name}",
-                        shape=(block.padded_size,),
-                        chunks=(self._horizontal_chunk(dim_name),),
-                        shards=self._horizontal_shards(()),
-                        dtype=np.int64,
-                        fill_value=-1,
-                        dimension_names=[dim_name],
-                    )
-                    global_index.attrs.update(
-                        units="1",
-                        long_name=(
-                            f"position of each {dim_name} entry in the undecomposed global "
-                            f"grid of {block.global_size} entries (-1 marks padding)"
-                        ),
-                    )
-            self._group = group
-
-        self._barrier()
+        self._root_step(self._create_store, "Creating the store")
         if self._is_collective():
             if not self._is_root():
                 self._group = zarr.open_group(self._file_name, mode="r+")
@@ -232,6 +196,70 @@ class ZarrWriter:
                 self._data_array(f"{writers.GLOBAL_INDEX_PREFIX}_{dim_name}")[index_range] = (
                     block.global_index
                 )
+
+    def _create_store(self) -> None:
+        """Create the store with its coordinate arrays and attributes (root rank only)."""
+        # mode "w-" refuses to overwrite an existing store; format 3 carries the
+        # dimension names of every array natively (``dimension_names``), which
+        # xarray reads like netCDF dimensions.
+        group = zarr.open_group(self._file_name, mode="w-", zarr_format=3)
+        log.info(f"Creating store {self._file_name}")
+        group.attrs.update({k: str(v) for (k, v) in self.attrs.items()})
+
+        # format 3 requires a fill value on every array (defaulting to the dtype's
+        # zero); unlike a format-2 fill value it is not decoded as a missing-value
+        # marker by xarray, so real coordinate values (e.g. level index 0) are safe
+        times = group.create_array(
+            writers.TIME, shape=(0,), chunks=(1,), dtype="f8", dimension_names=[writers.TIME]
+        )
+        times.attrs.update(writers.time_attributes(self._time_properties))
+
+        levels = group.create_array(
+            writers.MODEL_LEVEL,
+            shape=(self.num_levels,),
+            dtype=np.int32,
+            dimension_names=[writers.MODEL_LEVEL],
+        )
+        levels[:] = np.arange(self.num_levels, dtype=np.int32)
+        levels.attrs.update(metadata.LEVEL_ATTRIBUTES)
+
+        half_levels = group.create_array(
+            writers.MODEL_HALF_LEVEL,
+            shape=(self.num_levels + 1,),
+            dtype=np.int32,
+            dimension_names=[writers.MODEL_HALF_LEVEL],
+        )
+        half_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
+        half_levels.attrs.update(metadata.HALF_LEVEL_ATTRIBUTES)
+
+        heights = group.create_array(
+            "height",
+            shape=(self.num_levels + 1,),
+            dtype=np.float64,
+            dimension_names=[writers.MODEL_HALF_LEVEL],
+        )
+        heights[:] = data_alloc.as_numpy(self._vertical_params.interface_physical_height)
+        heights.attrs.update(metadata.HEIGHT_ATTRIBUTES)
+
+        if self._rank_blocks is not None:
+            for dim_name, block in self._rank_blocks.items():
+                global_index = group.create_array(
+                    f"{writers.GLOBAL_INDEX_PREFIX}_{dim_name}",
+                    shape=(block.padded_size,),
+                    chunks=(self._horizontal_chunk(dim_name),),
+                    shards=self._horizontal_shards(()),
+                    dtype=np.int64,
+                    fill_value=-1,
+                    dimension_names=[dim_name],
+                )
+                global_index.attrs.update(
+                    units="1",
+                    long_name=(
+                        f"position of each {dim_name} entry in the undecomposed global "
+                        f"grid of {block.global_size} entries (-1 marks padding)"
+                    ),
+                )
+        self._group = group
 
     def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None:
         """
@@ -250,7 +278,9 @@ class ZarrWriter:
             state_to_append, self._horizontal_sizes
         )
         time_pos = self._append_count
-        if self._is_root():
+
+        def _extend_time_axis() -> None:
+            assert self._group is not None
             times = self._data_array(writers.TIME)
             times.resize((time_pos + 1,))
             times[time_pos] = cf_utils.date2num(
@@ -263,7 +293,8 @@ class ZarrWriter:
                     self._create_variable(var_name, canonical_slice)
                 variable = self._data_array(var_name)
                 variable.resize((time_pos + 1, *variable.shape[1:]))
-        self._barrier()
+
+        self._root_step(_extend_time_axis, "Extending the time axis of")
         for var_name, canonical_slice in canonical_slices.items():
             variable = self._data_array(var_name)
             horizontal_range = self._horizontal_write_range(str(canonical_slice.dims[-1]))
