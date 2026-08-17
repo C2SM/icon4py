@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Parallel output tests for the standalone driver.
+"""Parallel output tests for the driver.
 
 A single-rank run provides the reference output; multi-rank runs must reproduce it
 (within the multi-rank comparison tolerances) through every parallel output path:
@@ -27,12 +27,7 @@ import xarray as xr
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.io import io as common_io, netcdf_writers, writers
-from icon4py.model.standalone_driver import (
-    config as driver_config,
-    driver_io,
-    driver_utils,
-    standalone_driver,
-)
+from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
@@ -97,13 +92,13 @@ def _run_driver_with_output(
         allocator=allocator,
         process_props=process_props,
     )
-    _, driver = standalone_driver.run_driver(
+    _, icon4py_driver = driver.run_driver(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,
         backend=backend,
     )
-    return driver.config.driver.output_path
+    return icon4py_driver.config.driver.output_path
 
 
 def _open_single_output(

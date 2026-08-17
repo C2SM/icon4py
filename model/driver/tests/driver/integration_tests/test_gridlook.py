@@ -23,7 +23,7 @@ import pytest
 import zarr
 
 from icon4py.model.common.io import writers
-from icon4py.model.standalone_driver import gridlook
+from icon4py.model.driver import gridlook
 from icon4py.model.testing import definitions, grid_utils, test_utils
 
 

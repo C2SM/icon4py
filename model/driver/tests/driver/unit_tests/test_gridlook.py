@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Unit tests for ``standalone_driver.gridlook`` (data-free)."""
+"""Unit tests for ``driver.gridlook`` (data-free)."""
 
 import functools
 import http.server
@@ -22,7 +22,7 @@ import pytest
 import zarr
 
 from icon4py.model.common.io import cf_utils, writers
-from icon4py.model.standalone_driver import gridlook
+from icon4py.model.driver import gridlook
 from icon4py.model.testing import test_utils
 
 

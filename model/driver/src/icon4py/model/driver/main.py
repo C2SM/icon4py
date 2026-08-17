@@ -19,7 +19,7 @@ from icon4py.model.common.decomposition import (
     mpi_decomposition as mpi_decomp,
 )
 from icon4py.model.common.io import io as common_io
-from icon4py.model.standalone_driver import config as driver_config, driver_utils, standalone_driver
+from icon4py.model.driver import config as driver_config, driver, driver_utils
 
 
 log = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ def main(
         process_props=process_props,
     )
 
-    standalone_driver.run_driver(
+    driver.run_driver(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,
