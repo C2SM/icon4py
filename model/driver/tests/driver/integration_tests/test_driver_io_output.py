@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Integration test for single-node output from the standalone driver.
+"""Integration test for single-node output from the driver.
 
 Runs the Jablonowski-Williamson testcase for one step with output enabled and asserts
 that valid CF/UGRID NetCDF files (or zarr stores) are produced. It exercises the full
@@ -24,12 +24,7 @@ import xarray as xr
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.io import io as common_io
-from icon4py.model.standalone_driver import (
-    config as driver_config,
-    driver_io,
-    driver_utils,
-    standalone_driver,
-)
+from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 
 from ..fixtures import *  # noqa: F403
@@ -55,7 +50,7 @@ def _open_output(path: pathlib.Path, output_backend: common_io.OutputBackend) ->
 @pytest.mark.parametrize(
     "output_backend", [common_io.OutputBackend.NETCDF, common_io.OutputBackend.ZARR]
 )
-def test_standalone_driver_writes_output(
+def test_driver_writes_output(
     experiment_description: test_defs.ExperimentDescription,
     output_backend: common_io.OutputBackend,
     *,
@@ -87,7 +82,7 @@ def test_standalone_driver_writes_output(
         allocator=allocator,
         process_props=process_props,
     )
-    standalone_driver.run_driver(
+    driver.run_driver(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,

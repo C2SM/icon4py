@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Unit tests for ``standalone_driver.config`` (data-free)."""
+"""Unit tests for ``driver.config`` (data-free)."""
 
 import dataclasses
 import datetime
@@ -18,7 +18,7 @@ import pytest
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common.config import config_io
 from icon4py.model.common.io import io as common_io, netcdf_writers
-from icon4py.model.standalone_driver import config as driver_config, driver_states
+from icon4py.model.driver import config as driver_config, driver_states
 
 
 def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
