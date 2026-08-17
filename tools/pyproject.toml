@@ -27,7 +27,7 @@ dependencies = [
   # external dependencies
   'clang-format>=22.1.0',
   'cffi>=1.5',
-  'gt4py==1.2.0',
+  'gt4py==1.2.1',
   "numpy>=1.23.3",
   'packaging>=20.0',
   'click>=8.1.7',
