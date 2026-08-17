@@ -1,0 +1,491 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+import pathlib
+from collections.abc import Callable
+from typing import Final
+
+import gt4py.next.typing as gtx_typing
+import numpy as np
+import pytest
+from scipy.stats import linregress
+
+from icon4py.model.atmosphere.tracer_advection import tracer_advection
+from icon4py.model.common import model_backends, time
+from icon4py.model.common.config import config_io
+from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.grid import geometry_attributes as geometry_meta, gridfile
+from icon4py.model.common.initial_condition.analytical import (
+    linear_horizontal_advection,
+    linear_vertical_advection,
+)
+from icon4py.model.common.states import factory as states_factory
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.driver import config as driver_config, driver, driver_utils
+from icon4py.model.testing import config as test_config
+
+from ..fixtures import *  # noqa: F403
+
+
+_ZERO_ORDER = 0.0
+_DEGRADED_FIRST_ORDER = 0.5
+_SECOND_ORDER = 2.0
+_THIRD_ORDER = 3.0
+_TOL = 0.1
+_DEGRADED_TOL = 0.5
+_STD_TOL = 0.4
+
+#: the vertical study only needs a horizontal grid to exist, so it takes the smallest one
+_MINIMAL_TORUS_ROWS: Final = 6
+_MINIMAL_TORUS_COLS: Final = 4
+_MINIMAL_TORUS_EDGE_LENGTH: Final = 100.0
+_REFINEMENT_FACTORS: Final = tuple(2**exponent for exponent in range(3))
+
+#: (n_rows, n_cols, edge_length) of the coarsest member; the refinement factors bisect it.
+type TorusFamily = tuple[int, int, float]
+
+#: The family the miura ranges below were measured on. Its coarsest member has to resolve the
+#: profile: the circle_2d radius is (domain_length + domain_height) / 8, which is 38 cells
+#: across here, and that is what allows the tight _TOL.
+_TORUS_FAMILY: Final[TorusFamily] = (150, 174, 100.0)
+
+#: The same domain to within a percent, one bisection coarser, for the schemes that cost
+#: several times a miura step. The disc is still 19 cells across at the coarsest and the fit
+#: still spans a 4x refinement range, but the finest member is 214,016 cells rather than
+#: 835,200. 'n_rows' has to stay even at every level, which is why this is not 75 x 87.
+_COARSE_TORUS_FAMILY: Final[TorusFamily] = (76, 88, 200.0)
+
+
+def _compute_relative_errors(
+    simulated_values: data_alloc.NDArray,
+    reference: data_alloc.NDArray,
+) -> tuple[float, float]:
+    # compute the errors relative to the reference
+    # note: the following lines take the errors of all the levels, which is fine
+    array_ns = data_alloc.array_namespace(simulated_values)
+    error_l1 = array_ns.sum(array_ns.abs(simulated_values - reference)) / array_ns.sum(
+        array_ns.abs(reference)
+    )
+    error_linf = array_ns.max(array_ns.abs(simulated_values - reference)) / array_ns.max(
+        array_ns.abs(reference)
+    )
+    return error_l1, error_linf
+
+
+def _check_convergence(
+    *,
+    l1_acceptable_range: tuple[float, float],
+    linf_acceptable_range: tuple[float, float],
+    error_l1: list[float] | np.ndarray,
+    error_linf: list[float] | np.ndarray,
+    grid_spacing: list[float] | np.ndarray,
+) -> None:
+    linreg_l1 = linregress(np.log(grid_spacing), np.log(error_l1))
+    p_l1 = linreg_l1.slope
+    linreg_linf = linregress(np.log(grid_spacing), np.log(error_linf))
+    p_linf = linreg_linf.slope
+    # the measured rates are what the study is after, so report them either way
+    print(
+        f"measured convergence: L1 {p_l1:.4f} (stderr {linreg_l1.stderr:.4f}), "
+        f"Linf {p_linf:.4f} (stderr {linreg_linf.stderr:.4f})\n"
+        f"  errors L1:   {[float(e) for e in error_l1]}\n"
+        f"  errors Linf: {[float(e) for e in error_linf]}\n"
+        f"  grid spacing: {[float(h) for h in grid_spacing]}"
+    )
+    # check that the measured convergence rates are within the acceptable ranges
+    assert l1_acceptable_range[0] <= p_l1 <= l1_acceptable_range[1], (
+        f"L1 rate {p_l1:.4f} outside {l1_acceptable_range}"
+    )
+    assert linf_acceptable_range[0] <= p_linf <= linf_acceptable_range[1], (
+        f"Linf rate {p_linf:.4f} outside {linf_acceptable_range}"
+    )
+    # check that the standard errors are within the acceptable tolerance
+    assert linreg_l1.stderr <= _STD_TOL
+    assert linreg_linf.stderr <= _STD_TOL
+
+
+_MIURA = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER
+_MIURA3 = tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER
+_MIURA_SUBCYCLED = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_SUBCYCLED
+_MIURA_WENO = tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO
+_MIURA3_WENO = tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO
+
+#: Bands wide enough to assert nothing, for rows whose rate has not been measured yet.
+_MEASURE_ONLY: Final = [-10.0, 10.0]
+
+
+def _measured(rate: float) -> list[float]:
+    """A band around a rate we measured rather than derived from an order argument.
+
+    Most rows here assert a formal order: miura is second order on a smooth profile, miura3
+    third, and a discontinuity converges at a degraded first order in L1 and not at all in
+    L-infinity. Two schemes have no such clean rate on the smooth profile -- WENO blending
+    and subcycling both change the effective order -- so their bands are centred on what
+    was measured, at the width the discontinuous rows already use. They are regression
+    guards, not statements about the schemes.
+    """
+    return [rate - _DEGRADED_TOL, rate + _DEGRADED_TOL]
+
+
+#: miura3 WENO blends 27 candidate reconstructions, each a pair of stencil launches over
+#: every cell, so one row of this study costs roughly two orders of magnitude more than the
+#: single-launch schemes. Measured here: the other three rows finish in minutes each, while
+#: this one was killed after 20 hours without producing a rate. The scheme is still covered
+#: end to end by the tracer-disc test in
+#: model/driver/tests/driver/integration_tests/test_tracer_advection_weno.py; this row is
+#: kept, and skipped, so the cost is recorded rather than silently dropped.
+_MIURA3_WENO_SKIP: Final = (
+    "miura3 WENO's 27-candidate loop makes a convergence study of it impractical: "
+    "one row ran for 20 hours without finishing. Deselect this mark to run it anyway."
+)
+
+
+@pytest.mark.level("validation")
+@pytest.mark.embedded_remap_error
+@pytest.mark.parametrize(
+    "experiment_case, horizontal_advection_type, torus_family, "
+    "l1_acceptable_range, linf_acceptable_range",
+    [
+        pytest.param(
+            "linear_horizontal_advection_gaussian_2d",
+            _MIURA,
+            _TORUS_FAMILY,
+            [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
+            [_SECOND_ORDER - _TOL, _SECOND_ORDER + _TOL],
+            id="gaussian_2d-miura",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_gaussian_2d",
+            _MIURA_SUBCYCLED,
+            _COARSE_TORUS_FAMILY,
+            _measured(2.21),
+            _measured(2.55),
+            id="gaussian_2d-miura_subcycled",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_gaussian_2d",
+            _MIURA3,
+            _COARSE_TORUS_FAMILY,
+            [_THIRD_ORDER - _TOL, _THIRD_ORDER + _TOL],
+            [_THIRD_ORDER - _TOL, _THIRD_ORDER + _TOL],
+            id="gaussian_2d-miura3",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_gaussian_2d",
+            _MIURA_WENO,
+            _COARSE_TORUS_FAMILY,
+            _measured(2.38),
+            _measured(1.31),
+            id="gaussian_2d-miura_weno",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_gaussian_2d",
+            _MIURA3_WENO,
+            _COARSE_TORUS_FAMILY,
+            _MEASURE_ONLY,
+            _MEASURE_ONLY,
+            id="gaussian_2d-miura3_weno",
+            marks=pytest.mark.skip(reason=_MIURA3_WENO_SKIP),
+        ),
+        pytest.param(
+            "linear_horizontal_advection_circle_2d",
+            _MIURA,
+            _TORUS_FAMILY,
+            [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
+            [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
+            id="circle_2d-miura",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_circle_2d",
+            _MIURA_SUBCYCLED,
+            _COARSE_TORUS_FAMILY,
+            [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
+            [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
+            id="circle_2d-miura_subcycled",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_circle_2d",
+            _MIURA3,
+            _COARSE_TORUS_FAMILY,
+            [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
+            [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
+            id="circle_2d-miura3",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_circle_2d",
+            _MIURA_WENO,
+            _COARSE_TORUS_FAMILY,
+            [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
+            [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
+            id="circle_2d-miura_weno",
+        ),
+        pytest.param(
+            "linear_horizontal_advection_circle_2d",
+            _MIURA3_WENO,
+            _COARSE_TORUS_FAMILY,
+            _MEASURE_ONLY,
+            _MEASURE_ONLY,
+            id="circle_2d-miura3_weno",
+            marks=pytest.mark.skip(reason=_MIURA3_WENO_SKIP),
+        ),
+    ],
+)
+def test_horizontal_advection_convergence(
+    *,
+    experiment_case: str,
+    horizontal_advection_type: tracer_advection.HorizontalAdvectionType,
+    torus_family: TorusFamily,
+    l1_acceptable_range: tuple[float, float],
+    linf_acceptable_range: tuple[float, float],
+    tmp_path: pathlib.Path,
+    generate_torus_grid: Callable[..., pathlib.Path],
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+) -> None:
+    allocator = model_backends.get_allocator(backend)
+
+    base_rows, base_cols, base_edge_length = torus_family
+    grid_file_paths = [
+        generate_torus_grid(
+            n_rows=base_rows * factor,
+            n_cols=base_cols * factor,
+            edge_length=base_edge_length / factor,
+        )
+        for factor in _REFINEMENT_FACTORS
+    ]
+
+    error_l1: list[float] = []
+    error_linf: list[float] = []
+    mean_edge_length: list[float] = []
+
+    config_path = test_config.EXPERIMENT_CONFIG_PATH / f"{experiment_case}.yaml"
+
+    experiment_config = config_io.read_yaml_str(
+        config_path.read_text(), driver_config.ExperimentConfig
+    ).with_overrides(
+        driver={"output_path": tmp_path / "ci_driver_output"},
+        tracer_advection={"horizontal_advection_type": horizontal_advection_type},
+    )
+
+    grid_managers = [
+        driver_utils.create_grid_manager(
+            grid_file_path=grid_path,
+            vertical_grid_config=experiment_config.vertical_grid,
+            allocator=allocator,
+            process_props=process_props,
+        )
+        for _, grid_path in enumerate(grid_file_paths)
+    ]
+
+    # compute the time step based on the CFL condition and the maximum velocity on the finest grid
+    domain_length = grid_managers[-1].grid.grid_params.domain_length
+    domain_height = grid_managers[-1].grid.grid_params.domain_height
+    assert (
+        type(experiment_config.initial_condition.config)
+        is linear_horizontal_advection.LinearHorizontalAdvectionConfig
+    )
+    assert domain_length is not None
+    assert domain_height is not None
+    vel_max = linear_horizontal_advection.compute_max_velocity(
+        velocity_field=experiment_config.initial_condition.config.velocity_field,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    match experiment_config.driver.end_of_simulation:
+        case time.RelativeTime() as relative:
+            integration_time = relative.total_seconds()
+        case time.AbsoluteTime() as absolute:
+            integration_time = (
+                absolute - experiment_config.driver.start_of_simulation
+            ).total_seconds()
+        case _:
+            raise ValueError(
+                f"end_of_simulation {experiment_config.driver.end_of_simulation} must be specified as a RelativeTime or AbsoluteTime for this test"
+            )
+    dtime = min(
+        experiment_config.initial_condition.config.cfl_number
+        * grid_managers[-1].geometry_fields[gridfile.GeometryName.EDGE_LENGTH].asnumpy().mean()
+        / vel_max,
+        integration_time,
+    )
+    # recompute the integration time to be a multiple of dtime, so that the model stops at a time that is consistent with the CFL condition
+    num_steps = int(integration_time / dtime)
+    experiment_config = experiment_config.with_overrides(
+        driver={
+            "dtime": time.RelativeTime(seconds=dtime),
+            "end_of_simulation": time.NumTimeSteps(num_steps),
+        },
+    )
+
+    for i in range(len(grid_file_paths)):
+        ds, icon4py_driver = driver.run_driver(
+            config=experiment_config,
+            grid_manager=grid_managers[i],
+            process_props=process_props,
+            backend=backend,
+        )
+        simulated_tracer = ds.tracers.current.qv.ndarray
+
+        assert (
+            type(experiment_config.initial_condition.config)
+            is linear_horizontal_advection.LinearHorizontalAdvectionConfig
+        )
+        reference_tracer = linear_horizontal_advection.construct_reference_tracer(
+            config=experiment_config.initial_condition.config,
+            grid=grid_managers[i].grid,
+            static_fields=icon4py_driver.static_field_factories,
+            integration_time=num_steps * experiment_config.driver.dtime.total_seconds(),
+            num_levels=experiment_config.vertical_grid.num_levels,
+        )
+
+        current_error_l1, current_error_linf = _compute_relative_errors(
+            simulated_tracer, reference_tracer
+        )
+        error_l1.append(current_error_l1)
+        error_linf.append(current_error_linf)
+        mean_edge_length.append(
+            icon4py_driver.static_field_factories.geometry.get(
+                geometry_meta.MEAN_EDGE_LENGTH, states_factory.RetrievalType.SCALAR
+            )
+        )
+
+    _check_convergence(
+        l1_acceptable_range=l1_acceptable_range,
+        linf_acceptable_range=linf_acceptable_range,
+        error_l1=error_l1,
+        error_linf=error_linf,
+        grid_spacing=mean_edge_length,
+    )
+
+
+@pytest.mark.level("validation")
+@pytest.mark.embedded_remap_error
+@pytest.mark.parametrize(
+    "experiment_case, num_levels, l1_acceptable_range, linf_acceptable_range",
+    [
+        (
+            "linear_vertical_advection_gaussian",
+            [400 * 2**i for i in range(3)],
+            [_THIRD_ORDER - _TOL, _THIRD_ORDER + _TOL],
+            [_THIRD_ORDER - _TOL, _THIRD_ORDER + _TOL],
+        ),
+        (
+            "linear_vertical_advection_box",
+            [400 * 2**i for i in range(3)],
+            [_DEGRADED_FIRST_ORDER - _DEGRADED_TOL, _DEGRADED_FIRST_ORDER + _DEGRADED_TOL],
+            [_ZERO_ORDER - _TOL, _ZERO_ORDER + _TOL],
+        ),
+    ],
+)
+def test_vertical_advection_convergence(
+    *,
+    experiment_case: str,
+    num_levels: tuple[int, ...],
+    l1_acceptable_range: tuple[float, float],
+    linf_acceptable_range: tuple[float, float],
+    tmp_path: pathlib.Path,
+    generate_torus_grid: Callable[..., pathlib.Path],
+    process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend,
+) -> None:
+    allocator = model_backends.get_allocator(backend)
+
+    grid_path = generate_torus_grid(
+        n_rows=_MINIMAL_TORUS_ROWS,
+        n_cols=_MINIMAL_TORUS_COLS,
+        edge_length=_MINIMAL_TORUS_EDGE_LENGTH,
+    )
+    error_l1: list[float] = []
+    error_linf: list[float] = []
+
+    config_path = test_config.EXPERIMENT_CONFIG_PATH / f"{experiment_case}.yaml"
+
+    experiment_config = config_io.read_yaml_str(
+        config_path.read_text(), driver_config.ExperimentConfig
+    ).with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
+
+    assert (
+        type(experiment_config.initial_condition.config)
+        is linear_vertical_advection.LinearVerticalAdvectionConfig
+    )
+    w_max = linear_vertical_advection.compute_max_velocity(
+        velocity_field=experiment_config.initial_condition.config.velocity_field,
+        model_top_height=experiment_config.vertical_grid.model_top_height,
+    )
+    match experiment_config.driver.end_of_simulation:
+        case time.RelativeTime() as relative:
+            integration_time = relative.total_seconds()
+        case time.AbsoluteTime() as absolute:
+            integration_time = (
+                absolute - experiment_config.driver.start_of_simulation
+            ).total_seconds()
+        case _:
+            raise ValueError(
+                f"end_of_simulation {experiment_config.driver.end_of_simulation} must be specified as a RelativeTime or AbsoluteTime for this test"
+            )
+    dtime = min(
+        experiment_config.initial_condition.config.cfl_number
+        * experiment_config.vertical_grid.model_top_height
+        / num_levels[-1]
+        / w_max,
+        integration_time,
+    )
+    num_steps = int(integration_time / dtime)
+
+    for num_lev in num_levels:
+        experiment_config_local = experiment_config.with_overrides(
+            driver={
+                "dtime": time.RelativeTime(seconds=dtime),
+                "end_of_simulation": time.NumTimeSteps(num_steps),
+            },
+            vertical_grid={"num_levels": num_lev},
+        )
+
+        grid_manager = driver_utils.create_grid_manager(
+            grid_file_path=grid_path,
+            vertical_grid_config=experiment_config_local.vertical_grid,
+            allocator=allocator,
+            process_props=process_props,
+        )
+
+        ds, icon4py_driver = driver.run_driver(
+            config=experiment_config_local,
+            grid_manager=grid_manager,
+            process_props=process_props,
+            backend=backend,
+        )
+        simulated_tracer = ds.tracers.current.qv.ndarray
+
+        assert (
+            type(experiment_config_local.initial_condition.config)
+            is linear_vertical_advection.LinearVerticalAdvectionConfig
+        )
+        reference_tracer = linear_vertical_advection.construct_reference_tracer(
+            config=experiment_config_local.initial_condition.config,
+            metrics=icon4py_driver.static_field_factories.metrics,
+            vertical_config=experiment_config_local.vertical_grid,
+            integration_time=num_steps * experiment_config_local.driver.dtime.total_seconds(),
+        )
+
+        current_error_l1, current_error_linf = _compute_relative_errors(
+            simulated_tracer, reference_tracer
+        )
+        error_l1.append(current_error_l1)
+        error_linf.append(current_error_linf)
+
+    mean_thickness = experiment_config.vertical_grid.model_top_height / np.array(
+        num_levels, dtype=float
+    )
+
+    _check_convergence(
+        l1_acceptable_range=l1_acceptable_range,
+        linf_acceptable_range=linf_acceptable_range,
+        error_l1=error_l1,
+        error_linf=error_linf,
+        grid_spacing=mean_thickness,
+    )

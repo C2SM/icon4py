@@ -384,14 +384,26 @@ def read_experiment_config_from_fortran(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
 
-    nonhydro_cfg = solve_nh.NonHydrostaticConfig.from_fortran_dict(
-        atm_dict,
-        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
+    do_dynamics = fortran_config.list_to_value(atm_dict["run_nml"]["ldynamics"])
+    # With dynamics off, tracer advection runs from the IC-prescribed mass fluxes;
+    # building the dycore/diffusion config from the namelists would silently run
+    # dynamics over the frozen prescription.
+    nonhydro_cfg = (
+        solve_nh.NonHydrostaticConfig.from_fortran_dict(
+            atm_dict,
+            max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
+        )
+        if do_dynamics
+        else None
     )
 
-    diffusion_cfg = diffusion.DiffusionConfig.from_fortran_dict(
-        atm_dict,
-        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
+    diffusion_cfg = (
+        diffusion.DiffusionConfig.from_fortran_dict(
+            atm_dict,
+            max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
+        )
+        if do_dynamics
+        else None
     )
 
     do_tracer_advection = not (

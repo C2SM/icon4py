@@ -42,6 +42,7 @@ from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.states import adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
@@ -60,8 +61,18 @@ class HorizontalAdvectionType(Enum):
 
     #: no horizontal tracer advection
     NO_ADVECTION = 0
+    #: 1st order upwind
+    UPWIND_1ST_ORDER = 1
     #: 2nd order MIURA with linear reconstruction
     LINEAR_2ND_ORDER = 2
+    #: 3rd order MIURA with quadratic reconstruction
+    QUADRATIC_3RD_ORDER = 3
+    #: 2nd order MIURA with linear reconstruction, subcycled within the advection step
+    LINEAR_2ND_ORDER_SUBCYCLED = 20
+    #: 2nd order MIURA with linear reconstruction and WENO candidate blending
+    LINEAR_2ND_ORDER_WENO = 102
+    #: 3rd order MIURA with quadratic reconstruction and WENO candidate blending
+    QUADRATIC_3RD_ORDER_WENO = 103
 
 
 @config_io.register_enum
@@ -72,6 +83,8 @@ class HorizontalAdvectionLimiter(Enum):
 
     #: no horizontal limiter
     NO_LIMITER = 0
+    #: monotonic (flux-corrected transport) horizontal limiter
+    MONOTONIC = 3
     #: positive definite horizontal limiter
     POSITIVE_DEFINITE = 4
 
@@ -112,6 +125,18 @@ class AdvectionConfig:
     horizontal_advection_limiter: HorizontalAdvectionLimiter
     vertical_advection_type: VerticalAdvectionType
     vertical_advection_limiter: VerticalAdvectionLimiter
+    #: how far the monotonic limiter may over-/undershoot the local range, ICON's beta_fct;
+    #: the namelist restricts it to [1, 2)
+    monotonic_limiter_boost_factor: float = 1.005
+    #: substeps per advection step for the subcycled schemes, ICON's nadv_substeps
+    n_advection_substeps: int = 3
+
+    def __post_init__(self) -> None:
+        if not 1.0 <= self.monotonic_limiter_boost_factor < 2.0:
+            raise ValueError(
+                "'monotonic_limiter_boost_factor' must be in [1, 2), but is "
+                f"{self.monotonic_limiter_boost_factor}."
+            )
 
     @classmethod
     def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> AdvectionConfig:
@@ -129,6 +154,8 @@ class AdvectionConfig:
             vertical_advection_limiter=VerticalAdvectionLimiter(
                 fortran_config.list_to_value(transport_nml["itype_vlimit"])
             ),
+            monotonic_limiter_boost_factor=transport_nml["beta_fct"],
+            n_advection_substeps=fortran_config.list_to_value(transport_nml["nadv_substeps"]),
             **overrides,
         )
 
@@ -148,7 +175,7 @@ class Advection(ABC):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -207,7 +234,7 @@ class NoAdvection(Advection):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -316,7 +343,7 @@ class GodunovSplittingAdvection(Advection):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: adv_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -424,6 +451,25 @@ class GodunovSplittingAdvection(Advection):
         log.debug("tracer_advection run - end")
 
 
+def _monotonic_limiter_beta_fct(config: AdvectionConfig) -> float:
+    """How far the monotonic limiter may overshoot the local range, per scheme.
+
+    Fortran passes ``opt_beta_fct`` to ``hflx_limiter_mo`` only from the schemes built on
+    the quadratic reconstruction (mo_advection_hflux.f90:3083 and :4810); the ones built on
+    the linear reconstruction (:1606 and :1990) leave it at the routine's own default of 1,
+    which is a strictly monotonic limiter.
+    """
+    quadratic_reconstruction = {
+        HorizontalAdvectionType.QUADRATIC_3RD_ORDER,
+        HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO,
+    }
+    return (
+        config.monotonic_limiter_boost_factor
+        if config.horizontal_advection_type in quadratic_reconstruction
+        else 1.0
+    )
+
+
 def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]
     *,
     config: AdvectionConfig,
@@ -435,6 +481,9 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime,
+    quadratic_state: tracer_advection_states.AdvectionQuadraticState | None = None,
+    weno_linear_state: tracer_advection_states.AdvectionWenoLinearState | None = None,
+    weno_quadratic_state: tracer_advection_states.AdvectionWenoQuadraticState | None = None,
 ) -> tuple[
     tracer_advection_horizontal.HorizontalAdvection, tracer_advection_vertical.VerticalAdvection
 ]:
@@ -443,6 +492,14 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     match config.horizontal_advection_limiter:
         case HorizontalAdvectionLimiter.NO_LIMITER:
             horizontal_limiter = tracer_advection_horizontal.NoLimiter()
+        case HorizontalAdvectionLimiter.MONOTONIC:
+            horizontal_limiter = tracer_advection_horizontal.Monotonic(
+                grid=grid,
+                interpolation_state=interpolation_state,
+                backend=backend,
+                exchange=exchange,
+                beta_fct=_monotonic_limiter_beta_fct(config),
+            )
         case HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
             horizontal_limiter = tracer_advection_horizontal.PositiveDefinite(
                 grid=grid,
@@ -459,10 +516,93 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
             horizontal_advection = tracer_advection_horizontal.NoAdvection(
                 grid=grid, backend=backend
             )
-        case HorizontalAdvectionType.LINEAR_2ND_ORDER:
-            tracer_flux = tracer_advection_horizontal.SecondOrderMiura(
+        case HorizontalAdvectionType.UPWIND_1ST_ORDER:
+            horizontal_advection = tracer_advection_horizontal.FirstOrderUpwind(
                 grid=grid,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                backend=backend,
+            )
+        case HorizontalAdvectionType.LINEAR_2ND_ORDER:
+            tracer_flux: tracer_advection_horizontal.SemiLagrangianTracerFlux = (
+                tracer_advection_horizontal.SecondOrderMiura(
+                    grid=grid,
+                    least_squares_state=least_squares_state,
+                    horizontal_limiter=horizontal_limiter,
+                    backend=backend,
+                )
+            )
+            horizontal_advection = tracer_advection_horizontal.SemiLagrangian(
+                tracer_flux=tracer_flux,
+                grid=grid,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                cell_params=cell_params,
+                backend=backend,
+            )
+        case HorizontalAdvectionType.LINEAR_2ND_ORDER_SUBCYCLED:
+            horizontal_advection = tracer_advection_horizontal.SubcycledSecondOrderMiura(
+                grid=grid,
+                interpolation_state=interpolation_state,
                 least_squares_state=least_squares_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                backend=backend,
+                exchange=exchange,
+                n_substeps=config.n_advection_substeps,
+                limit_substep_flux=(
+                    config.horizontal_advection_limiter != HorizontalAdvectionLimiter.NO_LIMITER
+                ),
+            )
+        case HorizontalAdvectionType.QUADRATIC_3RD_ORDER:
+            if quadratic_state is None:
+                raise ValueError(
+                    "Horizontal advection type 'QUADRATIC_3RD_ORDER' requires 'quadratic_state'."
+                )
+            tracer_flux = tracer_advection_horizontal.ThirdOrderMiura(
+                grid=grid,
+                quadratic_state=quadratic_state,
+                horizontal_limiter=horizontal_limiter,
+                backend=backend,
+            )
+            horizontal_advection = tracer_advection_horizontal.SemiLagrangian(
+                tracer_flux=tracer_flux,
+                grid=grid,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                cell_params=cell_params,
+                backend=backend,
+            )
+        case HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO:
+            if weno_linear_state is None:
+                raise ValueError(
+                    "Horizontal advection type 'LINEAR_2ND_ORDER_WENO' requires 'weno_linear_state'."
+                )
+            tracer_flux = tracer_advection_horizontal.SecondOrderMiuraWeno(
+                grid=grid,
+                weno_linear_state=weno_linear_state,
+                horizontal_limiter=horizontal_limiter,
+                backend=backend,
+            )
+            horizontal_advection = tracer_advection_horizontal.SemiLagrangian(
+                tracer_flux=tracer_flux,
+                grid=grid,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                cell_params=cell_params,
+                backend=backend,
+            )
+        case HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO:
+            if weno_quadratic_state is None:
+                raise ValueError(
+                    "Horizontal advection type 'QUADRATIC_3RD_ORDER_WENO' requires 'weno_quadratic_state'."
+                )
+            tracer_flux = tracer_advection_horizontal.ThirdOrderMiuraWeno(
+                grid=grid,
+                weno_quadratic_state=weno_quadratic_state,
                 horizontal_limiter=horizontal_limiter,
                 backend=backend,
             )
@@ -532,6 +672,9 @@ def convert_config_to_advection(
     backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime,
     even_timestep: bool = False,
+    quadratic_state: tracer_advection_states.AdvectionQuadraticState | None = None,
+    weno_linear_state: tracer_advection_states.AdvectionWenoLinearState | None = None,
+    weno_quadratic_state: tracer_advection_states.AdvectionWenoQuadraticState | None = None,
 ) -> Advection:
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
@@ -550,6 +693,9 @@ def convert_config_to_advection(
         cell_params=cell_params,
         backend=backend,
         exchange=exchange,
+        quadratic_state=quadratic_state,
+        weno_linear_state=weno_linear_state,
+        weno_quadratic_state=weno_quadratic_state,
     )
 
     advection = GodunovSplittingAdvection(

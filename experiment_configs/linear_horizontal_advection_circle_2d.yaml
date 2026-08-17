@@ -1,0 +1,39 @@
+geometry: {}
+metrics: {}
+interpolation: {}
+vertical_grid:
+  num_levels: 5
+  model_top_height: 1000.0
+  lowest_layer_thickness: 0.0
+topography:
+  config:
+    type: flat
+initial_condition:
+  config:
+    type: lin_hor_adv
+    tracer_profile: circle_2d
+    velocity_field: constant
+    cfl_number: 0.11
+    initial_center: [0.5, 0.5]
+prescribed_tendencies:
+  data_path:
+driver:
+  experiment_name: horizontal_advection_convergence_test
+  profiling_options:
+  dtime: 1
+  start_of_simulation: 0001-01-01T00:00:00
+  start_of_timestepping: 0001-01-01T00:00:00
+  end_of_simulation:
+    type: relative
+    value: 1.0
+nonhydrostatic:
+diffusion:
+tracer_config:
+  qv: true
+tracer_advection:
+  horizontal_advection_type: linear_2nd_order
+  horizontal_advection_limiter: positive_definite
+  vertical_advection_type: no_advection
+  vertical_advection_limiter: no_limiter
+graupel:
+muphys:

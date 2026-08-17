@@ -33,7 +33,11 @@ from icon4py.model.common.diagnostic_calculations.stencils import diagnose_tempe
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
-from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
+from icon4py.model.common.states import (
+    data as state_data,
+    prognostic_state as prognostics,
+    tracer_states,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -84,6 +88,31 @@ def prognostic_state_to_dataarrays(
             to_host=True,
         )
     return state
+
+
+# --------------------------------------------------------------------------------------
+# Tracer fields
+# --------------------------------------------------------------------------------------
+
+
+def tracer_state_to_dataarrays(tracers: tracer_states.TracerState) -> dict[str, xr.DataArray]:
+    """Assemble CF/UGRID-annotated DataArrays for the active tracer fields."""
+    state: dict[str, xr.DataArray] = {}
+    for tracer in tracers.active_fields():
+        metadata = state_data.COMMON_TRACER_CF_ATTRIBUTES[tracer.name]
+        state[tracer.name] = io_utils.to_data_array(
+            tracer.field,  # type: ignore[arg-type]  # to_data_array is annotated for 1-dim fields
+            metadata,
+            is_on_half_levels=False,
+            to_host=True,
+        )
+    return state
+
+
+def output_variables(tracer_config: tracer_states.TracerConfig | None) -> list[str]:
+    """The default output variables plus the active tracers."""
+    tracers = () if tracer_config is None else tracer_config.active_names
+    return [*DEFAULT_OUTPUT_VARIABLES, *tracers]
 
 
 # --------------------------------------------------------------------------------------
@@ -271,13 +300,13 @@ def create_io_monitor(
     signature change.
     """
     del process_props  # reserved for the distributed IO path; unused while single-node
-    output_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
+    selected_variables = DEFAULT_OUTPUT_VARIABLES if variables is None else variables
 
     field_groups = [
         common_io.FieldGroupIOConfig(
             output_interval=output_interval,
             filename=DEFAULT_OUTPUT_FILENAME,
-            variables=output_variables,
+            variables=selected_variables,
             nc_title="ICON4Py output",
             nc_comment="Fields computed by ICON4Py.",
         )

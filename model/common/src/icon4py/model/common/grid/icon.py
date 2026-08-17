@@ -40,6 +40,7 @@ CONNECTIVITIES_ON_BOUNDARIES = (
     dims.E2C2EDim,
     dims.E2C2EODim,
     dims.C2E2C2E2CDim,
+    dims.E2C2E2CDim,
 )
 CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 

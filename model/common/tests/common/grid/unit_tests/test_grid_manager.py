@@ -601,6 +601,7 @@ def test_decomposition_info_single_rank(
         dims.C2E2CO,
         dims.C2E2C2E,
         dims.C2E2C2E2C,
+        dims.E2C2E2C,
         dims.E2C2V,
         dims.E2C2E,
         dims.E2C2EO,

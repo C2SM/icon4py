@@ -44,6 +44,7 @@ from icon4py.model.common.interpolation import interpolation_attributes as intp_
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
+    adv_states,
     diagnostic_state as diagnostics,
     nonhydro_states,
     prognostic_state as prognostics,
@@ -157,6 +158,7 @@ class Icon4pyDriver:
     def _store_output(
         self,
         prognostic_state: prognostics.PrognosticState,
+        tracer_state: tracer_states.TracerState,
         simulation_current_datetime: time.AbsoluteTime,
     ) -> None:
         """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
@@ -176,6 +178,7 @@ class Icon4pyDriver:
             rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
         )
         state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
+        state_to_store.update(driver_io.tracer_state_to_dataarrays(tracer_state))
         self.io_monitor.store(state_to_store, simulation_current_datetime)
 
     def time_integration(
@@ -203,7 +206,9 @@ class Icon4pyDriver:
                 # write the initial state; the simulation datetime is still the start here
                 # (it is advanced below, per step)
                 self._store_output(
-                    prognostic_states.current, self.model_time_variables.simulation_current_datetime
+                    prognostic_states.current,
+                    tracers.current,
+                    self.model_time_variables.simulation_current_datetime,
                 )
 
             self._diffuse_before_time_loop(diffusion_diagnostic_state, prognostic_states.current)
@@ -254,6 +259,7 @@ class Icon4pyDriver:
                 if self.io_monitor is not None:
                     self._store_output(
                         prognostic_states.current,
+                        tracers.current,
                         self.model_time_variables.simulation_current_datetime,
                     )
         finally:
@@ -279,7 +285,7 @@ class Icon4pyDriver:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         tracers: common_utils.TimeStepPair[tracer_states.TracerState],
         prep_adv: dycore_states.PrepAdvection | None,
-        tracer_prep_adv: tracer_advection_states.AdvectionPrepAdvState | None,
+        tracer_prep_adv: adv_states.AdvectionPrepAdvState | None,
     ) -> None:
         # Airmass (rho * dz) is tracer advection's density<->mixing-ratio conversion
         # factor: computed from rho at the beginning of the time step and from the rho
@@ -760,6 +766,7 @@ def initialize_driver(
                 grid=grid_manager.grid,
                 vertical_grid=vertical_grid,
                 dtime=config.driver.dtime,
+                variables=driver_io.output_variables(config.tracer_config),
                 process_props=process_props,
             )
 
@@ -820,6 +827,15 @@ def run_driver(
         if icon4py_driver.config.nonhydrostatic is not None
         else None
     )
+    # allocated before the initial condition, so that an idealized initial condition can
+    # prescribe the advection driving fields the (disabled) dycore never writes
+    adv_prep_adv_state = (
+        adv_states.initialize_advection_prep_adv_state(
+            grid=icon4py_driver.grid, allocator=allocator
+        )
+        if icon4py_driver.config.tracer_advection is not None
+        else None
+    )
     initial_condition.create(
         config=icon4py_driver.config.initial_condition,
         vertical_config=icon4py_driver.config.vertical_grid,
@@ -828,6 +844,7 @@ def run_driver(
         prognostic_state_now=prognostic_state_now,
         tracer_state_now=tracer_state_now,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+        adv_prep_adv_state=adv_prep_adv_state,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
@@ -846,6 +863,7 @@ def run_driver(
         diagnostic_state=diagnostic_state,
         experiment_config=icon4py_driver.config,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
+        adv_prep_adv_state=adv_prep_adv_state,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,

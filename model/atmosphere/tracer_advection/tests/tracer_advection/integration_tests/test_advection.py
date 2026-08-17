@@ -77,6 +77,25 @@ from ..utils import (
             tracer_advection.VerticalAdvectionType.NO_ADVECTION,
             tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
         ),
+        # ntracer 2 is miura with the monotonic limiter, itype_hlimit = 3
+        (
+            "2021-06-20T12:00:10.000",
+            False,
+            2,
+            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionLimiter.MONOTONIC,
+            tracer_advection.VerticalAdvectionType.NO_ADVECTION,
+            tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
+        ),
+        (
+            "2021-06-20T12:00:20.000",
+            True,
+            2,
+            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionLimiter.MONOTONIC,
+            tracer_advection.VerticalAdvectionType.NO_ADVECTION,
+            tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
+        ),
         (
             "2021-06-20T12:00:10.000",
             False,
