@@ -30,12 +30,11 @@ import pathlib
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Annotated, Final
 
+import numpy as np
 import typer
 
 
 if TYPE_CHECKING:
-    import numpy as np
-
     from icon4py.model.testing import definitions as test_defs
 
 
@@ -147,8 +146,6 @@ def summarize(
     values: np.ndarray, *, savepoint: str, date: str | None, field: str, component: str | None
 ) -> FieldStats:
     """Reduce an array to the statistics that tell whether it carries information."""
-    import numpy as np  # noqa: PLC0415 [import-outside-top-level]
-
     values = np.squeeze(values)
     as_float = values.astype(np.float64)
     finite = np.isfinite(as_float)
@@ -256,8 +253,6 @@ class ArchiveExplorer:
         self, *, name: str | None = None, date: str | None = None, field: str | None = None
     ) -> list[FieldStats]:
         """Statistics of every matching field of every matching savepoint."""
-        import numpy as np  # noqa: PLC0415 [import-outside-top-level]
-
         collected: list[FieldStats] = []
         for reference in self.find(name=name, date=date, field=field):
             for field_name in self.fields(reference):
@@ -275,8 +270,6 @@ class ArchiveExplorer:
         The two savepoints may differ in timestamp (does the field evolve?), in name
         (does the process between an init and an exit savepoint do anything?), or both.
         """
-        import numpy as np  # noqa: PLC0415 [import-outside-top-level]
-
         first = self.read(before, field).astype(np.float64)
         second = self.read(after, field).astype(np.float64)
         if first.shape != second.shape:
@@ -350,7 +343,7 @@ def format_stats(collected: Sequence[FieldStats]) -> str:
             _number(stats.mean),
             f"{stats.nonzero_fraction:.3f}",
             str(stats.n_nonfinite) if stats.n_nonfinite else "",
-            "ALL ZERO" if stats.all_zero else "",
+            "ALL ZEROS" if stats.all_zero else "",
         ]
         for stats in collected
     ]
@@ -561,8 +554,6 @@ def shell(
     path: PathOption = None,
 ) -> None:
     """Open an interactive interpreter with the archive bound to 'e'."""
-    import numpy as np  # noqa: PLC0415 [import-outside-top-level]
-
     archive = open_archive(experiment, version, comm_size, rank, path)
     namespace = {"e": archive, "np": np, "ArchiveExplorer": ArchiveExplorer}
     banner = (

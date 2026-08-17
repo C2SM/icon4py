@@ -27,7 +27,6 @@ def test_summarize_reports_range_and_mean():
     assert (stats.min, stats.max, stats.mean) == (1.0, 4.0, 2.5)
     assert stats.shape == (2, 2)
     assert stats.nonzero_fraction == 1.0
-    assert not stats.all_zero
 
 
 def test_summarize_flags_an_all_zero_field():

@@ -205,8 +205,6 @@ def run_command(
 ) -> subprocess.CompletedProcess:
     result = subprocess.run(cmd, check=False, text=True, capture_output=True, cwd=cwd)
     if check and result.returncode != 0:
-        # 'CalledProcessError' reports the exit status but not the captured output, and
-        # the output is the part that says what went wrong.
         details = (result.stderr or result.stdout or "").strip()
         raise RuntimeError(
             f"Command '{shlex.join(cmd)}' failed with exit status {result.returncode}"
