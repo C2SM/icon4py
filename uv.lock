@@ -2211,7 +2211,8 @@ requires-dist = [
   {name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0"},
   {name = "serialbox4py", specifier = ">=2.6.2"},
   {name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0"},
-  {name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.3.0,<2026.4"}
+  {name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.10.0,<2026.4"},
+  {name = "zarr", marker = "extra == 'io'", specifier = ">=3.0"}
 ]
 
 [package.optional-dependencies]
@@ -2227,7 +2228,8 @@ all = [
   {name = "pymetis"},
   {name = "scikit-learn"},
   {name = "uxarray"},
-  {name = "xarray", extra = ["complete"]}
+  {name = "xarray", extra = ["complete"]},
+  {name = "zarr"}
 ]
 cuda12 = [
   {name = "cupy-cuda12x"},
@@ -2251,7 +2253,8 @@ io = [
   {name = "pymetis"},
   {name = "scikit-learn"},
   {name = "uxarray"},
-  {name = "xarray", extra = ["complete"]}
+  {name = "xarray", extra = ["complete"]},
+  {name = "zarr"}
 ]
 rocm7 = [
   {name = "cupy-rocm-7-0"},
