@@ -165,7 +165,7 @@ def test_io_roundtrip_cls_cls() -> None:
             driver:
                 experiment_name: foo
                 profiling_options:
-                dtime: 10
+                dtime: 10.0
                 start_of_simulation: 2020-01-01T00:00:00
                 start_of_timestepping: 2020-01-01T00:00:00
                 end_of_simulation:

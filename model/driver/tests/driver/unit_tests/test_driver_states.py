@@ -11,7 +11,10 @@
 Data-free: they use the ``simple_grid`` and need no serialized test data.
 """
 
-import gt4py.next.typing as gtx_typing
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 
 from icon4py.model.common import model_backends
@@ -20,6 +23,10 @@ from icon4py.model.common.states import adv_states
 from icon4py.model.driver import driver_states
 
 from ..fixtures import *  # noqa: F403
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
 
 
 def test_dycore_prep_adv_shares_the_advection_prep_adv_buffers(
