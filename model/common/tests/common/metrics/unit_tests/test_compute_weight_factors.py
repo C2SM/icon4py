@@ -128,7 +128,9 @@ def _cells_to_edges(cell_field: np.ndarray, c_lin_e: np.ndarray, e2c: np.ndarray
     )
 
 
-def _cells_to_verts(cell_field: np.ndarray, cells_aw_verts: np.ndarray, v2c: np.ndarray) -> np.ndarray:
+def _cells_to_verts(
+    cell_field: np.ndarray, cells_aw_verts: np.ndarray, v2c: np.ndarray
+) -> np.ndarray:
     return weight_factors.compute_inv_ddqz_z_half_v(
         v2c=v2c,
         inv_ddqz_z_half=cell_field,

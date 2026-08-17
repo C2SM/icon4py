@@ -41,6 +41,7 @@ from icon4py.model.testing import definitions
 from icon4py.model.testing.fixtures.datatest import topography_savepoint
 
 from ..fixtures import *  # noqa: F403  (re-exports experiment, decomposition_info, etc.)
+from .utils import assert_scaled_allclose, construct_interpolation_state, construct_metric_state
 
 
 @pytest.fixture  # type: ignore[no-redef]  # deliberately shadows the fixtures.py import
@@ -56,9 +57,6 @@ def icon_grid(grid_savepoint, backend):
     return grid_savepoint.construct_icon_grid(
         backend=backend, keep_skip_values=True, with_repeated_index=False
     )
-
-
-from .utils import assert_scaled_allclose, construct_interpolation_state, construct_metric_state
 
 
 if TYPE_CHECKING:

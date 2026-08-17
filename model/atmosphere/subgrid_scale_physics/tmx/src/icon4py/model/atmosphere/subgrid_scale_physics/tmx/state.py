@@ -8,15 +8,14 @@
 
 """TmxState — physics-state adapter for the TMX turbulent mixing scheme.
 
-Bridges the dycore's prognostic state and the :class:`TmxComponent` contract.
-The class follows the same *gather / as_component_input / scatter* pattern. All three protocol methods (``gather_from_prognostic``,
-``as_component_input``, ``scatter_to_prognostic``) are implemented here.
+Bridges the dycore's prognostic state and the :class:`TmxComponent` contract
+via the *gather / as_component_input / scatter* protocol of ``PhysicsState``.
 """
 
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 import gt4py.next as gtx
 
@@ -56,16 +55,20 @@ if TYPE_CHECKING:
     from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 
 
-def _require(field: fa.CellKField[ta.wpfloat] | None, name: str) -> fa.CellKField[ta.wpfloat]:
-    """Return *field*, or raise if it is inactive (``None``).
+# The six moisture species tmx requires from the TracerState.
+_MOISTURE_SPECIES: Final = ("qv", "qc", "qi", "qr", "qs", "qg")
 
-    TMX requires all six moisture species; ``TracerState`` fields are optional
-    per ``TracerConfig``, so we fail loudly here rather than pass ``None`` into
-    the physics.
-    """
-    if field is None:
-        raise ValueError(f"tmx requires tracer '{name}' to be active in the TracerState")
-    return field
+# The granule outputs stored for reporting; never applied to the prognostic state.
+DIAGNOSTICS: Final = (
+    "km",
+    "kh",
+    "heating",
+    "dissip_ke",
+    "cptgz_vi",
+    "dissip_ke_vi",
+    "int_energy_vi",
+    "int_energy_vi_tend",
+)
 
 
 class TmxState(PhysicsState):
@@ -167,8 +170,8 @@ class TmxState(PhysicsState):
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        # compute_vn_from_uv: used by scatter (Task 5); wired now so the program
-        # is compiled with the grid's E2C connectivity at construction time.
+        # compute_vn_from_uv is used by scatter; wired here so the program
+        # compiles with the grid's E2C connectivity at construction time.
         self._compute_vn_from_uv = model_options.setup_program(
             program=compute_vn_from_uv,
             backend=backend,
@@ -259,10 +262,11 @@ class TmxState(PhysicsState):
             q_snocpymlt=self.q_snocpymlt,
         )
 
-        # --- Scratch buffers for scatter (Task 5) ---
+        # --- Scratch buffers for scatter ---
         self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._ddt_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
+        self._diagnostics: dict[str, fa.CellKField[ta.wpfloat]] | None = None
 
         # --- Prognostic references — bound during gather ---
         self._rho: fa.CellKField[ta.wpfloat] | None = None
@@ -292,16 +296,24 @@ class TmxState(PhysicsState):
         self._rho = prognostic.rho
         self._w = prognostic.w
         self._vn = prognostic.vn
+        # tmx needs all six moisture species; TracerState fields are optional (a
+        # tracer may be inactive per TracerConfig), so fail loudly once here rather
+        # than feed None into the physics.
+        missing = [name for name in _MOISTURE_SPECIES if getattr(tracers, name) is None]
+        if missing:
+            raise ValueError(
+                f"tmx requires all moisture species active in the TracerState; missing: {missing}"
+            )
         self._tracers = tracers
 
         # 1. Diagnose virtual temperature and temperature
         self._diagnose_temperature(
-            qv=_require(tracers.qv, "qv"),
-            qc=_require(tracers.qc, "qc"),
-            qi=_require(tracers.qi, "qi"),
-            qr=_require(tracers.qr, "qr"),
-            qs=_require(tracers.qs, "qs"),
-            qg=_require(tracers.qg, "qg"),
+            qv=tracers.qv,
+            qc=tracers.qc,
+            qi=tracers.qi,
+            qr=tracers.qr,
+            qs=tracers.qs,
+            qg=tracers.qg,
             theta_v=prognostic.theta_v,
             exner=prognostic.exner,
             virtual_temperature=self.virtual_temperature,
@@ -345,12 +357,12 @@ class TmxState(PhysicsState):
 
         # 5. cv_air (moisture-weighted)
         self._compute_cv_air(
-            qv=_require(tracers.qv, "qv"),
-            qc=_require(tracers.qc, "qc"),
-            qi=_require(tracers.qi, "qi"),
-            qr=_require(tracers.qr, "qr"),
-            qs=_require(tracers.qs, "qs"),
-            qg=_require(tracers.qg, "qg"),
+            qv=tracers.qv,
+            qc=tracers.qc,
+            qi=tracers.qi,
+            qr=tracers.qr,
+            qs=tracers.qs,
+            qg=tracers.qg,
             air_mass=self.air_mass,
             cv_air=self.cv_air,
         )
@@ -366,22 +378,23 @@ class TmxState(PhysicsState):
     ) -> None:
         """Outbound translation: apply TMX output tendencies back to the prognostic state.
 
-        Apply order (must match brief):
+        Apply order:
         1. Moisture tracers: qv/qc/qi += ddt * dt  (qr/qs/qg untouched — TMX does not diffuse them)
         2. tend_temperature → new_temperature → Tv tendency → update exner + theta_v (muphys path)
         3. Project (tend_u, tend_v) → _ddt_vn via compute_vn_from_uv, then vn += dt * _ddt_vn
         4. w += dt * tend_w  (KDim+1 half-levels)
-        5. Store 8 diagnostics as attributes
+        5. Store the DIAGNOSTICS outputs (exposed via the ``diagnostics`` property)
         """
         assert self._tracers is not None, "gather_from_prognostic must be called first"
-        dt = dtime.total_seconds()
+        # convert to seconds only at the gt4py boundary (stencils take a scalar dt)
+        dt_seconds = dtime.total_seconds()
 
         # 1. Moisture tendencies: only qv, qc, qi (TMX does not diffuse qr/qs/qg)
         for name in ("qv", "qc", "qi"):
-            tracer = _require(getattr(self._tracers, name), name)
+            tracer = getattr(self._tracers, name)
             self._apply_tendency(
                 field_a=tracer,
-                coeff=ta.wpfloat(dt),
+                coeff=dt_seconds,
                 field_b=outputs[f"tend_{name}"],
                 output_field=tracer,
             )
@@ -390,19 +403,19 @@ class TmxState(PhysicsState):
         # 2a. new_temperature = temperature + tend_temperature * dt
         self._apply_tendency(
             field_a=self.temperature,
-            coeff=ta.wpfloat(dt),
+            coeff=dt_seconds,
             field_b=outputs["tend_temperature"],
             output_field=self._new_te,
         )
         # 2b. Tv tendency: uses updated tracers (post step-1) and new temperature
         self._calculate_virtual_temperature_tendency(
-            dtime=ta.wpfloat(dt),
-            qv=_require(self._tracers.qv, "qv"),
-            qc=_require(self._tracers.qc, "qc"),
-            qi=_require(self._tracers.qi, "qi"),
-            qr=_require(self._tracers.qr, "qr"),
-            qs=_require(self._tracers.qs, "qs"),
-            qg=_require(self._tracers.qg, "qg"),
+            dtime=dt_seconds,
+            qv=self._tracers.qv,
+            qc=self._tracers.qc,
+            qi=self._tracers.qi,
+            qr=self._tracers.qr,
+            qs=self._tracers.qs,
+            qg=self._tracers.qg,
             temperature=self._new_te,
             virtual_temperature=self.virtual_temperature,
             virtual_temperature_tendency=self._tv_tendency,
@@ -412,7 +425,7 @@ class TmxState(PhysicsState):
             rho=self._rho,
             virtual_temperature=self.virtual_temperature,
             virtual_temperature_tendency=self._tv_tendency,
-            dtime=ta.wpfloat(dt),
+            dtime=dt_seconds,
             exner=prognostic.exner,
             theta_v=prognostic.theta_v,
         )
@@ -425,7 +438,7 @@ class TmxState(PhysicsState):
         )
         self._apply_tendency_vn(
             field_a=prognostic.vn,
-            coeff=ta.wpfloat(dt),
+            coeff=dt_seconds,
             field_b=self._ddt_vn,
             output_field=prognostic.vn,
         )
@@ -433,20 +446,13 @@ class TmxState(PhysicsState):
         # 4. w (KDim+1 half-levels)
         self._apply_tendency_w(
             field_a=prognostic.w,
-            coeff=ta.wpfloat(dt),
+            coeff=dt_seconds,
             field_b=outputs["tend_w"],
             output_field=prognostic.w,
         )
 
-        # 5. Store 8 diagnostics as attributes
-        self.km = outputs["km"]
-        self.kh = outputs["kh"]
-        self.heating = outputs["heating"]
-        self.dissip_ke = outputs["dissip_ke"]
-        self.cptgz_vi = outputs["cptgz_vi"]
-        self.dissip_ke_vi = outputs["dissip_ke_vi"]
-        self.int_energy_vi = outputs["int_energy_vi"]
-        self.int_energy_vi_tend = outputs["int_energy_vi_tend"]
+        # 5. Store diagnostics (references; never applied to prognostic state).
+        self._diagnostics = {name: outputs[name] for name in DIAGNOSTICS}
 
     def as_component_input(self) -> dict[str, fa.CellKField[ta.wpfloat]]:
         """Return exactly the 21 ``INPUTS_PROPERTIES`` keys mapped to GT4Py fields."""
@@ -464,13 +470,8 @@ class TmxState(PhysicsState):
             # Prognostic references (no copy)
             "w": self._w,
             "rho": self._rho,
-            # Tracers (no copy)
-            "qv": _require(self._tracers.qv, "qv"),
-            "qc": _require(self._tracers.qc, "qc"),
-            "qi": _require(self._tracers.qi, "qi"),
-            "qr": _require(self._tracers.qr, "qr"),
-            "qs": _require(self._tracers.qs, "qs"),
-            "qg": _require(self._tracers.qg, "qg"),
+            # Tracers (no copy; validated in gather_from_prognostic)
+            **{name: getattr(self._tracers, name) for name in _MOISTURE_SPECIES},
             # TMX-specific computed fields
             "air_mass": self.air_mass,
             "cv_air": self.cv_air,
@@ -481,3 +482,10 @@ class TmxState(PhysicsState):
             "v_stress": self.v_stress,
             "q_snocpymlt": self.q_snocpymlt,
         }
+
+    @property
+    def diagnostics(self) -> dict[str, fa.CellKField[ta.wpfloat]]:
+        """tmx diagnostics keyed by name, ready for IO / plotting."""
+        if self._diagnostics is None:
+            raise RuntimeError("diagnostics accessed before scatter_to_prognostic")
+        return self._diagnostics
