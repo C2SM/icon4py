@@ -37,19 +37,9 @@ For example `tracer_advection/compute_tendency` computes `(new - old) / dtime`. 
 
 This does not contradict the YAGNI item above: do not _generalise_ code speculatively so that it might be shared one day. But code that is _already_ generic should be placed and named generically from the start, because moving it later also means moving its tests and coordinating stencil renames.
 
-
 ### Naming
 
-A generic name states **what the operation does** and **which grid entities it acts on**. It must **not** encode:
-
-- the caller's argument or output variable names: `diffusion/calculate_nabla2_for_z` is named after the Fortran temporary `z_nabla2_e`, while the stencil computes a coefficient-weighted normal gradient of a cell field onto edges;
-- Fortran temporary prefixes (`z_`, `p_`, `opt_`) or Fortran module names (`mo_intp_rbf_rbf_vec_interpol_cell`);
-- the floating point precision (`_wp`, `_vp`), which is already part of the signature;
-- the physical meaning of an operand that the mathematics does not depend on.
-
-Use the swap test: replace an input with an unrelated field of the same type. If the code still works but the name no longer reads correctly, the name is too specific.
-
-Generic does not mean meaningless: name the operation, not placeholders. `add_fields` is a generic name, `compute_a_plus_b` is not.
+Stencil names must follow the [naming conventions for stencils](docs/stencil_naming_convention.md).
 
 The same applies outside stencils: shared enums, options and dictionaries are named after what they configure, not after the component that introduced them.
 
