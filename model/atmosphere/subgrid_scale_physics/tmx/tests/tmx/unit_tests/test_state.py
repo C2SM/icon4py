@@ -11,10 +11,15 @@ import datetime
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import data as tmx_data, static_fields
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.state import TmxState
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
+    data as tmx_data,
+    state as tmx_state,
+    static_fields,
+)
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import simple
+from icon4py.model.common.grid import geometry_attributes, simple
+from icon4py.model.common.interpolation import interpolation_attributes
+from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -62,16 +67,53 @@ def _tracer_state(
     )
 
 
-def _tmx_state(grid, **kwargs) -> TmxState:
-    """Construct a TmxState on the simple grid with neutral/zero interpolation coefficients."""
-    return TmxState(
+class _StubFieldSource:
+    """Minimal FieldSource stand-in: serves pre-built fields by attribute name."""
+
+    def __init__(self, fields):
+        self._fields = fields
+
+    def get(self, name, *args, **kwargs):
+        return self._fields[name]
+
+
+def _tmx_state(grid, **kwargs) -> tmx_state.State:
+    """Construct a State on the simple grid with neutral/zero interpolation coefficients."""
+    metrics = _StubFieldSource(
+        {
+            metrics_attributes.DDQZ_Z_FULL: data_alloc.constant_field(
+                grid, 100.0, dims.CellDim, dims.KDim
+            ),
+        }
+    )
+    interpolation = _StubFieldSource(
+        {
+            interpolation_attributes.RBF_VEC_COEFF_C1: data_alloc.zero_field(
+                grid, dims.CellDim, dims.C2E2C2EDim
+            ),
+            interpolation_attributes.RBF_VEC_COEFF_C2: data_alloc.zero_field(
+                grid, dims.CellDim, dims.C2E2C2EDim
+            ),
+            interpolation_attributes.C_LIN_E: data_alloc.constant_field(
+                grid, 0.5, dims.EdgeDim, dims.E2CDim
+            ),
+        }
+    )
+    geometry = _StubFieldSource(
+        {
+            geometry_attributes.EDGE_NORMAL_CELL_U: data_alloc.constant_field(
+                grid, 1.0, dims.EdgeDim, dims.E2CDim
+            ),
+            geometry_attributes.EDGE_NORMAL_CELL_V: data_alloc.zero_field(
+                grid, dims.EdgeDim, dims.E2CDim
+            ),
+        }
+    )
+    return tmx_state.State(
         grid=grid,
-        ddqz_z_full=data_alloc.constant_field(grid, 100.0, dims.CellDim, dims.KDim),
-        rbf_coeff_c1=data_alloc.zero_field(grid, dims.CellDim, dims.C2E2C2EDim),
-        rbf_coeff_c2=data_alloc.zero_field(grid, dims.CellDim, dims.C2E2C2EDim),
-        c_lin_e=data_alloc.constant_field(grid, 0.5, dims.EdgeDim, dims.E2CDim),
-        primal_normal_cell_x=data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.E2CDim),
-        primal_normal_cell_y=data_alloc.zero_field(grid, dims.EdgeDim, dims.E2CDim),
+        geometry=geometry,
+        interpolation=interpolation,
+        metrics=metrics,
         backend=None,
         **kwargs,
     )

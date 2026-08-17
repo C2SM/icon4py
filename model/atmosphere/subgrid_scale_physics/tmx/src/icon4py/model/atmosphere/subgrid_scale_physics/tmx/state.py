@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""TmxState — physics-state adapter for the TMX turbulent mixing scheme.
+"""Physics-state adapter for the TMX turbulent mixing scheme.
 
 Bridges the dycore's prognostic state and the :class:`TmxComponent` contract
 via the *gather / as_component_input / scatter* protocol of ``PhysicsState``.
@@ -41,10 +41,13 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_temperature,
     update_exner_and_theta_v,
 )
+from icon4py.model.common.grid import geometry_attributes
+from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
 from icon4py.model.common.math.stencils import generic_math_operations
+from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -52,7 +55,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
+    from icon4py.model.common.states import factory, prognostic_state as prognostics, tracer_states
 
 
 # The six moisture species tmx requires from the TracerState.
@@ -71,7 +74,7 @@ DIAGNOSTICS: Final = (
 )
 
 
-class TmxState(PhysicsState):
+class State(PhysicsState):
     """Physics-state adapter for the TMX turbulent mixing scheme.
 
     Two independent axes describe each field:
@@ -93,18 +96,23 @@ class TmxState(PhysicsState):
         self,
         *,
         grid: base_grid.Grid,
-        ddqz_z_full: fa.CellKField[ta.wpfloat],
-        rbf_coeff_c1: gtx.Field,
-        rbf_coeff_c2: gtx.Field,
-        c_lin_e: gtx.Field,
-        primal_normal_cell_x: gtx.Field,
-        primal_normal_cell_y: gtx.Field,
+        geometry: factory.FieldSource,
+        interpolation: factory.FieldSource,
+        metrics: factory.FieldSource,
         surface_flux_provider: surface_fluxes.SurfaceFluxProvider | None = None,
         backend: gtx_typing.Backend | None = None,
     ) -> None:
         self._num_cells = grid.num_cells
         self._num_levels = grid.num_levels
         self._backend = backend
+
+        # Static fields fetched from the factory sources
+        self.ddqz_z_full = metrics.get(metrics_attributes.DDQZ_Z_FULL)
+        rbf_coeff_c1 = interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C1)
+        rbf_coeff_c2 = interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2)
+        c_lin_e = interpolation.get(interpolation_attributes.C_LIN_E)
+        primal_normal_cell_x = geometry.get(geometry_attributes.EDGE_NORMAL_CELL_U)
+        primal_normal_cell_y = geometry.get(geometry_attributes.EDGE_NORMAL_CELL_V)
 
         full_horizontal = {
             "horizontal_start": gtx.int32(0),
@@ -114,9 +122,6 @@ class TmxState(PhysicsState):
             "vertical_start": gtx.int32(0),
             "vertical_end": gtx.int32(self._num_levels),
         }
-
-        # Geometry field — kept as a reference, not owned
-        self.ddqz_z_full = ddqz_z_full
 
         # --- Compiled programs ---
         self._diagnose_temperature = model_options.setup_program(

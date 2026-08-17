@@ -504,18 +504,11 @@ def initialize_granules(
                 backend=backend,
                 exchange=exchange,
             ),
-            state=tmx_state.TmxState(
+            state=tmx_state.State(
                 grid=grid,
-                ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
-                rbf_coeff_c1=interpolation_field_source.get(
-                    interpolation_attributes.RBF_VEC_COEFF_C1
-                ),
-                rbf_coeff_c2=interpolation_field_source.get(
-                    interpolation_attributes.RBF_VEC_COEFF_C2
-                ),
-                c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
-                primal_normal_cell_x=edge_geometry.primal_normal_cell[0],
-                primal_normal_cell_y=edge_geometry.primal_normal_cell[1],
+                geometry=geometry_field_source,
+                interpolation=interpolation_field_source,
+                metrics=metrics_field_source,
                 backend=backend,
             ),
             time_control=physics_driver.ProcessTimeControl(

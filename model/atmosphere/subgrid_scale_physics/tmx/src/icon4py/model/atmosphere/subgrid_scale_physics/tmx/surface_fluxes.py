@@ -32,7 +32,7 @@ class SurfaceFluxProvider(Protocol):
     def compute(self, *, out: tmx_states.TmxSurfaceFluxState) -> None:
         """Set every field of ``out``.
 
-        Called as the final step of ``TmxState.gather_from_prognostic`` (after
+        Called as the final step of ``State.gather_from_prognostic`` (after
         the thermodynamic diagnostics, before ``Tmx.run`` consumes the
         buffers). Implementations must write all fields on every call — no
         partial updates.

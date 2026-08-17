@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Adapter stencils of the TmxState (dycore -> tmx input translation).
+"""Adapter stencils of the tmx State (dycore -> tmx input translation).
 
 ``compute_air_mass``: mair = rho * dz (``diag%airmass_new`` bound to
 ``field%mair`` in mo_interface_iconam_aes.f90; shallow atmosphere).

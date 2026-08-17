@@ -47,7 +47,7 @@ def test_zero_flux_provider_rezeros_all_fields():
 
 
 def test_gather_rezeros_fluxes_by_default():
-    """Default TmxState (no provider arg) uses ZeroFluxProvider: gather re-zeros dirty buffers."""
+    """Default State (no provider arg) uses ZeroFluxProvider: gather re-zeros dirty buffers."""
     grid = simple.simple_grid()
     state = _tmx_state(grid)
     state.sensible_heat_flux.ndarray[...] = 42.0  # dirty one buffer to prove re-zeroing
