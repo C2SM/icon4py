@@ -25,7 +25,7 @@ classifiers = [
 ]
 dependencies = [
   'array-api-compat>=1.13.0',
-  'gt4py==1.2.0',
+  'gt4py==1.2.1',
   'packaging>=20.0',
   'numpy>=1.23.3',  # needed to read topography from file until IO is done
   "serialbox4py>=2.6.2",
@@ -61,7 +61,8 @@ io = [
   "uxarray==2024.3.0",
   # xarray>=2026.4.0 raises TypeError when passing a Dataset as data_vars to the Dataset constructor
   # (pydata/xarray#11139), which is used internally by uxarray==2024.3.0.
-  "xarray[complete]>=2024.3.0,<2026.4"
+  "xarray[complete]>=2024.10.0,<2026.4",
+  "zarr>=3.0"
 ]
 rocm7 = ['cupy-rocm-7-0>=14.1.1', 'gt4py[rocm7]']  # include fix for cupy issue https://github.com/cupy/cupy/issues/9742
 

@@ -10,6 +10,7 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+import dace
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
@@ -23,6 +24,14 @@ log = logging.getLogger(__name__)
 
 def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
+
+
+def _dace_remove_access_node_copies(sdfg: dace.SDFG) -> None:
+    sdfg.apply_transformations_repeated(
+        gtx_transformations.RemoveAccessNodeCopies(),
+        validate=False,
+        validate_all=False,
+    )
 
 
 def get_dace_options(
@@ -53,11 +62,7 @@ def get_dace_options(
         if gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep not in optimization_hooks:
             # Enable pass that removes access node (next_w) copies for vertically implicit solver programs
             optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
-                lambda sdfg: sdfg.apply_transformations_repeated(
-                    gtx_transformations.RemoveAccessNodeCopies(),
-                    validate=False,
-                    validate_all=False,
-                )
+                _dace_remove_access_node_copies
             )
         if "scan_loop_unrolling" not in optimization_args:
             optimization_args["scan_loop_unrolling"] = True

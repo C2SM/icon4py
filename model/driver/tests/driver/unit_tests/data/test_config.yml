@@ -85,6 +85,8 @@ driver:
   enable_statistics_logging: false
   enable_output: false
   backend_config:
+  output_backend: zarr
+  output_mode: distributed
 nonhydrostatic:
 diffusion:
 tracer_config:

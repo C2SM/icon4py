@@ -39,6 +39,7 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file
 from icon4py.model.common.interpolation import interpolation_factory
+from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_states
 from icon4py.model.common.utils import fortran_config
@@ -290,6 +291,25 @@ class DriverConfig:
             icon_equivalent=None,
         ),
     ] = dataclasses.field(default_factory=backend_cfg.backend_config_from_env)
+    output_backend: typing.Annotated[
+        common_io.OutputBackend,
+        common_conf_opt.ConfigOption(
+            description="File format of the output field groups ('netcdf' or 'zarr').",
+            icon_equivalent=None,
+        ),
+    ] = common_io.OutputBackend.ZARR
+    output_mode: typing.Annotated[
+        common_io.OutputMode,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Write strategy of distributed runs ('gather' or 'distributed', see "
+                "'icon4py.model.common.io.OutputMode'); 'distributed' netCDF needs an "
+                "MPI-parallel netCDF4 installation in multi-rank runs (see 'Parallel "
+                "netCDF' in 'icon4py.model.common.io')."
+            ),
+            icon_equivalent=None,
+        ),
+    ] = common_io.OutputMode.DISTRIBUTED
 
     def __post_init__(self) -> None:
         if self.start_of_timestepping < self.start_of_simulation:

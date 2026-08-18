@@ -18,6 +18,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
+from icon4py.model.common.io import io as common_io
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 
 
@@ -63,6 +64,19 @@ def main(
             help="Write the prognostic and diagnostic fields to output.",
         ),
     ] = False,
+    output_backend: Annotated[
+        common_io.OutputBackend,
+        typer.Option(help="Output file format."),
+    ] = common_io.OutputBackend.ZARR,
+    output_mode: Annotated[
+        common_io.OutputMode,
+        typer.Option(
+            help=(
+                "How ranks write output in distributed runs ('distributed' netCDF "
+                "needs an MPI-parallel netCDF4 installation)."
+            )
+        ),
+    ] = common_io.OutputMode.DISTRIBUTED,
 ) -> None:
     """
     CLI entry point that runs the icon4py driver.
@@ -82,7 +96,11 @@ def main(
     )
 
     config = driver_config.read_experiment_config_from_fortran(config_file_path)
-    driver_overrides: dict[str, object] = {"enable_output": enable_output}
+    driver_overrides: dict[str, object] = {
+        "enable_output": enable_output,
+        "output_backend": output_backend,
+        "output_mode": output_mode,
+    }
     if output_path is not None:
         driver_overrides["output_path"] = output_path
     config = config.with_overrides(driver=driver_overrides)
