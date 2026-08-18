@@ -456,7 +456,7 @@ class TestDataAllocationWrapper:
 
         assert np.all((values >= 2.0) & (values < 3.0))
 
-    def test_from_numpy_hands_host_data_to_the_allocator(self, wrapper, grid):
+    def test_field_from_array_hands_host_data_to_the_allocator(self, wrapper, grid):
         """
         A fixture that must build its input with NumPy has to hand the array over.
 
@@ -468,7 +468,7 @@ class TestDataAllocationWrapper:
             grid.num_cells, grid.num_levels
         )
 
-        field = wrapper.from_numpy(values, dims.CellDim, dims.KDim)
+        field = wrapper.field_from_array(values, dims.CellDim, dims.KDim)
 
         assert field.domain.dims == (dims.CellDim, dims.KDim)
         np.testing.assert_array_equal(field.asnumpy(), values)

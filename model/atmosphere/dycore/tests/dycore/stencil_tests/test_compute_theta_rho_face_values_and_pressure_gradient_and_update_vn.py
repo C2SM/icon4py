@@ -504,7 +504,9 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
                 high=k_levels - k - 1,
                 size=ikoffset_buffer.shape[:2],
             )
-        ikoffset = data_alloc.from_numpy(ikoffset_buffer, dims.EdgeDim, dims.E2CDim, dims.KDim)
+        ikoffset = data_alloc.field_from_array(
+            ikoffset_buffer, dims.EdgeDim, dims.E2CDim, dims.KDim
+        )
 
         dtime = 0.9
         iau_wgt_dyn = 1.0

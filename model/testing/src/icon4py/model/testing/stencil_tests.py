@@ -239,16 +239,14 @@ class DataAllocationWrapper:
             domain=connectivity.domain, data=connectivity.ndarray, allocator=self.allocator
         )
 
-    def from_numpy(self, data: npt.NDArray, *dims: gtx.Dimension) -> gtx.Field:
-        """
-        A field over `dims` holding a copy of `data`, allocated on the target device.
-
-        For inputs that have to be built with NumPy first, such as index patterns. Filling
-        an already allocated field by writing into its buffer only works while that buffer
-        is host memory, which it is not once a GPU backend selects the allocator.
-        """
-        # same suppression as `data_allocation.as_field`: NDArrayObject vs np.ndarray
-        return gtx.as_field(dims, data, allocator=self.allocator)  # type: ignore[arg-type]
+    def field_from_array(
+        self,
+        data: npt.NDArray,
+        *dims: gtx.Dimension,
+        dtype: npt.DTypeLike | None = None,
+    ) -> gtx.Field:
+        """A field over `dims` holding `data`, for inputs built with NumPy first."""
+        return data_allocation.field_from_array(data, *dims, dtype=dtype, allocator=self.allocator)
 
     def constant_field(
         self,

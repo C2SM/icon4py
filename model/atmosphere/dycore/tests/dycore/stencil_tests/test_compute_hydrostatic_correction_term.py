@@ -148,7 +148,9 @@ class TestComputeHydrostaticCorrectionTerm(stencil_tests.StencilTest):
                 high=grid.num_levels - k - 1,
                 size=ikoffset_buffer.shape[:2],
             )
-        ikoffset = data_alloc.from_numpy(ikoffset_buffer, dims.EdgeDim, dims.E2CDim, dims.KDim)
+        ikoffset = data_alloc.field_from_array(
+            ikoffset_buffer, dims.EdgeDim, dims.E2CDim, dims.KDim
+        )
 
         theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         zdiff_gradp = data_alloc.random_field(
