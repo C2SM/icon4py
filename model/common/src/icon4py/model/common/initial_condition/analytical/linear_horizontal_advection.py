@@ -111,7 +111,7 @@ def compute_max_velocity(
 ) -> float:
     # note: as we need vel_max at time n+1/2 and vel_max is needed for the time step, we have a chicken-and-egg problem
     # instead of doing a fixed-point iteration, we simply estimate an upper bound for vel_max
-    u, v = _compute_idealized_velocity_field(
+    u, v = _compute_idealized_horizontal_velocity_field(
         velocity_field=velocity_field,
         domain_length=domain_length,
         domain_height=domain_height,
@@ -202,7 +202,7 @@ def _compute_tracer_center(
     )
 
 
-def _compute_idealized_velocity_field(
+def _compute_idealized_horizontal_velocity_field(
     *,
     velocity_field: HorizontalVelocityField,
     domain_length: float,
@@ -242,7 +242,7 @@ def _fill_prep_adv_from_prescribed_wind_field(
 ) -> None:
     # we assume that the airmass is a constant value 1.0, the mass flux equals the velocity
     # impose 2D velocity field at time n+1/2 as required by the numerical scheme
-    u, v = _compute_idealized_velocity_field(
+    u, v = _compute_idealized_horizontal_velocity_field(
         velocity_field=velocity_field,
         domain_length=domain_length,
         domain_height=domain_height,
@@ -422,7 +422,7 @@ def construct_reference_tracer(
 
     array_ns = data_alloc.array_namespace(cell_center_x)
     reference_tracer = array_ns.tile(array_ns.zeros_like(cell_center_x)[:, None], (1, num_levels))
-    u, v = _compute_idealized_velocity_field(
+    u, v = _compute_idealized_horizontal_velocity_field(
         velocity_field=config.velocity_field,
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,

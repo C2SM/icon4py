@@ -98,14 +98,14 @@ def compute_max_velocity(
     # note: as we need vel_max at time n+1/2 and vel_max is needed for the time step, we have a chicken-and-egg problem
     # instead of doing a fixed-point iteration, we simply estimate an upper bound for vel_max
 
-    w = _compute_idealized_velocity_field(
+    w = _compute_idealized_vertical_velocity_field(
         velocity_field=velocity_field,
         model_top_height=model_top_height,
     )
     return data_alloc.array_namespace(w).max(data_alloc.array_namespace(w).abs(w))
 
 
-def _compute_idealized_velocity_field(
+def _compute_idealized_vertical_velocity_field(
     *,
     velocity_field: VerticalVelocityField,
     model_top_height: float,
@@ -128,7 +128,7 @@ def _fill_prep_adv_from_prescribed_wind_field(
     model_top_height: float,
 ) -> None:
     # impose 1D velocity field at time n+1/2 as required by the numerical scheme
-    w = _compute_idealized_velocity_field(
+    w = _compute_idealized_vertical_velocity_field(
         velocity_field=velocity_field,
         model_top_height=model_top_height,
     )
@@ -237,7 +237,7 @@ def construct_reference_tracer(
     z_ifc = metrics.get(metrics_meta.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
     array_ns = data_alloc.array_namespace(z_mc)
     reference_tracer = array_ns.zeros_like(z_mc)
-    w = _compute_idealized_velocity_field(
+    w = _compute_idealized_vertical_velocity_field(
         velocity_field=config.velocity_field,
         model_top_height=vertical_config.model_top_height,
     )
