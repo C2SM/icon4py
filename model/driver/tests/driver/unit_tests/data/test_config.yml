@@ -84,6 +84,8 @@ driver:
   ndyn_substeps: 5
   enable_statistics_logging: false
   enable_output: false
+  output_backend: zarr
+  output_mode: distributed
 nonhydrostatic:
 diffusion:
 tracer_config:
