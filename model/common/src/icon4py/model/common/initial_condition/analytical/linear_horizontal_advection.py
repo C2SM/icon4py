@@ -231,7 +231,7 @@ def _compute_idealized_velocity_field(
     return u, v
 
 
-def _construct_idealized_prep_adv(
+def _fill_prep_adv_from_prescribed_wind_field(
     *,
     velocity_field: VelocityField,
     prep_adv_state: adv_states.AdvectionPrepAdvState,
@@ -257,10 +257,10 @@ def _construct_idealized_prep_adv(
     mass_flx_ic[:, :] = 0.0
 
 
-def _construct_idealized_tracer(
+def _fill_tracer_from_analytical_profile(
     *,
     config: LinearHorizontalAdvectionConfig,
-    tracer: data_alloc.NDArray,
+    tracer_buffer: data_alloc.NDArray,
     tracer_center_x: float,
     tracer_center_y: float,
     domain_length: float,
@@ -273,11 +273,12 @@ def _construct_idealized_tracer(
     the domain size. When the tracer profile is Gaussian, the decay factor is chosen such
     that the Gaussian decays to 1.e-3 at the decay radius from the center.
     Otherwise, the tracer profile is a discontinuous circle with radius equal to 1/4 of
-    the average domain size.
+    the average domain size. The accuracy of the tracer profile depends on the number of
+    quadrature points (nodes) used to project the profile onto the grid.
 
     Args:
-        tracer_profile: tracer profile type
-        tracer: array to store the tracer values
+        config: configuration for the linear horizontal advection test case
+        tracer_buffer: buffer array to store the tracer values
         tracer_center_x: tracer center x-coordinate
         tracer_center_y: tracer center y-coordinate
         domain_length: domain size in x-direction
@@ -326,7 +327,7 @@ def _construct_idealized_tracer(
             raise NotImplementedError(
                 f"Initial tracer profile {config.tracer_profile} not implemented."
             )
-    tracer[:, :] = array_ns.sum(weights * vertex_tracer, axis=0)[:, None]
+    tracer_buffer[:, :] = array_ns.sum(weights * vertex_tracer, axis=0)[:, None]
 
 
 def linear_horizontal_advection(
@@ -366,7 +367,7 @@ def linear_horizontal_advection(
         domain_height=grid.grid_params.domain_height,
     )
 
-    _construct_idealized_prep_adv(
+    _fill_prep_adv_from_prescribed_wind_field(
         velocity_field=config.velocity_field,
         prep_adv_state=adv_prep_adv_state,
         primal_normal_x=geometry.get(geometry_meta.EDGE_NORMAL_U).ndarray,
@@ -382,9 +383,9 @@ def linear_horizontal_advection(
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
     )
-    _construct_idealized_tracer(
+    _fill_tracer_from_analytical_profile(
         config=config,
-        tracer=tracer_state_now.qv.ndarray,
+        tracer_buffer=tracer_state_now.qv.ndarray,
         tracer_center_x=center_x,
         tracer_center_y=center_y,
         domain_length=grid.grid_params.domain_length,
@@ -434,9 +435,9 @@ def construct_reference_tracer(
         displacement_x=u * integration_time,
         displacement_y=v * integration_time,
     )
-    _construct_idealized_tracer(
+    _fill_tracer_from_analytical_profile(
         config=config,
-        tracer=reference_tracer,
+        tracer_buffer=reference_tracer,
         tracer_center_x=end_center_x,
         tracer_center_y=end_center_y,
         domain_length=grid.grid_params.domain_length,

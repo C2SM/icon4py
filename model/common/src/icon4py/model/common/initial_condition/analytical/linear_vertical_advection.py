@@ -121,7 +121,7 @@ def _compute_idealized_velocity_field(
     return w
 
 
-def _construct_idealized_prep_adv(
+def _fill_prep_adv_from_prescribed_wind_field(
     *,
     velocity_field: VelocityField,
     prep_adv_state: adv_states.AdvectionPrepAdvState,
@@ -142,16 +142,28 @@ def _construct_idealized_prep_adv(
     mass_flx_ic[:, :] = w
 
 
-def _construct_idealized_tracer(
+def _fill_tracer_from_analytical_profile(
     *,
     config: LinearVerticalAdvectionConfig,
-    tracer: data_alloc.NDArray,
+    tracer_buffer: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     center_z: float,
     model_top_height: float,
 ) -> None:
-    # impose tracer ICs at the horizontal grid center
+    """
+    Create an idealized tracer vertical profile. The profile is constructed using Simpson's
+    1/3 rule to integrate the tracer values over neighboring cell interfaces. The accuracy
+    of the tracer profile is third order.
+
+    Args:
+        config: configuration for the linear vertical advection test case
+        tracer_buffer: buffer array to store the tracer values
+        z_mc: cell center z-coordinate
+        z_ifc: cell interface z-coordinate
+        center_z: domain size in x-direction
+        model_top_height: height of the model top
+    """
     array_ns = data_alloc.array_namespace(z_mc)
 
     def _compute_tracer(dz: data_alloc.NDArray) -> data_alloc.NDArray:
@@ -172,7 +184,7 @@ def _construct_idealized_tracer(
     # Simpson's 1/3 rule
     tracer_mc = _compute_tracer(z_mc - center_z)
     tracer_ifc = _compute_tracer(z_ifc - center_z)
-    tracer[:, :] = (tracer_ifc[:, :-1] + 4.0 * tracer_mc + tracer_ifc[:, 1:]) / 6.0
+    tracer_buffer[:, :] = (tracer_ifc[:, :-1] + 4.0 * tracer_mc + tracer_ifc[:, 1:]) / 6.0
 
 
 def linear_vertical_advection(
@@ -198,15 +210,15 @@ def linear_vertical_advection(
 
     prognostic_state_now.rho.ndarray[:, :] = 1.0
 
-    _construct_idealized_prep_adv(
+    _fill_prep_adv_from_prescribed_wind_field(
         velocity_field=config.velocity_field,
         prep_adv_state=adv_prep_adv_state,
         model_top_height=vertical_config.model_top_height,
     )
 
-    _construct_idealized_tracer(
+    _fill_tracer_from_analytical_profile(
         config=config,
-        tracer=tracer_state_now.qv.ndarray,
+        tracer_buffer=tracer_state_now.qv.ndarray,
         z_mc=z_mc,
         z_ifc=z_ifc,
         center_z=config.initial_center * vertical_config.model_top_height,
@@ -230,9 +242,9 @@ def construct_reference_tracer(
         model_top_height=vertical_config.model_top_height,
     )
     end_center_z = config.initial_center * vertical_config.model_top_height + integration_time * w
-    _construct_idealized_tracer(
+    _fill_tracer_from_analytical_profile(
         config=config,
-        tracer=reference_tracer,
+        tracer_buffer=reference_tracer,
         z_mc=z_mc,
         z_ifc=z_ifc,
         center_z=end_center_z,
