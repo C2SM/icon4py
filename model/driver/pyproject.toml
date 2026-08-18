@@ -34,7 +34,10 @@ dependencies = [
   "typer>=0.20.0",
   "devtools>=0.12",
   "gt4py==1.2.0",
-  "packaging>=20.0"
+  "netcdf4>=1.6.1",
+  "numpy>=1.23.3",
+  "packaging>=20.0",
+  "zarr>=3.0"
 ]
 description = "ICON model driver."
 license = {text = "BSD-3 License"}
@@ -46,6 +49,7 @@ version = "0.3.0"
 
 [project.scripts]
 icon4py-driver = "icon4py.model.driver.main:app"
+icon4py-gridlook = "icon4py.model.driver.gridlook:app"
 
 [project.urls]
 Homepage = "https://github.com/C2SM/icon4py"
