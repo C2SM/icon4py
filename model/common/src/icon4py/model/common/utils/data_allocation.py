@@ -94,9 +94,14 @@ def scalar_like_array[ScalarT: gtx_typing.Scalar](
     value: ScalarT,
     allocator: ModuleType | gtx_typing.Allocator | None = None,
 ) -> ScalarLikeArray[ScalarT]:  # type: ignore[type-var] # ScalarT is a subtype of already specified other types
-    """Create a 0-d array (scalar-like) with given value on specified array namespace or allocator."""
-    array_ns = allocator if allocator in (np, xp) else import_array_ns(allocator)
-    assert array_ns is not None and hasattr(array_ns, "asarray")
+    """
+    Create a 0-d array (scalar-like) holding `value`.
+
+    `allocator` selects where the array is placed: pass an array namespace module to
+    allocate in it directly, or a GT4Py allocator to let its device decide between
+    numpy and cupy. `None` means numpy.
+    """
+    array_ns = allocator if isinstance(allocator, ModuleType) else import_array_ns(allocator)
     return array_ns.asarray(value)
 
 
