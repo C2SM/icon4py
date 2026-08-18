@@ -179,12 +179,10 @@ def test_io_roundtrip_cls_cls() -> None:
             interpolation: {}
             vertical_grid:
                 num_levels: 10
-            domain:
-                params: {}
-                topography:
-                    type: jablonowski_williamson
-                initial_condition:
-                    type: jablonowski_williamson
+            topography:
+                type: jablonowski_williamson
+            initial_condition:
+                type: jablonowski_williamson
             prescribed_tendencies: {}
             driver:
                 experiment_name: foo
