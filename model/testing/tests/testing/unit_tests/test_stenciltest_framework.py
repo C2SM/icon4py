@@ -215,6 +215,27 @@ class TestInputDataFixture:
         with pytest.raises(TypeError, match="should not call 'data_allocation' functions"):
             stencil_tests.input_data_fixture(input_data)
 
+    def test_rejects_a_gt4py_constructor_without_an_allocator(self):
+        """It would allocate on the host, which a GPU backend cannot use."""
+
+        def input_data(data_alloc, grid):
+            return {"a": gtx.constructors.zeros(domain={dims.CellDim: (0, 3)}, dtype=float)}
+
+        with pytest.raises(TypeError, match="without an 'allocator'"):
+            stencil_tests.input_data_fixture(input_data)
+
+    def test_accepts_a_gt4py_constructor_given_the_allocator(self):
+        """Needed when the domain is one `zero_field` cannot express."""
+
+        def input_data(data_alloc, grid):
+            return {
+                "a": gtx.constructors.zeros(
+                    domain={dims.CellDim: (0, 3)}, dtype=float, allocator=data_alloc.allocator
+                )
+            }
+
+        assert stencil_tests.input_data_fixture(input_data) is not None
+
     def test_is_skipped_when_no_source_is_available(self):
         """Dynamically generated fixtures cannot be inspected; they must not blow up."""
         namespace: dict = {}

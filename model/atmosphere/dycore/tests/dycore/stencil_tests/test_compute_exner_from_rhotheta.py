@@ -47,6 +47,8 @@ class TestComputeExnerFromRhotheta(stencil_tests.StencilTest):
         rho = data_alloc.random_field(dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
         exner = data_alloc.random_field(dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
         theta_v = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        # a buffer of its own: `out` must not alias the `exner` the program reads
+        exner_out = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             rho=rho,
@@ -57,5 +59,5 @@ class TestComputeExnerFromRhotheta(stencil_tests.StencilTest):
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
                 dims.KDim: (0, gtx.int32(grid.num_levels)),
             },
-            out=(theta_v, exner),
+            out=(theta_v, exner_out),
         )

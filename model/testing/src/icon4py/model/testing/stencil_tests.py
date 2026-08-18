@@ -62,6 +62,9 @@ _STENCIL_REFERENCE_MARKER: Final = "__stencil_test_reference__"
 _INPUT_DATA_FIXTURE_MARKER: Final = "__stencil_test_input_fixture__"
 _METRICS_KEY_EXTRACTOR: Final = "metrics_id_extractor"
 
+#: gt4py constructors that allocate a field, and so need an allocator.
+_GT4PY_FIELD_CONSTRUCTORS: Final = frozenset({"as_field", "zeros", "ones", "full", "empty"})
+
 #: Members every `StencilTest` subclass must define, as (name, marker, decorator name).
 _REQUIRED_MEMBERS: Final = (
     ("reference", _STENCIL_REFERENCE_MARKER, "static_reference"),
@@ -110,7 +113,7 @@ def _validate_signature(
         )
 
 
-def _reject_direct_data_allocation(func: types.FunctionType) -> None:
+def _reject_direct_data_allocation(func: types.FunctionType, tree: ast.AST) -> None:
     """
     Ensure `func` allocates through its `data_alloc` argument, not by calling `data_allocation`.
 
@@ -124,12 +127,6 @@ def _reject_direct_data_allocation(func: types.FunctionType) -> None:
     better: it sees only the top-level code object, and resolves every name in `co_names`,
     attribute names included.
     """
-    try:
-        source = inspect.getsource(func)
-    except OSError:  # no source available, e.g. a dynamically generated function
-        return
-
-    tree = ast.parse(textwrap.dedent(source))
     referenced = {
         node.id
         for node in ast.walk(tree)
@@ -159,6 +156,33 @@ def _reject_direct_data_allocation(func: types.FunctionType) -> None:
             "The 'input_data_fixture' should not call 'data_allocation' functions directly. "
             "Use the 'data_alloc' fixture argument to access data allocation functions instead."
         )
+
+
+def _reject_host_field_construction(tree: ast.AST) -> None:
+    """
+    Ensure a gt4py constructor called directly is given an allocator.
+
+    Without one it allocates on the host, and a GPU backend then rejects the field. The
+    `data_alloc` wrapper passes the allocator for you; when a domain it cannot express
+    forces a direct call, pass `data_alloc.allocator` explicitly.
+    """
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr not in _GT4PY_FIELD_CONSTRUCTORS:
+            continue
+        root: ast.expr = node.func
+        while isinstance(root, ast.Attribute):
+            root = root.value
+        if not (isinstance(root, ast.Name) and root.id.startswith("gtx")):
+            continue
+        if not any(keyword.arg == "allocator" for keyword in node.keywords):
+            raise TypeError(
+                f"'{ast.unparse(node.func)}' is called without an 'allocator', so it"
+                " allocates on the host and a GPU backend cannot use the result. Allocate"
+                " through the 'data_alloc' fixture argument, or pass"
+                " 'allocator=data_alloc.allocator' when it cannot express the domain."
+            )
 
 
 def _static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
@@ -191,7 +215,14 @@ def _input_data_fixture(
         allowed_description="a regular function or a staticmethod",
     )
     plain = cast(types.FunctionType, func.__func__) if isinstance(func, staticmethod) else func
-    _reject_direct_data_allocation(plain)
+    try:
+        source: str | None = inspect.getsource(plain)
+    except OSError:  # no source available, e.g. a dynamically generated function
+        source = None
+    if source is not None:
+        tree = ast.parse(textwrap.dedent(source))
+        _reject_direct_data_allocation(plain, tree)
+        _reject_host_field_construction(tree)
 
     kwargs.setdefault("scope", "class")
     # Wrapped in a `staticmethod` because pytest deprecated class-scoped fixtures defined

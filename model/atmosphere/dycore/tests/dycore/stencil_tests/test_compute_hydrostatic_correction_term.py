@@ -161,14 +161,14 @@ class TestComputeHydrostaticCorrectionTerm(stencil_tests.StencilTest):
         inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
         grav_o_cpd = ta.wpfloat("10.0")
 
-        z_hydro_corr = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-
+        # only the last level is written, so the domain cannot come from `zero_field`
         z_hydro_corr = gtx.constructors.zeros(
             domain={
                 dims.EdgeDim: (0, grid.num_edges),
                 dims.KDim: (grid.num_levels - 1, grid.num_levels),
             },
             dtype=ta.vpfloat,
+            allocator=data_alloc.allocator,
         )
 
         return dict(
