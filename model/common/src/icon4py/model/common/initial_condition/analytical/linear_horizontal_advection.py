@@ -50,12 +50,12 @@ class VelocityField(int, enum.Enum):
     Velocity field for idealized advection test cases.
     """
 
-    #: constant velocity field in x and y directions
-    CONSTANT = 1
-    #: constant velocity field in x direction, zero velocity in y direction
-    CONSTANT_X = 2
-    #: constant velocity field in y direction, zero velocity in x direction
-    CONSTANT_Y = 3
+    #: uniform velocity field in x and y directions
+    UNIFORM_XY = 1
+    #: uniform velocity field in x direction, zero velocity in y direction
+    UNIFORM_X = 2
+    #: uniform velocity field in y direction, zero velocity in x direction
+    UNIFORM_Y = 3
     #: two-dimensional divergence-free swirling velocity field
     VORTEX_2D = 4
     #: two-dimensional increasingly deformational field
@@ -77,7 +77,7 @@ class LinearHorizontalAdvectionConfig:
             description="Velocity field for transporting the tracer.",
             icon_equivalent=None,
         ),
-    ] = VelocityField.CONSTANT
+    ] = VelocityField.UNIFORM_XY
     cfl_number: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
@@ -220,11 +220,11 @@ def _compute_idealized_velocity_field(
         tuple[float, float]: velocity components (u, v) in x and y directions
     """
     match velocity_field:
-        case VelocityField.CONSTANT:
+        case VelocityField.UNIFORM_XY:
             u, v = domain_length, domain_height
-        case VelocityField.CONSTANT_X:
+        case VelocityField.UNIFORM_X:
             u, v = domain_length, 0.0
-        case VelocityField.CONSTANT_Y:
+        case VelocityField.UNIFORM_Y:
             u, v = 0.0, domain_height
         case _:
             raise NotImplementedError(f"Velocity field {velocity_field} not implemented.")
@@ -240,7 +240,7 @@ def _fill_prep_adv_from_prescribed_wind_field(
     domain_length: float,
     domain_height: float,
 ) -> None:
-    # we assume that the airmass is constant 1.0, the mass flux equals the velocity
+    # we assume that the airmass is a constant value 1.0, the mass flux equals the velocity
     # impose 2D velocity field at time n+1/2 as required by the numerical scheme
     u, v = _compute_idealized_velocity_field(
         velocity_field=velocity_field,
@@ -355,6 +355,7 @@ def linear_horizontal_advection(
     cell_center_x = geometry.get(geometry_meta.CELL_CENTER_X).ndarray
     cell_center_y = geometry.get(geometry_meta.CELL_CENTER_Y).ndarray
 
+    # density is set to the inverse of the vertical grid spacing, so that the mass flux equals the velocity
     prognostic_state_now.rho.ndarray[:, :] = metrics.get(metrics_meta.INV_DDQZ_Z_FULL).ndarray
 
     weights, nodes = _prepare_torus_quadratic_quadrature(

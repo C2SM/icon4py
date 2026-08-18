@@ -44,9 +44,9 @@ class VelocityField(int, enum.Enum):
     Velocity field for idealized advection test cases.
     """
 
-    #: constant velocity field
-    CONSTANT_POSITIVE = 1
-    CONSTANT_NEGATIVE = 2
+    #: uniform velocity field
+    UNIFORM_POSITIVE = 1
+    UNIFORM_NEGATIVE = 2
 
 
 @dataclasses.dataclass
@@ -64,7 +64,7 @@ class LinearVerticalAdvectionConfig:
             description="Velocity field for transporting the tracer.",
             icon_equivalent=None,
         ),
-    ] = VelocityField.CONSTANT_POSITIVE
+    ] = VelocityField.UNIFORM_POSITIVE
     cfl_number: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
@@ -112,9 +112,9 @@ def _compute_idealized_velocity_field(
 ) -> float:
     # note: assumes that time is at n+1/2
     match velocity_field:
-        case VelocityField.CONSTANT_POSITIVE:
+        case VelocityField.UNIFORM_POSITIVE:
             w = model_top_height
-        case VelocityField.CONSTANT_NEGATIVE:
+        case VelocityField.UNIFORM_NEGATIVE:
             w = -model_top_height
         case _:
             raise NotImplementedError(f"Velocity field {velocity_field} not implemented.")
