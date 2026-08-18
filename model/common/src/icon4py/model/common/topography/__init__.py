@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common.topography.config import TopographyConfig, create
+from icon4py.model.common.topography.config import TOPO_CONFIG, TopographyConfig, create
 from icon4py.model.common.topography.smoothing import compute_nabla2_on_cell, smooth_topography
 
 
