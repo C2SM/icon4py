@@ -91,17 +91,21 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(stencil_tests.Sten
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
-        zd_vertoffset = data_alloc.zero_field(
-            dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32
+        zd_vertoffset_buffer = np.zeros(
+            (grid.size[dims.CellDim], grid.size[dims.C2E2CDim], grid.size[dims.KDim]),
+            dtype=gtx.int32,
         )
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            zd_vertoffset[:, :, k] = rng.integers(
+            zd_vertoffset_buffer[:, :, k] = rng.integers(
                 low=0 - k,
                 high=grid.num_levels - k - 1,
-                size=(zd_vertoffset.ndarray.shape[0], zd_vertoffset.ndarray.shape[1]),
+                size=zd_vertoffset_buffer.shape[:2],
             )
+        zd_vertoffset = data_alloc.from_numpy(
+            zd_vertoffset_buffer, dims.CellDim, dims.C2E2CDim, dims.KDim
+        )
 
         zd_diffcoef = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
         geofac_n2s_c = data_alloc.random_field(dims.CellDim, dtype=wpfloat)

@@ -136,15 +136,19 @@ class TestComputeHydrostaticCorrectionTerm(stencil_tests.StencilTest):
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        ikoffset = data_alloc.zero_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
+        ikoffset_buffer = np.zeros(
+            (grid.size[dims.EdgeDim], grid.size[dims.E2CDim], grid.size[dims.KDim]),
+            dtype=gtx.int32,
+        )
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]
+            ikoffset_buffer[:, :, k] = rng.integers(
                 low=0 - k,
                 high=grid.num_levels - k - 1,
-                size=(ikoffset.shape[0], ikoffset.shape[1]),
+                size=ikoffset_buffer.shape[:2],
             )
+        ikoffset = data_alloc.from_numpy(ikoffset_buffer, dims.EdgeDim, dims.E2CDim, dims.KDim)
 
         theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         zdiff_gradp = data_alloc.random_field(

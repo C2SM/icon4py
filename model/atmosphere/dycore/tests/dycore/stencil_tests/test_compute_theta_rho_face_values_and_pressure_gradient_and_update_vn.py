@@ -490,17 +490,21 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         horizontal_pressure_gradient = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         rho_at_edges_on_model_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim)
 
-        ikoffset = data_alloc.zero_field(dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
+        ikoffset_buffer = np.zeros(
+            (grid.size[dims.EdgeDim], grid.size[dims.E2CDim], grid.size[dims.KDim]),
+            dtype=gtx.int32,
+        )
         rng = np.random.default_rng()
         k_levels = grid.num_levels
 
         for k in range(k_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]
+            ikoffset_buffer[:, :, k] = rng.integers(
                 low=0 - k,
                 high=k_levels - k - 1,
-                size=(ikoffset.shape[0], ikoffset.shape[1]),
+                size=ikoffset_buffer.shape[:2],
             )
+        ikoffset = data_alloc.from_numpy(ikoffset_buffer, dims.EdgeDim, dims.E2CDim, dims.KDim)
 
         dtime = 0.9
         iau_wgt_dyn = 1.0

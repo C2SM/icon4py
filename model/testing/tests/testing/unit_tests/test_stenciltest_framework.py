@@ -456,6 +456,23 @@ class TestDataAllocationWrapper:
 
         assert np.all((values >= 2.0) & (values < 3.0))
 
+    def test_from_numpy_hands_host_data_to_the_allocator(self, wrapper, grid):
+        """
+        A fixture that must build its input with NumPy has to hand the array over.
+
+        Writing into an already allocated field instead only works while its buffer is host
+        memory; under a GPU backend it raises, or is silently discarded when the write goes
+        through `asnumpy()`, which returns a copy.
+        """
+        values = np.arange(grid.num_cells * grid.num_levels, dtype=np.int32).reshape(
+            grid.num_cells, grid.num_levels
+        )
+
+        field = wrapper.from_numpy(values, dims.CellDim, dims.KDim)
+
+        assert field.domain.dims == (dims.CellDim, dims.KDim)
+        np.testing.assert_array_equal(field.asnumpy(), values)
+
     def test_connectivity_field_returns_a_plain_field(self, wrapper, grid):
         """
         Regression: dropping `allocate_data` also dropped the conversion it performed.
