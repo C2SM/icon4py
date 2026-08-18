@@ -253,15 +253,17 @@ class DataAllocationWrapper:
         value: float,
         *dims: gtx.Dimension,
         dtype: npt.DTypeLike = ta.wpfloat,
+        extend: dict[gtx.Dimension, int] | None = None,
     ) -> gtx.Field:
         """A field filled with `value`."""
         return data_allocation.constant_field(
-            self.grid, value, *dims, dtype=dtype, allocator=self.allocator
+            self.grid, value, *dims, dtype=dtype, extend=extend, allocator=self.allocator
         )
 
     def index_field(
         self,
         dim: gtx.Dimension,
+        *,
         extend: dict[gtx.Dimension, int] | None = None,
         dtype: npt.DTypeLike = gtx.int32,
     ) -> gtx.Field:
