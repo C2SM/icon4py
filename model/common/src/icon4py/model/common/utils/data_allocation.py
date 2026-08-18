@@ -71,7 +71,7 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
         return cp.asnumpy(array)
 
 
-def array_ns(try_cupy: bool) -> ModuleType:
+def _array_ns(try_cupy: bool) -> ModuleType:
     """CuPy if requested and installed, NumPy otherwise."""
     if try_cupy:
         try:
@@ -87,7 +87,7 @@ def array_ns(try_cupy: bool) -> ModuleType:
 
 def import_array_ns(allocator: gtx_typing.Allocator | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
-    return array_ns(device_utils.is_cupy_device(allocator))
+    return _array_ns(device_utils.is_cupy_device(allocator))
 
 
 def scalar_like_array[ScalarT: gtx_typing.Scalar](
