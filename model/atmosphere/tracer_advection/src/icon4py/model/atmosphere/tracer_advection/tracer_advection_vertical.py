@@ -80,7 +80,7 @@ log = logging.getLogger(__name__)
 
 
 class BoundaryConditions(abc.ABC):
-    """Class that sets the upper and lower boundary conditions."""
+    """Abstract base class that sets the upper and lower boundary conditions."""
 
     @abc.abstractmethod
     def run(
@@ -102,7 +102,7 @@ class BoundaryConditions(abc.ABC):
 
 
 class NoFluxCondition(BoundaryConditions):
-    """Class that sets the upper and lower boundary fluxes to zero."""
+    """Sets the upper and lower boundary fluxes to zero."""
 
     def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
@@ -152,7 +152,7 @@ class NoFluxCondition(BoundaryConditions):
 
 
 class VerticalLimiter(abc.ABC):
-    """Class that limits the vertical reconstructed fields and the fluxes."""
+    """Abstract base class for limiters of the vertical reconstructed field and tracer flux."""
 
     @abc.abstractmethod
     def limit_slope(
@@ -184,7 +184,7 @@ class VerticalLimiter(abc.ABC):
 
 
 class NoLimiter(VerticalLimiter):
-    """Class that implements no vertical parabola limiter."""
+    """Disable limiter."""
 
     def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
@@ -255,7 +255,7 @@ class NoLimiter(VerticalLimiter):
 
 
 class SemiMonotonicLimiter(VerticalLimiter):
-    """Class that implements a semi-monotonic vertical parabola limiter."""
+    """Semi-monotonic vertical parabola limiter."""
 
     def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
@@ -362,7 +362,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
 
 
 class VerticalAdvection(abc.ABC):
-    """Class that does one vertical tracer_advection step."""
+    """Abstract base class for vertical tracer advection."""
 
     @abc.abstractmethod
     def run(
@@ -401,7 +401,7 @@ class VerticalAdvection(abc.ABC):
 
 
 class NoAdvection(VerticalAdvection):
-    """Class that implements disabled vertical tracer_advection."""
+    """Disable vertical tracer advection."""
 
     def __init__(
         self,
@@ -475,7 +475,12 @@ class NoAdvection(VerticalAdvection):
 
 
 class FiniteVolume(VerticalAdvection):
-    """Class that defines a finite volume vertical tracer_advection scheme."""
+    """
+    Abstract base class for finite-volume vertical tracer advection schemes.
+    Implements the two-step update pattern: subclasses supply
+    ``_compute_numerical_flux`` (flux reconstruction) and ``_update_unknowns``
+    (tracer field integration).
+    """
 
     def run(
         self,
@@ -539,7 +544,7 @@ class FiniteVolume(VerticalAdvection):
 
 
 class FirstOrderUpwind(FiniteVolume):
-    """Class that does one vertical first-order accurate upwind finite volume tracer_advection step."""
+    """First-order upwind finite-volume vertical tracer advection."""
 
     def __init__(
         self,
@@ -684,7 +689,7 @@ class FirstOrderUpwind(FiniteVolume):
 
 
 class PiecewiseParabolicMethod(FiniteVolume):
-    """Class that does one vertical PPM finite volume tracer_advection step."""
+    """Piecewise Parabolic Method (PPM) vertical finite-volume tracer advection scheme."""
 
     def __init__(
         self,

@@ -60,7 +60,7 @@ log = logging.getLogger(__name__)
 
 
 class HorizontalFluxLimiter(ABC):
-    """Class that limits the horizontal finite volume numerical flux."""
+    """Abstract base class for horizontal finite-volume flux limiters."""
 
     @abstractmethod
     def apply_flux_limiter(
@@ -73,7 +73,7 @@ class HorizontalFluxLimiter(ABC):
 
 
 class NoLimiter(HorizontalFluxLimiter):
-    """Do not apply any limiting."""
+    """Disable limiter."""
 
     def apply_flux_limiter(
         self,
@@ -85,7 +85,7 @@ class NoLimiter(HorizontalFluxLimiter):
 
 
 class PositiveDefinite(HorizontalFluxLimiter):
-    """Class that implements a positive definite horizontal flux limiter."""
+    """Positive definite horizontal flux limiter."""
 
     def __init__(
         self,
@@ -198,7 +198,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
 
 
 class SemiLagrangianTracerFlux(ABC):
-    """Class that defines the horizontal semi-Lagrangian tracer flux."""
+    """Abstract base class for the horizontal semi-Lagrangian tracer flux."""
 
     @abstractmethod
     def compute_tracer_flux(
@@ -215,7 +215,7 @@ class SemiLagrangianTracerFlux(ABC):
 
 
 class SecondOrderMiura(SemiLagrangianTracerFlux):
-    """Class that computes a Miura-based second-order accurate tracer flux."""
+    """Second-order Miura tracer flux using SVD-based linear reconstruction."""
 
     def __init__(
         self,
@@ -341,7 +341,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
 
 
 class HorizontalAdvection(ABC):
-    """Class that does one horizontal tracer_advection step."""
+    """Abstract base class for horizontal tracer advection."""
 
     @abstractmethod
     def run(
@@ -372,7 +372,7 @@ class HorizontalAdvection(ABC):
 
 
 class NoAdvection(HorizontalAdvection):
-    """Class that implements disabled horizontal tracer_advection."""
+    """Disable horizontal tracer_advection."""
 
     def __init__(
         self,
@@ -429,7 +429,12 @@ class NoAdvection(HorizontalAdvection):
 
 
 class FiniteVolume(HorizontalAdvection):
-    """Class that defines a finite volume horizontal tracer_advection scheme."""
+    """
+    Abstract base class for finite-volume horizontal tracer advection schemes.
+    Implements the two-step update pattern: subclasses supply
+    ``_compute_numerical_flux`` (flux reconstruction) and ``_update_unknowns``
+    (tracer field integration).
+    """
 
     def run(
         self,
@@ -487,7 +492,7 @@ class FiniteVolume(HorizontalAdvection):
 
 
 class FirstOrderUpwind(FiniteVolume):
-    """Class that does one horizontal first-order accurate upwind finite volume advection step."""
+    """First-order upwind finite-volume horizontal tracer advection."""
 
     def __init__(
         self,
@@ -598,7 +603,7 @@ class FirstOrderUpwind(FiniteVolume):
 
 
 class SemiLagrangian(FiniteVolume):
-    """Class that does one horizontal semi-Lagrangian finite volume tracer_advection step."""
+    """Semi-Lagrangian finite-volume horizontal tracer advection scheme."""
 
     def __init__(
         self,

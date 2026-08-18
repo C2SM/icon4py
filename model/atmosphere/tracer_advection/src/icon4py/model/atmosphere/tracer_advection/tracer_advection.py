@@ -171,7 +171,7 @@ class Advection(ABC):
 
 
 class NoAdvection(Advection):
-    """Class that implements disabled three-dimensional tracer advection."""
+    """Disable three-dimensional tracer advection."""
 
     def __init__(
         self,
@@ -233,7 +233,7 @@ class NoAdvection(Advection):
 
 
 class GodunovSplittingAdvection(Advection):
-    """Class that implements three-dimensional tracer_advection based on Godunov splitting."""
+    """Implements three-dimensional tracer advection based on Godunov splitting."""
 
     def __init__(
         self,
