@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 @config_io.register_enum
-class TracerProfile(int, enum.Enum):
+class HorizontalTracerProfile(int, enum.Enum):
     """
     Initial tracer profile for idealized advection test cases.
     """
@@ -45,7 +45,7 @@ class TracerProfile(int, enum.Enum):
 
 
 @config_io.register_enum
-class VelocityField(int, enum.Enum):
+class HorizontalVelocityField(int, enum.Enum):
     """
     Velocity field for idealized advection test cases.
     """
@@ -65,19 +65,19 @@ class VelocityField(int, enum.Enum):
 @dataclasses.dataclass
 class LinearHorizontalAdvectionConfig:
     tracer_profile: typing.Annotated[
-        TracerProfile,
+        HorizontalTracerProfile,
         common_conf_opt.ConfigOption(
             description="Initial tracer profile.",
             icon_equivalent=None,
         ),
-    ] = TracerProfile.GAUSSIAN_2D
+    ] = HorizontalTracerProfile.GAUSSIAN_2D
     velocity_field: typing.Annotated[
-        VelocityField,
+        HorizontalVelocityField,
         common_conf_opt.ConfigOption(
             description="Velocity field for transporting the tracer.",
             icon_equivalent=None,
         ),
-    ] = VelocityField.UNIFORM_XY
+    ] = HorizontalVelocityField.UNIFORM_XY
     cfl_number: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
@@ -105,7 +105,7 @@ class LinearHorizontalAdvectionConfig:
 
 def compute_max_velocity(
     *,
-    velocity_field: VelocityField,
+    velocity_field: HorizontalVelocityField,
     domain_length: float,
     domain_height: float,
 ) -> float:
@@ -204,7 +204,7 @@ def _compute_tracer_center(
 
 def _compute_idealized_velocity_field(
     *,
-    velocity_field: VelocityField,
+    velocity_field: HorizontalVelocityField,
     domain_length: float,
     domain_height: float,
 ) -> tuple[float, float]:
@@ -220,11 +220,11 @@ def _compute_idealized_velocity_field(
         tuple[float, float]: velocity components (u, v) in x and y directions
     """
     match velocity_field:
-        case VelocityField.UNIFORM_XY:
+        case HorizontalVelocityField.UNIFORM_XY:
             u, v = domain_length, domain_height
-        case VelocityField.UNIFORM_X:
+        case HorizontalVelocityField.UNIFORM_X:
             u, v = domain_length, 0.0
-        case VelocityField.UNIFORM_Y:
+        case HorizontalVelocityField.UNIFORM_Y:
             u, v = 0.0, domain_height
         case _:
             raise NotImplementedError(f"Velocity field {velocity_field} not implemented.")
@@ -233,7 +233,7 @@ def _compute_idealized_velocity_field(
 
 def _fill_prep_adv_from_prescribed_wind_field(
     *,
-    velocity_field: VelocityField,
+    velocity_field: HorizontalVelocityField,
     prep_adv_state: adv_states.AdvectionPrepAdvState,
     primal_normal_x: data_alloc.NDArray,
     primal_normal_y: data_alloc.NDArray,
@@ -299,14 +299,14 @@ def _fill_tracer_from_analytical_profile(
             domain_extent_y=domain_height,
         )
     match config.tracer_profile:
-        case TracerProfile.GAUSSIAN_2D:
+        case HorizontalTracerProfile.GAUSSIAN_2D:
             decay_factor = (
                 -1.0
                 / (config.decay_radius * min(domain_length, domain_height)) ** (2)
                 * math.log(1e-3)
             )
             vertex_tracer = array_ns.exp(-decay_factor * (dx**2 + dy**2))
-        case TracerProfile.GAUSSIAN_2D_OFFCENTER:
+        case HorizontalTracerProfile.GAUSSIAN_2D_OFFCENTER:
             decay_factor = (
                 -1.0
                 / (config.decay_radius * min(domain_length, domain_height)) ** (2)
@@ -314,13 +314,13 @@ def _fill_tracer_from_analytical_profile(
             )
             dy -= domain_height / 4
             vertex_tracer = array_ns.exp(-decay_factor * (dx**2 + dy**2))
-        case TracerProfile.CIRCLE_2D:
+        case HorizontalTracerProfile.CIRCLE_2D:
             radius = (domain_length + domain_height) / 8.0
             vertex_tracer = array_ns.where(dx**2 + dy**2 <= radius**2, 1.0, 0.0)
-        case TracerProfile.GAUSSIAN_1D_X:
+        case HorizontalTracerProfile.GAUSSIAN_1D_X:
             decay_factor = -1.0 / (config.decay_radius * domain_length) ** (2) * math.log(1e-3)
             vertex_tracer = array_ns.exp(-decay_factor * (dx**2))
-        case TracerProfile.GAUSSIAN_1D_Y:
+        case HorizontalTracerProfile.GAUSSIAN_1D_Y:
             decay_factor = -1.0 / (config.decay_radius * domain_height) ** (2) * math.log(1e-3)
             vertex_tracer = array_ns.exp(-decay_factor * (dy**2))
         case _:

@@ -10,7 +10,7 @@ topography:
     type: flat
 initial_condition:
   config:
-    type: lin_hor_adv
+    type: linear_horizontal_adv
     tracer_profile: circle_2d
     velocity_field: uniform_xy
     cfl_number: 0.11

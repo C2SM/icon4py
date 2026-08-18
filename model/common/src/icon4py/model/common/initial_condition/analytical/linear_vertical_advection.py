@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 @config_io.register_enum
-class TracerProfile(int, enum.Enum):
+class VerticalTracerProfile(int, enum.Enum):
     """
     Initial conditions for idealized advection test cases.
     """
@@ -39,7 +39,7 @@ class TracerProfile(int, enum.Enum):
 
 
 @config_io.register_enum
-class VelocityField(int, enum.Enum):
+class VerticalVelocityField(int, enum.Enum):
     """
     Velocity field for idealized advection test cases.
     """
@@ -52,19 +52,19 @@ class VelocityField(int, enum.Enum):
 @dataclasses.dataclass
 class LinearVerticalAdvectionConfig:
     tracer_profile: typing.Annotated[
-        TracerProfile,
+        VerticalTracerProfile,
         common_conf_opt.ConfigOption(
             description="Initial tracer profile.",
             icon_equivalent=None,
         ),
-    ] = TracerProfile.GAUSSIAN
+    ] = VerticalTracerProfile.GAUSSIAN
     velocity_field: typing.Annotated[
-        VelocityField,
+        VerticalVelocityField,
         common_conf_opt.ConfigOption(
             description="Velocity field for transporting the tracer.",
             icon_equivalent=None,
         ),
-    ] = VelocityField.UNIFORM_POSITIVE
+    ] = VerticalVelocityField.UNIFORM_POSITIVE
     cfl_number: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
@@ -92,7 +92,7 @@ class LinearVerticalAdvectionConfig:
 
 def compute_max_velocity(
     *,
-    velocity_field: VelocityField,
+    velocity_field: VerticalVelocityField,
     model_top_height: float,
 ) -> float:
     # note: as we need vel_max at time n+1/2 and vel_max is needed for the time step, we have a chicken-and-egg problem
@@ -107,14 +107,14 @@ def compute_max_velocity(
 
 def _compute_idealized_velocity_field(
     *,
-    velocity_field: VelocityField,
+    velocity_field: VerticalVelocityField,
     model_top_height: float,
 ) -> float:
     # note: assumes that time is at n+1/2
     match velocity_field:
-        case VelocityField.UNIFORM_POSITIVE:
+        case VerticalVelocityField.UNIFORM_POSITIVE:
             w = model_top_height
-        case VelocityField.UNIFORM_NEGATIVE:
+        case VerticalVelocityField.UNIFORM_NEGATIVE:
             w = -model_top_height
         case _:
             raise NotImplementedError(f"Velocity field {velocity_field} not implemented.")
@@ -123,7 +123,7 @@ def _compute_idealized_velocity_field(
 
 def _fill_prep_adv_from_prescribed_wind_field(
     *,
-    velocity_field: VelocityField,
+    velocity_field: VerticalVelocityField,
     prep_adv_state: adv_states.AdvectionPrepAdvState,
     model_top_height: float,
 ) -> None:
@@ -168,12 +168,12 @@ def _fill_tracer_from_analytical_profile(
 
     def _compute_tracer(dz: data_alloc.NDArray) -> data_alloc.NDArray:
         match config.tracer_profile:
-            case TracerProfile.GAUSSIAN:
+            case VerticalTracerProfile.GAUSSIAN:
                 decay_factor = (
                     -1.0 / (config.decay_radius * model_top_height) ** (2) * math.log(1e-3)
                 )
                 return array_ns.exp(-decay_factor * (dz**2))
-            case TracerProfile.BOX:
+            case VerticalTracerProfile.BOX:
                 r = model_top_height / 8.0
                 return array_ns.where(dz**2 <= r**2, 1.0, 0.0)
             case _:

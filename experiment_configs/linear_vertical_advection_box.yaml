@@ -10,7 +10,7 @@ topography:
     type: flat
 initial_condition:
   config:
-    type: lin_ver_adv
+    type: linear_vertical_adv
     tracer_profile: box
     velocity_field: uniform_positive
     cfl_number: 0.11
