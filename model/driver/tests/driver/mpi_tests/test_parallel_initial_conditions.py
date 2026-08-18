@@ -128,7 +128,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         grid=single_rank_icon4py_driver.grid, allocator=allocator
     )
     initial_condition.create(
-        config=single_rank_icon4py_driver.config.domain.initial_condition,
+        config=single_rank_icon4py_driver.config.initial_condition,
         vertical_config=single_rank_icon4py_driver.config.vertical_grid,
         grid=single_rank_icon4py_driver.grid,
         static_fields=single_rank_icon4py_driver.static_field_factories,
@@ -184,7 +184,7 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
     initial_condition.create(
-        config=multi_rank_icon4py_driver.config.domain.initial_condition,
+        config=multi_rank_icon4py_driver.config.initial_condition,
         vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
         grid=multi_rank_icon4py_driver.grid,
         static_fields=multi_rank_icon4py_driver.static_field_factories,

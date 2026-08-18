@@ -27,14 +27,13 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
-    domain_config,
     initial_condition,
     prescribed_tendencies,
     time,
     topography,
     type_alias as ta,
 )
-from icon4py.model.common.config import options as common_conf_opt
+from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file
@@ -331,13 +330,14 @@ class DriverConfig:
         )
 
 
-@dataclasses.dataclass(frozen=True)
-class ExperimentConfig:
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class ExperimentConfig(config_io.ConfigWithShared):
     geometry: GeometryConfig
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
-    domain: domain_config.DomainConfig
+    initial_condition: initial_condition.IC_CONFIG
+    topography: topography.TOPO_CONFIG
     prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
@@ -351,7 +351,7 @@ class ExperimentConfig:
         # The file-based initial condition needs the clock of the driver to know which
         # savepoint to read: the initial state, or the state of a later time step when
         # restarting. 'with_overrides' rebuilds the config, so the two stay in sync.
-        initial_condition_config = self.domain.initial_condition
+        initial_condition_config = self.initial_condition
         if isinstance(initial_condition_config, from_file.FromFileConfig):
             initial_condition_config.start_of_simulation = self.driver.start_of_simulation
             initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
@@ -492,10 +492,8 @@ def read_experiment_config_from_fortran(
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         muphys=muphys_cfg,
-        domain=domain_config.DomainConfig(
-            topography=topography_cfg.config,
-            initial_condition=initial_condition_cfg.config,
-        ),
+        topography=topography_cfg.config,
+        initial_condition=initial_condition_cfg.config,
         prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
             atm_dict=atm_dict, data_path=config_file_path
         ),
