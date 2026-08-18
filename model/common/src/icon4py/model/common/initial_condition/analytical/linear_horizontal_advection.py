@@ -261,12 +261,12 @@ def _fill_tracer_from_analytical_profile(
     *,
     config: LinearHorizontalAdvectionConfig,
     tracer_buffer: data_alloc.NDArray,
+    weights: data_alloc.NDArray,
+    nodes: data_alloc.NDArray,
     tracer_center_x: float,
     tracer_center_y: float,
     domain_length: float,
     domain_height: float,
-    weights: data_alloc.NDArray,
-    nodes: data_alloc.NDArray,
 ) -> None:
     """
     Create an idealized tracer profile on a torus grid, given the center of the tracer and
@@ -386,12 +386,12 @@ def linear_horizontal_advection(
     _fill_tracer_from_analytical_profile(
         config=config,
         tracer_buffer=tracer_state_now.qv.ndarray,
+        weights=weights,
+        nodes=nodes,
         tracer_center_x=center_x,
         tracer_center_y=center_y,
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
-        weights=weights,
-        nodes=nodes,
     )
 
 
@@ -438,11 +438,11 @@ def construct_reference_tracer(
     _fill_tracer_from_analytical_profile(
         config=config,
         tracer_buffer=reference_tracer,
+        weights=weights,
+        nodes=nodes,
         tracer_center_x=end_center_x,
         tracer_center_y=end_center_y,
         domain_length=grid.grid_params.domain_length,
         domain_height=grid.grid_params.domain_height,
-        weights=weights,
-        nodes=nodes,
     )
     return reference_tracer
