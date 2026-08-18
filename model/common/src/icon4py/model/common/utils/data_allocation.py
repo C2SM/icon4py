@@ -232,13 +232,21 @@ def array_namespace(array: NDArray) -> ModuleType:
     return array_api_compat.array_namespace(array)
 
 
-def list2field(
+def scattered_field(
     domain: gtx.Domain,
     values: NDArray,
     indices: tuple[NDArray, ...],
     default_value: state_utils.ScalarType,
     allocator: gtx_typing.Allocator,
 ) -> gtx.Field:
+    """
+    Create a field over `domain` by scattering `values` into a `default_value` background.
+
+    `indices` holds one entry per dimension of `domain`, together forming the fancy
+    index that selects the positions `values` is written to; every entry must be an
+    index array of the same shape as `values`, or a slice covering a whole dimension.
+    All positions not selected keep `default_value`.
+    """
     if len(domain) != len(indices):
         raise RuntimeError("The number of indices must match the shape of the domain.")
     assert all(index.shape == indices[0].shape for index in indices if not isinstance(index, slice))
