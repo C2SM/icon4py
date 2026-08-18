@@ -100,7 +100,7 @@ def scalar_like_array[ScalarT: gtx_typing.Scalar](
     return array_ns.asarray(value)
 
 
-def as_field(
+def reallocate(
     field: gtx.Field,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
