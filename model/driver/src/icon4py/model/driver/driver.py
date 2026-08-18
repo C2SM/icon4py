@@ -165,19 +165,28 @@ class Icon4pyDriver:
         The assembled DataArrays reference the live state (see ``io.utils.to_data_array``),
         so they must be written here and now -- before the next step mutates the state. The
         static diagnostic inputs are fetched directly from the field factories.
+
+        At steps no field group captures, only the monitor's schedule counters advance:
+        nothing is assembled, timed or written -- so the diagnostics are not computed
+        for steps that discard them, and the output timers hold only real capture work.
         """
         assert self.io_monitor is not None
-        metrics = self.static_field_factories.metrics
-        interpolation = self.static_field_factories.interpolation
-        state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-        diagnostic_fields = self._diagnostics_computer.compute(
-            prognostic_state,
-            ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
-            rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
-            rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
-        )
-        state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
-        self.io_monitor.store(state_to_store, simulation_current_datetime)
+        if not self.io_monitor.captures_next_store():
+            self.io_monitor.store({}, simulation_current_datetime)
+            return
+        with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
+            metrics = self.static_field_factories.metrics
+            interpolation = self.static_field_factories.interpolation
+            state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
+            diagnostic_fields = self._diagnostics_computer.compute(
+                prognostic_state,
+                ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
+                rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
+                rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
+            )
+            state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
+        with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_STORE.value]:
+            self.io_monitor.store(state_to_store, simulation_current_datetime)
 
     def time_integration(
         self,
@@ -257,13 +266,16 @@ class Icon4pyDriver:
                         prognostic_states.current,
                         self.model_time_variables.simulation_current_datetime,
                     )
+            if self.io_monitor is not None:
+                self.io_monitor.report_timings()
         finally:
             if self.io_monitor is not None:
                 self.io_monitor.close()
 
         self._compute_mean_at_final_time_step(prognostic_states.current)
 
-        self.timer_collection.show_timer_report()
+        total_wall_time = (datetime.datetime.now() - wall_clock_starting_time).total_seconds()
+        self.timer_collection.show_timer_report(total_wall_time=total_wall_time)
         if (
             self.config.driver.profiling_options is not None
             and self.config.driver.profiling_options.gt4py_metrics_level > gtx_metrics.DISABLED
@@ -749,20 +761,18 @@ def initialize_driver(
     )
     io_monitor = None
     if config.driver.enable_output:
-        if process_props.comm_size > 1:
-            # IO is single-node only for now: under MPI every rank would construct its own
-            # monitor and write overlapping files. Disable until IO becomes distributed.
-            log.warning("output is not supported in distributed (MPI) runs yet: disabling IO")
-        else:
-            log.info("Initializing single-node IO monitor")
-            io_monitor = driver_io.create_io_monitor(
-                output_path=config.driver.output_path,
-                grid_file_path=pathlib.Path(grid_manager.file_path),
-                grid=grid_manager.grid,
-                vertical_grid=vertical_grid,
-                dtime=config.driver.dtime,
-                process_props=process_props,
-            )
+        log.info("Initializing IO monitor")
+        io_monitor = driver_io.create_io_monitor(
+            output_path=config.driver.output_path,
+            grid_file_path=pathlib.Path(grid_manager.file_path),
+            grid=grid_manager.grid,
+            vertical_grid=vertical_grid,
+            dtime=config.driver.dtime,
+            output_backend=config.driver.output_backend,
+            output_mode=config.driver.output_mode,
+            process_props=process_props,
+            decomposition_info=decomposition_info,
+        )
 
     icon4py_driver = Icon4pyDriver(
         config=config,

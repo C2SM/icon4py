@@ -70,6 +70,87 @@ def finalize_mpi() -> None:
         MPI.Finalize()
 
 
+def allgather_entry_counts(
+    process_props: decomp_defs.ProcessProperties, count: int, *, array_ns: ModuleType
+) -> data_alloc.NDArray:
+    """Entry counts of all ranks (one entry per rank, in rank order).
+
+    ``array_ns`` determines the namespace of the returned array (there is no input
+    array to derive it from). Collective on the communicator; works on a single-rank
+    communicator without an MPI installation.
+    """
+    if process_props.is_single_rank():
+        return array_ns.asarray([count], dtype=array_ns.int64)
+    return array_ns.asarray(process_props.comm.allgather(count), dtype=array_ns.int64)
+
+
+def gather_entries(
+    process_props: decomp_defs.ProcessProperties,
+    local_entries: data_alloc.NDArray,
+    *,
+    entry_counts: data_alloc.NDArray,
+) -> data_alloc.NDArray | None:
+    """Concatenate the ranks' entries (leading-axis) on the root rank, in rank order.
+
+    ``entry_counts`` holds the per-rank leading-axis sizes (see
+    ``allgather_entry_counts``); trailing axes must agree between the ranks. The
+    result is allocated in the namespace of ``local_entries``. Returns the
+    concatenation on the root rank and None on all other ranks. Collective on the
+    communicator; works on a single-rank communicator without an MPI installation.
+    """
+    if process_props.is_single_rank():
+        return local_entries
+    xp = data_alloc.array_namespace(local_entries)
+    send = xp.ascontiguousarray(local_entries)
+    entry_elements = int(np.prod(send.shape[1:], dtype=np.int64))
+    # the per-rank receive counts are message metadata, not payload: they live on host
+    host_counts = data_alloc.as_numpy(entry_counts)
+    if process_props.rank == 0:
+        gathered = xp.empty((int(host_counts.sum()), *send.shape[1:]), dtype=send.dtype)
+        process_props.comm.Gatherv(send, [gathered, host_counts * entry_elements], root=0)
+        return gathered
+    process_props.comm.Gatherv(send, None, root=0)
+    return None
+
+
+def check_global_index_partition(
+    process_props: decomp_defs.ProcessProperties,
+    dim_name: str,
+    gathered_index: data_alloc.NDArray | None,
+    global_size: int,
+) -> None:
+    """Check that the ranks' gathered owned global indices partition the global grid.
+
+    ``gathered_index`` is the rank-order concatenation of the owned global indices of
+    all ranks (``gather_entries``; None on non-root ranks) and must be a permutation
+    of ``0..global_size - 1`` -- overlapping or gappy owner masks would otherwise
+    reassemble a plausible-looking but wrong global field. Collective: the root
+    rank's verdict is broadcast so all ranks raise together instead of hanging in
+    the next collective.
+
+    Raises:
+        ValueError: if the gathered global indices are not a permutation of
+            ``0..global_size - 1``.
+    """
+    if gathered_index is None:
+        is_partition = True
+    else:
+        xp = data_alloc.array_namespace(gathered_index)
+        is_partition = bool(
+            xp.array_equal(
+                xp.sort(gathered_index), xp.arange(global_size, dtype=gathered_index.dtype)
+            )
+        )
+    if not process_props.is_single_rank():
+        is_partition = process_props.comm.bcast(is_partition, root=0)
+    if not is_partition:
+        raise ValueError(
+            f"Owner masks of dimension '{dim_name}' do not partition the global grid: "
+            f"the owned global indices of all ranks are not a permutation of "
+            f"0..{global_size - 1}."
+        )
+
+
 def _get_process_properties(with_mpi: bool = False, comm_id: CommId = None) -> Any:
     def _get_current_comm_or_comm_world(comm_id: CommId) -> mpi4py.MPI.Comm:
         if isinstance(comm_id, int):
