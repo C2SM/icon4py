@@ -36,7 +36,7 @@ To see the current list of packages:
 
 ### 1. Bump the version
 
-Create a new branch for bumping the version. You can find the current icon4py version in the pyporject.toml.
+Create a new branch for bumping the version. You can find the current icon4py version in the main pyproject.toml file.
 Open PR against the main branch with the bumped versions.
 
 Use the `bump-versions` script to update all packages to the new version:
