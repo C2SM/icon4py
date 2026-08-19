@@ -27,14 +27,14 @@ dependencies = [
   # workspace members
   "icon4py-atmosphere-dycore~=0.3.0",
   "icon4py-atmosphere-diffusion~=0.3.0",
-  "icon4py-common~=0.3.0",
-  "icon4py-testing~=0.3.0",  # TODO(): remove this dependency when driver is fully standalone
+  "icon4py-atmosphere-physics-driver~=0.3.0",
+  "icon4py-atmosphere-muphys~=0.3.0",
+  "icon4py-common[io]~=0.3.0",
   # external dependencies
-  "click>=8.0.1",
+  "typer>=0.20.0",
   "devtools>=0.12",
-  "gt4py==1.1.12",
-  "packaging>=20.0",
-  "numpy>=1.23.3"
+  "gt4py==1.2.1",
+  "packaging>=20.0"
 ]
 description = "ICON model driver."
 license = {text = "BSD-3 License"}
@@ -45,7 +45,7 @@ requires-python = ">=3.12"
 version = "0.3.0"
 
 [project.scripts]
-icon4py_driver = "icon4py.model.driver.icon4py_driver:main"
+icon4py-driver = "icon4py.model.driver.main:app"
 
 [project.urls]
 Homepage = "https://github.com/C2SM/icon4py"

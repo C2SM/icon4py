@@ -180,8 +180,9 @@ def _compute_rho_theta_pgrad_and_update_vn(
 ]:
     # TODO(havogt): it would be nice if we could shrink the start of the compute domain to `start_edge_lateral_boundary_level_7 <= dims.EdgeDim`,
     # but that would require to put the correct lateral boundary condition where this is consumed.
-    # TODO(havogt): most likely it is possible to remove the `end_edge_halo` bound here (and shrink the compute domain), the corresponding
-    # Fortran code states "Initialize halo edges with zero in order to avoid access of uninitialized array elements".
+    # Note: the zeros outside are required, the Fortran code states "Initialize halo edges with
+    # zero in order to avoid access of uninitialized array elements", therefore this cannot be
+    # expressed as an output domain.
     (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = concat_where(
         ((start_edge_lateral_boundary_level_7 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_halo)),
         _compute_horizontal_advection_of_rho_and_theta(
@@ -207,33 +208,21 @@ def _compute_rho_theta_pgrad_and_update_vn(
         ),
     )
 
-    # The pressure gradient is computed on [start_edge_nudging_level_2, end_edge_local),
-    # matching the Fortran compute domain rl = [grf_bdywidth_e+1, min_rledge_int]. Outside
-    # this interval the E2C neighbors and the ikoffset/zdiff_gradp/pg_exdist metric fields
-    # contain skip values (-1) or are uninitialized (outer lateral-boundary rows and halo
-    # edges), and the result is never consumed there; write 0.0 instead.
-    horizontal_pressure_gradient = concat_where(
-        (start_edge_nudging_level_2 <= dims.EdgeDim) & (dims.EdgeDim < end_edge_local),
-        _compute_horizontal_pressure_gradient(
-            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
-            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
-            ddxn_z_full=ddxn_z_full,
-            c_lin_e=c_lin_e,
-            ikoffset=ikoffset,
-            zdiff_gradp=zdiff_gradp,
-            pg_exdist=pg_exdist,
-            inv_dual_edge_length=inv_dual_edge_length,
-            nflatlev=nflatlev,
-            nflat_gradp=nflat_gradp,
-        ),
-        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+    horizontal_pressure_gradient = _compute_horizontal_pressure_gradient(
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
+        ddxn_z_full=ddxn_z_full,
+        c_lin_e=c_lin_e,
+        ikoffset=ikoffset,
+        zdiff_gradp=zdiff_gradp,
+        pg_exdist=pg_exdist,
+        inv_dual_edge_length=inv_dual_edge_length,
+        nflatlev=nflatlev,
+        nflat_gradp=nflat_gradp,
     )
 
-    # Note: we overcompute `next_vn`, which is only needed
-    # up to dims.EdgeDim < end_edge_local
-    # TODO(havogt): with multiple output domains this should be fixed.
     next_vn = concat_where(
         start_edge_nudging_level_2 <= dims.EdgeDim,
         _add_temporal_tendencies_to_vn(
@@ -248,7 +237,6 @@ def _compute_rho_theta_pgrad_and_update_vn(
     )
 
     if is_iau_active:
-        # Note: we overcompute `next_vn`, see above.
         next_vn = concat_where(
             start_edge_nudging_level_2 <= dims.EdgeDim,
             _add_analysis_increments_to_vn(
@@ -531,10 +519,24 @@ def compute_rho_theta_pgrad_and_update_vn(
             horizontal_pressure_gradient,
             next_vn,
         ),
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+        domain=(
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.EdgeDim: (start_edge_nudging_level_2, end_edge_local),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.EdgeDim: (start_edge_lateral_boundary, end_edge_local),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+        ),
     )
 
 

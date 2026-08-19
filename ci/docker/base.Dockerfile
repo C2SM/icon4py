@@ -36,9 +36,9 @@ RUN apt-get update && \
         libuv1-dev \
         libyaml-dev \
         llvm \
-        gfortran-12 \
-        gcc-12 \
-        g++-12 \
+        gfortran-13 \
+        gcc-13 \
+        g++-13 \
         pkg-config \
         python3 \
         strace \
@@ -49,9 +49,9 @@ RUN apt-get update && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 && \
-    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100 && \
-    update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-12 100
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100 && \
+    update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-13 100
 
 ENV CC=gcc
 ENV CXX=g++

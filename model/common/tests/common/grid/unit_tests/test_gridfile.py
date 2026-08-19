@@ -17,7 +17,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import gridfile
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
-    definitions,
+    definitions as test_defs,
     grid_utils as gridtest_utils,
 )
 from icon4py.model.testing.fixtures import (
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.with_netcdf
 def test_grid_file_dimension() -> None:
-    grid_description = definitions.Grids.R02B04_GLOBAL
+    grid_description = test_defs.Grids.R02B04_GLOBAL
     global_grid_file = str(dt_utils.get_grid_filepath(grid_description))
     parser = gridfile.GridFile(global_grid_file, offset_transformation=gridfile.NoTransformation())
     try:
@@ -58,7 +58,7 @@ def test_grid_file_dimension() -> None:
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 def test_grid_file_vertex_cell_edge_dimensions(
-    experiment: definitions.Experiment, grid_savepoint: serialbox.IconGridSavepoint
+    experiment: test_defs.Experiment, grid_savepoint: serialbox.IconGridSavepoint
 ) -> None:
     file = dt_utils.get_grid_filepath(experiment.grid)
     parser = gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation())
@@ -80,7 +80,7 @@ def test_grid_file_vertex_cell_edge_dimensions(
 
 
 @pytest.mark.parametrize("apply_offset", (True, False))
-def test_int_variable(grid_description: definitions.GridDescription, apply_offset: bool) -> None:
+def test_int_variable(grid_description: test_defs.GridDescription, apply_offset: bool) -> None:
     file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         edge_dim = parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
@@ -105,7 +105,7 @@ _index_selection: Iterable[list[int]] = [
     _index_selection,
 )
 def test_index_read_for_1d_fields(
-    grid_description: definitions.GridDescription, selection: list[int]
+    grid_description: test_defs.GridDescription, selection: list[int]
 ) -> None:
     file = dt_utils.get_grid_filepath(grid_description)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
@@ -131,7 +131,7 @@ def test_index_read_for_1d_fields(
 )
 @pytest.mark.parametrize("apply_offset", (True, False))
 def test_index_read_for_2d_connectivity(
-    grid_description: definitions.GridDescription,
+    grid_description: test_defs.GridDescription,
     selection: list[int],
     field: gridfile.FieldName,
     apply_offset: bool,

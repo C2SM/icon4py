@@ -41,7 +41,6 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
     PROGRAM = compute_interpolation_and_nonhydro_buoy
     OUTPUTS = (
         "rho_at_cells_on_half_levels",
-        "perturbed_theta_v_at_cells_on_half_levels",
         "theta_v_at_cells_on_half_levels",
         "nonhydro_buoy_at_cells_on_half_levels",
     )
@@ -64,7 +63,6 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         rho_at_cells_on_half_levels: np.ndarray,
-        perturbed_theta_v_at_cells_on_half_levels: np.ndarray,
         theta_v_at_cells_on_half_levels: np.ndarray,
         nonhydro_buoy_at_cells_on_half_levels: np.ndarray,
         w: np.ndarray,
@@ -161,11 +159,6 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         ] = rho_at_cells_on_half_levels_full[
             horizontal_start:horizontal_end, vertical_start:vertical_end
         ]
-        perturbed_theta_v_at_cells_on_half_levels[
-            horizontal_start:horizontal_end, vertical_start:vertical_end
-        ] = perturbed_theta_v_at_cells_on_half_levels_full[
-            horizontal_start:horizontal_end, vertical_start:vertical_end
-        ]
         theta_v_at_cells_on_half_levels[
             horizontal_start:horizontal_end, vertical_start:vertical_end
         ] = theta_v_at_cells_on_half_levels_full[
@@ -178,7 +171,6 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         ]
         return dict(
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
-            perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         )
@@ -206,9 +198,6 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             grid, dims.CellDim, dims.KDim
         )
         rho_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
-        )
         theta_v_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
@@ -226,7 +215,6 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
 
         return dict(
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
-            perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
             nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             w=w,

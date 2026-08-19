@@ -174,8 +174,32 @@ variables:
     # so this can be used safely.
     UV_LINK_MODE: symlink
 
+.retry_on_transient_failure:
+  # Retry on transient runner/scheduler failures and signal-killed (e.g. slurm
+  # timeouts and cancellations due to filesystem/network hangs) jobs.
+  #
+  # GitLab failure types and exit codes are documented at:
+  # https://docs.gitlab.com/ee/ci/yaml/#retry
+  #
+  # 137 and 143 are SIGKILL and SIGTERM for slurm cancellations. These are 128 +
+  # signal according to https://man7.org/linux/man-pages/man7/signal.7.html and
+  # https://tldp.org/LDP/abs/html/exitcodes.html.
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - runner_interrupted
+      - runner_external_dependency_failure
+      - api_failure
+      - scheduler_failure
+      - server_timeout_running
+      - server_timeout_canceling
+    exit_codes:
+      - 137
+      - 143
+
 .test_model_aarch64:
-  extends: [.test_runner_serial, .test_template_aarch64]
+  extends: [.test_runner_serial, .test_template_aarch64, .retry_on_transient_failure]
   script:
     - |
       PYTEST_ARGS="--backend=$BACKEND"
@@ -187,10 +211,10 @@ variables:
       variables:
         NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '01:00:00'
-    - if: $MODEL_SUBPACKAGE == 'standalone_driver'
+    - if: $MODEL_SUBPACKAGE == 'driver'
       variables:
         SLURM_TIMELIMIT: '00:50:00'
-    - if: $MODEL_SUBPACKAGE == 'driver' || $MODEL_SUBPACKAGE == 'dycore' || $MODEL_SUBPACKAGE == 'muphys'
+    - if: $MODEL_SUBPACKAGE == 'dycore' || $MODEL_SUBPACKAGE == 'muphys'
       variables:
         SLURM_TIMELIMIT: '00:30:00'
     - when: on_success
@@ -198,29 +222,39 @@ variables:
         SLURM_TIMELIMIT: '00:30:00'
 
 .test_tools_aarch64:
-  extends: [.test_runner_serial, .test_template_aarch64]
+  extends: [.test_runner_serial, .test_template_aarch64, .retry_on_transient_failure]
   script:
     - nox -s "test_tools_and_bindings-${PYVERSION_SHORT}($SELECTION)"
 
 .test_model_mpi_aarch64:
-  extends: [.test_runner_mpi, .test_template_aarch64]
+  extends: [.test_runner_mpi, .test_template_aarch64, .retry_on_transient_failure]
   script:
     - ci/scripts/ci-mpi-wrapper.sh nox -s "test_model_mpi-${PYVERSION_SHORT}($SELECTION, $MODEL_MPI_SUBPACKAGE)" -- --backend=$BACKEND --level=$LEVEL
   rules:
-    - if: $MODEL_MPI_SUBPACKAGE == 'standalone_driver' && $LEVEL == 'validation'
+    - if: $MODEL_MPI_SUBPACKAGE == 'driver' || $MODEL_MPI_SUBPACKAGE == 'common'
       variables:
         # Signal to (selected) tests that they should expect bitwise identical
         # results between single- and multi-rank runs. This goes hand-in-hand with
         # compiler flags like -ffp-contract=off and others that may be required to
         # actually get bitwise identical results.
         ICON4PY_TEST_EXPECT_MPI_REPRODUCIBLE: "1"
+        # Compute RBF interpolation coefficients with a host (numpy) linear
+        # solve instead of batched cupy.linalg.solve, whose results depend on
+        # the batch extent (= rank-local element count) and therefore on the
+        # domain decomposition. Required for bitwise identical single- vs
+        # multi-rank results on GPU; production runs keep the GPU solve.
+        ICON4PY_DETERMINISTIC_RBF_COEFFS: "1"
         CXXFLAGS: "-ffp-contract=off"
+        # Disable FMA contraction in nvcc. This is the only GPU flag required
+        # for bitwise-identical single- vs multi-rank results on GPU backends
+        # in the driver validation tests.
+        NVCC_APPEND_FLAGS: "--fmad=false"
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'
         # TODO(msimberg): Use shared partition when time limit can be set to at
         # most an hour. The shared partition only accepts jobs maximum an hour long.
         SLURM_PARTITION: "normal"
-    - if: $MODEL_MPI_SUBPACKAGE == 'standalone_driver' || ($MODEL_MPI_SUBPACKAGE == 'common' && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'))
+    - if: $MODEL_MPI_SUBPACKAGE == 'driver' || ($MODEL_MPI_SUBPACKAGE == 'common' && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'))
       variables:
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'

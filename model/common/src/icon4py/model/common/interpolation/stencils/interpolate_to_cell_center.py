@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E, C2EDim
+from icon4py.model.common.dimension import C2E
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -20,7 +20,7 @@ def _interpolate_to_cell_center(
 ) -> fa.CellKField[vpfloat]:
     """Formerly known as mo_velocity_advection_stencil_08 or mo_velocity_advection_stencil_09."""
     interpolant_wp = astype(interpolant, wpfloat)
-    interpolation_wp = neighbor_sum(e_bln_c_s * interpolant_wp(C2E), axis=C2EDim)
+    interpolation_wp = neighbor_sum(e_bln_c_s * interpolant_wp(C2E), axis=dims.C2EDim)
     return astype(interpolation_wp, vpfloat)
 
 
