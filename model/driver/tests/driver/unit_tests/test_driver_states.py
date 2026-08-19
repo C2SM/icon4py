@@ -19,7 +19,7 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.common.states import adv_states
+from icon4py.model.common.states import tracer_prep_adv_states
 from icon4py.model.driver import driver_states
 
 from ..fixtures import *  # noqa: F403
@@ -34,7 +34,7 @@ def test_dycore_prep_adv_shares_the_advection_prep_adv_buffers(
 ) -> None:
     allocator = model_backends.get_allocator(backend)
     grid = simple_grid.simple_grid(allocator=allocator)
-    adv_prep_adv_state = adv_states.initialize_advection_prep_adv_state(
+    adv_prep_adv_state = tracer_prep_adv_states.initialize_tracer_prep_adv_state(
         grid=grid,
         allocator=allocator,
     )
@@ -67,7 +67,7 @@ def test_dycore_prep_adv_is_none_when_disabled(
     allocator = model_backends.get_allocator(backend)
     grid = simple_grid.simple_grid(allocator=allocator)
     adv_prep_adv_state = (
-        adv_states.initialize_advection_prep_adv_state(
+        tracer_prep_adv_states.initialize_tracer_prep_adv_state(
             grid=grid,
             allocator=allocator,
         )

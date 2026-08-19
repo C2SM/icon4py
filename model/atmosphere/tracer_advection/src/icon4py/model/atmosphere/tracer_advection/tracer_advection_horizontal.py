@@ -50,7 +50,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.states import adv_states
+from icon4py.model.common.states import tracer_prep_adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -204,7 +204,7 @@ class SemiLagrangianTracerFlux(ABC):
     def compute_tracer_flux(
         self,
         *,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
@@ -292,7 +292,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
     def compute_tracer_flux(
         self,
         *,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
@@ -347,7 +347,7 @@ class HorizontalAdvection(ABC):
     def run(
         self,
         *,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -409,7 +409,7 @@ class NoAdvection(HorizontalAdvection):
     def run(
         self,
         *,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -439,7 +439,7 @@ class FiniteVolume(HorizontalAdvection):
     def run(
         self,
         *,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
@@ -471,7 +471,7 @@ class FiniteVolume(HorizontalAdvection):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
@@ -556,7 +556,7 @@ class FirstOrderUpwind(FiniteVolume):
 
     def _compute_numerical_flux(
         self,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
@@ -715,7 +715,7 @@ class SemiLagrangian(FiniteVolume):
     def _compute_numerical_flux(
         self,
         *,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],

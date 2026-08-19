@@ -42,7 +42,7 @@ from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.states import adv_states
+from icon4py.model.common.states import tracer_prep_adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
@@ -151,7 +151,7 @@ class Advection(ABC):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -210,7 +210,7 @@ class NoAdvection(Advection):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -319,7 +319,7 @@ class GodunovSplittingAdvection(Advection):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: adv_states.AdvectionPrepAdvState,
+        prep_adv: tracer_prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,

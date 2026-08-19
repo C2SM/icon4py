@@ -44,11 +44,11 @@ from icon4py.model.common.interpolation import interpolation_attributes as intp_
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
-    adv_states,
     diagnostic_state as diagnostics,
     nonhydro_states,
     prognostic_state as prognostics,
     static_fields,
+    tracer_prep_adv_states,
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
@@ -292,7 +292,7 @@ class Icon4pyDriver:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         tracers: common_utils.TimeStepPair[tracer_states.TracerState],
         prep_adv: dycore_states.PrepAdvection | None,
-        tracer_prep_adv: adv_states.AdvectionPrepAdvState | None,
+        tracer_prep_adv: tracer_prep_adv_states.TracerPrepAdvState | None,
     ) -> None:
         # Airmass (rho * dz) is tracer advection's density<->mixing-ratio conversion
         # factor: computed from rho at the beginning of the time step and from the rho
@@ -832,7 +832,7 @@ def run_driver(
         else None
     )
     adv_prep_adv_state = (
-        adv_states.initialize_advection_prep_adv_state(
+        tracer_prep_adv_states.initialize_tracer_prep_adv_state(
             grid=icon4py_driver.grid, allocator=allocator
         )
         if icon4py_driver.config.tracer_advection is not None

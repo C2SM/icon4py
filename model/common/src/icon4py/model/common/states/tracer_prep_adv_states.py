@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-AdvectionPrepAdvState for tracer advection.
+TracerPrepAdvState for tracer advection.
 
 It is allocated by the driver, filled by the initial condition and mutated by the
 tracer advection, so it lives here and not in the tracer advection package.
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 @dataclasses.dataclass(frozen=True)
-class AdvectionPrepAdvState:
+class TracerPrepAdvState:
     """Represents the prepare tracer_advection state needed in tracer_advection."""
 
     #: horizontal velocity at edges for computation of backward trajectories averaged over dynamics substeps [m/s]
@@ -42,10 +42,10 @@ class AdvectionPrepAdvState:
     mass_flx_ic: fa.CellKField[ta.wpfloat]
 
 
-def initialize_advection_prep_adv_state(
+def initialize_tracer_prep_adv_state(
     grid: base_grid.Grid,
     allocator: gtx_typing.Allocator,
-) -> AdvectionPrepAdvState:
+) -> TracerPrepAdvState:
     vn_traj = data_alloc.zero_field(
         grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
@@ -55,7 +55,7 @@ def initialize_advection_prep_adv_state(
     mass_flx_ic = data_alloc.zero_field(
         grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator, dtype=ta.wpfloat
     )
-    return AdvectionPrepAdvState(
+    return TracerPrepAdvState(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
