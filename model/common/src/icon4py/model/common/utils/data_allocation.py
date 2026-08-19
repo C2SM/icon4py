@@ -160,8 +160,8 @@ def random_mask(
 ) -> gtx.Field:
     """A field with half of its entries set, in random positions."""
     shape = _shape(grid, *dims, extend=extend)
-    size = math.prod(shape)
-    mask = np.arange(size) < size // 2
+    mask = np.zeros(math.prod(shape), dtype=bool)
+    mask[: mask.size // 2] = True
     np.random.default_rng().shuffle(mask)
     return gtx.as_field(dims, mask.reshape(shape), dtype=dtype, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
