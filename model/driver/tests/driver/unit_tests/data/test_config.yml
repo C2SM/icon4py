@@ -1,14 +1,14 @@
 shared:
-- name: u0
-  value: 35.0
-  consumers:
-  - initial_condition
-  - topography
-- name: eta_0
-  value: 0.252
-  consumers:
-  - initial_condition
-  - topography
+  - name: u0
+    value: 35.0
+    consumers:
+      - initial_condition
+      - topography
+  - name: eta_0
+    value: 0.252
+    consumers:
+      - initial_condition
+      - topography
 geometry:
   use_analytical_means: true
 metrics:
