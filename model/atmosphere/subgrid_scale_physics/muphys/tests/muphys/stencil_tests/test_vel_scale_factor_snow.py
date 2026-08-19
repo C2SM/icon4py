@@ -5,6 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -30,12 +38,12 @@ class TestVelScaleFactorSnow(StencilTest):
         rho: np.ndarray,
         t: np.ndarray,
         qs: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(scale_factor=np.full(xrho.shape, 0.06633230453931642))
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.Grid) -> dict:
         return dict(
             xrho=data_alloc.constant_field(grid, 1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho=data_alloc.constant_field(grid, 0.882961, dims.CellDim, dims.KDim, dtype=wpfloat),

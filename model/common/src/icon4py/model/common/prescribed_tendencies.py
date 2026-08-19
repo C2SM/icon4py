@@ -31,7 +31,7 @@ import pathlib
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
-import serialbox  # type: ignore[import-untyped]
+import serialbox  # type: ignore[import-untyped]  # optional dependency without stubs
 
 from icon4py.model.common import model_backends, time
 from icon4py.model.common.states import nonhydro_states

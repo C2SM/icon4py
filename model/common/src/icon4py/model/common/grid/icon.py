@@ -9,6 +9,7 @@ import dataclasses
 import enum
 import logging
 from collections.abc import Callable
+from typing import cast
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -118,7 +119,7 @@ class GridParams:
 @dataclasses.dataclass(frozen=True)
 class IconGrid(base.Grid):
     grid_params: GridParams = dataclasses.field(kw_only=True)
-    refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
+    refinement_control: dict[gtx.Dimension, gtx.Field] | None = dataclasses.field(
         default=None, kw_only=True
     )
 
@@ -134,7 +135,9 @@ def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool)
     In the local area model or a distributed grid there are also skip values at the boundaries or halos when
     accessing neighbouring cells or edges from vertices.
     """
-    dimension = offset.target[1]
+    target = offset.target
+    assert len(target) == 2, "only offsets with a local dimension can have skip values"
+    dimension = target[1]
     assert dimension.kind == gtx.DimensionKind.LOCAL, "only local dimensions can have skip values"
     return dimension in CONNECTIVITIES_ON_PENTAGONS or (
         limited_area_or_distributed and dimension in CONNECTIVITIES_ON_BOUNDARIES
@@ -184,7 +187,7 @@ def icon_grid(
 ) -> IconGrid:
     limited_area_or_distributed = config.limited_area or config.distributed
     connectivities = {
-        offset.value: base.construct_connectivity(
+        cast(str, offset.value): base.construct_connectivity(
             offset,
             data_alloc.import_array_ns(allocator).asarray(table),
             skip_value=-1 if _has_skip_values(offset, limited_area_or_distributed) else None,

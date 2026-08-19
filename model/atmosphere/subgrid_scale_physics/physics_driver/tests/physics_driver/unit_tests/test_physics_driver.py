@@ -8,6 +8,7 @@
 
 import dataclasses
 import datetime
+from typing import Any
 
 import pytest
 
@@ -35,6 +36,8 @@ _T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
 _DT = datetime.timedelta(seconds=300)  # 5-min physics interval
 # 'PhysicsDriver.run' takes the date at the END of the step, so the step starting at
 # '_T0' is passed as '_T0 + _DT'.
+_PROG: Any = "prog"
+_TRACERS: Any = "tracers"
 
 
 def _tc(
@@ -96,7 +99,7 @@ class TestProcessTimeControl:
     def test_frozen_dataclass(self) -> None:
         tc = _tc()
         with pytest.raises(dataclasses.FrozenInstanceError):
-            tc.interval = datetime.timedelta(seconds=1)  # type: ignore[misc]
+            tc.interval = datetime.timedelta(seconds=1)  # type: ignore[misc]  # frozen dataclass mutation intentionally raises
 
     def test_validate_interval_accepts_integer_multiple(self) -> None:
         _tc(interval=2 * _DT).validate_interval(_DT)
@@ -115,10 +118,10 @@ class TestProcessTimeControl:
 
 def test_physics_process_construction() -> None:
     class _DummyComponent:
-        inputs_properties = {}
-        outputs_properties = {}
+        inputs_properties: dict[str, Any] = {}
+        outputs_properties: dict[str, Any] = {}
 
-        def __call__(self, state, time_step):
+        def __call__(self, state: Any, time_step: datetime.datetime) -> dict[str, Any]:
             return {}
 
     state = RecordingPhysicsState()
@@ -145,21 +148,21 @@ class RecordingComponent:
     outputs: dict[str, object]
     output_kinds: dict[str, str]
     call_count: int = 0
-    last_state: dict | None = None
+    last_state: dict[str, Any] | None = None
     last_time: datetime.datetime | None = None
 
     @property
-    def inputs_properties(self) -> dict:
+    def inputs_properties(self) -> dict[str, Any]:
         return {}
 
     @property
-    def outputs_properties(self) -> dict:
+    def outputs_properties(self) -> dict[str, Any]:
         return {
             k: {"standard_name": k, "units": "1", "kind": self.output_kinds[k]}
             for k in self.outputs
         }
 
-    def __call__(self, state, time_step):
+    def __call__(self, state: Any, time_step: datetime.datetime) -> dict[str, Any]:
         self.call_count += 1
         self.last_state = state
         self.last_time = time_step
@@ -171,16 +174,20 @@ class RecordingPhysicsState(PhysicsState):
     """Stub PhysicsState: records refresh / scatter; returns a fixed dict
     from as_component_input. Implements just enough surface for the PhysicsDriver."""
 
-    gather_calls: list = dataclasses.field(default_factory=list)
-    scatter_calls: list = dataclasses.field(default_factory=list)
+    gather_calls: list[Any] = dataclasses.field(default_factory=list)
+    scatter_calls: list[tuple[Any, Any, datetime.timedelta]] = dataclasses.field(
+        default_factory=list
+    )
 
-    def gather_from_prognostic(self, prognostic, tracers) -> None:
+    def gather_from_prognostic(self, prognostic: Any, tracers: Any) -> None:
         self.gather_calls.append(prognostic)
 
-    def as_component_input(self) -> dict:
+    def as_component_input(self) -> dict[str, Any]:
         return {"foo": "bar"}
 
-    def scatter_to_prognostic(self, prognostic, outputs, dtime) -> None:
+    def scatter_to_prognostic(
+        self, prognostic: Any, outputs: Any, dtime: datetime.timedelta
+    ) -> None:
         self.scatter_calls.append((prognostic, outputs, dtime))
 
 
@@ -221,8 +228,8 @@ def test_run_invokes_components_in_order() -> None:
     )
 
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
+        prognostic=_PROG,
+        tracers=_TRACERS,
         dtime=datetime.timedelta(seconds=300),
         simulation_current_datetime=_T0 + _DT,
     )
@@ -250,8 +257,8 @@ def test_run_raises_for_non_multiple_interval() -> None:
 
     with pytest.raises(ValueError, match="integer multiple"):
         driver.run(
-            prognostic="prog",
-            tracers="tracers",
+            prognostic=_PROG,
+            tracers=_TRACERS,
             dtime=_DT,
             simulation_current_datetime=_T0,
         )
@@ -273,8 +280,8 @@ def test_disabled_process_is_skipped() -> None:
     )
 
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
+        prognostic=_PROG,
+        tracers=_TRACERS,
         dtime=datetime.timedelta(seconds=300),
         simulation_current_datetime=_T0,
     )
@@ -298,8 +305,8 @@ def test_out_of_window_process_does_nothing() -> None:
     )
 
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
+        prognostic=_PROG,
+        tracers=_TRACERS,
         dtime=datetime.timedelta(seconds=300),
         simulation_current_datetime=_T0,
     )
@@ -319,8 +326,8 @@ def test_active_call_caches_outputs_and_applies_them() -> None:
     )
 
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
+        prognostic=_PROG,
+        tracers=_TRACERS,
         dtime=datetime.timedelta(seconds=300),
         simulation_current_datetime=_T0 + _DT,
     )
@@ -348,15 +355,15 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
 
     # Step 1: active (elapsed == 0), compute + cache.
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
+        prognostic=_PROG,
+        tracers=_TRACERS,
         dtime=_DT,
         simulation_current_datetime=_T0 + _DT,
     )
     # Step 2: in window, but not active (elapsed == _DT, not a multiple of 2*_DT).
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
+        prognostic=_PROG,
+        tracers=_TRACERS,
         dtime=_DT,
         simulation_current_datetime=_T0 + 2 * _DT,
     )
@@ -385,8 +392,8 @@ def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
 
     # First call lands in-window but off the firing tick (elapsed == _DT, interval == 2*_DT).
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
+        prognostic=_PROG,
+        tracers=_TRACERS,
         dtime=_DT,
         simulation_current_datetime=_T0 + 2 * _DT,
     )

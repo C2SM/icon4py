@@ -35,13 +35,19 @@ from ...fixtures import random_name, test_path
 from .. import utils as test_io_utils
 
 
+TEST_GLOBAL_ATTRS: writers.GlobalFileAttributes = {  # type: ignore[typeddict-item]  # Tests use only a subset of required attributes
+    "title": "test",
+    "institution": "EXCLAIM - ETH Zurich",
+}
+
+
 def _vertical_params(grid: grid_def.Grid) -> v_grid.VerticalGrid:
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
     return v_grid.VerticalGrid(
         vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), heights),
+        vct_a=gtx.as_field((dims.KDim,), heights),  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
         vct_b=None,
     )
 
@@ -61,7 +67,7 @@ def initialized_writer(
         time_properties=writers.TimeProperties(
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
         ),
-        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        global_attrs=TEST_GLOBAL_ATTRS,
         horizontal_chunk_size=horizontal_chunk_size,
         rank_blocks=None,
         process_props=decomposition_defs.SingleNodeProcessProperties(),
@@ -70,7 +76,7 @@ def initialized_writer(
     return writer, grid
 
 
-def test_initialize_writer_time_var(test_path, random_name):
+def test_initialize_writer_time_var(test_path: pathlib.Path, random_name: str) -> None:
     dataset, _ = initialized_writer(test_path, random_name)
     time_var = dataset.variables[writers.TIME]
     assert time_var.dimensions == ("time",)
@@ -81,7 +87,7 @@ def test_initialize_writer_time_var(test_path, random_name):
     assert len(time_var) == 0
 
 
-def test_initialize_writer_vertical_model_levels(test_path, random_name):
+def test_initialize_writer_vertical_model_levels(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     vertical = dataset.variables[writers.MODEL_LEVEL]
     assert vertical.units == "1"
@@ -93,7 +99,7 @@ def test_initialize_writer_vertical_model_levels(test_path, random_name):
     assert np.all(vertical == np.arange(grid.num_levels))
 
 
-def test_initialize_writer_half_levels(test_path, random_name):
+def test_initialize_writer_half_levels(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     half_levels = dataset.variables[writers.MODEL_HALF_LEVEL]
     assert half_levels.units == "1"
@@ -104,7 +110,7 @@ def test_initialize_writer_half_levels(test_path, random_name):
     assert np.all(half_levels == np.arange(grid.num_levels + 1))
 
 
-def test_initialize_writer_heights(test_path, random_name):
+def test_initialize_writer_heights(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     heights = dataset.variables["height"]
     assert heights.units == "m"
@@ -116,11 +122,11 @@ def test_initialize_writer_heights(test_path, random_name):
     assert heights[-1] == 0.0
 
 
-def test_writer_append_timeslice(test_path, random_name):
+def test_writer_append_timeslice(test_path: pathlib.Path, random_name: str) -> None:
     writer, _ = initialized_writer(test_path, random_name)
     time = datetime.now()
     assert len(writer.variables[writers.TIME]) == 0
-    slice1 = {}
+    slice1: dict[str, xr.DataArray] = {}
     writer.append(slice1, time)
     assert len(writer.variables[writers.TIME]) == 1
     time1 = time + timedelta(hours=1)
@@ -137,7 +143,7 @@ def test_writer_append_timeslice(test_path, random_name):
     )
 
 
-def test_writer_append_timeslice_create_new_var(test_path, random_name):
+def test_writer_append_timeslice_create_new_var(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
     assert len(dataset.variables[writers.TIME]) == 0
@@ -160,7 +166,7 @@ def test_writer_append_timeslice_create_new_var(test_path, random_name):
     test_utils.assert_dallclose(dataset.variables["air_density"][0], state["air_density"].data.T)
 
 
-def test_writer_append_timeslice_to_existing_var(test_path, random_name):
+def test_writer_append_timeslice_to_existing_var(test_path: pathlib.Path, random_name: str) -> None:
     dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
     state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
@@ -182,7 +188,7 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
         grid.num_levels,
         grid.num_cells,
     )
-    test_utils.assert_dallclose(dataset.variables["air_density"][1], new_rho.ndarray.T)
+    test_utils.assert_dallclose(dataset.variables["air_density"][1], new_rho.ndarray.T)  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks .T attribute
 
 
 def initialized_zarr_writer(
@@ -203,7 +209,7 @@ def initialized_zarr_writer(
         time_properties=writers.TimeProperties(
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
         ),
-        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        global_attrs=TEST_GLOBAL_ATTRS,
         rank_blocks=rank_blocks,
         horizontal_chunk_size=horizontal_chunk_size,
         horizontal_shard_size=horizontal_shard_size,
@@ -264,7 +270,7 @@ def test_zarr_writer_append_timeslice_to_existing_var(
     writer.close()
     with xr.open_zarr(store_path) as ds:
         assert ds["air_density"].shape == (2, grid.num_levels, grid.num_cells)
-        test_utils.assert_dallclose(ds["air_density"].values[1], new_rho.ndarray.T)
+        test_utils.assert_dallclose(ds["air_density"].values[1], new_rho.ndarray.T)  # type: ignore[attr-defined]  # NDArrayObject Protocol lacks .T attribute
         assert ds.sizes[writers.TIME] == 2
     # the raw time values must be the CF-encoded model times, in append order
     with xr.open_zarr(store_path, decode_times=False) as ds:
@@ -284,7 +290,7 @@ def test_zarr_writer_refuses_to_overwrite(test_path: pathlib.Path, random_name: 
         time_properties=writers.TimeProperties(
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
         ),
-        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        global_attrs=TEST_GLOBAL_ATTRS,
         rank_blocks=None,
         process_props=decomposition_defs.SingleNodeProcessProperties(),
     )
@@ -334,7 +340,7 @@ def test_zarr_writer_root_failure_reaches_non_root_ranks(
         time_properties=writers.TimeProperties(
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
         ),
-        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        global_attrs=TEST_GLOBAL_ATTRS,
         rank_blocks=_single_rank_block(10),
         process_props=_NonRootProcessProperties(
             _ReplayingComm("FileExistsError: store already exists")
@@ -545,7 +551,7 @@ def test_zarr_writer_rejects_chunks_crossing_rank_blocks(
             time_properties=writers.TimeProperties(
                 cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
             ),
-            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+            global_attrs=TEST_GLOBAL_ATTRS,
             rank_blocks=_single_rank_block(10),
             horizontal_chunk_size=4,
             process_props=decomposition_defs.SingleNodeProcessProperties(),
@@ -553,9 +559,9 @@ def test_zarr_writer_rejects_chunks_crossing_rank_blocks(
 
 
 def test_initialize_writer_create_dimensions(
-    test_path,
-    random_name,
-):
+    test_path: pathlib.Path,
+    random_name: str,
+) -> None:
     writer, grid = initialized_writer(test_path, random_name)
 
     assert writer["title"] == "test"
@@ -591,7 +597,7 @@ def initialized_netcdf_rank_block_writer(
         time_properties=writers.TimeProperties(
             cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
         ),
-        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+        global_attrs=TEST_GLOBAL_ATTRS,
         rank_blocks=rank_blocks,
         horizontal_chunk_size=horizontal_chunk_size,
         process_props=decomposition_defs.SingleNodeProcessProperties(),
@@ -796,7 +802,7 @@ def test_netcdf_writer_rejects_chunks_crossing_rank_blocks(
             time_properties=writers.TimeProperties(
                 cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
             ),
-            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+            global_attrs=TEST_GLOBAL_ATTRS,
             rank_blocks=_single_rank_block(10),
             horizontal_chunk_size=4,
             process_props=decomposition_defs.SingleNodeProcessProperties(),
@@ -829,7 +835,7 @@ def test_netcdf_writer_rejects_multi_rank_blocks_without_parallel_support(
             time_properties=writers.TimeProperties(
                 cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
             ),
-            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+            global_attrs=TEST_GLOBAL_ATTRS,
             rank_blocks={},  # the guard fires on the mode alone, before any block is used
             process_props=_TwoRankProcessProperties(),
         )
@@ -855,10 +861,10 @@ class _FakeNetCDF4Module:
         self.__has_parallel4_support__ = has_parallel4_support
 
 
-def _find_spec_pretending_mpi4py(present: bool):
+def _find_spec_pretending_mpi4py(present: bool):  # type: ignore[no-untyped-def]  # Returns a dynamically-constructed finder function
     real_find_spec = importlib.util.find_spec
 
-    def find_spec(name, *args):
+    def find_spec(name, *args):  # type: ignore[no-untyped-def]  # Dynamically-constructed finder function
         if name == "mpi4py":
             return object() if present else None
         return real_find_spec(name, *args)
@@ -931,7 +937,7 @@ def test_zarr_writer_rejects_shards_crossing_rank_blocks(
             time_properties=writers.TimeProperties(
                 cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
             ),
-            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+            global_attrs=TEST_GLOBAL_ATTRS,
             rank_blocks=_single_rank_block(24),
             horizontal_chunk_size=8,
             horizontal_shard_size=16,
@@ -952,7 +958,7 @@ def test_zarr_writer_rejects_shard_without_dividing_chunk(
             time_properties=writers.TimeProperties(
                 cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR
             ),
-            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+            global_attrs=TEST_GLOBAL_ATTRS,
             horizontal_chunk_size=3,
             horizontal_shard_size=8,
             rank_blocks=None,

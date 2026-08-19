@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -46,7 +48,7 @@ class TestUpdateThetaAndExner(StencilTest):
         theta_v: np.ndarray,
         exner: np.ndarray,
         rd_o_cvd: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         theta_v, exner = update_theta_and_exner_numpy(z_temp, area, theta_v, exner, rd_o_cvd)
         return dict(theta_v=theta_v, exner=exner)

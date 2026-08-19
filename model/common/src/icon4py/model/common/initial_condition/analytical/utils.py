@@ -164,7 +164,7 @@ def zonalwind_2_normalwind_ndarray(
             u
             + baroclinic_amplitude
             * array_ns.exp(
-                -(
+                -(  # type: ignore[misc]  # numpy __neg__ stub issue
                     (
                         10.0
                         * distance_array_ns.central_angle(

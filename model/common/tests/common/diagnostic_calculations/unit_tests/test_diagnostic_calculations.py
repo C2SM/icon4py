@@ -69,9 +69,9 @@ def test_update_exner_and_theta_v(backend: gtx_typing.Backend) -> None:
     )
     exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
     theta_v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    rho.ndarray[...] = rho_value
-    virtual_temperature.ndarray[...] = tv_value
-    virtual_temperature_tendency.ndarray[...] = tv_tendency_value
+    rho.ndarray[...] = rho_value  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
+    virtual_temperature.ndarray[...] = tv_value  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
+    virtual_temperature_tendency.ndarray[...] = tv_tendency_value  # type: ignore[index]  # NDArrayObject Protocol lacks item assignment
 
     update_exner_and_theta_v.update_exner_and_theta_v.with_backend(backend)(
         rho=rho,
@@ -276,7 +276,7 @@ def test_diagnose_pressure(
         icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, allocator=backend
     )
 
-    pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
+    pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray  # type: ignore[index]  # NDArrayObject Protocol limitation
 
     diagnose_pressure.diagnose_pressure.with_backend(backend)(
         ddqz_z_full,
@@ -349,8 +349,8 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         virtual_temperature=satad_init.virtual_temperature(),
         pressure=satad_init.pressure(),
         pressure_ifc=satad_init.pressure_ifc(),
-        u=None,
-        v=None,
+        u=None,  # type: ignore[arg-type]  # u/v not needed for this test
+        v=None,  # type: ignore[arg-type]  # u/v not needed for this test
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -396,7 +396,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
 
     diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
         gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
-        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
+        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
         metrics_savepoint.ddqz_z_full(),
         diagnostic_state.pressure_ifc,
         horizontal_start=start_cell_nudging,
@@ -408,7 +408,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
 
     diagnose_pressure.diagnose_pressure.with_backend(backend)(
         metrics_savepoint.ddqz_z_full(),
-        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
+        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
         diagnostic_state.surface_pressure,
         diagnostic_state.pressure,
         diagnostic_state.pressure_ifc,

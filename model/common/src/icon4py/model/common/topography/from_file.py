@@ -13,7 +13,7 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING
 
-import serialbox  # type: ignore[import-untyped]
+import serialbox  # type: ignore[import-untyped]  # optional dependency without stubs
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs

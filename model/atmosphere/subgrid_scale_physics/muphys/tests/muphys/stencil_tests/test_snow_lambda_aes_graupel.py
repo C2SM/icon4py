@@ -5,6 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -18,6 +22,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
+
 class TestSnowLambdaAesGraupel(StencilTest):
     PROGRAM = snow_lambda_aes_graupel
     OUTPUTS = ("riming_snow_rate",)
@@ -28,14 +36,14 @@ class TestSnowLambdaAesGraupel(StencilTest):
         *,
         rho_s: np.ndarray,
         ns: np.ndarray,
-        **kwargs,
-    ) -> dict:
+        **kwargs: Any,
+    ) -> dict[str, np.ndarray]:
         # mirrors ICON mo_aes_graupel.f90 snow_lambda
         lam = np.where(rho_s > 1.0e-15, (2.0 * 0.069 * ns / rho_s) ** (1.0 / 3.0), 1.0e10)
         return dict(riming_snow_rate=lam)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.Grid) -> dict[str, Any]:
         return dict(
             rho_s=data_alloc.constant_field(
                 grid, 1.12204 * 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat

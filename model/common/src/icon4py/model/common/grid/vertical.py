@@ -13,6 +13,7 @@ import functools
 import logging
 import math
 import pathlib
+from collections.abc import Callable
 from typing import Any, Final
 
 import gt4py.next as gtx
@@ -28,6 +29,7 @@ from icon4py.model.common import (
     topography as topo,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.states import model as states_model
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
@@ -58,10 +60,10 @@ class Domain:
     marker: Zone
     offset: int = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self._validate()
 
-    def _validate(self):
+    def _validate(self) -> None:
         assert self.dim.kind == gtx.DimensionKind.VERTICAL
         if self.marker == Zone.TOP:
             assert self.offset >= 0, (
@@ -69,8 +71,8 @@ class Domain:
             )
 
 
-def domain(dim: gtx.Dimension):
-    def _domain(marker: Zone):
+def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
+    def _domain(marker: Zone) -> Domain:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
         return Domain(dim, marker)
 
@@ -167,7 +169,9 @@ class VerticalGrid:
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
 
-    def __post_init__(self, vct_a, vct_b):
+    def __post_init__(
+        self, vct_a: fa.KField[ta.wpfloat], vct_b: fa.KField[ta.wpfloat] | None
+    ) -> None:
         object.__setattr__(
             self,
             "_vct_a",
@@ -220,11 +224,11 @@ class VerticalGrid:
         return "\n".join(vertical_params_properties)
 
     @property
-    def metadata_interface_physical_height(self):
+    def metadata_interface_physical_height(self) -> states_model.FieldMetaData:
         return data.attrs["model_interface_height"]
 
     @property
-    def num_levels(self):
+    def num_levels(self) -> int:
         return self.config.num_levels
 
     def index(self, domain: Domain) -> gtx.int32:
@@ -304,7 +308,7 @@ class VerticalGrid:
         return (
             0
             if damping_height > vct_a[0]
-            else gtx.int32(np.argmax(np.where(vct_a >= damping_height)[0]).item())
+            else gtx.int32(int(np.argmax(np.where(vct_a >= damping_height)[0])))
         )
 
     @classmethod
@@ -360,8 +364,14 @@ def _read_vct_a_and_vct_b_from_file(
         ) from err
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
-    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator), gtx.as_field(
-        (dims.KDim,), vct_b, allocator=allocator
+    return gtx.as_field(
+        (dims.KDim,),
+        vct_a,  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject Protocol
+        allocator=allocator,
+    ), gtx.as_field(
+        (dims.KDim,),
+        vct_b,  # type: ignore[arg-type]  # numpy ndarray does not match GT4Py NDArrayObject Protocol
+        allocator=allocator,
     )
 
 

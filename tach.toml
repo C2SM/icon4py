@@ -26,6 +26,7 @@ exclude = [
     "ghex",
     "dace",
     "mpi4py",
+    "mypy",  # imported only by the icon4py mypy plugin at type-check time, not at runtime
     "netcdf4",
     "pymetis",
     "xarray",

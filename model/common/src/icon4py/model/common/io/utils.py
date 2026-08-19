@@ -40,7 +40,7 @@ def to_data_array(
     dims = tuple(dimension_mapping(d, is_on_half_levels) for d in field.domain.dims)
     horizontal_dim = next(d for d in field.domain.dims if _is_horizontal(d))
     uxgrid_attrs = ugrid_attributes(horizontal_dim)
-    attrs.update(uxgrid_attrs)  # type: ignore [typeddict-item] # mypy does not accept the dict types flexibility
+    attrs.update(uxgrid_attrs)  # type: ignore[typeddict-item]  # mypy does not accept the dict types flexibility
     data = data_alloc.as_numpy(field) if to_host else field.ndarray
     return xa.DataArray(data=data, dims=dims, attrs=attrs)
 

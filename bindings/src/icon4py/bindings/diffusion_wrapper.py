@@ -103,13 +103,13 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     a_hshr: gtx.float64,
     loutshs: bool,
     backend: gtx.int32,
-):
+) -> None:
     if grid_wrapper.grid_state is None:
         raise Exception(
             "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    xp = theta_ref_mc.array_ns
+    xp = data_alloc.array_namespace(theta_ref_mc.ndarray)
     on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
@@ -170,6 +170,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32, allocator=allocator)
     else:
         # transform lists to fields
+        assert zd_vertidx is not None and zd_intcoef is not None and zd_diffcoef is not None
 
         # only the first row is needed, the others are for C2E2C neighbors, but slicing in fortran causes issues
         zd_cellidx = zd_cellidx[0, :]
@@ -199,7 +200,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             default_value=gtx.float64(0.0),
             allocator=allocator,
         )
-        zd_vertoffset = data_alloc.list2field(
+        zd_vertoffset = data_alloc.list2field(  # type: ignore[assignment]  # GT4Py Field type narrowing
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(
@@ -275,7 +276,7 @@ def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
     dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
     dtime: gtx.float64,
     linit: bool,
-):
+) -> None:
     if granule is None:
         raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init' first.")
 

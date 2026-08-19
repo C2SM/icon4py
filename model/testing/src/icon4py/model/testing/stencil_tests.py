@@ -155,7 +155,7 @@ def test_and_benchmark(
                 f"Metrics key ({metrics_key}) does not start with the program name ({_configured_program.__name__})"
             )
 
-            assert len(_configured_program._compiled_programs.compiled_programs) == 1, (
+            assert len(_configured_program._compiled_programs.compiled_programs) == 1, (  # type: ignore[attr-defined]  # introspection of GT4Py compiled programs
                 "Multiple compiled programs found, cannot extract metrics."
             )
             metrics_data = gtx_metrics.sources
@@ -227,7 +227,7 @@ class StencilTest:
             else:
                 program.compile(
                     offset_provider=grid.connectivities,
-                    **static_args,  # type: ignore[arg-type]
+                    **static_args,  # type: ignore[arg-type]  # static_args validated by caller against program.compile signature
                 )
 
         test_func = device_utils.synchronized_function(program, allocator=backend)
@@ -305,7 +305,7 @@ class StencilTest:
             # not parametrized, return an empty tuple
             cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign] # we override with a non-parametrized function
         else:
-            cls.static_variant = staticmethod(  # type: ignore[method-assign]
+            cls.static_variant = staticmethod(  # type: ignore[method-assign]  # override with a parametrized fixture
                 pytest.fixture(params=cls.STATIC_PARAMS.items(), scope="class", ids=lambda p: p[0])(
                     cls.static_variant
                 )

@@ -158,7 +158,7 @@ def _cleanup_global_self_update(
     scan_compute_st: dace.SDFGState,
     compute_src_node: dace_nodes.AccessNode,
     compute_dst_node: dace_nodes.AccessNode,
-):
+) -> None:
     scan_sdfg = scan_node.sdfg
     assert isinstance(compute_dst_node.desc(scan_sdfg), dace.data.Scalar)
 

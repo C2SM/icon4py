@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -14,13 +16,14 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbu
     calculate_diagnostics_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def calculate_diagnostics_for_turbulence_numpy(
-    wgtfac_c: np.ndarray, div: np.ndarray, kh_c: np.ndarray, div_ic, hdef_ic
+    wgtfac_c: np.ndarray, div: np.ndarray, kh_c: np.ndarray, div_ic: np.ndarray, hdef_ic: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
     kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
     div_offset_1 = np.roll(div, shift=1, axis=1)
@@ -50,7 +53,7 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
         return dict(div_ic=div_ic, hdef_ic=hdef_ic)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid) -> dict:
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         div = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         kh_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

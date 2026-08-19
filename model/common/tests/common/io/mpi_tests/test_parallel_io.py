@@ -142,7 +142,7 @@ def create_monitor(
     )
     vertical = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=NUM_LEVELS),
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, NUM_LEVELS + 1)),
+        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, NUM_LEVELS + 1)),  # type: ignore[arg-type]  # NDArrayObject Protocol mismatch
         vct_b=None,
     )
     return common_io.FieldGroupMonitor(

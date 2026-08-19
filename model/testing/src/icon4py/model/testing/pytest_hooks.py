@@ -8,6 +8,8 @@
 import contextlib
 import os
 import re
+from collections.abc import Generator
+from typing import Any
 
 import numpy as np
 import pytest
@@ -28,7 +30,7 @@ __all__ = [
 _TEST_LEVELS = ("any", "unit", "integration", "validation")
 
 
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "datatest: this test uses binary data")
     config.addinivalue_line(
         "markers", "with_netcdf: test uses netcdf which is an optional dependency"
@@ -54,7 +56,7 @@ def pytest_configure(config):
     handle_mpi_options(config)
 
 
-def pytest_addoption(parser: pytest.Parser):
+def pytest_addoption(parser: pytest.Parser) -> None:
     """Add custom commandline options for pytest."""
     try:
         datatest = parser.getgroup("datatest", "Options for data testing")
@@ -123,7 +125,7 @@ def pytest_addoption(parser: pytest.Parser):
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     """Modify collected test items based on command line options."""
     scheduler = getattr(config, "_mpi_scheduler", None)
     if scheduler is not None:
@@ -198,7 +200,7 @@ def _name_from_fullname(fullname: str) -> str:
 
 # pytest benchmark hook, see:
 #     https://pytest-benchmark.readthedocs.io/en/latest/hooks.html#pytest_benchmark.hookspec.pytest_benchmark_update_json
-def pytest_benchmark_update_json(output_json):
+def pytest_benchmark_update_json(output_json: dict[str, Any]) -> None:
     """
     Replace 'fullname' of pytest benchmarks with a shorter name for better readability in bencher.
 
@@ -227,14 +229,16 @@ def pytest_benchmark_update_json(output_json):
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item, call):
+def pytest_runtest_makereport(
+    item: pytest.Item, call: pytest.CallInfo[None]
+) -> Generator[None, pytest.TestReport, None]:
     """
     Gather GT4Py timer metrics from benchmark fixture and add them to the test report.
     """
     outcome = yield
     report = outcome.get_result()
     if call.when == "call":
-        benchmark = item.funcargs.get("benchmark", None)
+        benchmark = item.funcargs.get("benchmark", None)  # type: ignore[attr-defined]  # pytest internal funcargs not exposed in type stubs
         if benchmark and hasattr(benchmark, "extra_info"):
             info = benchmark.extra_info.get("gtx_metrics", None)
             if info:
@@ -243,7 +247,9 @@ def pytest_runtest_makereport(item, call):
                 report.sections.append(("benchmark-extra", tuple([filtered_benchmark_name, info])))
 
 
-def pytest_terminal_summary(terminalreporter, exitstatus, config):
+def pytest_terminal_summary(
+    terminalreporter: pytest.TerminalReporter, exitstatus: int, config: pytest.Config
+) -> None:
     """
     Add a custom section to the terminal summary with GT4Py timer metrics from benchmarks.
     """
@@ -278,7 +284,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         terminalreporter.line("-" * len(header), blue=True)
 
 
-def handle_mpi_options(config):
+def handle_mpi_options(config: pytest.Config) -> None:
     with_mpi = config.getoption("--with-mpi", default=False)
     only_mpi = config.getoption("--only-mpi", default=False)
     subcomm_size = config.getoption("--mpi-subcomm-size", default=None)
@@ -311,7 +317,7 @@ def handle_mpi_options(config):
 
         if subcomm_size is not None:
             scheduler = MPISubcommScheduler(subcomm_size)
-            config._mpi_scheduler = scheduler
+            config._mpi_scheduler = scheduler  # type: ignore[attr-defined]  # pytest internal _mpi_scheduler not exposed in type stubs
 
             if scheduler.subcomm.Get_rank() == 0:
                 start_rank = scheduler.group_id * scheduler.subcomm_size
@@ -353,7 +359,7 @@ class MPISubcommScheduler:
 
         self._original_get_props = mpi_decomposition._get_process_properties
 
-        def _patched_get_props(with_mpi=False, comm_id=None, **kwargs):
+        def _patched_get_props(with_mpi: bool = False, comm_id: Any = None, **kwargs: Any) -> Any:
             if with_mpi and comm_id is None:
                 comm_id = self.subcomm
             return self._original_get_props(with_mpi=with_mpi, comm_id=comm_id, **kwargs)
@@ -371,7 +377,8 @@ class MPISubcommScheduler:
         valid_mpi_items = [
             item
             for item in mpi_items
-            if item.get_closest_marker("mpi").kwargs.get("min_size", 1) <= self.subcomm_size
+            if (marker := item.get_closest_marker("mpi")) is not None
+            and marker.kwargs.get("min_size", 1) <= self.subcomm_size
         ]
 
         assigned_mpi = [

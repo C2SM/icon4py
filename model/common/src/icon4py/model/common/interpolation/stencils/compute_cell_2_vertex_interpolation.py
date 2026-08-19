@@ -25,7 +25,7 @@ def _compute_cell_2_vertex_interpolation(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cell_2_vertex_interpolation(
     cell_in: fa.CellKField[types.wpfloat],
-    c_int: gtx.Field[[dims.VertexDim, dims.V2CDim], types.wpfloat],
+    c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], types.wpfloat],
     vert_out: fa.VertexKField[types.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
