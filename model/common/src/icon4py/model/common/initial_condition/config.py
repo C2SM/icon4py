@@ -25,7 +25,7 @@ from icon4py.model.common.initial_condition.analytical import (
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import tracer_prep_adv_states
+from icon4py.model.common.states import tracer_prep_adv_state
 from icon4py.model.common.utils import fortran_config
 
 
@@ -138,7 +138,7 @@ def create(
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
-    tracer_prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState | None,
+    tracer_prep_adv_state: tracer_prep_adv_state.TracerPrepAdvState | None,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,

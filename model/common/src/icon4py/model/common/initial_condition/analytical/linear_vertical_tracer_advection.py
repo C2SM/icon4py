@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, ClassVar
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_prep_adv_states, tracer_states
+from icon4py.model.common.states import prognostic_state as prognostics, tracer_prep_adv_state, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -124,7 +124,7 @@ def _compute_idealized_vertical_velocity_field(
 def _fill_prep_adv_from_prescribed_wind_field(
     *,
     velocity_field: VerticalVelocityField,
-    prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState,
+    prep_adv_state: tracer_prep_adv_state.TracerPrepAdvState,
     model_top_height: float,
 ) -> None:
     # impose 1D velocity field at time n+1/2 as required by the numerical scheme
@@ -194,7 +194,7 @@ def linear_vertical_advection(
     metrics: metrics_factory.MetricsFieldsFactory,
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
-    tracer_prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState,
+    tracer_prep_adv_state: tracer_prep_adv_state.TracerPrepAdvState,
 ) -> None:
     """
     Initial condition for the idealized vertical advection test case.
