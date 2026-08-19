@@ -100,7 +100,7 @@ def _check_convergence(
         ),
     ],
 )
-def test_horizontal_advection_convergence(
+def test_horizontal_tracer_advection_convergence(
     *,
     experiment_case: str,
     l1_acceptable_range: tuple[float, float],
@@ -241,7 +241,7 @@ def test_horizontal_advection_convergence(
         ),
     ],
 )
-def test_vertical_advection_convergence(
+def test_vertical_tracer_advection_convergence(
     *,
     experiment_case: str,
     num_levels: tuple[int, ...],

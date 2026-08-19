@@ -19,8 +19,8 @@ from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
-    linear_horizontal_advection as lin_hor_adv_ic,
-    linear_vertical_advection as lin_ver_adv_ic,
+    linear_horizontal_tracer_advection as lin_hor_adv_ic,
+    linear_vertical_tracer_advection as lin_ver_adv_ic,
     weisman_klemp as wk_ic,
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
