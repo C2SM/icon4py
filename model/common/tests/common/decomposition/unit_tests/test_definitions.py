@@ -91,3 +91,37 @@ def test_decomposition_info_is_distributed(
         np.full((mesh.num_cells,), flag),
     )
     assert decomp.is_distributed() == expected
+
+
+def test_decomposition_info_as_host_returns_self_for_host_buffers() -> None:
+    decomp = definitions.DecompositionInfo()
+    decomp.set_dimension(
+        dims.CellDim,
+        np.asarray([2, 0, 1], dtype=np.int64),
+        np.asarray([True, True, False]),
+        np.where(
+            [True, True, False],
+            definitions.DecompositionFlag.OWNED.value,
+            definitions.DecompositionFlag.FIRST_HALO_LEVEL.value,
+        ),
+    )
+    assert decomp.as_host() is decomp
+
+
+def test_decomposition_info_as_host_copies_device_buffers() -> None:
+    cp = pytest.importorskip("cupy")
+    decomp = definitions.DecompositionInfo()
+    decomp.set_dimension(
+        dims.CellDim,
+        cp.asarray([2, 0, 1]),
+        cp.asarray([True, True, False]),
+        cp.full((3,), definitions.DecompositionFlag.OWNED.value),
+    )
+    host = decomp.as_host()
+    assert host is not decomp
+    for array in (
+        host.global_index(dims.CellDim),
+        host.owner_mask(dims.CellDim),
+        host.halo_levels(dims.CellDim),
+    ):
+        assert isinstance(array, np.ndarray)
