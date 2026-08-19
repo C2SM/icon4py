@@ -462,7 +462,7 @@ def read_experiment_config_from_fortran(
 
     # the file-based initial condition needs the clock of the driver to know which
     # savepoint to read: the initial state, or a later one when restarting
-    initial_condition_cfg = initial_condition.InitialConditionConfig.from_fortran_dict(
+    initial_condition_cfg = initial_condition.from_fortran_dict(
         atm_dict=atm_dict,
         input_dict=input_dict,
         data_path=config_file_path,
@@ -472,11 +472,11 @@ def read_experiment_config_from_fortran(
     )
 
     if not do_tracer_advection and isinstance(
-        initial_condition_cfg.config, from_file.FromFileConfig
+        initial_condition_cfg, from_file.FromFileConfig
     ):
         initial_condition_cfg = dataclasses.replace(
             initial_condition_cfg,
-            config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
+            config=dataclasses.replace(initial_condition_cfg, ntracer=0),
         )
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
@@ -493,7 +493,7 @@ def read_experiment_config_from_fortran(
         graupel=graupel_cfg,
         muphys=muphys_cfg,
         topography=topography_cfg.config,
-        initial_condition=initial_condition_cfg.config,
+        initial_condition=initial_condition_cfg,
         prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
             atm_dict=atm_dict, data_path=config_file_path
         ),
