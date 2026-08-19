@@ -194,7 +194,7 @@ def linear_vertical_advection(
     metrics: metrics_factory.MetricsFieldsFactory,
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
-    adv_prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState,
+    tracer_prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState,
 ) -> None:
     """
     Initial condition for the idealized vertical advection test case.
@@ -212,7 +212,7 @@ def linear_vertical_advection(
 
     _fill_prep_adv_from_prescribed_wind_field(
         velocity_field=config.velocity_field,
-        prep_adv_state=adv_prep_adv_state,
+        prep_adv_state=tracer_prep_adv_state,
         model_top_height=vertical_config.model_top_height,
     )
 

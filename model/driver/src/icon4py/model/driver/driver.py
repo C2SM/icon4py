@@ -831,7 +831,7 @@ def run_driver(
         if icon4py_driver.config.nonhydrostatic is not None
         else None
     )
-    adv_prep_adv_state = (
+    tracer_prep_adv_state = (
         tracer_prep_adv_states.initialize_tracer_prep_adv_state(
             grid=icon4py_driver.grid, allocator=allocator
         )
@@ -846,7 +846,7 @@ def run_driver(
         prognostic_state_now=prognostic_state_now,
         tracer_state_now=tracer_state_now,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
-        adv_prep_adv_state=adv_prep_adv_state,
+        tracer_prep_adv_state=tracer_prep_adv_state,
         backend=icon4py_driver.backend,
         exchange=icon4py_driver.exchange,
         global_reductions=icon4py_driver.global_reductions,
@@ -865,7 +865,7 @@ def run_driver(
         diagnostic_state=diagnostic_state,
         experiment_config=icon4py_driver.config,
         solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
-        adv_prep_adv_state=adv_prep_adv_state,
+        tracer_prep_adv_state=tracer_prep_adv_state,
     )
     driver_utils.validate_granule_state_consistency(
         config=icon4py_driver.config,

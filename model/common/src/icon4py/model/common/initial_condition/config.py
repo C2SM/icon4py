@@ -138,7 +138,7 @@ def create(
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
-    adv_prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState | None,
+    tracer_prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState | None,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
@@ -191,7 +191,7 @@ def create(
                 static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
                 tracer_state_now=tracer_state_now,
-                adv_prep_adv_state=adv_prep_adv_state,
+                tracer_prep_adv_state=tracer_prep_adv_state,
             )
         case lin_ver_adv_ic.LinearVerticalAdvectionConfig():
             lin_ver_adv_ic.linear_vertical_advection(
@@ -200,7 +200,7 @@ def create(
                 metrics=static_fields.metrics,
                 prognostic_state_now=prognostic_state_now,
                 tracer_state_now=tracer_state_now,
-                adv_prep_adv_state=adv_prep_adv_state,
+                tracer_prep_adv_state=tracer_prep_adv_state,
             )
         case from_file_ic.FromFileConfig():
             if config.config.is_restart:

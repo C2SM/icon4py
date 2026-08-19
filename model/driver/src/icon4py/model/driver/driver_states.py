@@ -257,11 +257,11 @@ class TimerCollection:
             )
 
 
-def link_prep_adv_to_dycore(
+def link_tracer_prep_adv_to_dycore(
     grid: base_grid.Grid,
     allocator: gtx_typing.Allocator | None,
     *,
-    adv_prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState | None,
+    tracer_prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState | None,
     solve_nonhydro_enabled: bool,
 ) -> dycore_states.PrepAdvection | None:
     """
@@ -270,11 +270,11 @@ def link_prep_adv_to_dycore(
     """
     if not solve_nonhydro_enabled:
         return None
-    if adv_prep_adv_state is not None:
+    if tracer_prep_adv_state is not None:
         return dycore_states.PrepAdvection(
-            vn_traj=adv_prep_adv_state.vn_traj,
-            mass_flx_me=adv_prep_adv_state.mass_flx_me,
-            dynamical_vertical_mass_flux_at_cells_on_half_levels=adv_prep_adv_state.mass_flx_ic,
+            vn_traj=tracer_prep_adv_state.vn_traj,
+            mass_flx_me=tracer_prep_adv_state.mass_flx_me,
+            dynamical_vertical_mass_flux_at_cells_on_half_levels=tracer_prep_adv_state.mass_flx_ic,
             dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
             ),
@@ -303,7 +303,7 @@ def assemble_driver_states(
     diagnostic_state: diagnostics.DiagnosticState,
     experiment_config: driver_config.ExperimentConfig,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
-    adv_prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState | None,
+    tracer_prep_adv_state: tracer_prep_adv_states.TracerPrepAdvState | None,
 ) -> DriverStates:
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
@@ -349,10 +349,10 @@ def assemble_driver_states(
         if diffusion_enabled
         else None
     )
-    prep_adv = link_prep_adv_to_dycore(
+    prep_adv = link_tracer_prep_adv_to_dycore(
         grid=grid,
         allocator=allocator,
-        adv_prep_adv_state=adv_prep_adv_state,
+        tracer_prep_adv_state=tracer_prep_adv_state,
         solve_nonhydro_enabled=solve_nonhydro_enabled,
     )
     tracer_advection_diagnostic_state = (
@@ -366,7 +366,7 @@ def assemble_driver_states(
     return DriverStates(
         prep_advection_prognostic=prep_adv,
         solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
-        prep_tracer_advection_prognostic=adv_prep_adv_state,
+        prep_tracer_advection_prognostic=tracer_prep_adv_state,
         tracer_advection_diagnostic=tracer_advection_diagnostic_state,
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,
