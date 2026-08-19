@@ -51,11 +51,10 @@ class SharedOption:
 class ConfigWithShared:
     shared: list[SharedOption] = dataclasses.field(default_factory=list)
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls: type[typing.Self], **kwargs: typing.Any):
         super().__init_subclass__(**kwargs)
         CONV.register_structure_hook(cls, structure_with_shared)
         CONV.register_unstructure_hook(cls, unstructure_with_shared)
-
 
 
 @CONV.register_structure_hook
@@ -101,12 +100,14 @@ def structure_with_shared[ST](spec: dict, config_cls: type[ST]) -> ST:
             if spec[consumer_name] is None:
                 spec[consumer_name] = {}
             if shared_option.name in spec[consumer_name]:
-                raise ValueError(f"duplicate option for {consumer_name}: {shared_option.name} given in 'shared' as well as directly.")
+                raise ValueError(
+                    f"duplicate option for {consumer_name}: {shared_option.name} given in 'shared' as well as directly."
+                )
             spec[consumer_name] |= {shared_option.name: shared_option.value}
     return cattrs.gen.make_dict_structure_fn(config_cls, CONV)(spec, config_cls)
 
 
-def unstructure_with_shared[ST](config_obj: ST) -> dict:
+def unstructure_with_shared(config_obj: ConfigWithShared) -> dict:
     spec = cattrs.gen.make_dict_unstructure_fn(type(config_obj), CONV)(config_obj)
     config_copy = copy.deepcopy(config_obj)
     for shared_option in config_copy.shared:
