@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 from . import test_dycore_utils
 
@@ -46,9 +45,9 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         ),
     }
 
-    @staticmethod
+    @test_helpers.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         next_vn: np.ndarray,
@@ -86,13 +85,14 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         vertical_end: gtx.int32,
         **kwargs: object,
     ) -> dict:
+        connectivities = test_helpers.connectivities_asnumpy(grid)
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
 
         scaling_factor_for_3d_divdamp = np.expand_dims(scaling_factor_for_3d_divdamp, axis=0)
         horizontal_mask_for_3d_divdamp = np.expand_dims(horizontal_mask_for_3d_divdamp, axis=-1)
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-        e2c = connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2C]
         dwdz_at_edges_on_model_levels = dwdz_at_cells_on_model_levels[e2c]
         weighted_dwdz_at_edges_on_model_levels = (
             dwdz_at_edges_on_model_levels[:, 1] - dwdz_at_edges_on_model_levels[:, 0]
@@ -127,7 +127,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             )
 
         if apply_4th_order_divergence_damping:
-            e2c2eO = connectivities[dims.E2C2EODim]
+            e2c2eO = connectivities[dims.E2C2EO]
             # verified for e-10
             squared_horizontal_gradient_of_total_divergence = np.where(
                 (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
@@ -185,7 +185,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
 
         return dict(next_vn=next_vn)
 
-    @pytest.fixture(
+    @test_helpers.input_data_fixture(
         params=[
             {"divdamp_order": do, "is_iau_active": ia, "second_order_divdamp_factor": sodf}
             for do, ia, sodf in [
@@ -205,31 +205,31 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             f"divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}]__second_order_divdamp_factor[{param['second_order_divdamp_factor']}]"
         ),
     )
-    def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
-        current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim)
-        scaling_factor_for_3d_divdamp = data_alloc.random_field(grid, dims.KDim)
-        dwdz_at_cells_on_model_levels = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        corrector_normal_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
-        )
-        predictor_normal_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
-        )
+    def input_data(
+        data_alloc: test_helpers.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
+    ) -> dict:
+        current_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        horizontal_mask_for_3d_divdamp = data_alloc.random_field(dims.EdgeDim)
+        scaling_factor_for_3d_divdamp = data_alloc.random_field(dims.KDim)
+        dwdz_at_cells_on_model_levels = data_alloc.random_field(dims.CellDim, dims.KDim)
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim)
+        corrector_normal_wind_advective_tendency = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        predictor_normal_wind_advective_tendency = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         normal_wind_tendency_due_to_slow_physics_process = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
+            dims.EdgeDim, dims.KDim
         )
         horizontal_gradient_of_normal_wind_divergence = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
+            dims.EdgeDim, dims.KDim
         )
-        normal_wind_iau_increment = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        next_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        horizontal_pressure_gradient = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        geofac_grdiv = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
-        interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim)
-        nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim)
+        normal_wind_iau_increment = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        next_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        theta_v_at_edges_on_model_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        horizontal_pressure_gradient = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        geofac_grdiv = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
+        interpolated_fourth_order_divdamp_factor = data_alloc.random_field(dims.KDim)
+        nudgecoeff_e = data_alloc.random_field(dims.EdgeDim)
 
         mean_cell_area = 1000.0
         max_nudging_coefficient = 0.3

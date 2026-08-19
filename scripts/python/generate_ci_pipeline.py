@@ -47,22 +47,22 @@ ALL_SESSIONS = ["model", "model_mpi", "tools"]
 ALL_MODEL_SUBSETS = ["stencils", "datatest", "basic"]
 ALL_MODEL_MPI_SUBSETS = ["basic", "datatest"]
 ALL_MODEL_SUBPACKAGES = [
-    "advection",
+    "tracer_advection",
     "diffusion",
     "dycore",
     "microphysics",
     "muphys",
+    "physics_driver",
     "common",
     "driver",
-    "standalone_driver",
 ]
 
 ALL_MODEL_MPI_SUBPACKAGES = [
-    "advection",
+    "tracer_advection",
     "diffusion",
     "dycore",
     "common",
-    "standalone_driver",
+    "driver",
 ]
 ALL_BACKENDS = ["embedded", "dace_cpu", "dace_gpu", "gtfn_cpu", "gtfn_gpu"]
 ALL_GRIDS = ["simple", "icon_regional", "icon_global"]

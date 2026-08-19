@@ -50,14 +50,14 @@ if _rank is not None:
 
 # -- Parameter sets --
 type ModelSubpackagePath = Literal[
-    "atmosphere/advection",
+    "atmosphere/tracer_advection",
     "atmosphere/diffusion",
     "atmosphere/dycore",
     "atmosphere/subgrid_scale_physics/microphysics",
     "atmosphere/subgrid_scale_physics/muphys",
+    "atmosphere/subgrid_scale_physics/physics_driver",
     "common",
     "driver",
-    "standalone_driver",
     "testing",
 ]
 MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
