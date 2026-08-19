@@ -362,6 +362,42 @@ def _tools_cells(selections: list[str]) -> list[_MatrixCell]:
     return cells
 
 
+def _mpi_cell_slurm_vars(subpackage: str, backend: str, level: str) -> dict[str, str]:
+    """SLURM allocation variables for an MPI cell.
+
+    These are emitted into the generated child pipeline (an artifact, always
+    consistent with the triggering commit's checkout) instead of relying only
+    on rules:variables in ci/base.yml. The keys mirror the sbatch overrides
+    the CSCS runner wrapper reads from the job environment.
+    """
+    gpu_backend = backend in ("dace_gpu", "gtfn_gpu")
+    if level == "validation":
+        # The 7-day JW validation simulations are compute-bound, not
+        # compilation-bound; they need the full node and longer time.
+        return {
+            "SLURM_TIMELIMIT": "02:00:00",
+            "SLURM_PARTITION": "normal",
+            "GT4PY_BUILD_JOBS": "64",
+        }
+    if subpackage == "driver" or (subpackage == "common" and gpu_backend):
+        return {
+            "SLURM_TIMELIMIT": "00:55:00",
+            "SLURM_PARTITION": "shared",
+            "GT4PY_BUILD_JOBS": "12",
+        }
+    if subpackage == "common":
+        return {
+            "SLURM_TIMELIMIT": "00:55:00",
+            "SLURM_PARTITION": "shared",
+            "GT4PY_BUILD_JOBS": "12",
+        }
+    return {
+        "SLURM_TIMELIMIT": "00:30:00",
+        "SLURM_PARTITION": "shared",
+        "GT4PY_BUILD_JOBS": "12",
+    }
+
+
 def _model_mpi_cells(
     subpackages: list[str],
     backends: list[str],
@@ -393,6 +429,7 @@ def _model_mpi_cells(
                                 "MODEL_MPI_SUBPACKAGE": subpackage,
                                 "BACKEND": backend,
                                 "LEVEL": level,
+                                **_mpi_cell_slurm_vars(subpackage, backend, level),
                             },
                             session=_nox_session_name("test_model_mpi", f"{subset}, {subpackage}"),
                             pytest_args=pytest_args,
