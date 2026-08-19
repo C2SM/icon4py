@@ -400,7 +400,7 @@ def read_experiment_config_from_fortran(
 
     vertical_grid_cfg = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
 
-    topography_cfg = topography.TopographyConfig.from_fortran_dict(
+    topography_cfg = topography.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
 
@@ -471,13 +471,8 @@ def read_experiment_config_from_fortran(
         dtime=driver_cfg.dtime,
     )
 
-    if not do_tracer_advection and isinstance(
-        initial_condition_cfg, from_file.FromFileConfig
-    ):
-        initial_condition_cfg = dataclasses.replace(
-            initial_condition_cfg,
-            config=dataclasses.replace(initial_condition_cfg, ntracer=0),
-        )
+    if not do_tracer_advection and isinstance(initial_condition_cfg, from_file.FromFileConfig):
+        initial_condition_cfg = dataclasses.replace(initial_condition_cfg, ntracer=0)
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
@@ -492,7 +487,7 @@ def read_experiment_config_from_fortran(
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         muphys=muphys_cfg,
-        topography=topography_cfg.config,
+        topography=topography_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
             atm_dict=atm_dict, data_path=config_file_path
