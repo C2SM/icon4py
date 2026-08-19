@@ -28,6 +28,11 @@ ST = typing.TypeVar("ST", bound="ConfigWithShared")
 CONV = cattrs.preconf.pyyaml.PyyamlConverter(forbid_extra_keys=True)
 
 
+class IndentSequencesDumper(yaml.Dumper):
+    def increase_indent(self, flow: bool = False, indentless: bool = False) -> None:
+        return super().increase_indent(flow, False)
+
+
 @dataclasses.dataclass
 class ConfigUnionStructurer[T]:
     union_type: type[T]
@@ -76,7 +81,7 @@ def read_yaml_str[T](yaml_str: str, config_cls: type[T]) -> T:
 
 
 def write_yaml_str[T](config_inst: T) -> str:
-    return yaml.dump(CONV.unstructure(config_inst), sort_keys=False)
+    return yaml.dump(CONV.unstructure(config_inst), sort_keys=False, Dumper=IndentSequencesDumper)
 
 
 def structure_enum(val: str, enum_type: type[enum.Enum]) -> enum.Enum:

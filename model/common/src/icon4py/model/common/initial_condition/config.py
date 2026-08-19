@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
@@ -42,7 +41,10 @@ log = logging.getLogger(__name__)
 
 
 type IC_CONFIG = (
-    jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig | wk_ic.WeismanKlempConfig
+    jw_ic.JablonowskiWilliamsonConfig
+    | gauss_ic.Gauss3DConfig
+    | from_file_ic.FromFileConfig
+    | wk_ic.WeismanKlempConfig
 )
 
 
@@ -95,9 +97,7 @@ def from_fortran_dict(
                 config.baroclinic_amplitude = 0.0
         case "gauss3D":
             log.info("Analytical initial condition for Gauss 3D test case")
-            config = fortran_config.config_dataclass_from_dict(
-                gauss_ic.Gauss3DConfig, testcase_nml
-            )
+            config = fortran_config.config_dataclass_from_dict(gauss_ic.Gauss3DConfig, testcase_nml)
         case "wk82":
             log.info("Analytical initial condition for Weisman-Klemp test case")
             config = fortran_config.config_dataclass_from_dict(
