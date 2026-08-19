@@ -173,5 +173,5 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,
-            vertical_end=grid.num_levels,
+            vertical_end=grid.num_levels + 1,
         )

@@ -28,11 +28,11 @@ def extrapolate_quadratically_to_surface_numpy(
     # half level k is extrapolated from the three model levels below it
     interpolation_to_surface = np.copy(interpolation_to_surface)
     nlev = interpolant.shape[1]
-    k = np.arange(3, nlev)
-    interpolation_to_surface[:, 3:nlev] = (
-        wgtfacq_c[:, k - 1] * interpolant[:, k - 1]
-        + wgtfacq_c[:, k - 2] * interpolant[:, k - 2]
-        + wgtfacq_c[:, k - 3] * interpolant[:, k - 3]
+    khalf = np.arange(3, nlev + 1)
+    interpolation_to_surface[:, 3 : nlev + 1] = (
+        wgtfacq_c[:, khalf - 1] * interpolant[:, khalf - 1]
+        + wgtfacq_c[:, khalf - 2] * interpolant[:, khalf - 2]
+        + wgtfacq_c[:, khalf - 3] * interpolant[:, khalf - 3]
     )
     return interpolation_to_surface
 
@@ -70,5 +70,5 @@ class TestInterpolateToSurface(StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=3,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

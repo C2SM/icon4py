@@ -221,7 +221,7 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_field("vct_a", dims.KHalfDim)
 
     def vct_b(self):
-        return self._get_field("vct_b", dims.KDim)
+        return self._get_field("vct_b", dims.KHalfDim)
 
     def tangent_orientation(self):
         return self._get_field("tangent_orientation", dims.EdgeDim)
@@ -997,19 +997,19 @@ class AdvectionExitSavepoint(IconSavepoint):
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KHalfDim)
     def hdef_ic(self):
         return self._get_field("hdef_ic", dims.CellDim, dims.KHalfDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KHalfDim)
     def div_ic(self):
         return self._get_field("div_ic", dims.CellDim, dims.KHalfDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KHalfDim)
     def dwdx(self):
         return self._get_field("dwdx", dims.CellDim, dims.KHalfDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KHalfDim)
     def dwdy(self):
         return self._get_field("dwdy", dims.CellDim, dims.KHalfDim)
 

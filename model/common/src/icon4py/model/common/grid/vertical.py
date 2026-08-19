@@ -160,9 +160,9 @@ class VerticalGrid:
 
     config: VerticalGridConfig
     vct_a: dataclasses.InitVar[fa.KHalfField[ta.wpfloat]]
-    vct_b: dataclasses.InitVar[fa.KField[ta.wpfloat] | None]
+    vct_b: dataclasses.InitVar[fa.KHalfField[ta.wpfloat] | None]
     _vct_a: fa.KHalfField[ta.wpfloat] = dataclasses.field(init=False)
-    _vct_b: fa.KField[ta.wpfloat] | None = dataclasses.field(init=False)
+    _vct_b: fa.KHalfField[ta.wpfloat] | None = dataclasses.field(init=False)
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
@@ -275,7 +275,7 @@ class VerticalGrid:
         return self._vct_a
 
     @property
-    def vct_b(self) -> fa.KField | None:
+    def vct_b(self) -> fa.KHalfField | None:
         return self._vct_b
 
     def size(self, dim: gtx.Dimension) -> int:
@@ -321,7 +321,7 @@ class VerticalGrid:
 
 def _read_vct_a_and_vct_b_from_file(
     file_path: pathlib.Path, num_levels: int, allocator: gtx_typing.Allocator
-) -> tuple[fa.KField, fa.KField]:
+) -> tuple[fa.KHalfField, fa.KHalfField]:
     """
     Read vct_a and vct_b from a file.
     The file format should be as follows (the same format used for icon):
@@ -367,7 +367,7 @@ def _read_vct_a_and_vct_b_from_file(
 
 def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
     vertical_config: VerticalGridConfig, allocator: gtx_typing.Allocator
-) -> tuple[fa.KField, fa.KField]:
+) -> tuple[fa.KHalfField, fa.KHalfField]:
     """
     Compute vct_a and vct_b.
 
@@ -557,7 +557,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
 def get_vct_a_and_vct_b(
     vertical_config: VerticalGridConfig,
     allocator: gtx_typing.Allocator,
-) -> tuple[fa.KField, fa.KField]:
+) -> tuple[fa.KHalfField, fa.KHalfField]:
     """
     get vct_a and vct_b.
     vct_a is an array that contains the height of grid interfaces (or half levels) from model surface to model top, before terrain-following coordinates are applied.
@@ -570,7 +570,7 @@ def get_vct_a_and_vct_b(
     Args:
         vertical_config: Vertical grid configuration
         backend: GT4Py backend
-    Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
+    Returns:  one dimensional (dims.KHalfDim) vct_a and vct_b gt4py fields.
     """
 
     return (

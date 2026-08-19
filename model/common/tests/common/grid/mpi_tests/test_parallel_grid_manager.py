@@ -449,12 +449,12 @@ def _compare_metrics_fields_single_multi_rank(
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,),
+            (dims.KHalfDim,),
             xp.linspace(12000.0, 0.0, experiment.config.vertical_grid.num_levels + 1),
             allocator=allocator,
         ),
         vct_b=gtx.as_field(
-            (dims.KDim,),
+            (dims.KHalfDim,),
             xp.linspace(12000.0, 0.0, experiment.config.vertical_grid.num_levels + 1),
             allocator=allocator,
         ),
@@ -683,12 +683,12 @@ def test_metrics_mask_prog_halo_c(
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field(
-            (dims.KDim,),
+            (dims.KHalfDim,),
             xp.linspace(12000.0, 0.0, experiment.config.vertical_grid.num_levels + 1),
             allocator=allocator,
         ),
         vct_b=gtx.as_field(
-            (dims.KDim,),
+            (dims.KHalfDim,),
             xp.linspace(12000.0, 0.0, experiment.config.vertical_grid.num_levels + 1),
             allocator=allocator,
         ),

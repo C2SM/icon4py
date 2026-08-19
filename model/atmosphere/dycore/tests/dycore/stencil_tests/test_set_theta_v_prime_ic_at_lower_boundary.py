@@ -37,7 +37,7 @@ def set_theta_v_prime_ic_at_lower_boundary_numpy(
         interpolation_to_surface=z_theta_v_pr_ic,
     )
     nlev = z_rth_pr.shape[1]
-    theta_v_ic[:, 3:nlev] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3:nlev]
+    theta_v_ic[:, 3 : nlev + 1] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3 : nlev + 1]
     return (z_theta_v_pr_ic, theta_v_ic)
 
 
@@ -82,5 +82,5 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=3,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )
