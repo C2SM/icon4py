@@ -7,14 +7,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """External workspace allocation for the DaCe backend.
 
-The DaCe backend in GT4Py can be configured with a
-:class:`~gt4py.next.program_processors.runners.dace.transformations.ExternalMemoryAllocator`
+The DaCe backend in GT4Py can be configured with an
+:class:`~gt4py.next.program_processors.runners.dace.workflow.common.ExternalWorkspace`
 to provide workspace memory for transient SDFG arrays
-(``transient_memory_mode = EXTERNAL``). The
-:class:`IconWorkspaceAllocator` defined here is a process-wide singleton that
-caches a single aligned slab per device and reuses it across every compiled
-program; :func:`make_custom_dace_backend <icon4py.model.common.model_backends.make_custom_dace_backend>`
-installs it by default.
+(``transient_memory_mode = EXTERNAL``). When a :class:`BackendConfig` is
+provided, :func:`get_dace_options <icon4py.model.common.model_options.get_dace_options>`
+calls the :class:`IconWorkspaceAllocator` defined here — a process-wide
+singleton that caches a single aligned slab per device and reuses it across
+every compiled program.
 
 The size and alignment of the workspace are configurable per experiment via
 :class:`BackendConfig` (see :func:`backend_config_from_env` for an
@@ -30,7 +30,7 @@ from types import ModuleType
 from typing import ClassVar, Final
 
 import gt4py.next as gtx
-from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
+from gt4py.next.program_processors.runners.dace.workflow import common as gtx_wfdcommon
 
 from icon4py.model.common.utils import data_allocation
 
@@ -98,7 +98,8 @@ def _array_base_ptr(buf: data_allocation.NDArray) -> int:
     interface = getattr(buf, "__cuda_array_interface__", None) or getattr(
         buf, "__array_interface__", None
     )
-    assert interface is not None, "allocated buffer exposes no array interface"
+    if interface is None:
+        raise ValueError("allocated buffer exposes no array interface")
     return int(interface["data"][0])
 
 
@@ -118,7 +119,7 @@ def _aligned_slab(nbytes: int, alignment: int, device: gtx.DeviceType) -> data_a
 
 
 class IconWorkspaceAllocator:
-    """Singleton slab-reuse `ExternalMemoryAllocator` for the DaCe backend.
+    """Singleton workspace allocator for the DaCe backend.
 
     Exactly one instance exists per process (enforced by `__new__`); all DaCe
     backends share it via the module-level `ICON_WORKSPACE_ALLOCATOR`. It keeps
@@ -141,10 +142,10 @@ class IconWorkspaceAllocator:
         *,
         size: int,
         alignment: int = _DEFAULT_ALIGNMENT,
-    ) -> gtx_transformations.ExternalWorkspace:
+    ) -> gtx_wfdcommon.ExternalWorkspace:
         if isinstance(devices, gtx.DeviceType):
             devices = [devices]
-        wsp = {}
+        wsp: gtx_wfdcommon.ExternalWorkspace = {}
         for dev in devices:
             if (cached := self._workspace_slabs.get(dev)) is not None:
                 if cached.nbytes != size:
@@ -164,11 +165,6 @@ class IconWorkspaceAllocator:
                 self._workspace_slabs[dev] = slab
                 wsp[dev] = slab
         return wsp
-
-    def deallocate(self, wsp: gtx_transformations.ExternalWorkspace) -> None:
-        # Keep the slab alive for reuse across programs; `deallocate` only
-        # signals that this compiled program is done with the workspace.
-        pass
 
 
 ICON_WORKSPACE_ALLOCATOR: Final[IconWorkspaceAllocator] = IconWorkspaceAllocator()

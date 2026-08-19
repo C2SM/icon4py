@@ -170,7 +170,8 @@ def setup_program(
         - horizontal_sizes: horizontal domain bounds,
         - vertical_sizes: vertical domain bounds,
         - offset_provider: GT4Py offset_provider,
-        - backend_config: external DaCe workspace sizing, or `None` to disable.
+        - backend_config: external DaCe workspace sizing, or `None` to fall back
+          to the 'ICON4PY_BACKEND_WORKSPACE_<SIZE|ALIGNMENT>' environment variables.
     """
     constant_args = {} if constant_args is None else constant_args
     variants = {} if variants is None else variants

@@ -15,6 +15,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
+from gt4py.next.program_processors.runners.dace.workflow import common as gtx_wfdcommon
 
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
@@ -85,7 +86,7 @@ def make_custom_dace_backend(
     use_metrics: bool = True,
     use_zero_origin: bool = False,
     use_max_domain_range_on_unstructured_shift: bool | None = None,
-    external_workspace: gtx_transformations.ExternalWorkspace | None = None,
+    external_workspace: gtx_wfdcommon.ExternalWorkspace | None = None,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.

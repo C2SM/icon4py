@@ -287,7 +287,11 @@ class DriverConfig:
     backend_config: typing.Annotated[
         backend_cfg.BackendConfig | None,
         common_conf_opt.ConfigOption(
-            description="Backend configuration. None uses the default configuration.",
+            description=(
+                "Configuration of the external DaCe workspace. `None` falls back "
+                "to the 'ICON4PY_BACKEND_WORKSPACE_<SIZE|ALIGNMENT>' environment "
+                "variables, if set, otherwise the workspace is disabled."
+            ),
             icon_equivalent=None,
         ),
     ] = dataclasses.field(default_factory=backend_cfg.backend_config_from_env)
