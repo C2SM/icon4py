@@ -10,11 +10,11 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.tracer_advection.stencils.prepare_ffsl_flux_area_patches_list import (
     prepare_ffsl_flux_area_patches_list,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
@@ -897,9 +897,9 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_4_lat_vmask,
         )
 
-    @classmethod
+    @stencil_tests.static_reference
     def reference(
-        cls,
+        grid: base.Grid,
         *,
         famask_int,
         p_vn,
@@ -920,7 +920,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         ptr_v3_lat_e = np.expand_dims(ptr_v3_lat, axis=-1)
         tangent_orientation_dsl = np.expand_dims(tangent_orientation_dsl, axis=-1)
 
-        result_tuple = cls._generate_flux_area_geometry(
+        result_tuple = TestPrepareFfslFluxAreaPatchesList._generate_flux_area_geometry(
             dreg_patch0_1_lon_dsl=dreg_patch0_1_lon_dsl,
             dreg_patch0_1_lat_dsl=dreg_patch0_1_lat_dsl,
             dreg_patch0_2_lon_dsl=dreg_patch0_2_lon_dsl,
@@ -1019,7 +1019,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch0_3_lat_dsl,
             dreg_patch0_4_lon_dsl,
             dreg_patch0_4_lat_dsl,
-        ) = cls._apply_case1_patch0(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case1_patch0(
             mask_case1=mask_case1,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1045,7 +1045,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch1_2_lat_vmask,
             dreg_patch1_3_lon_vmask,
             dreg_patch1_3_lat_vmask,
-        ) = cls._apply_case1_patch1(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case1_patch1(
             mask_case1=mask_case1,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1065,7 +1065,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_2_lat_vmask,
             dreg_patch2_3_lon_vmask,
             dreg_patch2_3_lat_vmask,
-        ) = cls._apply_case1_patch2(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case1_patch2(
             mask_case1=mask_case1,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
@@ -1081,7 +1081,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             [lintersect_line1, np.logical_not(lintersect_line2), famask_bool]
         )
         # Case 2a - patch 0
-        result_tuple_patch0 = cls._apply_case2a_patch0(
+        result_tuple_patch0 = TestPrepareFfslFluxAreaPatchesList._apply_case2a_patch0(
             mask_case2a=mask_case2a,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1113,7 +1113,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch0_4_lat_dsl,
         ) = result_tuple_patch0
         # Case 2a - patch 1
-        result_tuple_patch1 = cls._apply_case2a_patch1(
+        result_tuple_patch1 = TestPrepareFfslFluxAreaPatchesList._apply_case2a_patch1(
             mask_case2a=mask_case2a,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1157,7 +1157,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             [lintersect_line2, np.logical_not(lintersect_line1), famask_bool]
         )
         # Case 2b - patch 0
-        result_tuple_patch0_case2b = cls._apply_case2b_patch0(
+        result_tuple_patch0_case2b = TestPrepareFfslFluxAreaPatchesList._apply_case2b_patch0(
             mask_case2b=mask_case2b,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1190,7 +1190,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         ) = result_tuple_patch0_case2b
 
         # Case 2b - patch 1
-        result_tuple_patch1_case2b = cls._apply_case2b_patch1(
+        result_tuple_patch1_case2b = TestPrepareFfslFluxAreaPatchesList._apply_case2b_patch1(
             mask_case2b=mask_case2b,
             dreg_patch1_1_lon_vmask=dreg_patch1_1_lon_vmask,
             dreg_patch1_1_lat_vmask=dreg_patch1_1_lat_vmask,
@@ -1214,7 +1214,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         ) = result_tuple_patch1_case2b
 
         # Case 2b - patch 2
-        result_tuple_patch2_case2b = cls._apply_case2b_patch2(
+        result_tuple_patch2_case2b = TestPrepareFfslFluxAreaPatchesList._apply_case2b_patch2(
             mask_case2b=mask_case2b,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
@@ -1278,7 +1278,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             line2_p2_lat=tri_line1_p2_lat,
         )
         # Case 3a - patch 0
-        result = cls._apply_case3a_patch0(
+        result = TestPrepareFfslFluxAreaPatchesList._apply_case3a_patch0(
             mask_case3a=mask_case3a,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
             arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
@@ -1320,7 +1320,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch1_2_lat_vmask,
             dreg_patch1_3_lon_vmask,
             dreg_patch1_3_lat_vmask,
-        ) = cls._apply_case3a_patch1(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case3a_patch1(
             mask_case3a=mask_case3a,
             lvn_sys_pos=lvn_sys_pos,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
@@ -1383,7 +1383,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch0_2_lat_dsl,
             dreg_patch0_3_lon_dsl,
             dreg_patch0_3_lat_dsl,
-        ) = cls._apply_case3b_patch0(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case3b_patch0(
             mask_case3b=mask_case3b,
             arrival_pts_1_lon_dsl=arrival_pts_1_lon_dsl,
             arrival_pts_1_lat_dsl=arrival_pts_1_lat_dsl,
@@ -1421,7 +1421,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_3_lat_vmask,
             dreg_patch2_4_lon_vmask,
             dreg_patch2_4_lat_vmask,
-        ) = cls._apply_case3b_patch2(
+        ) = TestPrepareFfslFluxAreaPatchesList._apply_case3b_patch2(
             mask_case3b=mask_case3b,
             arrival_pts_2_lon_dsl=arrival_pts_2_lon_dsl,
             arrival_pts_2_lat_dsl=arrival_pts_2_lat_dsl,
@@ -1497,41 +1497,37 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_4_lat_vmask=dreg_patch2_4_lat_vmask,
         )
 
-    @pytest.fixture
-    def input_data(self, grid) -> dict:
-        famask_int = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ptr_v3_lon_field = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0
-        )
-        ptr_v3_lat_field = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0
-        )
-        tangent_orientation_dsl = data_alloc.random_field(grid, dims.EdgeDim, low=0.1, high=1.0)
-        dreg_patch0_1_lon_dsl = data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_1_lat_dsl = data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_2_lon_dsl = data_alloc.constant_field(grid, 2.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_2_lat_dsl = data_alloc.constant_field(grid, 2.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_3_lon_dsl = data_alloc.constant_field(grid, 3.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_3_lat_dsl = data_alloc.constant_field(grid, 3.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_4_lon_dsl = data_alloc.constant_field(grid, 4.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_4_lat_dsl = data_alloc.constant_field(grid, 4.0, dims.EdgeDim, dims.KDim)
-        dreg_patch1_1_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_1_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_2_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_2_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_3_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_3_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_4_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_4_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_1_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_1_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_2_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_2_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_3_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_3_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_4_lon_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_4_lat_vmask = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        famask_int = data_alloc.random_mask(dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        ptr_v3_lon_field = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
+        ptr_v3_lat_field = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
+        tangent_orientation_dsl = data_alloc.random_field(dims.EdgeDim, low=0.1, high=1.0)
+        dreg_patch0_1_lon_dsl = data_alloc.constant_field(1.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_1_lat_dsl = data_alloc.constant_field(1.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_2_lon_dsl = data_alloc.constant_field(2.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_2_lat_dsl = data_alloc.constant_field(2.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_3_lon_dsl = data_alloc.constant_field(3.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_3_lat_dsl = data_alloc.constant_field(3.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_4_lon_dsl = data_alloc.constant_field(4.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_4_lat_dsl = data_alloc.constant_field(4.0, dims.EdgeDim, dims.KDim)
+        dreg_patch1_1_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_1_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_2_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_2_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_3_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_3_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_4_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch1_4_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_1_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_1_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_2_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_2_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_3_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_3_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_4_lon_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        dreg_patch2_4_lat_vmask = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         return dict(
             famask_int=famask_int,
             p_vn=p_vn,

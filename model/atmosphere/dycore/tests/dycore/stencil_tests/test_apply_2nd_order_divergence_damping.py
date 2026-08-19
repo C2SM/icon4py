@@ -19,8 +19,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def apply_2nd_order_divergence_damping_numpy(
@@ -30,13 +29,13 @@ def apply_2nd_order_divergence_damping_numpy(
     return vn
 
 
-class TestApply2ndOrderDivergenceDamping(StencilTest):
+class TestApply2ndOrderDivergenceDamping(stencil_tests.StencilTest):
     PROGRAM = apply_2nd_order_divergence_damping
     OUTPUTS = ("vn",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         z_graddiv_vn: np.ndarray,
         vn: np.ndarray,
@@ -46,10 +45,12 @@ class TestApply2ndOrderDivergenceDamping(StencilTest):
         vn = apply_2nd_order_divergence_damping_numpy(z_graddiv_vn, vn, scal_divdamp_o2)
         return dict(vn=vn)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_graddiv_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_graddiv_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         scal_divdamp_o2 = wpfloat("5.0")
 
         return dict(
