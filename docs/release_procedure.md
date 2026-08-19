@@ -36,8 +36,8 @@ To see the current list of packages:
 
 ### 1. Bump the version
 
-Create a new branch for bumping the version. Open PR against the main branch
-with the bumped versions.
+Create a new branch for bumping the version. You can find the current icon4py version in the pyporject.toml.
+Open PR against the main branch with the bumped versions.
 
 Use the `bump-versions` script to update all packages to the new version:
 
@@ -56,7 +56,7 @@ Use `--dry-run` to preview changes without writing files.
 
 ### 2. Create a GitHub Release
 
-Once the all PRs for the new release, including the one frome the previous step,
+Once all PRs for the new release, including the one frome the previous step,
 are merged to main:
 
 1. Go to **Releases -> Draft a new release**.
