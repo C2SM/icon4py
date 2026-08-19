@@ -54,14 +54,13 @@ def test_dycore_prep_adv_shares_the_advection_prep_adv_buffers(
 
 
 @pytest.mark.parametrize(
-    "solve_nonhydro_enabled, with_adv_prep_adv_state",
+    "with_adv_prep_adv_state",
     [
-        (False, False),
-        (False, True),
+        False,
+        True,
     ],
 )
 def test_dycore_prep_adv_is_none_when_disabled(
-    solve_nonhydro_enabled: bool,
     with_adv_prep_adv_state: bool,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -80,7 +79,7 @@ def test_dycore_prep_adv_is_none_when_disabled(
             grid=grid,
             allocator=allocator,
             adv_prep_adv_state=adv_prep_adv_state,
-            solve_nonhydro_enabled=solve_nonhydro_enabled,
+            solve_nonhydro_enabled=False,
         )
         is None
     )
