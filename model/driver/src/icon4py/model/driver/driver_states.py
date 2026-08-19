@@ -29,9 +29,9 @@ from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_i
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     nonhydro_states,
+    prep_adv_states,
     prognostic_state as prognostics,
     static_fields,
-    tracer_prep_adv_state,
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -65,7 +65,7 @@ class DriverStates(NamedTuple):
     solve_nonhydro_diagnostic: nonhydro_states.DiagnosticStateNonHydro | None
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
     tracer_advection_diagnostic: tracer_advection_states.AdvectionDiagnosticState | None
-    prep_tracer_advection_prognostic: tracer_prep_adv_state.TracerPrepAdvState | None
+    prep_tracer_advection_prognostic: prep_adv_states.TracerPrepAdvState | None
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     tracers: common_utils.TimeStepPair[tracer_states.TracerState]
     diagnostic: diagnostics.DiagnosticState
@@ -261,7 +261,7 @@ def link_tracer_prep_adv_to_dycore(
     grid: base_grid.Grid,
     allocator: gtx_typing.Allocator | None,
     *,
-    tracer_prep_adv_state: tracer_prep_adv_state.TracerPrepAdvState | None,
+    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
     solve_nonhydro_enabled: bool,
 ) -> dycore_states.PrepAdvection | None:
     """
@@ -303,7 +303,7 @@ def assemble_driver_states(
     diagnostic_state: diagnostics.DiagnosticState,
     experiment_config: driver_config.ExperimentConfig,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
-    tracer_prep_adv_state: tracer_prep_adv_state.TracerPrepAdvState | None,
+    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
 ) -> DriverStates:
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),

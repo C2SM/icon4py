@@ -18,7 +18,11 @@ from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_prep_adv_state, tracer_states
+from icon4py.model.common.states import (
+    prep_adv_states,
+    prognostic_state as prognostics,
+    tracer_states,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -234,7 +238,7 @@ def _compute_idealized_horizontal_velocity_field(
 def _fill_prep_adv_from_prescribed_wind_field(
     *,
     velocity_field: HorizontalVelocityField,
-    prep_adv_state: tracer_prep_adv_state.TracerPrepAdvState,
+    prep_adv_state: prep_adv_states.TracerPrepAdvState,
     primal_normal_x: data_alloc.NDArray,
     primal_normal_y: data_alloc.NDArray,
     domain_length: float,
@@ -337,7 +341,7 @@ def linear_horizontal_advection(
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
-    tracer_prep_adv_state: tracer_prep_adv_state.TracerPrepAdvState,
+    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState,
 ) -> None:
     """
     Initial condition for the idealized horizontal advection test case.
