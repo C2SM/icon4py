@@ -463,33 +463,38 @@ def _model_mpi_cells(
                         )
                     )
                     # TEMPORARY (experiment branch, revert before merge): when
-                    # ICON4PY_CI_MPI_PROBE_JOBS_EXTRA is set, additionally emit
-                    # the most expensive cell (driver on gtfn_gpu) with that
-                    # GT4PY_BUILD_JOBS value for an in-pipeline A/B.
-                    if extra_jobs := os.environ.get("ICON4PY_CI_MPI_PROBE_JOBS_EXTRA"):
-                        if subpackage == "driver" and backend == "gtfn_gpu":
-                            cells.append(
-                                _MatrixCell(
-                                    job_name=f"test_model_mpi_{subset}_aarch64",
-                                    extends=".test_model_mpi_aarch64",
-                                    variables={"SELECTION": subset},
-                                    matrix={
-                                        "MODEL_MPI_SUBPACKAGE": subpackage,
-                                        "BACKEND": backend,
-                                        "LEVEL": level,
-                                        **{
-                                            **_mpi_cell_slurm_vars_probe(
-                                                subpackage, backend, level
-                                            ),
-                                            "GT4PY_BUILD_JOBS": extra_jobs,
+                    # ICON4PY_CI_MPI_PROBE_JOBS_EXTRA / _NTASKS_EXTRA are set,
+                    # additionally emit the most expensive cell (driver on
+                    # gtfn_gpu) with that GT4PY_BUILD_JOBS / SLURM_NTASKS value
+                    # for an in-pipeline A/B.
+                    if subpackage == "driver" and backend == "gtfn_gpu":
+                        for env_var, key in (
+                            ("ICON4PY_CI_MPI_PROBE_JOBS_EXTRA", "GT4PY_BUILD_JOBS"),
+                            ("ICON4PY_CI_MPI_PROBE_NTASKS_EXTRA", "SLURM_NTASKS"),
+                        ):
+                            if extra := os.environ.get(env_var):
+                                cells.append(
+                                    _MatrixCell(
+                                        job_name=f"test_model_mpi_{subset}_aarch64",
+                                        extends=".test_model_mpi_aarch64",
+                                        variables={"SELECTION": subset},
+                                        matrix={
+                                            "MODEL_MPI_SUBPACKAGE": subpackage,
+                                            "BACKEND": backend,
+                                            "LEVEL": level,
+                                            **{
+                                                **_mpi_cell_slurm_vars_probe(
+                                                    subpackage, backend, level
+                                                ),
+                                                key: extra,
+                                            },
                                         },
-                                    },
-                                    session=_nox_session_name(
-                                        "test_model_mpi", f"{subset}, {subpackage}"
-                                    ),
-                                    pytest_args=pytest_args,
+                                        session=_nox_session_name(
+                                            "test_model_mpi", f"{subset}, {subpackage}"
+                                        ),
+                                        pytest_args=pytest_args,
+                                    )
                                 )
-                            )
     return cells
 
 
