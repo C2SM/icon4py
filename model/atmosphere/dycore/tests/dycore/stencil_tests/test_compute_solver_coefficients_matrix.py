@@ -37,8 +37,11 @@ def compute_solver_coefficients_matrix_numpy(
 ) -> tuple[np.ndarray, np.ndarray]:
     z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
     vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
-    z_alpha[:, -1] = 0.0
+    # z_alpha is as wide as theta_v_ic, which callers pass either KHalfDim-wide or truncated to
+    # nlev; only in the former case is there a surface half level to leave at zero.
+    nlev = exner_nnow.shape[1]
+    z_alpha = np.zeros_like(theta_v_ic)
+    z_alpha[:, :nlev] = (vwind_impl_wgt * theta_v_ic * rho_ic)[:, :nlev]
     return (z_beta, z_alpha)
 
 
