@@ -611,7 +611,9 @@ def get_single_node_properties(s: SingleNodeRun, comm_id: int | None = None) -> 
 
 
 @functools.singledispatch
-def create_exchange(process_props: ProcessProperties, decomp_info: DecompositionInfo) -> ExchangeRuntime:  # fmt: skip
+def create_exchange(
+    process_props: ProcessProperties, decomp_info: DecompositionInfo
+) -> ExchangeRuntime:
     """
     Create an Exchange depending on the runtime size.
 
@@ -621,12 +623,16 @@ def create_exchange(process_props: ProcessProperties, decomp_info: Decomposition
 
 
 @create_exchange.register(SingleNodeProcessProperties)
-def create_single_node_exchange(process_props: SingleNodeProcessProperties, decomp_info: DecompositionInfo) -> ExchangeRuntime:  # fmt: skip
+def create_single_node_exchange(
+    process_props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
+) -> ExchangeRuntime:
     return SingleNodeExchange()
 
 
 @functools.singledispatch
-def create_reduction(process_props: ProcessProperties, decomposition_info: DecompositionInfo) -> Reductions:  # fmt: skip
+def create_reduction(
+    process_props: ProcessProperties, decomposition_info: DecompositionInfo
+) -> Reductions:
     """
     Create a Global Reduction depending on the runtime size.
 
@@ -636,7 +642,9 @@ def create_reduction(process_props: ProcessProperties, decomposition_info: Decom
 
 
 @create_reduction.register(SingleNodeProcessProperties)
-def create_single_reduction_exchange(process_props: SingleNodeProcessProperties, decomposition_info: DecompositionInfo) -> Reductions:  # fmt: skip
+def create_single_reduction_exchange(
+    process_props: SingleNodeProcessProperties, decomposition_info: DecompositionInfo
+) -> Reductions:
     return SingleNodeReductions()
 
 
