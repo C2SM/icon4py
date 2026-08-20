@@ -20,22 +20,20 @@ def _compute_contravariant_correction_of_w(
     wgtfac_c: fa.CellKHalfField[vpfloat],
 ) -> fa.CellKHalfField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_39."""
-    z_w_concorr_me_offset_1 = z_w_concorr_me(dims.KHalfDim - 0.5)
+    z_w_concorr_me_kup = z_w_concorr_me(dims.KHalfDim - 0.5)
 
-    z_w_concorr_me_wp, z_w_concorr_me_offset_1_wp = astype(
-        (z_w_concorr_me(dims.KHalfDim + 0.5), z_w_concorr_me_offset_1), wpfloat
+    z_w_concorr_me_wp, z_w_concorr_me_kup_wp = astype(
+        (z_w_concorr_me(dims.KHalfDim + 0.5), z_w_concorr_me_kup), wpfloat
     )
 
-    z_w_concorr_mc_m1_wp = neighbor_sum(
-        e_bln_c_s * z_w_concorr_me_offset_1_wp(C2E), axis=dims.C2EDim
-    )
-    z_w_concorr_mc_m0_wp = neighbor_sum(e_bln_c_s * z_w_concorr_me_wp(C2E), axis=dims.C2EDim)
+    z_w_concorr_mc_kup_wp = neighbor_sum(e_bln_c_s * z_w_concorr_me_kup_wp(C2E), axis=dims.C2EDim)
+    z_w_concorr_mc_wp = neighbor_sum(e_bln_c_s * z_w_concorr_me_wp(C2E), axis=dims.C2EDim)
 
-    z_w_concorr_mc_m1_vp, z_w_concorr_mc_m0_vp = astype(
-        (z_w_concorr_mc_m1_wp, z_w_concorr_mc_m0_wp), vpfloat
+    z_w_concorr_mc_kup_vp, z_w_concorr_mc_vp = astype(
+        (z_w_concorr_mc_kup_wp, z_w_concorr_mc_wp), vpfloat
     )
     w_concorr_c_vp = (
-        wgtfac_c * z_w_concorr_mc_m0_vp + (vpfloat("1.0") - wgtfac_c) * z_w_concorr_mc_m1_vp
+        wgtfac_c * z_w_concorr_mc_vp + (vpfloat("1.0") - wgtfac_c) * z_w_concorr_mc_kup_vp
     )
     return w_concorr_c_vp
 

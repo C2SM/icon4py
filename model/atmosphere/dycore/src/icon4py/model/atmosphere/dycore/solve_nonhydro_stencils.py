@@ -91,6 +91,6 @@ def stencils_61_62(  # noqa: PLR0917 [too-many-positional-arguments]
         out=w_new,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KHalfDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_end - 1, vertical_end),
         },
     )

@@ -57,13 +57,7 @@ def test_cross_product(backend: gtx_typing.Backend) -> None:
 
 class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
     PROGRAM = vertical_ops.average_two_vertical_levels_downwards_on_edges
-    OUTPUTS = (
-        stencil_tests.Output(
-            "average",
-            refslice=(slice(None), slice(None, -1)),
-            gtslice=(slice(None), slice(None, -1)),
-        ),
-    )
+    OUTPUTS = ("average",)
 
     @stencil_tests.static_reference
     def reference(
@@ -92,13 +86,7 @@ class TestAverageTwoVerticalLevelsDownwardsOnEdges(stencil_tests.StencilTest):
 
 class TestAverageTwoVerticalLevelsDownwardsOnCells(stencil_tests.StencilTest):
     PROGRAM = vertical_ops.average_two_vertical_levels_downwards_on_cells
-    OUTPUTS = (
-        stencil_tests.Output(
-            "average",
-            refslice=(slice(None), slice(None, -1)),
-            gtslice=(slice(None), slice(None, -1)),
-        ),
-    )
+    OUTPUTS = ("average",)
 
     @stencil_tests.static_reference
     def reference(
