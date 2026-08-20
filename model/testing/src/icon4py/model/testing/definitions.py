@@ -14,7 +14,7 @@ import pathlib
 from typing import Final
 
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.standalone_driver import config as driver_config
+from icon4py.model.driver import config as driver_config
 from icon4py.model.testing import config
 
 
@@ -197,6 +197,8 @@ class Experiments:
         name="exclaim_ape_aesPhys",
         long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics (TMX turbulent mixing)",
         grid=Grids.R02B04_GLOBAL,
+        # v08: first archive with the tmx savepoints (tmx-init/entry/exit,
+        # tmx-surface-fluxes); the reference run has graupel AND vdf/tmx active.
         version=8,
     )
     MCH_CH_R04B09: Final = ExperimentDescription(

@@ -55,7 +55,7 @@ ALL_MODEL_SUBPACKAGES = [
     "tmx",
     "physics_driver",
     "common",
-    "standalone_driver",
+    "driver",
 ]
 
 ALL_MODEL_MPI_SUBPACKAGES = [
@@ -64,7 +64,7 @@ ALL_MODEL_MPI_SUBPACKAGES = [
     "dycore",
     "tmx",
     "common",
-    "standalone_driver",
+    "driver",
 ]
 ALL_BACKENDS = ["embedded", "dace_cpu", "dace_gpu", "gtfn_cpu", "gtfn_gpu"]
 ALL_GRIDS = ["simple", "icon_regional", "icon_global"]
