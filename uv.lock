@@ -16,10 +16,10 @@ resolution-markers = [
   "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
   "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
   "python_full_version == '3.13.*' and platform_machine == 'ARM64' and sys_platform == 'win32'",
-  "python_full_version < '3.13' and platform_machine == 'ARM64' and sys_platform == 'win32'",
   "python_full_version == '3.13.*' and platform_machine != 'ARM64' and sys_platform == 'win32'",
   "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
   "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+  "python_full_version < '3.13' and platform_machine == 'ARM64' and sys_platform == 'win32'",
   "python_full_version < '3.13' and platform_machine != 'ARM64' and sys_platform == 'win32'",
   "python_full_version < '3.13' and sys_platform == 'emscripten'",
   "python_full_version < '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'"
@@ -38,7 +38,7 @@ members = [
   "icon4py-atmosphere-tracer-advection",
   "icon4py-bindings",
   "icon4py-common",
-  "icon4py-standalone-driver",
+  "icon4py-driver",
   "icon4py-testing",
   "icon4py-tools"
 ]
@@ -1164,8 +1164,10 @@ dependencies = [
   {name = "astunparse"},
   {name = "dill"},
   {name = "fparser"},
+  {name = "ml-dtypes"},
   {name = "networkx"},
   {name = "numpy"},
+  {name = "ordered-set"},
   {name = "packaging"},
   {name = "ply"},
   {name = "pyreadline", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"},
@@ -1174,9 +1176,9 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-sdist = {url = "https://files.pythonhosted.org/packages/55/b1/6ecb926fad1efcb99afc9f148493f4bd33a788c3c7079b90ad764e7f56f3/dace-2.0.0a5.tar.gz", hash = "sha256:09d9185c9d0dd663ce00c3cfd11d0c9048f80415db7080d09d109fce0e044a02", size = 6185419, upload-time = "2026-07-23T17:57:33.557Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/ea/f2/31941fed070b22a94a265e612fb9615080a3d5f788273e37be6eadf57042/dace-2.0.0a6.tar.gz", hash = "sha256:d05884911a5f49bc89bf4b90b1aca2c1dc713541c5e0b5c9039cb7b39de24102", size = 6373222, upload-time = "2026-08-14T10:17:41.117Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "2.0.0a5"
+version = "2.0.0a6"
 
 [[package]]
 dependencies = [
@@ -1552,9 +1554,9 @@ dependencies = [
   {name = "numpy"}
 ]
 name = "ghex"
-sdist = {url = "https://files.pythonhosted.org/packages/12/dc/a5168a63f0543b9f6882487807ec586746cff71fc68f37ac010e63e751b8/ghex-0.7.0.tar.gz", hash = "sha256:4966ef3cee77038edd31444079c0b780d1b0c922a58464c5114092bf503cc308", size = 8915433, upload-time = "2026-06-18T15:35:30.856Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/a3/bc/773f20762d7d269e6b56d7fd8c39f522e48be875cc2e52b87bc2e9bfc806/ghex-0.9.0.tar.gz", hash = "sha256:165115747171c2b16367dace0420d8d50ddc925a1ad9b037c6669ffa70e7a596", size = 8932624, upload-time = "2026-08-06T15:29:30.433Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "0.7.0"
+version = "0.9.0"
 
 [[package]]
 dependencies = [
@@ -1645,11 +1647,11 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-sdist = {url = "https://files.pythonhosted.org/packages/7d/85/57e39c3caadcf3f2d72988ac17f0094ef76b6c4739fec252270a3b8d67e1/gt4py-1.2.0.tar.gz", hash = "sha256:c00e8469cc1426da4477ac5ff79f52aea04d51aec7d1001d7d7e3c01cc9788b4", size = 861599, upload-time = "2026-08-05T09:53:29.056Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/a7/1b/32d686217f33923be252c4dda950aedbd20aa94447d62e2332c1ae776fe1/gt4py-1.2.1.tar.gz", hash = "sha256:8f3cce85380994cf532b0433300496cddfb5e1855ee623642ef188851ce1ccea", size = 882545, upload-time = "2026-08-17T10:47:25.351Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "1.2.0"
+version = "1.2.1"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/d1/82/10260441a6bd1bad392464306772f40ae0ff0177208d196dd94c8e81b284/gt4py-1.2.0-py3-none-any.whl", hash = "sha256:caedcefedaae24cabb76fb24322b18c6859d48309a24aa8cf1b44dbfe1b7807b", size = 1078899, upload-time = "2026-08-05T09:53:27.443Z"}
+  {url = "https://files.pythonhosted.org/packages/c0/8d/30417e009216393825d4584f93a7cbf858a9d3987cc8ee28538af26f029a/gt4py-1.2.1-py3-none-any.whl", hash = "sha256:7cad0421f13c558166991a5e1f6042351473e52957461f406c068bec5d8b459c", size = 1100850, upload-time = "2026-08-17T10:47:23.49Z"}
 ]
 
 [package.optional-dependencies]
@@ -1765,11 +1767,11 @@ dependencies = [
   {name = "icon4py-atmosphere-physics-driver"},
   {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common"},
-  {name = "icon4py-standalone-driver"}
+  {name = "icon4py-driver"}
 ]
 name = "icon4py"
 source = {editable = "."}
-version = "0.3.0"
+version = "0.4.0"
 
 [package.dev-dependencies]
 build = [
@@ -1884,7 +1886,7 @@ requires-dist = [
   {name = "icon4py-common", extras = ["distributed"], marker = "extra == 'distributed'", editable = "model/common"},
   {name = "icon4py-common", extras = ["io"], marker = "extra == 'io'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
-  {name = "icon4py-standalone-driver", editable = "model/standalone_driver"},
+  {name = "icon4py-driver", editable = "model/driver"},
   {name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing"},
   {name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0"}
 ]
@@ -2025,11 +2027,11 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-diffusion"
 source = {editable = "model/atmosphere/diffusion"}
-version = "0.3.0"
+version = "0.4.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.0"},
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2042,11 +2044,11 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-dycore"
 source = {editable = "model/atmosphere/dycore"}
-version = "0.3.0"
+version = "0.4.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.0"},
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2059,11 +2061,11 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-microphysics"
 source = {editable = "model/atmosphere/subgrid_scale_physics/microphysics"}
-version = "0.3.0"
+version = "0.4.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.0"},
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2077,11 +2079,11 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-muphys"
 source = {editable = "model/atmosphere/subgrid_scale_physics/muphys"}
-version = "0.3.0"
+version = "0.4.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.0"},
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
@@ -2110,11 +2112,11 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-tracer-advection"
 source = {editable = "model/atmosphere/tracer_advection"}
-version = "0.3.0"
+version = "0.4.0"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.0"},
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2134,7 +2136,7 @@ dependencies = [
 ]
 name = "icon4py-bindings"
 source = {editable = "bindings"}
-version = "0.3.0"
+version = "0.4.0"
 
 [package.metadata]
 provides-extras = ["cuda12", "cuda13", "profiling"]
@@ -2143,7 +2145,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
-  {name = "gt4py", specifier = "==1.2.0"},
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
@@ -2181,7 +2183,7 @@ dependencies = [
 ]
 name = "icon4py-common"
 source = {editable = "model/common"}
-version = "0.3.0"
+version = "0.4.0"
 
 [package.metadata]
 provides-extras = ["all", "cuda12", "cuda13", "distributed", "io", "rocm7"]
@@ -2194,8 +2196,8 @@ requires-dist = [
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
-  {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.7.0"},
-  {name = "gt4py", specifier = "==1.2.0"},
+  {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
   {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'"},
@@ -2211,7 +2213,8 @@ requires-dist = [
   {name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0"},
   {name = "serialbox4py", specifier = ">=2.6.2"},
   {name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0"},
-  {name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.3.0,<2026.4"}
+  {name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.10.0,<2026.4"},
+  {name = "zarr", marker = "extra == 'io'", specifier = ">=3.0"}
 ]
 
 [package.optional-dependencies]
@@ -2227,7 +2230,8 @@ all = [
   {name = "pymetis"},
   {name = "scikit-learn"},
   {name = "uxarray"},
-  {name = "xarray", extra = ["complete"]}
+  {name = "xarray", extra = ["complete"]},
+  {name = "zarr"}
 ]
 cuda12 = [
   {name = "cupy-cuda12x"},
@@ -2251,7 +2255,8 @@ io = [
   {name = "pymetis"},
   {name = "scikit-learn"},
   {name = "uxarray"},
-  {name = "xarray", extra = ["complete"]}
+  {name = "xarray", extra = ["complete"]},
+  {name = "zarr"}
 ]
 rocm7 = [
   {name = "cupy-rocm-7-0"},
@@ -2270,14 +2275,14 @@ dependencies = [
   {name = "packaging"},
   {name = "typer"}
 ]
-name = "icon4py-standalone-driver"
-source = {editable = "model/standalone_driver"}
-version = "0.3.0"
+name = "icon4py-driver"
+source = {editable = "model/driver"}
+version = "0.4.0"
 
 [package.metadata]
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", specifier = "==1.2.0"},
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
@@ -2300,12 +2305,12 @@ dependencies = [
 ]
 name = "icon4py-testing"
 source = {editable = "model/testing"}
-version = "0.3.0"
+version = "0.4.0"
 
 [package.metadata]
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
-  {name = "gt4py", specifier = "==1.2.0"},
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"},
@@ -2327,7 +2332,7 @@ dependencies = [
 ]
 name = "icon4py-tools"
 source = {editable = "tools"}
-version = "0.3.0"
+version = "0.4.0"
 
 [package.metadata]
 provides-extras = ["cuda12", "cuda13", "profiling", "rocm7"]
@@ -2337,7 +2342,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.1.7"},
   {name = "configargparse", specifier = ">=1.7.1"},
   {name = "fprettify", specifier = ">=0.3.7"},
-  {name = "gt4py", specifier = "==1.2.0"},
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
@@ -2949,6 +2954,47 @@ source = {registry = "https://pypi.org/simple"}
 version = "0.1.2"
 wheels = [
   {url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z"}
+]
+
+[[package]]
+dependencies = [
+  {name = "numpy"}
+]
+name = "ml-dtypes"
+sdist = {url = "https://files.pythonhosted.org/packages/12/72/307d7c4bd0600601c7133fba5cb78af7db968152951c1cd473abb1cda782/ml_dtypes-0.6.0.tar.gz", hash = "sha256:5e60251d32ced5598972e4d5e06a2f044341f9291402551a3f6f0ec44f9299b0", size = 3032327, upload-time = "2026-08-13T14:14:40.215Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "0.6.0"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/84/6a/441eb053b078954f7fea284dfb288701884d0a1404d39babb858e1649023/ml_dtypes-0.6.0-cp312-cp312-macosx_10_13_universal2.whl", hash = "sha256:5359c588cc62de6f78d7430f06b65853d884955494d86d6ad90b6dd64a3f3a08", size = 565447, upload-time = "2026-08-13T14:14:01.737Z"},
+  {url = "https://files.pythonhosted.org/packages/ed/cf/87e8a6c57eed63a91782a0d229856ddf73e138ce004dd71e2799a9dcdb33/ml_dtypes-0.6.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:37da32aa97749251025666d62372775019594577b9c9e9cfda83bed48d778fdb", size = 360227, upload-time = "2026-08-13T14:14:02.938Z"},
+  {url = "https://files.pythonhosted.org/packages/c7/f9/7d76c1eae866f5d4636401b31b6d6dd90e4b4ced1fa7cfdfcca9c60e4bd3/ml_dtypes-0.6.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3b4a480aa8fd54a1805b8ac10f3f91763926a74f73c0c364c10f9231854f4170", size = 409890, upload-time = "2026-08-13T14:14:04.248Z"},
+  {url = "https://files.pythonhosted.org/packages/ba/db/9c61ec2760b5cbfb1c6558d5c991a6d8fd3271053c32db20506a9a90272b/ml_dtypes-0.6.0-cp312-cp312-win_amd64.whl", hash = "sha256:2a3e9d53925597fbffafd2a37048dadeddd0bdaba58058f6ae0869ed709a184d", size = 439333, upload-time = "2026-08-13T14:14:05.501Z"},
+  {url = "https://files.pythonhosted.org/packages/6a/57/780ca3e5ab135b9fbdd8e5441abf5f801b30398371b691291e05ab9834c0/ml_dtypes-0.6.0-cp312-cp312-win_arm64.whl", hash = "sha256:6eaed129a4afe90694b8685e2f9b6294849f5eda4af9a15be83a4326eeebd775", size = 552268, upload-time = "2026-08-13T14:14:06.866Z"},
+  {url = "https://files.pythonhosted.org/packages/50/51/fd1582b8f5ed8a9e7be0e161a6ea0dff70cb280479a12178df0b3a72700e/ml_dtypes-0.6.0-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:084dfe51a7ad58b171f05115f8226ed4233a454a1611371947e806e76f0c638d", size = 565468, upload-time = "2026-08-13T14:14:08.5Z"},
+  {url = "https://files.pythonhosted.org/packages/d2/22/20fd70ca6ed12446cb92d5b2a7745bd185f9d8b8cdeeadad976574398e6b/ml_dtypes-0.6.0-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:28d676428b104bb9717b0928bc5c5129f2d6b51b6727587cc4289e7bf8713cb5", size = 360232, upload-time = "2026-08-13T14:14:09.873Z"},
+  {url = "https://files.pythonhosted.org/packages/89/a5/da8ae6c6f1babe4b68e3e55d43d39b529e29774f10e0910671a6b8c86eb8/ml_dtypes-0.6.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:26b1f1fa4f0435a2946859823f6e2bf06796f1e9f10f5a05b08a5e3c8f46ff69", size = 410169, upload-time = "2026-08-13T14:14:11.036Z"},
+  {url = "https://files.pythonhosted.org/packages/e2/55/4561acefa00fa4bcbfb82ca6a48578b41f372cd7dd7cdd6eb4720abc2e5f/ml_dtypes-0.6.0-cp313-cp313-win_amd64.whl", hash = "sha256:fb87f46b4f7ad7b5d3ad8f4b452b024bd4229d44c8ff934798c1fe656210387a", size = 439357, upload-time = "2026-08-13T14:14:12.172Z"},
+  {url = "https://files.pythonhosted.org/packages/b1/5d/6a01538e507ef0ed5e879985b13a92467bf8960696fb1131f8b8cadc60ff/ml_dtypes-0.6.0-cp313-cp313-win_arm64.whl", hash = "sha256:57ed0d6b4ac5e7868361303a9c57fbcf63b768236ee14456f585dfcf260d0292", size = 552278, upload-time = "2026-08-13T14:14:13.539Z"},
+  {url = "https://files.pythonhosted.org/packages/d9/7a/97dc35667b7c9db33c5344c673cd27f87e34771875ea7100138726132ac9/ml_dtypes-0.6.0-cp314-cp314-macosx_10_15_universal2.whl", hash = "sha256:84fa136b8602c8c39e3b6cb24918960cd6f36cade7a70376f56770729cd56510", size = 562551, upload-time = "2026-08-13T14:14:14.774Z"},
+  {url = "https://files.pythonhosted.org/packages/db/48/77f0ede10558d0d935da2e3276ed7e9c8cc2bad3463b9a0b66b03fc60be2/ml_dtypes-0.6.0-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:317be9967fb84b0ce4e80e6b1bf71213d21971621cf6f1e501a63602a95297bf", size = 360334, upload-time = "2026-08-13T14:14:16.079Z"},
+  {url = "https://files.pythonhosted.org/packages/1c/b1/1831dd8c9b06c013085d31a2ac4f03392d43bd36bfc6ff591a08bcedc1cf/ml_dtypes-0.6.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:8f490c003369ce60e514a0c3b12374f05274c101fee1bead6740ec8a564032b0", size = 409966, upload-time = "2026-08-13T14:14:17.477Z"},
+  {url = "https://files.pythonhosted.org/packages/ff/ad/9c32c53f823dda3742df19a79c10bc198365937873ea125ba65747440c23/ml_dtypes-0.6.0-cp314-cp314-win_amd64.whl", hash = "sha256:d574c2b28921dc72e869df248f1a278f6eee176a1f237c8642e1a71eb15f3977", size = 457224, upload-time = "2026-08-13T14:14:18.608Z"},
+  {url = "https://files.pythonhosted.org/packages/41/3d/dd98205418a13353d41c52bf5326d8cbec515aace46174e23c6ea01c2978/ml_dtypes-0.6.0-cp314-cp314-win_arm64.whl", hash = "sha256:f4adb4af61516510d786cf8c01851a66f6d3ddfa79e1144deaa5b40d8507231e", size = 568378, upload-time = "2026-08-13T14:14:19.843Z"},
+  {url = "https://files.pythonhosted.org/packages/65/36/32e7beef3281fed74883451477ad976364323206dbfaa95e948ba788dac7/ml_dtypes-0.6.0-cp314-cp314t-macosx_10_15_universal2.whl", hash = "sha256:3e169214e0d80ff1c038e1b3017e33c23e43bdf948d42d31de8283111c7e2fa3", size = 590177, upload-time = "2026-08-13T14:14:20.971Z"},
+  {url = "https://files.pythonhosted.org/packages/d7/a2/99b3d9b3c984b3bd1e81d8244f1fa2f812e44060d853205b2df6271aa17c/ml_dtypes-0.6.0-cp314-cp314t-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:573b11f3c327e17ef3826d266e676cf1149a1f3016f822a05f2306c55d8246bf", size = 363142, upload-time = "2026-08-13T14:14:22.463Z"},
+  {url = "https://files.pythonhosted.org/packages/0c/fb/8091c0aee7f2712de99c7fd4b1642382644dec6a4962effe4f5b9d16a973/ml_dtypes-0.6.0-cp314-cp314t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b76fa1d3f92967d58289ac47ab7458ede66e6f3527fff3e59142aee57d9307cd", size = 430645, upload-time = "2026-08-13T14:14:23.737Z"},
+  {url = "https://files.pythonhosted.org/packages/c4/6f/962d2c589513b5930d05b6eae5fbd22ad8bbcf26bb763449f3d8f912360f/ml_dtypes-0.6.0-cp314-cp314t-win_amd64.whl", hash = "sha256:3be9911d953f97cddded4b9961d7b650473b7e55806d20f6176f8356dfe7b38e", size = 465667, upload-time = "2026-08-13T14:14:25.04Z"},
+  {url = "https://files.pythonhosted.org/packages/aa/ca/bcb25e246edd19af5fa1cf6267040bd9977a7afca846e6cfd4a52078b44f/ml_dtypes-0.6.0-cp314-cp314t-win_arm64.whl", hash = "sha256:e74266ca8e97874a937b7646378c178025650a236584f7474d10d8086a6edea3", size = 572706, upload-time = "2026-08-13T14:14:26.296Z"},
+  {url = "https://files.pythonhosted.org/packages/12/42/46cb442648e3c774d8cb25f2e1e41d496cdcc91fbe9c2a6f75c0b8df7af6/ml_dtypes-0.6.0-cp315-cp315-macosx_10_15_universal2.whl", hash = "sha256:b1b503864fada3f74fabf8d9fee7b4c1cbe956301e6fdece975d5f77c2fce958", size = 562550, upload-time = "2026-08-13T14:14:27.542Z"},
+  {url = "https://files.pythonhosted.org/packages/07/56/844eff5af7a2d1a09d75df12c70225c3a6b6a771f95876b2bf5f7d10ad44/ml_dtypes-0.6.0-cp315-cp315-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9c6ad60af4102789a5c09824004beade2f7f28cd1cd581ee5c170d9dc2fbb00e", size = 360332, upload-time = "2026-08-13T14:14:28.767Z"},
+  {url = "https://files.pythonhosted.org/packages/b6/29/b7165a3a76364a5baa6aa4ee82a0adf73a3c014b8cd126120b62cc087992/ml_dtypes-0.6.0-cp315-cp315-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d4f1b9329a251e4affe3bb58f4d3e2db22a714396fd7ffb40d0b5db423c24d17", size = 409964, upload-time = "2026-08-13T14:14:30.023Z"},
+  {url = "https://files.pythonhosted.org/packages/c8/2e/f61c54a0544b6a170ac1bb89bcf406af53fb2deffc5476b6d2d3df5ba13e/ml_dtypes-0.6.0-cp315-cp315-win_amd64.whl", hash = "sha256:488c99ab181a2f59d9ec3b12c5fa11ec904e92be2c4ba18cded54dd7501208fe", size = 457249, upload-time = "2026-08-13T14:14:31.213Z"},
+  {url = "https://files.pythonhosted.org/packages/63/00/bee1bc9faa02a46e7a851019fd23f47ca1f906609edbec8b6ba5decc3cc3/ml_dtypes-0.6.0-cp315-cp315-win_arm64.whl", hash = "sha256:de9d14748dbf3968951436ef514a29c9d1fe438aa680d110134ee2f7a9f9df18", size = 568381, upload-time = "2026-08-13T14:14:32.548Z"},
+  {url = "https://files.pythonhosted.org/packages/72/f7/9a5edede28f73185fd51d75030ef7f11d76997bab3a92427d986e54fe2eb/ml_dtypes-0.6.0-cp315-cp315t-macosx_10_15_universal2.whl", hash = "sha256:e25bb3b0ad1217b60626e4ed45b10ca170c41d99fbe44a12bebc1e07ec4aad55", size = 589877, upload-time = "2026-08-13T14:14:33.695Z"},
+  {url = "https://files.pythonhosted.org/packages/fd/81/d5924a141b850b606eb027493c9c3ca3c665cca5163af3f5b6e5e3345503/ml_dtypes-0.6.0-cp315-cp315t-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:31f1ce979d31a357e95aa81812f20412c8c954fa43c44ee3ead1e1c8a78575ef", size = 362788, upload-time = "2026-08-13T14:14:34.996Z"},
+  {url = "https://files.pythonhosted.org/packages/59/8f/3298e3f334832bc28dd144af6b99cdc93502a8687e71922ea68b0a319929/ml_dtypes-0.6.0-cp315-cp315t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e2d6149f3a57f405bcad5fb41e03218b8373936253f23e1ca84c0108abbc3392", size = 430823, upload-time = "2026-08-13T14:14:36.44Z"},
+  {url = "https://files.pythonhosted.org/packages/93/d2/f2dbf118f42ce4c325a139c9236737f436b7f8e00cd18701c99ef2405e6f/ml_dtypes-0.6.0-cp315-cp315t-win_amd64.whl", hash = "sha256:ce7563e0b1a4482cbc1b4a6272145e54e4489e54fe7428f94908c3d87103abfa", size = 465119, upload-time = "2026-08-13T14:14:37.776Z"},
+  {url = "https://files.pythonhosted.org/packages/5a/ff/bda40387b5c5c64254595f4d81a12351770856acc5de4e6d43606a31f161/ml_dtypes-0.6.0-cp315-cp315t-win_arm64.whl", hash = "sha256:f6cb525101b6b903779188c1e9e9490c343b455ab822883e02cf01e5547338d2", size = 572666, upload-time = "2026-08-13T14:14:38.993Z"}
 ]
 
 [[package]]
