@@ -370,15 +370,10 @@ def _mpi_cell_slurm_vars(subpackage: str, backend: str, level: str) -> dict[str,
     on rules:variables in ci/base.yml. The keys mirror the sbatch overrides
     the CSCS runner wrapper reads from the job environment.
     """
+    # NOTE: no special case for level == "validation": even the 7-day JW
+    # validation simulation runs in ~8 min on GPU (445s job wall with a warm
+    # cache, measured 2026-08); its cost is like any other compilation job.
     gpu_backend = backend in ("dace_gpu", "gtfn_gpu")
-    if level == "validation":
-        # The 7-day JW validation simulations are compute-bound, not
-        # compilation-bound; they need the full node and longer time.
-        return {
-            "SLURM_TIMELIMIT": "02:00:00",
-            "SLURM_PARTITION": "normal",
-            "GT4PY_BUILD_JOBS": "64",
-        }
     if subpackage == "driver" or (subpackage == "common" and gpu_backend):
         return {
             "SLURM_TIMELIMIT": "00:55:00",
