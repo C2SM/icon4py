@@ -62,9 +62,9 @@ class HorizontalAdvectionType(Enum):
     #: no horizontal tracer advection
     NO_ADVECTION = 0
     #: 1st order upwind
-    UPWIND_1ST_ORDER = 1
+    FIRST_ORDER_UPWIND = 1
     #: 2nd order MIURA with linear reconstruction
-    LINEAR_2ND_ORDER = 2
+    SECOND_ORDER_LINEAR_MIURA = 2
 
 
 @config_io.register_enum
@@ -88,7 +88,7 @@ class VerticalAdvectionType(Enum):
     #: no vertical tracer advection
     NO_ADVECTION = 0
     #: 1st order upwind
-    UPWIND_1ST_ORDER = 1
+    FIRST_ORDER_UPWIND = 1
     #: 3rd order PPM
     PPM_3RD_ORDER = 3
 
@@ -462,14 +462,14 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
             horizontal_advection = tracer_advection_horizontal.NoAdvection(
                 grid=grid, backend=backend
             )
-        case HorizontalAdvectionType.UPWIND_1ST_ORDER:
+        case HorizontalAdvectionType.FIRST_ORDER_UPWIND:
             horizontal_advection = tracer_advection_horizontal.FirstOrderUpwind(
                 grid=grid,
                 interpolation_state=interpolation_state,
                 metric_state=metric_state,
                 backend=backend,
             )
-        case HorizontalAdvectionType.LINEAR_2ND_ORDER:
+        case HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA:
             tracer_flux = tracer_advection_horizontal.SecondOrderMiura(
                 grid=grid,
                 least_squares_state=least_squares_state,
@@ -503,7 +503,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     match config.vertical_advection_type:
         case VerticalAdvectionType.NO_ADVECTION:
             vertical_advection = tracer_advection_vertical.NoAdvection(grid=grid, backend=backend)
-        case VerticalAdvectionType.UPWIND_1ST_ORDER:
+        case VerticalAdvectionType.FIRST_ORDER_UPWIND:
             boundary_conditions = tracer_advection_vertical.NoFluxCondition(
                 grid=grid, backend=backend
             )
