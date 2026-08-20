@@ -545,6 +545,23 @@ def _print_collection_summary(
         print(_format_cell(cell), file=sys.stderr)
 
 
+class _QuotedSafeDumper(yaml.SafeDumper):
+    """Safe dumper that quotes H:MM:SS-looking strings.
+
+    Without quoting, YAML 1.1 consumers (GitLab) parse e.g. 00:55:00 as the
+    sexagesimal integer 3300, which then reaches --time=3300 (minutes) in
+    sbatch and is rejected on partitions with low MaxTime.
+    """
+
+
+def _quoted_str(dumper: yaml.SafeDumper, data: str) -> yaml.nodes.ScalarNode:
+    style = "'" if re.fullmatch(r"\d{1,2}:\d{2}:\d{2}", data) else None
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data, style=style)
+
+
+_QuotedSafeDumper.add_representer(str, _quoted_str)
+
+
 def _generate_child_pipeline(
     *,
     sessions: str | None = None,
@@ -666,7 +683,7 @@ def _generate_child_pipeline(
         )
         sys.exit(1)
 
-    return yaml.safe_dump(pipeline)
+    return yaml.dump(pipeline, Dumper=_QuotedSafeDumper)
 
 
 @cli.command()
