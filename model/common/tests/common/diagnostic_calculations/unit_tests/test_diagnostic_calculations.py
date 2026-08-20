@@ -412,6 +412,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         diagnostic_state.surface_pressure,
         diagnostic_state.pressure,
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
         diagnostic_state.pressure_ifc,
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,
