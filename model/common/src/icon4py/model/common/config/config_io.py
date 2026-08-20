@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import copy
 import dataclasses
 import enum
 import typing
@@ -46,30 +45,32 @@ class ConfigUnionStructurer[T]:
 
 
 @dataclasses.dataclass
-class SharedOption:
-    name: str
-    value: typing.Any
+class SharedOptionSet:
+    options: dict[str, typing.Any]
     consumers: list[str]
+
+
+@CONV.register_structure_hook
+def structure_shared_set(data: dict, _: typing.Any) -> SharedOptionSet:
+    print(data)
+    return SharedOptionSet(
+        consumers=data["consumers"], options={k: v for k, v in data.items() if k != "consumers"}
+    )
+
+
+@CONV.register_unstructure_hook
+def unstructure_shared_set(shared_set: SharedOptionSet) -> dict:
+    return shared_set.options | {"consumers": shared_set.consumers}
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class ConfigWithShared:
-    shared: list[SharedOption] = dataclasses.field(default_factory=list)
+    shared: list[SharedOptionSet] = dataclasses.field(default_factory=list)
 
     def __init_subclass__(cls: type[typing.Self], **kwargs: typing.Any):
         super().__init_subclass__(**kwargs)
         CONV.register_structure_hook(cls, structure_with_shared)
         CONV.register_unstructure_hook(cls, unstructure_with_shared)
-
-
-@CONV.register_structure_hook
-def structure_shared_option(data: dict, _: typing.Any) -> SharedOption:
-    match tuple(data.items()):
-        case ((name, value), ("consumers", [*consumers])):
-            data = {"consumers": consumers, "name": name, "value": value}
-        case (("consumers", [*consumers]), (name, value)):
-            data = {"consumers": consumers, "name": name, "value": value}
-    return cattrs.gen.make_dict_structure_fn(SharedOption, CONV)(data, SharedOption)
 
 
 CONV.register_unstructure_hook(ta.wpfloat, lambda v: CONV.unstructure(float(v)))
@@ -99,37 +100,28 @@ def register_enum[ET](enum_type: type[ET]) -> type[ET]:
 
 
 def structure_with_shared[ST](spec: dict, config_cls: type[ST]) -> ST:
-    for shared_option_spec in spec.get("shared", []):
-        shared_option = CONV.structure(shared_option_spec, SharedOption)
-        for consumer_name in shared_option.consumers:
-            if spec[consumer_name] is None:
-                spec[consumer_name] = {}
-            if shared_option.name in spec[consumer_name]:
+    for option_set in [CONV.structure(i, SharedOptionSet) for i in spec.get("shared", [])]:
+        for consumer in option_set.consumers:
+            if spec[consumer] is None:
+                spec[consumer] = {}
+            if clashing := set(spec[consumer]).intersection(set(option_set.options)):
                 raise ValueError(
-                    f"duplicate option for {consumer_name}: {shared_option.name} given in 'shared' as well as directly."
+                    f"multiple options given for {consumer}: {clashing} given in 'shared' as well as directly."
                 )
-            spec[consumer_name] |= {shared_option.name: shared_option.value}
+            spec[consumer] |= option_set.options
     return cattrs.gen.make_dict_structure_fn(config_cls, CONV)(spec, config_cls)
 
 
 def unstructure_with_shared(config_obj: ConfigWithShared) -> dict:
     spec = cattrs.gen.make_dict_unstructure_fn(type(config_obj), CONV)(config_obj)
-    config_copy = copy.deepcopy(config_obj)
-    for shared_option in config_copy.shared:
-        for consumer_name in shared_option.consumers:
-            if spec[consumer_name][shared_option.name] == shared_option.value:
-                spec[consumer_name].pop(shared_option.name)
-                if spec[consumer_name] == {}:
-                    spec[consumer_name] = None
-            else:
-                shared_option.consumers.remove(consumer_name)
-        if not shared_option.consumers:
-            config_copy.shared.remove(shared_option)
-
+    for shared_set in config_obj.shared:
+        for consumer in shared_set.consumers:
+            consistent = {k for k, v in shared_set.options.items() if spec[consumer][k] == v}
+            spec[consumer] = {
+                k: v for k, v in spec[consumer].items() if k not in consistent
+            } or None
     if not spec["shared"]:
         spec.pop("shared")
-    else:
-        spec["shared"] = CONV.unstructure(config_copy.shared)
     return spec
 
 
