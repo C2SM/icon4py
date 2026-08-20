@@ -177,7 +177,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
                 & (horz_idx < end_cell_halo)
                 & (vert_idx == surface_level - 1),
                 extrapolate_quadratically_to_surface_numpy(
-                    interpolant=temporal_extrapolation_of_perturbed_exner,
+                    interpolant=temporal_extrapolation_of_perturbed_exner[:, : surface_level - 1],
                     wgtfacq_c=wgtfacq_c,
                     interpolation_to_surface=exner_at_cells_on_half_levels,
                 ),
@@ -301,7 +301,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             theta_v_at_cells_on_half_levels_surface,
         ) = set_theta_v_prime_ic_at_lower_boundary_numpy(
             wgtfacq_c=wgtfacq_c,
-            z_rth_pr=perturbed_theta_v_at_cells_on_model_levels,
+            z_rth_pr=perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
             theta_ref_ic=reference_theta_at_cells_on_half_levels,
             z_theta_v_pr_ic=np.zeros_like(perturbed_theta_v_at_cells_on_half_levels),
             theta_v_ic=np.zeros_like(theta_v_at_cells_on_half_levels),
