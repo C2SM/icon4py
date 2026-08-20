@@ -14,7 +14,7 @@ are applied to the prognostic state exactly once, after all processes.
 
 Deliberately NOT implemented here: ICON AES couples microphyscs and turbulence sequentially
 (each process sees the previous one's provisional update). Reintroducing that
-would require per-process state advances and working tracer buffers. 
+would require per-process state advances and working tracer buffers.
 """
 
 from __future__ import annotations
@@ -46,11 +46,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.common.states import (
-        factory,
-        prognostic_state as prognostics,
-        tracer_states,
-    )
+    from icon4py.model.common.states import factory, prognostic_state as prognostics, tracer_states
 
 
 # The six moisture species physics requires from the TracerState.
@@ -234,7 +230,7 @@ class TendencyAccumulators:
     def zero(self) -> None:
         """Reset all accumulators; called by the driver at the start of every run."""
         for buffer in self.acc.values():
-            buffer.ndarray[...] = 0.0
+            buffer.ndarray[...] = 0.0  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
     def accumulate(self, outputs: dict, outputs_properties: dict) -> None:
         """Add a process's tendency outputs to the per-variable sums.
@@ -250,7 +246,7 @@ class TendencyAccumulators:
             if buffer is None:
                 buffer = gtx.zeros(field.domain, dtype=field.dtype, allocator=self._backend)
                 self.acc[name] = buffer
-            buffer.ndarray[...] += field.ndarray
+            buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
 
 class ApplyToPrognostic:
@@ -343,9 +339,7 @@ class ApplyToPrognostic:
 
         # Scratch buffers — allocated once
         self._new_te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self._tv_tendency = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
-        )
+        self._tv_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
         self._ddt_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
     def __call__(
@@ -357,6 +351,7 @@ class ApplyToPrognostic:
         """Write the accumulated tendencies to the model state — through the facade's pointers."""
         acc = accumulators.acc
         tracers = entry_state.tracers
+        assert tracers is not None, "diagnose_from must run before apply"
 
         # 1. Tracers: q += dt * sum of tendencies (mo_interface_iconam_aes:513)
         for name in MOISTURE_SPECIES:

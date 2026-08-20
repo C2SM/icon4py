@@ -9,14 +9,10 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest
 
-from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import (
-    compute_vn_from_uv,
-)
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +20,9 @@ class TestComputeVnFromUv(stencil_tests.StencilTest):
     PROGRAM = compute_vn_from_uv
     OUTPUTS = ("vn",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         u: np.ndarray,
         v: np.ndarray,
@@ -39,7 +35,8 @@ class TestComputeVnFromUv(stencil_tests.StencilTest):
         vertical_end: int,
         **kwargs: Any,
     ) -> dict:
-        e2c = connectivities[dims.E2CDim]  # (n_edges, 2)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        e2c = connectivities[dims.E2C]  # (n_edges, 2)
 
         # (n_edges, 2, nlev) gathers of the cell-center wind components
         u_e = u[e2c]
@@ -58,18 +55,16 @@ class TestComputeVnFromUv(stencil_tests.StencilTest):
         ]
         return dict(vn=vn_out)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        u = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        primal_normal_cell_x = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
-        )
-        primal_normal_cell_y = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
-        )
-        c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
-        vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        u = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        primal_normal_cell_x = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        primal_normal_cell_y = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        c_lin_e = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        vn = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         # Fortran: compute_normal_velocity_edge runs on
         # rl_start = grf_bdywidth_e + 1, rl_end = min_rledge_int.
