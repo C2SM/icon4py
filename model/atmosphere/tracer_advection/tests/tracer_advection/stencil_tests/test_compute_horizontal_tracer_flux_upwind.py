@@ -9,10 +9,10 @@
 import gt4py.next as gtx
 import numpy as np
 
+import icon4py.model.common.type_alias as types
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_upwind import (
     compute_horizontal_tracer_flux_upwind,
 )
-import icon4py.model.common.type_alias as types
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
