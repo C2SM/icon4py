@@ -1,11 +1,6 @@
 shared:
-  - name: u0
-    value: 35.0
-    consumers:
-      - initial_condition
-      - topography
-  - name: eta_0
-    value: 0.252
+  - u0: 35.0
+    eta_0: 0.252
     consumers:
       - initial_condition
       - topography
