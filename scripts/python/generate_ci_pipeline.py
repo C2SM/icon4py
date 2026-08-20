@@ -370,35 +370,33 @@ def _mpi_cell_slurm_vars(subpackage: str, backend: str, level: str) -> dict[str,
     on rules:variables in ci/base.yml. The keys mirror the sbatch overrides
     the CSCS runner wrapper reads from the job environment.
 
-    TEMPORARY (experiment branch, revert before merge): the env vars
-    ICON4PY_CI_MPI_PROBE_TIMELIMIT / ICON4PY_CI_MPI_PROBE_GPUS /
-    ICON4PY_CI_MPI_PROBE_JOBS override SLURM_TIMELIMIT / SLURM_PARTITION /
-    SLURM_GPUS_PER_NODE / GT4PY_BUILD_JOBS for ALL emitted MPI cells, so ad-hoc pipeline triggers
-    can probe allocation shapes without code changes.
+    All cells get a <= 1h limit (the shared-partition maximum) on the shared partition. Values follow the
+    cold-cache measurements of the W1-W3 allocation probes (August 2026,
+    gt4py 1.2.1 + dace 2.0.0a6):
 
-    All cells get a sub-1h time limit. Partition assignment follows measured
-    cold-compile durations (cycle 4/5 of PR #1386, gt4py 1.2.1 + dace
-    2.0.0a6): dace_* builds are latency-bound and fit a shared-partition
-    module (worst 3060s); gtfn_gpu driver builds are core-throughput-bound
-    and do not fit a shared module within 55 min (>=3300s measured), so
-    they get a normal node with a 55 min cap; validation jobs need no extra
-    allowance (7-day JW simulation is ~8 min wall with a warm cache).
+    - driver/gtfn_gpu is the hardest cell: many light per-program ninja
+      builds make it core-throughput-bound. It fits a 2-GPU (144 core)
+      shared allocation with 24 tasks (1847s measured); 1 GPU times out
+      (>3300s). NTASKS=24 buys 1.45x over 12 at the same allocation.
+    - dace_* cells are latency-bound and fit 1 GPU (driver unit: 3060s,
+      common: 1927s).
+    - GT4PY_BUILD_JOBS=12: no wall-time effect observed for 12 vs 32/64 in
+      any measured cell; higher values only raise memory.
     """
     if subpackage == "driver" and backend == "gtfn_gpu":
+        # validation-level driver runs the long simulations in addition; keep
+        # the default task count there (12) to bound concurrent sim memory.
+        tasks = "24" if level != "validation" else "12"
         return {
-            "SLURM_TIMELIMIT": "00:55:00",
-            "SLURM_PARTITION": "normal",
-            "GT4PY_BUILD_JOBS": "12",
-        }
-    if level == "validation":
-        return {
-            "SLURM_TIMELIMIT": "00:55:00",
-            "SLURM_PARTITION": "normal",
+            "SLURM_TIMELIMIT": "01:00:00",
+            "SLURM_PARTITION": "shared",
+            "SLURM_GPUS_PER_NODE": "2",
+            "SLURM_NTASKS": tasks,
             "GT4PY_BUILD_JOBS": "12",
         }
     if subpackage in ("driver", "common"):
         return {
-            "SLURM_TIMELIMIT": "00:55:00",
+            "SLURM_TIMELIMIT": "01:00:00",
             "SLURM_PARTITION": "shared",
             "GT4PY_BUILD_JOBS": "12",
         }
