@@ -18,8 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
@@ -41,13 +40,13 @@ def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
     return rho_ic, z_rth_pr_1, z_rth_pr_2
 
 
-class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest):
+class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(stencil_tests.StencilTest):
     PROGRAM = compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers
     OUTPUTS = ("rho_ic", "z_rth_pr_1", "z_rth_pr_2")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         wgtfac_c: np.ndarray,
         rho: np.ndarray,
@@ -69,16 +68,18 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest
         )
         return dict(rho_ic=rho_ic, z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
-        rho = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        rho_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        rho_ic = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
-        z_rth_pr_1 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        rho = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ref_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_ref_mc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        rho_ic = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        z_rth_pr_1 = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_2 = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,

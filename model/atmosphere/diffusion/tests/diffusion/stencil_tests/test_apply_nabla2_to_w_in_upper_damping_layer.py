@@ -15,8 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damp
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def apply_nabla2_to_w_in_upper_damping_layer_numpy(
@@ -30,16 +29,16 @@ def apply_nabla2_to_w_in_upper_damping_layer_numpy(
     return w
 
 
-class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
+class TestApplyNabla2ToWInUpperDampingLayer(stencil_tests.StencilTest):
     PROGRAM = apply_nabla2_to_w_in_upper_damping_layer
     OUTPUTS = ("w",)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid):
-        w = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
-        diff_multfac_n2w = random_field(grid, dims.KHalfDim, dtype=wpfloat)
-        cell_area = random_field(grid, dims.CellDim, dtype=wpfloat)
-        z_nabla2_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        diff_multfac_n2w = data_alloc.random_field(dims.KHalfDim, dtype=wpfloat)
+        cell_area = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        z_nabla2_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
 
         return dict(
             w=w,
@@ -52,9 +51,9 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
             vertical_end=gtx.int32(grid.num_levels + 1),
         )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         w: np.ndarray,
         diff_multfac_n2w: np.ndarray,

@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
@@ -15,13 +16,12 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import upd
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def update_mass_volume_flux_numpy(
     *,
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     z_contr_w_fl_l: np.ndarray,
     rho_ic: np.ndarray,
     vwind_impl_wgt: np.ndarray,
@@ -37,16 +37,16 @@ def update_mass_volume_flux_numpy(
     return (mass_flx_ic, vol_flx_ic)
 
 
-class TestUpdateMassVolumeFlux(StencilTest):
+class TestUpdateMassVolumeFlux(stencil_tests.StencilTest):
     PROGRAM = update_mass_volume_flux
     OUTPUTS = (
         "mass_flx_ic",
         "vol_flx_ic",
     )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         z_contr_w_fl_l: np.ndarray,
         rho_ic: np.ndarray,
@@ -57,6 +57,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
         r_nsubsteps: float,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (mass_flx_ic, vol_flx_ic) = update_mass_volume_flux_numpy(
             connectivities=connectivities,
             z_contr_w_fl_l=z_contr_w_fl_l,
@@ -69,16 +70,16 @@ class TestUpdateMassVolumeFlux(StencilTest):
         )
         return dict(mass_flx_ic=mass_flx_ic, vol_flx_ic=vol_flx_ic)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_contr_w_fl_l = data_alloc.random_field(
-            grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat
-        )
-        rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
-        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
-        mass_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
-        vol_flx_ic = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_contr_w_fl_l = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        rho_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        vwind_impl_wgt = data_alloc.random_field(dims.CellDim, dtype=ta.wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        mass_flx_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        vol_flx_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         r_nsubsteps = 7.0
 
         return dict(

@@ -9,7 +9,6 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest
 
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
@@ -18,8 +17,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_
     _interpolate_cell_field_to_half_levels_vp,
     _interpolate_cell_field_to_half_levels_wp,
 )
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def interpolate_cell_field_to_half_levels_vp_numpy(
@@ -48,13 +46,13 @@ def interpolate_cell_field_to_half_levels_wp_numpy(
     return interpolation_to_half_levels_wp
 
 
-class TestInterpolateToHalfLevelsVp(StencilTest):
+class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
     PROGRAM = _interpolate_cell_field_to_half_levels_vp
     OUTPUTS = ("out",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         wgtfac_c: np.ndarray,
         interpolant: np.ndarray,
@@ -66,11 +64,13 @@ class TestInterpolateToHalfLevelsVp(StencilTest):
             )
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        interpolant = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
-        out = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        interpolant = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
+        out = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,
@@ -83,13 +83,13 @@ class TestInterpolateToHalfLevelsVp(StencilTest):
         )
 
 
-class TestInterpolateToHalfLevelsWp(StencilTest):
+class TestInterpolateToHalfLevelsWp(stencil_tests.StencilTest):
     PROGRAM = _interpolate_cell_field_to_half_levels_wp
     OUTPUTS = ("out",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         wgtfac_c: np.ndarray,
         interpolant: np.ndarray,
@@ -101,11 +101,13 @@ class TestInterpolateToHalfLevelsWp(StencilTest):
             )
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        interpolant = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
-        out = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        interpolant = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        out = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,
