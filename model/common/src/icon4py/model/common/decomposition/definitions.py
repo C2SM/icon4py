@@ -634,9 +634,10 @@ def create_reduction(
     process_props: ProcessProperties, decomposition_info: DecompositionInfo
 ) -> Reductions:
     """
-    Create a Global Reduction depending on the runtime size.
+    Create a reductions object depending on the runtime size.
 
-    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+    For a single-rank run, returns a `SingleNodeReductions` object.
+    For a distributed run, returns a `GlobalReductions` object.
     """
     raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
 
