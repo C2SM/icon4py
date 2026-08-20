@@ -384,14 +384,14 @@ def _mpi_cell_slurm_vars(subpackage: str, backend: str, level: str) -> dict[str,
       any measured cell; higher values only raise memory.
     """
     if subpackage == "driver" and backend == "gtfn_gpu":
-        # validation-level driver runs the long simulations in addition; keep
-        # the default task count there (12) to bound concurrent sim memory.
-        tasks = "24" if level != "validation" else "12"
+        # Hardest cell: throughput-bound ninja/gcc builds. Measured floor is 2
+        # GPUs (144 cores) with the uniform 12-tasks-per-GPU rule (1847s,
+        # cold cache, W3); 1 GPU times out (>3300s).
         return {
             "SLURM_TIMELIMIT": "01:00:00",
             "SLURM_PARTITION": "shared",
             "SLURM_GPUS_PER_NODE": "2",
-            "SLURM_NTASKS": tasks,
+            "SLURM_NTASKS": "24",
             "GT4PY_BUILD_JOBS": "12",
         }
     if subpackage in ("driver", "common"):
