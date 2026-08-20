@@ -14,7 +14,11 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, grid_manager as gm, simple as simple_grid
-from icon4py.model.testing import definitions as test_defs, grid_utils
+from icon4py.model.testing import (
+    definitions as test_defs,
+    grid_utils,
+    stencil_tests as _stencil_tests,
+)
 
 
 BENCHMARK_DEFAULT_LEVELS: Final[int] = 80
@@ -132,3 +136,13 @@ def grid(
         )
     else:
         return grid_manager.grid
+
+
+@pytest.fixture(scope="session")
+def data_alloc(
+    grid: base_grid.Grid, backend_like: model_backends.BackendLike
+) -> _stencil_tests.DataAllocationWrapper:
+    """Field constructors with the grid and the selected backend's allocator bound."""
+    return _stencil_tests.DataAllocationWrapper(
+        grid=grid, allocator=model_backends.get_allocator(backend_like)
+    )

@@ -18,7 +18,6 @@ from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_
     interpolate_edge_field_to_half_levels_vp,
 )
 from icon4py.model.common.type_alias import vpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 
 
 def interpolate_edge_field_to_half_levels_vp_numpy(
@@ -37,9 +36,9 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
     PROGRAM = interpolate_edge_field_to_half_levels_vp
     OUTPUTS = ("interpolation_to_half_levels_vp",)
 
-    @staticmethod
+    @test_helpers.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base_grid.Grid,
         *,
         wgtfac_e: np.ndarray,
         interpolant: np.ndarray,
@@ -50,11 +49,13 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
         )
         return dict(interpolation_to_half_levels_vp=interpolation_to_half_levels_vp)
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        interpolant = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        interpolation_to_half_levels_vp = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+    @test_helpers.input_data_fixture
+    def input_data(data_alloc: test_helpers.DataAllocationWrapper, grid: base_grid.Grid) -> dict:
+        interpolant = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        wgtfac_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        interpolation_to_half_levels_vp = data_alloc.zero_field(
+            dims.EdgeDim, dims.KDim, dtype=vpfloat
+        )
 
         return dict(
             wgtfac_e=wgtfac_e,
