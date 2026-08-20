@@ -32,16 +32,16 @@ class TestComputeHorizontalTracerFluxUpwind(stencil_tests.StencilTest):
         **kwargs,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        e2c = connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2C]
         p_out_e = np.where(p_vn > 0.0, p_cc[e2c][:, 0], p_cc[e2c][:, 1]) * p_mass_flx_e
         return dict(p_out_e=p_out_e)
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
-        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=types.wpfloat)
-        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=types.wpfloat)
-        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=types.wpfloat)
-        p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=types.wpfloat)
+        p_cc = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=types.wpfloat)
+        p_mass_flx_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=types.wpfloat)
+        p_vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=types.wpfloat)
+        p_out_e = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=types.wpfloat)
         return dict(
             p_cc=p_cc,
             p_mass_flx_e=p_mass_flx_e,
