@@ -9,7 +9,7 @@ import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim
-from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_wp import (
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_wp,
 )
 from icon4py.model.common.type_alias import wpfloat

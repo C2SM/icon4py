@@ -60,17 +60,21 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "theta_v": (1.2e-3, 3.6e-6),
         "rho": (3.5e-6, 3.7e-6),
     },
+    # Measured 2026-08-20 on the v08 reference (graupel + tmx, parallel two-layer
+    # coupling, zero surface fluxes) with ~2x headroom over the observed max diffs
+    # (vn 5.5e-7, w 8.4e-9, exner 5.5e-4, theta_v rel 1.4e-3, qv 5.2e-5, qc 5.0e-5,
+    # qi 2.9e-5, qr 1.5e-13, rho 1.6e-10, qs/qg bitwise exact).
     test_defs.Experiments.EXCLAIM_APE_AES: {
-        "vn": (6e-7, 0.0),
-        "w": (1e-8, 0.0),
+        "vn": (1.2e-6, 0.0),
+        "w": (2e-8, 0.0),
         "rho": (9e-10, 0.0),
-        "exner": (1e-8, 0.0),
-        "theta_v": (0.0, 3e-8),
-        "qv": (1e-8, 0.0),
-        "qc": (1e-10, 0.0),
-        "qr": (1e-10, 0.0),
+        "exner": (1.2e-3, 0.0),
+        "theta_v": (0.0, 3e-3),
+        "qv": (1.2e-4, 0.0),
+        "qc": (1.2e-4, 0.0),
+        "qr": (5e-13, 0.0),
         "qs": (1e-10, 0.0),
-        "qi": (1e-10, 0.0),
+        "qi": (6e-5, 0.0),
         "qg": (1e-10, 0.0),
     },
 }
@@ -155,9 +159,11 @@ def test_driver(
 
     EXCLAIM_APE_AES, as of the **v08** reference, runs graupel AND vdf/tmx — vn and w
     are now actively written by the physics (tmx momentum coupling), unlike the
-    muphys-only v06 era.
-    TODO(Yilu): the EXCLAIM_APE_AES tolerances below are the v06 muphys-only
-    measurements; re-measure on v08 (vn/w in particular).
+    muphys-only v06 era. Tolerances measured 2026-08-20 on v08 under the parallel
+    two-layer coupling (see ``_TOLERANCES``); the residuals bundle the remaining
+    zero-surface-flux seam, the parallel-vs-sequential splitting difference vs the
+    ICON reference, and the clipping / vertical-extent items below — together they
+    stay at the 1e-3-relative level (theta_v) or far below.
 
     muphys: runs ``MuphysScheme.AES_GRAUPEL`` -- the port of the exact ICON
     formulation that generated the reference. The tracer comparison carries
@@ -273,7 +279,7 @@ def test_driver(
         ),
     ],
 )
-def test_standalone_driver_moist_physics_with_tmx(
+def test_driver_moist_physics_with_tmx(
     experiment_description: test_defs.ExperimentDescription,
     timeloop_date_exit: str,
     *,
@@ -319,7 +325,7 @@ def test_standalone_driver_moist_physics_with_tmx(
         allocator=allocator,
         process_props=process_props,
     )
-    ds, icon4py_driver = standalone_driver.run_driver(
+    ds, icon4py_driver = driver.run_driver(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,

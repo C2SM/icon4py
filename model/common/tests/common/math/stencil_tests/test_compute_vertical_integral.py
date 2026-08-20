@@ -5,15 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vertical_integral import (
-    compute_vertical_integral,
-)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.math.vertical_operations import compute_vertical_integral
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -29,7 +29,7 @@ class TestComputeVerticalIntegral(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         integrand: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         return dict(vertical_integral=np.cumsum(integrand, axis=1))
 
@@ -68,7 +68,7 @@ class TestComputeVerticalIntegralReadAtBottomLevel(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         *,
         integrand: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         vertical_integral = np.zeros_like(integrand)
         vertical_integral[:, -1] = np.sum(integrand, axis=1)

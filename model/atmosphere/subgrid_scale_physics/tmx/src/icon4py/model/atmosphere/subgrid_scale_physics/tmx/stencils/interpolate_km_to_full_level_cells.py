@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common.math.vertical_operations import average_level_plus1_on_cells
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -24,7 +24,8 @@ def _interpolate_km_to_full_level_cells(
 
         km_c(k) = max(km_min, 0.5 * (km_ic(k) + km_ic(k + 1)))
 
-    Port of ``interpolate_eddy_viscosity2cell`` in ICON's ``mo_vdf_atmo.f90``.
+    Port of ``interpolate_eddy_viscosity2cell`` in ICON's ``mo_vdf_atmo.f90``
+    (reuses the common field operator ``average_level_plus1_on_cells``).
     The floor deliberately lives here (and in the vertex/edge interpolations)
     and not in the Smagorinsky viscosity computation, matching the Fortran.
 
@@ -44,7 +45,7 @@ def _interpolate_km_to_full_level_cells(
     Returns:
         eddy viscosity at full-level cell centers (nlev levels)
     """
-    return maximum(km_min, wpfloat("0.5") * (km_ic + km_ic(KDim + 1)))
+    return maximum(km_min, average_level_plus1_on_cells(km_ic))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

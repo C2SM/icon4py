@@ -24,7 +24,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     component as muphys_component,
     state as muphys_state,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
+    physics_driver,
+    physics_state,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
     component as tmx_component,
     state as tmx_state,
@@ -473,7 +476,7 @@ def initialize_granules(
                 backend=backend,
                 scheme=config.muphys.scheme,
             ),
-            state=muphys_state.State(grid=grid, metrics=metrics_field_source, backend=backend),
+            state=muphys_state.State(metrics=metrics_field_source),
             time_control=physics_driver.ProcessTimeControl(
                 interval=config.driver.dtime,
                 start_date=config.driver.start_of_simulation,
@@ -504,13 +507,7 @@ def initialize_granules(
                 backend=backend,
                 exchange=exchange,
             ),
-            state=tmx_state.State(
-                grid=grid,
-                geometry=geometry_field_source,
-                interpolation=interpolation_field_source,
-                metrics=metrics_field_source,
-                backend=backend,
-            ),
+            state=tmx_state.State(grid=grid, metrics=metrics_field_source, backend=backend),
             time_control=physics_driver.ProcessTimeControl(
                 interval=config.driver.dtime,
                 start_date=config.driver.start_of_simulation,
@@ -520,9 +517,24 @@ def initialize_granules(
         )
         processes.append(tmx_process)
 
-    physics_granule: physics_driver.PhysicsDriver | None = (
-        physics_driver.PhysicsDriver(processes) if processes else None
-    )
+    physics_granule: physics_driver.PhysicsDriver | None = None
+    if processes:
+        physics_granule = physics_driver.PhysicsDriver(
+            processes,
+            entry_state=physics_state.EntryState(
+                grid=grid,
+                interpolation=interpolation_field_source,
+                metrics=metrics_field_source,
+                backend=backend,
+            ),
+            accumulators=physics_state.TendencyAccumulators(backend=backend),
+            apply_to_prognostic=physics_state.ApplyToPrognostic(
+                grid=grid,
+                geometry=geometry_field_source,
+                interpolation=interpolation_field_source,
+                backend=backend,
+            ),
+        )
 
     return Granules(
         solve_nonhydro=solve_nonhydro_granule,

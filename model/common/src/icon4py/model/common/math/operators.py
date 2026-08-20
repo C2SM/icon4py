@@ -51,11 +51,37 @@ def _compute_difference_on_cell_k(
 
 
 @gtx.field_operator
+def _compute_reciprocal_on_cell_k(
+    input_field: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """Compute the elementwise reciprocal ``1 / input_field``."""
+    return wpfloat("1.0") / input_field
+
+
+@gtx.field_operator
+def _subtract_cell_field_on_cell_k(
+    minuend: fa.CellKField[ta.wpfloat],
+    subtrahend_cell: fa.CellField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """Subtract a single-level cell field from every K level of a cell K field."""
+    return minuend - subtrahend_cell
+
+
+@gtx.field_operator
 def _compute_field_a_plus_coeff_times_field_b_on_cell_k(
     field_a: fa.CellKField[ta.wpfloat],
     coeff: ta.wpfloat,
     field_b: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
+    return field_a + coeff * field_b
+
+
+@gtx.field_operator
+def _compute_field_a_plus_coeff_times_field_b_on_edge_k(
+    field_a: fa.EdgeKField[ta.wpfloat],
+    coeff: ta.wpfloat,
+    field_b: fa.EdgeKField[ta.wpfloat],
+) -> fa.EdgeKField[ta.wpfloat]:
     return field_a + coeff * field_b
 
 

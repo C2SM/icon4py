@@ -43,17 +43,31 @@ OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     "tend_u": data.tendency_of(data.DIAGNOSTIC_CF_ATTRIBUTES["eastward_wind"]),
     "tend_v": data.tendency_of(data.DIAGNOSTIC_CF_ATTRIBUTES["northward_wind"]),
     "tend_w": data.tendency_of(data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"]),
-    "km": dict(standard_name="mass_weighted_turbulent_viscosity", units="kg m-1 s-1"),
-    "kh": dict(standard_name="mass_weighted_turbulent_diffusivity", units="kg m-1 s-1"),
-    "heating": dict(standard_name="turbulent_heating_rate", units="W m-2"),
-    "dissip_ke": dict(standard_name="kinetic_energy_dissipation_rate", units="W m-2"),
-    "cptgz_vi": dict(standard_name="vertically_integrated_dry_static_energy", units="J m-2"),
-    "dissip_ke_vi": dict(
-        standard_name="vertically_integrated_kinetic_energy_dissipation_rate", units="W m-2"
+    "km": dict(
+        standard_name="mass_weighted_turbulent_viscosity", kind="diagnostic", units="kg m-1 s-1"
     ),
-    "int_energy_vi": dict(standard_name="vertically_integrated_internal_energy", units="J m-2"),
+    "kh": dict(
+        standard_name="mass_weighted_turbulent_diffusivity", kind="diagnostic", units="kg m-1 s-1"
+    ),
+    "heating": dict(standard_name="turbulent_heating_rate", kind="diagnostic", units="W m-2"),
+    "dissip_ke": dict(
+        standard_name="kinetic_energy_dissipation_rate", kind="diagnostic", units="W m-2"
+    ),
+    "cptgz_vi": dict(
+        standard_name="vertically_integrated_dry_static_energy", kind="diagnostic", units="J m-2"
+    ),
+    "dissip_ke_vi": dict(
+        standard_name="vertically_integrated_kinetic_energy_dissipation_rate",
+        kind="diagnostic",
+        units="W m-2",
+    ),
+    "int_energy_vi": dict(
+        standard_name="vertically_integrated_internal_energy", kind="diagnostic", units="J m-2"
+    ),
     "int_energy_vi_tend": dict(
-        standard_name="tendency_of_vertically_integrated_internal_energy", units="W m-2"
+        standard_name="tendency_of_vertically_integrated_internal_energy",
+        kind="diagnostic",
+        units="W m-2",
     ),
 }
 

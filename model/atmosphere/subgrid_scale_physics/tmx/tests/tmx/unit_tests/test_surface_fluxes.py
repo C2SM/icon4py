@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Unit tests for the TMX surface-flux provider seam (simple grid, no data)."""
+"""Tests of the surface-flux seam (provider protocol + the adapter's collect hook)."""
 
 import numpy as np
 
@@ -15,7 +15,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-from .test_state import _tmx_state, _tracer_state, _uniform_prognostic
+from .test_state import _entry_stub, _tmx_state
 
 
 FLUX_NAMES = (
@@ -46,12 +46,12 @@ def test_zero_flux_provider_rezeros_all_fields():
         np.testing.assert_array_equal(getattr(out, name).asnumpy(), 0.0, err_msg=name)
 
 
-def test_gather_rezeros_fluxes_by_default():
-    """Default State (no provider arg) uses ZeroFluxProvider: gather re-zeros dirty buffers."""
+def test_collect_inputs_rezeros_fluxes_by_default():
+    """Default State (no provider arg) uses ZeroFluxProvider: collect re-zeros dirty buffers."""
     grid = simple.simple_grid()
     state = _tmx_state(grid)
     state.sensible_heat_flux.ndarray[...] = 42.0  # dirty one buffer to prove re-zeroing
-    state.gather_from_prognostic(_uniform_prognostic(grid), _tracer_state(grid, qv=1e-3))
+    state.collect_inputs(_entry_stub(grid))
     inp = state.as_component_input()
     for name in FLUX_NAMES:
         np.testing.assert_array_equal(inp[name].asnumpy(), 0.0, err_msg=name)
@@ -72,7 +72,7 @@ def test_injected_provider_called_once_and_values_reach_component_input():
     grid = simple.simple_grid()
     provider = _RecordingProvider()
     state = _tmx_state(grid, surface_flux_provider=provider)
-    state.gather_from_prognostic(_uniform_prognostic(grid), _tracer_state(grid, qv=1e-3))
+    state.collect_inputs(_entry_stub(grid))
     assert provider.calls == 1
     inp = state.as_component_input()
     np.testing.assert_array_equal(inp["sensible_heat_flux"].asnumpy(), 123.0)

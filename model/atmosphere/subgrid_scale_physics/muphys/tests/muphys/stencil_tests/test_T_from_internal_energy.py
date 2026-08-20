@@ -9,8 +9,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import T_from_internal_energy
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.physics.thermodynamics import T_from_internal_energy
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests

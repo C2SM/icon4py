@@ -37,6 +37,7 @@ class IconOption:
     path: tuple[str, ...]
     list_to_value: bool = False
     read_from_icon: bool = True
+    converter: typing.Callable[[typing.Any], typing.Any] | None = None
     # position of the option in an unnamed (positional) namelist record.
     # Derived-type namelists (e.g. the AES physics ``aes_*_nml``) are echoed
     # by ICON as an anonymous array of the member values in declaration
@@ -44,7 +45,6 @@ class IconOption:
     # is the 0-based member position within one record (i.e. one domain),
     # while ``name`` only serves as documentation.
     unnamed_index: int | None = None
-    converter: typing.Callable[[typing.Any], typing.Any] | None = None
 
     def convert(
         self: Self,
