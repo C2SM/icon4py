@@ -393,8 +393,7 @@ class MultiNodeResult(decomp_defs.ExchangeResult):
 
 @decomp_defs.create_exchange.register(MPICommProcessProperties)
 def create_multinode_node_exchange(
-    process_props: MPICommProcessProperties,
-    decomp_info: decomp_defs.DecompositionInfo,
+    process_props: MPICommProcessProperties, decomp_info: decomp_defs.DecompositionInfo
 ) -> decomp_defs.ExchangeRuntime:
     if process_props.comm_size == 1:
         return SingleNodeExchange()
@@ -561,8 +560,7 @@ class GlobalReductions(Reductions):
 
 @decomp_defs.create_reduction.register(MPICommProcessProperties)
 def create_global_reduction(
-    process_props: MPICommProcessProperties,
-    decomposition_info: decomp_defs.DecompositionInfo,
+    process_props: MPICommProcessProperties, decomposition_info: decomp_defs.DecompositionInfo
 ) -> Reductions:
     if process_props.comm_size == 1:
         return SingleNodeReductions()
