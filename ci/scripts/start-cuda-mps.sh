@@ -15,11 +15,12 @@ export CUDA_MPS_LOG_DIRECTORY=${mps_prefix}-log
 mkdir -p "${CUDA_MPS_PIPE_DIRECTORY}"
 mkdir -p "${CUDA_MPS_LOG_DIRECTORY}"
 
-# Remember the allocated GPU indices so the per-rank wrappers can pin ranks to
-# individual GPUs with CUDA_VISIBLE_DEVICES (currently Slurm already sets
-# CUDA_VISIBLE_DEVICES to the single allocated device on shared partitions, in
-# which case the list has one entry and behavior is unchanged).
-export ICON4PY_CI_GPU_LIST="${CUDA_VISIBLE_DEVICES}"
+# The MPS daemon below is started with the Slurm-provided CUDA_VISIBLE_DEVICES
+# values, but MPS clients address those devices by their ordinal (0..N-1)
+# within the daemon's set. Export the ordinal list so ci-mpi-wrapper.sh can
+# pin ranks to individual GPUs (a single-entry list keeps legacy behavior).
+IFS=',' read -ra _alloc_gpus <<< "${CUDA_VISIBLE_DEVICES}"
+export ICON4PY_CI_GPU_LIST=$(seq -s ',' 0 $(( ${#_alloc_gpus[@]} - 1 )))
 
 if [[ "${SLURM_LOCALID}" -eq 0 ]]; then
     # Only start the MPS server on the first local rank to avoid multiple
