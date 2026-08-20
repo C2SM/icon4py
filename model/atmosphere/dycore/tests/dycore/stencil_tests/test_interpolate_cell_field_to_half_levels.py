@@ -9,7 +9,6 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest
 
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
@@ -65,7 +64,7 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
             )
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, Any]:
