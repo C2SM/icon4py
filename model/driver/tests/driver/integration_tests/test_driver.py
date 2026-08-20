@@ -273,7 +273,7 @@ def test_driver(
         ),
     ],
 )
-def test_standalone_driver_moist_physics_with_tmx(
+def test_driver_moist_physics_with_tmx(
     experiment_description: test_defs.ExperimentDescription,
     timeloop_date_exit: str,
     *,
@@ -319,7 +319,7 @@ def test_standalone_driver_moist_physics_with_tmx(
         allocator=allocator,
         process_props=process_props,
     )
-    ds, icon4py_driver = standalone_driver.run_driver(
+    ds, icon4py_driver = driver.run_driver(
         config=config,
         grid_manager=grid_manager,
         process_props=process_props,

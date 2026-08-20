@@ -6,65 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import datetime
+"""Tests of the tmx ComponentState adapter: input mapping + derived inputs."""
+
+import types
 
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
-    data as tmx_data,
-    state as tmx_state,
-    static_fields,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import data as tmx_data, state as tmx_state
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import geometry_attributes, simple
-from icon4py.model.common.interpolation import interpolation_attributes
+from icon4py.model.common.grid import simple
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
+from icon4py.model.common.states import tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-# ---------------------------------------------------------------------------
-# Helper factories (adapted from the muphys test_state pattern)
-# ---------------------------------------------------------------------------
-
-
-def _uniform_prognostic(
-    grid,
-    *,
-    rho: float = 1.2,
-    exner: float = 0.95,
-    theta_v: float = 300.0,
-) -> prognostics.PrognosticState:
-    """PrognosticState filled with uniform constant values on the simple grid."""
-    return prognostics.PrognosticState(
-        rho=data_alloc.constant_field(grid, rho, dims.CellDim, dims.KDim),
-        w=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
-        vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
-        exner=data_alloc.constant_field(grid, exner, dims.CellDim, dims.KDim),
-        theta_v=data_alloc.constant_field(grid, theta_v, dims.CellDim, dims.KDim),
-    )
-
-
-def _tracer_state(
-    grid,
-    *,
-    qv: float = 0.0,
-    qc: float = 0.0,
-    qi: float = 0.0,
-    qr: float = 0.0,
-    qs: float = 0.0,
-    qg: float = 0.0,
-) -> tracer_states.TracerState:
-    """TracerState with all six species active (defaults to zero except where specified)."""
-    return tracer_states.TracerState(
-        qv=data_alloc.constant_field(grid, qv, dims.CellDim, dims.KDim),
-        qc=data_alloc.constant_field(grid, qc, dims.CellDim, dims.KDim),
-        qi=data_alloc.constant_field(grid, qi, dims.CellDim, dims.KDim),
-        qr=data_alloc.constant_field(grid, qr, dims.CellDim, dims.KDim),
-        qs=data_alloc.constant_field(grid, qs, dims.CellDim, dims.KDim),
-        qg=data_alloc.constant_field(grid, qg, dims.CellDim, dims.KDim),
-    )
 
 
 class _StubFieldSource:
@@ -77,8 +31,29 @@ class _StubFieldSource:
         return self._fields[name]
 
 
+def _tracer_state(grid, *, qv: float = 0.0) -> tracer_states.TracerState:
+    ck = lambda value: data_alloc.constant_field(grid, value, dims.CellDim, dims.KDim)  # noqa: E731
+    return tracer_states.TracerState(
+        qv=ck(qv), qc=ck(0.0), qi=ck(0.0), qr=ck(0.0), qs=ck(0.0), qg=ck(0.0)
+    )
+
+
+def _entry_stub(grid, *, qv: float = 1e-3, rho: float = 1.2):
+    """EntryState stand-in: real fields where the adapter runs stencils, sentinels elsewhere."""
+    return types.SimpleNamespace(
+        ta="TA",
+        tv="TV",
+        pressure="P",
+        pressure_ifc="P_IFC",
+        u="U",
+        v="V",
+        w="W",
+        rho=data_alloc.constant_field(grid, rho, dims.CellDim, dims.KDim),
+        tracers=_tracer_state(grid, qv=qv),
+    )
+
+
 def _tmx_state(grid, **kwargs) -> tmx_state.State:
-    """Construct a State on the simple grid with neutral/zero interpolation coefficients."""
     metrics = _StubFieldSource(
         {
             metrics_attributes.DDQZ_Z_FULL: data_alloc.constant_field(
@@ -86,171 +61,29 @@ def _tmx_state(grid, **kwargs) -> tmx_state.State:
             ),
         }
     )
-    interpolation = _StubFieldSource(
-        {
-            interpolation_attributes.RBF_VEC_COEFF_C1: data_alloc.zero_field(
-                grid, dims.CellDim, dims.C2E2C2EDim
-            ),
-            interpolation_attributes.RBF_VEC_COEFF_C2: data_alloc.zero_field(
-                grid, dims.CellDim, dims.C2E2C2EDim
-            ),
-            interpolation_attributes.C_LIN_E: data_alloc.constant_field(
-                grid, 0.5, dims.EdgeDim, dims.E2CDim
-            ),
-        }
-    )
-    geometry = _StubFieldSource(
-        {
-            geometry_attributes.EDGE_NORMAL_CELL_U: data_alloc.constant_field(
-                grid, 1.0, dims.EdgeDim, dims.E2CDim
-            ),
-            geometry_attributes.EDGE_NORMAL_CELL_V: data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.E2CDim
-            ),
-        }
-    )
-    return tmx_state.State(
-        grid=grid,
-        geometry=geometry,
-        interpolation=interpolation,
-        metrics=metrics,
-        backend=None,
-        **kwargs,
-    )
+    return tmx_state.State(grid=grid, metrics=metrics, backend=None, **kwargs)
 
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
-
-def test_as_component_input_matches_contract():
-    """as_component_input must return exactly the 21 keys of INPUTS_PROPERTIES."""
+def test_collect_inputs_derives_and_maps_the_contract():
     grid = simple.simple_grid()
     state = _tmx_state(grid)
-    prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
-    tracers = _tracer_state(grid, qv=1e-3)
-    state.gather_from_prognostic(prognostic, tracers)
-    inp = state.as_component_input()
-    assert set(inp) == set(tmx_data.INPUTS_PROPERTIES)
+    entry = _entry_stub(grid, qv=1e-3, rho=1.2)
+
+    state.collect_inputs(entry)
+    inputs = state.as_component_input()
+
+    # exactly the component contract, nothing more or less
+    assert set(inputs) == set(tmx_data.INPUTS_PROPERTIES)
+    # derived inputs: air_mass = rho * dz; cv_air is a positive heat capacity
+    np.testing.assert_allclose(state.air_mass.asnumpy(), 1.2 * 100.0, rtol=1e-12)
+    assert (state.cv_air.asnumpy() > 0).all()
+    # facade fields pass through untouched (pointers, no copies)
+    assert inputs["temperature"] == "TA"
+    assert inputs["w"] == "W"
+    assert inputs["qv"] is entry.tracers.qv
+    assert inputs["air_mass"] is state.air_mass
 
 
-def test_gather_computes_air_mass_and_zero_surface_fluxes():
-    """air_mass == rho * ddqz_z_full; surface-flux buffers stay zero before TMX runs."""
-    grid = simple.simple_grid()
-    state = _tmx_state(grid)
-    prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
-    tracers = _tracer_state(grid, qv=1e-3)
-    state.gather_from_prognostic(prognostic, tracers)
-    inp = state.as_component_input()
-    np.testing.assert_allclose(
-        inp["air_mass"].asnumpy(), prognostic.rho.asnumpy() * 100.0, rtol=1e-14
-    )
-    for key in ("evapotranspiration", "sensible_heat_flux", "u_stress", "v_stress", "q_snocpymlt"):
-        assert (inp[key].asnumpy() == 0.0).all()
-
-
-# ---------------------------------------------------------------------------
-# Task-5 helpers and tests: scatter_to_prognostic
-# ---------------------------------------------------------------------------
-
-
-def _tmx_outputs(grid, *, ddt_u=0.0, ddt_v=0.0, ddt_w=0.0, ddt_qv=0.0):
-    def ck(value, **kw):
-        return data_alloc.constant_field(grid, value, dims.CellDim, dims.KDim, **kw)
-
-    # ddt_w spans KDim+1 half-levels; constant_field does not support 'extend',
-    # so we use zero_field (which does) and fill the backing array.
-    _ddt_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-    if ddt_w != 0.0:
-        _ddt_w.ndarray[:] = ddt_w
-
-    out = {
-        "tend_temperature": ck(0.0),
-        "tend_qv": ck(ddt_qv),
-        "tend_qc": ck(0.0),
-        "tend_qi": ck(0.0),
-        "tend_u": ck(ddt_u),
-        "tend_v": ck(ddt_v),
-        "tend_w": _ddt_w,
-        "km": ck(0.0),
-        "kh": ck(0.0),
-        "heating": ck(0.0),
-        "dissip_ke": ck(0.0),
-    }
-    for key in ("cptgz_vi", "dissip_ke_vi", "int_energy_vi", "int_energy_vi_tend"):
-        out[key] = data_alloc.constant_field(grid, 0.0, dims.CellDim)
-    return out
-
-
-def test_scatter_applies_qv_and_w_tendencies():
-    grid = simple.simple_grid()
-    state = _tmx_state(grid)
-    prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
-    tracers = _tracer_state(grid, qv=1e-3)
-    state.gather_from_prognostic(prognostic, tracers)
-    dt = 300.0
-    state.scatter_to_prognostic(
-        prognostic, _tmx_outputs(grid, ddt_qv=1e-7, ddt_w=1e-4), datetime.timedelta(seconds=dt)
-    )
-    np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)
-    np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
-
-
-def test_scatter_projects_wind_tendency_to_vn():
-    # uniform ddt_u = 1e-4, ddt_v = 0; primal_normal_cell_x = 1, c_lin_e = 0.5 (two neighbors)
-    # => ddt_vn = 2 * 0.5 * 1e-4 * 1.0 = 1e-4 on interior edges
-    grid = simple.simple_grid()
-    state = _tmx_state(grid)
-    prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
-    tracers = _tracer_state(grid, qv=1e-3)
-    state.gather_from_prognostic(prognostic, tracers)
-    dt = 300.0
-    state.scatter_to_prognostic(
-        prognostic, _tmx_outputs(grid, ddt_u=1e-4), datetime.timedelta(seconds=dt)
-    )
-    np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
-
-
-# Moved from test_static_fields.py: covers the wgtfacq DSL->Fortran column
-# reorder still performed by the static_fields bridge.
-class TestDslToFortranOrder:
-    """Unit tests for dsl_to_fortran_order."""
-
-    def test_column_reversal_asymmetric(self) -> None:
-        """[a, b, c] columns become [c, b, a] (reversal catches wrong flip axis)."""
-        a, b, c = 1.0, 2.0, 3.0
-        d, e, f = 4.0, 5.0, 6.0
-        arr = np.array([[a, b, c], [d, e, f]])
-        result = static_fields.dsl_to_fortran_order(arr)
-        expected = np.array([[c, b, a], [f, e, d]])
-        np.testing.assert_array_equal(result, expected)
-
-    def test_wrong_column_count_raises(self) -> None:
-        """AssertionError fires for arrays with != 3 columns."""
-        for ncols in (1, 2, 4, 5):
-            arr_wrong = np.ones((5, ncols))
-            with pytest.raises(AssertionError, match="expected 3 K columns"):
-                static_fields.dsl_to_fortran_order(arr_wrong)
-
-    def test_symmetric_column_unchanged(self) -> None:
-        """[a, b, a] → [a, b, a]: symmetric case is invariant under reversal."""
-        arr = np.array([[1.0, 2.0, 1.0], [3.0, 4.0, 3.0]])
-        result = static_fields.dsl_to_fortran_order(arr)
-        np.testing.assert_array_equal(result, arr)
-
-    def test_double_reversal_is_identity(self) -> None:
-        """Applying the transform twice returns the original array."""
-        rng = np.random.default_rng(0)
-        arr = rng.uniform(size=(4, 3))
-        np.testing.assert_array_equal(
-            static_fields.dsl_to_fortran_order(static_fields.dsl_to_fortran_order(arr)),
-            arr,
-        )
-
-    def test_values_not_equal_to_input_for_asymmetric(self) -> None:
-        """Result differs from input when columns are asymmetric (catches no-op bug)."""
-        arr = np.array([[1.0, 2.0, 3.0]])
-        result = static_fields.dsl_to_fortran_order(arr)
-        with pytest.raises(AssertionError):
-            np.testing.assert_array_equal(result, arr)
+def test_as_component_input_requires_collect_inputs_first():
+    with pytest.raises(RuntimeError, match="collect_inputs"):
+        _tmx_state(simple.simple_grid()).as_component_input()
