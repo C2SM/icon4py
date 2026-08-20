@@ -611,10 +611,7 @@ def get_single_node_properties(s: SingleNodeRun, comm_id: int | None = None) -> 
 
 
 @functools.singledispatch
-def create_exchange(
-    process_props: ProcessProperties,
-    decomp_info: DecompositionInfo,
-) -> ExchangeRuntime:
+def create_exchange(process_props: ProcessProperties, decomp_info: DecompositionInfo) -> ExchangeRuntime:  # fmt: skip
     """
     Create an Exchange depending on the runtime size.
 
@@ -624,32 +621,22 @@ def create_exchange(
 
 
 @create_exchange.register(SingleNodeProcessProperties)
-def create_single_node_exchange(
-    process_props: SingleNodeProcessProperties,
-    decomp_info: DecompositionInfo,
-) -> ExchangeRuntime:
+def create_single_node_exchange(process_props: SingleNodeProcessProperties, decomp_info: DecompositionInfo) -> ExchangeRuntime:  # fmt: skip
     return SingleNodeExchange()
 
 
 @functools.singledispatch
-def create_reduction(
-    process_props: ProcessProperties,
-    decomposition_info: DecompositionInfo,
-) -> Reductions:
+def create_reduction(process_props: ProcessProperties, decomposition_info: DecompositionInfo) -> Reductions:  # fmt: skip
     """
-    Create a reductions object depending on the runtime size.
+    Create a Global Reduction depending on the runtime size.
 
-    For a single-rank run, returns a SingleNodeReductions object.
-    For a distributed run, returns a GlobalReductions object.
+    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
     """
     raise NotImplementedError(f"Unknown ProcessProperties type ({type(process_props)})")
 
 
 @create_reduction.register(SingleNodeProcessProperties)
-def create_single_reduction_exchange(
-    process_props: SingleNodeProcessProperties,
-    decomposition_info: DecompositionInfo,
-) -> Reductions:
+def create_single_reduction_exchange(process_props: SingleNodeProcessProperties, decomposition_info: DecompositionInfo) -> Reductions:  # fmt: skip
     return SingleNodeReductions()
 
 
