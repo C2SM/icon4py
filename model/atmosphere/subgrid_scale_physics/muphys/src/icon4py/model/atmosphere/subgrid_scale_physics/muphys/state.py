@@ -23,7 +23,7 @@ from icon4py.model.common import (
     model_options,
     type_alias as ta,
 )
-from icon4py.model.common.components.physics_state import PhysicsState
+from icon4py.model.common.components.component_state import ComponentState
 from icon4py.model.common.diagnostic_calculations.stencils import (
     calculate_tendency,
     diagnose_pressure,
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from icon4py.model.common.states import factory, prognostic_state as prognostics, tracer_states
 
 
-class State(PhysicsState):
+class State(ComponentState):
     """The muphys physics State adapter.
 
     Bridges the dycore's prognostic state and the muphys Component contract.
