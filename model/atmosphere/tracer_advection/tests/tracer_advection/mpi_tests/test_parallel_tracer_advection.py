@@ -97,7 +97,7 @@ from ..utils import (
     ],
 )
 @pytest.mark.mpi
-def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     date,
     even_timestep,
     ntracer,

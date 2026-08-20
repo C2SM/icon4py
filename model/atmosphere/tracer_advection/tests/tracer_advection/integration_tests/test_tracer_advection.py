@@ -42,7 +42,7 @@ from ..utils import (
 )
 
 
-# ntracer legend for the serialization data used here in test_advection:
+# ntracer legend for the serialization data used here in test_tracer_advection:
 # ------------------------------------
 # ntracer          |  0, 1, 2, 3, 4 |
 # ------------------------------------
@@ -97,7 +97,7 @@ from ..utils import (
         ),
     ],
 )
-def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     date,
     even_timestep,
     ntracer,
