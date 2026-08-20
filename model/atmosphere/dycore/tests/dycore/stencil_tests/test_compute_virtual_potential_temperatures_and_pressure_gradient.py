@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
@@ -18,13 +19,12 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
     *,
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     wgtfac_c: np.ndarray,
     z_rth_pr_2: np.ndarray,
     theta_v: np.ndarray,
@@ -60,13 +60,13 @@ def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
     )
 
 
-class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
+class TestComputeVirtualPotentialTemperaturesAndPressureGradient(stencil_tests.StencilTest):
     PROGRAM = compute_virtual_potential_temperatures_and_pressure_gradient
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         wgtfac_c: np.ndarray,
         z_rth_pr_2: np.ndarray,
@@ -77,6 +77,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
         ddqz_z_half: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         (
             z_theta_v_pr_ic,
             theta_v_ic,
@@ -98,18 +99,20 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
             z_th_ddz_exner_c=z_th_ddz_exner_c,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
-        z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-        exner_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        d_exner_dz_ref_ic = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
-        ddqz_z_half = random_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
-        z_theta_v_pr_ic = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=wpfloat)
-        z_th_ddz_exner_c = zero_field(grid, dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        z_rth_pr_2 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        vwind_expl_wgt = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
+        exner_pr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        d_exner_dz_ref_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        z_theta_v_pr_ic = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        theta_v_ic = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        z_th_ddz_exner_c = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,

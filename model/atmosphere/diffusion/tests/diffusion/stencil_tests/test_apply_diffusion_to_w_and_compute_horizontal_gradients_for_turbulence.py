@@ -15,8 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
+from icon4py.model.testing import stencil_tests
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
 from .test_apply_nabla2_to_w_in_upper_damping_layer import (
@@ -30,12 +29,12 @@ from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
-class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
+class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
             "halo_idx",
@@ -45,7 +44,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             "nrdmax",
             "type_shear",
         ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
             "nrdmax",
@@ -53,9 +52,9 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         area,
         geofac_n2s,
@@ -76,6 +75,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         vertical_end,
         **kwargs,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         k = np.arange(w_old.shape[1])
         cell = np.arange(w_old.shape[0])
         reshaped_k = k[np.newaxis, :]
@@ -123,8 +123,8 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         out_dwdy[subset] = dwdy[subset]
         return dict(w=out_w, dwdx=out_dwdx, dwdy=out_dwdy)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict:
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
         nrdmax = 13
         cell_domain = h_grid.domain(dims.CellDim)
         interior_idx = grid.start_index(cell_domain(h_grid.Zone.INTERIOR))  # 0 for simple grid
@@ -143,17 +143,17 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         horizontal_start = _get_start_index_for_w_diffusion()
         horizontal_end = grid.end_index(cell_domain(h_grid.Zone.HALO))
 
-        geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim)
-        geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim)
-        diff_multfac_n2w = random_field(grid, dims.KHalfDim)
-        area = random_field(grid, dims.CellDim)
-        geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim)
-        w_old = random_field(grid, dims.CellDim, dims.KHalfDim)
+        geofac_grg_x = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
+        geofac_grg_y = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
+        diff_multfac_n2w = data_alloc.random_field(dims.KHalfDim)
+        area = data_alloc.random_field(dims.CellDim)
+        geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
+        w_old = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         diff_multfac_w = 5.0
 
-        w = zero_field(grid, dims.CellDim, dims.KHalfDim)
-        dwdx = random_field(grid, dims.CellDim, dims.KHalfDim)
-        dwdy = random_field(grid, dims.CellDim, dims.KHalfDim)
+        w = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
+        dwdx = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        dwdy = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
 
         return dict(
             area=area,
