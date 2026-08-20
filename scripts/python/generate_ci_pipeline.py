@@ -369,18 +369,28 @@ def _mpi_cell_slurm_vars(subpackage: str, backend: str, level: str) -> dict[str,
     consistent with the triggering commit's checkout) instead of relying only
     on rules:variables in ci/base.yml. The keys mirror the sbatch overrides
     the CSCS runner wrapper reads from the job environment.
+
+    All cells get a sub-1h time limit. Partition assignment follows measured
+    cold-compile durations (cycle 4/5 of PR #1386, gt4py 1.2.1 + dace
+    2.0.0a6): dace_* builds are latency-bound and fit a shared-partition
+    module (worst 3060s); gtfn_gpu driver builds are core-throughput-bound
+    and do not fit a shared module within 55 min (>=3300s measured), so
+    they get a normal node with a 55 min cap; validation jobs need no extra
+    allowance (7-day JW simulation is ~8 min wall with a warm cache).
     """
-    # NOTE: no special case for level == "validation": even the 7-day JW
-    # validation simulation runs in ~8 min on GPU (445s job wall with a warm
-    # cache, measured 2026-08); its cost is like any other compilation job.
-    gpu_backend = backend in ("dace_gpu", "gtfn_gpu")
-    if subpackage == "driver" or (subpackage == "common" and gpu_backend):
+    if subpackage == "driver" and backend == "gtfn_gpu":
         return {
             "SLURM_TIMELIMIT": "00:55:00",
-            "SLURM_PARTITION": "shared",
+            "SLURM_PARTITION": "normal",
             "GT4PY_BUILD_JOBS": "12",
         }
-    if subpackage == "common":
+    if level == "validation":
+        return {
+            "SLURM_TIMELIMIT": "00:55:00",
+            "SLURM_PARTITION": "normal",
+            "GT4PY_BUILD_JOBS": "12",
+        }
+    if subpackage in ("driver", "common"):
         return {
             "SLURM_TIMELIMIT": "00:55:00",
             "SLURM_PARTITION": "shared",
