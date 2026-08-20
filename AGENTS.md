@@ -6,6 +6,8 @@ ICON4Py is a Python implementation of the Fortran [ICON climate and weather mode
 
 Always read the CODING_GUIDELINES.md document first and follow it.
 
+In particular, before adding a stencil, a helper, an enum or an options dictionary to a component, check the "Shared code and generic naming" section: if it can be described using only grid entities and mathematical operations, it belongs in `model/common` and must be named after the operation, not after the calling code's variables.
+
 ## Monorepo structure
 
 uv workspace with 10 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
@@ -135,7 +137,7 @@ Registered by `icon4py.model.testing.pytest_hooks` (auto-loaded via `addopts`):
 | ------------------------------------------- | --------------------------------------------------------------------------------- |
 | `--datatest-only`                           | Run only `@pytest.mark.datatest` tests                                            |
 | `--datatest-skip`                           | Skip all datatests                                                                |
-| `--backend <name>`                          | GT4Py backend (default: roundtrip; others: gtfn_cpu, gtfn_gpu, embedded)          |
+| `--backend <name>`                          | GT4Py backend (default: embedded; others: gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu) |
 | `--grid <name>`                             | Grid to use                                                                       |
 | `--enable-mixed-precision`                  | Switch from double to mixed-precision                                             |
 | `--level {any,unit,integration,validation}` | Filter by `@pytest.mark.level` marker. `any` (default) excludes validation tests. |
