@@ -71,7 +71,7 @@ class TestComputePpmQuarticFaceValues(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         z_slope = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_face = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
 
