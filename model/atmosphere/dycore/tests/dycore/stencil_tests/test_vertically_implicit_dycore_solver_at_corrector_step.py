@@ -429,7 +429,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         corrector_vertical_wind_advective_tendency = data_alloc.random_field(
             dims.CellDim, dims.KHalfDim
         )
-        nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(dims.CellDim, dims.KDim)
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         rho_at_cells_on_half_levels = data_alloc.random_field(
             dims.CellDim, dims.KHalfDim, low=1.0e-5
         )
