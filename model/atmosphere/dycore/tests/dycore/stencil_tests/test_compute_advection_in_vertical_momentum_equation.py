@@ -658,7 +658,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
             dims.CellDim, dims.KDim
         )
-        vertical_wind_advective_tendency = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        vertical_wind_advective_tendency = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
         w = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.random_field(
             dims.EdgeDim, dims.KHalfDim
