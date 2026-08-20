@@ -383,21 +383,19 @@ def _mpi_cell_slurm_vars(subpackage: str, backend: str, level: str) -> dict[str,
     - GT4PY_BUILD_JOBS=12: no wall-time effect observed for 12 vs 32/64 in
       any measured cell; higher values only raise memory.
     """
-    if subpackage == "driver" and backend == "gtfn_gpu":
-        # Hardest cell: throughput-bound ninja/gcc builds. Measured floor is 2
-        # GPUs (144 cores) with the uniform 12-tasks-per-GPU rule (1847s,
-        # cold cache, W3); 1 GPU times out (>3300s).
+    if subpackage in ("driver", "common"):
+        # Heavy cells. Uniform shape for every backend and level: limit
+        # 1h = shared-partition maximum; 24 tasks = 12 per GPU (12 = largest
+        # multiple of the 4-rank MPI test groups that fits one GPU's memory);
+        # GPUs are really the cores knob: a GH200 GPU asks for one 72-core
+        # module slice. gtfn_gpu/driver measured to need 2 GPUs (144 cores):
+        # 1847s vs >3300s timeout on 1 GPU (W1-W3, cold cache); dace cells
+        # fit 1 GPU but the extra module buys compile-phase headroom.
         return {
             "SLURM_TIMELIMIT": "01:00:00",
             "SLURM_PARTITION": "shared",
             "SLURM_GPUS_PER_NODE": "2",
             "SLURM_NTASKS": "24",
-            "GT4PY_BUILD_JOBS": "12",
-        }
-    if subpackage in ("driver", "common"):
-        return {
-            "SLURM_TIMELIMIT": "01:00:00",
-            "SLURM_PARTITION": "shared",
             "GT4PY_BUILD_JOBS": "12",
         }
     return {
@@ -433,10 +431,14 @@ def _model_mpi_cells(
     cells: list[_MatrixCell] = []
     if not subpackages or not backends or not levels:
         return cells
+    probe_only = os.environ.get("ICON4PY_CI_MPI_PROBE_ONLY")
+    want = set(probe_only.split(":")) if probe_only else None  # "subpackage.backend.level" tokens
     for subset in subsets:
         for subpackage in subpackages:
             for backend in backends:
                 for level in levels:
+                    if want is not None and f"{subpackage}.{backend}.{level}" not in want:
+                        continue
                     pytest_args = [
                         "--collect-only",
                         "-n0",
