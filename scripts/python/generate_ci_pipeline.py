@@ -418,6 +418,8 @@ def _mpi_cell_slurm_vars_probe(subpackage: str, backend: str, level: str) -> dic
         vars_["SLURM_GPUS_PER_NODE"] = v
     if v := os.environ.get("ICON4PY_CI_MPI_PROBE_PARTITION"):
         vars_["SLURM_PARTITION"] = v
+    if v := os.environ.get("ICON4PY_CI_MPI_PROBE_NTASKS"):
+        vars_["SLURM_NTASKS"] = v
     if v := os.environ.get("ICON4PY_CI_MPI_PROBE_JOBS"):
         vars_["GT4PY_BUILD_JOBS"] = v
     return vars_
