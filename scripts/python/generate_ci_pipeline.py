@@ -370,6 +370,12 @@ def _mpi_cell_slurm_vars(subpackage: str, backend: str, level: str) -> dict[str,
     on rules:variables in ci/base.yml. The keys mirror the sbatch overrides
     the CSCS runner wrapper reads from the job environment.
 
+    TEMPORARY (experiment branch, revert before merge): the env vars
+    ICON4PY_CI_MPI_PROBE_TIMELIMIT / ICON4PY_CI_MPI_PROBE_GPUS /
+    ICON4PY_CI_MPI_PROBE_JOBS override SLURM_TIMELIMIT / SLURM_PARTITION /
+    SLURM_GPUS_PER_NODE / GT4PY_BUILD_JOBS for ALL emitted MPI cells, so ad-hoc pipeline triggers
+    can probe allocation shapes without code changes.
+
     All cells get a sub-1h time limit. Partition assignment follows measured
     cold-compile durations (cycle 4/5 of PR #1386, gt4py 1.2.1 + dace
     2.0.0a6): dace_* builds are latency-bound and fit a shared-partition
@@ -403,6 +409,20 @@ def _mpi_cell_slurm_vars(subpackage: str, backend: str, level: str) -> dict[str,
     }
 
 
+def _mpi_cell_slurm_vars_probe(subpackage: str, backend: str, level: str) -> dict[str, str]:
+    """Apply temporary probe overrides (see _mpi_cell_slurm_vars docstring)."""
+    vars_ = dict(_mpi_cell_slurm_vars(subpackage, backend, level))
+    if v := os.environ.get("ICON4PY_CI_MPI_PROBE_TIMELIMIT"):
+        vars_["SLURM_TIMELIMIT"] = v
+    if v := os.environ.get("ICON4PY_CI_MPI_PROBE_GPUS"):
+        vars_["SLURM_GPUS_PER_NODE"] = v
+    if v := os.environ.get("ICON4PY_CI_MPI_PROBE_PARTITION"):
+        vars_["SLURM_PARTITION"] = v
+    if v := os.environ.get("ICON4PY_CI_MPI_PROBE_JOBS"):
+        vars_["GT4PY_BUILD_JOBS"] = v
+    return vars_
+
+
 def _model_mpi_cells(
     subpackages: list[str],
     backends: list[str],
@@ -434,12 +454,40 @@ def _model_mpi_cells(
                                 "MODEL_MPI_SUBPACKAGE": subpackage,
                                 "BACKEND": backend,
                                 "LEVEL": level,
-                                **_mpi_cell_slurm_vars(subpackage, backend, level),
+                                **_mpi_cell_slurm_vars_probe(subpackage, backend, level),
                             },
                             session=_nox_session_name("test_model_mpi", f"{subset}, {subpackage}"),
                             pytest_args=pytest_args,
                         )
                     )
+                    # TEMPORARY (experiment branch, revert before merge): when
+                    # ICON4PY_CI_MPI_PROBE_JOBS_EXTRA is set, additionally emit
+                    # the most expensive cell (driver on gtfn_gpu) with that
+                    # GT4PY_BUILD_JOBS value for an in-pipeline A/B.
+                    if extra_jobs := os.environ.get("ICON4PY_CI_MPI_PROBE_JOBS_EXTRA"):
+                        if subpackage == "driver" and backend == "gtfn_gpu":
+                            cells.append(
+                                _MatrixCell(
+                                    job_name=f"test_model_mpi_{subset}_aarch64",
+                                    extends=".test_model_mpi_aarch64",
+                                    variables={"SELECTION": subset},
+                                    matrix={
+                                        "MODEL_MPI_SUBPACKAGE": subpackage,
+                                        "BACKEND": backend,
+                                        "LEVEL": level,
+                                        **{
+                                            **_mpi_cell_slurm_vars_probe(
+                                                subpackage, backend, level
+                                            ),
+                                            "GT4PY_BUILD_JOBS": extra_jobs,
+                                        },
+                                    },
+                                    session=_nox_session_name(
+                                        "test_model_mpi", f"{subset}, {subpackage}"
+                                    ),
+                                    pytest_args=pytest_args,
+                                )
+                            )
     return cells
 
 

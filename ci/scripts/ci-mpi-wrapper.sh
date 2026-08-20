@@ -17,6 +17,20 @@ else
     exit 1
 fi
 
+# If multiple GPUs are allocated (ICON4PY_CI_GPU_LIST exported by
+# start-cuda-mps.sh), pin this rank to one of them round-robin. With a single
+# allocated GPU (the current shared-partition behavior, where Slurm sets
+# CUDA_VISIBLE_DEVICES to the allocated index directly), this is a no-op and
+# the legacy "unset CUDA_VISIBLE_DEVICES after the MPS daemon pinned it"
+# semantics are preserved.
+if [[ -n "${ICON4PY_CI_GPU_LIST:-}" ]]; then
+    IFS=',' read -ra _gpus <<< "${ICON4PY_CI_GPU_LIST}"
+    if (( ${#_gpus[@]} > 1 )); then
+        export CUDA_VISIBLE_DEVICES="${_gpus[$(( rank % ${#_gpus[@]} ))]}"
+        echo "Rank ${rank}/${SLURM_NTASKS:-?}: pinned to GPU ${CUDA_VISIBLE_DEVICES}"
+    fi
+fi
+
 log_file="${CI_PROJECT_DIR:+${CI_PROJECT_DIR}/}pytest-log-rank-${rank}.txt"
 
 # If ICON4PY_TEST_MPI_SUBCOMM_SIZE is set, print output from the first rank in

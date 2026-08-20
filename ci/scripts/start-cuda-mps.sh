@@ -10,11 +10,16 @@ if [[ -z "${CUDA_VISIBLE_DEVICES:-}" ]]; then
 fi
 
 mps_prefix="/tmp/$(id -un)/slurm-${SLURM_JOBID}.${SLURM_STEPID}/nvidia"
-
 export CUDA_MPS_PIPE_DIRECTORY=${mps_prefix}-mps
 export CUDA_MPS_LOG_DIRECTORY=${mps_prefix}-log
 mkdir -p "${CUDA_MPS_PIPE_DIRECTORY}"
 mkdir -p "${CUDA_MPS_LOG_DIRECTORY}"
+
+# Remember the allocated GPU indices so the per-rank wrappers can pin ranks to
+# individual GPUs with CUDA_VISIBLE_DEVICES (currently Slurm already sets
+# CUDA_VISIBLE_DEVICES to the single allocated device on shared partitions, in
+# which case the list has one entry and behavior is unchanged).
+export ICON4PY_CI_GPU_LIST="${CUDA_VISIBLE_DEVICES}"
 
 if [[ "${SLURM_LOCALID}" -eq 0 ]]; then
     # Only start the MPS server on the first local rank to avoid multiple
@@ -29,7 +34,7 @@ if ! timeout ${mps_pid_file_timeout} bash -c "until [[ -f \"${pid_file}\" ]]; do
     exit 1
 fi
 
-echo "Using MPS server with GPU ${CUDA_VISIBLE_DEVICES}, MPS pipe directory ${CUDA_MPS_PIPE_DIRECTORY}, MPS log directory ${CUDA_MPS_LOG_DIRECTORY} on rank ${SLURM_PROCID}"
+echo "Using MPS server with GPU(s) ${ICON4PY_CI_GPU_LIST}, MPS pipe directory ${CUDA_MPS_PIPE_DIRECTORY}, MPS log directory ${CUDA_MPS_LOG_DIRECTORY} on rank ${SLURM_PROCID}"
 
 # Once the daemon has been started, unset CUDA_VISIBLE_DEVICES as the
 # selection has already been made in the daemon.
