@@ -319,7 +319,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             (tridiagonal_intermediate_result, next_w[:, :n_lev]),
         )
 
-        next_w[:] = np.where(
+        next_w = np.where(
             (start_cell_index_nudging <= horz_idx) & (horz_idx < end_cell_index_local),
             solve_tridiagonal_matrix_for_w_back_substitution_numpy(
                 connectivities=connectivities,

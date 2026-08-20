@@ -290,7 +290,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             (tridiagonal_intermediate_result, next_w[:, :n_lev]),
         )
 
-        next_w[:] = np.where(
+        next_w = np.where(
             (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             solve_tridiagonal_matrix_for_w_back_substitution_numpy(
                 connectivities=connectivities,

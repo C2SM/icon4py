@@ -27,7 +27,7 @@ def interpolate_vt_to_interface_edges_numpy(
     nlev = vt.shape[1]
     z_vt_ie = np.zeros((vt.shape[0], nlev + 1))
     w = wgtfac_e[:, 1:nlev]
-    z_vt_ie[:, 1:nlev] = w * vt[:, 1:nlev] + (1.0 - w) * vt[:, 0 : nlev - 1]
+    z_vt_ie[:, 1:nlev] = w * vt[:, 1:nlev] + (1.0 - w) * vt[:, : nlev - 1]
     z_vt_ie[:, 0] = vt[:, 0]
     return z_vt_ie
 

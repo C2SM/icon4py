@@ -21,6 +21,13 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
+def _on_half_levels(a: np.ndarray, nlev: int) -> np.ndarray:
+    """Place values computed for half levels 1..nlev-1 into a full KHalfDim-wide array."""
+    out = np.zeros((a.shape[0], nlev + 1))
+    out[:, 1:nlev] = a
+    return out
+
+
 def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     *,
     w: np.ndarray,
@@ -43,11 +50,6 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     nlev = rho_now.shape[1]
     lo, hi = slice(0, nlev - 1), slice(1, nlev)  # model levels k-1 and k, for half level k
 
-    def half(a: np.ndarray) -> np.ndarray:
-        out = np.zeros((a.shape[0], nlev + 1))
-        out[:, 1:nlev] = a
-        return out
-
     w_ = wgtfac_c[:, hi]
     z_w_backtraj = -(w[:, hi] - w_concorr_c[:, hi]) * dtime * 0.5 / ddqz_z_half[:, hi]
     z_rho_tavg_m1 = wgt_nnow_rth * rho_now[:, lo] + wgt_nnew_rth * rho_var[:, lo]
@@ -55,23 +57,26 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient_numpy(
     z_rho_tavg = wgt_nnow_rth * rho_now[:, hi] + wgt_nnew_rth * rho_var[:, hi]
     z_theta_tavg = wgt_nnow_rth * theta_now[:, hi] + wgt_nnew_rth * theta_var[:, hi]
 
-    rho_ic = half(
-        w_ * z_rho_tavg + (1 - w_) * z_rho_tavg_m1 + z_w_backtraj * (z_rho_tavg_m1 - z_rho_tavg)
+    rho_ic = _on_half_levels(
+        w_ * z_rho_tavg + (1 - w_) * z_rho_tavg_m1 + z_w_backtraj * (z_rho_tavg_m1 - z_rho_tavg),
+        nlev,
     )
     z_theta_v_pr_mc_m1 = z_theta_tavg_m1 - theta_ref_mc[:, lo]
     z_theta_v_pr_mc = z_theta_tavg - theta_ref_mc[:, hi]
-    z_theta_v_pr_ic = half(w_ * z_theta_v_pr_mc + (1 - w_) * z_theta_v_pr_mc_m1)
-    theta_v_ic = half(
+    z_theta_v_pr_ic = _on_half_levels(w_ * z_theta_v_pr_mc + (1 - w_) * z_theta_v_pr_mc_m1, nlev)
+    theta_v_ic = _on_half_levels(
         w_ * z_theta_tavg
         + (1 - w_) * z_theta_tavg_m1
-        + z_w_backtraj * (z_theta_tavg_m1 - z_theta_tavg)
+        + z_w_backtraj * (z_theta_tavg_m1 - z_theta_tavg),
+        nlev,
     )
-    z_th_ddz_exner_c = half(
+    z_th_ddz_exner_c = _on_half_levels(
         vwind_expl_wgt
         * theta_v_ic[:, hi]
         * (exner_pr[:, lo] - exner_pr[:, hi])
         / ddqz_z_half[:, hi]
-        + z_theta_v_pr_ic[:, hi] * d_exner_dz_ref_ic[:, hi]
+        + z_theta_v_pr_ic[:, hi] * d_exner_dz_ref_ic[:, hi],
+        nlev,
     )
     return (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c)
 

@@ -37,9 +37,8 @@ def compute_solver_coefficients_matrix_numpy(
 ) -> tuple[np.ndarray, np.ndarray]:
     z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
     vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-    nlev = exner_nnow.shape[1]
-    z_alpha = np.zeros_like(theta_v_ic)
-    z_alpha[:, :nlev] = (vwind_impl_wgt * theta_v_ic * rho_ic)[:, :nlev]
+    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
+    z_alpha[:, -1] = 0.0
     return (z_beta, z_alpha)
 
 

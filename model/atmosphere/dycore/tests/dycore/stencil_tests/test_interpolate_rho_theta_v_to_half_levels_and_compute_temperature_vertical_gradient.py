@@ -35,6 +35,16 @@ from icon4py.model.testing import stencil_tests
 
 
 @pytest.mark.continuous_benchmarking
+def _lower(a: np.ndarray) -> np.ndarray:
+    """model level k-1, read at half level k"""
+    return np.concatenate([a[:, :1], a], axis=1)
+
+
+def _upper(a: np.ndarray) -> np.ndarray:
+    """model level k, read at half level k"""
+    return np.concatenate([a, a[:, -1:]], axis=1)
+
+
 class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration(
     stencil_tests.StencilTest
 ):
@@ -86,30 +96,22 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             exner_w_explicit_weight_parameter, axis=-1
         )
 
-        def lower(a: np.ndarray) -> np.ndarray:
-            """model level k-1, read at half level k"""
-            return np.concatenate([a[:, :1], a], axis=1)
-
-        def upper(a: np.ndarray) -> np.ndarray:
-            """model level k, read at half level k"""
-            return np.concatenate([a, a[:, -1:]], axis=1)
-
         back_trajectory_w_at_cells_on_half_levels = (
             -(w - contravariant_correction_at_cells_on_half_levels) * dtime * 0.5 / ddqz_z_half
         )
-        time_averaged_rho_kup = lower(
+        time_averaged_rho_kup = _lower(
             rhotheta_explicit_weight_parameter * current_rho
             + rhotheta_implicit_weight_parameter * next_rho
         )
-        time_averaged_theta_v_kup = lower(
+        time_averaged_theta_v_kup = _lower(
             rhotheta_explicit_weight_parameter * current_theta_v
             + rhotheta_implicit_weight_parameter * next_theta_v
         )
-        time_averaged_rho = upper(
+        time_averaged_rho = _upper(
             rhotheta_explicit_weight_parameter * current_rho
             + rhotheta_implicit_weight_parameter * next_rho
         )
-        time_averaged_theta_v = upper(
+        time_averaged_theta_v = _upper(
             rhotheta_explicit_weight_parameter * current_theta_v
             + rhotheta_implicit_weight_parameter * next_theta_v
         )
@@ -119,10 +121,10 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             + back_trajectory_w_at_cells_on_half_levels
             * (time_averaged_rho_kup - time_averaged_rho)
         )
-        time_averaged_perturbed_theta_v_kup = time_averaged_theta_v_kup - lower(
+        time_averaged_perturbed_theta_v_kup = time_averaged_theta_v_kup - _lower(
             reference_theta_at_cells_on_model_levels
         )
-        time_averaged_perturbed_theta_v = time_averaged_theta_v - upper(
+        time_averaged_perturbed_theta_v = time_averaged_theta_v - _upper(
             reference_theta_at_cells_on_model_levels
         )
         perturbed_theta_v_at_cells_on_half_levels_full = (
@@ -139,8 +141,8 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             exner_w_explicit_weight_parameter
             * theta_v_at_cells_on_half_levels_full
             * (
-                lower(perturbed_exner_at_cells_on_model_levels)
-                - upper(perturbed_exner_at_cells_on_model_levels)
+                _lower(perturbed_exner_at_cells_on_model_levels)
+                - _upper(perturbed_exner_at_cells_on_model_levels)
             )
             / ddqz_z_half
             + perturbed_theta_v_at_cells_on_half_levels_full
