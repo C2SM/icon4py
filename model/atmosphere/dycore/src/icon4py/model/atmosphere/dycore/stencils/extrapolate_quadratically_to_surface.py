@@ -8,26 +8,25 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import vpfloat
 
 
 @gtx.field_operator
-def _interpolate_to_surface(
+def _extrapolate_quadratically_to_surface(
     wgtfacq_c: fa.CellKField[vpfloat],
     interpolant: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_04."""
-    interpolation_to_surface = (
-        wgtfacq_c(KDim - 1) * interpolant(KDim - 1)
-        + wgtfacq_c(KDim - 2) * interpolant(KDim - 2)
-        + wgtfacq_c(KDim - 3) * interpolant(KDim - 3)
+    extrapolate_quadratically_to_surface = (
+        wgtfacq_c(dims.KDim - 1) * interpolant(dims.KDim - 1)
+        + wgtfacq_c(dims.KDim - 2) * interpolant(dims.KDim - 2)
+        + wgtfacq_c(dims.KDim - 3) * interpolant(dims.KDim - 3)
     )
-    return interpolation_to_surface
+    return extrapolate_quadratically_to_surface
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_to_surface(
+def extrapolate_quadratically_to_surface(
     wgtfacq_c: fa.CellKField[vpfloat],
     interpolant: fa.CellKField[vpfloat],
     interpolation_to_surface: fa.CellKField[vpfloat],
@@ -36,7 +35,7 @@ def interpolate_to_surface(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _interpolate_to_surface(
+    _extrapolate_quadratically_to_surface(
         wgtfacq_c=wgtfacq_c,
         interpolant=interpolant,
         out=interpolation_to_surface,

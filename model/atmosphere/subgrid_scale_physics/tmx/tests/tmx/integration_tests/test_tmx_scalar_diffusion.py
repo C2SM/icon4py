@@ -30,8 +30,8 @@ from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 from .utils import (
+    RTOL,
     TMX_DATES,
-    assert_scaled_allclose,
     construct_input_state,
     construct_interpolation_state,
     construct_metric_state,
@@ -152,16 +152,26 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
         dtime=setup.dtime,
     )
 
+    # (actual, desired, name, absolute tolerance; see verify_full_run_fields in
+    # utils.py for how the tolerances are chosen). The cloud water and cloud ice
+    # fields were bit-identical to the reference on the v06 archive, which was
+    # zero-filled there; on v08 they carry values and deviate at round-off.
     fields = (
-        (setup.tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv"),
-        (setup.tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc"),
-        (setup.tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi"),
-        (setup.new_state.qv, exit_savepoint.qv_new(), "qv_new"),
-        (setup.new_state.qc, exit_savepoint.qc_new(), "qc_new"),
-        (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new"),
+        (setup.tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv", 5.0e-20),
+        (setup.tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc", 5.0e-21),
+        (setup.tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi", 3.0e-22),
+        (setup.new_state.qv, exit_savepoint.qv_new(), "qv_new", 2.0e-17),
+        (setup.new_state.qc, exit_savepoint.qc_new(), "qc_new", 2.0e-18),
+        (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new", 7.0e-20),
     )
-    for actual, desired, name in fields:
-        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
+    for actual, desired, name, atol in fields:
+        test_utils.assert_dallclose(
+            actual.asnumpy(),
+            desired.asnumpy(),
+            rtol=RTOL,
+            atol=atol,
+            err_msg=name,
+        )
 
 
 @pytest.mark.datatest
@@ -218,12 +228,22 @@ def test_tmx_run_temperature_diffusion_single_step(
     # (no solve); the serialized field includes the halo values updated by the
     # sync before the horizontal diffusion, which is a no-op on a single node
     test_utils.assert_dallclose(
-        setup.granule.energy.asnumpy(), exit_savepoint.energy().asnumpy(), err_msg="energy"
+        setup.granule.energy.asnumpy(),
+        exit_savepoint.energy().asnumpy(),
+        rtol=RTOL,
+        atol=2.0e-10,
+        err_msg="energy",
     )
     fields = (
-        (setup.granule.tend_energy, exit_savepoint.tend_energy(), "tend_energy"),
-        (new_state.temperature, exit_savepoint.ta_new(), "ta_new"),
-        (setup.tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta"),
+        (setup.granule.tend_energy, exit_savepoint.tend_energy(), "tend_energy", 5.0e-13),
+        (new_state.temperature, exit_savepoint.ta_new(), "ta_new", 4.0e-13),
+        (setup.tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
     )
-    for actual, desired, name in fields:
-        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
+    for actual, desired, name, atol in fields:
+        test_utils.assert_dallclose(
+            actual.asnumpy(),
+            desired.asnumpy(),
+            rtol=RTOL,
+            atol=atol,
+            err_msg=name,
+        )

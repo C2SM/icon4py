@@ -83,6 +83,9 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
             geofac_grg_y=geofac_grg_y,
             out=(p_grad_1_u, p_grad_1_v),
             domain=gtx.domain(
-                {dims.CellDim: gtx.int32(grid.num_cells), dims.KDim: gtx.int32(grid.num_levels)}
+                {
+                    dims.CellDim: gtx.int32(grid.num_cells),
+                    dims.KDim: gtx.int32(grid.num_levels),
+                }
             ),
         )

@@ -52,6 +52,7 @@ ALL_MODEL_SUBPACKAGES = [
     "dycore",
     "microphysics",
     "muphys",
+    "tmx",
     "physics_driver",
     "common",
     "standalone_driver",
@@ -61,6 +62,7 @@ ALL_MODEL_MPI_SUBPACKAGES = [
     "tracer_advection",
     "diffusion",
     "dycore",
+    "tmx",
     "common",
     "standalone_driver",
 ]

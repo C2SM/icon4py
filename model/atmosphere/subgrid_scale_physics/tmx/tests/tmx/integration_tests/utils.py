@@ -33,28 +33,8 @@ if TYPE_CHECKING:
 # so the verification tests parametrize over the subsequent steps only.
 TMX_DATES: tuple[str, ...] = ("2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000")
 
-
-def assert_scaled_allclose(
-    actual: np.ndarray,
-    desired: np.ndarray,
-    *,
-    rtol: float = 1.0e-11,
-    atol_scale: float = 1.0e-9,
-    err_msg: str = "",
-) -> None:
-    """
-    'assert_dallclose' with an absolute tolerance scaled to the reference field.
-
-    The tmx fields verified against the Fortran reference agree to a few ulp of
-    the field magnitude, but a plain relative tolerance blows up on near-zero
-    entries (e.g. tendencies crossing zero, v-wind on a zonally symmetric
-    aquaplanet). ``atol = atol_scale * max|desired|`` gives every field an
-    absolute floor tied to its own scale; the measured normalized deviations
-    (max abs diff / max|desired|) on the v06 archive are all below 6e-11, and
-    the largest relative deviations away from zero are below 3e-12.
-    """
-    atol = atol_scale * float(np.max(np.abs(desired)))
-    test_utils.assert_dallclose(actual, desired, rtol=rtol, atol=atol, err_msg=err_msg)
+# Relative tolerance of all tmx integration datatests, see verify_full_run_fields.
+RTOL: float = 3.0e-12
 
 
 def verify_full_run_fields(
@@ -65,46 +45,72 @@ def verify_full_run_fields(
     num_levels: int,
 ) -> None:
     """Verify the outputs of a full ``Tmx.run`` against the tmx-exit savepoint."""
+    # The tmx fields agree with the Fortran reference to a few ulp of the field
+    # magnitude, but a plain relative tolerance blows up on near-zero entries
+    # (e.g. tendencies crossing zero, v-wind on a zonally symmetric aquaplanet),
+    # hence the per-field absolute floor. Each atol is the largest deviation
+    # measured on the v08 archive (embedded, gtfn_cpu, gtfn_gpu, dace_cpu and
+    # dace_gpu, both serialized timesteps), rounded up to one significant digit
+    # with ~20% of headroom. The v06 values were an order of magnitude tighter
+    # because most of that archive was zero-filled; v08 carries real values.
+    # RTOL is above the double-precision default of assert_dallclose but below
+    # the largest relative deviation away from zero (km/kh, 3.9e-11), so those
+    # fields are covered by their atol rather than by RTOL.
     # final tendencies and Stage F diagnostics
     fields = (
-        (tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta"),
-        (tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv"),
-        (tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc"),
-        (tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi"),
-        (tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua"),
-        (tendency_state.ddt_v, exit_savepoint.tend_va(), "tend_va"),
-        (tendency_state.ddt_w, exit_savepoint.tend_wa(), "tend_wa"),
-        (diagnostic_state.heating, exit_savepoint.heating(), "heating"),
-        (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), "dissip_ke"),
+        (tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
+        (tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv", 3.0e-18),
+        (tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc", 6.0e-19),
+        (tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi", 8.0e-22),
+        (tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua", 2.0e-16),
+        (tendency_state.ddt_v, exit_savepoint.tend_va(), "tend_va", 4.0e-17),
+        (tendency_state.ddt_w, exit_savepoint.tend_wa(), "tend_wa", 2.0e-17),
+        (diagnostic_state.heating, exit_savepoint.heating(), "heating", 9.0e-13),
+        (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), "dissip_ke", 9.0e-13),
     )
-    for actual, desired, name in fields:
-        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
+    for actual, desired, name, atol in fields:
+        test_utils.assert_dallclose(
+            actual.asnumpy(),
+            desired.asnumpy(),
+            rtol=RTOL,
+            atol=atol,
+            err_msg=name,
+        )
 
     # Stage G vertically integrated diagnostics (2D)
     integrals = (
-        (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), "cptgzvi"),
-        (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), "dissip_ke_vi"),
-        (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), "int_energy_vi"),
+        (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), "cptgzvi", 4.0e-6),
+        (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), "dissip_ke_vi", 3.0e-12),
+        (diagnostic_state.int_energy_vi, exit_savepoint.int_energy_vi(), "int_energy_vi", 3.0e-6),
         (
             diagnostic_state.int_energy_vi_tend,
             exit_savepoint.tend_int_energy_vi(),
             "tend_int_energy_vi",
+            7.0e-9,
         ),
     )
-    for actual, desired, name in integrals:
-        assert_scaled_allclose(actual.asnumpy(), desired.asnumpy(), err_msg=name)
+    for actual, desired, name, atol in integrals:
+        test_utils.assert_dallclose(
+            actual.asnumpy(),
+            desired.asnumpy(),
+            rtol=RTOL,
+            atol=atol,
+            err_msg=name,
+        )
 
     # Stage G km/kh diagnostics: the bottom (nlev) row is excluded, it holds
     # the tile-aggregated surface exchange coefficients in the Fortran
     # (km_sfc/kh_sfc from mo_vdf_diag_smag.f90, out of scope of the
     # atmosphere-only port; the granule writes zero there)
-    for actual, desired, name in (
-        (diagnostic_state.km, exit_savepoint.km(), "km"),
-        (diagnostic_state.kh, exit_savepoint.kh(), "kh"),
+    for actual, desired, name, atol in (
+        (diagnostic_state.km, exit_savepoint.km(), "km", 1.0e-10),
+        (diagnostic_state.kh, exit_savepoint.kh(), "kh", 3.0e-10),
     ):
-        assert_scaled_allclose(
+        test_utils.assert_dallclose(
             actual.asnumpy()[:, : num_levels - 1],
             desired.asnumpy()[:, : num_levels - 1],
+            rtol=RTOL,
+            atol=atol,
             err_msg=name,
         )
 

@@ -15,6 +15,8 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
@@ -25,17 +27,16 @@ classifiers = [
 ]
 dependencies = [
   # workspace members
-  "icon4py-common~=0.3.0",
+  "icon4py-common~=0.2.0",
   # external dependencies
-  "gt4py==1.1.12",
-  "numpy>=1.23.3",
+  "gt4py==1.2.0",
   "packaging>=20.0"
 ]
 description = "ICON AES turbulent mixing (tmx) parameterization."
 license = {text = "BSD-3 License"}
 name = "icon4py-atmosphere-tmx"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 # managed by bump-my-version:
 version = "0.3.0"
 

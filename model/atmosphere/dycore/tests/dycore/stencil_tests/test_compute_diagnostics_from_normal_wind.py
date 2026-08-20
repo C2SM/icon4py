@@ -24,7 +24,6 @@ from .test_compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity_numpy,
 )
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
-from .test_compute_tangential_wind import compute_tangential_wind_numpy
 from .test_extrapolate_at_top import extrapolate_at_top_numpy
 from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
     interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy,
@@ -35,6 +34,15 @@ from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
+
+
+def compute_tangential_wind_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray], vn: np.ndarray, rbf_vec_coeff_e: np.ndarray
+) -> np.ndarray:
+    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
+    e2c2e = connectivities[dims.E2C2EDim]
+    vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
+    return vt
 
 
 def compute_diagnostics_from_normal_wind_numpy(

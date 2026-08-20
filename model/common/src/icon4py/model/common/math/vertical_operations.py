@@ -17,8 +17,33 @@ from gt4py import next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
+
+
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=wpfloat("0.0"))
+def _accumulate_from_top(state: wpfloat, integrand: wpfloat) -> wpfloat:
+    return state + integrand
+
+
+@gtx.field_operator
+def _compute_vertical_integral(
+    integrand: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    """
+    Compute the running vertical sum of ``integrand`` from the top of the column downwards.
+
+    The value at level k is sum_{j<=k} integrand(j), so the value at the last full
+    level is the column integral. Callers pre-multiply the integrand with the
+    appropriate weights (e.g. ``rho * dz`` for mass-weighted vertical integrals as in
+    the ``*_vi`` diagnostics of ``Update_diagnostics`` in ICON's ``mo_vdf_atmo.f90``).
+
+    Args:
+        integrand: integrand on full levels
+
+    Returns:
+        running vertical sum of the integrand
+    """
+    return _accumulate_from_top(integrand)
 
 
 @gtx.field_operator
@@ -36,7 +61,7 @@ def average_level_plus1_on_cells(
     Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(KDim + 1))
+    return 0.5 * (half_level_field + half_level_field(dims.KDim + 1))
 
 
 @gtx.field_operator
@@ -54,7 +79,7 @@ def average_level_plus1_on_edges(
     Returns: fa.EdgeKField[wpfloat] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(KDim + 1))
+    return 0.5 * (half_level_field + half_level_field(dims.KDim + 1))
 
 
 @gtx.field_operator
@@ -72,7 +97,7 @@ def difference_level_plus1_on_cells(
     Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
 
     """
-    return half_level_field - half_level_field(KDim + 1)
+    return half_level_field - half_level_field(dims.KDim + 1)
 
 
 @gtx.field_operator
@@ -95,6 +120,25 @@ def with_boundaries_on_half_levels_on_cells(
     )
     result = concat_where(dims.KDim == 0, top, result)
     return concat_where(dims.KDim == nlev, bottom, result)
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_vertical_integral(  # noqa: PLR0917 [too-many-positional-arguments]
+    integrand: fa.CellKField[wpfloat],
+    vertical_integral: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _compute_vertical_integral(
+        integrand=integrand,
+        out=vertical_integral,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

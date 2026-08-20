@@ -34,9 +34,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_brunt_v
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_energy_from_temperature import (
     compute_energy_from_temperature,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_inverse_air_mass import (
-    compute_inverse_air_mass,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_scalar_nabla2_flux import (
     compute_scalar_nabla2_flux,
 )
@@ -54,9 +51,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_surface
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_surface_flux_rhs import (
     compute_surface_flux_rhs,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_tangential_wind_wp import (
-    compute_tangential_wind_wp,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_temperature_from_energy_and_tendency import (
     compute_temperature_from_energy_and_tendency,
@@ -81,12 +75,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_w_horiz
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_w_vertical_diffusion_rhs import (
     compute_w_vertical_diffusion_rhs,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_cell_kdim_field_with_zero import (
-    init_cell_kdim_field_with_zero,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_height_above_ground import (
-    init_height_above_ground,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_louis_scaling_factor import (
     init_louis_scaling_factor,
@@ -136,9 +124,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.solve_vertical_
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_exchange_coefficient_diagnostics import (
     update_exchange_coefficient_diagnostics,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_horizontal_wind import (
-    update_horizontal_wind,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_temperature_with_dissipation_heating import (
     update_temperature_with_dissipation_heating,
 )
@@ -152,6 +137,9 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     compute_cell_2_vertex_interpolation,
 )
+from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
+    compute_tangential_wind_wp,
+)
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
@@ -160,6 +148,16 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center impo
 )
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
+)
+from icon4py.model.common.math.stencils.generic_math_operations import (
+    compute_reciprocal_on_cell_k,
+    subtract_cell_field_on_cell_k,
+)
+from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
+    init_cell_kdim_field_with_zero_wp,
+)
+from icon4py.model.common.math.stencils.update_two_cell_kdim_fields_with_tendency import (
+    update_two_cell_kdim_fields_with_tendency,
 )
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -579,11 +577,16 @@ class Tmx:
             offset_provider={},
         )
         # compute_geopotential_height_above_ground (mo_vdf_atmo.f90): tmx t_domain
-        # cells (grf_bdywidth_c + 1 .. min_rlcell_int), all full levels
+        # cells (grf_bdywidth_c + 1 .. min_rlcell_int), all full levels.
+        # ghf = z_mc - z_ifc_sfc; despite the Fortran name it is the geometric
+        # height in meters (gravity is only applied later, e.g. in
+        # compute_static_energy). z_ifc_sfc is the surface slice z_ifc[:, nlev],
+        # passed as a 2D field because GT4Py offsets are relative and cannot
+        # address a fixed absolute K row.
         self.init_height_above_ground = setup_program(
             backend=backend,
-            program=init_height_above_ground,
-            constant_args={"z_mc": self._metric_state.z_mc, "z_ifc_sfc": z_ifc_sfc},
+            program=subtract_cell_field_on_cell_k,
+            constant_args={"minuend": self._metric_state.z_mc, "subtrahend_cell": z_ifc_sfc},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -972,7 +975,7 @@ class Tmx:
             # the Fortran init only computes the Louis scaling factor if the
             # Louis stability correction is enabled; the field stays zero otherwise
             self.init_louis_scaling_factor(scaling_factor_louis=self.louis_factor)
-        self.init_height_above_ground(height_above_ground=self.ghf)
+        self.init_height_above_ground(difference=self.ghf)
 
     def _setup_scalar_diffusion_programs(
         self,
@@ -993,7 +996,7 @@ class Tmx:
         # CALL init(...) zero fills (whole array, tendencies before the solves)
         self.init_cell_kdim_field_with_zero = setup_program(
             backend=backend,
-            program=init_cell_kdim_field_with_zero,
+            program=init_cell_kdim_field_with_zero_wp,
             horizontal_sizes={
                 "horizontal_start": gtx.int32(0),
                 "horizontal_end": self._cell_end_end,
@@ -1004,11 +1007,13 @@ class Tmx:
             },
             offset_provider={},
         )
-        # inverse air mass (the ``inv_mair`` loops of mo_vdf.f90)
+        # inverse air mass (the ``inv_mair`` loops of mo_vdf.f90): inv_mair
+        # scales the rows of the vertical diffusion matrix
+        # ('prepare_diffusion_matrix') and the surface flux right-hand side
         self.compute_inverse_air_mass = setup_program(
             backend=backend,
-            program=compute_inverse_air_mass,
-            constant_args={"inv_air_mass": self._inv_air_mass},
+            program=compute_reciprocal_on_cell_k,
+            constant_args={"output_field": self._inv_air_mass},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -1199,7 +1204,7 @@ class Tmx:
         # full-level variant, one more K row
         self.init_cell_kdim_half_field_with_zero = setup_program(
             backend=backend,
-            program=init_cell_kdim_field_with_zero,
+            program=init_cell_kdim_field_with_zero_wp,
             horizontal_sizes={
                 "horizontal_start": gtx.int32(0),
                 "horizontal_end": self._cell_end_end,
@@ -1348,10 +1353,12 @@ class Tmx:
             },
             offset_provider=self._grid.connectivities,
         )
-        # final update loop: tmx t_domain cells, all full levels
+        # final update loop of Compute_diffusion_hor_wind (mo_vdf.f90): tmx
+        # t_domain cells, all full levels; new_u/v = u/v + tend * dtime with
+        # the tendencies from the RBF cell interpolation of tot_tend
         self.update_horizontal_wind = setup_program(
             backend=backend,
-            program=update_horizontal_wind,
+            program=update_two_cell_kdim_fields_with_tendency,
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -1992,7 +1999,7 @@ class Tmx:
         """
         log.debug("tmx Stage B (Compute_diffusion_hydrometeors): start")
 
-        self.compute_inverse_air_mass(air_mass=input_state.air_mass)
+        self.compute_inverse_air_mass(input_field=input_state.air_mass)
         self.prepare_tridiagonal_matrix_hydrometeors(
             zk=diagnostic_state.kh_ic,
             a=self._matrix_a,
@@ -2012,7 +2019,7 @@ class Tmx:
             ("qi", input_state.qi, tendency_state.ddt_qi, new_state.qi, self._zero_surface_flux),
         )
         for name, state, tend, new, sfc_flx in tracers:
-            self.init_cell_kdim_field_with_zero(field=tend)
+            self.init_cell_kdim_field_with_zero(field_with_zero_wp=tend)
             self.compute_surface_flux_rhs(sfc_flx=sfc_flx, rhs=self._rhs, prefac=1.0)
             self._solve_scalar_vertical_diffusion(var=state, tend=tend, dtime=dtime)
 
@@ -2071,7 +2078,7 @@ class Tmx:
         """
         log.debug("tmx Stage C (Compute_diffusion_temperature): start")
 
-        self.init_cell_kdim_field_with_zero(field=self.tend_energy)
+        self.init_cell_kdim_field_with_zero(field_with_zero_wp=self.tend_energy)
 
         self.compute_energy_from_temperature(
             temperature=input_state.temperature,
@@ -2100,7 +2107,7 @@ class Tmx:
             flux_x=self._flux_x,
         )
 
-        self.compute_inverse_air_mass(air_mass=input_state.air_mass)
+        self.compute_inverse_air_mass(input_field=input_state.air_mass)
         self.prepare_tridiagonal_matrix_energy(
             zk=diagnostic_state.kh_ic,
             a=self._matrix_a,
@@ -2184,8 +2191,8 @@ class Tmx:
 
         # CALL init(tend_u/tend_v): the RBF interpolation only writes cells
         # 2..min_rlcell_int, everything outside must be zero
-        self.init_cell_kdim_field_with_zero(field=tendency_state.ddt_u)
-        self.init_cell_kdim_field_with_zero(field=tendency_state.ddt_v)
+        self.init_cell_kdim_field_with_zero(field_with_zero_wp=tendency_state.ddt_u)
+        self.init_cell_kdim_field_with_zero(field_with_zero_wp=tendency_state.ddt_v)
 
         # S7: CALL sync_patch_array(SYNC_C, patch, rho) in mo_vdf.f90
         log.debug("communication of rho (cells): start")
@@ -2235,12 +2242,12 @@ class Tmx:
             p_v_out=tendency_state.ddt_v,
         )
         self.update_horizontal_wind(
-            u=input_state.u,
-            v=input_state.v,
-            tend_u=tendency_state.ddt_u,
-            tend_v=tendency_state.ddt_v,
-            new_u=new_state.u,
-            new_v=new_state.v,
+            field_1=input_state.u,
+            field_2=input_state.v,
+            tendency_1=tendency_state.ddt_u,
+            tendency_2=tendency_state.ddt_v,
+            new_field_1=new_state.u,
+            new_field_2=new_state.v,
             dtime=dtime,
         )
 
@@ -2286,8 +2293,8 @@ class Tmx:
 
         # CALL init(tend) / init(new_state): ddt_w is accumulated and new_w is
         # only written on the interior half levels
-        self.init_cell_kdim_half_field_with_zero(field=tendency_state.ddt_w)
-        self.init_cell_kdim_half_field_with_zero(field=new_state.w)
+        self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=tendency_state.ddt_w)
+        self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=new_state.w)
 
         self.compute_tangential_wind_full_levels(vn=diagnostic_state.vn)
         self.compute_w_vertical_diffusion_rhs(
@@ -2358,7 +2365,7 @@ class Tmx:
 
         # CALL init(heating): zero fill of the whole array; the update stencil
         # only writes the domain cells
-        self.init_cell_kdim_field_with_zero(field=diagnostic_state.heating)
+        self.init_cell_kdim_field_with_zero(field_with_zero_wp=diagnostic_state.heating)
         self.update_temperature_with_dissipation_heating(
             u=input_state.u,
             v=input_state.v,

@@ -8,10 +8,10 @@
 import gt4py.next as gtx
 from gt4py.next import astype
 
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
     _init_cell_kdim_field_with_zero_wp,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

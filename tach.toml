@@ -6,8 +6,8 @@ source_roots = [
     "model/atmosphere/dycore/src",
     "model/atmosphere/subgrid_scale_physics/microphysics/src",
     "model/atmosphere/subgrid_scale_physics/muphys/src",
-    "model/atmosphere/subgrid_scale_physics/physics_driver/src",
     "model/atmosphere/subgrid_scale_physics/tmx/src",
+    "model/atmosphere/subgrid_scale_physics/physics_driver/src",
     "model/standalone_driver/src",
     "model/common/src",
     "model/testing/src",
@@ -42,11 +42,11 @@ path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
-path = "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver"
+path = "icon4py.model.atmosphere.subgrid_scale_physics.tmx"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
-path = "icon4py.model.atmosphere.subgrid_scale_physics.tmx"
+path = "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver"
 depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
@@ -70,7 +70,6 @@ path = "icon4py.model.standalone_driver"
 depends_on = [
     { path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys" },
     { path = "icon4py.model.atmosphere.subgrid_scale_physics.physics_driver" },
-    { path = "icon4py.model.atmosphere.subgrid_scale_physics.tmx" },
     { path = "icon4py.model.common" },
 ]
 
