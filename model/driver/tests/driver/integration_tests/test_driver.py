@@ -189,6 +189,11 @@ def test_driver(
     config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
 
     config = driver_config.read_experiment_config_from_fortran(config_file_path)
+    if experiment_description is test_defs.Experiments.EXCLAIM_APE_AES:
+        # the production enablement path: the Fortran namelist reader itself switches
+        # the physics on — muphys from aes_phy_nml, tmx from aes_vdf_nml
+        assert config.muphys is not None, "muphys must be auto-enabled for APE_aes"
+        assert config.tmx is not None, "tmx must be auto-enabled from aes_vdf_nml for APE_aes"
     config = config.with_overrides(
         driver={
             "output_path": tmp_path / "ci_driver_output",
@@ -266,87 +271,3 @@ def test_driver(
             rtol=rtol,
             err_msg=name,
         )
-
-
-@pytest.mark.datatest
-@pytest.mark.embedded_remap_error
-@pytest.mark.parametrize(
-    "experiment_description, timeloop_date_exit",
-    [
-        (
-            test_defs.Experiments.EXCLAIM_APE_AES,
-            "2008-09-01T00:05:00.000",
-        ),
-    ],
-)
-def test_driver_moist_physics_with_tmx(
-    experiment_description: test_defs.ExperimentDescription,
-    timeloop_date_exit: str,
-    *,
-    tmp_path: pathlib.Path,
-    process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
-) -> None:
-    """Smoke test: one large time step over EXCLAIM_APE_AES with muphys + TMX enabled.
-
-    Both processes are enabled by the config reader itself: muphys from the
-    presence of ``aes_phy_nml``, TMX from ``aes_vdf_nml`` (with ``TmxConfig``
-    parsed positionally from the echoed namelist) — this test exercises the
-    production configuration path end to end.
-
-    Assertions:
-    - The physics driver has exactly the two registered processes ["muphys", "tmx"].
-    - All prognostic fields (vn, w, exner, theta_v, rho) and moisture tracers
-      (qv, qc, qi) are finite after the step.
-
-    No savepoint equality is asserted for vn/w because TMX writes them by design.
-    """
-    allocator = model_backends.get_allocator(backend)
-
-    grid_file_path = grid_utils._download_grid_file(experiment_description.grid)
-    config_file_path = dt_utils.get_path_for_experiment(experiment_description, process_props)
-
-    config = driver_config.read_experiment_config_from_fortran(config_file_path)
-    assert config.muphys is not None, "muphys must be enabled for the APE_aes experiment"
-    assert config.tmx is not None, "tmx must be auto-enabled from aes_vdf_nml for APE_aes"
-
-    config = config.with_overrides(
-        driver={
-            "output_path": tmp_path / "ci_driver_output",
-            "end_of_simulation": datetime.datetime.fromisoformat(timeloop_date_exit).replace(
-                tzinfo=datetime.UTC
-            ),
-        }
-    )
-
-    grid_manager = driver_utils.create_grid_manager(
-        grid_file_path=grid_file_path,
-        vertical_grid_config=config.vertical_grid,
-        allocator=allocator,
-        process_props=process_props,
-    )
-    ds, icon4py_driver = driver.run_driver(
-        config=config,
-        grid_manager=grid_manager,
-        process_props=process_props,
-        backend=backend,
-    )
-
-    granules = icon4py_driver.granules
-    prognostic = ds.prognostics.current
-    tracers = ds.tracers.current
-
-    assert granules.physics is not None
-    assert [p.name for p in granules.physics._processes] == ["muphys", "tmx"]
-    for name, field in (
-        ("vn", prognostic.vn),
-        ("w", prognostic.w),
-        ("exner", prognostic.exner),
-        ("theta_v", prognostic.theta_v),
-        ("rho", prognostic.rho),
-        ("qv", tracers.qv),
-        ("qc", tracers.qc),
-        ("qi", tracers.qi),
-    ):
-        arr = field.asnumpy()
-        assert np.isfinite(arr).all(), f"{name} has non-finite entries after muphys+tmx step"
