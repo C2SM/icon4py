@@ -20,7 +20,7 @@ def _identity_c_k(field: fa.CellKField[float]) -> fa.CellKField[float]:
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def copy_field(old_f: fa.CellKField[float], new_f: fa.CellKField[float]) -> None:
+def copy_ck_field(old_f: fa.CellKField[float], new_f: fa.CellKField[float]) -> None:
     _identity_c_k(old_f, out=new_f)
 
 
@@ -30,7 +30,7 @@ def _identity_c_khalf(field: fa.CellKHalfField[float]) -> fa.CellKHalfField[floa
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def copy_khalf_field(old_f: fa.CellKHalfField[float], new_f: fa.CellKHalfField[float]) -> None:
+def copy_ckhalf_field(old_f: fa.CellKHalfField[float], new_f: fa.CellKHalfField[float]) -> None:
     _identity_c_khalf(old_f, out=new_f)
 
 

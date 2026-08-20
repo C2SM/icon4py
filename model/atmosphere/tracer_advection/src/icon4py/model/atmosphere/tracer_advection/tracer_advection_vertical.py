@@ -772,7 +772,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=compute_ppm4gpu_courant_number,
             constant_args={
-                "k": self._k_half_field,
+                "k_half": self._k_half_field,
                 "slevp1_ti": self._slevp1_ti,
                 "nlev": self._nlev,
                 "dbl_eps": constants.DBL_EPS,
@@ -849,7 +849,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=compute_ppm4gpu_fractional_flux,
             constant_args={
-                "k": self._k_half_field,
+                "k_half": self._k_half_field,
                 "slev": self._slev,
             },
             vertical_sizes={
@@ -862,7 +862,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=compute_ppm4gpu_integer_flux,
             constant_args={
-                "k": self._k_half_field,
+                "k_half": self._k_half_field,
                 "slev": self._slev,
             },
             vertical_sizes={

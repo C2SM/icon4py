@@ -83,7 +83,7 @@ def _compute_ppm4gpu_integer_flux(
     p_cellmass_now: fa.CellKField[ta.wpfloat],
     z_cfl: fa.CellKHalfField[ta.wpfloat],
     p_upflux: fa.CellKHalfField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.wpfloat]:
@@ -93,7 +93,7 @@ def _compute_ppm4gpu_integer_flux(
     z_cfl_neg = z_cfl < 0.0
     wsign = where(z_cfl_pos, 1.0, -1.0)
 
-    in_slev_bounds = astype(k, wpfloat) - js >= astype(slev, wpfloat)
+    in_slev_bounds = astype(k_half, wpfloat) - js >= astype(slev, wpfloat)
 
     p_cc_cellmass_now_jks = _sum_neighbor_contributions_all(
         mask1=z_cfl_pos,
@@ -116,7 +116,7 @@ def compute_ppm4gpu_integer_flux(
     p_cellmass_now: fa.CellKField[ta.wpfloat],
     z_cfl: fa.CellKHalfField[ta.wpfloat],
     p_upflux: fa.CellKHalfField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
@@ -129,7 +129,7 @@ def compute_ppm4gpu_integer_flux(
         p_cellmass_now=p_cellmass_now,
         z_cfl=z_cfl,
         p_upflux=p_upflux,
-        k=k,
+        k_half=k_half,
         slev=slev,
         p_dtime=p_dtime,
         out=p_upflux,

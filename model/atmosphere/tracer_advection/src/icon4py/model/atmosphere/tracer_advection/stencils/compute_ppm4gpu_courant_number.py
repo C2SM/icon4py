@@ -21,16 +21,16 @@ def _compute_courant_number_below(
     p_cellmass_now: fa.CellKField[ta.wpfloat],
     z_mass: fa.CellKHalfField[ta.wpfloat],
     z_cfl: fa.CellKHalfField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     nlev: gtx.int32,
     dbl_eps: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     z_mass_pos = z_mass > 0.0
 
-    in_bounds_p0 = k <= nlev - 1
-    in_bounds_p1 = k <= nlev - 2
-    in_bounds_p2 = k <= nlev - 3
-    in_bounds_p3 = k <= nlev - 4
+    in_bounds_p0 = k_half <= nlev - 1
+    in_bounds_p1 = k_half <= nlev - 2
+    in_bounds_p2 = k_half <= nlev - 3
+    in_bounds_p3 = k_half <= nlev - 4
 
     mass_gt_cellmass_p0 = where(
         z_mass_pos & in_bounds_p0, z_mass >= p_cellmass_now(dims.KHalfDim + 0.5), False
@@ -82,16 +82,16 @@ def _compute_courant_number_above(
     p_cellmass_now: fa.CellKField[ta.wpfloat],
     z_mass: fa.CellKHalfField[ta.wpfloat],
     z_cfl: fa.CellKHalfField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slevp1_ti: gtx.int32,
     dbl_eps: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     z_mass_neg = z_mass <= 0.0
 
-    in_bounds_m0 = k >= slevp1_ti + 1
-    in_bounds_m1 = k >= slevp1_ti + 2
-    in_bounds_m2 = k >= slevp1_ti + 3
-    in_bounds_m3 = k >= slevp1_ti + 4
+    in_bounds_m0 = k_half >= slevp1_ti + 1
+    in_bounds_m1 = k_half >= slevp1_ti + 2
+    in_bounds_m2 = k_half >= slevp1_ti + 3
+    in_bounds_m3 = k_half >= slevp1_ti + 4
 
     mass_gt_cellmass_m0 = where(
         z_mass_neg & in_bounds_m0, abs(z_mass) >= p_cellmass_now(dims.KHalfDim - 0.5), False
@@ -143,7 +143,7 @@ def _compute_ppm4gpu_courant_number(
     p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
     z_cfl: fa.CellKHalfField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slevp1_ti: gtx.int32,
     nlev: gtx.int32,
     dbl_eps: ta.wpfloat,
@@ -155,7 +155,7 @@ def _compute_ppm4gpu_courant_number(
         p_cellmass_now=p_cellmass_now,
         z_mass=z_mass,
         z_cfl=z_cfl,
-        k=k,
+        k_half=k_half,
         nlev=nlev,
         dbl_eps=dbl_eps,
     )
@@ -163,7 +163,7 @@ def _compute_ppm4gpu_courant_number(
         p_cellmass_now=p_cellmass_now,
         z_mass=z_mass,
         z_cfl=z_cfl,
-        k=k,
+        k_half=k_half,
         slevp1_ti=slevp1_ti,
         dbl_eps=dbl_eps,
     )
@@ -178,7 +178,7 @@ def compute_ppm4gpu_courant_number(
     p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
     z_cfl: fa.CellKHalfField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slevp1_ti: gtx.int32,
     nlev: gtx.int32,
     dbl_eps: ta.wpfloat,
@@ -192,7 +192,7 @@ def compute_ppm4gpu_courant_number(
         p_mflx_contra_v=p_mflx_contra_v,
         p_cellmass_now=p_cellmass_now,
         z_cfl=z_cfl,
-        k=k,
+        k_half=k_half,
         slevp1_ti=slevp1_ti,
         nlev=nlev,
         dbl_eps=dbl_eps,

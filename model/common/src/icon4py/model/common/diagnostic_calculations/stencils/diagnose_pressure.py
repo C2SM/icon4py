@@ -60,8 +60,8 @@ def _pressure_on_half_levels(
     surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
     nlev: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
-    # The scan runs on KDim, so the staggering happens here rather than inside it: a scan
-    # whose axis differs from its output dimension is rejected by the embedded backend.
+    # TODO(havogt): The range of the scan is deduced from the (unique) domain,
+    # therefore multiple output domains are currently not possible with scans.
     return concat_where(
         dims.KHalfDim == nlev,
         surface_pressure,

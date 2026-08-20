@@ -19,6 +19,7 @@ def relabel_dim(field: gtx.Field, old_dim: gtx.Dimension, new_dim: gtx.Dimension
         old_dim: The dimension to replace.
         new_dim: The dimension to replace it with.
     """
+    # TODO(havogt): this function is used for a workaround.
     # using GT4Py internal API since `gtx.as_field` copies rather than aliases the buffer
     return gtx_common._field(
         field.ndarray,

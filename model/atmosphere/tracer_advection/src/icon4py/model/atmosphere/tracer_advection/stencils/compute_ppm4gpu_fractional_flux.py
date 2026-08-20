@@ -63,7 +63,7 @@ def _compute_ppm4gpu_fractional_flux(
     z_cfl: fa.CellKHalfField[ta.wpfloat],
     z_delta_q: fa.CellKField[ta.wpfloat],
     z_a1: fa.CellKField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.wpfloat]:
@@ -78,7 +78,7 @@ def _compute_ppm4gpu_fractional_flux(
     mask1 = z_cfl_pos & z_cflfrac_nonzero
     mask2 = z_cfl_neg & z_cflfrac_nonzero
 
-    in_slev_bounds = astype(k, wpfloat) - js >= astype(slev, wpfloat)
+    in_slev_bounds = astype(k_half, wpfloat) - js >= astype(slev, wpfloat)
 
     p_cc_jks = _sum_neighbor_contributions(mask1=mask1, mask2=mask2, js=js, p_cc=p_cc)
     p_cellmass_now_jks = _sum_neighbor_contributions(
@@ -108,7 +108,7 @@ def compute_ppm4gpu_fractional_flux(
     z_delta_q: fa.CellKField[ta.wpfloat],
     z_a1: fa.CellKField[ta.wpfloat],
     p_upflux: fa.CellKHalfField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
@@ -122,7 +122,7 @@ def compute_ppm4gpu_fractional_flux(
         z_cfl=z_cfl,
         z_delta_q=z_delta_q,
         z_a1=z_a1,
-        k=k,
+        k_half=k_half,
         slev=slev,
         p_dtime=p_dtime,
         out=p_upflux,
