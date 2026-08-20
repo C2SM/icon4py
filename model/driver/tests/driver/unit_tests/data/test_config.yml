@@ -1,0 +1,95 @@
+geometry:
+  use_analytical_means: true
+metrics:
+  exner_expol: 0.3333333333333333
+  vwind_offctr: 0.15
+  thslp_zdiffu: 0.025
+  thhgtd_zdiffu: 200.0
+  rayleigh_type: klemp
+  rayleigh_coeff: 0.05
+  divdamp_trans_start: 12500.0
+  divdamp_trans_end: 17500.0
+  divdamp_type: 3
+  igradp_method: 3
+interpolation:
+  divergence_averaging_central_cell_weight: 0.5
+  max_nudging_coefficient: 0.375
+  _nudge_max_coeff:
+  nudge_efold_width: 2.0
+  nudge_zone_width: 10
+  rbf_kernel_cell: gaussian
+  rbf_kernel_edge: inverse_multiquadratic
+  rbf_kernel_vertex: gaussian
+  lsq_dim_unk: 2
+  lsq_dim_c: 3
+  lsq_wgt_exp: 2
+  lsq_high_ord: 1
+vertical_grid:
+  num_levels: 10
+  maximal_layer_thickness: 25000.0
+  top_height_limit_for_maximal_layer_thickness: 15000.0
+  lowest_layer_thickness: 50.0
+  model_top_height: 23500.0
+  flat_height: 16000.0
+  stretch_factor: 1.0
+  rayleigh_damping_height: 45000.0
+  htop_moist_proc: 22500.0
+  file_path:
+  SLEVE_decay_scale_1: 4000.0
+  SLEVE_decay_scale_2: 2500.0
+  SLEVE_decay_exponent: 1.2
+  _SLEVE_minimum_layer_thickness_1: 100.0
+  _SLEVE_minimum_layer_thickness_2: 500.0
+  _SLEVE_minimum_relative_layer_thickness_1: 0.3333333333333333
+  _SLEVE_minimum_relative_layer_thickness_2: 0.5
+topography:
+  config:
+    type: jablonowski_williamson
+    u0: 35.0
+    eta_0: 0.252
+initial_condition:
+  config:
+    type: jablonowski_williamson
+    p_sfc: 100000.0
+    baroclinic_amplitude: 1.0
+    u0: 35.0
+    temp0: 288.0
+    eta_0: 0.252
+    eta_t: 0.2
+    gamma: 0.005
+    dtemp: 480000.0
+    lon_perturbation_center: 0.3490658503988659
+    lat_perturbation_center: 0.6981317007977318
+    rh_at_1000hpa: 0.7
+    qv_max: 0.02
+    moisture_init_iterations: 10
+    global_moisture_content: 25.006
+    normalize_global_moisture: false
+prescribed_tendencies:
+  data_path:
+driver:
+  experiment_name: foo
+  profiling_options:
+  dtime: 10
+  start_of_simulation: '2020-01-01T00:00:00'
+  start_of_timestepping: '2020-01-01T00:00:00'
+  end_of_simulation:
+    type: numsteps
+    value: 5
+  output_path: output
+  apply_extra_second_order_divdamp: false
+  do_prep_adv: false
+  diffuse_before_time_loop: false
+  vertical_cfl_threshold: 0.85
+  ndyn_substeps: 5
+  enable_statistics_logging: false
+  enable_output: false
+  output_backend: zarr
+  output_mode: distributed
+nonhydrostatic:
+diffusion:
+tracer_config:
+tracer_advection:
+graupel:
+muphys:
+tmx:

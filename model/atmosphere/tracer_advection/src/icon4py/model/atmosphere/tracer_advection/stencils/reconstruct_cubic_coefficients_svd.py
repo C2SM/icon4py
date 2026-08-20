@@ -10,7 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E2C2E2C, C2E2C2E2CDim
+from icon4py.model.common.dimension import C2E2C2E2C
 
 
 @gtx.field_operator
@@ -46,15 +46,17 @@ def _reconstruct_cubic_coefficients_svd(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    p_coeff_10_dsl = neighbor_sum(lsq_pseudoinv_9 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
-    p_coeff_9_dsl = neighbor_sum(lsq_pseudoinv_8 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
-    p_coeff_8_dsl = neighbor_sum(lsq_pseudoinv_7 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
-    p_coeff_7_dsl = neighbor_sum(lsq_pseudoinv_6 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
-    p_coeff_6_dsl = neighbor_sum(lsq_pseudoinv_5 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
-    p_coeff_5_dsl = neighbor_sum(lsq_pseudoinv_4 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
-    p_coeff_4_dsl = neighbor_sum(lsq_pseudoinv_3 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
-    p_coeff_3_dsl = neighbor_sum(lsq_pseudoinv_2 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
-    p_coeff_2_dsl = neighbor_sum(lsq_pseudoinv_1 * (p_cc(C2E2C2E2C) - p_cc), axis=C2E2C2E2CDim)
+    p_coeff_10_dsl = neighbor_sum(
+        lsq_pseudoinv_9 * (p_cc(C2E2C2E2C) - p_cc), axis=dims.C2E2C2E2CDim
+    )
+    p_coeff_9_dsl = neighbor_sum(lsq_pseudoinv_8 * (p_cc(C2E2C2E2C) - p_cc), axis=dims.C2E2C2E2CDim)
+    p_coeff_8_dsl = neighbor_sum(lsq_pseudoinv_7 * (p_cc(C2E2C2E2C) - p_cc), axis=dims.C2E2C2E2CDim)
+    p_coeff_7_dsl = neighbor_sum(lsq_pseudoinv_6 * (p_cc(C2E2C2E2C) - p_cc), axis=dims.C2E2C2E2CDim)
+    p_coeff_6_dsl = neighbor_sum(lsq_pseudoinv_5 * (p_cc(C2E2C2E2C) - p_cc), axis=dims.C2E2C2E2CDim)
+    p_coeff_5_dsl = neighbor_sum(lsq_pseudoinv_4 * (p_cc(C2E2C2E2C) - p_cc), axis=dims.C2E2C2E2CDim)
+    p_coeff_4_dsl = neighbor_sum(lsq_pseudoinv_3 * (p_cc(C2E2C2E2C) - p_cc), axis=dims.C2E2C2E2CDim)
+    p_coeff_3_dsl = neighbor_sum(lsq_pseudoinv_2 * (p_cc(C2E2C2E2C) - p_cc), axis=dims.C2E2C2E2CDim)
+    p_coeff_2_dsl = neighbor_sum(lsq_pseudoinv_1 * (p_cc(C2E2C2E2C) - p_cc), axis=dims.C2E2C2E2CDim)
 
     p_coeff_1_dsl = p_cc - (
         p_coeff_2_dsl * lsq_moments_1
