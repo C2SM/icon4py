@@ -54,7 +54,7 @@ config_io.register_config_union(
         "jablonowski_williamson": jw_ic.JablonowskiWilliamsonConfig,
         "gauss_3d": gauss_ic.Gauss3DConfig,
         "from_file": from_file_ic.FromFileConfig,
-        "weissman_klemp": wk_ic.WeismanKlempConfig,
+        "weisman_klemp": wk_ic.WeismanKlempConfig,
     },
 )
 

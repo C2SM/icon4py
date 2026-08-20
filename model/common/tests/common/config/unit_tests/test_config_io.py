@@ -195,8 +195,7 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             textwrap.dedent(
                 """\
                 shared:
-                  - name: b
-                    value: 42
+                  - b: 42
                     consumers:
                       - abc
                       - bc
@@ -210,7 +209,7 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             ),
             SharedConfig,
             SharedConfig(
-                shared=[config_io.SharedOption(name="b", value=42, consumers=["abc", "bc"])],
+                shared=[config_io.SharedOptionSet(options={"b": 42}, consumers=["abc", "bc"])],
                 abc=ABConfig(a=1, b=42),
                 bc=BConfig(b=42),
                 bdc=BDConfig(b=123, d=4),
@@ -233,18 +232,18 @@ def test_dispatch_shared_short_form() -> None:
     testee = config_io.read_yaml_str(
         textwrap.dedent(
             """
-        shared:
-        - b: 42
-          consumers:
-          - abc
-          - bc
-        abc:
-          a: 1
-        bc:
-        bdc:
-          b: 123
-          d: 4
-        """
+            shared:
+            - b: 42
+              consumers:
+              - abc
+              - bc
+            abc:
+              a: 1
+            bc:
+            bdc:
+              b: 123
+              d: 4
+            """
         ),
         SharedConfig,
     )
