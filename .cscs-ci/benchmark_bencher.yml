@@ -1,6 +1,6 @@
 include:
-  - local: 'ci/base.yml'
-  - local: 'ci/benchmark_bencher_common.yml'
+  - local: '.cscs-ci/base.yml'
+  - local: '.cscs-ci/benchmark_bencher_common.yml'
 
 .bencher_feature_tests:
   extends: [.benchmark_nox_job]

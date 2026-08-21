@@ -30,6 +30,7 @@ exclude = [
     "pymetis",
     "xarray",
     "uxarray",
+    "zarr",
     "cftime",
     "viztracer",
     "clang_format",

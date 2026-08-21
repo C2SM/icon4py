@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
@@ -18,12 +19,11 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def apply_rayleigh_damping_mechanism_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     z_raylfac: np.ndarray,
     w: np.ndarray,
 ) -> np.ndarray:
@@ -32,25 +32,28 @@ def apply_rayleigh_damping_mechanism_numpy(
     return w
 
 
-class TestApplyRayleighDampingMechanism(StencilTest):
+class TestApplyRayleighDampingMechanism(stencil_tests.StencilTest):
     PROGRAM = apply_rayleigh_damping_mechanism
     OUTPUTS = ("w",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         z_raylfac: np.ndarray,
         w: np.ndarray,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         w = apply_rayleigh_damping_mechanism_numpy(connectivities, z_raylfac, w)
         return dict(w=w)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_raylfac = random_field(grid, dims.KDim, dtype=wpfloat)
-        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        z_raylfac = data_alloc.random_field(dims.KDim, dtype=wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             z_raylfac=z_raylfac,
