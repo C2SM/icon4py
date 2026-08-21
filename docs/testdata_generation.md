@@ -26,8 +26,8 @@ git -C <icon checkout> log --oneline --no-merges "$OLD".."$NEW" -- src/shr_horiz
 ```
 
 Scope by the file the failing test's field comes from, not by subsystem: the commit that
-last moved three geometry fields was titled *"[nwp] Improve wave energy propagation near the
-coast"*, so only the path is decisive.
+last moved three geometry fields was titled _"[nwp] Improve wave energy propagation near the
+coast"_, so only the path is decisive.
 
 ## Versions
 
@@ -50,8 +50,7 @@ cd icon-exclaim.serialize/icon4py && source .venv/bin/activate
 ```
 
 The run prints the ICON source tree's `git describe` before submitting anything, and refuses
-to start from a modified icon4py checkout (`--allow-dirty` overrides). A failing task no
-longer aborts the campaign.
+to start from a modified icon4py checkout (`--allow-dirty` overrides).
 
 Before publishing, run the datatests against the new data:
 
@@ -67,8 +66,6 @@ aws --profile cscs-icon4py s3 sync . s3://testdata/experiments/ --exclude "*" --
 ```
 
 ## Building on Santis
-
-*Carried over from the previous HackMD page and not re-run since; correct in place.*
 
 ```bash
 git clone git@github.com:C2SM/icon-exclaim.git icon-exclaim.serialize
