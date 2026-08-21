@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-from typing import TYPE_CHECKING, ClassVar
+import typing
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
@@ -35,16 +37,26 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class Gauss3DConfig:
-    u0: float = 0.0
-    t0: float = 300.0
-    brunt_vais: float = 0.01
+    u0: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="??", icon_equivalent=common_conf_opt.IconOption(name="nh_u0", path=())
+        ),
+    ] = 0.0
+    t0: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="??", icon_equivalent=common_conf_opt.IconOption(name="nh_t0", path=())
+        ),
+    ] = 300.0
+    brunt_vais: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="??",
+            icon_equivalent=common_conf_opt.IconOption(name="nh_brunt_vais", path=()),
+        ),
+    ] = 0.01
     # The default values are from mo_nh_testcases.f90 and mo_nh_testcases_nml.f90
-
-    fortran_name_map: ClassVar[dict[str, str]] = {
-        "nh_u0": "u0",
-        "nh_t0": "t0",
-        "nh_brunt_vais": "brunt_vais",
-    }
 
 
 def gauss3d(
