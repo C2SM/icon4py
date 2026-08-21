@@ -62,8 +62,21 @@ log = logging.getLogger(__name__)
 # patterns), so they are cached per (process_props, decomposition_info) pair.
 # Keys are object identities; pairs are expected to be few and long-lived.
 # The pytest plugin clears these between tests via clear_caches().
-_exchange_cache: dict[tuple[int, int], decomp_defs.ExchangeRuntime] = {}
-_reduction_cache: dict[tuple[int, int], Reductions] = {}
+_exchange_cache: dict[tuple[int, int], _CacheEntry] = {}
+_reduction_cache: dict[tuple[int, int], _CacheEntry] = {}
+
+
+@dataclass
+class _CacheEntry:
+    obj: Any
+
+
+def _get_or_create(cache: dict, key: Any, factory: Callable[[], Any]) -> Any:
+    if (entry := cache.get(key)) is not None:
+        return entry.obj
+    obj = factory()
+    cache[key] = _CacheEntry(obj)
+    return obj
 
 
 def clear_caches() -> None:
@@ -398,9 +411,9 @@ def create_multinode_node_exchange(
     if process_props.comm_size == 1:
         return SingleNodeExchange()
     key = (id(process_props), id(decomp_info))
-    if (exchange := _exchange_cache.get(key)) is None:
-        exchange = _exchange_cache[key] = GHexMultiNodeExchange(process_props, decomp_info)
-    return exchange
+    return _get_or_create(
+        _exchange_cache, key, lambda: GHexMultiNodeExchange(process_props, decomp_info)
+    )
 
 
 @dataclasses.dataclass
@@ -565,6 +578,6 @@ def create_global_reduction(
     if process_props.comm_size == 1:
         return SingleNodeReductions()
     key = (id(process_props), id(decomposition_info))
-    if (reductions := _reduction_cache.get(key)) is None:
-        reductions = _reduction_cache[key] = GlobalReductions(process_props, decomposition_info)
-    return reductions
+    return _get_or_create(
+        _reduction_cache, key, lambda: GlobalReductions(process_props, decomposition_info)
+    )

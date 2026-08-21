@@ -58,8 +58,6 @@ class GridGeometry(factory.FieldSource):
         ...     metadata=geometry_attributes.attrs,
         ...     config=geometry_config.GeometryConfig(),
         ...     process_props=process_props,
-        ...     exchange=exchange,
-        ...     global_reductions=global_reductions,
         ... )
         GridGeometry for geometry_type=SPHERE grid=f2e06839-694a-cca1-a3d5-028e0ff326e0 : R9B4
         >>> geometry.get("edge_length")
