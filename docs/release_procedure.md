@@ -81,7 +81,7 @@ are merged to main:
 Publishing the GitHub Release automatically triggers the
 `deploy-release.yml` workflow, which publishes all packages to TestPyPI.
 
-1. Go to **Actions -> Deploy Python Distribution** and wait for the
+1. Go to **GitHub Actions -> Deploy Python Distribution** and wait for the
    `publish-test-pypi` jobs to complete.
 
 2. Verify the packages appear on TestPyPI, e.g.:
@@ -91,6 +91,12 @@ Publishing the GitHub Release automatically triggers the
 
    ```bash
    pip install --index-url https://test.pypi.org/simple/ icon4py==<new_version>
+   ```
+
+   If this fails, install `icon4py` with PyPI as an extra index:
+
+   ```bash
+   python3 -m pip install --extra-index-url https://pypi.org/simple -i https://test.pypi.org/simple icon4py==<new_version>
    ```
 
    **Note:** TestPyPI may not have all transitive dependencies. Use
@@ -105,7 +111,7 @@ Publishing the GitHub Release automatically triggers the
 
 Once TestPyPI is verified, manually trigger the production publish:
 
-1. Go to **Actions -> Deploy Python Distribution**.
+1. Go to **GitHub Actions -> Deploy Python Distribution**.
 2. Click **Run workflow** on the `main` branch.
 3. Wait for the `publish-pypi` jobs to complete.
 4. Verify on <https://pypi.org/project/icon4py/>.
