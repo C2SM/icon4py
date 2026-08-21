@@ -47,13 +47,18 @@ elif [[ "$ICON_GRID" == *"R02B07"* ]]; then
     SUFFIX="R02B07"
 fi
 
-export GT4PY_BUILD_CACHE_DIR="MI300A_JW_${SUFFIX}_persistent_ntasks${SLURM_NTASKS}"
+export GT4PY_BUILD_CACHE_DIR="MI300A_JW_external8G_${SUFFIX}_persistent_ntasks${SLURM_NTASKS}"
 
 export GT4PY_SKIP_DACE_WARNINGS=0
 
 export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 
 export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_wall
+
+
+# Optimization flags
+export ICON4PY_BACKEND_WORKSPACE_SIZE=8589934592 # 8Gib external workspace storage per device
+
 
 echo "Executing JW4Py on ${SLURM_NNODES} MI300A nodes to check the WALL CLOCK timer reported at the end of the run"
 
