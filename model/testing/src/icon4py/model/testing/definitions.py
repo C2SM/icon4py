@@ -203,7 +203,7 @@ class Experiments:
         name="exclaim_ch_r04b09_dsl",
         long_name="Regional setup used by EXCLAIM to validate the icon-exclaim.",
         grid=Grids.MCH_CH_R04B09_DSL,
-        version=7,
+        version=6,
     )
     JW: Final = ExperimentDescription(
         name="exclaim_nh35_tri_jws",
