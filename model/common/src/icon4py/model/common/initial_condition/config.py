@@ -13,7 +13,7 @@ import pathlib
 from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common import time
-from icon4py.model.common.config import config_io
+from icon4py.model.common.config import config_io, options as common_config_opt
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
@@ -87,14 +87,9 @@ def from_fortran_dict(
     match test_name:
         case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
             log.info("Analytical initial condition for Jablonowski-Williamson test case")
-            config = fortran_config.config_dataclass_from_dict(
+            config = common_config_opt.construct_config_from_icon(
                 jw_ic.JablonowskiWilliamsonConfig, testcase_nml
             )
-            # Only the APE cases rescale qv to a prescribed global moisture content.
-            config.normalize_global_moisture = test_name in ("APE_nwp", "APE_aes")
-            # Fortran resets jw_up to 0 only for jabw_s; other cases keep the default (1.0).
-            if test_name == "jabw_s":
-                config.baroclinic_amplitude = 0.0
         case "gauss3D":
             log.info("Analytical initial condition for Gauss 3D test case")
             config = fortran_config.config_dataclass_from_dict(gauss_ic.Gauss3DConfig, testcase_nml)
