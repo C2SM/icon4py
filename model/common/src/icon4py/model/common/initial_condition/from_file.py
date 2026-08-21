@@ -12,12 +12,14 @@ import dataclasses
 import logging
 import pathlib
 import types
+import typing
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import serialbox  # type: ignore[import-untyped]
 
 from icon4py.model.common import model_backends, time
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.states import (
@@ -39,16 +41,33 @@ log = logging.getLogger(__name__)
 class FromFileConfig:
     """Parameters for the file-based initial condition."""
 
-    #: Path to the serialised data directory (typically ``<experiment>/ser_data``).
-    data_path: pathlib.Path
-    #: Beginning of the simulation.
-    start_of_simulation: time.AbsoluteTime
-    #: Beginning of the time loop. Differs from 'start_of_simulation' when restarting.
-    start_of_timestepping: time.AbsoluteTime
-    #: Model time step. Needed to select the savepoint to restart from.
-    dtime: time.RelativeTime
-    #: Number of tracer species stored in the snapshot.
-    ntracer: int = 0
+    data_path: typing.Annotated[
+        pathlib.Path,
+        common_conf_opt.ConfigOption(
+            description="Path to the serialised data directory (typically '<experiment>/ser_data')."
+        ),
+    ]
+    start_of_simulation: typing.Annotated[
+        time.AbsoluteTime, common_conf_opt.ConfigOption(description="Beginning of the simulation.")
+    ]  # TODO(ricoh): should be passed when the initial conditions are applied (it's duplicated from DriverConfig)
+    start_of_timestepping: typing.Annotated[
+        time.AbsoluteTime,
+        common_conf_opt.ConfigOption(
+            description="Beginning of the time loop. Differs from 'start_of_simulation' when restarting."
+        ),
+    ]  # TODO(ricoh): should be passed when the initial conditions are applied (it's duplicated from DriverConfig)
+    dtime: typing.Annotated[
+        time.RelativeTime,
+        common_conf_opt.ConfigOption(
+            description="Model time step. Needed to select the savepoint to restart from."
+        ),
+    ]  # TODO(ricoh): should be passed when the initial conditions are applied (it's duplicated from DriverConfig)
+    ntracer: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description="Number of tracer species stored in the snapshot."
+        ),
+    ] = 0  # TODO(ricoh): should be read from the number of active tracers when the initial conditions are applied
 
     @property
     def is_restart(self) -> bool:
