@@ -12,6 +12,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.math.operators import (
     _compute_difference_on_cell_k,
     _compute_field_a_plus_coeff_times_field_b_on_cell_k,
+    _compute_field_a_plus_coeff_times_field_b_on_edge_k,
     _copy_field_on_cell_k,
 )
 
@@ -55,6 +56,29 @@ def compute_field_a_plus_coeff_times_field_b_on_cell_k(
         out=output_field,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program
+def compute_field_a_plus_coeff_times_field_b_on_edge_k(
+    field_a: fa.EdgeKField[ta.wpfloat],
+    coeff: ta.wpfloat,
+    field_b: fa.EdgeKField[ta.wpfloat],
+    output_field: fa.EdgeKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _compute_field_a_plus_coeff_times_field_b_on_edge_k(
+        field_a,
+        coeff,
+        field_b,
+        out=output_field,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -60,5 +60,14 @@ def _compute_field_a_plus_coeff_times_field_b_on_cell_k(
 
 
 @gtx.field_operator
+def _compute_field_a_plus_coeff_times_field_b_on_edge_k(
+    field_a: fa.EdgeKField[ta.wpfloat],
+    coeff: ta.wpfloat,
+    field_b: fa.EdgeKField[ta.wpfloat],
+) -> fa.EdgeKField[ta.wpfloat]:
+    return field_a + coeff * field_b
+
+
+@gtx.field_operator
 def _copy_field_on_cell_k(field: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
     return field
