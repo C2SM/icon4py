@@ -39,9 +39,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    init_cell_kdim_field_with_zero_wp,
-)
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
 )
@@ -65,6 +62,9 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
+    init_cell_kdim_field_with_zero_wp,
+)
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
