@@ -97,7 +97,7 @@ def from_fortran_dict(
             )
         case "wk82":
             log.info("Analytical initial condition for Weisman-Klemp test case")
-            config = fortran_config.config_dataclass_from_dict(
+            config = common_conf_opt.construct_config_from_icon(
                 wk_ic.WeismanKlempConfig, testcase_nml
             )
         case name:
