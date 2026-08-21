@@ -87,13 +87,11 @@ Publishing the GitHub Release automatically triggers the
    pip install --index-url https://test.pypi.org/simple/ icon4py==<new_version>
    ```
 
-   If installation fails, try again with PyPI as an extra index:
+   If installation fails, try again with PyPI as an extra index because TestPyPI may not have all transitive dependencies:
 
    ```bash
    pip install --extra-index-url https://pypi.org/simple -i https://test.pypi.org/simple icon4py==<new_version>
    ```
-
-   **Note:** TestPyPI may not have all transitive dependencies.
    For `uv pip install`, also use `--index-strategy unsafe-best-match` to allow picking the best match from pypi.org and test.pypi.org. Finally, `--refresh` may be needed to update cached package information.
 
    Test in dependent projects if needed, like in ICON.
