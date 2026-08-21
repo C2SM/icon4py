@@ -6,6 +6,8 @@ ICON4Py is a Python implementation of the Fortran [ICON climate and weather mode
 
 Always read the CODING_GUIDELINES.md document first and follow it.
 
+In particular, before adding a stencil, a helper, an enum or an options dictionary to a component, check the "Shared code and generic naming" section: if it can be described using only grid entities and mathematical operations, it belongs in `model/common` and must be named after the operation, not after the calling code's variables.
+
 ## Monorepo structure
 
 uv workspace with 10 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
@@ -118,7 +120,7 @@ uv run --group test --frozen pytest --datatest-skip model/<component>/
 uv run --group test --frozen pytest --datatest-only model/<component>/
 
 # MPI tests (requires mpi4py, distributed extra; always use -n0 for sequential):
-mpirun -np 4 ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pytest -v -s --with-mpi -n0 -k mpi_tests model/<component>/
+mpirun -np 4 .cscs-ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pytest -v -s --with-mpi -n0 -k mpi_tests model/<component>/
 #   --with-mpi: enables MPI test mode (from pytest-mpi plugin)
 #   -k mpi_tests: selects tests by directory/class name convention
 #   ci-mpi-wrapper.sh: suppresses stdout from non-zero ranks
