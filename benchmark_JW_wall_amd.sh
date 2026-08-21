@@ -1,0 +1,69 @@
+#!/bin/bash
+#SBATCH --job-name=wall_JW4Py
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --time=08:00:00
+##SBATCH --gpus-per-task=1
+#SBATCH --uenv=prgenv-gnu/7.2.3:2579601092
+#SBATCH -A csstaff
+#SBATCH --view=default
+#SBATCH --partition mi300
+
+ICON4PY_GIT_ROOT=$(git rev-parse --show-toplevel)
+cd $ICON4PY_GIT_ROOT
+
+source setup_amd_env.sh
+
+source venv_mi300/bin/activate
+
+export MPICH_GPU_SUPPORT_ENABLED=1
+export HSA_ENABLE_IPC_MODE_LEGACY=1
+export SRUN_CPUS_PER_TASK=$SLURM_CPUS_PER_TASK
+
+export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE="1"
+export GT4PY_BUILD_CACHE_LIFETIME=persistent
+export DACE_compiler_build_folder_mode="development"
+export PYTHONOPTIMIZE=2
+
+export ICON4PY_DRIVER_LOGGING_LEVEL="warning"
+
+export CC=$(which gcc)
+export CXX=$(which g++)
+export MPICH_CC=$(which gcc)
+export MPICH_CXX=$(which g++)
+export GHEX_USE_GPU=ON
+export GHEX_GPU_TYPE=AMD
+export GHEX_GPU_ARCH=gfx942
+export GHEX_TRANSPORT_BACKEND=MPI
+
+export ICON_GRID="./icon_grid_0004_R02B07_G.nc"
+#export ICON_GRID="./icon_grid_0013_R02B04_R.nc"
+SUFFIX=""
+if [[ "$ICON_GRID" == *"R02B04"* ]]; then
+    SUFFIX="R02B04"
+elif [[ "$ICON_GRID" == *"R02B06"* ]]; then
+    SUFFIX="R02B06"
+elif [[ "$ICON_GRID" == *"R02B07"* ]]; then
+    SUFFIX="R02B07"
+fi
+
+export GT4PY_BUILD_CACHE_DIR="MI300A_JW_${SUFFIX}_persistent_ntasks${SLURM_NTASKS}"
+
+export GT4PY_SKIP_DACE_WARNINGS=0
+
+export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
+
+export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_wall
+
+echo "Executing JW4Py on ${SLURM_NNODES} MI300A nodes to check the WALL CLOCK timer reported at the end of the run"
+
+srun -u --cpu-bind=cores \
+    bash -c 'printenv TMPDIR; export HIP_VISIBLE_DEVICES=${SLURM_LOCALID}; echo "SLURM_LOCALID: ${SLURM_LOCALID}: GPU ${HIP_VISIBLE_DEVICES}"; icon4py-driver \
+    --config-file-path exclaim_nh35_tri_jws_r2b7_${SLURM_NNODES}nodes \
+    --grid-file-path $(realpath ${ICON_GRID}) \
+    --icon4py-backend dace_gpu \
+    --log-level ${ICON4PY_DRIVER_LOGGING_LEVEL} \
+    --output-path ${OUTPUT_PATH} \
+    --no-enable-output'
+
+rm -rf ${OUTPUT_PATH}

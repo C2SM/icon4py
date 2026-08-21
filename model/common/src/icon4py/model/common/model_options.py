@@ -65,6 +65,11 @@ def get_dace_options(
             optimization_args["gpu_block_size_2d"] = (64, 6)
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
+    if is_rocm_device:
+        optimization_args["gpu_memory_pool"] = False
+        optimization_args["make_persistent"] = True
+        optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
+        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:

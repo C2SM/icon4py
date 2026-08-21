@@ -210,7 +210,7 @@ class TimerCollection:
         of it. The percentages need not sum to 100: the difference is time spent
         outside any timer.
         """
-        log.info("===== ICON4Py timer report =====")
+        log.warning("===== ICON4Py timer report =====")
         wall_time = total_wall_time if total_wall_time > 0 else None
         table_titles = (
             f"|{'timer name':^30}|"
@@ -221,8 +221,8 @@ class TimerCollection:
             f"{'max time (s)':^23}|"
             f"{'% of wall time':^23}|"
         )
-        log.info(table_titles)
-        log.info("-" * len(table_titles))
+        log.warning(table_titles)
+        log.warning("-" * len(table_titles))
         timed_total = 0.0
         for timer_name, timer in self.timers.items():
             times = []
@@ -233,7 +233,7 @@ class TimerCollection:
             if len(times) > 0:
                 timed_total += sum(times)
                 share = f"{100 * sum(times) / wall_time:.2f}" if wall_time is not None else "n/a"
-                log.info(
+                log.warning(
                     f"|{timer_name:^30}|"
                     f"{len(times):^23}|"
                     f"{statistics.mean(times):^23.8f}|"
@@ -243,14 +243,14 @@ class TimerCollection:
                     f"{share:^23}|"
                 )
             else:
-                log.info(
+                log.warning(
                     f"|{timer_name:^30}|{'not started':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|"
                 )
         if wall_time is not None:
-            log.info("-" * len(table_titles))
-            log.info(f"total wall-clock time of the simulation: {wall_time:.8f} s")
+            log.warning("-" * len(table_titles))
+            log.warning(f"total wall-clock time of the simulation: {wall_time:.8f} s")
             timed_share = 100 * timed_total / wall_time
-            log.info(
+            log.warning(
                 f"timed regions total: {timed_total:.8f} s  "
                 f"({timed_share:.2f}% of wall time; {100 - timed_share:.2f}% untimed)"
             )

@@ -1,0 +1,25 @@
+{
+    "master_nml": {
+        "lrestart": false,
+        "read_restart_namelists": true
+    },
+    "master_time_control_nml": {
+        "calendar": "proleptic gregorian",
+        "experimentstartdate": "2008-09-01T00:00:00Z",
+        "restarttimeintval": "",
+        "checkpointtimeintval": "",
+        "experimentstopdate": "2008-09-08T00:00:00Z"
+    },
+    "time_nml": {
+        "is_relative_time": false
+    },
+    "master_model_nml": {
+        "model_name": "atm",
+        "model_namelist_filename": "NAMELIST_exclaim_nh35_tri_jws_r2b7_1nodes",
+        "model_type": 1,
+        "model_min_rank": 0,
+        "model_max_rank": 65535,
+        "model_inc_rank": 1,
+        "model_rank_group_size": 1
+    }
+}

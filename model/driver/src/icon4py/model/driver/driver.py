@@ -199,7 +199,7 @@ class Icon4pyDriver:
         prep_adv = ds.prep_advection_prognostic
         tracer_prep_adv = ds.prep_tracer_advection_prognostic
 
-        log.debug(
+        log.warning(
             f"starting time loop for dtime = {self.model_time_variables.dtime_in_seconds} s, substep_timestep = {self.model_time_variables.substep_timestep} s, n_timesteps = {self.model_time_variables.n_time_steps}"
         )
 
