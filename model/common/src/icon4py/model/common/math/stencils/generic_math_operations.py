@@ -77,3 +77,29 @@ def copy_field_on_cell_k(
             dims.KDim: (vertical_start, vertical_end),
         },
     )
+
+
+@gtx.field_operator
+def _copy_field_on_cell_khalf(
+    field: fa.CellKHalfField[ta.wpfloat],
+) -> fa.CellKHalfField[ta.wpfloat]:
+    return field
+
+
+@gtx.program
+def copy_field_on_cell_khalf(
+    field: fa.CellKHalfField[ta.wpfloat],
+    output_field: fa.CellKHalfField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _copy_field_on_cell_khalf(
+        field,
+        out=output_field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
+        },
+    )

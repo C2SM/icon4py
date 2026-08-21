@@ -21,7 +21,7 @@ from icon4py.model.testing import stencil_tests
 
 class TestComputePpmQuarticFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_quartic_face_values
-    OUTPUTS = (stencil_tests.Output("p_face", gtslice=(slice(None), slice(2, None))),)
+    OUTPUTS = (stencil_tests.Output("p_face", gtslice=(slice(None), slice(2, -1))),)
 
     @stencil_tests.static_reference
     def reference(
@@ -73,7 +73,7 @@ class TestComputePpmQuarticFaceValues(stencil_tests.StencilTest):
         p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         z_slope = data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_face = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_face = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
 
         return dict(
             p_cc=p_cc,

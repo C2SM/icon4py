@@ -25,6 +25,8 @@ def _compute_hydrostatic_correction_term(
     grav_o_cpd: wpfloat,
 ) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_21."""
+    # TODO(havogt): theta_v_ic is a half-level field, but dace cannot lower `as_offset` applied
+    # to a staggered access, so the caller passes it relabelled onto KDim.
     zdiff_gradp_wp = zdiff_gradp  # astype(zdiff_gradp, wpfloat) # TODO(): fix this cast
 
     theta_v_0 = theta_v(E2C[0])(as_offset(Koff, ikoffset[dims.E2CDim(0)]))

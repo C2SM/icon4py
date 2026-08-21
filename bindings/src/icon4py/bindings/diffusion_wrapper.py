@@ -65,7 +65,7 @@ granule: DiffusionGranule | None = None
 @icon4py_export.export
 def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     theta_ref_mc: fa.CellKField[wpfloat],
-    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
@@ -149,7 +149,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     diffusion_params = DiffusionParams(config)
 
-    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
+    nlev = wgtfac_c.domain[dims.KHalfDim].unit_range.stop - 1
     cell_k_domain = gtx.domain(
         {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
     )
@@ -264,15 +264,15 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @icon4py_export.export
 def diffusion_run(  # noqa: PLR0917 [too-many-positional-arguments]
-    w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     vn: fa.EdgeKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     rho: fa.CellKField[wpfloat],
-    hdef_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
-    div_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
-    dwdx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
-    dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
+    hdef_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
+    div_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
+    dwdx: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
+    dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64] | None,
     dtime: gtx.float64,
     linit: bool,
 ):

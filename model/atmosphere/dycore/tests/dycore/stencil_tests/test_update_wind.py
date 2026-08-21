@@ -40,9 +40,9 @@ class TestUpdateWind(stencil_tests.StencilTest):
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = wpfloat("10.0")
-        w_now = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        grf_tend_w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_new = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_now = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        grf_tend_w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        w_new = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
 
         return dict(
             w_now=w_now,
@@ -52,5 +52,5 @@ class TestUpdateWind(stencil_tests.StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

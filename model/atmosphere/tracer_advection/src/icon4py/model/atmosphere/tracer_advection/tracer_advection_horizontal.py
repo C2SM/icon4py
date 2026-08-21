@@ -28,9 +28,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_trace
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field import (
-    copy_cell_kdim_field,
-)
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
 )
@@ -47,6 +44,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -384,9 +382,9 @@ class NoAdvection(HorizontalAdvection):
         self._end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         # stencils
-        self._copy_cell_kdim_field = model_options.setup_program(
+        self._copy_field_on_cell_k = model_options.setup_program(
             backend=self._backend,
-            program=copy_cell_kdim_field,
+            program=generic_math_operations.copy_field_on_cell_k,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_nudging,
                 "horizontal_end": self._end_cell_local,
@@ -413,12 +411,12 @@ class NoAdvection(HorizontalAdvection):
     ) -> None:
         log.debug("horizontal tracer_advection run - start")
 
-        log.debug("running stencil copy_cell_kdim_field - start")
-        self._copy_cell_kdim_field(
+        log.debug("running stencil copy_field_on_cell_k - start")
+        self._copy_field_on_cell_k(
             field_in=p_tracer_now,
             field_out=p_tracer_new,
         )
-        log.debug("running stencil copy_cell_kdim_field - end")
+        log.debug("running stencil copy_field_on_cell_k - end")
         log.debug("horizontal tracer_advection run - end")
 
 
