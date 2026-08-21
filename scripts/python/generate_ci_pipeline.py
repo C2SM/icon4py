@@ -284,13 +284,19 @@ def _model_cells(
     subsets: list[str],
 ) -> list[_MatrixCell]:
     """Build collection cells for the serial model test sessions."""
+    # TEMPORARY (experiment branch, revert before merge): whitelist for serial
+    # cells, "subpackage.backend.level" or "subpackage.backend.grid.stencils".
+    _only = os.environ.get("ICON4PY_CI_MODEL_PROBE_ONLY")
+    want = set(_only.split(":")) if _only else None
     cells: list[_MatrixCell] = []
 
     if "stencils" in subsets and grids:
         for subpackage in subpackages:
             for backend in backends:
                 for grid in grids:
-                    cells.append(  # noqa: PERF401
+                    if want is not None and f"{subpackage}.{backend}.{grid}.stencils" not in want:
+                        continue
+                    cells.append(
                         _MatrixCell(
                             job_name="test_model_stencils_aarch64",
                             extends=".test_model_aarch64",
@@ -318,6 +324,8 @@ def _model_cells(
         for subpackage in subpackages:
             for backend in backends:
                 for level in levels:
+                    if want is not None and f"{subpackage}.{backend}.{level}" not in want:
+                        continue
                     pytest_args = [
                         "--collect-only",
                         "-n0",
