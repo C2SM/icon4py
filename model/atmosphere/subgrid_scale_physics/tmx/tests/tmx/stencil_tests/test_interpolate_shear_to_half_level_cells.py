@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_she
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestInterpolateShearToHalfLevelCells(stencil_tests.StencilTest):
     PROGRAM = interpolate_shear_to_half_level_cells
     OUTPUTS = ("mech_prod",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         shear: np.ndarray,
         e_bln_c_s: np.ndarray,
@@ -37,7 +36,8 @@ class TestInterpolateShearToHalfLevelCells(stencil_tests.StencilTest):
         vertical_end: int,
         **kwargs: Any,
     ) -> dict:
-        c2e = connectivities[dims.C2EDim]  # (n_cells, 3)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        c2e = connectivities[dims.C2E]  # (n_cells, 3)
 
         # Edge -> cell average with the bilinear weights, (n_cells, nlev) full levels
         shear_c = np.sum(np.expand_dims(e_bln_c_s, axis=-1) * shear[c2e], axis=1)
@@ -56,15 +56,17 @@ class TestInterpolateShearToHalfLevelCells(stencil_tests.StencilTest):
         ]
         return dict(mech_prod=mech_prod_out)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        shear = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        shear = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
         wgtfac_c = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         mech_prod = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
 
         # Fortran: interpolate_rate_of_strain_full2half_edge2cell runs on

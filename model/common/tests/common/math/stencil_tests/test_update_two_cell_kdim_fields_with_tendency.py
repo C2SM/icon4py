@@ -16,7 +16,6 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.math.stencils.update_two_cell_kdim_fields_with_tendency import (
     update_two_cell_kdim_fields_with_tendency,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestUpdateTwoCellKdimFieldsWithTendency(stencil_tests.StencilTest):
     PROGRAM = update_two_cell_kdim_fields_with_tendency
     OUTPUTS = ("new_field_1", "new_field_2")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         field_1: np.ndarray,
         field_2: np.ndarray,
@@ -47,14 +46,16 @@ class TestUpdateTwoCellKdimFieldsWithTendency(stencil_tests.StencilTest):
         new_field_2[hs:he, vs:ve] = field_2[hs:he, vs:ve] + tendency_2[hs:he, vs:ve] * dtime
         return dict(new_field_1=new_field_1, new_field_2=new_field_2)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        field_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        field_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        tendency_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        tendency_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        new_field_1 = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        new_field_2 = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        field_1 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        field_2 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        tendency_1 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        tendency_2 = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        new_field_1 = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        new_field_2 = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         # exercise a partial horizontal domain (the tmx wind-update loop bounds)
         cell_domain = h_grid.domain(dims.CellDim)

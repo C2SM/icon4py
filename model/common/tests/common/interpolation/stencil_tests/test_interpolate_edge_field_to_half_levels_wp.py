@@ -11,14 +11,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.stencil_tests as test_helpers
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_wp import (
     interpolate_edge_field_to_half_levels_wp,
 )
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing import stencil_tests
 
 
 def interpolate_edge_field_to_half_levels_wp_numpy(
@@ -33,13 +32,13 @@ def interpolate_edge_field_to_half_levels_wp_numpy(
     return interpolation_to_half_levels_wp
 
 
-class TestInterpolateToHalfLevelsWp(test_helpers.StencilTest):
+class TestInterpolateToHalfLevelsWp(stencil_tests.StencilTest):
     PROGRAM = interpolate_edge_field_to_half_levels_wp
     OUTPUTS = ("interpolation_to_half_levels_wp",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         wgtfac_e: np.ndarray,
         interpolant: np.ndarray,
@@ -50,11 +49,13 @@ class TestInterpolateToHalfLevelsWp(test_helpers.StencilTest):
         )
         return dict(interpolation_to_half_levels_wp=interpolation_to_half_levels_wp)
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict:
-        interpolant = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        interpolation_to_half_levels_wp = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
+        interpolant = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        wgtfac_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        interpolation_to_half_levels_wp = data_alloc.zero_field(
+            dims.EdgeDim, dims.KDim, dtype=wpfloat
+        )
 
         return dict(
             wgtfac_e=wgtfac_e,

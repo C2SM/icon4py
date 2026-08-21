@@ -62,7 +62,7 @@ def tmx_config(
 
 
 # ISO 8601 duration, fixed-length components only (duplicated from
-# standalone_driver.config, which the tmx tests may not depend on)
+# driver.config, which the tmx tests may not depend on)
 _ISO8601_DURATION = re.compile(
     r"P(?:(?P<weeks>\d+)W)?(?:(?P<days>\d+)D)?"
     r"(?:T(?=\d)(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?"

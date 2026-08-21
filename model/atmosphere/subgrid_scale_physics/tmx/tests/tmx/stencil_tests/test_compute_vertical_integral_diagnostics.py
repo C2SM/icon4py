@@ -18,8 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.physics.thermodynamics import ThermodynamicConstants
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def internal_energy_numpy(
@@ -48,13 +47,13 @@ def internal_energy_numpy(
     )
 
 
-class TestComputeVerticalIntegralDiagnostics(StencilTest):
+class TestComputeVerticalIntegralDiagnostics(stencil_tests.StencilTest):
     PROGRAM = compute_vertical_integral_diagnostics
     OUTPUTS = ("cptgz_vi", "dissip_ke_vi", "int_energy_vi", "int_energy_vi_tend")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         static_energy: np.ndarray,
         dissip_ke: np.ndarray,
@@ -88,33 +87,33 @@ class TestComputeVerticalIntegralDiagnostics(StencilTest):
             int_energy_vi_tend=(int_energy_vi - np.cumsum(int_energy_old, axis=1)) / dtime,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         def moisture_field() -> gtx.Field:
             return data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=0.0, high=1.0e-3, dtype=wpfloat
+                dims.CellDim, dims.KDim, low=0.0, high=1.0e-3, dtype=wpfloat
             )
 
         def temperature_field() -> gtx.Field:
             return data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=250.0, high=300.0, dtype=wpfloat
+                dims.CellDim, dims.KDim, low=250.0, high=300.0, dtype=wpfloat
             )
 
         def output_field() -> gtx.Field:
-            return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+            return data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             static_energy=data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=1.5e5, high=5.0e5, dtype=wpfloat
+                dims.CellDim, dims.KDim, low=1.5e5, high=5.0e5, dtype=wpfloat
             ),
             dissip_ke=data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=-10.0, high=10.0, dtype=wpfloat
+                dims.CellDim, dims.KDim, low=-10.0, high=10.0, dtype=wpfloat
             ),
-            rho=data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=0.5, high=1.3, dtype=wpfloat
-            ),
+            rho=data_alloc.random_field(dims.CellDim, dims.KDim, low=0.5, high=1.3, dtype=wpfloat),
             dz=data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=100.0, high=1000.0, dtype=wpfloat
+                dims.CellDim, dims.KDim, low=100.0, high=1000.0, dtype=wpfloat
             ),
             temperature=temperature_field(),
             qv=moisture_field(),

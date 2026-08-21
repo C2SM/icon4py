@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -16,8 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def tdma_solver_numpy(
@@ -78,25 +79,22 @@ def diffuse_vertical_implicit_numpy(
 
 
 def _solver_input_data(
-    grid: base.Grid, horizontal_dim: gtx.Dimension, vertical_start: int
+    data_alloc: stencil_tests.DataAllocationWrapper,
+    grid: base.Grid,
+    horizontal_dim: gtx.Dimension,
+    vertical_start: int,
 ) -> dict[str, gtx.Field | state_utils.ScalarType]:
     num_horizontal = grid.num_cells if horizontal_dim == dims.CellDim else grid.num_edges
     return dict(
         # a, c < 0 and bb >= |a| + |c| as produced by prepare_tridiagonal_matrix_*:
         # the system is diagonally dominant, hence the Thomas algorithm is stable.
-        a=data_alloc.random_field(
-            grid, horizontal_dim, dims.KDim, low=-1.0, high=-0.1, dtype=wpfloat
-        ),
-        b=data_alloc.random_field(
-            grid, horizontal_dim, dims.KDim, low=2.5, high=4.0, dtype=wpfloat
-        ),
-        c=data_alloc.random_field(
-            grid, horizontal_dim, dims.KDim, low=-1.0, high=-0.1, dtype=wpfloat
-        ),
-        rhs=data_alloc.random_field(grid, horizontal_dim, dims.KDim, dtype=wpfloat),
-        var=data_alloc.random_field(grid, horizontal_dim, dims.KDim, dtype=wpfloat),
-        new_var=data_alloc.zero_field(grid, horizontal_dim, dims.KDim, dtype=wpfloat),
-        tend=data_alloc.random_field(grid, horizontal_dim, dims.KDim, dtype=wpfloat),
+        a=data_alloc.random_field(horizontal_dim, dims.KDim, low=-1.0, high=-0.1, dtype=wpfloat),
+        b=data_alloc.random_field(horizontal_dim, dims.KDim, low=2.5, high=4.0, dtype=wpfloat),
+        c=data_alloc.random_field(horizontal_dim, dims.KDim, low=-1.0, high=-0.1, dtype=wpfloat),
+        rhs=data_alloc.random_field(horizontal_dim, dims.KDim, dtype=wpfloat),
+        var=data_alloc.random_field(horizontal_dim, dims.KDim, dtype=wpfloat),
+        new_var=data_alloc.zero_field(horizontal_dim, dims.KDim, dtype=wpfloat),
+        tend=data_alloc.random_field(horizontal_dim, dims.KDim, dtype=wpfloat),
         dtime=wpfloat(2.0),
         horizontal_start=0,
         horizontal_end=gtx.int32(num_horizontal),
@@ -106,7 +104,7 @@ def _solver_input_data(
 
 
 def solve_vertical_diffusion_reference(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    grid: base.Grid,
     *,
     a: np.ndarray,
     b: np.ndarray,
@@ -132,17 +130,22 @@ def solve_vertical_diffusion_reference(
     return dict(new_var=new_var, tend=tend_out)
 
 
-class TestSolveVerticalDiffusionCells(StencilTest):
+class TestSolveVerticalDiffusionCells(stencil_tests.StencilTest):
     PROGRAM = solve_vertical_diffusion_cells
     OUTPUTS = ("new_var", "tend")
-    reference = staticmethod(solve_vertical_diffusion_reference)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        return _solver_input_data(grid, dims.CellDim, vertical_start=0)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return solve_vertical_diffusion_reference(grid, **kwargs)
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        return _solver_input_data(data_alloc, grid, dims.CellDim, vertical_start=0)
 
 
-class TestSolveVerticalDiffusionCellsFromSecondLevel(StencilTest):
+class TestSolveVerticalDiffusionCellsFromSecondLevel(stencil_tests.StencilTest):
     """
     Half-level (w) solve case: the solve starts at vertical_start=1 (Fortran minlvl=2).
 
@@ -152,8 +155,13 @@ class TestSolveVerticalDiffusionCellsFromSecondLevel(StencilTest):
 
     PROGRAM = solve_vertical_diffusion_cells
     OUTPUTS = ("new_var", "tend")
-    reference = staticmethod(solve_vertical_diffusion_reference)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        return _solver_input_data(grid, dims.CellDim, vertical_start=1)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return solve_vertical_diffusion_reference(grid, **kwargs)
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        return _solver_input_data(data_alloc, grid, dims.CellDim, vertical_start=1)

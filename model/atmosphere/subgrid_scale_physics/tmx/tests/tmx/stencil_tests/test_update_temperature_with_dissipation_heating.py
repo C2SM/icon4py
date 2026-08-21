@@ -17,17 +17,16 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_temperat
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestUpdateTemperatureWithDissipationHeating(StencilTest):
+class TestUpdateTemperatureWithDissipationHeating(stencil_tests.StencilTest):
     PROGRAM = update_temperature_with_dissipation_heating
     OUTPUTS = ("dissip_ke", "heating", "new_temperature", "tend_temperature")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         u: np.ndarray,
         v: np.ndarray,
@@ -56,11 +55,13 @@ class TestUpdateTemperatureWithDissipationHeating(StencilTest):
             tend_temperature=tend_temperature,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         def wind() -> gtx.Field:
             return data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=-10.0, high=10.0, dtype=wpfloat
+                dims.CellDim, dims.KDim, low=-10.0, high=10.0, dtype=wpfloat
             )
 
         return dict(
@@ -69,23 +70,21 @@ class TestUpdateTemperatureWithDissipationHeating(StencilTest):
             new_u=wind(),
             new_v=wind(),
             air_mass=data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=100.0, high=1000.0, dtype=wpfloat
+                dims.CellDim, dims.KDim, low=100.0, high=1000.0, dtype=wpfloat
             ),
             cv_air=data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=700.0, high=800.0, dtype=wpfloat
+                dims.CellDim, dims.KDim, low=700.0, high=800.0, dtype=wpfloat
             ),
             temperature=data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=250.0, high=300.0, dtype=wpfloat
+                dims.CellDim, dims.KDim, low=250.0, high=300.0, dtype=wpfloat
             ),
             tend_temperature=data_alloc.random_field(
-                grid, dims.CellDim, dims.KDim, low=-1.0e-3, high=1.0e-3, dtype=wpfloat
+                dims.CellDim, dims.KDim, low=-1.0e-3, high=1.0e-3, dtype=wpfloat
             ),
-            q_snocpymlt=data_alloc.random_field(
-                grid, dims.CellDim, low=0.0, high=10.0, dtype=wpfloat
-            ),
-            dissip_ke=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            heating=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            new_temperature=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            q_snocpymlt=data_alloc.random_field(dims.CellDim, low=0.0, high=10.0, dtype=wpfloat),
+            dissip_ke=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            heating=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            new_temperature=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             dissipation_factor=wpfloat(1.0),
             dtime=wpfloat(300.0),
             nlev=gtx.int32(grid.num_levels),

@@ -16,8 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def diffuse_vertical_explicit_numpy(
@@ -59,13 +58,13 @@ def diffuse_vertical_explicit_numpy(
     return tend_out
 
 
-class TestApplyExplicitVerticalDiffusionCells(StencilTest):
+class TestApplyExplicitVerticalDiffusionCells(stencil_tests.StencilTest):
     PROGRAM = apply_explicit_vertical_diffusion_cells
     OUTPUTS = ("tend",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         a: np.ndarray,
         b: np.ndarray,
@@ -87,15 +86,17 @@ class TestApplyExplicitVerticalDiffusionCells(StencilTest):
         )
         return dict(tend=tend_out)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         return dict(
-            a=data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            b=data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            c=data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rhs=data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            var=data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            tend=data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            a=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            b=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            c=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            rhs=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            var=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            tend=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

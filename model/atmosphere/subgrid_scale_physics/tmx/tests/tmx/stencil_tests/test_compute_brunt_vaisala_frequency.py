@@ -16,8 +16,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def compute_brunt_vaisala_frequency_numpy(
@@ -44,13 +43,13 @@ def compute_brunt_vaisala_frequency_numpy(
     return bruvais
 
 
-class TestComputeBruntVaisalaFrequency(StencilTest):
+class TestComputeBruntVaisalaFrequency(stencil_tests.StencilTest):
     PROGRAM = compute_brunt_vaisala_frequency
     OUTPUTS = ("bruvais",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         theta_v: np.ndarray,
         wgtfac_c: np.ndarray,
@@ -63,16 +62,17 @@ class TestComputeBruntVaisalaFrequency(StencilTest):
         )
         return dict(bruvais=bruvais)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         theta_v = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=270.0, high=350.0, dtype=wpfloat
+            dims.CellDim, dims.KDim, low=270.0, high=350.0, dtype=wpfloat
         )
         wgtfac_c = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=wpfloat, extend={dims.KDim: 1}
+            dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=wpfloat, extend={dims.KDim: 1}
         )
         inv_ddqz_z_half = data_alloc.random_field(
-            grid,
             dims.CellDim,
             dims.KDim,
             low=1.0e-3,
@@ -81,7 +81,7 @@ class TestComputeBruntVaisalaFrequency(StencilTest):
             extend={dims.KDim: 1},
         )
         bruvais = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
+            dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
         )
 
         return dict(

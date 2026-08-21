@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.apply_w_horizon
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -31,9 +30,9 @@ class TestApplyWHorizontalDiffusionAndUpdate(stencil_tests.StencilTest):
     PROGRAM = apply_w_horizontal_diffusion_and_update
     OUTPUTS = ("new_w", "tend")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         hori_tend_e: np.ndarray,
         e_bln_c_s: np.ndarray,
@@ -47,7 +46,8 @@ class TestApplyWHorizontalDiffusionAndUpdate(stencil_tests.StencilTest):
         vertical_end: int,
         **kwargs: Any,
     ) -> dict:
-        c2e = connectivities[dims.C2EDim]  # (n_cells, 3)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        c2e = connectivities[dims.C2E]  # (n_cells, 3)
         hori_tend_c = inv_rho_ic * np.sum(e_bln_c_s[:, :, np.newaxis] * hori_tend_e[c2e], axis=1)
 
         hs, he = horizontal_start, horizontal_end
@@ -58,16 +58,17 @@ class TestApplyWHorizontalDiffusionAndUpdate(stencil_tests.StencilTest):
         new_w[hs:he, vs:ve] = w[hs:he, vs:ve] + tend_out[hs:he, vs:ve] * dtime
         return dict(new_w=new_w, tend=tend_out)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         hori_tend_e = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         e_bln_c_s = data_alloc.random_field(
-            grid, dims.CellDim, dims.C2EDim, low=0.0, high=1.0, dtype=ta.wpfloat
+            dims.CellDim, dims.C2EDim, low=0.0, high=1.0, dtype=ta.wpfloat
         )
         inv_rho_ic = data_alloc.random_field(
-            grid,
             dims.CellDim,
             dims.KDim,
             low=0.5,
@@ -76,13 +77,13 @@ class TestApplyWHorizontalDiffusionAndUpdate(stencil_tests.StencilTest):
             dtype=ta.wpfloat,
         )
         w = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         tend = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         new_w = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
 
         # Fortran: tmx 'domain' cell bounds, rl_start = grf_bdywidth_c + 1,

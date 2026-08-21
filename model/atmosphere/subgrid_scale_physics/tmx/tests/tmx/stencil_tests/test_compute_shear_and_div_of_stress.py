@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_shear_a
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestComputeShearAndDivOfStress(stencil_tests.StencilTest):
     PROGRAM = compute_shear_and_div_of_stress
     OUTPUTS = ("shear", "div_stress")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         u_vert: np.ndarray,
         v_vert: np.ndarray,
@@ -50,8 +49,9 @@ class TestComputeShearAndDivOfStress(stencil_tests.StencilTest):
         vertical_end: int,
         **kwargs: Any,
     ) -> dict:
-        e2c2v = connectivities[dims.E2C2VDim]  # (n_edges, 4)
-        e2c = connectivities[dims.E2CDim]  # (n_edges, 2)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        e2c2v = connectivities[dims.E2C2V]  # (n_edges, 4)
+        e2c = connectivities[dims.E2C]  # (n_edges, 2)
 
         # (n_edges, 4, nlev) gathers of the vertex velocities
         u_vert_e = u_vert[e2c2v]
@@ -113,47 +113,45 @@ class TestComputeShearAndDivOfStress(stencil_tests.StencilTest):
 
         return dict(shear=shear_out, div_stress=div_stress_out)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat)
-        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        u_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.wpfloat)
+        v_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.wpfloat)
         w_vert = data_alloc.random_field(
-            grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.VertexDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         w = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         vn_ie = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         vt_ie = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         w_ie = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
 
         primal_normal_vert_x = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+            dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
         primal_normal_vert_y = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
+            dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
         )
-        dual_normal_vert_x = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
-        )
-        dual_normal_vert_y = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
-        )
+        dual_normal_vert_x = data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat)
+        dual_normal_vert_y = data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat)
 
-        tangent_orientation = data_alloc.random_sign(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        inv_ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        tangent_orientation = data_alloc.random_sign(dims.EdgeDim, dtype=ta.wpfloat)
+        inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        inv_vert_vert_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        inv_ddqz_z_full_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
-        shear = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        div_stress = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        shear = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        div_stress = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         # Fortran: compute_velocity_gradient_tensor / compute_shear run on
         # rl_start = 4, rl_end = min_rledge_int - 2.

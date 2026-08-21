@@ -16,8 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def assign_constant_viscosity_numpy(
@@ -35,13 +34,13 @@ def assign_constant_viscosity_numpy(
     return km_ic, kh_ic
 
 
-class TestAssignConstantViscosity(StencilTest):
+class TestAssignConstantViscosity(stencil_tests.StencilTest):
     PROGRAM = assign_constant_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         rho_ic: np.ndarray,
         km_const: float,
@@ -51,17 +50,15 @@ class TestAssignConstantViscosity(StencilTest):
         km_ic, kh_ic = assign_constant_viscosity_numpy(rho_ic, km_const, rturb_prandtl)
         return dict(km_ic=km_ic, kh_ic=kh_ic)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho_ic = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=0.5, high=1.4, dtype=wpfloat, extend={dims.KDim: 1}
+            dims.CellDim, dims.KDim, low=0.5, high=1.4, dtype=wpfloat, extend={dims.KDim: 1}
         )
-        km_ic = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
-        )
-        kh_ic = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
-        )
+        km_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1})
+        kh_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1})
 
         return dict(
             rho_ic=rho_ic,

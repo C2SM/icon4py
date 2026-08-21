@@ -16,8 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def interpolate_vn_to_half_levels_with_boundary_numpy(
@@ -45,13 +44,13 @@ def interpolate_vn_to_half_levels_with_boundary_numpy(
     return vn_ie
 
 
-class TestInterpolateVnToHalfLevelsWithBoundary(StencilTest):
+class TestInterpolateVnToHalfLevelsWithBoundary(stencil_tests.StencilTest):
     PROGRAM = interpolate_vn_to_half_levels_with_boundary
     OUTPUTS = ("vn_ie",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         vn: np.ndarray,
         wgtfac_e: np.ndarray,
@@ -75,21 +74,21 @@ class TestInterpolateVnToHalfLevelsWithBoundary(StencilTest):
         )
         return dict(vn_ie=vn_ie)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         wgtfac_e = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
+            dims.EdgeDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
         )
-        wgtfacq1_e_1 = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        wgtfacq1_e_2 = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        wgtfacq1_e_3 = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        wgtfacq_e_1 = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        wgtfacq_e_2 = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        wgtfacq_e_3 = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        vn_ie = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
-        )
+        wgtfacq1_e_1 = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        wgtfacq1_e_2 = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        wgtfacq1_e_3 = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        wgtfacq_e_1 = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        wgtfacq_e_2 = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        wgtfacq_e_3 = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
+        vn_ie = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1})
 
         return dict(
             vn=vn,
