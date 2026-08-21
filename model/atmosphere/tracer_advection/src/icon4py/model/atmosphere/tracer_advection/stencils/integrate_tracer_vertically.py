@@ -12,7 +12,7 @@ from gt4py.next import where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-# TODO(dastrm): k/iadv_slev_jt and vertical_start/end are redundant
+# TODO(nfarabullini, OngChia): k/iadv_slev_jt and vertical_start/end are redundant
 
 
 @gtx.field_operator

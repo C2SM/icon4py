@@ -14,6 +14,7 @@ on cell and edge fields.
 """
 
 from gt4py import next as gtx
+from gt4py.next import broadcast
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -127,6 +128,134 @@ def average_two_vertical_levels_downwards_on_cells(  # noqa: PLR0917 [too-many-p
     average_level_plus1_on_cells(
         half_level_field=input_field,
         out=average,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
+def _set_constant_on_half_levels_on_cells(value: wpfloat) -> fa.CellKHalfField[wpfloat]:
+    return broadcast(value, (dims.CellDim, dims.KHalfDim))
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def set_constant_on_half_levels_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
+    field: fa.CellKHalfField[wpfloat],
+    value: wpfloat,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _set_constant_on_half_levels_on_cells(
+        value=value,
+        out=field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
+def _copy_model_level_below_to_half_levels_on_cells(
+    model_level_field: fa.CellKField[wpfloat],
+) -> fa.CellKHalfField[wpfloat]:
+    return model_level_field(dims.KHalfDim + 0.5)
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def copy_model_level_below_to_half_levels_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
+    model_level_field: fa.CellKField[wpfloat],
+    half_level_field: fa.CellKHalfField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _copy_model_level_below_to_half_levels_on_cells(
+        model_level_field=model_level_field,
+        out=half_level_field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
+def _copy_model_level_above_to_half_levels_on_cells(
+    model_level_field: fa.CellKField[wpfloat],
+) -> fa.CellKHalfField[wpfloat]:
+    return model_level_field(dims.KHalfDim - 0.5)
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def copy_model_level_above_to_half_levels_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
+    model_level_field: fa.CellKField[wpfloat],
+    half_level_field: fa.CellKHalfField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _copy_model_level_above_to_half_levels_on_cells(
+        model_level_field=model_level_field,
+        out=half_level_field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
+def _copy_half_level_above_to_model_levels_on_cells(
+    half_level_field: fa.CellKHalfField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    return half_level_field(dims.KDim - 0.5)
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def copy_half_level_above_to_model_levels_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
+    half_level_field: fa.CellKHalfField[wpfloat],
+    model_level_field: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _copy_half_level_above_to_model_levels_on_cells(
+        half_level_field=half_level_field,
+        out=model_level_field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
+def _copy_half_level_below_to_model_levels_on_cells(
+    half_level_field: fa.CellKHalfField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    return half_level_field(dims.KDim + 0.5)
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def copy_half_level_below_to_model_levels_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
+    half_level_field: fa.CellKHalfField[wpfloat],
+    model_level_field: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _copy_half_level_below_to_model_levels_on_cells(
+        half_level_field=half_level_field,
+        out=model_level_field,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

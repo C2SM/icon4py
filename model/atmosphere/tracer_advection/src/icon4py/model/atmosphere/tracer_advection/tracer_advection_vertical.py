@@ -38,24 +38,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_parabol
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_tracer_flux_upwind import (
     compute_vertical_tracer_flux_upwind,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field import (
-    copy_cell_kdim_field,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field_to_khalf import (
-    copy_cell_kdim_field_to_khalf,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field_to_khalf_koff_minus1 import (
-    copy_cell_kdim_field_to_khalf_koff_minus1,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_khalf_field_to_kdim import (
-    copy_cell_khalf_field_to_kdim,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_khalf_field_to_kdim_koff_plus1 import (
-    copy_cell_khalf_field_to_kdim_koff_plus1,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.init_constant_cell_khalf_field import (
-    init_constant_cell_khalf_field,
-)
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_vertically import (
     integrate_tracer_vertically,
 )
@@ -74,6 +56,8 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.math import vertical_operations
+from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -115,8 +99,8 @@ class NoFluxCondition(BoundaryConditions):
         self._backend = backend
 
         # stencils
-        self._init_constant_cell_khalf_field = init_constant_cell_khalf_field.with_backend(
-            self._backend
+        self._set_constant_on_half_levels_on_cells = (
+            vertical_operations.set_constant_on_half_levels_on_cells.with_backend(self._backend)
         )
 
     def run(
@@ -128,8 +112,8 @@ class NoFluxCondition(BoundaryConditions):
         log.debug("vertical boundary conditions computation - start")
 
         # set upper boundary conditions
-        log.debug("running stencil init_constant_cell_khalf_field - start")
-        self._init_constant_cell_khalf_field(
+        log.debug("running stencil set_constant_on_half_levels_on_cells - start")
+        self._set_constant_on_half_levels_on_cells(
             field=p_mflx_tracer_v,
             value=0.0,
             horizontal_start=horizontal_start,
@@ -138,11 +122,11 @@ class NoFluxCondition(BoundaryConditions):
             vertical_end=1,
             offset_provider=self._grid.connectivities,
         )
-        log.debug("running stencil init_constant_cell_khalf_field - end")
+        log.debug("running stencil set_constant_on_half_levels_on_cells - end")
 
         # set lower boundary conditions
-        log.debug("running stencil init_constant_cell_khalf_field - start")
-        self._init_constant_cell_khalf_field(
+        log.debug("running stencil set_constant_on_half_levels_on_cells - start")
+        self._set_constant_on_half_levels_on_cells(
             field=p_mflx_tracer_v,
             value=0.0,
             horizontal_start=horizontal_start,
@@ -151,7 +135,7 @@ class NoFluxCondition(BoundaryConditions):
             vertical_end=self._grid.num_levels + 1,
             offset_provider=self._grid.connectivities,
         )
-        log.debug("running stencil init_constant_cell_khalf_field - end")
+        log.debug("running stencil set_constant_on_half_levels_on_cells - end")
 
         log.debug("vertical boundary conditions computation - end")
 
@@ -196,18 +180,18 @@ class NoLimiter(VerticalLimiter):
         self._grid = grid
 
         # stencils
-        self._copy_cell_khalf_field_to_kdim = model_options.setup_program(
+        self._copy_half_level_above_to_model_levels_on_cells = model_options.setup_program(
             backend=backend,
-            program=copy_cell_khalf_field_to_kdim,
+            program=vertical_operations.copy_half_level_above_to_model_levels_on_cells,
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
             offset_provider=self._grid.connectivities,
         )
-        self._copy_cell_khalf_field_to_kdim_koff_plus1 = model_options.setup_program(
+        self._copy_half_level_below_to_model_levels_on_cells = model_options.setup_program(
             backend=backend,
-            program=copy_cell_khalf_field_to_kdim_koff_plus1,
+            program=vertical_operations.copy_half_level_below_to_model_levels_on_cells,
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
@@ -234,23 +218,23 @@ class NoLimiter(VerticalLimiter):
         horizontal_end: gtx.int32,
     ) -> None:
         # simply copy to up/low face values
-        log.debug("running stencil copy_cell_khalf_field_to_kdim - start")
-        self._copy_cell_khalf_field_to_kdim(
+        log.debug("running stencil copy_half_level_above_to_model_levels_on_cells - start")
+        self._copy_half_level_above_to_model_levels_on_cells(
             field_in=p_face,
             field_out=p_face_up,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil copy_cell_khalf_field_to_kdim - end")
+        log.debug("running stencil copy_half_level_above_to_model_levels_on_cells - end")
 
-        log.debug("running stencil copy_cell_khalf_field_to_kdim_koff_plus1 - start")
-        self._copy_cell_khalf_field_to_kdim_koff_plus1(
+        log.debug("running stencil copy_half_level_below_to_model_levels_on_cells - start")
+        self._copy_half_level_below_to_model_levels_on_cells(
             field_in=p_face,
             field_out=p_face_low,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil copy_cell_khalf_field_to_kdim_koff_plus1 - end")
+        log.debug("running stencil copy_half_level_below_to_model_levels_on_cells - end")
 
     def limit_fluxes(
         self,
@@ -428,9 +412,9 @@ class NoAdvection(VerticalAdvection):
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         # stencils
-        self._copy_cell_kdim_field = model_options.setup_program(
+        self._copy_field_on_cell_k = model_options.setup_program(
             backend=backend,
-            program=copy_cell_kdim_field,
+            program=generic_math_operations.copy_field_on_cell_k,
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
@@ -468,14 +452,14 @@ class NoAdvection(VerticalAdvection):
             even_timestep=even_timestep
         )
 
-        log.debug("running stencil copy_cell_kdim_field - start")
-        self._copy_cell_kdim_field(
+        log.debug("running stencil copy_field_on_cell_k - start")
+        self._copy_field_on_cell_k(
             field_in=p_tracer_now,
             field_out=p_tracer_new,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil copy_cell_kdim_field - end")
+        log.debug("running stencil copy_field_on_cell_k - end")
         log.debug("vertical tracer_advection run - end")
 
 
@@ -755,9 +739,9 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._iadv_slev_jt = 0
 
         # stencils
-        self._init_constant_cell_khalf_field = model_options.setup_program(
+        self._set_constant_on_half_levels_on_cells = model_options.setup_program(
             backend=self._backend,
-            program=init_constant_cell_khalf_field,
+            program=vertical_operations.set_constant_on_half_levels_on_cells,
             constant_args={
                 "value": 0.0,
             },
@@ -816,9 +800,9 @@ class PiecewiseParabolicMethod(FiniteVolume):
             },
             offset_provider=self._grid.connectivities,
         )
-        self._copy_cell_kdim_field_to_khalf = model_options.setup_program(
+        self._copy_model_level_below_to_half_levels_on_cells = model_options.setup_program(
             backend=self._backend,
-            program=copy_cell_kdim_field_to_khalf,
+            program=vertical_operations.copy_model_level_below_to_half_levels_on_cells,
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(1),
@@ -826,9 +810,9 @@ class PiecewiseParabolicMethod(FiniteVolume):
             offset_provider=self._grid.connectivities,
         )
 
-        self._copy_cell_kdim_field_to_khalf_koff_minus1 = model_options.setup_program(
+        self._copy_model_level_above_to_half_levels_on_cells = model_options.setup_program(
             backend=self._backend,
-            program=copy_cell_kdim_field_to_khalf_koff_minus1,
+            program=vertical_operations.copy_model_level_above_to_half_levels_on_cells,
             vertical_sizes={
                 "vertical_start": gtx.int32(self._grid.num_levels),
                 "vertical_end": gtx.int32(self._grid.num_levels + 1),
@@ -918,13 +902,13 @@ class PiecewiseParabolicMethod(FiniteVolume):
 
         ## compute density-weighted Courant number
 
-        log.debug("running stencil init_constant_cell_khalf_field - start")
-        self._init_constant_cell_khalf_field(
+        log.debug("running stencil set_constant_on_half_levels_on_cells - start")
+        self._set_constant_on_half_levels_on_cells(
             field=self._z_cfl,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil init_constant_cell_khalf_field - end")
+        log.debug("running stencil set_constant_on_half_levels_on_cells - end")
 
         log.debug("running stencil compute_ppm4gpu_courant_number - start")
         self._compute_ppm4gpu_courant_number(
@@ -982,24 +966,24 @@ class PiecewiseParabolicMethod(FiniteVolume):
         log.debug("running stencil compute_ppm_quadratic_face_values - end")
 
         # compute highest face value
-        log.debug("running stencil copy_cell_kdim_field_to_khalf - start")
-        self._copy_cell_kdim_field_to_khalf(
+        log.debug("running stencil copy_model_level_below_to_half_levels_on_cells - start")
+        self._copy_model_level_below_to_half_levels_on_cells(
             field_in=p_tracer_now,
             field_out=self._z_face,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil copy_cell_kdim_field_to_khalf - end")
+        log.debug("running stencil copy_model_level_below_to_half_levels_on_cells - end")
 
         # compute lowest face value
-        log.debug("running stencil copy_cell_kdim_field_to_khalf_koff_minus1 - start")
-        self._copy_cell_kdim_field_to_khalf_koff_minus1(
+        log.debug("running stencil copy_model_level_above_to_half_levels_on_cells - start")
+        self._copy_model_level_above_to_half_levels_on_cells(
             field_in=p_tracer_now,
             field_out=self._z_face,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
-        log.debug("running stencil copy_cell_kdim_field_to_khalf_koff_minus1 - end")
+        log.debug("running stencil copy_model_level_above_to_half_levels_on_cells - end")
 
         # compute all other face values
         log.debug("running stencil compute_ppm_quartic_face_values - start")

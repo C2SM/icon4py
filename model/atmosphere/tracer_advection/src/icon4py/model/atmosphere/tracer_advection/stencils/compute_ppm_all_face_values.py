@@ -15,8 +15,8 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_quadratic_fa
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-# TODO(dastrm): this stencil is imported but never called
-# TODO(dastrm): slev/elev and vertical_start/end are redundant
+# TODO(nfarabullini, OngChia): this stencil is imported but never called
+# TODO(nfarabullini, OngChia): slev/elev and vertical_start/end are redundant
 
 
 @gtx.field_operator

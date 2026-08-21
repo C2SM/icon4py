@@ -12,8 +12,8 @@ from gt4py.next import abs, where  # noqa: A004
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-# TODO(dastrm): this stencil has no test
-# TODO(dastrm): this stencil does not strictly match the fortran code
+# TODO(nfarabullini, OngChia): this stencil has no test
+# TODO(nfarabullini, OngChia): this stencil does not strictly match the fortran code
 
 
 @gtx.field_operator

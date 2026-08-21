@@ -19,7 +19,6 @@ from icon4py.model.common.grid import horizontal
 from icon4py.model.common.metrics.reference_atmosphere import (
     compute_d2dexdz2_fac_mc,
     compute_reference_atmosphere_cell_fields,
-    compute_reference_atmosphere_cell_fields_on_half_levels,
     compute_reference_atmosphere_edge_fields,
     compute_theta_d_exner_dz_ref_ic,
 )
@@ -89,59 +88,6 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     assert stencil_tests.dallclose(rho_ref_mc.asnumpy(), rho_ref_mc_ref.asnumpy())
     assert stencil_tests.dallclose(theta_ref_mc.asnumpy(), theta_ref_mc_ref.asnumpy())
     assert stencil_tests.dallclose(exner_ref_mc.asnumpy(), exner_ref_mc_ref.asnumpy())
-
-
-@pytest.mark.datatest
-def test_compute_reference_atmosphere_on_half_level_mass_points(
-    icon_grid: base_grid.Grid,
-    metrics_savepoint: sb.MetricSavepoint,
-    backend: gtx_typing.Backend | None,
-) -> None:
-    theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
-    z_ifc = metrics_savepoint.z_ifc()
-
-    exner_ref_ic = data_alloc.zero_field(
-        icon_grid,
-        dims.CellDim,
-        dims.KHalfDim,
-        dtype=ta.wpfloat,
-        allocator=backend,
-    )
-    rho_ref_ic = data_alloc.zero_field(
-        icon_grid,
-        dims.CellDim,
-        dims.KHalfDim,
-        dtype=ta.wpfloat,
-        allocator=backend,
-    )
-    theta_ref_ic = data_alloc.zero_field(
-        icon_grid,
-        dims.CellDim,
-        dims.KHalfDim,
-        dtype=ta.wpfloat,
-        allocator=backend,
-    )
-    compute_reference_atmosphere_cell_fields_on_half_levels.with_backend(backend=backend)(
-        z_height=z_ifc,
-        p0ref=constants.P0REF,
-        p0sl_bg=constants.SEA_LEVEL_PRESSURE,
-        grav=constants.GRAVITATIONAL_ACCELERATION,
-        cpd=constants.CPD,
-        rd=constants.RD,
-        t0sl_bg=constants.T0SL_BG,
-        h_scal_bg=constants._H_SCAL_BG,
-        del_t_bg=constants.DELTA_TEMPERATURE,
-        exner_ref_ic=exner_ref_ic,
-        rho_ref_ic=rho_ref_ic,
-        theta_ref_ic=theta_ref_ic,
-        horizontal_start=gtx.int32(0),
-        horizontal_end=gtx.int32(icon_grid.num_cells),
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(icon_grid.num_levels + 1),
-        offset_provider={},
-    )
-
-    assert stencil_tests.dallclose(theta_ref_ic.asnumpy(), theta_ref_ic_ref.asnumpy())
 
 
 @pytest.mark.datatest

@@ -13,8 +13,8 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO(dastrm): this stencil has no test
-# TODO(dastrm): this stencil does not strictly match the fortran code
+# TODO(nfarabullini, OngChia): this stencil has no test
+# TODO(nfarabullini, OngChia): this stencil does not strictly match the fortran code
 
 
 @gtx.field_operator

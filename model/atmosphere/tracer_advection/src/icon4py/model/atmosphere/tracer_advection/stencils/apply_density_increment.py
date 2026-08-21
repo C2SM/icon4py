@@ -12,7 +12,7 @@ from gt4py.next import broadcast, maximum, where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-# TODO(dastrm): this stencil has no test
+# TODO(nfarabullini, OngChia): this stencil has no test
 
 
 @gtx.field_operator

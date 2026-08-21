@@ -24,9 +24,6 @@ from icon4py.model.testing import stencil_tests
 from .test_add_interpolated_horizontal_advection_of_w import (
     add_interpolated_horizontal_advection_of_w_numpy,
 )
-from .test_compute_advective_vertical_wind_tendency import (
-    compute_advective_vertical_wind_tendency_numpy,
-)
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity_numpy,
 )
@@ -204,6 +201,23 @@ def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
         vertical_wind_advective_tendency,
     )
     return vertical_wind_advective_tendency
+
+
+def compute_advective_vertical_wind_tendency_numpy(
+    z_w_con_c: np.ndarray,
+    w: np.ndarray,
+    coeff1_dwdz: np.ndarray,
+    coeff2_dwdz: np.ndarray,
+    **kwargs: Any,
+) -> np.ndarray:
+    # coeff*_dwdz live on model levels; model level k pairs with half level k
+    nlev = coeff1_dwdz.shape[1]
+    ddt_w_adv = np.zeros((z_w_con_c.shape[0], nlev + 1))
+    c1, c2 = coeff1_dwdz[:, 1:nlev], coeff2_dwdz[:, 1:nlev]
+    ddt_w_adv[:, 1:nlev] = -z_w_con_c[:, 1:nlev] * (
+        w[:, 0 : nlev - 1] * c1 - w[:, 2 : nlev + 1] * c2 + w[:, 1:nlev] * (c2 - c1)
+    )
+    return ddt_w_adv
 
 
 def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(

@@ -23,8 +23,8 @@ def _compute_ppm_quartic_face_values(
     hgt_p1 = p_cellhgt_mc_now(dims.KHalfDim + 1.5)
     cc_m1 = p_cc(dims.KHalfDim - 0.5)
     cc = p_cc(dims.KHalfDim + 0.5)
-    slope_m1 = z_slope(dims.KHalfDim - 0.5)
-    slope = z_slope(dims.KHalfDim + 0.5)
+    slope_above = z_slope(dims.KHalfDim - 0.5)
+    slope_below = z_slope(dims.KHalfDim + 0.5)
 
     zgeo1 = hgt_m1 / (hgt_m1 + hgt)
     zgeo2 = 1.0 / (hgt_m2 + hgt_m1 + hgt + hgt_p1)
@@ -37,8 +37,8 @@ def _compute_ppm_quartic_face_values(
         + zgeo2
         * (
             (2.0 * hgt * zgeo1) * (zgeo3 - zgeo4) * (cc - cc_m1)
-            - zgeo3 * hgt_m1 * slope
-            + zgeo4 * hgt * slope_m1
+            - zgeo3 * hgt_m1 * slope_below
+            + zgeo4 * hgt * slope_above
         )
     )
 
