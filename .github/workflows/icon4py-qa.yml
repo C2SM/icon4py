@@ -36,8 +36,5 @@ jobs:
       - name: Install icon4py namespace packages
         run: uv sync --extra all
 
-      - name: Check package version consistency
-        run: ./scripts/run check-versions
-
       - name: "Run pre-commit"
         uses: pre-commit/action@v3.0.1

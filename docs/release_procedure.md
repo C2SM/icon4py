@@ -56,12 +56,6 @@ Before making changes, the script verifies that every package `pyproject.toml`
 has a `[tool.bumpversion]` section, all `icon4py.*` package versions agree, and all pinned
 cross-package dependency constraints use that version.
 
-The same checks run in the quality-assurance CI workflow:
-
-```bash
-./scripts/run check-versions
-```
-
 Use `--dry-run` to preview changes without writing files.
 
 ### 2. Create a GitHub Release
@@ -93,17 +87,14 @@ Publishing the GitHub Release automatically triggers the
    pip install --index-url https://test.pypi.org/simple/ icon4py==<new_version>
    ```
 
-   If this fails, install `icon4py` with PyPI as an extra index:
+   If installation fails, try again with PyPI as an extra index:
 
    ```bash
-   python3 -m pip install --extra-index-url https://pypi.org/simple -i https://test.pypi.org/simple icon4py==<new_version>
+   pip install --extra-index-url https://pypi.org/simple -i https://test.pypi.org/simple icon4py==<new_version>
    ```
 
-   **Note:** TestPyPI may not have all transitive dependencies. Use
-   `--extra-index-url https://pypi.org/simple/` as a fallback.
-   You may also need `--index-strategy unsafe-best-match` to allow picking the
-   best match from pypi.org and test.pypi.org. Finally, `--refresh` may be
-   needed to update cached package information.
+   **Note:** TestPyPI may not have all transitive dependencies.
+   For `uv pip install`, also use `--index-strategy unsafe-best-match` to allow picking the best match from pypi.org and test.pypi.org. Finally, `--refresh` may be needed to update cached package information.
 
    Test in dependent projects if needed, like in ICON.
 
