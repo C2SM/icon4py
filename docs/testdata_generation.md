@@ -59,7 +59,9 @@ ICON4PY_TEST_DATA_PATH=<...>/build_serialize/experiments ICON4PY_ENABLE_TESTDATA
   uv run --group test --frozen pytest --datatest-only --backend=gtfn_cpu model/common
 ```
 
-Then upload, and open a PR with the version bump:
+Then upload, and open a PR with the version bump. The `cscs-icon4py` profile and the
+bucket credentials are set up once, as described in the
+[AWS setup notes](https://hackmd.io/lCvfSs_HSeujV2PL0hUqqg).
 
 ```bash
 cd $ICON4PY_TEST_DATA_PATH

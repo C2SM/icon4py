@@ -90,6 +90,11 @@ class SerializationSettings:
         # Directories (derived from this script's location in icon4py/)
         _THIS_FILE = pathlib.Path(__file__).resolve()
         ICON4PY_REPO_DIR = _THIS_FILE.parents[2]
+        if not (ICON4PY_REPO_DIR / "pyproject.toml").is_file():
+            raise RuntimeError(
+                f"Expected the icon4py repository root at '{ICON4PY_REPO_DIR}', derived from "
+                f"the location of '{_THIS_FILE}', but found no 'pyproject.toml' there."
+            )
         ROOT_PROJECT_DIR = ICON4PY_REPO_DIR.parent
         ICONF90_REPO_DIR = ROOT_PROJECT_DIR / "icon"
         BUILD_DIR = ROOT_PROJECT_DIR / "build_serialize"

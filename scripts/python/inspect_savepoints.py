@@ -28,7 +28,7 @@ import functools
 import itertools
 import pathlib
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Annotated, Final
+from typing import TYPE_CHECKING, Annotated, Any, Final
 
 import numpy as np
 import typer
@@ -94,7 +94,12 @@ class SavepointRef:
 
     index: int
     name: str
-    date: str | None
+    metainfo: tuple[tuple[str, Any], ...] = ()
+
+    @property
+    def date(self) -> str | None:
+        date = dict(self.metainfo).get("date")
+        return None if date is None else str(date)
 
     @property
     def label(self) -> str:
@@ -115,6 +120,8 @@ class FieldStats:
     mean: float
     nonzero_fraction: float
     n_nonfinite: int
+    # the metainfo that tells repeated savepoints of one name apart, e.g. 'istep=2'
+    step: str = ""
 
     @property
     def all_zero(self) -> bool:
@@ -137,16 +144,45 @@ def component_labels(field: str, size: int) -> tuple[str, ...] | None:
     return tuple(known[i] if i < len(known) else f"idx{i}" for i in range(size))
 
 
+def distinguishing_keys(references: Sequence[SavepointRef]) -> tuple[str, ...]:
+    """Metainfo keys whose value differs between *references*, the date excluded.
+
+    The date does not identify a savepoint: ICON writes 'solve-nonhydro-init' ten times
+    under one date, once per dynamical substep ('dyn_timestep') and stage ('istep').
+    """
+    values: dict[str, set[Any]] = {}
+    for reference in references:
+        for key, value in reference.metainfo:
+            if key != "date":
+                values.setdefault(key, set()).add(value)
+    return tuple(sorted(key for key, seen in values.items() if len(seen) > 1))
+
+
+def step_label(reference: SavepointRef, keys: Sequence[str]) -> str:
+    """Render the metainfo of *reference* restricted to *keys*, as 'key=value' pairs."""
+    metainfo = dict(reference.metainfo)
+    return " ".join(f"{key}={metainfo[key]}" for key in keys if key in metainfo)
+
+
 def _transition(before: str | None, after: str | None) -> str | None:
     """Label a pair of endpoints, collapsing to a single value when they are equal."""
     return after if before == after else f"{before} -> {after}"
 
 
 def summarize(
-    values: np.ndarray, *, savepoint: str, date: str | None, field: str, component: str | None
+    values: np.ndarray,
+    *,
+    savepoint: str,
+    date: str | None,
+    field: str,
+    component: str | None,
+    step: str = "",
 ) -> FieldStats:
-    """Reduce an array to the statistics that tell whether it carries information."""
-    values = np.squeeze(values)
+    """Reduce an array to the statistics that tell whether it carries information.
+
+    The reported shape is the serialized one, singleton dimensions included, so that it
+    can be compared with what ICON wrote rather than with a compacted version of it.
+    """
     as_float = values.astype(np.float64)
     finite = np.isfinite(as_float)
     n_nonfinite = int(as_float.size - finite.sum())
@@ -169,6 +205,7 @@ def summarize(
         mean=mean,
         nonzero_fraction=nonzero_fraction,
         n_nonfinite=n_nonfinite,
+        step=step,
     )
 
 
@@ -191,7 +228,7 @@ class ArchiveExplorer:
         )
         self._raw = tuple(self._serializer.savepoint_list())
         self.savepoints = tuple(
-            SavepointRef(index, savepoint.name, savepoint.metainfo.to_dict().get("date"))
+            SavepointRef(index, savepoint.name, tuple(sorted(savepoint.metainfo.to_dict().items())))
             for index, savepoint in enumerate(self._raw)
         )
 
@@ -253,22 +290,43 @@ class ArchiveExplorer:
         self, *, name: str | None = None, date: str | None = None, field: str | None = None
     ) -> list[FieldStats]:
         """Statistics of every matching field of every matching savepoint."""
+        found = self.find(name=name, date=date, field=field)
+        # computed over all savepoints of a name, so that the step of a row does not
+        # depend on which of them the filters happened to select
+        keys = {name: distinguishing_keys(self.names[name]) for name in {r.name for r in found}}
         collected: list[FieldStats] = []
-        for reference in self.find(name=name, date=date, field=field):
+        for reference in found:
             for field_name in self.fields(reference):
                 if field is not None and field != field_name:
                     continue
                 values = self.read(reference, field_name)
                 if not np.issubdtype(values.dtype, np.number) and values.dtype != np.bool_:
                     continue
-                collected.extend(self._summarize_components(values, reference, field_name))
+                collected.extend(
+                    self._summarize_components(
+                        values,
+                        field_name,
+                        savepoint=reference.name,
+                        date=reference.date,
+                        step=step_label(reference, keys[reference.name]),
+                    )
+                )
         return collected
 
-    def diff_stats(self, before: SavepointRef, after: SavepointRef, field: str) -> list[FieldStats]:
+    def diff_stats(
+        self,
+        before: SavepointRef,
+        after: SavepointRef,
+        field: str,
+        *,
+        keys: Sequence[str] = (),
+    ) -> list[FieldStats]:
         """Statistics of ``after - before``, to see whether a field changes at all.
 
         The two savepoints may differ in timestamp (does the field evolve?), in name
         (does the process between an init and an exit savepoint do anything?), or both.
+        *keys* are the metainfo keys that tell the compared pairs apart, and are
+        reported alongside the endpoints.
         """
         first = self.read(before, field).astype(np.float64)
         second = self.read(after, field).astype(np.float64)
@@ -277,15 +335,22 @@ class ArchiveExplorer:
                 f"Shape mismatch for field '{field}': {first.shape} at '{before.label}' "
                 f"vs {second.shape} at '{after.label}'."
             )
-        labelled = SavepointRef(
-            index=after.index,
-            name=_transition(before.name, after.name),
+        return self._summarize_components(
+            second - first,
+            field,
+            savepoint=_transition(before.name, after.name),
             date=_transition(before.date, after.date),
+            step=_transition(step_label(before, keys), step_label(after, keys)) or "",
         )
-        return self._summarize_components(second - first, labelled, field)
 
     def _summarize_components(
-        self, values: np.ndarray, reference: SavepointRef, field: str
+        self,
+        values: np.ndarray,
+        field: str,
+        *,
+        savepoint: str | None,
+        date: str | None,
+        step: str = "",
     ) -> list[FieldStats]:
         labels = component_labels(field, values.shape[-1]) if values.ndim > 1 else None
         species = (
@@ -295,7 +360,12 @@ class ArchiveExplorer:
         )
         return [
             summarize(
-                slice_, savepoint=reference.name, date=reference.date, field=field, component=label
+                slice_,
+                savepoint=savepoint or "",
+                date=date,
+                field=field,
+                component=label,
+                step=step,
             )
             for slice_, label in species
         ]
@@ -336,6 +406,7 @@ def format_stats(collected: Sequence[FieldStats]) -> str:
         [
             stats.savepoint,
             stats.date or "",
+            stats.step,
             stats.full_name,
             "x".join(str(size) for size in stats.shape),
             _number(stats.min),
@@ -347,7 +418,19 @@ def format_stats(collected: Sequence[FieldStats]) -> str:
         ]
         for stats in collected
     ]
-    headers = ["savepoint", "date", "field", "shape", "min", "max", "mean", "nonzero", "nonfin", ""]
+    headers = [
+        "savepoint",
+        "date",
+        "step",
+        "field",
+        "serialized shape",
+        "min",
+        "max",
+        "mean",
+        "nonzero",
+        "nonfin",
+        "",
+    ]
     return format_table(headers, rows)
 
 
@@ -489,15 +572,10 @@ def diff(
 
     if against is not None:
         others = _one_savepoint(archive.find(name=against, field=field), field, "--against")
-        by_date = {reference.date: reference for reference in others}
-        pairs = [
-            (reference, by_date[reference.date])
-            for reference in references
-            if reference.date in by_date
-        ]
+        pairs = _pair_by_metainfo(references, others)
         if not pairs:
             raise typer.BadParameter(
-                f"'{references[0].name}' and '{others[0].name}' share no date."
+                f"'{references[0].name}' and '{others[0].name}' share no step."
             )
     elif from_date is None and to_date is None:
         if len(references) < 2:
@@ -509,14 +587,51 @@ def diff(
     else:
         pairs = [(_at_date(references, from_date), _at_date(references, to_date))]
 
+    keys = distinguishing_keys([reference for pair in pairs for reference in pair])
     collected = [
-        entry for before, after in pairs for entry in archive.diff_stats(before, after, field)
+        entry
+        for before, after in pairs
+        for entry in archive.diff_stats(before, after, field, keys=keys)
     ]
     print(f"{archive.path}: differences of '{field}'")
     print(format_stats(collected))
     unchanged = [entry for entry in collected if entry.all_zero]
     if unchanged:
         print(f"\n{len(unchanged)} of {len(collected)} differences are identically zero.")
+
+
+def _pair_by_metainfo(
+    references: Sequence[SavepointRef], others: Sequence[SavepointRef]
+) -> list[tuple[SavepointRef, SavepointRef]]:
+    """Pair up savepoints of two names that agree on every metainfo key they share.
+
+    The date does not identify a savepoint -- ICON writes 'solve-nonhydro-init' ten times
+    under one date -- and the two names being compared record different key sets ('linit'
+    on one side, 'prep_adv' on the other). What both record, and what pins down a step,
+    are the keys they have in common.
+    """
+    shared = sorted(
+        set.intersection(
+            *({key for key, _ in reference.metainfo} for reference in (*references, *others))
+        )
+    )
+    indexed = []
+    for group, other in ((references, others), (others, references)):
+        keyed: dict[tuple[Any, ...], SavepointRef] = {}
+        for reference in group:
+            metainfo = dict(reference.metainfo)
+            key = tuple(metainfo[name] for name in shared)
+            if key in keyed:
+                raise typer.BadParameter(
+                    f"Several savepoints of '{reference.name}' share the same "
+                    f"({', '.join(shared) or 'no key at all'}); they are told apart by "
+                    f"{', '.join(distinguishing_keys(group)) or 'nothing'}, which "
+                    f"'{other[0].name}' does not record, so the two cannot be paired."
+                )
+            keyed[key] = reference
+        indexed.append(keyed)
+    left, right = indexed
+    return [(reference, right[key]) for key, reference in left.items() if key in right]
 
 
 def _one_savepoint(
@@ -538,9 +653,15 @@ def _at_date(references: Sequence[SavepointRef], date: str | None) -> SavepointR
     if date is None:
         raise typer.BadParameter("Pass both '--from' and '--to', or neither.")
     matching = [reference for reference in references if reference.date == date]
-    if len(matching) != 1:
+    if not matching:
         available = ", ".join(sorted({r.date for r in references if r.date}))
-        raise typer.BadParameter(f"No unique savepoint at date '{date}'. Available: {available}.")
+        raise typer.BadParameter(f"No savepoint at date '{date}'. Available: {available}.")
+    if len(matching) > 1:
+        keys = distinguishing_keys(matching)
+        raise typer.BadParameter(
+            f"{len(matching)} savepoints of '{matching[0].name}' carry the date '{date}', "
+            f"differing in {', '.join(keys) or 'nothing'}; a date does not select one of them."
+        )
     return matching[0]
 
 
