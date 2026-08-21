@@ -15,15 +15,18 @@ find "${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache" -mindepth 1 
 uv_lock_hash=$(sha256sum "./uv.lock" | awk '{print substr($1,1,32)}')
 job_name_hash=$(echo -n "${CI_JOB_NAME}" | sha256sum | awk '{print substr($1,1,32)}')
 if [[ -z "${BASE_IMAGE:-}" ]]; then
-    echo "BASE_IMAGE must be set and non-empty" >&2
-    exit 1
+	echo "BASE_IMAGE must be set and non-empty" >&2
+	exit 1
 fi
 base_image_hash=$(echo -n "${BASE_IMAGE}" | sha256sum | awk '{print substr($1,1,32)}')
 flags_hash=$(echo -n "CXXFLAGS=${CXXFLAGS:-} NVCC_APPEND_FLAGS=${NVCC_APPEND_FLAGS:-}" | sha256sum | awk '{print substr($1,1,32)}')
 
 # Then set the cache directory for this run based on the backend and current date.
 DATE=$(date +%Y-%W)
-export GT4PY_BUILD_CACHE_DIR="${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache/base-${base_image_hash}-uv-lock-${uv_lock_hash}-flags-${flags_hash}-job-${job_name_hash}-${DATE}"
+# TEMPORARY (experiment branch, revert before merge): when set, appends a
+# cache-busting suffix so a run always gets a fresh cache directory.
+BUST="${ICON4PY_CI_GT4PY_CACHE_BUST:-}"
+export GT4PY_BUILD_CACHE_DIR="${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache/base-${base_image_hash}-uv-lock-${uv_lock_hash}-flags-${flags_hash}-job-${job_name_hash}-${DATE}${BUST:+-bust-${BUST}}"
 mkdir -p "${GT4PY_BUILD_CACHE_DIR}"
 
 echo "Using GT4PY_BUILD_CACHE_DIR=${GT4PY_BUILD_CACHE_DIR}"
