@@ -92,6 +92,7 @@ Publishing the GitHub Release automatically triggers the
    ```bash
    pip install --extra-index-url https://pypi.org/simple -i https://test.pypi.org/simple icon4py==<new_version>
    ```
+
    For `uv pip install`, also use `--index-strategy unsafe-best-match` to allow picking the best match from pypi.org and test.pypi.org. Finally, `--refresh` may be needed to update cached package information.
 
    Test in dependent projects if needed, like in ICON.
