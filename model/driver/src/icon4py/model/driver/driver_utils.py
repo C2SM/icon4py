@@ -32,6 +32,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
     component as tmx_component,
     state as tmx_state,
     static_fields as tmx_static_fields,
+    surface_fluxes as tmx_surface_fluxes,
 )
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
@@ -466,6 +467,17 @@ def initialize_granules(
 
     processes: list[physics_driver.PhysicsProcess] = []
 
+    # Built before the process blocks: the tmx surface-flux provider binds the live
+    # pressure_ifc buffer the entry state re-diagnoses each step.
+    entry_state: physics_state.EntryState | None = None
+    if config.muphys is not None or config.tmx is not None:
+        entry_state = physics_state.EntryState(
+            grid=grid,
+            interpolation=interpolation_field_source,
+            metrics=metrics_field_source,
+            backend=backend,
+        )
+
     if config.muphys is not None:
         muphys_process = physics_driver.PhysicsProcess(
             name="muphys",
@@ -487,6 +499,26 @@ def initialize_granules(
         processes.append(muphys_process)
 
     if config.tmx is not None:
+        assert entry_state is not None
+        # isrfc_type = 1 (the serialized idealized experiments): fixed kinematic heat
+        # fluxes from the prescribed provider; any other value falls back to the
+        # zero-flux seam default until the interactive surface scheme is ported.
+        surface_flux_provider: tmx_surface_fluxes.SurfaceFluxProvider | None = None
+        if (
+            config.tmx_surface_flux is not None
+            and config.tmx_surface_flux.isrfc_type == tmx_surface_fluxes.FIXED_SURFACE_FLUXES
+        ):
+            assert config.surface_temperature is not None
+            surface_flux_provider = tmx_surface_fluxes.PrescribedFluxProvider(
+                config=config.tmx_surface_flux,
+                pressure_ifc=entry_state.pressure_ifc,
+                surface_temperature=data_alloc.constant_field(
+                    grid,
+                    config.surface_temperature,
+                    dims.CellDim,
+                    allocator=model_backends.get_allocator(backend),
+                ),
+            )
         tmx_metric_state, tmx_interpolation_state = tmx_static_fields.build_tmx_static_states(
             grid=grid,
             geometry_source=geometry_field_source,
@@ -507,7 +539,12 @@ def initialize_granules(
                 backend=backend,
                 exchange=exchange,
             ),
-            state=tmx_state.State(grid=grid, metrics=metrics_field_source, backend=backend),
+            state=tmx_state.State(
+                grid=grid,
+                metrics=metrics_field_source,
+                surface_flux_provider=surface_flux_provider,
+                backend=backend,
+            ),
             time_control=physics_driver.ProcessTimeControl(
                 interval=config.driver.dtime,
                 start_date=config.driver.start_of_simulation,
@@ -519,14 +556,10 @@ def initialize_granules(
 
     physics_granule: physics_driver.PhysicsDriver | None = None
     if processes:
+        assert entry_state is not None
         physics_granule = physics_driver.PhysicsDriver(
             processes,
-            entry_state=physics_state.EntryState(
-                grid=grid,
-                interpolation=interpolation_field_source,
-                metrics=metrics_field_source,
-                backend=backend,
-            ),
+            entry_state=entry_state,
             accumulators=physics_state.TendencyAccumulators(backend=backend),
             apply_to_prognostic=physics_state.ApplyToPrognostic(
                 grid=grid,
