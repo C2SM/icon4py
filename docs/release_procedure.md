@@ -52,6 +52,10 @@ This updates `version` in every `pyproject.toml` and `__init__.py`, and also
 updates cross-package dependency constraints (e.g., `icon4py-common~=0.1.0` ->
 `icon4py-common~=0.2.0`).
 
+Before making changes, the script verifies that every package `pyproject.toml`
+has a `[tool.bumpversion]` section, all `icon4py.*` package versions agree, and all pinned
+cross-package dependency constraints use that version.
+
 Use `--dry-run` to preview changes without writing files.
 
 ### 2. Create a GitHub Release
