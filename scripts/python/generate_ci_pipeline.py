@@ -433,6 +433,11 @@ def _model_mpi_cells(
         return cells
     probe_only = os.environ.get("ICON4PY_CI_MPI_PROBE_ONLY")
     want = set(probe_only.split(":")) if probe_only else None  # "subpackage.backend.level" tokens
+    # TEMPORARY (experiment branch, revert before merge): if set, whitelisted
+    # cells are emitted ONLY as one matrix instance per listed OMP_NUM_THREADS
+    # value (e.g. "6:72:144"), replacing the default unpinned instance.
+    _omp_vals = os.environ.get("ICON4PY_CI_MPI_PROBE_OMP_VALUES")
+    omp_variants = _omp_vals.split(":") if _omp_vals else []
     for subset in subsets:
         for subpackage in subpackages:
             for backend in backends:
@@ -447,21 +452,25 @@ def _model_mpi_cells(
                         f"--backend={backend}",
                         f"--level={level}",
                     ]
-                    cells.append(
-                        _MatrixCell(
-                            job_name=f"test_model_mpi_{subset}_aarch64",
-                            extends=".test_model_mpi_aarch64",
-                            variables={"SELECTION": subset},
-                            matrix={
-                                "MODEL_MPI_SUBPACKAGE": subpackage,
-                                "BACKEND": backend,
-                                "LEVEL": level,
-                                **_mpi_cell_slurm_vars_probe(subpackage, backend, level),
-                            },
-                            session=_nox_session_name("test_model_mpi", f"{subset}, {subpackage}"),
-                            pytest_args=pytest_args,
+                    for omp in omp_variants or [None]:
+                        cells.append(  # noqa: PERF401
+                            _MatrixCell(
+                                job_name=f"test_model_mpi_{subset}_aarch64",
+                                extends=".test_model_mpi_aarch64",
+                                variables={"SELECTION": subset},
+                                matrix={
+                                    "MODEL_MPI_SUBPACKAGE": subpackage,
+                                    "BACKEND": backend,
+                                    "LEVEL": level,
+                                    **_mpi_cell_slurm_vars_probe(subpackage, backend, level),
+                                    **({"OMP_NUM_THREADS": omp} if omp else {}),
+                                },
+                                session=_nox_session_name(
+                                    "test_model_mpi", f"{subset}, {subpackage}"
+                                ),
+                                pytest_args=pytest_args,
+                            )
                         )
-                    )
                     # TEMPORARY (experiment branch, revert before merge): when
                     # ICON4PY_CI_MPI_PROBE_JOBS_EXTRA / _NTASKS_EXTRA are set,
                     # additionally emit the most expensive cell (driver on
