@@ -71,7 +71,7 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
         return cp.asnumpy(array)
 
 
-def array_ns(try_cupy: bool) -> ModuleType:
+def _array_ns(try_cupy: bool) -> ModuleType:
     """CuPy if requested and installed, NumPy otherwise."""
     if try_cupy:
         try:
@@ -87,20 +87,25 @@ def array_ns(try_cupy: bool) -> ModuleType:
 
 def import_array_ns(allocator: gtx_typing.Allocator | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
-    return array_ns(device_utils.is_cupy_device(allocator))
+    return _array_ns(device_utils.is_cupy_device(allocator))
 
 
 def scalar_like_array[ScalarT: gtx_typing.Scalar](
     value: ScalarT,
     allocator: ModuleType | gtx_typing.Allocator | None = None,
 ) -> ScalarLikeArray[ScalarT]:  # type: ignore[type-var] # ScalarT is a subtype of already specified other types
-    """Create a 0-d array (scalar-like) with given value on specified array namespace or allocator."""
-    array_ns = allocator if allocator in (np, xp) else import_array_ns(allocator)
-    assert array_ns is not None and hasattr(array_ns, "asarray")
+    """
+    Create a 0-d array (scalar-like) holding `value`.
+
+    `allocator` selects where the array is placed: pass an array namespace module to
+    allocate in it directly, or a GT4Py allocator to let its device decide between
+    numpy and cupy. `None` means numpy.
+    """
+    array_ns = allocator if isinstance(allocator, ModuleType) else import_array_ns(allocator)
     return array_ns.asarray(value)
 
 
-def as_field(
+def reallocate(
     field: gtx.Field,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
@@ -232,13 +237,21 @@ def array_namespace(array: NDArray) -> ModuleType:
     return array_api_compat.array_namespace(array)
 
 
-def list2field(
+def scattered_field(
     domain: gtx.Domain,
     values: NDArray,
     indices: tuple[NDArray, ...],
     default_value: state_utils.ScalarType,
     allocator: gtx_typing.Allocator,
 ) -> gtx.Field:
+    """
+    Create a field over `domain` by scattering `values` into a `default_value` background.
+
+    `indices` holds one entry per dimension of `domain`, together forming the fancy
+    index that selects the positions `values` is written to; every entry must be an
+    index array of the same shape as `values`, or a slice covering a whole dimension.
+    All positions not selected keep `default_value`.
+    """
     if len(domain) != len(indices):
         raise RuntimeError("The number of indices must match the shape of the domain.")
     assert all(index.shape == indices[0].shape for index in indices if not isinstance(index, slice))
