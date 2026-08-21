@@ -90,6 +90,10 @@ Of course you can write the necessary configuration files manually or start by s
   to output. Defaults to `--no-enable-output`. Works in single-node and MPI runs
   alike (output is collective in MPI runs).
 - `--output-backend`: file format of the output, `zarr` (default) or `netcdf`.
+  Zarr output is written asynchronously by default: the data writes run on a
+  background thread per field group, overlapping the file output with the model
+  computation (`asynchronous` in `icon4py.model.common.io`); netCDF output is
+  written synchronously.
 - `--output-mode`: how the ranks of an MPI run write the output: `distributed`
   (default; every rank writes its own block of a shared store) or `gather`
   (owned entries are collected and written by the root rank). Distributed

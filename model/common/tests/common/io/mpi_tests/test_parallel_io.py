@@ -129,6 +129,7 @@ def create_monitor(
     *,
     horizontal_chunk_size: int | None = None,
     horizontal_shard_size: int | None = None,
+    asynchronous: bool | None = None,
 ) -> common_io.FieldGroupMonitor:
     config = common_io.FieldGroupIOConfig(
         basename="synthetic_output",
@@ -139,6 +140,7 @@ def create_monitor(
         mode=output_mode,
         horizontal_chunk_size=horizontal_chunk_size,
         horizontal_shard_size=horizontal_shard_size,
+        asynchronous=asynchronous,
     )
     vertical = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=NUM_LEVELS),
@@ -187,16 +189,20 @@ def assert_dataset_is_exact(
 @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "output_backend, output_mode, chunking",
+    "output_backend, output_mode, chunking, asynchronous",
     [
-        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, None),
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER, None),
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, None),
+        (common_io.OutputBackend.NETCDF, common_io.OutputMode.GATHER, None, None),
+        # the unconfigured zarr cases write asynchronously (the default); one explicit
+        # synchronous case keeps the fallback path covered in distributed runs
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.GATHER, None, None),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, None, None),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, None, False),
         # sub-chunked, sharded rank blocks (block size rounded up to the shard size)
-        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, (8, 16)),
+        (common_io.OutputBackend.ZARR, common_io.OutputMode.DISTRIBUTED, (8, 16), None),
         pytest.param(
             common_io.OutputBackend.NETCDF,
             common_io.OutputMode.DISTRIBUTED,
+            None,
             None,
             marks=pytest.mark.skipif(
                 netcdf_writers.missing_parallel_support() is not None,
@@ -210,9 +216,11 @@ def assert_dataset_is_exact(
 )
 def test_parallel_output_synthetic_decomposition(
     process_props: decomp_defs.ProcessProperties,
+    *,
     output_backend: common_io.OutputBackend,
     output_mode: common_io.OutputMode,
     chunking: tuple[int, int] | None,
+    asynchronous: bool | None,
     tmp_path: pathlib.Path,
 ) -> None:
     output_path = pathlib.Path(
@@ -235,6 +243,7 @@ def test_parallel_output_synthetic_decomposition(
         output_path,
         horizontal_chunk_size=chunk_size,
         horizontal_shard_size=shard_size,
+        asynchronous=asynchronous,
     )
 
     for step in range(NUM_STEPS):
