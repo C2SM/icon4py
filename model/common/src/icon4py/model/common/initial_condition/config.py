@@ -13,7 +13,7 @@ import pathlib
 from typing import TYPE_CHECKING, Any
 
 from icon4py.model.common import time
-from icon4py.model.common.config import config_io, options as common_config_opt
+from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
@@ -87,12 +87,14 @@ def from_fortran_dict(
     match test_name:
         case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
             log.info("Analytical initial condition for Jablonowski-Williamson test case")
-            config = common_config_opt.construct_config_from_icon(
+            config = common_conf_opt.construct_config_from_icon(
                 jw_ic.JablonowskiWilliamsonConfig, testcase_nml
             )
         case "gauss3D":
             log.info("Analytical initial condition for Gauss 3D test case")
-            config = fortran_config.config_dataclass_from_dict(gauss_ic.Gauss3DConfig, testcase_nml)
+            config = common_conf_opt.construct_config_from_icon(
+                gauss_ic.Gauss3DConfig, testcase_nml
+            )
         case "wk82":
             log.info("Analytical initial condition for Weisman-Klemp test case")
             config = fortran_config.config_dataclass_from_dict(
