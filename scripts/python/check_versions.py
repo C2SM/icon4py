@@ -12,6 +12,8 @@
 
 from __future__ import annotations
 
+import sys
+
 import typer
 from bump_versions import _find_package_dirs, _validate_package_versions
 
@@ -24,3 +26,7 @@ def check_versions() -> None:
     """Verify all package versions and pinned icon4py dependencies agree."""
     current_version = _validate_package_versions(_find_package_dirs())
     typer.echo(f"All icon4py package versions are consistent at {current_version}.")
+
+
+if __name__ == "__main__":
+    sys.exit(cli())
