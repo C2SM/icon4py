@@ -17,8 +17,8 @@ from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_d
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     nonhydro_states,
-    prep_adv_states,
     prognostic_state as prognostics,
+    tracer_prep_adv_states as prep_adv_states,
     tracer_states,
 )
 from icon4py.model.driver import config as driver_config, driver, driver_states, driver_utils

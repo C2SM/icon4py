@@ -46,9 +46,9 @@ from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     nonhydro_states,
-    prep_adv_states,
     prognostic_state as prognostics,
     static_fields,
+    tracer_prep_adv_states as prep_adv_states,
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils

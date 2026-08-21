@@ -19,8 +19,8 @@ from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon
 from icon4py.model.common.math import distance_array_ns
 from icon4py.model.common.metrics import metrics_attributes as metrics_meta
 from icon4py.model.common.states import (
-    prep_adv_states,
     prognostic_state as prognostics,
+    tracer_prep_adv_states as prep_adv_states,
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc

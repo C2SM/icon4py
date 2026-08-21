@@ -25,7 +25,7 @@ from icon4py.model.common.initial_condition.analytical import (
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import prep_adv_states
+from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import fortran_config
 
 

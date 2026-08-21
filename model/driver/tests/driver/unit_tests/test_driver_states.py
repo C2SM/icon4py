@@ -19,7 +19,7 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.common.states import prep_adv_states
+from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.driver import driver_states
 
 from ..fixtures import *  # noqa: F403
