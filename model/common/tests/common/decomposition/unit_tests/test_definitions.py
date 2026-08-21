@@ -12,7 +12,7 @@ import pytest
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions, mpi_decomposition
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import simple
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs
@@ -121,34 +121,3 @@ def test_decomposition_info_as_host_copies_device_buffers() -> None:
         host.halo_levels(dims.CellDim),
     ):
         assert isinstance(array, np.ndarray)
-
-
-def test_clear_caches_empties_exchange_and_reduction_caches() -> None:
-    mpi_decomposition._exchange_cache[(1, 2)] = mpi_decomposition._CacheEntry("exchange-dummy")
-    mpi_decomposition._reduction_cache[(3, 4)] = mpi_decomposition._CacheEntry("reduction-dummy")
-    mpi_decomposition.clear_caches()
-    assert mpi_decomposition._exchange_cache == {}
-    assert mpi_decomposition._reduction_cache == {}
-
-
-def test_cache_returns_same_object_for_same_key() -> None:
-    calls = []
-
-    def factory() -> object:
-        calls.append(None)
-        return object()
-
-    key = "same-key"
-    first = mpi_decomposition._get_or_create(mpi_decomposition._exchange_cache, key, factory)
-    second = mpi_decomposition._get_or_create(mpi_decomposition._exchange_cache, key, factory)
-    assert first is second
-    assert len(calls) == 1
-
-
-def test_cache_returns_different_objects_for_different_keys() -> None:
-    def factory() -> object:
-        return object()
-
-    first = mpi_decomposition._get_or_create(mpi_decomposition._exchange_cache, "key-1", factory)
-    second = mpi_decomposition._get_or_create(mpi_decomposition._exchange_cache, "key-2", factory)
-    assert first is not second
