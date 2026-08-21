@@ -39,9 +39,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    init_cell_khalf_field_with_zero_wp,
-)
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
 )
@@ -64,7 +61,7 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     vertical as v_grid,
 )
-from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.math import smagorinsky, vertical_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
@@ -763,9 +760,9 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._init_cell_khalf_field_with_zero_wp = setup_program(
+        self._set_constant_on_half_levels_on_cells = setup_program(
             backend=backend,
-            program=init_cell_khalf_field_with_zero_wp,
+            program=vertical_operations.set_constant_on_half_levels_on_cells,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary,
                 "horizontal_end": self._end_cell_lateral_boundary_level_4,
@@ -1501,8 +1498,9 @@ class SolveNonhydro:
                     log.debug(
                         "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
                     )
-                    self._init_cell_khalf_field_with_zero_wp(
-                        field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    self._set_constant_on_half_levels_on_cells(
+                        field=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                        value=0.0,
                     )
                 self._update_mass_flux_weighted(
                     rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,

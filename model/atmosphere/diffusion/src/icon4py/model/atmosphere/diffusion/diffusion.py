@@ -24,8 +24,6 @@ import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
-    copy_ck_field,
-    copy_ckhalf_field,
     init_diffusion_local_fields_for_regular_timestep,
     scale_k,
     setup_fields_for_initial_step,
@@ -53,6 +51,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, v
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
+from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -692,8 +691,18 @@ class Diffusion:
             },
             offset_provider=self._grid.connectivities,
         )
-        self.copy_ck_field = setup_program(backend=backend, program=copy_ck_field)
-        self.copy_ckhalf_field = setup_program(backend=backend, program=copy_ckhalf_field)
+        self.copy_field_on_cell_k = setup_program(
+            backend=backend,
+            program=generic_math_operations.copy_field_on_cell_k,
+            horizontal_sizes={"horizontal_start": 0, "horizontal_end": self._grid.num_cells},
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
+        )
+        self.copy_field_on_cell_khalf = setup_program(
+            backend=backend,
+            program=generic_math_operations.copy_field_on_cell_khalf,
+            horizontal_sizes={"horizontal_start": 0, "horizontal_end": self._grid.num_cells},
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels + 1},
+        )
         self.scale_k = setup_program(backend=backend, program=scale_k)
         self.setup_fields_for_initial_step = setup_program(
             backend=backend, program=setup_fields_for_initial_step
@@ -949,7 +958,7 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
-        self.copy_ckhalf_field(prognostic_state.w, self.w_tmp)
+        self.copy_field_on_cell_khalf(field=prognostic_state.w, output_field=self.w_tmp)
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             w_old=self.w_tmp,
@@ -981,8 +990,8 @@ class Diffusion:
                 "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
             )
             log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
-            self.copy_ck_field(
-                prognostic_state.theta_v, self.theta_v_tmp
+            self.copy_field_on_cell_k(
+                field=prognostic_state.theta_v, output_field=self.theta_v_tmp
             )  # TODO(): write in a way that we can avoid the copy
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,

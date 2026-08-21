@@ -10,14 +10,12 @@ import gt4py.next as gtx
 from icon4py.model.atmosphere.dycore.dycore_utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_kdim_field_with_zero_wp,
-)
 from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
     _update_density_exner_wind,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.math.vertical_operations import _set_constant_on_model_levels_on_cells
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -37,7 +35,8 @@ def init_test_fields(  # noqa: PLR0917 [too-many-positional-arguments]
         out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
         domain={dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
     )
-    _init_cell_kdim_field_with_zero_wp(
+    _set_constant_on_model_levels_on_cells(
+        0.0,
         out=z_dwdz_dd,
         domain={dims.CellDim: (cells_start, cells_end), dims.KDim: (vertical_start, vertical_end)},
     )

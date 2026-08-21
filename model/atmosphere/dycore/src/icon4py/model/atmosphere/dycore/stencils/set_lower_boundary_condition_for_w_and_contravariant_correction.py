@@ -8,10 +8,8 @@
 import gt4py.next as gtx
 from gt4py.next import astype
 
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_khalf_field_with_zero_wp,
-)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.math.vertical_operations import _set_constant_on_half_levels_on_cells
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -23,7 +21,7 @@ def _set_lower_boundary_condition_for_w_and_contravariant_correction(
     w_concorr_c_wp = astype(w_concorr_c, wpfloat)
 
     w_nnew_wp = w_concorr_c_wp
-    z_contr_w_fl_l_wp = _init_cell_khalf_field_with_zero_wp()
+    z_contr_w_fl_l_wp = _set_constant_on_half_levels_on_cells(wpfloat("0.0"))
     return w_nnew_wp, z_contr_w_fl_l_wp
 
 

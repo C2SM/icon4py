@@ -261,3 +261,27 @@ def copy_half_level_below_to_model_levels_on_cells(  # noqa: PLR0917 [too-many-p
             dims.KDim: (vertical_start, vertical_end),
         },
     )
+
+
+@gtx.field_operator
+def _set_constant_on_model_levels_on_cells(value: wpfloat) -> fa.CellKField[wpfloat]:
+    return broadcast(value, (dims.CellDim, dims.KDim))
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def set_constant_on_model_levels_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
+    field: fa.CellKField[wpfloat],
+    value: wpfloat,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _set_constant_on_model_levels_on_cells(
+        value=value,
+        out=field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
