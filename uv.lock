@@ -16,10 +16,10 @@ resolution-markers = [
   "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
   "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
   "python_full_version == '3.13.*' and platform_machine == 'ARM64' and sys_platform == 'win32'",
-  "python_full_version < '3.13' and platform_machine == 'ARM64' and sys_platform == 'win32'",
   "python_full_version == '3.13.*' and platform_machine != 'ARM64' and sys_platform == 'win32'",
   "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
   "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+  "python_full_version < '3.13' and platform_machine == 'ARM64' and sys_platform == 'win32'",
   "python_full_version < '3.13' and platform_machine != 'ARM64' and sys_platform == 'win32'",
   "python_full_version < '3.13' and sys_platform == 'emscripten'",
   "python_full_version < '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'"
@@ -1771,7 +1771,7 @@ dependencies = [
 ]
 name = "icon4py"
 source = {editable = "."}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.dev-dependencies]
 build = [
@@ -2027,7 +2027,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-diffusion"
 source = {editable = "model/atmosphere/diffusion"}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
@@ -2044,7 +2044,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-dycore"
 source = {editable = "model/atmosphere/dycore"}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
@@ -2061,7 +2061,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-microphysics"
 source = {editable = "model/atmosphere/subgrid_scale_physics/microphysics"}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
@@ -2079,7 +2079,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-muphys"
 source = {editable = "model/atmosphere/subgrid_scale_physics/muphys"}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
@@ -2096,7 +2096,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-physics-driver"
 source = {editable = "model/atmosphere/subgrid_scale_physics/physics_driver"}
-version = "0.2.0"
+version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
@@ -2112,7 +2112,7 @@ dependencies = [
 ]
 name = "icon4py-atmosphere-tracer-advection"
 source = {editable = "model/atmosphere/tracer_advection"}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
@@ -2136,7 +2136,7 @@ dependencies = [
 ]
 name = "icon4py-bindings"
 source = {editable = "bindings"}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.metadata]
 provides-extras = ["cuda12", "cuda13", "profiling"]
@@ -2183,7 +2183,7 @@ dependencies = [
 ]
 name = "icon4py-common"
 source = {editable = "model/common"}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.metadata]
 provides-extras = ["all", "cuda12", "cuda13", "distributed", "io", "rocm7"]
@@ -2277,7 +2277,7 @@ dependencies = [
 ]
 name = "icon4py-driver"
 source = {editable = "model/driver"}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
@@ -2305,7 +2305,7 @@ dependencies = [
 ]
 name = "icon4py-testing"
 source = {editable = "model/testing"}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
@@ -2332,7 +2332,7 @@ dependencies = [
 ]
 name = "icon4py-tools"
 source = {editable = "tools"}
-version = "0.3.0"
+version = "0.4.1"
 
 [package.metadata]
 provides-extras = ["cuda12", "cuda13", "profiling", "rocm7"]
