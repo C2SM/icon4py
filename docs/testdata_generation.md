@@ -62,6 +62,7 @@ ICON4PY_TEST_DATA_PATH=<...>/build_serialize/experiments ICON4PY_ENABLE_TESTDATA
 Then upload, and open a PR with the version bump:
 
 ```bash
+cd $ICON4PY_TEST_DATA_PATH
 aws --profile cscs-icon4py s3 sync . s3://testdata/experiments/ --exclude "*" --include "*.tar.gz"
 ```
 
