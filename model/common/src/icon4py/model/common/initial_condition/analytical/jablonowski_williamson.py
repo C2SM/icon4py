@@ -11,6 +11,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import math
+import typing
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -21,6 +22,7 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
@@ -50,28 +52,75 @@ class JablonowskiWilliamsonConfig:
     # with the difference that jabw* has p_sfc hardcoded to 1e5, while APE
     # reads zp_ape from the nh_testcase_nml
     # The default values are from mo_nh_jabw_exp.f90 and mo_nh_testcases_nml.f90
-    p_sfc: float = 100000.0
-    # amplitude of the u-perturbation [m/s] (jw_up); jabw_s resets it to 0.0 (matches the ICON namelist default).
-    baroclinic_amplitude: float = 1.0
-    u0: float = 35.0
-    temp0: float = 288.0
-    eta_0: float = 0.252
-    eta_t: float = 0.2
-    gamma: float = 0.005
-    dtemp: float = 4.8e5
-    lon_perturbation_center: float = math.pi / 9.0
-    lat_perturbation_center: float = 2.0 * math.pi / 9.0
-    # Moist tracer initialization (inwp tracers, see init_nh_inwp_tracers in
-    # mo_nh_jabw_exp.f90). Relevant only when transport is active.
-    rh_at_1000hpa: float = 0.7
-    qv_max: float = 20e-3
-    # number of iterations to converge qv against the moisture-dependent
-    # temperature (Fortran l_rediag=.TRUE. => 10 iterations).
-    moisture_init_iterations: int = 10
-    # target column-integrated moisture for APE cases [kg/m**2] (ztmc_ape).
-    global_moisture_content: float = 25.006
-    # rescale qv to global_moisture_content (APE only; Fortran opt_global_moist).
-    normalize_global_moisture: bool = False
+    p_sfc: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(description="??"),
+    ] = 100000.0
+    baroclinic_amplitude: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Amplitude of the u-perturbation [m/s].",
+        ),
+    ] = 1.0
+    u0: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="??",
+        ),
+    ] = 35.0
+    temp0: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="??",
+        ),
+    ] = 288.0
+    eta_0: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="??",
+        ),
+    ] = 0.252
+    eta_t: typing.Annotated[float, common_conf_opt.ConfigOption(description="??")] = 0.2
+    gamma: typing.Annotated[float, common_conf_opt.ConfigOption(description="??")] = 0.005
+    dtemp: typing.Annotated[float, common_conf_opt.ConfigOption(description="??")] = 4.8e5
+    lon_perturbation_center: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="??")
+    ] = math.pi / 9.0
+    lat_perturbation_center: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="??")
+    ] = 2.0 * math.pi / 9.0
+    # inwp tracers, see init_nh_inwp_tracers in mo_nh_jabw_exp.f90
+    rh_at_1000hpa: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Moist tracer initialization (inwp tracers). Relevant only when transport is active",
+        ),
+    ] = 0.7
+    qv_max: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="??",
+        ),
+    ] = 20e-3
+    # Fortran l_rediag=.TRUE. => 10 iterations
+    moisture_init_iterations: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description="Number of iterations to converge qv agains the moisture-dependent temperature.",
+        ),
+    ] = 10
+    global_moisture_content: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Target column-integrated moisture for APE cases [kg/m^2].",
+        ),
+    ] = 25.006
+    normalize_global_moisture: typing.Annotated[
+        bool,
+        common_conf_opt.ConfigOption(
+            description="Rescale qv to global_moisture_content (APE only).",
+        ),
+    ] = False
 
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
