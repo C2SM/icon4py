@@ -58,8 +58,6 @@ class GridGeometry(factory.FieldSource):
         ...     metadata=geometry_attributes.attrs,
         ...     config=geometry_config.GeometryConfig(),
         ...     process_props=process_props,
-        ...     exchange=exchange,
-        ...     global_reductions=global_reductions,
         ... )
         GridGeometry for geometry_type=SPHERE grid=f2e06839-694a-cca1-a3d5-028e0ff326e0 : R9B4
         >>> geometry.get("edge_length")
@@ -97,13 +95,6 @@ class GridGeometry(factory.FieldSource):
         metadata: dict[str, model.FieldMetaData],
         config: geometry_config.GeometryConfig,
         process_props: decomposition.ProcessProperties,
-        # TODO(msimberg): There's no need to pass exchange and global_reductions
-        # if process_props is passed. The former can all be constructed from
-        # process_props. Refactor this consistently across the code base to use
-        # process_props only. We may need special care to make sure that we
-        # don't create many different GHEX communication objects.
-        exchange: decomposition.ExchangeRuntime,
-        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ) -> None:
         """
         Args:
@@ -128,9 +119,9 @@ class GridGeometry(factory.FieldSource):
         self._geometry_type: icon.GeometryType = grid.grid_params.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         self._config = config
-        self._exchange = exchange
         self._process_props = process_props
-        self._global_reductions = global_reductions
+        self._exchange = decomposition.create_exchange(process_props, decomposition_info)
+        self._global_reductions = decomposition.create_reduction(process_props, decomposition_info)
         log.info(
             f"initializing geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )

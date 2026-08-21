@@ -21,7 +21,11 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.decomposition.definitions import Reductions, SingleNodeExchange
+from icon4py.model.common.decomposition.definitions import (
+    Reductions,
+    SingleNodeExchange,
+    SingleNodeReductions,
+)
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -52,6 +56,20 @@ except ImportError as e:
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
+
+
+# Exchange and reduction objects are expensive to build (GHEX context, halo
+# patterns), so they are cached per (process_props, decomposition_info) pair.
+# Keys are object identities; pairs are expected to be few and long-lived.
+# The pytest plugin clears these between tests via clear_caches().
+_exchange_cache: dict[tuple[int, int], decomp_defs.ExchangeRuntime] = {}
+_reduction_cache: dict[tuple[int, int], Reductions] = {}
+
+
+def clear_caches() -> None:
+    """Clear the cached exchange and reduction objects (used by the test suite)."""
+    _exchange_cache.clear()
+    _reduction_cache.clear()
 
 
 def init_mpi() -> None:
@@ -377,10 +395,14 @@ class MultiNodeResult(decomp_defs.ExchangeResult):
 def create_multinode_node_exchange(
     process_props: MPICommProcessProperties, decomp_info: decomp_defs.DecompositionInfo
 ) -> decomp_defs.ExchangeRuntime:
-    if process_props.comm_size > 1:
-        return GHexMultiNodeExchange(process_props, decomp_info)
-    else:
+    if process_props.comm_size == 1:
         return SingleNodeExchange()
+    key = (id(process_props), id(decomp_info))
+    if (exchange := _exchange_cache.get(key)) is not None:
+        return exchange
+    exchange = GHexMultiNodeExchange(process_props, decomp_info)
+    _exchange_cache[key] = exchange
+    return exchange
 
 
 @dataclasses.dataclass
@@ -542,4 +564,11 @@ class GlobalReductions(Reductions):
 def create_global_reduction(
     process_props: MPICommProcessProperties, decomposition_info: decomp_defs.DecompositionInfo
 ) -> Reductions:
-    return GlobalReductions(process_props, decomposition_info)
+    if process_props.comm_size == 1:
+        return SingleNodeReductions()
+    key = (id(process_props), id(decomposition_info))
+    if (reduction := _reduction_cache.get(key)) is not None:
+        return reduction
+    reduction = GlobalReductions(process_props, decomposition_info)
+    _reduction_cache[key] = reduction
+    return reduction
