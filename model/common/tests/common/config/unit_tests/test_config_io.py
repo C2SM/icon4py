@@ -119,7 +119,7 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             time.AbsoluteTime,
             time.AbsoluteTime(year=2026, month=7, day=30, hour=14, minute=41, second=25),
         ),
-        ("300\n...\n", time.RelativeTime, time.RelativeTime(seconds=300)),
+        ("300.0\n...\n", time.RelativeTime, time.RelativeTime(seconds=300)),
         (
             "endtime:\n  type: absolute\n  value: '2026-07-30T14:41:46'\n",
             EndtimeConfig,
@@ -128,7 +128,7 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             ),
         ),
         (
-            "endtime:\n  type: relative\n  value: 50\n",
+            "endtime:\n  type: relative\n  value: 50.0\n",
             EndtimeConfig,
             EndtimeConfig(time.RelativeTime(seconds=50)),
         ),

@@ -43,20 +43,6 @@ class AdvectionDiagnosticState:
 
 
 @dataclasses.dataclass(frozen=True)
-class AdvectionPrepAdvState:
-    """Represents the prepare tracer_advection state needed in tracer_advection."""
-
-    #: horizontal velocity at edges for computation of backward trajectories averaged over dynamics substeps [m/s]
-    vn_traj: fa.EdgeKField[ta.wpfloat]
-
-    #: mass flux at full level edges averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_me: fa.EdgeKField[ta.wpfloat]
-
-    #: mass flux at half level centers averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_ic: fa.CellKField[ta.wpfloat]  # TODO(dastrm): should be KHalfDim
-
-
-@dataclasses.dataclass(frozen=True)
 class AdvectionInterpolationState:
     """Represents the interpolation state needed in tracer_advection."""
 

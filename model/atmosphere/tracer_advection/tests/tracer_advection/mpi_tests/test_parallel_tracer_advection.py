@@ -62,7 +62,7 @@ from ..utils import (
             "2021-06-20T12:00:10.000",
             False,
             1,
-            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
             tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             tracer_advection.VerticalAdvectionType.NO_ADVECTION,
             tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
@@ -71,7 +71,7 @@ from ..utils import (
             "2021-06-20T12:00:20.000",
             True,
             1,
-            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
             tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             tracer_advection.VerticalAdvectionType.NO_ADVECTION,
             tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
@@ -97,7 +97,7 @@ from ..utils import (
     ],
 )
 @pytest.mark.mpi
-def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     date,
     even_timestep,
     ntracer,
