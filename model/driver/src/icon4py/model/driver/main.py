@@ -86,11 +86,6 @@ def main(
     run.
     """
 
-    backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(icon4py_backend)
-    )
-    allocator = model_backends.get_allocator(backend)
-
     process_props = decomposition_defs.get_process_properties(
         decomposition_defs.get_runtype(with_mpi=mpi_decomp.mpi4py is not None)
     )
@@ -109,6 +104,13 @@ def main(
     if output_path is not None:
         driver_overrides["output_path"] = output_path
     config = config.with_overrides(driver=driver_overrides)
+
+    backend = model_options.customize_backend(
+        program=None,
+        backend=driver_utils.get_backend_from_name(icon4py_backend),
+        backend_config=config.driver.backend_config,
+    )
+    allocator = model_backends.get_allocator(backend)
 
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
