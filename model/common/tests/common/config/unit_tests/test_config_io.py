@@ -35,6 +35,30 @@ class ExampleEnum(int, enum.Enum):
     BAR = enum.auto()
 
 
+@dataclasses.dataclass
+class ABConfig:
+    a: int
+    b: int
+
+
+@dataclasses.dataclass
+class BConfig:
+    b: int
+
+
+@dataclasses.dataclass
+class BDConfig:
+    b: int
+    d: int
+
+
+@dataclasses.dataclass(frozen=True)
+class SharedConfig(config_io.ConfigWithShared):
+    abc: ABConfig
+    bc: BConfig
+    bdc: BDConfig
+
+
 type CONFIG_UNION = ExampleConfig | AlternativeConfig
 config_io.register_config_union(
     CONFIG_UNION.__value__, {"example": ExampleConfig, "alt": AlternativeConfig}
@@ -114,27 +138,35 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
 @pytest.mark.parametrize(
     ("input_str", "config_type", "reference"),
     (
-        (
+        pytest.param(
             "'2026-07-30T14:41:25'\n",
             time.AbsoluteTime,
             time.AbsoluteTime(year=2026, month=7, day=30, hour=14, minute=41, second=25),
+            id="abstime",
         ),
-        ("300\n...\n", time.RelativeTime, time.RelativeTime(seconds=300)),
-        (
+        pytest.param("300\n...\n", time.RelativeTime, time.RelativeTime(seconds=300), id="reltime"),
+        pytest.param(
             "endtime:\n  type: absolute\n  value: '2026-07-30T14:41:46'\n",
             EndtimeConfig,
             EndtimeConfig(
                 time.AbsoluteTime(year=2026, month=7, day=30, hour=14, minute=41, second=46)
             ),
+            id="endtime-abs",
         ),
-        (
+        pytest.param(
             "endtime:\n  type: relative\n  value: 50\n",
             EndtimeConfig,
             EndtimeConfig(time.RelativeTime(seconds=50)),
+            id="endtime-rel",
         ),
-        ("endtime:\n  type: numsteps\n  value: 42\n", EndtimeConfig, EndtimeConfig(42)),
-        ("foo\n...\n", ExampleEnum, ExampleEnum.FOO),
-        (
+        pytest.param(
+            "endtime:\n  type: numsteps\n  value: 41\n",
+            EndtimeConfig,
+            EndtimeConfig(41),
+            id="endtime-nstep",
+        ),
+        pytest.param("foo\n...\n", ExampleEnum, ExampleEnum.FOO, id="enum"),
+        pytest.param(
             textwrap.dedent(
                 """\
                 union:
@@ -145,8 +177,9 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             ),
             UnionConfig,
             UnionConfig(ExampleConfig(True, 42)),
+            id="union-ex",
         ),
-        (
+        pytest.param(
             textwrap.dedent(
                 """\
                 union:
@@ -156,6 +189,32 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             ),
             UnionConfig,
             UnionConfig(AlternativeConfig(7)),
+            id="union-alt",
+        ),
+        pytest.param(
+            textwrap.dedent(
+                """\
+                shared:
+                  - b: 42
+                    consumers:
+                      - abc
+                      - bc
+                abc:
+                  a: 1
+                bc:
+                bdc:
+                  b: 123
+                  d: 4
+                """
+            ),
+            SharedConfig,
+            SharedConfig(
+                shared=[config_io.SharedOptionSet(options={"b": 42}, consumers=["abc", "bc"])],
+                abc=ABConfig(a=1, b=42),
+                bc=BConfig(b=42),
+                bdc=BDConfig(b=123, d=4),
+            ),
+            id="shared",
         ),
     ),
 )
@@ -167,3 +226,48 @@ def test_roundtrip_customized_type(
     read_value = config_io.read_yaml_str(input_str, config_type)
     assert read_value == reference
     assert config_io.write_yaml_str(read_value) == input_str
+
+
+def test_dispatch_shared_short_form() -> None:
+    testee = config_io.read_yaml_str(
+        textwrap.dedent(
+            """
+            shared:
+            - b: 42
+              consumers:
+              - abc
+              - bc
+            abc:
+              a: 1
+            bc:
+            bdc:
+              b: 123
+              d: 4
+            """
+        ),
+        SharedConfig,
+    )
+
+    assert testee.abc.b == 42
+    assert testee.bc.b == 42
+    assert testee.bdc.b == 123
+
+
+def test_dispatch_shared_clash_raises() -> None:
+    with pytest.raises(ValueError):
+        _ = config_io.read_yaml_str(
+            textwrap.dedent(
+                """
+            shared:
+            - b: 42
+              consumers: [abc, bc, bdc]
+            abc:
+              a: 1
+            bc:
+            bdc:
+              b: 123
+              d: 4
+            """
+            ),
+            SharedConfig,
+        )
