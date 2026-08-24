@@ -6,11 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common.initial_condition.config import IC_CONFIG, create, from_fortran_dict
+from icon4py.model.common.initial_condition.config import IC_CONFIG, apply, from_fortran_dict
 
 
 __all__ = [
     "IC_CONFIG",
-    "create",
+    "apply",
     "from_fortran_dict",
 ]
