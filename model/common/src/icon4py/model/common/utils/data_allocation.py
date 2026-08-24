@@ -113,21 +113,6 @@ def reallocate(
     return gtx.as_field(field.domain, data=field.ndarray, allocator=allocator)
 
 
-def field_from_array(
-    data: NDArray,
-    *dims: gtx.Dimension,
-    dtype: npt.DTypeLike | None = None,
-    allocator: gtx_typing.Allocator | None = None,
-) -> gtx.Field:
-    """
-    Create a field over `dims` holding `data`, on the device the allocator selects.
-
-    For inputs that have to be computed with NumPy first, such as index patterns. Writing
-    into an already allocated field instead only works while its buffer is host memory.
-    """
-    return gtx.as_field(dims, data, dtype=dtype, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
-
-
 def random_field(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
