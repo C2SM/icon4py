@@ -36,7 +36,6 @@ from icon4py.model.common import (
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
-from icon4py.model.common.initial_condition import from_file
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
@@ -200,6 +199,11 @@ class DriverConfig:
         kwargs["start_of_timestepping"] = kwargs["start_of_simulation"]
         return cls(**kwargs)
 
+    @property
+    def is_restart(self) -> bool:
+        """Whether the time loop starts at a later date than the simulation."""
+        return self.start_of_timestepping != self.start_of_simulation
+
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ExperimentConfig(config_io.ConfigWithShared):
@@ -222,15 +226,6 @@ class ExperimentConfig(config_io.ConfigWithShared):
     tmx: tmx_config.TmxConfig | None = None
 
     def __post_init__(self) -> None:
-        # The file-based initial condition needs the clock of the driver to know which
-        # savepoint to read: the initial state, or the state of a later time step when
-        # restarting. 'with_overrides' rebuilds the config, so the two stay in sync.
-        initial_condition_config = self.initial_condition
-        if isinstance(initial_condition_config, from_file.FromFileConfig):
-            initial_condition_config.start_of_simulation = self.driver.start_of_simulation
-            initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
-            initial_condition_config.dtime = self.driver.dtime
-
         if self.driver.diffuse_before_time_loop and not (
             self.nonhydrostatic is not None
             and self.diffusion is not None
