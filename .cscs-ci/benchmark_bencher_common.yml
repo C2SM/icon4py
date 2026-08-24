@@ -6,6 +6,9 @@
     STENCIL_TEST_SELECTION: "test_Test and compile_time_domain"
     GRANULE_TEST_SELECTION: "test_diffusion_benchmark or test_benchmark_solve_nonhydro"
     OMP_NUM_THREADS: 64
+    OMP_DISPLAY_ENV: "VERBOSE"
+    OMP_DISPLAY_AFFINITY: "TRUE"
+    OMP_AFFINITY_FORMAT: "thread_num=%n,affinity=%A"
 
 .benchmark_nox_job:
   stage: benchmark
