@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.states import static_fields
+    from icon4py.model.driver import config as driver_config
 
 log = logging.getLogger(__name__)
 
@@ -141,8 +142,7 @@ class JablonowskiWilliamsonConfig:
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     *,
-    config: JablonowskiWilliamsonConfig,
-    vertical_config: v_grid.VerticalGridConfig,
+    config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
@@ -159,6 +159,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     The reference experiment config for this is
     exp.exclaim_nh35_tri_jws_sb.
     """
+    ic_config = config.initial_condition
+    assert isinstance(ic_config, JablonowskiWilliamsonConfig)
     allocator = model_backends.get_allocator(backend)
     array_ns = data_alloc.import_array_ns(allocator)
 
@@ -186,16 +188,16 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     c_lin_e = interpolation.get(interpolation_attributes.C_LIN_E)
     zone_idx = testcases_utils.zone_indices(grid)
 
-    p_sfc = config.p_sfc
-    jw_baroclinic_amplitude = config.baroclinic_amplitude
-    u0 = config.u0
-    temp0 = config.temp0
-    eta_0 = config.eta_0
-    eta_t = config.eta_t
-    gamma = config.gamma
-    dtemp = config.dtemp
-    lon_perturbation_center = config.lon_perturbation_center
-    lat_perturbation_center = config.lat_perturbation_center
+    p_sfc = ic_config.p_sfc
+    jw_baroclinic_amplitude = ic_config.baroclinic_amplitude
+    u0 = ic_config.u0
+    temp0 = ic_config.temp0
+    eta_0 = ic_config.eta_0
+    eta_t = ic_config.eta_t
+    gamma = ic_config.gamma
+    dtemp = ic_config.dtemp
+    lon_perturbation_center = ic_config.lon_perturbation_center
+    lat_perturbation_center = ic_config.lat_perturbation_center
 
     num_cells = grid.num_cells
     num_levels = grid.num_levels
@@ -304,7 +306,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("U2vn computation completed.")
 
-    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
+    _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
@@ -368,9 +370,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             ddqz_z_full=ddqz_z_full_field.ndarray,
             qv=tracer_state_now.qv.ndarray,
             global_reductions=global_reductions,
-            n_iter=config.moisture_init_iterations,
-            rh_at_1000hpa=config.rh_at_1000hpa,
-            qv_max=config.qv_max,
-            global_moisture_content=config.global_moisture_content,
-            normalize_global_moisture=config.normalize_global_moisture,
+            n_iter=ic_config.moisture_init_iterations,
+            rh_at_1000hpa=ic_config.rh_at_1000hpa,
+            qv_max=ic_config.qv_max,
+            global_moisture_content=ic_config.global_moisture_content,
+            normalize_global_moisture=ic_config.normalize_global_moisture,
         )

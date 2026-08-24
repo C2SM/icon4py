@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.states import static_fields
+    from icon4py.model.driver import config as driver_config
 
 log = logging.getLogger(__name__)
 
@@ -61,8 +62,7 @@ class Gauss3DConfig:
 
 def gauss3d(
     *,
-    config: Gauss3DConfig,
-    vertical_config: v_grid.VerticalGridConfig,
+    config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
@@ -75,6 +75,8 @@ def gauss3d(
     The reference experiment config for this is
     exp.exclaim_gauss3d_sb.
     """
+    ic_config = config.initial_condition
+    assert isinstance(ic_config, Gauss3DConfig)
     allocator = model_backends.get_allocator(backend)
     array_ns = data_alloc.import_array_ns(allocator)
 
@@ -98,9 +100,9 @@ def gauss3d(
     num_edges = grid.num_edges
     num_levels = grid.num_levels
 
-    u0 = config.u0
-    t0 = config.t0
-    brunt_vais = config.brunt_vais
+    u0 = ic_config.u0
+    t0 = ic_config.t0
+    brunt_vais = ic_config.brunt_vais
 
     exner_ndarray = prognostic_state_now.exner.ndarray
     rho_ndarray = prognostic_state_now.rho.ndarray
@@ -144,7 +146,7 @@ def gauss3d(
     )
     log.info("Hydrostatic adjustment (constant theta_v) computation completed.")
 
-    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
+    _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,

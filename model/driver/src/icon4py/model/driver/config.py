@@ -36,7 +36,6 @@ from icon4py.model.common import (
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
-from icon4py.model.common.initial_condition import from_file
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
@@ -329,6 +328,11 @@ class DriverConfig:
             **overrides,
         )
 
+    @property
+    def is_restart(self) -> bool:
+        """Whether the time loop starts at a later date than the simulation."""
+        return self.start_of_timestepping != self.start_of_simulation
+
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ExperimentConfig(config_io.ConfigWithShared):
@@ -348,15 +352,6 @@ class ExperimentConfig(config_io.ConfigWithShared):
     muphys: muphys_config.MuphysConfig | None = None
 
     def __post_init__(self) -> None:
-        # The file-based initial condition needs the clock of the driver to know which
-        # savepoint to read: the initial state, or the state of a later time step when
-        # restarting. 'with_overrides' rebuilds the config, so the two stay in sync.
-        initial_condition_config = self.initial_condition
-        if isinstance(initial_condition_config, from_file.FromFileConfig):
-            initial_condition_config.start_of_simulation = self.driver.start_of_simulation
-            initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
-            initial_condition_config.dtime = self.driver.dtime
-
         if self.driver.diffuse_before_time_loop and not (
             self.nonhydrostatic is not None
             and self.diffusion is not None
@@ -466,13 +461,7 @@ def read_experiment_config_from_fortran(
         atm_dict=atm_dict,
         input_dict=input_dict,
         data_path=config_file_path,
-        start_of_simulation=driver_cfg.start_of_simulation,
-        start_of_timestepping=driver_cfg.start_of_timestepping,
-        dtime=driver_cfg.dtime,
     )
-
-    if not do_tracer_advection and isinstance(initial_condition_cfg, from_file.FromFileConfig):
-        initial_condition_cfg = dataclasses.replace(initial_condition_cfg, ntracer=0)
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
