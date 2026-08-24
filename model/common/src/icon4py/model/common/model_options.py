@@ -16,8 +16,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
-from icon4py.model.common import backend_configuration as backend_cfg, model_backends
-
+from icon4py.model.common import backend_configuration as backend_cfg, model_backends, dimension
 
 log = logging.getLogger(__name__)
 
@@ -85,6 +84,8 @@ def get_dace_options(
         # optimization_args["make_persistent"] = True
         optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
         optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
+        optimization_args["amd_heuristic"] = True
+        optimization_args["blocking_only_if_independent_nodes"] = False
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
