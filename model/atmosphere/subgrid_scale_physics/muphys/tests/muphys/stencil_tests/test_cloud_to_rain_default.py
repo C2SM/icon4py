@@ -11,18 +11,18 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import cloud_to_rain
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestCloudToRainDefault(StencilTest):
+class TestCloudToRainDefault(stencil_tests.StencilTest):
     PROGRAM = cloud_to_rain
     OUTPUTS = ("conversion_rate",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         t: np.ndarray,
         qc: np.ndarray,
@@ -32,12 +32,12 @@ class TestCloudToRainDefault(StencilTest):
     ) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
-    @pytest.fixture
-    def input_data(self, grid):
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
         return dict(
-            t=data_alloc.constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qr=data_alloc.constant_field(grid, 52312e-7, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t=data_alloc.constant_field(281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qc=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            qr=data_alloc.constant_field(52312e-7, dims.CellDim, dims.KDim, dtype=wpfloat),
             nc=100.0,
-            conversion_rate=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            conversion_rate=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )
