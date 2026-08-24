@@ -16,8 +16,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def compute_virtual_potential_temperature_numpy(
@@ -27,13 +26,13 @@ def compute_virtual_potential_temperature_numpy(
     return virtual_temperature * (constants.P0REF / pressure) ** constants.RD_O_CPD
 
 
-class TestComputeVirtualPotentialTemperature(StencilTest):
+class TestComputeVirtualPotentialTemperature(stencil_tests.StencilTest):
     PROGRAM = compute_virtual_potential_temperature
     OUTPUTS = ("theta_v",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         virtual_temperature: np.ndarray,
         pressure: np.ndarray,
@@ -42,15 +41,17 @@ class TestComputeVirtualPotentialTemperature(StencilTest):
         theta_v = compute_virtual_potential_temperature_numpy(virtual_temperature, pressure)
         return dict(theta_v=theta_v)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         virtual_temperature = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=180.0, high=320.0, dtype=wpfloat
+            dims.CellDim, dims.KDim, low=180.0, high=320.0, dtype=wpfloat
         )
         pressure = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e3, high=1.05e5, dtype=wpfloat
+            dims.CellDim, dims.KDim, low=1.0e3, high=1.05e5, dtype=wpfloat
         )
-        theta_v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_v = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             virtual_temperature=virtual_temperature,

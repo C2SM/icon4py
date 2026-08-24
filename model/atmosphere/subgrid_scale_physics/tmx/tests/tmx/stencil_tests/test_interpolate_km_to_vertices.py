@@ -16,8 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def interpolate_km_to_vertices_numpy(
@@ -27,37 +26,40 @@ def interpolate_km_to_vertices_numpy(
 
 
 @pytest.mark.skip_value_error
-class TestInterpolateKmToVertices(StencilTest):
+class TestInterpolateKmToVertices(stencil_tests.StencilTest):
     PROGRAM = interpolate_km_to_vertices
     OUTPUTS = ("km_iv",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         km_ic: np.ndarray,
         cells_aw_verts: np.ndarray,
         km_min: float,
         **kwargs,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         km_iv = interpolate_km_to_vertices_numpy(
             km_ic,
             cells_aw_verts=cells_aw_verts,
-            v2c=connectivities[dims.V2CDim],
+            v2c=connectivities[dims.V2C],
             km_min=km_min,
         )
         return dict(km_iv=km_iv)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         km_ic = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=wpfloat, extend={dims.KDim: 1}
+            dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=wpfloat, extend={dims.KDim: 1}
         )
         cells_aw_verts = data_alloc.random_field(
-            grid, dims.VertexDim, dims.V2CDim, low=0.0, high=1.0 / 6.0, dtype=wpfloat
+            dims.VertexDim, dims.V2CDim, low=0.0, high=1.0 / 6.0, dtype=wpfloat
         )
         km_iv = data_alloc.zero_field(
-            grid, dims.VertexDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
+            dims.VertexDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
         )
 
         return dict(

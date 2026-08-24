@@ -16,19 +16,18 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 from .test_prepare_tridiagonal_matrix_cells import prepare_diffusion_matrix_numpy
 
 
-class TestPrepareTridiagonalMatrixEdges(StencilTest):
+class TestPrepareTridiagonalMatrixEdges(stencil_tests.StencilTest):
     PROGRAM = prepare_tridiagonal_matrix_edges
     OUTPUTS = ("a", "b", "c")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         inv_mair: np.ndarray,
         inv_dz: np.ndarray,
@@ -49,21 +48,21 @@ class TestPrepareTridiagonalMatrixEdges(StencilTest):
         )
         return dict(a=a, b=b, c=c)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         return dict(
             inv_mair=data_alloc.random_field(
-                grid, dims.EdgeDim, dims.KDim, low=0.1, high=2.0, dtype=wpfloat
+                dims.EdgeDim, dims.KDim, low=0.1, high=2.0, dtype=wpfloat
             ),
             inv_dz=data_alloc.random_field(
-                grid, dims.EdgeDim, dims.KDim, low=0.1, high=2.0, dtype=wpfloat
+                dims.EdgeDim, dims.KDim, low=0.1, high=2.0, dtype=wpfloat
             ),
-            zk=data_alloc.random_field(
-                grid, dims.EdgeDim, dims.KDim, low=0.1, high=2.0, dtype=wpfloat
-            ),
-            a=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat),
-            b=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat),
-            c=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat),
+            zk=data_alloc.random_field(dims.EdgeDim, dims.KDim, low=0.1, high=2.0, dtype=wpfloat),
+            a=data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=wpfloat),
+            b=data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=wpfloat),
+            c=data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=wpfloat),
             zprefac=wpfloat(1.0),
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),

@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.modify_w_diffus
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -31,9 +30,9 @@ class TestModifyWDiffusionMatrixBoundary(stencil_tests.StencilTest):
     PROGRAM = modify_w_diffusion_matrix_boundary
     OUTPUTS = ("b",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         b: np.ndarray,
         km_c: np.ndarray,
@@ -57,17 +56,16 @@ class TestModifyWDiffusionMatrixBoundary(stencil_tests.StencilTest):
         )
         return dict(b=b_out)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        b = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        km_c = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
-        )
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        b = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        km_c = data_alloc.random_field(dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
         inv_dz = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=0.1, high=2.0, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, low=0.1, high=2.0, dtype=ta.wpfloat
         )
         inv_mair_ic = data_alloc.random_field(
-            grid,
             dims.CellDim,
             dims.KDim,
             low=0.1,

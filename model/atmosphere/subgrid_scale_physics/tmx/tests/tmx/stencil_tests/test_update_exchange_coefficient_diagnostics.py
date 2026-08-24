@@ -17,12 +17,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_exchange
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def exchange_coefficient_diagnostics_reference(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    grid: base.Grid,
     *,
     km_ic: np.ndarray,
     kh_ic: np.ndarray,
@@ -40,11 +39,10 @@ def exchange_coefficient_diagnostics_reference(
 
 
 def exchange_coefficient_diagnostics_input_data(
-    grid: base.Grid, use_km_const: bool
+    data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid, use_km_const: bool
 ) -> dict[str, Any]:
     def half_level_field() -> gtx.Field:
         return data_alloc.random_field(
-            grid,
             dims.CellDim,
             dims.KDim,
             low=1.0e-3,
@@ -56,8 +54,8 @@ def exchange_coefficient_diagnostics_input_data(
     return dict(
         km_ic=half_level_field(),
         kh_ic=half_level_field(),
-        km=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-        kh=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+        km=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+        kh=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         km_const=wpfloat(1.0),
         rturb_prandtl=wpfloat(3.0),
         use_km_const=use_km_const,
@@ -77,25 +75,33 @@ STATIC_VARIANTS = {
 }
 
 
-class TestUpdateExchangeCoefficientDiagnostics(StencilTest):
+class TestUpdateExchangeCoefficientDiagnostics(stencil_tests.StencilTest):
     PROGRAM = update_exchange_coefficient_diagnostics
     OUTPUTS = ("km", "kh")
     STATIC_PARAMS = STATIC_VARIANTS
 
-    reference = staticmethod(exchange_coefficient_diagnostics_reference)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return exchange_coefficient_diagnostics_reference(grid, **kwargs)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        return exchange_coefficient_diagnostics_input_data(grid, use_km_const=False)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        return exchange_coefficient_diagnostics_input_data(data_alloc, grid, use_km_const=False)
 
 
-class TestUpdateExchangeCoefficientDiagnosticsKmConst(StencilTest):
+class TestUpdateExchangeCoefficientDiagnosticsKmConst(stencil_tests.StencilTest):
     PROGRAM = update_exchange_coefficient_diagnostics
     OUTPUTS = ("km", "kh")
     STATIC_PARAMS = STATIC_VARIANTS
 
-    reference = staticmethod(exchange_coefficient_diagnostics_reference)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return exchange_coefficient_diagnostics_reference(grid, **kwargs)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        return exchange_coefficient_diagnostics_input_data(grid, use_km_const=True)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        return exchange_coefficient_diagnostics_input_data(data_alloc, grid, use_km_const=True)

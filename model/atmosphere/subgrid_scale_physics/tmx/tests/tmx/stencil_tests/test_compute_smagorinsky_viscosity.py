@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -17,8 +19,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def stability_term_classic_numpy(
@@ -92,7 +93,7 @@ def compute_smagorinsky_viscosity_numpy(
 
 
 def smagorinsky_viscosity_reference(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    grid: base.Grid,
     *,
     mech_prod: np.ndarray,
     bruvais: np.ndarray,
@@ -126,16 +127,16 @@ def smagorinsky_viscosity_reference(
 
 
 def smagorinsky_viscosity_input_data(
+    data_alloc: stencil_tests.DataAllocationWrapper,
     grid: base.Grid,
     use_louis: bool,
     use_louis_land: bool,
     use_louis_ice: bool,
 ) -> dict[str, gtx.Field | state_utils.ScalarType]:
     mech_prod = data_alloc.random_field(
-        grid, dims.CellDim, dims.KDim, low=0.0, high=1.0e-2, dtype=wpfloat, extend={dims.KDim: 1}
+        dims.CellDim, dims.KDim, low=0.0, high=1.0e-2, dtype=wpfloat, extend={dims.KDim: 1}
     )
     bruvais = data_alloc.random_field(
-        grid,
         dims.CellDim,
         dims.KDim,
         low=-1.0e-3,
@@ -144,22 +145,16 @@ def smagorinsky_viscosity_input_data(
         extend={dims.KDim: 1},
     )
     rho_ic = data_alloc.random_field(
-        grid, dims.CellDim, dims.KDim, low=0.5, high=1.4, dtype=wpfloat, extend={dims.KDim: 1}
+        dims.CellDim, dims.KDim, low=0.5, high=1.4, dtype=wpfloat, extend={dims.KDim: 1}
     )
     mixing_length_sq = data_alloc.random_field(
-        grid, dims.CellDim, dims.KDim, low=0.0, high=1.0e4, dtype=wpfloat, extend={dims.KDim: 1}
+        dims.CellDim, dims.KDim, low=0.0, high=1.0e4, dtype=wpfloat, extend={dims.KDim: 1}
     )
-    scaling_factor_louis = data_alloc.random_field(
-        grid, dims.CellDim, low=0.5, high=2.0, dtype=wpfloat
-    )
-    fract_land = data_alloc.random_field(grid, dims.CellDim, low=0.0, high=1.0, dtype=wpfloat)
-    fract_ice = data_alloc.random_field(grid, dims.CellDim, low=0.0, high=1.0, dtype=wpfloat)
-    km_ic = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
-    )
-    kh_ic = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
-    )
+    scaling_factor_louis = data_alloc.random_field(dims.CellDim, low=0.5, high=2.0, dtype=wpfloat)
+    fract_land = data_alloc.random_field(dims.CellDim, low=0.0, high=1.0, dtype=wpfloat)
+    fract_ice = data_alloc.random_field(dims.CellDim, low=0.0, high=1.0, dtype=wpfloat)
+    km_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1})
+    kh_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1})
 
     return dict(
         mech_prod=mech_prod,
@@ -192,57 +187,73 @@ STATIC_VARIANTS = {
 }
 
 
-class TestComputeSmagorinskyViscosityClassic(StencilTest):
+class TestComputeSmagorinskyViscosityClassic(stencil_tests.StencilTest):
     PROGRAM = compute_smagorinsky_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
     STATIC_PARAMS = STATIC_VARIANTS
 
-    reference = staticmethod(smagorinsky_viscosity_reference)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return smagorinsky_viscosity_reference(grid, **kwargs)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         return smagorinsky_viscosity_input_data(
-            grid, use_louis=False, use_louis_land=True, use_louis_ice=True
+            data_alloc, grid, use_louis=False, use_louis_land=True, use_louis_ice=True
         )
 
 
-class TestComputeSmagorinskyViscosityLouis(StencilTest):
+class TestComputeSmagorinskyViscosityLouis(stencil_tests.StencilTest):
     PROGRAM = compute_smagorinsky_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
     STATIC_PARAMS = STATIC_VARIANTS
 
-    reference = staticmethod(smagorinsky_viscosity_reference)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return smagorinsky_viscosity_reference(grid, **kwargs)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         return smagorinsky_viscosity_input_data(
-            grid, use_louis=True, use_louis_land=True, use_louis_ice=True
+            data_alloc, grid, use_louis=True, use_louis_land=True, use_louis_ice=True
         )
 
 
-class TestComputeSmagorinskyViscosityLouisMaskedLandIce(StencilTest):
+class TestComputeSmagorinskyViscosityLouisMaskedLandIce(stencil_tests.StencilTest):
     PROGRAM = compute_smagorinsky_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
     STATIC_PARAMS = STATIC_VARIANTS
 
-    reference = staticmethod(smagorinsky_viscosity_reference)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return smagorinsky_viscosity_reference(grid, **kwargs)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         return smagorinsky_viscosity_input_data(
-            grid, use_louis=True, use_louis_land=False, use_louis_ice=False
+            data_alloc, grid, use_louis=True, use_louis_land=False, use_louis_ice=False
         )
 
 
-class TestComputeSmagorinskyViscosityLouisMaskedLandOnly(StencilTest):
+class TestComputeSmagorinskyViscosityLouisMaskedLandOnly(stencil_tests.StencilTest):
     PROGRAM = compute_smagorinsky_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
     STATIC_PARAMS = STATIC_VARIANTS
 
-    reference = staticmethod(smagorinsky_viscosity_reference)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return smagorinsky_viscosity_reference(grid, **kwargs)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         return smagorinsky_viscosity_input_data(
-            grid, use_louis=True, use_louis_land=False, use_louis_ice=True
+            data_alloc, grid, use_louis=True, use_louis_land=False, use_louis_ice=True
         )

@@ -16,8 +16,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def init_smagorinsky_mixing_length_numpy(
@@ -41,13 +40,13 @@ def init_smagorinsky_mixing_length_numpy(
     )
 
 
-class TestInitSmagorinskyMixingLength(StencilTest):
+class TestInitSmagorinskyMixingLength(stencil_tests.StencilTest):
     PROGRAM = init_smagorinsky_mixing_length
     OUTPUTS = ("mixing_length_sq",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         dz_ic: np.ndarray,
         geopot_agl_ic: np.ndarray,
@@ -67,10 +66,11 @@ class TestInitSmagorinskyMixingLength(StencilTest):
         )
         return dict(mixing_length_sq=mixing_length_sq)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dz_ic = data_alloc.random_field(
-            grid,
             dims.CellDim,
             dims.KDim,
             low=10.0,
@@ -79,7 +79,6 @@ class TestInitSmagorinskyMixingLength(StencilTest):
             extend={dims.KDim: 1},
         )
         geopot_agl_ic = data_alloc.random_field(
-            grid,
             dims.CellDim,
             dims.KDim,
             low=0.0,
@@ -87,11 +86,9 @@ class TestInitSmagorinskyMixingLength(StencilTest):
             dtype=wpfloat,
             extend={dims.KDim: 1},
         )
-        cell_area = data_alloc.random_field(
-            grid, dims.CellDim, low=1.0e6, high=1.0e8, dtype=wpfloat
-        )
+        cell_area = data_alloc.random_field(dims.CellDim, low=1.0e6, high=1.0e8, dtype=wpfloat)
         mixing_length_sq = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
+            dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
         )
 
         return dict(

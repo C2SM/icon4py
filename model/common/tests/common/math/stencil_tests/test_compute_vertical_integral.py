@@ -16,28 +16,29 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.math.vertical_operations import compute_vertical_integral
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import Output, StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestComputeVerticalIntegral(StencilTest):
+class TestComputeVerticalIntegral(stencil_tests.StencilTest):
     PROGRAM = compute_vertical_integral
     OUTPUTS = ("vertical_integral",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         integrand: np.ndarray,
         **kwargs: Any,
     ) -> dict:
         return dict(vertical_integral=np.cumsum(integrand, axis=1))
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         return dict(
-            integrand=data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            vertical_integral=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            integrand=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            vertical_integral=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
@@ -45,7 +46,7 @@ class TestComputeVerticalIntegral(StencilTest):
         )
 
 
-class TestComputeVerticalIntegralReadAtBottomLevel(StencilTest):
+class TestComputeVerticalIntegralReadAtBottomLevel(stencil_tests.StencilTest):
     """
     Verify only the last full level of the running sum against the column sum.
 
@@ -56,16 +57,16 @@ class TestComputeVerticalIntegralReadAtBottomLevel(StencilTest):
 
     PROGRAM = compute_vertical_integral
     OUTPUTS = (
-        Output(
+        stencil_tests.Output(
             "vertical_integral",
             refslice=(slice(None), slice(-1, None)),
             gtslice=(slice(None), slice(-1, None)),
         ),
     )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         integrand: np.ndarray,
         **kwargs: Any,
@@ -74,11 +75,13 @@ class TestComputeVerticalIntegralReadAtBottomLevel(StencilTest):
         vertical_integral[:, -1] = np.sum(integrand, axis=1)
         return dict(vertical_integral=vertical_integral)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         return dict(
-            integrand=data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            vertical_integral=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            integrand=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            vertical_integral=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

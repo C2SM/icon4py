@@ -17,12 +17,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_surface
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def surface_energy_flux_reference(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    grid: base.Grid,
     *,
     sensible_heat_flux: np.ndarray,
     evapotranspiration: np.ndarray,
@@ -39,18 +38,18 @@ def surface_energy_flux_reference(
     return dict(flux_x=flux_x)
 
 
-def surface_energy_flux_input_data(grid: base.Grid, use_internal_energy: bool) -> dict[str, Any]:
+def surface_energy_flux_input_data(
+    data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid, use_internal_energy: bool
+) -> dict[str, Any]:
     return dict(
         sensible_heat_flux=data_alloc.random_field(
-            grid, dims.CellDim, low=-200.0, high=200.0, dtype=wpfloat
+            dims.CellDim, low=-200.0, high=200.0, dtype=wpfloat
         ),
         evapotranspiration=data_alloc.random_field(
-            grid, dims.CellDim, low=-1.0e-4, high=1.0e-4, dtype=wpfloat
+            dims.CellDim, low=-1.0e-4, high=1.0e-4, dtype=wpfloat
         ),
-        temperature_sfc=data_alloc.random_field(
-            grid, dims.CellDim, low=220.0, high=320.0, dtype=wpfloat
-        ),
-        flux_x=data_alloc.zero_field(grid, dims.CellDim, dtype=wpfloat),
+        temperature_sfc=data_alloc.random_field(dims.CellDim, low=220.0, high=320.0, dtype=wpfloat),
+        flux_x=data_alloc.zero_field(dims.CellDim, dtype=wpfloat),
         use_internal_energy=use_internal_energy,
         horizontal_start=0,
         horizontal_end=gtx.int32(grid.num_cells),
@@ -65,25 +64,33 @@ STATIC_VARIANTS = {
 }
 
 
-class TestComputeSurfaceEnergyFluxInternal(StencilTest):
+class TestComputeSurfaceEnergyFluxInternal(stencil_tests.StencilTest):
     PROGRAM = compute_surface_energy_flux
     OUTPUTS = ("flux_x",)
     STATIC_PARAMS = STATIC_VARIANTS
 
-    reference = staticmethod(surface_energy_flux_reference)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return surface_energy_flux_reference(grid, **kwargs)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        return surface_energy_flux_input_data(grid, use_internal_energy=True)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        return surface_energy_flux_input_data(data_alloc, grid, use_internal_energy=True)
 
 
-class TestComputeSurfaceEnergyFluxDryStatic(StencilTest):
+class TestComputeSurfaceEnergyFluxDryStatic(stencil_tests.StencilTest):
     PROGRAM = compute_surface_energy_flux
     OUTPUTS = ("flux_x",)
     STATIC_PARAMS = STATIC_VARIANTS
 
-    reference = staticmethod(surface_energy_flux_reference)
+    @stencil_tests.static_reference
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return surface_energy_flux_reference(grid, **kwargs)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        return surface_energy_flux_input_data(grid, use_internal_energy=False)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        return surface_energy_flux_input_data(data_alloc, grid, use_internal_energy=False)

@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_w_horiz
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -30,9 +29,9 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
     PROGRAM = compute_w_horizontal_stress_tendency
     OUTPUTS = ("hori_tend_e",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         u: np.ndarray,
         v: np.ndarray,
@@ -60,8 +59,9 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
         vertical_end: int,
         **kwargs: Any,
     ) -> dict:
-        e2c = connectivities[dims.E2CDim]  # (n_edges, 2)
-        e2c2v = connectivities[dims.E2C2VDim]  # (n_edges, 4)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        e2c = connectivities[dims.E2C]  # (n_edges, 2)
+        e2c2v = connectivities[dims.E2C2V]  # (n_edges, 4)
         nlev = u.shape[1]
 
         # Half-level rows k = 1..nlev-1: full-level slices [k-1] = [:, :-1] and
@@ -140,12 +140,13 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
         ]
         return dict(hori_tend_e=out)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        u = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        u = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        v = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         km_ic = data_alloc.random_field(
-            grid,
             dims.CellDim,
             dims.KDim,
             low=0.0,
@@ -154,7 +155,6 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
             dtype=ta.wpfloat,
         )
         inv_ddqz_z_half = data_alloc.random_field(
-            grid,
             dims.CellDim,
             dims.KDim,
             low=0.1,
@@ -162,13 +162,12 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
             extend={dims.KDim: 1},
             dtype=ta.wpfloat,
         )
-        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat)
-        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat)
+        u_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.wpfloat)
+        v_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=ta.wpfloat)
         w_vert = data_alloc.random_field(
-            grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.VertexDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         km_iv = data_alloc.random_field(
-            grid,
             dims.VertexDim,
             dims.KDim,
             low=0.0,
@@ -177,7 +176,6 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
             dtype=ta.wpfloat,
         )
         inv_ddqz_z_half_v = data_alloc.random_field(
-            grid,
             dims.VertexDim,
             dims.KDim,
             low=0.1,
@@ -186,33 +184,25 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
             dtype=ta.wpfloat,
         )
         w_ie = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        vt_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        vt_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
-        primal_normal_cell_x = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
-        )
-        primal_normal_cell_y = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat
-        )
-        dual_normal_vert_x = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
-        )
-        dual_normal_vert_y = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat
-        )
+        primal_normal_cell_x = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        primal_normal_cell_y = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        dual_normal_vert_x = data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat)
+        dual_normal_vert_y = data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat)
         edge_cell_length = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=2.0, dtype=ta.wpfloat
+            dims.EdgeDim, dims.E2CDim, low=0.1, high=2.0, dtype=ta.wpfloat
         )
 
-        tangent_orientation = data_alloc.random_sign(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
-        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        tangent_orientation = data_alloc.random_sign(dims.EdgeDim, dtype=ta.wpfloat)
+        inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        inv_vert_vert_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
 
         hori_tend_e = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+            dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
 
         # Fortran: rl_start = grf_bdywidth_e, rl_end = min_rledge_int - 1.

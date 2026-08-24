@@ -17,17 +17,16 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_scalar_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
-class TestComputeScalarNabla2Flux(StencilTest):
+class TestComputeScalarNabla2Flux(stencil_tests.StencilTest):
     PROGRAM = compute_scalar_nabla2_flux
     OUTPUTS = ("nabla2_flux",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         scalar: np.ndarray,
         km_ie: np.ndarray,
@@ -39,7 +38,8 @@ class TestComputeScalarNabla2Flux(StencilTest):
         horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
-        e2c = connectivities[dims.E2CDim]  # (n_edges, 2)
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        e2c = connectivities[dims.E2C]  # (n_edges, 2)
         flux = (
             0.5
             * prefac
@@ -52,8 +52,10 @@ class TestComputeScalarNabla2Flux(StencilTest):
         nabla2_flux_out[horizontal_start:horizontal_end] = flux[horizontal_start:horizontal_end]
         return dict(nabla2_flux=nabla2_flux_out)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
         # Fortran: edges rl_start = grf_bdywidth_e, rl_end = min_rledge_int - 1
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING))
@@ -61,9 +63,8 @@ class TestComputeScalarNabla2Flux(StencilTest):
         assert horizontal_start < horizontal_end
 
         return dict(
-            scalar=data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
+            scalar=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             km_ie=data_alloc.random_field(
-                grid,
                 dims.EdgeDim,
                 dims.KDim,
                 low=0.0,
@@ -72,9 +73,9 @@ class TestComputeScalarNabla2Flux(StencilTest):
                 dtype=wpfloat,
             ),
             inv_dual_edge_length=data_alloc.random_field(
-                grid, dims.EdgeDim, low=1.0e-5, high=1.0e-3, dtype=wpfloat
+                dims.EdgeDim, low=1.0e-5, high=1.0e-3, dtype=wpfloat
             ),
-            nabla2_flux=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat),
+            nabla2_flux=data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=wpfloat),
             rturb_prandtl=wpfloat(3.0),
             prefac=wpfloat(0.9),
             horizontal_start=horizontal_start,

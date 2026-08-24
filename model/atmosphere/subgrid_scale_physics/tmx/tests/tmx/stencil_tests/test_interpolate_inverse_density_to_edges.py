@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_inv
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
@@ -24,9 +23,9 @@ class TestInterpolateInverseDensityToEdges(stencil_tests.StencilTest):
     PROGRAM = interpolate_inverse_density_to_edges
     OUTPUTS = ("inv_rhoe",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         rho: np.ndarray,
         c_lin_e: np.ndarray,
@@ -36,7 +35,8 @@ class TestInterpolateInverseDensityToEdges(stencil_tests.StencilTest):
         vertical_end: int,
         **kwargs: Any,
     ) -> dict:
-        e2c = connectivities[dims.E2CDim]
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        e2c = connectivities[dims.E2C]
         inv_rhoe = 1.0 / np.sum(rho[e2c] * c_lin_e[:, :, np.newaxis], axis=1)
 
         inv_rhoe_out = np.zeros_like(inv_rhoe)
@@ -45,15 +45,15 @@ class TestInterpolateInverseDensityToEdges(stencil_tests.StencilTest):
         ]
         return dict(inv_rhoe=inv_rhoe_out)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, Any]:
-        rho = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=0.5, high=2.0, dtype=ta.wpfloat
-        )
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, Any]:
+        rho = data_alloc.random_field(dims.CellDim, dims.KDim, low=0.5, high=2.0, dtype=ta.wpfloat)
         c_lin_e = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=0.9, dtype=ta.wpfloat
+            dims.EdgeDim, dims.E2CDim, low=0.1, high=0.9, dtype=ta.wpfloat
         )
-        inv_rhoe = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        inv_rhoe = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         # Fortran: cells2edges_scalar + reciprocal loop on
         # rl_start = grf_bdywidth_e + 1, rl_end = min_rledge_int.
