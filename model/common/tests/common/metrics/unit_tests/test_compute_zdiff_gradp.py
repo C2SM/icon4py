@@ -19,6 +19,7 @@ import icon4py.model.common.metrics.compute_zdiff_gradp as _zdiff_mod
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_zdiff_gradp import (
     compute_zdiff_gradp,
+    compute_zdiff_gradp_dispatch,
     compute_zdiff_gradp_exact,
     compute_zdiff_gradp_exact_v2,
     compute_zdiff_gradp_v2,
@@ -137,6 +138,7 @@ def _main_reference(  # noqa: PLR0912
         compute_zdiff_gradp_v2,
         compute_zdiff_gradp_exact,
         compute_zdiff_gradp_exact_v2,
+        compute_zdiff_gradp_dispatch,
     ],
 )
 def test_compute_zdiff_gradp(  # noqa: PLR0917
@@ -316,6 +318,7 @@ def test_compute_zdiff_gradp_endpoint_forcing(
         compute_zdiff_gradp_v2,
         compute_zdiff_gradp_exact,
         compute_zdiff_gradp_exact_v2,
+        compute_zdiff_gradp_dispatch,
     ],
 )
 def test_compute_zdiff_gradp_nan_validation(
@@ -391,7 +394,19 @@ def test_compute_zdiff_gradp_nan_validation(
         assert np.all(np.isfinite(vertoffset_gradp))
 
 
-def _build_p3_e3_violation_inputs() -> tuple[np.ndarray, ...]:
+def _build_p3_e3_violation_inputs() -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    int,
+    int,
+    int,
+    int,
+    int,
+]:
     nedges = 4
     ncells = 4
     nlev = 8
@@ -500,6 +515,20 @@ def test_compute_zdiff_gradp_e3_violation(
                 horizontal_start_1=gtx.int32(hs1),
             )
 
+        dispatch_zdiff, dispatch_vert = compute_zdiff_gradp_dispatch(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+        assert np.allclose(dispatch_zdiff, golden_zdiff)
+        assert np.array_equal(dispatch_vert, golden_vert)
+        assert _zdiff_mod._LAST_DISPATCH_PATH == "exact"
         assert not baseline_matches
     else:
         v2_zdiff, v2_vert = compute_zdiff_gradp_v2(
@@ -516,5 +545,262 @@ def test_compute_zdiff_gradp_e3_violation(
         v2_matches = np.allclose(v2_zdiff, golden_zdiff) and np.array_equal(v2_vert, golden_vert)
         assert not v2_matches
 
+        dispatch_zdiff, dispatch_vert = compute_zdiff_gradp_dispatch(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+        dispatch_matches = np.allclose(dispatch_zdiff, golden_zdiff) and np.array_equal(
+            dispatch_vert, golden_vert
+        )
+        assert not dispatch_matches
+        assert _zdiff_mod._LAST_DISPATCH_PATH == "fast"
 
 
+@pytest.mark.level("unit")
+def test_compute_zdiff_gradp_dispatch_routing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+
+    def _check_case(
+        builder: Callable[
+            [],
+            tuple[
+                np.ndarray,
+                np.ndarray,
+                np.ndarray,
+                np.ndarray,
+                np.ndarray,
+                np.ndarray,
+                int,
+                int,
+                int,
+                int,
+                int,
+            ],
+        ],
+        expected_dispatch_path: str,
+        expect_golden: bool,
+    ) -> None:
+        e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, _e0, _cell0 = builder()
+        golden_zdiff, golden_vert = _main_reference(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=hs,
+            horizontal_start_1=hs1,
+        )
+        dispatch_zdiff, dispatch_vert = compute_zdiff_gradp_dispatch(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+        assert expected_dispatch_path == _zdiff_mod._LAST_DISPATCH_PATH
+        if expect_golden:
+            assert np.allclose(dispatch_zdiff, golden_zdiff)
+            assert np.array_equal(dispatch_vert, golden_vert)
+
+    # Endpoint forcing: E1/E3 valid -> dispatch routes to v2 (fast) and matches golden.
+    _check_case(_build_endpoint_forcing_inputs, "fast", True)
+    # P1 interior tie: E1/E3 valid -> dispatch routes to v2 (fast) and diverges from golden.
+    _check_case(_build_p1_interior_tie_inputs, "fast", False)
+    # P2 zero-thickness level: E1 invalid -> dispatch routes to exact_v2 fallback.
+    _check_case(_build_p2_zero_thickness_inputs, "exact", True)
+    # P3 E3 violation: E3 invalid -> dispatch routes to exact_v2 fallback.
+    _check_case(_build_p3_e3_violation_inputs, "exact", True)
+
+
+def _build_endpoint_forcing_inputs() -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    int,
+    int,
+    int,
+    int,
+    int,
+]:
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    cell1 = 1
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    topography[cell1] = 30000.0 - (nlev - 2) * (30000.0 - topography[cell0]) / nlev + 6.0
+
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+
+    flat_idx = np.zeros((nedges,), dtype=np.int32)
+    flat_idx[e0] = nlev - 2
+    z_me[e0, nlev - 1] = z_ifc[cell0, nlev - 1]
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+def _build_p1_interior_tie_inputs() -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    int,
+    int,
+    int,
+    int,
+    int,
+]:
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    fi = 2
+    tie_level = fi + 1
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    z_me[e0, fi + 1] = z_ifc[cell0, tie_level]
+
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+def _build_p2_zero_thickness_inputs() -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    int,
+    int,
+    int,
+    int,
+    int,
+]:
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    fi = 1
+    thin_level = 4
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    z_ifc[cell0, thin_level + 1] = z_ifc[cell0, thin_level]
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    z_me[e0, fi + 1] = 0.5 * (z_ifc[cell0, thin_level - 1] + z_ifc[cell0, thin_level + 2])
+
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+@pytest.mark.level("unit")
+def test_compute_zdiff_gradp_dispatch_nan(monkeypatch: pytest.MonkeyPatch) -> None:
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    z_me[0, 2] = np.nan
+
+    flat_idx = np.full((nedges,), 1, dtype=np.int32)
+
+    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    with pytest.raises(ValueError):
+        compute_zdiff_gradp_dispatch(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+
+    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
+    zdiff_gradp, vertoffset_gradp = compute_zdiff_gradp_dispatch(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert zdiff_gradp.shape == (nedges, 2, nlev)
+    assert vertoffset_gradp.shape == (nedges, 2, nlev)
+    assert np.all(np.isfinite(vertoffset_gradp))

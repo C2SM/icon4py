@@ -174,6 +174,55 @@ def _validation_enabled() -> bool:
     return os.environ.get("ICON4PY_VALIDATE_ZDIFF_GRADP", "1") != "0"
 
 
+def _compute_v2_validation(  # noqa: PLR0917
+    array_ns: ModuleType,
+    z_ifc_e0: data_alloc.NDArray,
+    z_ifc_e1: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
+    z_aux2: data_alloc.NDArray,
+    fi: data_alloc.NDArray,
+    nlev: int,
+    nedges: int,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """Return (finite_ok, full_ok) for v2's full validation set with one host sync."""
+    finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
+    e3_ok = _check_e3(array_ns, z_me, fi, nlev)
+
+    k_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    valid_ifc = k_idx < (nlev - fi)[:, None]
+    e1_ok_0 = ((z_ifc_e0[:, :-1] < z_ifc_e0[:, 1:]) | ~valid_ifc).all()
+    e1_ok_1 = ((z_ifc_e1[:, :-1] < z_ifc_e1[:, 1:]) | ~valid_ifc).all()
+
+    global_max = array_ns.max(
+        array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()])
+    )
+    global_min = array_ns.min(
+        array_ns.stack([z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()])
+    )
+    max_num = global_max - global_min + 1.0
+    a2_ok = max_num * nedges < 2.0**53
+
+    spacing_0 = array_ns.where(
+        valid_ifc,
+        z_ifc_e0[:, 1:] - z_ifc_e0[:, :-1],
+        array_ns.asarray(array_ns.inf, dtype=z_ifc_e0.dtype),
+    )
+    spacing_1 = array_ns.where(
+        valid_ifc,
+        z_ifc_e1[:, 1:] - z_ifc_e1[:, :-1],
+        array_ns.asarray(array_ns.inf, dtype=z_ifc_e1.dtype),
+    )
+    min_spacing = array_ns.min(array_ns.stack([spacing_0.min(), spacing_1.min()]))
+    ulp_at_max = array_ns.nextafter(max_num, array_ns.inf) - max_num
+    spacing_ok = min_spacing > ulp_at_max
+
+    full_ok = e1_ok_0
+    for check in (e1_ok_1, e3_ok, a2_ok, spacing_ok):
+        full_ok = array_ns.logical_and(full_ok, check)
+
+    return finite_ok, full_ok
+
+
 def _batched_searchsorted_v2(
     a: data_alloc.NDArray, v: data_alloc.NDArray, array_ns: ModuleType
 ) -> data_alloc.NDArray:
@@ -196,46 +245,10 @@ def _validate_zdiff_gradp_inputs(  # noqa: PLR0917
     nlev: int,
     nedges: int,
 ) -> None:
-    finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
-    e3_ok = _check_e3(array_ns, z_me, fi, nlev)
-
-    # E1: strict z_ifc decrease over [fi..nlev] in the original (top->bottom)
-    # orientation is equivalent to strict increase of the ascending slices up to nlev-fi.
-    k_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
-    valid_ifc = k_idx < (nlev - fi)[:, None]
-    e1_ok_0 = ((z_ifc_e0[:, :-1] < z_ifc_e0[:, 1:]) | ~valid_ifc).all()
-    e1_ok_1 = ((z_ifc_e1[:, :-1] < z_ifc_e1[:, 1:]) | ~valid_ifc).all()
-
-    # A2 premise: float64 row-offset safety.
-    global_max = array_ns.max(
-        array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()])
+    finite_ok, full_ok = _compute_v2_validation(
+        array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges
     )
-    global_min = array_ns.min(
-        array_ns.stack([z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()])
-    )
-    max_num = global_max - global_min + 1.0
-    a2_ok = max_num * nedges < 2.0**53
-
-    # Min-level-spacing vs ULP at max_num.
-    spacing_0 = array_ns.where(
-        valid_ifc,
-        z_ifc_e0[:, 1:] - z_ifc_e0[:, :-1],
-        array_ns.asarray(array_ns.inf, dtype=z_ifc_e0.dtype),
-    )
-    spacing_1 = array_ns.where(
-        valid_ifc,
-        z_ifc_e1[:, 1:] - z_ifc_e1[:, :-1],
-        array_ns.asarray(array_ns.inf, dtype=z_ifc_e1.dtype),
-    )
-    min_spacing = array_ns.min(array_ns.stack([spacing_0.min(), spacing_1.min()]))
-    ulp_at_max = array_ns.nextafter(max_num, array_ns.inf) - max_num
-    spacing_ok = min_spacing > ulp_at_max
-
-    combined = e1_ok_0
-    for check in (e1_ok_1, finite_ok, e3_ok, a2_ok, spacing_ok):
-        combined = array_ns.logical_and(combined, check)
-
-    if not bool(combined):
+    if not bool(finite_ok & full_ok):
         raise ValueError(
             "compute_zdiff_gradp_v2 input validation failed: strict z_ifc decrease, "
             "z_me monotonicity, finiteness, A2 float-offset premise, or min-spacing-vs-ULP violated."
@@ -265,6 +278,7 @@ def compute_zdiff_gradp_v2(
     nlev: int,
     horizontal_start: gtx.int32,
     horizontal_start_1: gtx.int32,
+    _precomputed_validation_ok: bool = False,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(z_mc)
     nedges = e2c.shape[0]
@@ -289,8 +303,15 @@ def compute_zdiff_gradp_v2(
     z_ifc_e0 = z_ifc_asc[e2c_0]
     z_ifc_e1 = z_ifc_asc[e2c_1]
 
-    if _validation_enabled():
-        _validate_zdiff_gradp_inputs(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges)
+    if _validation_enabled() and not _precomputed_validation_ok:
+        finite_ok, full_ok = _compute_v2_validation(
+            array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges
+        )
+        if not bool(finite_ok & full_ok):
+            raise ValueError(
+                "compute_zdiff_gradp_v2 input validation failed: strict z_ifc decrease, "
+                "z_me monotonicity, finiteness, A2 float-offset premise, or min-spacing-vs-ULP violated."
+            )
     fill_high = (
         array_ns.max(array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()]))
         + 1.0
@@ -522,6 +543,87 @@ def compute_zdiff_gradp_exact_v2(
 
     _LAST_EXACT_V2_PATH = "carry" if use_carry else "fast"
     return zdiff_gradp, vertoffset_gradp
+
+
+def compute_zdiff_gradp_dispatch(
+    *,
+    e2c: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    flat_idx: data_alloc.NDArray,
+    topography: data_alloc.NDArray,
+    nlev: int,
+    horizontal_start: gtx.int32,
+    horizontal_start_1: gtx.int32,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    global _LAST_DISPATCH_PATH  # noqa: PLW0603
+    array_ns = data_alloc.array_namespace(z_mc)
+    nedges = e2c.shape[0]
+
+    hs = int(horizontal_start)
+    hs1 = int(horizontal_start_1)
+    if hs1 < hs:
+        raise ValueError("horizontal_start_1 must be greater than or equal to horizontal_start.")
+
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0
+
+    fi = flat_idx.astype(array_ns.int64)
+    e2c_0 = e2c[:, 0].astype(array_ns.int64)
+    e2c_1 = e2c[:, 1].astype(array_ns.int64)
+
+    z_ifc_asc = z_ifc[:, ::-1].copy()
+    z_ifc_e0 = z_ifc_asc[e2c_0]
+    z_ifc_e1 = z_ifc_asc[e2c_1]
+
+    if _validation_enabled():
+        finite_ok, full_ok = _compute_v2_validation(
+            array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges
+        )
+        if not bool(finite_ok):
+            raise ValueError("Searched arrays contain non-finite values.")
+        if bool(full_ok):
+            _LAST_DISPATCH_PATH = "fast"
+            return compute_zdiff_gradp_v2(
+                e2c=e2c,
+                z_me=z_me,
+                z_mc=z_mc,
+                z_ifc=z_ifc,
+                flat_idx=flat_idx,
+                topography=topography,
+                nlev=nlev,
+                horizontal_start=horizontal_start,
+                horizontal_start_1=horizontal_start_1,
+                _precomputed_validation_ok=True,
+            )
+        _LAST_DISPATCH_PATH = "exact"
+        return compute_zdiff_gradp_exact_v2(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=horizontal_start,
+            horizontal_start_1=horizontal_start_1,
+        )
+
+    # Validation OFF: unsafe-legacy timing mode; always use the v2 fast path.
+    _LAST_DISPATCH_PATH = "fast"
+    return compute_zdiff_gradp_v2(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=horizontal_start,
+        horizontal_start_1=horizontal_start_1,
+        _precomputed_validation_ok=True,
+    )
 
 
 def _exact_query_succ(
