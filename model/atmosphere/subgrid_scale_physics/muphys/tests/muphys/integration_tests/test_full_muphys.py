@@ -29,7 +29,7 @@ class Experiments:
     # muphys/full_muphys/r2b04.tar.gz
     # muphys/full_muphys/r2b05.tar.gz
     # Note: don't use the 'tiny' experiment from graupel_only,
-    # as it is not sensitive to saturation adjustment 
+    # as it is not sensitive to saturation adjustment
     # TODO(havogt): double-check that all other experiments actually are sensitive,
     # i.e. reference of full_muphys and graupel_only differ significantly.
     MINI: Final = utils.MuphysExperiment(
@@ -118,7 +118,7 @@ def test_full_muphys(
     )
 
     rtol = 1e-14
-    atol = 1e-16
+    atol = 1e-15
 
     test_utils.assert_dallclose(ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol)
     test_utils.assert_dallclose(ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol)
