@@ -150,7 +150,7 @@ def _batched_searchsorted_v2(
     a = a.astype(array_ns.float64)
     v = v.astype(array_ns.float64)
     m, n = a.shape
-    max_num = max(a.max() - a.min(), v.max() - v.min()) + 1.0
+    max_num = array_ns.maximum(a.max() - a.min(), v.max() - v.min()) + 1.0
     r = max_num * array_ns.arange(m, dtype=array_ns.float64)[:, None]
     p = array_ns.searchsorted((a + r).ravel(), (v + r).ravel()).reshape(v.shape)
     return p - n * array_ns.arange(m, dtype=p.dtype)[:, None]
@@ -280,8 +280,14 @@ def compute_zdiff_gradp_v2(
     if _validation_enabled():
         _validate_zdiff_gradp_inputs(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges)
 
-    fill_high = max(z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()) + 1.0
-    fill_low = min(z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()) - 1.0
+    fill_high = (
+        array_ns.max(array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()]))
+        + 1.0
+    )
+    fill_low = (
+        array_ns.min(array_ns.stack([z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()]))
+        - 1.0
+    )
     jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
     fi_sliced = fi[hs:]
 
@@ -398,7 +404,7 @@ def _exact_query_succ(
         succ: (chunk, nq, nlev) integer array where succ[e, q, t] is the first
             candidate index a >= t satisfying the bracket predicate, or the
             unconditional deepest level nlev-1. Uses int8 for nlev <= 127,
-            int16 for nlev <= 32767, otherwise int32.
+            int16 for 127 < nlev <= 32767; raises ValueError for larger nlev.
     """
     _chunk, nlev_p1 = z_ifc_k.shape
     nlev = nlev_p1 - 1
@@ -420,7 +426,9 @@ def _exact_query_succ(
     elif nlev <= 32767:
         idx = idx.astype(array_ns.int16)
     else:
-        idx = idx.astype(array_ns.int32)
+        raise ValueError(
+            f"compute_zdiff_gradp_exact successor tables support nlev <= 32767, got {nlev}."
+        )
 
     rev = idx[:, :, ::-1]
     pref_min = array_ns.minimum.accumulate(rev, axis=2)
@@ -451,10 +459,11 @@ def _exact_carry_loop(
     Returns jk1_out: (chunk, nlev) selected candidate for each jk.
     """
     chunk, _, nlev = succ.shape
+    single_query = succ.shape[1] == 1
     t = fi.astype(array_ns.int64).copy()
     jk1_out = array_ns.empty((chunk, nlev), dtype=array_ns.int64)
     for jk in range(nlev):
-        src = succ[:, 0:1, :] if succ.shape[1] == 1 else succ[:, jk : jk + 1, :]
+        src = succ[:, 0:1, :] if single_query else succ[:, jk : jk + 1, :]
         jk1 = array_ns.take_along_axis(src, t[:, None, None], axis=2)[:, 0, 0]
         jk1_out[:, jk] = jk1
         t = array_ns.where(active[:, jk], jk1, t)

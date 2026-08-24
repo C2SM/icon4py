@@ -323,9 +323,10 @@ def test_compute_zdiff_gradp_nan_validation(
     c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
     e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
     z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
-    z_me[0, 0] = np.nan
+    z_me[0, 2] = np.nan
 
-    flat_idx = np.zeros((nedges,), dtype=np.int32)
+    # Place NaN at jk > flat_idx so the kernels actually see it.
+    flat_idx = np.full((nedges,), 1, dtype=np.int32)
 
     # Validation ON (default): ValueError before compute.
     monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")

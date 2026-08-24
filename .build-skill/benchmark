@@ -1,0 +1,775 @@
+#! /usr/bin/env python3
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ruff: noqa: PLR0912, PLR0915, PLR0917, RUF059, PLC0415, B007, PTH103, PTH118, PTH123
+"""Benchmark contract implementation for compute_zdiff_gradp optimization."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import time
+
+import numpy as np
+
+from icon4py.model.common.metrics.compute_zdiff_gradp import (
+    compute_zdiff_gradp,
+    compute_zdiff_gradp_exact,
+    compute_zdiff_gradp_v2,
+)
+from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
+
+
+SEED = 20260824
+FULL_HEIGHT = 30000.0
+EXTRAPOL_DIST = 5.0
+TIER_A_MAIN_REF_CAP_SECONDS = 300.0
+
+
+def _log(msg: str) -> None:
+    print(msg, file=sys.stderr)
+
+
+def _sync(array_ns) -> None:
+    if array_ns.__name__ == "cupy":
+        array_ns.cuda.Device().synchronize()
+
+
+def _to_namespace(arrays, array_ns):
+    return [array_ns.asarray(a) for a in arrays]
+
+
+def build_inputs(nedges, ncells, nlev, seed):
+    rng = np.random.default_rng(seed)
+
+    walk = 1500.0 + np.cumsum(rng.normal(0.0, 20.0, ncells))
+    topography = np.clip(walk, 0.0, 3000.0)
+
+    raw = np.exp(-np.arange(nlev + 1, dtype=np.float64) / 240.0)
+    profile = (raw - raw[-1]) / (raw[0] - raw[-1])
+    thick_base = -np.diff(profile)
+    thick = thick_base[None, :] * rng.lognormal(0.0, 0.15, (ncells, nlev))
+    thick /= thick.sum(axis=1, keepdims=True)
+
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    z_ifc[:, nlev] = topography
+    for k in range(nlev - 1, -1, -1):
+        z_ifc[:, k] = z_ifc[:, k + 1] + (FULL_HEIGHT - topography) * thick[:, k]
+
+    c0 = np.mod(np.arange(nedges), ncells)
+    c1 = (c0 + 1) % ncells
+    cliff = rng.random(nedges) < 0.25
+    c1[cliff] = rng.integers(0, ncells, size=int(cliff.sum()))
+    e2c = np.stack([c0, c1], axis=1)
+
+    alpha = rng.uniform(0.3, 0.7, nedges)
+    c_lin_e = np.stack([alpha, 1.0 - alpha], axis=1)
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+
+    k_lev = np.arange(nlev + 1, dtype=np.int32)
+    flat_idx = compute_flat_max_idx(e2c=e2c, z_me=z_me, z_ifc=z_ifc, k_lev=k_lev)
+
+    hs = int(0.2 * nedges)
+    hs1 = int(0.5 * nedges)
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1
+
+
+def _endpoint_count(e2c, z_ifc, flat_idx, z_aux2, hs1, nedges, nlev):
+    count = 0
+    for je in range(hs1, nedges):
+        for c in (0, 1):
+            if z_aux2[je] > z_ifc[e2c[je, c], flat_idx[je]]:
+                count += 1
+    return count
+
+
+def main_reference(
+    *,
+    e2c,
+    z_me,
+    z_mc,
+    z_ifc,
+    flat_idx,
+    topography,
+    nlev,
+    horizontal_start,
+    horizontal_start_1,
+):
+    """Element-by-element reference matching main-branch scan semantics."""
+    array_ns = np
+    nedges = e2c.shape[0]
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - EXTRAPOL_DIST
+
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    jk_field = array_ns.arange(nlev, dtype=np.int32)
+    zdiff_gradp[horizontal_start:, :, :] = (
+        array_ns.expand_dims(z_me, axis=1)[horizontal_start:, :, :]
+        - z_mc[e2c][horizontal_start:, :, :]
+    )
+    vertidx_gradp = array_ns.broadcast_to(jk_field[None, None, :], (nedges, 2, nlev)).copy()
+    vertoffset_gradp = array_ns.broadcast_to(jk_field[None, None, :], (nedges, 2, nlev)).copy()
+
+    for je in range(horizontal_start, nedges):
+        for jk in range(int(flat_idx[je]) + 1, nlev):
+            param = array_ns.zeros((nlev,), dtype=bool)
+            for jk1 in range(int(flat_idx[je]), nlev):
+                if jk1 == nlev - 1 or (
+                    z_me[je, jk] <= z_ifc[e2c[je, 0], jk1]
+                    and z_me[je, jk] >= z_ifc[e2c[je, 0], jk1 + 1]
+                ):
+                    param[jk1] = True
+            idx = int(array_ns.where(param)[0][0])
+            vertidx_gradp[je, 0, jk] = idx
+            zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], idx]
+
+        jk_start = int(flat_idx[je])
+        for jk in range(int(flat_idx[je]) + 1, nlev):
+            for jk1 in range(jk_start, nlev):
+                if jk1 == nlev - 1 or (
+                    z_me[je, jk] <= z_ifc[e2c[je, 1], jk1]
+                    and z_me[je, jk] >= z_ifc[e2c[je, 1], jk1 + 1]
+                ):
+                    vertidx_gradp[je, 1, jk] = jk1
+                    zdiff_gradp[je, 1, jk] = z_me[je, jk] - z_mc[e2c[je, 1], jk1]
+                    jk_start = jk1
+                    break
+
+    for je in range(horizontal_start_1, nedges):
+        jk_start = int(flat_idx[je])
+        for jk in range(int(flat_idx[je]) + 1, nlev):
+            if z_me[je, jk] < z_aux2[je]:
+                for jk1 in range(jk_start, nlev):
+                    if jk1 == nlev - 1 or (
+                        z_aux2[je] <= z_ifc[e2c[je, 0], jk1]
+                        and z_aux2[je] >= z_ifc[e2c[je, 0], jk1 + 1]
+                    ):
+                        vertidx_gradp[je, 0, jk] = jk1
+                        zdiff_gradp[je, 0, jk] = z_aux2[je] - z_mc[e2c[je, 0], jk1]
+                        jk_start = jk1
+                        break
+
+        jk_start = int(flat_idx[je])
+        for jk in range(int(flat_idx[je]) + 1, nlev):
+            if z_me[je, jk] < z_aux2[je]:
+                for jk1 in range(jk_start, nlev):
+                    if jk1 == nlev - 1 or (
+                        z_aux2[je] <= z_ifc[e2c[je, 1], jk1]
+                        and z_aux2[je] >= z_ifc[e2c[je, 1], jk1 + 1]
+                    ):
+                        vertidx_gradp[je, 1, jk] = jk1
+                        zdiff_gradp[je, 1, jk] = z_aux2[je] - z_mc[e2c[je, 1], jk1]
+                        jk_start = jk1
+                        break
+
+    vertoffset_gradp = vertidx_gradp - vertoffset_gradp
+    return zdiff_gradp, vertoffset_gradp
+
+
+def run_variant(fn, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1):
+    return fn(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+
+def fingerprint_info(flat_idx, nlev, z_me, z_aux2, z_ifc, e2c, hs1, nedges):
+    bc = np.bincount(np.asarray(flat_idx), minlength=nlev)
+    bins = {
+        "0": int(bc[0]),
+        "1..9": int(bc[1:10].sum()),
+        "10..29": int(bc[10:30].sum()),
+        "30..49": int(bc[30:50].sum()),
+        "50..59": int(bc[50:60].sum()),
+    }
+    jk = np.arange(nlev)[None, :]
+    nudg = np.arange(nedges)[:, None] >= hs1
+    z_me_np = np.asarray(z_me if isinstance(z_me, np.ndarray) else z_me.get())
+    z_aux2_np = np.asarray(z_aux2 if isinstance(z_aux2, np.ndarray) else z_aux2.get())
+    flat_idx_np = np.asarray(flat_idx if isinstance(flat_idx, np.ndarray) else flat_idx.get())
+    p2 = (jk > flat_idx_np[:, None]) & nudg & (z_me_np < z_aux2_np[:, None])
+    ep = _endpoint_count(e2c, z_ifc, flat_idx, z_aux2, hs1, nedges, nlev)
+    return {
+        "bins": bins,
+        "phase2_active": int(p2.any(1).sum()),
+        "endpoint_count": ep,
+    }
+
+
+def build_endpoint_forcing_inputs():
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    cell1 = 1
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    topography[cell1] = FULL_HEIGHT - (nlev - 2) * (FULL_HEIGHT - topography[cell0]) / nlev + 6.0
+
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = FULL_HEIGHT - k * (FULL_HEIGHT - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+
+    flat_idx = np.zeros((nedges,), dtype=np.int32)
+    flat_idx[e0] = nlev - 2
+    z_me[e0, nlev - 1] = z_ifc[cell0, nlev - 1]
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+def run_endpoint_forcing():
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0 = (
+        build_endpoint_forcing_inputs()
+    )
+
+    z_aux1 = np.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - EXTRAPOL_DIST
+
+    assert flat_idx[e0] < nlev - 1
+    assert z_aux2[e0] > z_ifc[cell0, flat_idx[e0]]
+    for c in (0, 1):
+        for jk in range(flat_idx[e0] + 1, nlev):
+            assert z_me[e0, jk] <= z_ifc[e2c[e0, c], flat_idx[e0]]
+    assert e0 >= hs1
+    assert z_me[e0, nlev - 1] < z_aux2[e0]
+
+    golden_zdiff, golden_vert = main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+    candidate_zdiff, candidate_vert = run_variant(
+        compute_zdiff_gradp_v2, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    exact_zdiff, exact_vert = run_variant(
+        compute_zdiff_gradp_exact, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    baseline_zdiff, baseline_vert = run_variant(
+        compute_zdiff_gradp, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+
+    candidate_matches = np.allclose(candidate_zdiff, golden_zdiff) and np.array_equal(
+        candidate_vert, golden_vert
+    )
+    exact_matches = np.allclose(exact_zdiff, golden_zdiff) and np.array_equal(
+        exact_vert, golden_vert
+    )
+    baseline_diverges = not np.allclose(baseline_zdiff, golden_zdiff) or not np.array_equal(
+        baseline_vert, golden_vert
+    )
+    ep = int(
+        (z_aux2[e0] > z_ifc[e2c[e0, 0], flat_idx[e0]])
+        + (z_aux2[e0] > z_ifc[e2c[e0, 1], flat_idx[e0]])
+    )
+    return {
+        "endpoint_count": ep,
+        "candidate_matches_golden": bool(candidate_matches),
+        "baseline_diverges": bool(baseline_diverges),
+        "exact_matches_golden": bool(exact_matches),
+    }
+
+
+def build_p1_interior_tie_inputs():
+    """P1: interior z_me/z_ifc tie; E1 holds."""
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    fi = 2
+    tie_level = fi + 1
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = FULL_HEIGHT - k * (FULL_HEIGHT - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    # Query exactly equals an interior interface on the forced edge, between fi and nlev.
+    # z_ifc itself remains strictly decreasing (E1 holds); the tie is z_me == z_ifc.
+    z_me[e0, fi + 1] = z_ifc[cell0, tie_level]
+
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+    flat_idx[e0] = fi
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+def build_p2_zero_thickness_inputs():
+    """P2: one zero-thickness level; all finite, query between neighbors."""
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    fi = 1
+    thin_level = 4
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = FULL_HEIGHT - k * (FULL_HEIGHT - top) / nlev
+
+    # Zero-thickness level in cell0.
+    z_ifc[cell0, thin_level + 1] = z_ifc[cell0, thin_level]
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    # Query strictly between surrounding interfaces.
+    z_me[e0, fi + 1] = 0.5 * (z_ifc[cell0, thin_level - 1] + z_ifc[cell0, thin_level + 2])
+
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+def run_weird_input_probe(builder, name):
+    """Run one weird-input probe; return record dict per the amended schema."""
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0 = builder()
+
+    golden_zdiff, golden_vert = main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+    os.environ["ICON4PY_VALIDATE_ZDIFF_GRADP"] = "1"
+
+    exact_zdiff, exact_vert = run_variant(
+        compute_zdiff_gradp_exact, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    exact_matches = np.allclose(exact_zdiff, golden_zdiff) and np.array_equal(
+        exact_vert, golden_vert
+    )
+    if not exact_matches:
+        _log(f"Probe {name}: exact does not match golden")
+        sys.exit(1)
+
+    if name == "P1":
+        candidate_zdiff, candidate_vert = run_variant(
+            compute_zdiff_gradp_v2, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+        )
+        v2_diverges = not (
+            np.allclose(candidate_zdiff, golden_zdiff)
+            and np.array_equal(candidate_vert, golden_vert)
+        )
+        return {"name": name, "exact_matches_golden": True, "v2_diverges": bool(v2_diverges)}
+
+    if name == "P2":
+        try:
+            run_variant(
+                compute_zdiff_gradp_v2, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+            )
+            v2_raised = False
+        except ValueError:
+            v2_raised = True
+        return {"name": name, "exact_matches_golden": True, "v2_raised": bool(v2_raised)}
+
+    raise RuntimeError(f"Unknown probe {name}")
+
+
+def count_mismatches(a, b):
+    a_np = np.asarray(a if isinstance(a, np.ndarray) else a.get())
+    b_np = np.asarray(b if isinstance(b, np.ndarray) else b.get())
+    return int((a_np != b_np).sum())
+
+
+def count_mismatches_close(a, b):
+    a_np = np.asarray(a if isinstance(a, np.ndarray) else a.get())
+    b_np = np.asarray(b if isinstance(b, np.ndarray) else b.get())
+    return int((~np.isclose(a_np, b_np)).sum())
+
+
+def run_self_check():
+    nedges, ncells, nlev = 49152, 32768, 60
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(nedges, ncells, nlev, SEED)
+    info = fingerprint_info(
+        flat_idx, nlev, z_me, z_aux2_from(topography, e2c), z_ifc, e2c, hs1, nedges
+    )
+    expected = {
+        "0": 18,
+        "1..9": 2500,
+        "10..29": 3829,
+        "30..49": 1898,
+        "50..59": 40907,
+    }
+    ok = info["bins"] == expected and info["endpoint_count"] == 0
+    if not ok:
+        _log(f"Self-check failed: {info}")
+        sys.exit(1)
+    if info["phase2_active"] != 4326:
+        _log(f"Self-check phase2_active mismatch: {info['phase2_active']} != 4326")
+        sys.exit(1)
+    return info
+
+
+def z_aux2_from(topography, e2c):
+    return np.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]]) - EXTRAPOL_DIST
+
+
+def _build_tier_a_inputs():
+    nedges, ncells, nlev = 4096, 2731, 60
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(nedges, ncells, nlev, SEED)
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+
+
+def run_tier_a():
+    nedges, ncells, nlev = 4096, 2731, 60
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(nedges, ncells, nlev, SEED)
+    z_aux2 = z_aux2_from(topography, e2c)
+    info = fingerprint_info(flat_idx, nlev, z_me, z_aux2, z_ifc, e2c, hs1, nedges)
+    if info["endpoint_count"] != 0:
+        _log(f"Tier A endpoint count nonzero: {info['endpoint_count']}")
+        sys.exit(1)
+
+    t0 = time.perf_counter()
+    golden = main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+    main_ref_seconds = time.perf_counter() - t0
+
+    scale_change = None
+    if main_ref_seconds > TIER_A_MAIN_REF_CAP_SECONDS:
+        nedges_before = nedges
+        nedges = nedges // 2
+        ncells = ncells // 2
+        scale_change = {"nedges_before": nedges_before, "nedges_after": nedges}
+        e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(
+            nedges, ncells, nlev, SEED
+        )
+        z_aux2 = z_aux2_from(topography, e2c)
+        info = fingerprint_info(flat_idx, nlev, z_me, z_aux2, z_ifc, e2c, hs1, nedges)
+        if info["endpoint_count"] != 0:
+            _log(f"Tier A reduced endpoint count nonzero: {info['endpoint_count']}")
+            sys.exit(1)
+        t0 = time.perf_counter()
+        golden = main_reference(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=hs,
+            horizontal_start_1=hs1,
+        )
+        main_ref_seconds = time.perf_counter() - t0
+
+    variants = {}
+    for name, fn in [
+        ("numpy-baseline", compute_zdiff_gradp),
+        ("numpy-candidate", compute_zdiff_gradp_v2),
+        ("numpy-exact", compute_zdiff_gradp_exact),
+    ]:
+        result = run_variant(fn, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1)
+        mismatches_zdiff = count_mismatches_close(result[0], golden[0])
+        mismatches_vert = count_mismatches(result[1], golden[1])
+        variants[name] = {"mismatches_vs_golden": mismatches_zdiff + mismatches_vert}
+        if mismatches_zdiff or mismatches_vert:
+            _log(f"Tier A {name} mismatch: zdiff={mismatches_zdiff}, vert={mismatches_vert}")
+            sys.exit(1)
+
+    try:
+        import cupy as cp
+
+        e2c_cu, z_me_cu, z_mc_cu, z_ifc_cu, flat_idx_cu, topography_cu = _to_namespace(
+            [e2c, z_me, z_mc, z_ifc, flat_idx, topography], cp
+        )
+        for name, fn in [
+            ("cupy-baseline", compute_zdiff_gradp),
+            ("cupy-candidate", compute_zdiff_gradp_v2),
+            ("cupy-exact", compute_zdiff_gradp_exact),
+        ]:
+            result = run_variant(
+                fn, e2c_cu, z_me_cu, z_mc_cu, z_ifc_cu, flat_idx_cu, topography_cu, nlev, hs, hs1
+            )
+            mismatches_zdiff = count_mismatches_close(result[0], golden[0])
+            mismatches_vert = count_mismatches(result[1], golden[1])
+            variants[name] = {"mismatches_vs_golden": mismatches_zdiff + mismatches_vert}
+            if mismatches_zdiff or mismatches_vert:
+                _log(f"Tier A {name} mismatch: zdiff={mismatches_zdiff}, vert={mismatches_vert}")
+                sys.exit(1)
+    except ImportError:
+        pass
+
+    endpoint_forcing = run_endpoint_forcing()
+    if (
+        not endpoint_forcing["candidate_matches_golden"]
+        or not endpoint_forcing["exact_matches_golden"]
+        or not endpoint_forcing["baseline_diverges"]
+    ):
+        _log(f"Endpoint forcing failed: {endpoint_forcing}")
+        sys.exit(1)
+
+    probes = [
+        run_weird_input_probe(build_p1_interior_tie_inputs, "P1"),
+        run_weird_input_probe(build_p2_zero_thickness_inputs, "P2"),
+    ]
+
+    result = {
+        "endpoint_count": info["endpoint_count"],
+        "fingerprint": info["bins"],
+        "main_reference_seconds": float(main_ref_seconds),
+        "variants": variants,
+        "endpoint_forcing": endpoint_forcing,
+        "weird_input_probes": probes,
+    }
+    if scale_change is not None:
+        result["scale_change"] = scale_change
+    return result
+
+
+def _time_variant(fn, args, array_ns, timed_reps):
+    times = []
+    for _ in range(timed_reps):
+        _sync(array_ns)
+        t0 = time.perf_counter()
+        run_variant(fn, *args)
+        _sync(array_ns)
+        t1 = time.perf_counter()
+        times.append((t1 - t0) * 1000.0)
+    return times
+
+
+def run_tier_b(dev: bool):
+    if dev:
+        nedges, ncells, nlev = 49152, 32768, 60
+        timed_reps = 5
+    else:
+        nedges, ncells, nlev = 491520, 327680, 60
+        timed_reps = 25
+
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(nedges, ncells, nlev, SEED)
+    z_aux2 = z_aux2_from(topography, e2c)
+    info = fingerprint_info(flat_idx, nlev, z_me, z_aux2, z_ifc, e2c, hs1, nedges)
+    if info["endpoint_count"] != 0:
+        _log(f"Tier B endpoint count nonzero: {info['endpoint_count']}")
+        sys.exit(1)
+
+    backends = [("numpy", np)]
+    try:
+        import cupy as cp
+
+        backends.append(("cupy", cp))
+    except ImportError:
+        pass
+
+    # Per-backend inputs and variant definitions.
+    backend_inputs = {}
+    variant_defs = []
+    for backend_name, array_ns in backends:
+        e2c_b, z_me_b, z_mc_b, z_ifc_b, flat_idx_b, topography_b = _to_namespace(
+            [e2c, z_me, z_mc, z_ifc, flat_idx, topography], array_ns
+        )
+        backend_inputs[backend_name] = (
+            array_ns,
+            e2c_b,
+            z_me_b,
+            z_mc_b,
+            z_ifc_b,
+            flat_idx_b,
+            topography_b,
+        )
+        variant_defs.append(
+            (f"{backend_name}-baseline", compute_zdiff_gradp, False),
+        )
+        variant_defs.append(
+            (f"{backend_name}-candidate", compute_zdiff_gradp_v2, True),
+        )
+        variant_defs.append(
+            (f"{backend_name}-exact", compute_zdiff_gradp_exact, True),
+        )
+
+    # Bitwise equality check before timing (validation default ON is fine here).
+    results = {}
+    for name, fn, _ in variant_defs:
+        backend_name = name.split("-")[0]
+        args = backend_inputs[backend_name][1:]
+        results[name] = run_variant(fn, *args, nlev, hs, hs1)
+
+    baseline_by_backend = {}
+    for name, _, _ in variant_defs:
+        backend_name = name.split("-")[0]
+        if "-baseline" in name:
+            baseline_by_backend[backend_name] = results[name]
+
+    for name, result in results.items():
+        backend_name = name.split("-")[0]
+        baseline = baseline_by_backend[backend_name]
+        mismatches_zdiff = count_mismatches_close(result[0], baseline[0])
+        mismatches_vert = count_mismatches(result[1], baseline[1])
+        if mismatches_zdiff or mismatches_vert:
+            _log(
+                f"Tier B {name} mismatch vs baseline: zdiff={mismatches_zdiff}, vert={mismatches_vert}"
+            )
+            sys.exit(1)
+
+    # Timed validation on/off matrix.
+    timings: dict[str, dict[str, list[float]]] = {
+        name: {"on": [], "off": []} for name, _, _ in variant_defs
+    }
+
+    for mode_idx, mode in enumerate(("off", "on")):
+        os.environ["ICON4PY_VALIDATE_ZDIFF_GRADP"] = "0" if mode == "off" else "1"
+
+        # Per-mode warmup: 3 reps per variant before any timed reps.
+        for name, fn, has_modes in variant_defs:
+            if mode_idx == 1 and not has_modes:
+                continue
+            backend_name = name.split("-")[0]
+            array_ns, *args = backend_inputs[backend_name]
+            base_args = (*args, nlev, hs, hs1)
+            for _ in range(3):
+                run_variant(fn, *base_args)
+            _sync(array_ns)
+
+        # Timed reps: round-robin across variants within this mode.
+        for _ in range(timed_reps):
+            for name, fn, has_modes in variant_defs:
+                if mode_idx == 1 and not has_modes:
+                    continue
+                backend_name = name.split("-")[0]
+                array_ns, *args = backend_inputs[backend_name]
+                base_args = (*args, nlev, hs, hs1)
+                _sync(array_ns)
+                t0 = time.perf_counter()
+                run_variant(fn, *base_args)
+                _sync(array_ns)
+                t1 = time.perf_counter()
+                timings[name][mode].append((t1 - t0) * 1000.0)
+
+    # Baseline has no validation modes; its on/off entries are identical.
+    for name, _, has_modes in variant_defs:
+        if not has_modes:
+            timings[name]["on"] = timings[name]["off"][:]
+    variants = {}
+    for name, _, has_modes in variant_defs:
+        backend_name = name.split("-")[0]
+        baseline = baseline_by_backend[backend_name]
+        mismatches_zdiff = count_mismatches_close(results[name][0], baseline[0])
+        mismatches_vert = count_mismatches(results[name][1], baseline[1])
+        times_on = timings[name]["on"]
+        times_off = timings[name]["off"]
+        median_on = float(np.median(times_on))
+        median_off = float(np.median(times_off))
+        variants[name] = {
+            "validation_on": {"median_ms": median_on, "min_ms": float(np.min(times_on))},
+            "validation_off": {"median_ms": median_off, "min_ms": float(np.min(times_off))},
+            "validation_overhead_ms": median_on - median_off,
+            "validation_overhead_ratio": median_on / median_off if median_off > 0 else float("inf"),
+            "mismatches_vs_baseline": mismatches_zdiff + mismatches_vert,
+        }
+
+    return {
+        "endpoint_count": info["endpoint_count"],
+        "variants": variants,
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--dev", action="store_true", help="Reduce Tier B scale/reps for local dev."
+    )
+    args = parser.parse_args()
+
+    iteration_id = os.environ.get("BUILD_SKILL_ITERATION_ID", "iter-002")
+
+    self_check = run_self_check()
+    _log("Self-check passed.")
+
+    tier_a = run_tier_a()
+    _log("Tier A passed.")
+
+    tier_b = run_tier_b(dev=args.dev)
+    _log("Tier B completed.")
+
+    result = {
+        "iteration_id": iteration_id,
+        "seed": SEED,
+        "self_check": {
+            "endpoint_count": self_check["endpoint_count"],
+            "ok": True,
+            "fingerprint": self_check["bins"],
+            "phase2_active": self_check["phase2_active"],
+        },
+        "tierA": tier_a,
+        "tierB": tier_b,
+    }
+
+    json_line = json.dumps(result)
+    print(json_line)
+
+    log_dir = os.environ.get("BUILD_SKILL_LOG_DIR")
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+        log_path = os.path.join(log_dir, f"benchmark-{iteration_id}.json")
+        with open(log_path, "w") as f:
+            f.write(json_line + "\n")
+
+
+if __name__ == "__main__":
+    main()
