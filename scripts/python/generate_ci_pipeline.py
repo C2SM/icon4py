@@ -284,19 +284,13 @@ def _model_cells(
     subsets: list[str],
 ) -> list[_MatrixCell]:
     """Build collection cells for the serial model test sessions."""
-    # TEMPORARY (experiment branch, revert before merge): whitelist for serial
-    # cells, "subpackage.backend.level" or "subpackage.backend.grid.stencils".
-    _only = os.environ.get("ICON4PY_CI_MODEL_PROBE_ONLY")
-    want = set(_only.split(":")) if _only else None
     cells: list[_MatrixCell] = []
 
     if "stencils" in subsets and grids:
         for subpackage in subpackages:
             for backend in backends:
                 for grid in grids:
-                    if want is not None and f"{subpackage}.{backend}.{grid}.stencils" not in want:
-                        continue
-                    cells.append(
+                    cells.append(  # noqa: PERF401
                         _MatrixCell(
                             job_name="test_model_stencils_aarch64",
                             extends=".test_model_aarch64",
@@ -324,8 +318,6 @@ def _model_cells(
         for subpackage in subpackages:
             for backend in backends:
                 for level in levels:
-                    if want is not None and f"{subpackage}.{backend}.{level}" not in want:
-                        continue
                     pytest_args = [
                         "--collect-only",
                         "-n0",
@@ -370,65 +362,6 @@ def _tools_cells(selections: list[str]) -> list[_MatrixCell]:
     return cells
 
 
-def _mpi_cell_slurm_vars(subpackage: str, backend: str, level: str) -> dict[str, str]:
-    """SLURM allocation variables for an MPI cell.
-
-    These are emitted into the generated child pipeline (an artifact, always
-    consistent with the triggering commit's checkout) instead of relying only
-    on rules:variables in ci/base.yml. The keys mirror the sbatch overrides
-    the CSCS runner wrapper reads from the job environment.
-
-    All cells get a <= 1h limit (the shared-partition maximum) on the shared partition. Values follow the
-    cold-cache measurements of the W1-W3 allocation probes (August 2026,
-    gt4py 1.2.1 + dace 2.0.0a6):
-
-    - driver/gtfn_gpu is the hardest cell: many light per-program ninja
-      builds make it core-throughput-bound. It fits a 2-GPU (144 core)
-      shared allocation with 24 tasks (1847s measured); 1 GPU times out
-      (>3300s). NTASKS=24 buys 1.45x over 12 at the same allocation.
-    - dace_* cells are latency-bound and fit 1 GPU (driver unit: 3060s,
-      common: 1927s).
-    - GT4PY_BUILD_JOBS=12: no wall-time effect observed for 12 vs 32/64 in
-      any measured cell; higher values only raise memory.
-    """
-    if subpackage in ("driver", "common"):
-        # Heavy cells. Uniform shape for every backend and level: limit
-        # 1h = shared-partition maximum; 24 tasks = 12 per GPU (12 = largest
-        # multiple of the 4-rank MPI test groups that fits one GPU's memory);
-        # GPUs are really the cores knob: a GH200 GPU asks for one 72-core
-        # module slice. gtfn_gpu/driver measured to need 2 GPUs (144 cores):
-        # 1847s vs >3300s timeout on 1 GPU (W1-W3, cold cache); dace cells
-        # fit 1 GPU but the extra module buys compile-phase headroom.
-        return {
-            "SLURM_TIMELIMIT": "01:00:00",
-            "SLURM_PARTITION": "shared",
-            "SLURM_GPUS_PER_NODE": "2",
-            "SLURM_NTASKS": "24",
-            "GT4PY_BUILD_JOBS": "12",
-        }
-    return {
-        "SLURM_TIMELIMIT": "00:30:00",
-        "SLURM_PARTITION": "shared",
-        "GT4PY_BUILD_JOBS": "12",
-    }
-
-
-def _mpi_cell_slurm_vars_probe(subpackage: str, backend: str, level: str) -> dict[str, str]:
-    """Apply temporary probe overrides (see _mpi_cell_slurm_vars docstring)."""
-    vars_ = dict(_mpi_cell_slurm_vars(subpackage, backend, level))
-    if v := os.environ.get("ICON4PY_CI_MPI_PROBE_TIMELIMIT"):
-        vars_["SLURM_TIMELIMIT"] = v
-    if v := os.environ.get("ICON4PY_CI_MPI_PROBE_GPUS"):
-        vars_["SLURM_GPUS_PER_NODE"] = v
-    if v := os.environ.get("ICON4PY_CI_MPI_PROBE_PARTITION"):
-        vars_["SLURM_PARTITION"] = v
-    if v := os.environ.get("ICON4PY_CI_MPI_PROBE_NTASKS"):
-        vars_["SLURM_NTASKS"] = v
-    if v := os.environ.get("ICON4PY_CI_MPI_PROBE_JOBS"):
-        vars_["GT4PY_BUILD_JOBS"] = v
-    return vars_
-
-
 def _model_mpi_cells(
     subpackages: list[str],
     backends: list[str],
@@ -439,19 +372,10 @@ def _model_mpi_cells(
     cells: list[_MatrixCell] = []
     if not subpackages or not backends or not levels:
         return cells
-    probe_only = os.environ.get("ICON4PY_CI_MPI_PROBE_ONLY")
-    want = set(probe_only.split(":")) if probe_only else None  # "subpackage.backend.level" tokens
-    # TEMPORARY (experiment branch, revert before merge): if set, whitelisted
-    # cells are emitted ONLY as one matrix instance per listed OMP_NUM_THREADS
-    # value (e.g. "6:72:144"), replacing the default unpinned instance.
-    _omp_vals = os.environ.get("ICON4PY_CI_MPI_PROBE_OMP_VALUES")
-    omp_variants = _omp_vals.split(":") if _omp_vals else []
     for subset in subsets:
         for subpackage in subpackages:
             for backend in backends:
                 for level in levels:
-                    if want is not None and f"{subpackage}.{backend}.{level}" not in want:
-                        continue
                     pytest_args = [
                         "--collect-only",
                         "-n0",
@@ -460,58 +384,20 @@ def _model_mpi_cells(
                         f"--backend={backend}",
                         f"--level={level}",
                     ]
-                    for omp in omp_variants or [None]:
-                        cells.append(  # noqa: PERF401
-                            _MatrixCell(
-                                job_name=f"test_model_mpi_{subset}_aarch64",
-                                extends=".test_model_mpi_aarch64",
-                                variables={"SELECTION": subset},
-                                matrix={
-                                    "MODEL_MPI_SUBPACKAGE": subpackage,
-                                    "BACKEND": backend,
-                                    "LEVEL": level,
-                                    **_mpi_cell_slurm_vars_probe(subpackage, backend, level),
-                                    **({"OMP_NUM_THREADS": omp} if omp else {}),
-                                },
-                                session=_nox_session_name(
-                                    "test_model_mpi", f"{subset}, {subpackage}"
-                                ),
-                                pytest_args=pytest_args,
-                            )
+                    cells.append(
+                        _MatrixCell(
+                            job_name=f"test_model_mpi_{subset}_aarch64",
+                            extends=".test_model_mpi_aarch64",
+                            variables={"SELECTION": subset},
+                            matrix={
+                                "MODEL_MPI_SUBPACKAGE": subpackage,
+                                "BACKEND": backend,
+                                "LEVEL": level,
+                            },
+                            session=_nox_session_name("test_model_mpi", f"{subset}, {subpackage}"),
+                            pytest_args=pytest_args,
                         )
-                    # TEMPORARY (experiment branch, revert before merge): when
-                    # ICON4PY_CI_MPI_PROBE_JOBS_EXTRA / _NTASKS_EXTRA are set,
-                    # additionally emit the most expensive cell (driver on
-                    # gtfn_gpu) with that GT4PY_BUILD_JOBS / SLURM_NTASKS value
-                    # for an in-pipeline A/B.
-                    if subpackage == "driver" and backend == "gtfn_gpu":
-                        for env_var, key in (
-                            ("ICON4PY_CI_MPI_PROBE_JOBS_EXTRA", "GT4PY_BUILD_JOBS"),
-                            ("ICON4PY_CI_MPI_PROBE_NTASKS_EXTRA", "SLURM_NTASKS"),
-                        ):
-                            if extra := os.environ.get(env_var):
-                                cells.append(
-                                    _MatrixCell(
-                                        job_name=f"test_model_mpi_{subset}_aarch64",
-                                        extends=".test_model_mpi_aarch64",
-                                        variables={"SELECTION": subset},
-                                        matrix={
-                                            "MODEL_MPI_SUBPACKAGE": subpackage,
-                                            "BACKEND": backend,
-                                            "LEVEL": level,
-                                            **{
-                                                **_mpi_cell_slurm_vars_probe(
-                                                    subpackage, backend, level
-                                                ),
-                                                key: extra,
-                                            },
-                                        },
-                                        session=_nox_session_name(
-                                            "test_model_mpi", f"{subset}, {subpackage}"
-                                        ),
-                                        pytest_args=pytest_args,
-                                    )
-                                )
+                    )
     return cells
 
 

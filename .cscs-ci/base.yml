@@ -114,6 +114,12 @@ variables:
     # also scales with number of workers; 32 is a balance between these for jobs
     # that don't run many tests.
     NUM_PROCESSES: 32
+    # Cap OpenMP threads per process. Nothing pins this by default, and
+    # unpinned dace_cpu kernels oversubscribe the node badly (a measured
+    # >2x slowdown on the driver validation sim, see PR #1386).
+    # 8 is a measured plateau value on GH200 modules; most jobs are
+    # compile/latency-bound anyway.
+    OMP_NUM_THREADS: "8"
     GT4PY_BUILD_JOBS: 12
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     PY2F_GPU_TESTS: 1
@@ -214,10 +220,17 @@ variables:
         # for bitwise-identical single- vs multi-rank results on GPU backends
         # in the driver validation tests.
         NVCC_APPEND_FLAGS: "--fmad=false"
-    # NOTE: SLURM_TIMELIMIT/SLURM_PARTITION/GT4PY_BUILD_JOBS for MPI jobs are
-    # set per matrix cell by scripts/python/generate_ci_pipeline.py
-    # (_mpi_cell_slurm_vars), so the generated child pipeline carries the
-    # values in its artifact instead of relying on rules variable overrides.
+        # Allocation: measured shapes (PR #1386, cold caches, gt4py 1.2.1 +
+        # dace 2.0.0a6). The worst cells (driver x *_gpu x unit) need about
+        # 2000-3100 s; 1h is the node-sharing limit. GPUs here are really the
+        # module/cores selector: 1 GH200 chip = 72 Grace cores + 1 GPU.
+        # 24 tasks = 12 per GPU (12 = largest multiple of the 4-rank MPI test
+        # groups that fitted one GPU's memory). GT4PY_BUILD_JOBS=12: 12 == 32
+        # == 64 measured identical; more only costs memory.
+        SLURM_PARTITION: "shared"
+        SLURM_TIMELIMIT: "01:00:00"
+        SLURM_GPUS_PER_NODE: "2"
+        SLURM_NTASKS: "24"
     - when: on_success
   artifacts:
     when: always
