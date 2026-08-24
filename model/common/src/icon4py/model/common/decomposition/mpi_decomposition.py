@@ -60,8 +60,6 @@ log = logging.getLogger(__name__)
 
 # Exchange and reduction objects are expensive to build (GHEX context, halo
 # patterns), so they are cached per (process_props, decomposition_info) pair.
-# Keys are object identities; pairs are expected to be few and long-lived.
-# The pytest plugin clears these between tests via clear_caches().
 _exchange_cache: dict[tuple[int, int], decomp_defs.ExchangeRuntime] = {}
 _reduction_cache: dict[tuple[int, int], Reductions] = {}
 
