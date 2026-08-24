@@ -804,3 +804,175 @@ def test_compute_zdiff_gradp_dispatch_nan(monkeypatch: pytest.MonkeyPatch) -> No
     assert zdiff_gradp.shape == (nedges, 2, nlev)
     assert vertoffset_gradp.shape == (nedges, 2, nlev)
     assert np.all(np.isfinite(vertoffset_gradp))
+
+
+def _build_chunking_test_inputs() -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    int,
+    int,
+    int,
+]:
+    nedges = 20
+    ncells = 16
+    nlev = 8
+    hs = 4
+    hs1 = 10
+
+    topography = np.linspace(0.0, 3000.0, ncells).astype(np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    c0 = np.arange(nedges) % ncells
+    c1 = (c0 + 1) % ncells
+    e2c = np.stack([c0, c1], axis=1)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    flat_idx = np.full((nedges,), 2, dtype=np.int32)
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+
+
+def _build_chunking_carry_test_inputs() -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    int,
+    int,
+    int,
+    int,
+    int,
+]:
+    nedges = 20
+    ncells = 16
+    nlev = 8
+    hs = 4
+    hs1 = 10
+    e0 = 10
+    cell0 = 0
+    fi = 2
+
+    topography = np.linspace(0.0, 3000.0, ncells).astype(np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    c0 = np.arange(nedges) % ncells
+    c1 = (c0 + 1) % ncells
+    e2c = np.stack([c0, c1], axis=1)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+
+    # Force strictly increasing z_me over the active segment on e0.
+    z_me[e0, fi + 1] = 0.5 * (z_ifc[cell0, fi + 1] + z_ifc[cell0, fi + 2])
+    z_me[e0, fi + 2] = 0.5 * (z_ifc[cell0, fi] + z_ifc[cell0, fi + 1])
+    z_me[e0, fi + 3] = 0.5 * (z_ifc[cell0, fi - 1] + z_ifc[cell0, fi])
+    z_me[e0, fi + 4] = 0.5 * (z_ifc[cell0, fi - 2] + z_ifc[cell0, fi - 1])
+    z_me[e0, nlev - 1] = z_ifc[cell0, 0] - 100.0
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+@pytest.mark.level("unit")
+def test_compute_zdiff_gradp_exact_v2_chunking_fast(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1 = _build_chunking_test_inputs()
+
+    uncapped_zdiff, uncapped_vert = compute_zdiff_gradp_exact_v2(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert _zdiff_mod._LAST_EXACT_V2_PATH == "fast"
+
+    monkeypatch.setattr(_zdiff_mod, "_EXACT_V2_MAX_TABLE_BYTES", 1000)
+    capped_zdiff, capped_vert = compute_zdiff_gradp_exact_v2(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert _zdiff_mod._LAST_EXACT_V2_PATH == "fast"
+
+    assert np.allclose(capped_zdiff, uncapped_zdiff)
+    assert np.array_equal(capped_vert, uncapped_vert)
+
+
+@pytest.mark.level("unit")
+def test_compute_zdiff_gradp_exact_v2_chunking_carry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, _e0, _cell0 = (
+        _build_chunking_carry_test_inputs()
+    )
+
+    golden_zdiff, golden_vert = _main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+    uncapped_zdiff, uncapped_vert = compute_zdiff_gradp_exact_v2(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert _zdiff_mod._LAST_EXACT_V2_PATH == "carry"
+    assert np.allclose(uncapped_zdiff, golden_zdiff)
+    assert np.array_equal(uncapped_vert, golden_vert)
+
+    monkeypatch.setattr(_zdiff_mod, "_EXACT_V2_MAX_TABLE_BYTES", 1000)
+    capped_zdiff, capped_vert = compute_zdiff_gradp_exact_v2(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert _zdiff_mod._LAST_EXACT_V2_PATH == "carry"
+    assert np.allclose(capped_zdiff, golden_zdiff)
+    assert np.array_equal(capped_vert, golden_vert)

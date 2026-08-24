@@ -16,6 +16,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 _LAST_EXACT_V2_PATH: str | None = None
 _LAST_DISPATCH_PATH: str | None = None
+_EXACT_V2_MAX_TABLE_BYTES: int = 1 << 30
 
 
 def _check_finite(
@@ -422,7 +423,17 @@ def compute_zdiff_gradp_v2(
     return zdiff_gradp, vertoffset_gradp
 
 
-def compute_zdiff_gradp_exact_v2(
+def _exact_v2_chunk_size(nlev: int, itemsize: int) -> int:
+    bytes_per_edge = 2 * nlev * nlev * itemsize
+    return max(1, _EXACT_V2_MAX_TABLE_BYTES // bytes_per_edge)
+
+
+def _exact_v2_edge_chunks(start: int, end: int, chunk_size: int):
+    for s in range(start, end, chunk_size):
+        yield slice(s, min(s + chunk_size, end))
+
+
+def compute_zdiff_gradp_exact_v2(  # noqa: PLR0915
     *,
     e2c: data_alloc.NDArray,
     z_me: data_alloc.NDArray,
@@ -474,72 +485,90 @@ def compute_zdiff_gradp_exact_v2(
     valid_jk = (jk_idx > fi[:, None]) & edge_hs_mask[:, None]
     phase2_active = valid_jk & (z_me < z_aux2[:, None]) & edge_hs1_mask[:, None]
 
-    z_mc_e0 = z_mc[e2c_0]
-    z_mc_e1 = z_mc[e2c_1]
+    itemsize = 1 if nlev <= 127 else 2
+    chunk_size = _exact_v2_chunk_size(nlev, itemsize)
 
     # Phase 1, cell 0: no carry; fresh scan at every jk.
-    succ0 = _exact_query_succ(z_ifc_e0, z_me, array_ns)
-    jk1_0 = _exact_phase1_cell0(succ0, fi, array_ns)
-    zdiff_gradp[:, 0, :] = array_ns.where(
-        valid_jk,
-        z_me - array_ns.take_along_axis(z_mc_e0, jk1_0, axis=1),
-        zdiff_gradp[:, 0, :],
-    )
-    vertoffset_gradp[:, 0, :] = array_ns.where(
-        valid_jk,
-        (jk1_0 - jk_idx).astype(gtx.int32),
-        vertoffset_gradp[:, 0, :],
-    )
-    del succ0
+    for chunk in _exact_v2_edge_chunks(hs, nedges, chunk_size):
+        z_ifc_k0 = z_ifc_e0[chunk, :].astype(array_ns.float64)
+        z_me_c = z_me[chunk, :].astype(array_ns.float64)
+        fi_c = fi[chunk]
+        valid_jk_c = valid_jk[chunk, :]
+        succ0 = _exact_query_succ(z_ifc_k0, z_me_c, array_ns)
+        jk1_0 = _exact_phase1_cell0(succ0, fi_c, array_ns)
+        z_mc_e0 = z_mc[e2c_0[chunk]]
+        zdiff_gradp[chunk, 0, :] = array_ns.where(
+            valid_jk_c,
+            z_me_c - array_ns.take_along_axis(z_mc_e0, jk1_0, axis=1),
+            zdiff_gradp[chunk, 0, :],
+        )
+        vertoffset_gradp[chunk, 0, :] = array_ns.where(
+            valid_jk_c,
+            (jk1_0 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[chunk, 0, :],
+        )
 
     # Phase 1, cell 1: fresh scan when E3 holds, carry fallback otherwise.
-    succ1 = _exact_query_succ(z_ifc_e1, z_me, array_ns)
-    if use_carry:
-        jk1_1 = _exact_carry_loop(succ1, fi, valid_jk, array_ns)
-    else:
-        jk1_1 = _exact_phase1_cell0(succ1, fi, array_ns)
-    zdiff_gradp[:, 1, :] = array_ns.where(
-        valid_jk,
-        z_me - array_ns.take_along_axis(z_mc_e1, jk1_1, axis=1),
-        zdiff_gradp[:, 1, :],
-    )
-    vertoffset_gradp[:, 1, :] = array_ns.where(
-        valid_jk,
-        (jk1_1 - jk_idx).astype(gtx.int32),
-        vertoffset_gradp[:, 1, :],
-    )
-    del succ1
+    for chunk in _exact_v2_edge_chunks(hs, nedges, chunk_size):
+        z_ifc_k1 = z_ifc_e1[chunk, :].astype(array_ns.float64)
+        z_me_c = z_me[chunk, :].astype(array_ns.float64)
+        fi_c = fi[chunk]
+        valid_jk_c = valid_jk[chunk, :]
+        succ1 = _exact_query_succ(z_ifc_k1, z_me_c, array_ns)
+        if use_carry:
+            jk1_1 = _exact_carry_loop(succ1, fi_c, valid_jk_c, array_ns)
+        else:
+            jk1_1 = _exact_phase1_cell0(succ1, fi_c, array_ns)
+        z_mc_e1 = z_mc[e2c_1[chunk]]
+        zdiff_gradp[chunk, 1, :] = array_ns.where(
+            valid_jk_c,
+            z_me_c - array_ns.take_along_axis(z_mc_e1, jk1_1, axis=1),
+            zdiff_gradp[chunk, 1, :],
+        )
+        vertoffset_gradp[chunk, 1, :] = array_ns.where(
+            valid_jk_c,
+            (jk1_1 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[chunk, 1, :],
+        )
 
     # Phase 2: applies to edges [hs1:] only.
     if hs1 < nedges:
-        z_aux2_v = z_aux2[:, None].astype(array_ns.float64)
+        for chunk in _exact_v2_edge_chunks(hs1, nedges, chunk_size):
+            z_ifc_k0 = z_ifc_e0[chunk, :].astype(array_ns.float64)
+            z_ifc_k1 = z_ifc_e1[chunk, :].astype(array_ns.float64)
+            fi_c = fi[chunk]
+            phase2_active_c = phase2_active[chunk, :]
+            z_aux2_v = z_aux2[chunk, None].astype(array_ns.float64)
 
-        succ2_0 = _exact_query_succ(z_ifc_e0, z_aux2_v, array_ns)
-        jk1_aux_0 = _exact_phase1_cell0(succ2_0, fi, array_ns)
-        zdiff_gradp[:, 0, :] = array_ns.where(
-            phase2_active,
-            z_aux2_v - array_ns.take_along_axis(z_mc_e0, jk1_aux_0.astype(array_ns.int64), axis=1),
-            zdiff_gradp[:, 0, :],
-        )
-        vertoffset_gradp[:, 0, :] = array_ns.where(
-            phase2_active,
-            (jk1_aux_0 - jk_idx).astype(gtx.int32),
-            vertoffset_gradp[:, 0, :],
-        )
-        del succ2_0
+            succ2_0 = _exact_query_succ(z_ifc_k0, z_aux2_v, array_ns)
+            jk1_aux_0 = _exact_phase1_cell0(succ2_0, fi_c, array_ns)
+            z_mc_e0 = z_mc[e2c_0[chunk]]
+            zdiff_gradp[chunk, 0, :] = array_ns.where(
+                phase2_active_c,
+                z_aux2_v
+                - array_ns.take_along_axis(z_mc_e0, jk1_aux_0.astype(array_ns.int64), axis=1),
+                zdiff_gradp[chunk, 0, :],
+            )
+            vertoffset_gradp[chunk, 0, :] = array_ns.where(
+                phase2_active_c,
+                (jk1_aux_0 - jk_idx).astype(gtx.int32),
+                vertoffset_gradp[chunk, 0, :],
+            )
 
-        succ2_1 = _exact_query_succ(z_ifc_e1, z_aux2_v, array_ns)
-        jk1_aux_1 = _exact_phase1_cell0(succ2_1, fi, array_ns)
-        zdiff_gradp[:, 1, :] = array_ns.where(
-            phase2_active,
-            z_aux2_v - array_ns.take_along_axis(z_mc_e1, jk1_aux_1.astype(array_ns.int64), axis=1),
-            zdiff_gradp[:, 1, :],
-        )
-        vertoffset_gradp[:, 1, :] = array_ns.where(
-            phase2_active,
-            (jk1_aux_1 - jk_idx).astype(gtx.int32),
-            vertoffset_gradp[:, 1, :],
-        )
+            succ2_1 = _exact_query_succ(z_ifc_k1, z_aux2_v, array_ns)
+            jk1_aux_1 = _exact_phase1_cell0(succ2_1, fi_c, array_ns)
+            z_mc_e1 = z_mc[e2c_1[chunk]]
+            zdiff_gradp[chunk, 1, :] = array_ns.where(
+                phase2_active_c,
+                z_aux2_v
+                - array_ns.take_along_axis(z_mc_e1, jk1_aux_1.astype(array_ns.int64), axis=1),
+                zdiff_gradp[chunk, 1, :],
+            )
+            vertoffset_gradp[chunk, 1, :] = array_ns.where(
+                phase2_active_c,
+                (jk1_aux_1 - jk_idx).astype(gtx.int32),
+                vertoffset_gradp[chunk, 1, :],
+            )
 
     _LAST_EXACT_V2_PATH = "carry" if use_carry else "fast"
     return zdiff_gradp, vertoffset_gradp
@@ -655,16 +684,19 @@ def _exact_query_succ(
     qv = v[:, :, None]
     bracket = (upper >= qv) & (qv >= lower)
     unconditional = a_idx[None, None, :] == (nlev - 1)
-    idx = array_ns.where(bracket | unconditional, a_idx[None, None, :], nlev)
-
     if nlev <= 127:
-        idx = idx.astype(array_ns.int8)
+        idx_dtype = array_ns.int8
     elif nlev <= 32767:
-        idx = idx.astype(array_ns.int16)
+        idx_dtype = array_ns.int16
     else:
         raise ValueError(
             f"compute_zdiff_gradp_exact successor tables support nlev <= 32767, got {nlev}."
         )
+    idx = array_ns.where(
+        bracket | unconditional,
+        a_idx[None, None, :].astype(idx_dtype),
+        array_ns.asarray(nlev, dtype=idx_dtype),
+    )
 
     # Hillis-Steele style doubling scan for the suffix minimum along the
     # candidate axis. cupy does not implement ufunc.accumulate, so we compute
