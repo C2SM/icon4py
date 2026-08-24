@@ -23,10 +23,11 @@ flags_hash=$(echo -n "CXXFLAGS=${CXXFLAGS:-} NVCC_APPEND_FLAGS=${NVCC_APPEND_FLA
 
 # Then set the cache directory for this run based on the backend and current date.
 DATE=$(date +%Y-%W)
-# TEMPORARY (experiment branch, revert before merge): when set, appends a
-# cache-busting suffix so a run always gets a fresh cache directory.
-BUST="${ICON4PY_CI_GT4PY_CACHE_BUST:-}"
-export GT4PY_BUILD_CACHE_DIR="${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache/base-${base_image_hash}-uv-lock-${uv_lock_hash}-flags-${flags_hash}-job-${job_name_hash}-${DATE}${BUST:+-bust-${BUST}}"
+# TEMPORARY (experiment branch, revert before merge): hardcoded cache-busting
+# suffix so proof runs always get a fresh cache directory. Bump the counter
+# for each new proof run (phase 2/3), remove the whole line before merge.
+BUST="cleanupproof-1"
+export GT4PY_BUILD_CACHE_DIR="${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache/base-${base_image_hash}-uv-lock-${uv_lock_hash}-flags-${flags_hash}-job-${job_name_hash}-${DATE}-${BUST}"
 mkdir -p "${GT4PY_BUILD_CACHE_DIR}"
 
 echo "Using GT4PY_BUILD_CACHE_DIR=${GT4PY_BUILD_CACHE_DIR}"
