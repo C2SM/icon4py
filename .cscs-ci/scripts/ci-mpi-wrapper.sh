@@ -26,7 +26,7 @@ fi
 if [[ -n "${ICON4PY_CI_GPU_LIST:-}" ]]; then
     IFS=',' read -ra _gpus <<< "${ICON4PY_CI_GPU_LIST}"
     if (( ${#_gpus[@]} > 1 )); then
-        export CUDA_VISIBLE_DEVICES="${_gpus[$(( 10#$rank % ${#_gpus[@]} ))]}"
+        export CUDA_VISIBLE_DEVICES="${_gpus[$(( rank % ${#_gpus[@]} ))]}"
         echo "Rank ${rank}/${SLURM_NTASKS:-?}: pinned to GPU ${CUDA_VISIBLE_DEVICES}"
     fi
 fi

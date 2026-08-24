@@ -75,7 +75,7 @@ variables:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_GPUS_PER_NODE: 1
-    SLURM_PARTITION: 'shared'
+    SLURM_PARTITION: "shared"
     SLURM_CPU_BIND: "verbose"
     SLURM_TIMELIMIT: '00:30:00'
     SLURM_MPI_TYPE: pmix
@@ -114,10 +114,8 @@ variables:
     # also scales with number of workers; 32 is a balance between these for jobs
     # that don't run many tests.
     NUM_PROCESSES: 32
-    # Cap OpenMP threads: unpinned dace_cpu kernels oversubscribe the node
-    # (measured 2x slowdown on the CPU validation sim, PR #1386). Global for
-    # all test jobs: in serial jobs it also bounds thread storms during
-    # compilation.
+    # Cap OpenMP threads: unpinned CPU-backend kernels oversubscribe the node
+    # (measured 2x slowdown of the CPU validation sim, PR #1386).
     OMP_NUM_THREADS: 8
     GT4PY_BUILD_JOBS: 12
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
@@ -249,8 +247,8 @@ variables:
     OMPI_MCA_mpi_cuda_support: "0"
     SLURM_NTASKS: "1"
     SLURM_GPUS_PER_TASK: "1"
-    SLURM_PARTITION: 'shared'
-    SLURM_TIMELIMIT: '00:10:00'
+    SLURM_PARTITION: "shared"
+    SLURM_TIMELIMIT: "00:10:00"
   script:
     - cd /icon4py
     - scripts/python/generate_ci_pipeline.py > $CI_PROJECT_DIR/test.yml
