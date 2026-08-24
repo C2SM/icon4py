@@ -166,7 +166,7 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend_like,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
     )
 
     benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)
