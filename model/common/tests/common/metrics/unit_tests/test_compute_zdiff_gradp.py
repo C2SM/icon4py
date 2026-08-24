@@ -15,10 +15,12 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
+import icon4py.model.common.metrics.compute_zdiff_gradp as _zdiff_mod
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_zdiff_gradp import (
     compute_zdiff_gradp,
     compute_zdiff_gradp_exact,
+    compute_zdiff_gradp_exact_v2,
     compute_zdiff_gradp_v2,
 )
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
@@ -129,7 +131,13 @@ def _main_reference(  # noqa: PLR0912
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "compute_fn", [compute_zdiff_gradp, compute_zdiff_gradp_v2, compute_zdiff_gradp_exact]
+    "compute_fn",
+    [
+        compute_zdiff_gradp,
+        compute_zdiff_gradp_v2,
+        compute_zdiff_gradp_exact,
+        compute_zdiff_gradp_exact_v2,
+    ],
 )
 def test_compute_zdiff_gradp(  # noqa: PLR0917
     icon_grid: base_grid.Grid,
@@ -302,7 +310,14 @@ def test_compute_zdiff_gradp_endpoint_forcing(
 
 
 @pytest.mark.level("unit")
-@pytest.mark.parametrize("compute_fn", [compute_zdiff_gradp_v2, compute_zdiff_gradp_exact])
+@pytest.mark.parametrize(
+    "compute_fn",
+    [
+        compute_zdiff_gradp_v2,
+        compute_zdiff_gradp_exact,
+        compute_zdiff_gradp_exact_v2,
+    ],
+)
 def test_compute_zdiff_gradp_nan_validation(
     monkeypatch: pytest.MonkeyPatch, compute_fn: Callable[..., tuple[np.ndarray, np.ndarray]]
 ) -> None:
@@ -343,9 +358,104 @@ def test_compute_zdiff_gradp_nan_validation(
             horizontal_start_1=gtx.int32(hs1),
         )
 
-    # Validation OFF: defined nlev-1 fallback, no crash.
+    # Validation OFF: defined nlev-1 fallback, no crash for v2/exact/dispatch;
+    # exact_v2 keeps finiteness always-on, so it still raises.
     monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
-    zdiff_gradp, vertoffset_gradp = compute_fn(
+    if compute_fn is compute_zdiff_gradp_exact_v2:
+        with pytest.raises(ValueError):
+            compute_fn(
+                e2c=e2c,
+                z_me=z_me,
+                z_mc=z_mc,
+                z_ifc=z_ifc,
+                flat_idx=flat_idx,
+                topography=topography,
+                nlev=nlev,
+                horizontal_start=gtx.int32(hs),
+                horizontal_start_1=gtx.int32(hs1),
+            )
+    else:
+        zdiff_gradp, vertoffset_gradp = compute_fn(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+        assert zdiff_gradp.shape == (nedges, 2, nlev)
+        assert vertoffset_gradp.shape == (nedges, 2, nlev)
+        assert np.all(np.isfinite(vertoffset_gradp))
+
+
+def _build_p3_e3_violation_inputs() -> tuple[np.ndarray, ...]:
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    fi = 2
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+
+    # Force strictly increasing z_me over the active segment, crossing bracket
+    # boundaries upward so the carry semantics differ from a fresh per-jk scan.
+    z_me[e0, fi + 1] = 0.5 * (z_ifc[cell0, fi + 1] + z_ifc[cell0, fi + 2])
+    z_me[e0, fi + 2] = 0.5 * (z_ifc[cell0, fi] + z_ifc[cell0, fi + 1])
+    z_me[e0, fi + 3] = 0.5 * (z_ifc[cell0, fi - 1] + z_ifc[cell0, fi])
+    z_me[e0, fi + 4] = 0.5 * (z_ifc[cell0, fi - 2] + z_ifc[cell0, fi - 1])
+    z_me[e0, nlev - 1] = z_ifc[cell0, 0] - 100.0
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, 0
+
+
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("validation_enabled", [True, False])
+def test_compute_zdiff_gradp_e3_violation(
+    monkeypatch: pytest.MonkeyPatch, validation_enabled: bool
+) -> None:
+    if validation_enabled:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    else:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
+
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, _cell0 = (
+        _build_p3_e3_violation_inputs()
+    )
+
+    # Sanity-check that E3 is violated on the forced edge.
+    fi = int(flat_idx[e0])
+    assert any(z_me[e0, k] < z_me[e0, k + 1] for k in range(fi + 1, nlev - 1))
+
+    golden_zdiff, golden_vert = _main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+    exact2_zdiff, exact2_vert = compute_zdiff_gradp_exact_v2(
         e2c=e2c,
         z_me=z_me,
         z_mc=z_mc,
@@ -356,6 +466,55 @@ def test_compute_zdiff_gradp_nan_validation(
         horizontal_start=gtx.int32(hs),
         horizontal_start_1=gtx.int32(hs1),
     )
-    assert zdiff_gradp.shape == (nedges, 2, nlev)
-    assert vertoffset_gradp.shape == (nedges, 2, nlev)
-    assert np.all(np.isfinite(vertoffset_gradp))
+    assert np.allclose(exact2_zdiff, golden_zdiff)
+    assert np.array_equal(exact2_vert, golden_vert)
+    assert _zdiff_mod._LAST_EXACT_V2_PATH == "carry"
+
+    baseline_zdiff, baseline_vert = compute_zdiff_gradp(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    # The baseline vectorized path does not replicate main's carry for E3 violations.
+    baseline_matches = np.allclose(baseline_zdiff, golden_zdiff) and np.array_equal(
+        baseline_vert, golden_vert
+    )
+
+    if validation_enabled:
+        with pytest.raises(ValueError):
+            compute_zdiff_gradp_v2(
+                e2c=e2c,
+                z_me=z_me,
+                z_mc=z_mc,
+                z_ifc=z_ifc,
+                flat_idx=flat_idx,
+                topography=topography,
+                nlev=nlev,
+                horizontal_start=gtx.int32(hs),
+                horizontal_start_1=gtx.int32(hs1),
+            )
+
+        assert not baseline_matches
+    else:
+        v2_zdiff, v2_vert = compute_zdiff_gradp_v2(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+        v2_matches = np.allclose(v2_zdiff, golden_zdiff) and np.array_equal(v2_vert, golden_vert)
+        assert not v2_matches
+
+
+

@@ -14,6 +14,36 @@ import gt4py.next as gtx
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
+_LAST_EXACT_V2_PATH: str | None = None
+_LAST_DISPATCH_PATH: str | None = None
+
+
+def _check_finite(
+    array_ns: ModuleType,
+    z_ifc_e0: data_alloc.NDArray,
+    z_ifc_e1: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
+    z_aux2: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    return (
+        array_ns.isfinite(z_ifc_e0).all()
+        & array_ns.isfinite(z_ifc_e1).all()
+        & array_ns.isfinite(z_me).all()
+        & array_ns.isfinite(z_aux2).all()
+    )
+
+
+def _check_e3(
+    array_ns: ModuleType,
+    z_me: data_alloc.NDArray,
+    fi: data_alloc.NDArray,
+    nlev: int,
+) -> data_alloc.NDArray:
+    k_idx_me = array_ns.arange(nlev - 1, dtype=array_ns.int64)[None, :]
+    valid_me = (k_idx_me >= fi[:, None] + 1) & (k_idx_me < nlev - 1)
+    return ((z_me[:, :-1] >= z_me[:, 1:]) | ~valid_me).all()
+
+
 def _batched_searchsorted(a, v, array_ns):
     m, n = a.shape
     max_num = max(float(a.max() - a.min()), float(v.max() - v.min())) + 1
@@ -166,8 +196,8 @@ def _validate_zdiff_gradp_inputs(  # noqa: PLR0917
     nlev: int,
     nedges: int,
 ) -> None:
-    # All checks are device reductions AND-ed on-device into a single 0-d boolean;
-    # one host sync (the final bool(...)) per call.
+    finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
+    e3_ok = _check_e3(array_ns, z_me, fi, nlev)
 
     # E1: strict z_ifc decrease over [fi..nlev] in the original (top->bottom)
     # orientation is equivalent to strict increase of the ascending slices up to nlev-fi.
@@ -175,19 +205,6 @@ def _validate_zdiff_gradp_inputs(  # noqa: PLR0917
     valid_ifc = k_idx < (nlev - fi)[:, None]
     e1_ok_0 = ((z_ifc_e0[:, :-1] < z_ifc_e0[:, 1:]) | ~valid_ifc).all()
     e1_ok_1 = ((z_ifc_e1[:, :-1] < z_ifc_e1[:, 1:]) | ~valid_ifc).all()
-
-    # Finiteness of all searched arrays.
-    finite_ok = (
-        array_ns.isfinite(z_ifc_e0).all()
-        & array_ns.isfinite(z_ifc_e1).all()
-        & array_ns.isfinite(z_me).all()
-        & array_ns.isfinite(z_aux2).all()
-    )
-
-    # E3: z_me non-increasing over [fi+1, nlev-1].
-    k_idx_me = array_ns.arange(nlev - 1, dtype=array_ns.int64)[None, :]
-    valid_me = (k_idx_me >= fi[:, None] + 1) & (k_idx_me < nlev - 1)
-    e3_ok = ((z_me[:, :-1] >= z_me[:, 1:]) | ~valid_me).all()
 
     # A2 premise: float64 row-offset safety.
     global_max = array_ns.max(
@@ -232,12 +249,7 @@ def _validate_exact_inputs(
     z_me: data_alloc.NDArray,
     z_aux2: data_alloc.NDArray,
 ) -> None:
-    finite_ok = (
-        array_ns.isfinite(z_ifc_e0).all()
-        & array_ns.isfinite(z_ifc_e1).all()
-        & array_ns.isfinite(z_me).all()
-        & array_ns.isfinite(z_aux2).all()
-    )
+    finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
     if not bool(finite_ok):
         raise ValueError("Searched arrays contain non-finite values.")
 
@@ -279,7 +291,6 @@ def compute_zdiff_gradp_v2(
 
     if _validation_enabled():
         _validate_zdiff_gradp_inputs(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges)
-
     fill_high = (
         array_ns.max(array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()]))
         + 1.0
@@ -387,6 +398,129 @@ def compute_zdiff_gradp_v2(
             vertoffset_gradp[hs1:, 1, :],
         )
 
+    return zdiff_gradp, vertoffset_gradp
+
+
+def compute_zdiff_gradp_exact_v2(
+    *,
+    e2c: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    flat_idx: data_alloc.NDArray,
+    topography: data_alloc.NDArray,
+    nlev: int,
+    horizontal_start: gtx.int32,
+    horizontal_start_1: gtx.int32,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    global _LAST_EXACT_V2_PATH  # noqa: PLW0603
+    array_ns = data_alloc.array_namespace(z_mc)
+    nedges = e2c.shape[0]
+
+    hs = int(horizontal_start)
+    hs1 = int(horizontal_start_1)
+    if hs1 < hs:
+        raise ValueError("horizontal_start_1 must be greater than or equal to horizontal_start.")
+
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0
+
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    zdiff_gradp[hs:, :, :] = array_ns.expand_dims(z_me, axis=1)[hs:, :, :] - z_mc[e2c][hs:, :, :]
+    vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
+
+    fi = flat_idx.astype(array_ns.int64)
+    e2c_0 = e2c[:, 0].astype(array_ns.int64)
+    e2c_1 = e2c[:, 1].astype(array_ns.int64)
+
+    z_ifc_e0 = z_ifc[e2c_0, :]
+    z_ifc_e1 = z_ifc[e2c_1, :]
+
+    finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
+    e3_ok = _check_e3(array_ns, z_me, fi, nlev)
+
+    combined = finite_ok & e3_ok
+    if not bool(combined):
+        if not bool(finite_ok):
+            raise ValueError("Searched arrays contain non-finite values.")
+        use_carry = True
+    else:
+        use_carry = False
+
+    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    edge_hs_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs
+    edge_hs1_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs1
+    valid_jk = (jk_idx > fi[:, None]) & edge_hs_mask[:, None]
+    phase2_active = valid_jk & (z_me < z_aux2[:, None]) & edge_hs1_mask[:, None]
+
+    z_mc_e0 = z_mc[e2c_0]
+    z_mc_e1 = z_mc[e2c_1]
+
+    # Phase 1, cell 0: no carry; fresh scan at every jk.
+    succ0 = _exact_query_succ(z_ifc_e0, z_me, array_ns)
+    jk1_0 = _exact_phase1_cell0(succ0, fi, array_ns)
+    zdiff_gradp[:, 0, :] = array_ns.where(
+        valid_jk,
+        z_me - array_ns.take_along_axis(z_mc_e0, jk1_0, axis=1),
+        zdiff_gradp[:, 0, :],
+    )
+    vertoffset_gradp[:, 0, :] = array_ns.where(
+        valid_jk,
+        (jk1_0 - jk_idx).astype(gtx.int32),
+        vertoffset_gradp[:, 0, :],
+    )
+    del succ0
+
+    # Phase 1, cell 1: fresh scan when E3 holds, carry fallback otherwise.
+    succ1 = _exact_query_succ(z_ifc_e1, z_me, array_ns)
+    if use_carry:
+        jk1_1 = _exact_carry_loop(succ1, fi, valid_jk, array_ns)
+    else:
+        jk1_1 = _exact_phase1_cell0(succ1, fi, array_ns)
+    zdiff_gradp[:, 1, :] = array_ns.where(
+        valid_jk,
+        z_me - array_ns.take_along_axis(z_mc_e1, jk1_1, axis=1),
+        zdiff_gradp[:, 1, :],
+    )
+    vertoffset_gradp[:, 1, :] = array_ns.where(
+        valid_jk,
+        (jk1_1 - jk_idx).astype(gtx.int32),
+        vertoffset_gradp[:, 1, :],
+    )
+    del succ1
+
+    # Phase 2: applies to edges [hs1:] only.
+    if hs1 < nedges:
+        z_aux2_v = z_aux2[:, None].astype(array_ns.float64)
+
+        succ2_0 = _exact_query_succ(z_ifc_e0, z_aux2_v, array_ns)
+        jk1_aux_0 = _exact_phase1_cell0(succ2_0, fi, array_ns)
+        zdiff_gradp[:, 0, :] = array_ns.where(
+            phase2_active,
+            z_aux2_v - array_ns.take_along_axis(z_mc_e0, jk1_aux_0.astype(array_ns.int64), axis=1),
+            zdiff_gradp[:, 0, :],
+        )
+        vertoffset_gradp[:, 0, :] = array_ns.where(
+            phase2_active,
+            (jk1_aux_0 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[:, 0, :],
+        )
+        del succ2_0
+
+        succ2_1 = _exact_query_succ(z_ifc_e1, z_aux2_v, array_ns)
+        jk1_aux_1 = _exact_phase1_cell0(succ2_1, fi, array_ns)
+        zdiff_gradp[:, 1, :] = array_ns.where(
+            phase2_active,
+            z_aux2_v - array_ns.take_along_axis(z_mc_e1, jk1_aux_1.astype(array_ns.int64), axis=1),
+            zdiff_gradp[:, 1, :],
+        )
+        vertoffset_gradp[:, 1, :] = array_ns.where(
+            phase2_active,
+            (jk1_aux_1 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[:, 1, :],
+        )
+
+    _LAST_EXACT_V2_PATH = "carry" if use_carry else "fast"
     return zdiff_gradp, vertoffset_gradp
 
 
