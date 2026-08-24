@@ -12,7 +12,6 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
 
-from icon4py.model.common import time
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
@@ -29,13 +28,15 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
-    from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
+    from icon4py.model.common.grid import icon as icon_grid
     from icon4py.model.common.states import (
         nonhydro_states,
         prognostic_state as prognostics,
         static_fields,
         tracer_states,
     )
+    from icon4py.model.driver import config as driver_config
+
 
 log = logging.getLogger(__name__)
 
@@ -64,19 +65,12 @@ def from_fortran_dict(
     atm_dict: dict[str, Any],
     input_dict: dict[str, Any],
     data_path: pathlib.Path,
-    start_of_simulation: time.AbsoluteTime,
-    start_of_timestepping: time.AbsoluteTime,
-    dtime: time.RelativeTime,
 ) -> IC_CONFIG:
     run_nml = atm_dict["run_nml"]
     if not run_nml["ltestcase"]:
         log.info("Reading initial condition from file")
         return from_file_ic.FromFileConfig(
             data_path=data_path / fortran_config.SER_DATA_SUBDIR,
-            start_of_simulation=start_of_simulation,
-            start_of_timestepping=start_of_timestepping,
-            dtime=dtime,
-            ntracer=fortran_config.list_to_value(run_nml["ntracer"]),
         )
 
     testcase_nml = input_dict.get("nh_testcase_nml", {})
@@ -106,10 +100,9 @@ def from_fortran_dict(
     return config
 
 
-def create(
+def apply(
     *,
-    config: IC_CONFIG,
-    vertical_config: v_grid.VerticalGridConfig,
+    config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
@@ -126,11 +119,10 @@ def create(
     state is given: diagnosed from the initial state, or, when restarting, read from the
     serialized data together with the advective tendencies of the previous time step.
     """
-    match config:
+    match config.initial_condition:
         case jw_ic.JablonowskiWilliamsonConfig():
             jw_ic.jablonowski_williamson(
                 config=config,
-                vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
@@ -142,7 +134,6 @@ def create(
         case gauss_ic.Gauss3DConfig():
             gauss_ic.gauss3d(
                 config=config,
-                vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
@@ -152,7 +143,6 @@ def create(
         case wk_ic.WeismanKlempConfig():
             wk_ic.weisman_klemp(
                 config=config,
-                vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
@@ -161,7 +151,7 @@ def create(
                 exchange=exchange,
             )
         case from_file_ic.FromFileConfig():
-            if config.is_restart:
+            if config.driver.is_restart:
                 if solve_nonhydro_diagnostic_state is None:
                     raise ValueError(
                         "restarting needs the diagnostic state of the dycore to initialize."

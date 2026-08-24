@@ -33,6 +33,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.driver import config as driver_config
+
 
 log = logging.getLogger(__name__)
 
@@ -47,32 +49,6 @@ class FromFileConfig:
             description="Path to the serialised data directory (typically '<experiment>/ser_data')."
         ),
     ]
-    start_of_simulation: typing.Annotated[
-        time.AbsoluteTime, common_conf_opt.ConfigOption(description="Beginning of the simulation.")
-    ]  # TODO(ricoh): should be passed when the initial conditions are applied (it's duplicated from DriverConfig)
-    start_of_timestepping: typing.Annotated[
-        time.AbsoluteTime,
-        common_conf_opt.ConfigOption(
-            description="Beginning of the time loop. Differs from 'start_of_simulation' when restarting."
-        ),
-    ]  # TODO(ricoh): should be passed when the initial conditions are applied (it's duplicated from DriverConfig)
-    dtime: typing.Annotated[
-        time.RelativeTime,
-        common_conf_opt.ConfigOption(
-            description="Model time step. Needed to select the savepoint to restart from."
-        ),
-    ]  # TODO(ricoh): should be passed when the initial conditions are applied (it's duplicated from DriverConfig)
-    ntracer: typing.Annotated[
-        int,
-        common_conf_opt.ConfigOption(
-            description="Number of tracer species stored in the snapshot."
-        ),
-    ] = 0  # TODO(ricoh): should be read from the number of active tracers when the initial conditions are applied
-
-    @property
-    def is_restart(self) -> bool:
-        """Whether the time loop starts at a later date than the simulation."""
-        return self.start_of_timestepping != self.start_of_simulation
 
 
 def _savepoint_formatted_date(date: time.AbsoluteTime) -> str:
@@ -134,9 +110,13 @@ def _read_prognostic_state(
     prognostic_state.w.ndarray[:, :] = read_cell_k("w_now")
 
 
+def no_tracer_exception(data_path: pathlib.Path) -> bool:
+    return "exclaim_ch_r04b09_dsl" in data_path.name or "exclaim_ape_R02B04" in data_path.name
+
+
 def read_initial_condition_from_file(
     *,
-    config: FromFileConfig,
+    config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
@@ -144,12 +124,14 @@ def read_initial_condition_from_file(
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> None:
     """Initialise the prognostic and tracer states from the serialized ICON initial state."""
+    ic_config = config.initial_condition
+    assert isinstance(ic_config, FromFileConfig)
     array_ns = data_alloc.import_array_ns(model_backends.get_allocator(backend))
 
-    log.info("Reading the initial condition from %s", config.data_path)
+    log.info("Reading the initial condition from %s", ic_config.data_path)
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
-        str(config.data_path),
+        str(ic_config.data_path),
         f"icon_pydycore_rank{exchange.my_rank()}",
     )
     savepoint = serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
@@ -157,7 +139,10 @@ def read_initial_condition_from_file(
 
     _read_prognostic_state(prognostic_state_now, read_cell_k, read_edge_k)
 
-    if config.ntracer > 0:
+    ntracer = config.tracer_config.nactive if config.tracer_config else 0
+    if no_tracer_exception(ic_config.data_path):
+        ntracer = 0
+    if ntracer > 0:
         tracers = array_ns.squeeze(serializer.read("tracers_now", savepoint).astype(float))
         for i, tracer in enumerate(tracer_state_now.active_fields()):
             tracer.field.ndarray[:, :] = array_ns.asarray(tracers[: grid.num_cells, :, i])
@@ -165,7 +150,7 @@ def read_initial_condition_from_file(
 
 def read_restart_from_file(
     *,
-    config: FromFileConfig,
+    config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     prognostic_state_now: prognostics.PrognosticState,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
@@ -182,19 +167,24 @@ def read_restart_from_file(
     of the time step that starts at 'start_of_timestepping'. Those savepoints
     are stamped with the date of the end of their time step.
     """
-    if config.ntracer > 0:
+    ic_config = config.initial_condition
+    assert isinstance(ic_config, FromFileConfig)
+    ntracer = config.tracer_config.nactive if config.tracer_config else 0
+    if no_tracer_exception(ic_config.data_path):
+        ntracer = 0
+    if ntracer > 0:
         raise NotImplementedError(
             "restarting with tracers is not supported: the solve-nonhydro savepoints do not "
             "carry them, they are in the advection-init savepoint of the same date."
         )
 
     array_ns = data_alloc.import_array_ns(model_backends.get_allocator(backend))
-    date = _savepoint_formatted_date(config.start_of_timestepping + config.dtime)
+    date = _savepoint_formatted_date(config.driver.start_of_timestepping + config.driver.dtime)
 
     log.info("Restarting from the serialized state of the time step ending at %s", date)
     serializer = serialbox.Serializer(
         serialbox.OpenModeKind.Read,
-        str(config.data_path),
+        str(ic_config.data_path),
         f"icon_pydycore_rank{exchange.my_rank()}",
     )
     try:
