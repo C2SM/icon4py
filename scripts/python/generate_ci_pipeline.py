@@ -229,9 +229,9 @@ def _run_nox_collection(
     ]
     full_env = os.environ.copy()
     full_env.update(env)
-    # Set FLOAT_PRECISION for single-precision test collection
+    # Set ICON4PY_FLOAT_PRECISION for single-precision test collection
     if precision == "single":
-        full_env["FLOAT_PRECISION"] = "single"
+        full_env["ICON4PY_FLOAT_PRECISION"] = "single"
     result = subprocess.run(
         cmd,
         capture_output=True,
@@ -412,7 +412,7 @@ def _add_precision_variants(cells: list[_MatrixCell], precisions: list[str]) -> 
 
     For each precision in the list, creates cells with appropriate settings:
     - "double": original cells (default)
-    - "single": cells with suffix _single_precision and FLOAT_PRECISION="single"
+    - "single": cells with suffix _single_precision and ICON4PY_FLOAT_PRECISION="single"
     """
     # Only keep original cells if "double" is requested
     result = list(cells) if "double" in precisions else []
@@ -422,7 +422,7 @@ def _add_precision_variants(cells: list[_MatrixCell], precisions: list[str]) -> 
             new_cell = replace(
                 cell,
                 job_name=f"{cell.job_name}_single_precision",
-                variables={**cell.variables, "FLOAT_PRECISION": "single"},
+                variables={**cell.variables, "ICON4PY_FLOAT_PRECISION": "single"},
                 precision="single",
             )
             result.append(new_cell)

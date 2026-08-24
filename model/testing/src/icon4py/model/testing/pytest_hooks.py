@@ -50,7 +50,7 @@ def pytest_configure(config):
         m_option.append("datatest")
     if config.getoption("--datatest-skip"):
         m_option.append("not datatest")
-    if os.environ.get("FLOAT_PRECISION", "double").lower() == "single":
+    if os.environ.get("ICON4PY_FLOAT_PRECISION", "double").lower() == "single":
         # if precision is set to single per env variable, only run tests marked as single_precision_ready
         m_option.append("single_precision_ready")
     config.option.markexpr = " and ".join(m_option[::-1])

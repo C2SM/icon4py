@@ -187,10 +187,6 @@ def test_model(
 
     pytest_args = _selection_to_pytest_args(selection)
 
-    posargs_list = list(session.posargs)
-    if "--single-precision" in posargs_list:
-        session.env["FLOAT_PRECISION"] = "single"
-        posargs_list.remove("--single-precision")
     success_codes = (
         [0] if "--collect-only" in session.posargs else [0, NO_TESTS_COLLECTED_EXIT_CODE]
     )
@@ -199,7 +195,7 @@ def test_model(
             *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
             "tests",
-            *posargs_list,
+            *session.posargs,
             success_codes=success_codes,
         )
 

@@ -19,7 +19,7 @@ wpfloat: TypeAlias = gtx.float64  # noqa: UP040
 vpfloat: TypeAlias = gtx.float64  # noqa: UP040
 type anyfloat = gtx.float32 | gtx.float64
 
-precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
+precision = os.environ.get("ICON4PY_FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 
 
 def set_precision(new_precision: Literal["double", "mixed", "single"]) -> None:
