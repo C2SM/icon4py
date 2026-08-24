@@ -120,9 +120,8 @@ def test_initial_conditions(
         allocator=allocator,
         tracer_config=icon4py_driver.config.tracer_config,
     )
-    initial_condition.create(
-        config=icon4py_driver.config.initial_condition,
-        vertical_config=icon4py_driver.config.vertical_grid,
+    initial_condition.apply(
+        config=icon4py_driver.config,
         grid=icon4py_driver.grid,
         static_fields=icon4py_driver.static_field_factories,
         prognostic_state_now=prognostic_state_now,

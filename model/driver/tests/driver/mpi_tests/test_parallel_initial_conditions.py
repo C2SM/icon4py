@@ -127,9 +127,8 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     single_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
         grid=single_rank_icon4py_driver.grid, allocator=allocator
     )
-    initial_condition.create(
-        config=single_rank_icon4py_driver.config.initial_condition,
-        vertical_config=single_rank_icon4py_driver.config.vertical_grid,
+    initial_condition.apply(
+        config=single_rank_icon4py_driver.config,
         grid=single_rank_icon4py_driver.grid,
         static_fields=single_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=single_rank_prognostic,
@@ -183,9 +182,8 @@ def test_initial_conditions_compare_single_multi_rank(  # noqa: PLR0917 [too-man
     multi_rank_dycore_diagnostic = nonhydro_states.initialize_solve_nonhydro_diagnostic_state(
         grid=multi_rank_icon4py_driver.grid, allocator=allocator
     )
-    initial_condition.create(
-        config=multi_rank_icon4py_driver.config.initial_condition,
-        vertical_config=multi_rank_icon4py_driver.config.vertical_grid,
+    initial_condition.apply(
+        config=multi_rank_icon4py_driver.config,
         grid=multi_rank_icon4py_driver.grid,
         static_fields=multi_rank_icon4py_driver.static_field_factories,
         prognostic_state_now=multi_rank_prognostic,

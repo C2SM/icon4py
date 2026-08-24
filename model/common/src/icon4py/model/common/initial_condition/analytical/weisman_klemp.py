@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.states import static_fields
+    from icon4py.model.driver import config as driver_config
 
 log = logging.getLogger(__name__)
 
@@ -150,8 +151,7 @@ class WeismanKlempConfig:
 
 def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     *,
-    config: WeismanKlempConfig,
-    vertical_config: v_grid.VerticalGridConfig,
+    config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
@@ -169,6 +169,8 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     The reference experiment config for this is exp.exclaim_nh_weisman_klemp_sb.
     """
+    ic_config = config.initial_condition
+    assert isinstance(ic_config, WeismanKlempConfig)
     if tracer_state_now.qv is None:
         raise ValueError(
             "The Weisman-Klemp initial condition requires the 'qv' tracer to be active."
@@ -198,10 +200,10 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     grav_o_cpd = phy_const.GRAV_O_CPD
     vtmpc1 = phy_const.RV_O_RD_MINUS_1
-    h_tropopause = config.h_tropopause
-    t_tropopause = config.t_tropopause
-    theta_tropopause = config.theta_tropopause
-    qv_max = config.qv_max
+    h_tropopause = ic_config.h_tropopause
+    t_tropopause = ic_config.t_tropopause
+    theta_tropopause = ic_config.theta_tropopause
+    qv_max = ic_config.qv_max
 
     exner_ndarray = prognostic_state_now.exner.ndarray
     rho_ndarray = prognostic_state_now.rho.ndarray
@@ -226,7 +228,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     # Tropopause reference values.
     exner_tropopause = t_tropopause / theta_tropopause
-    vapor_pressure_tropopause = config.rh_min * thermo.sat_pres_water(
+    vapor_pressure_tropopause = ic_config.rh_min * thermo.sat_pres_water(
         array_ns.asarray(t_tropopause)
     )
     pressure_tropopause = phy_const.P0REF * exner_tropopause**phy_const.CPD_O_RD
@@ -245,7 +247,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     pressure_above = phy_const.P0REF * exner[above] ** phy_const.CPD_O_RD
     qv[above] = thermo.specific_humidity(vapor_pressure_tropopause, pressure_above)
     theta_v[above] = theta[above] * (1.0 + vtmpc1 * qv[above])
-    relative_humidity[above] = config.rh_min
+    relative_humidity[above] = ic_config.rh_min
     temperature[above] = t_tropopause
 
     # Below the tropopause the potential temperature and relative humidity profiles are
@@ -253,13 +255,13 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     below = slice(k_tropopause + 1, num_levels)
     height_below = height[below]
     theta[below] = (
-        config.theta_surface
-        + (theta_tropopause - config.theta_surface)
-        * (height_below / h_tropopause) ** config.exponent_theta
+        ic_config.theta_surface
+        + (theta_tropopause - ic_config.theta_surface)
+        * (height_below / h_tropopause) ** ic_config.exponent_theta
     )
     relative_humidity[below] = array_ns.minimum(
-        1.0 - 0.75 * (height_below / h_tropopause) ** config.exponent_relative_humidity,
-        config.rh_max,
+        1.0 - 0.75 * (height_below / h_tropopause) ** ic_config.exponent_relative_humidity,
+        ic_config.rh_max,
     )
 
     def _integrate_layer(
@@ -320,8 +322,9 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     log.info("Weisman-Klemp base-state profile completed.")
 
     # Sheared horizontal wind, projected onto the edge-normal direction.
-    wind_speed = config.max_wind_speed * (
-        array_ns.tanh((height - config.h_min) / (config.wind_scale_height - config.h_min)) - 0.45
+    wind_speed = ic_config.max_wind_speed * (
+        array_ns.tanh((height - ic_config.h_min) / (ic_config.wind_scale_height - ic_config.h_min))
+        - 0.45
     )
     boundary_lvl2 = zone_idx["end_edge_lateral_boundary_level_2"]
     prognostic_state_now.vn.ndarray[:boundary_lvl2, :] = 0.0
@@ -329,7 +332,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         wind_speed[array_ns.newaxis, :] * primal_normal_x[boundary_lvl2:, array_ns.newaxis]
     )
 
-    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
+    _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
         z_ifc=z_ifc,
@@ -365,12 +368,12 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         rho=rho_ndarray,
         qv=tracer_state_now.qv.ndarray,
         exner=exner_ndarray,
-        center_x=config.bubble_center_x,
-        center_y=config.bubble_center_y,
-        center_z=config.bubble_center_z,
-        horizontal_width=config.bubble_horizontal_width,
-        vertical_width=config.bubble_vertical_width,
-        amplitude=config.bubble_amplitude,
-        radius=config.bubble_radius,
+        center_x=ic_config.bubble_center_x,
+        center_y=ic_config.bubble_center_y,
+        center_z=ic_config.bubble_center_z,
+        horizontal_width=ic_config.bubble_horizontal_width,
+        vertical_width=ic_config.bubble_vertical_width,
+        amplitude=ic_config.bubble_amplitude,
+        radius=ic_config.bubble_radius,
     )
     log.info("Warm-bubble perturbation completed.")
