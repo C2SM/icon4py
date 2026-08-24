@@ -200,7 +200,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
     )
     at_first_substep = substep_init == 1
@@ -522,7 +522,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
     )
     at_first_substep = substep_init == 1
@@ -703,7 +703,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
     )
 
@@ -828,7 +828,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
     )
 

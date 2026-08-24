@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import copy
 import functools
 import logging
 from typing import Any
@@ -342,3 +343,56 @@ def test_halo_exchange_for_sparse_field(  # noqa: PLR0917 [too-many-positional-a
     exchange.exchange(dims.CellDim, result, stream=decomp_defs.BLOCK)
 
     assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_exchange_and_reduction_cached(
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
+) -> None:
+    exchange1 = decomp_defs.create_exchange(process_props, decomposition_info)
+    exchange2 = decomp_defs.create_exchange(process_props, decomposition_info)
+    assert exchange1 is exchange2
+
+    reductions1 = decomp_defs.create_reduction(process_props, decomposition_info)
+    reductions2 = decomp_defs.create_reduction(process_props, decomposition_info)
+    assert reductions1 is reductions2
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_clear_caches_creates_new_exchange_and_reduction(
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
+) -> None:
+    exchange1 = decomp_defs.create_exchange(process_props, decomposition_info)
+    reductions1 = decomp_defs.create_reduction(process_props, decomposition_info)
+
+    mpi_decomposition.clear_caches()
+
+    exchange2 = decomp_defs.create_exchange(process_props, decomposition_info)
+    reductions2 = decomp_defs.create_reduction(process_props, decomposition_info)
+    assert exchange1 is not exchange2
+    assert reductions1 is not reductions2
+
+
+@pytest.mark.mpi(min_size=2)
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("process_props", [True], indirect=True)
+def test_exchange_and_reduction_cache_isolated_by_decomp_info(
+    process_props: decomp_defs.ProcessProperties,
+    decomposition_info: decomp_defs.DecompositionInfo,
+) -> None:
+    other_decomposition_info = copy.copy(decomposition_info)
+    assert other_decomposition_info is not decomposition_info
+
+    exchange1 = decomp_defs.create_exchange(process_props, decomposition_info)
+    exchange2 = decomp_defs.create_exchange(process_props, other_decomposition_info)
+    assert exchange1 is not exchange2
+
+    reductions1 = decomp_defs.create_reduction(process_props, decomposition_info)
+    reductions2 = decomp_defs.create_reduction(process_props, other_decomposition_info)
+    assert reductions1 is not reductions2
