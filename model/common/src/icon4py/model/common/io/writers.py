@@ -6,23 +6,27 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Shared surface of the output writers.
+
+The writer implementations live in :mod:`icon4py.model.common.io.netcdf_writers`
+and :mod:`icon4py.model.common.io.zarr_writers`, each supporting serial and
+rank-block output. This module holds what they share so both file formats stay
+identical: the :class:`FieldWriter` protocol, the dimension names, and the
+coordinate/variable attributes.
+"""
+
 import dataclasses
 import datetime as dt
-import functools
-import logging
-import pathlib
+import types
 import uuid
-from typing import Final, TypedDict
+from typing import Final, Protocol, Required, Self, TypedDict
 
-import netCDF4 as nc
 import numpy as np
 import xarray as xr
-from typing_extensions import Required
 
-import icon4py.model.common.states.metadata
-from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import base, vertical as v_grid
+from icon4py.model.common.grid import base
 from icon4py.model.common.io import cf_utils
+from icon4py.model.common.states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -33,13 +37,13 @@ MODEL_HALF_LEVEL: Final[str] = "half_level"
 MODEL_LEVEL: Final[str] = "level"
 TIME: Final[str] = "time"
 
-log = logging.getLogger(__name__)
-process_properties = decomposition.SingleNodeProcessProperties()
+#: Prefix of the global-index coordinates of rank-block output (zarr and netCDF).
+GLOBAL_INDEX_PREFIX: Final[str] = "global_index"
 
 
 class GlobalFileAttributes(TypedDict, total=False):
     """
-    Global file attributes of a ICON generated netCDF file.
+    Global file attributes of an ICON generated netCDF file.
 
     Attribute map what ICON produces, (including the upper, lower case pattern).
     Omissions (possibly incomplete):
@@ -79,169 +83,126 @@ class TimeProperties:
     calendar: str
 
 
-class NETCDFWriter:
-    """
-    Writer for netcdf files.
+class FieldWriter(Protocol):
+    """Writer for one output file: create it, append time slices to it, close it."""
 
-    Writes a netcdf file using netcdf4-python directly. Currently, this seems to be the only way that we can
-      - get support for parallel (MPI available) writing
-      - the possibility to append time slices to a variable already present in the file. (Xarray.to_netcdf does not support this https://github.com/pydata/xarray/issues/1672)
-    """
+    def initialize_dataset(self) -> None: ...
 
-    def __init__(
+    def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None: ...
+
+    def close(self) -> None: ...
+
+    def __enter__(self) -> Self: ...
+
+    def __exit__(
         self,
-        *,
-        file_name: pathlib.Path | str,
-        vertical: v_grid.VerticalGrid,
-        horizontal: base.HorizontalGridSize,
-        time_properties: TimeProperties,
-        global_attrs: GlobalFileAttributes,
-        process_properties: decomposition.ProcessProperties = process_properties,
-    ):
-        self._file_name = str(file_name)
-        self._process_properties = process_properties
-        self._time_properties = time_properties
-        self._vertical_params = vertical
-        self._horizontal_size = horizontal
-        self.attrs = global_attrs
-        self.dataset = None
-
-    def __getitem__(self, item: str) -> str:
-        assert self.dataset is not None
-        return self.dataset.getncattr(item)
-
-    @functools.cached_property
-    def num_levels(self) -> int:
-        return self._vertical_params.interface_physical_height.ndarray.shape[0] - 1
-
-    @functools.cached_property
-    def num_interfaces(self) -> int:
-        return self._vertical_params.interface_physical_height.ndarray.shape[0]
-
-    def initialize_dataset(self) -> None:
-        self.dataset = nc.Dataset(  # type: ignore [assignment] # dataset is reassigned here
-            self._file_name,
-            "w",
-            format="NETCDF4",
-            persist=True,
-            parallel=self._process_properties.comm_size > 1,
-            comm=self._process_properties.comm,
-        )
-        assert self.dataset is not None
-        log.info(f"Creating file {self._file_name} at {self.dataset.filepath()}")
-        self.dataset.setncatts({k: str(v) for (k, v) in self.attrs.items()})
-        ## create dimensions all except time are fixed
-        self.dataset.createDimension(TIME, None)
-        self.dataset.createDimension(MODEL_LEVEL, self.num_levels)
-        self.dataset.createDimension(MODEL_HALF_LEVEL, self.num_interfaces)
-        self.dataset.createDimension(CELL, self._horizontal_size.num_cells)
-        self.dataset.createDimension(VERTEX, self._horizontal_size.num_vertices)
-        self.dataset.createDimension(EDGE, self._horizontal_size.num_edges)
-        log.debug(f"Creating dimensions {self.dataset.dimensions} in {self._file_name}")
-        # create time variables
-        times = self.dataset.createVariable(TIME, "f8", (TIME,))
-        times.units = self._time_properties.units
-        times.axis = cf_utils.COARDS_TIME_COORDINATE_NAME
-        times.calendar = self._time_properties.calendar
-        times.standard_name = TIME
-        times.long_name = TIME
-        # create vertical coordinates:
-        levels = self.dataset.createVariable(MODEL_LEVEL, np.int32, (MODEL_LEVEL,))
-        levels.units = "1"
-        levels.positive = "down"
-        levels.long_name = "model full level index"
-        levels.standard_name = cf_utils.LEVEL_STANDARD_NAME
-        levels[:] = np.arange(self.num_levels, dtype=np.int32)
-
-        half_levels = self.dataset.createVariable(MODEL_HALF_LEVEL, np.int32, (MODEL_HALF_LEVEL,))
-        half_levels.units = "1"
-        half_levels.positive = "down"
-        half_levels.long_name = "model half level index"
-        half_levels.standard_name = (
-            icon4py.model.common.states.metadata.INTERFACE_LEVEL_STANDARD_NAME
-        )
-        half_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
-
-        heights = self.dataset.createVariable("height", np.float64, (MODEL_HALF_LEVEL,))
-        heights.units = "m"
-        heights.positive = "up"
-        heights.axis = cf_utils.COARDS_VERTICAL_COORDINATE_NAME
-        heights.long_name = "height value of half levels without topography"
-        heights.standard_name = (
-            icon4py.model.common.states.metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
-        )
-        heights[:] = data_alloc.as_numpy(self._vertical_params.interface_physical_height)
-
-    def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None:
-        """
-        Append the fields to the dataset.
-
-        Appends a time slice of the fields in the state_to_append dictionary to the dataset for the `model_time` expanding the time coordinate by the `model_time`.
-        Args:
-            state_to_append: fields to append
-            model_time: time of the model state
-
-        Returns:
-
-        """
-        assert self.dataset is not None
-        time = self.dataset[TIME]
-        time_pos = len(time)
-        time[time_pos] = cf_utils.date2num(model_time, units=time.units, calendar=time.calendar)
-        for var_name, new_slice in state_to_append.items():
-            standard_name = new_slice.standard_name
-            canonical_new_slice = cf_utils.to_canonical_dim_order(new_slice)
-            assert standard_name is not None, f"No short_name provided for {standard_name}."
-            ds_var = filter_by_standard_name(self.dataset.variables, standard_name)
-            if not ds_var:
-                dimensions = ("time", *canonical_new_slice.dims)
-                new_var = self.dataset.createVariable(
-                    var_name, canonical_new_slice.dtype, dimensions
-                )
-                new_var[0, :] = data_alloc.as_numpy(canonical_new_slice.data)
-                new_var.units = canonical_new_slice.units
-                new_var.standard_name = canonical_new_slice.standard_name
-                new_var.long_name = canonical_new_slice.long_name
-                new_var.coordinates = canonical_new_slice.coordinates
-                new_var.mesh = canonical_new_slice.mesh
-                new_var.location = canonical_new_slice.location
-
-            else:
-                assert ds_var is not None
-                actual_var_name = ds_var.get(var_name).name
-                dims = ds_var.get(actual_var_name).dimensions
-                shape = ds_var.get(actual_var_name).shape
-                assert len(canonical_new_slice.dims) == len(dims) - 1, (
-                    f"Data variable dimensions do not match for {standard_name}."
-                )
-
-                # TODO(halungge): change for parallel/distributed case: where we write at `global_index` field on the node for the horizontal dim.
-                # we can acutally assume fixed index ordering here, input arrays are  re-shaped to canonical order (see above)
-
-                right = (slice(None),) * (len(dims) - 1)
-                expand_slice = (
-                    slice(shape[cf_utils.COARDS_T_POS] - 1, shape[cf_utils.COARDS_T_POS]),
-                )
-                slices = expand_slice + right
-                self.dataset.variables[actual_var_name][slices] = data_alloc.as_numpy(
-                    canonical_new_slice.data
-                )
-
-    def close(self) -> None:
-        assert self.dataset is not None
-        if self.dataset.isopen():
-            self.dataset.close()
-
-    @property
-    def dims(self) -> dict:
-        assert self.dataset is not None
-        return self.dataset.dimensions
-
-    @property
-    def variables(self) -> dict:
-        assert self.dataset is not None
-        return self.dataset.variables
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None: ...
 
 
-def filter_by_standard_name(model_state: dict, value: str) -> dict:
-    return {k: v for k, v in model_state.items() if value == v.standard_name}
+def horizontal_axis_sizes(horizontal: base.HorizontalGridSize) -> dict[str, int]:
+    return {
+        CELL: horizontal.num_cells,
+        EDGE: horizontal.num_edges,
+        VERTEX: horizontal.num_vertices,
+    }
+
+
+# ------------------------------------------------------------------------------------
+# Coordinate attributes, shared between the writers so the file formats stay identical
+# (the static per-axis attribute dicts live in ``common.states.metadata``)
+# ------------------------------------------------------------------------------------
+
+
+def time_attributes(time_properties: TimeProperties) -> dict[str, str]:
+    return {
+        "units": time_properties.units,
+        "axis": metadata.COARDS_TIME_COORDINATE_NAME,
+        "calendar": time_properties.calendar,
+        "standard_name": TIME,
+        "long_name": TIME,
+    }
+
+
+#: CF/UGRID attributes carried from a field's DataArray onto its file variable.
+DATA_VARIABLE_ATTRIBUTES: Final[tuple[str, ...]] = (
+    "units",
+    "standard_name",
+    "long_name",
+    "coordinates",
+    "mesh",
+    "location",
+)
+
+#: The attributes asserting the UGRID mesh association of a variable. The association
+#: holds only when the variable's horizontal axis is in the global order of the
+#: referenced topology -- which a rank-block store's axes are not.
+UGRID_ASSOCIATION_ATTRIBUTES: Final[tuple[str, ...]] = ("mesh", "location")
+
+#: Marker attribute replacing the UGRID association on rank-block variables: their
+#: horizontal axes are rank-ordered and padded (see ``distributed.RankBlock``), so a
+#: reader must reorder them by the store's ``global_index_<dim>`` coordinate before
+#: the mesh of the UGRID topology file applies.
+LAYOUT_ATTRIBUTE: Final[str] = "icon4py_layout"
+RANK_BLOCK_LAYOUT: Final[str] = "rank_block"
+
+
+def data_variable_attributes(
+    canonical_slice: xr.DataArray, *, rank_block_layout: bool = False
+) -> dict[str, str]:
+    """CF/UGRID attributes of a field, raising for missing ones.
+
+    Both writers call this before any file mutation: a missing attribute must fail on
+    every rank identically, not on the root rank inside a store operation.
+
+    With ``rank_block_layout`` the UGRID association (``mesh``, ``location``) is
+    replaced by ``icon4py_layout = "rank_block"``: the variable's horizontal axis is
+    rank-ordered and padded, so a UGRID-aware reader would otherwise silently place
+    the values on the wrong mesh entities (see ``LAYOUT_ATTRIBUTE``).
+    """
+    missing = [name for name in DATA_VARIABLE_ATTRIBUTES if name not in canonical_slice.attrs]
+    if missing:
+        raise ValueError(f"Field is missing the CF attributes: {', '.join(missing)}.")
+    attrs = {name: canonical_slice.attrs[name] for name in DATA_VARIABLE_ATTRIBUTES}
+    if rank_block_layout:
+        for name in UGRID_ASSOCIATION_ATTRIBUTES:
+            del attrs[name]
+        attrs[LAYOUT_ATTRIBUTE] = RANK_BLOCK_LAYOUT
+    return attrs
+
+
+def canonicalize_time_slice(
+    state_to_append: dict[str, xr.DataArray], horizontal_sizes: dict[str, int]
+) -> tuple[dict[str, xr.DataArray], dict[str, np.ndarray]]:
+    """Canonicalize the fields of a time slice and transfer them to host memory.
+
+    Runs before any file/store mutation, on every rank: a failure (unsupported or
+    unknown dimensions, missing CF attributes, a device buffer that cannot be
+    converted) must raise identically on all ranks first, or the file would be left
+    with a phantom time slice -- and, in rank-block mode, the surviving ranks would
+    hang in the next collective.
+    """
+    canonical_slices: dict[str, xr.DataArray] = {}
+    host_data: dict[str, np.ndarray] = {}
+    for var_name, new_slice in state_to_append.items():
+        canonical_slice = cf_utils.to_canonical_dim_order(new_slice)
+        if canonical_slice is None:
+            raise ValueError(
+                f"Cannot write field '{var_name}': only fields with a horizontal and a "
+                f"vertical dimension are supported."
+            )
+        horizontal_name = str(canonical_slice.dims[-1])
+        if horizontal_name not in horizontal_sizes:
+            raise ValueError(
+                f"Cannot write field '{var_name}': unknown horizontal dimension "
+                f"'{horizontal_name}'."
+            )
+        try:
+            data_variable_attributes(canonical_slice)
+        except ValueError as err:
+            raise ValueError(f"Cannot write field '{var_name}': {err}") from err
+        canonical_slices[var_name] = canonical_slice
+        host_data[var_name] = data_alloc.as_numpy(canonical_slice.data)
+    return canonical_slices, host_data

@@ -119,7 +119,7 @@ nox -l
 nox -s 'test_common'
 
 # Run a test session for a specific python version and parameter value
-nox -s 'test_atmosphere_advection-3.10(datatest=True)'
+nox -s 'test_model-3.12(datatest, tracer_advection)'
 ```
 
 To run distributed tests, make sure an MPI implementation is installed and run `uv sync --extra distributed` or `uv sync --extra all`. Then run tests using `mpirun`, the `--with-mpi` pytest flag, and the `-k mpi_tests` filter:
@@ -128,10 +128,10 @@ To run distributed tests, make sure an MPI implementation is installed and run `
 mpirun -np 4 pytest -v -s --with-mpi -k mpi_tests
 ```
 
-To avoid all ranks writing their test output to stdout, use the helper script `ci/scripts/ci-mpi-wrapper.sh` around the `pytest` command:
+To avoid all ranks writing their test output to stdout, use the helper script `.cscs-ci/scripts/ci-mpi-wrapper.sh` around the `pytest` command:
 
 ```bash
-mpirun -np 4 ci/scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi -k mpi_tests
+mpirun -np 4 .cscs-ci/scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi -k mpi_tests
 ```
 
 #### Distributed runs on Alps

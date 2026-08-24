@@ -13,6 +13,7 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
 
+from icon4py.model.common.config import config_io
 from icon4py.model.common.topography import from_file as from_file_topo
 from icon4py.model.common.topography.analytical import (
     flat_topography as flat_topo,
@@ -31,14 +32,27 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+type TOPO_CONFIG = (
+    flat_topo.FlatTopographyConfig
+    | jw_topo.JablonowskiWilliamsonConfig
+    | gausshill_topo.GaussianHillConfig
+    | from_file_topo.FromFileConfig
+)
+
+config_io.register_config_union(
+    TOPO_CONFIG.__value__,
+    {
+        "flat": flat_topo.FlatTopographyConfig,
+        "jablonowski_williamson": jw_topo.JablonowskiWilliamsonConfig,
+        "gaussian_hill": gausshill_topo.GaussianHillConfig,
+        "from_file": from_file_topo.FromFileConfig,
+    },
+)
+
+
 @dataclasses.dataclass
 class TopographyConfig:
-    config: (
-        flat_topo.FlatTopographyConfig
-        | jw_topo.JablonowskiWilliamsonConfig
-        | gausshill_topo.GaussianHillConfig
-        | from_file_topo.FromFileConfig
-    )
+    config: TOPO_CONFIG
 
     @classmethod
     def from_fortran_dict(
@@ -48,8 +62,8 @@ class TopographyConfig:
         input_dict: dict[str, Any],
         data_path: pathlib.Path,
     ) -> TopographyConfig:
-        run_nml = atm_dict.get("run_nml", {})
-        if not run_nml.get("ltestcase", False):
+        run_nml = atm_dict["run_nml"]
+        if not run_nml["ltestcase"]:
             log.info("Reading topography from file")
             return cls(
                 config=from_file_topo.FromFileConfig(
@@ -58,13 +72,14 @@ class TopographyConfig:
             )
 
         testcase_nml = input_dict.get("nh_testcase_nml", {})
+        test_name = testcase_nml.get("nh_test_name")
         config: (
             flat_topo.FlatTopographyConfig
             | jw_topo.JablonowskiWilliamsonConfig
             | gausshill_topo.GaussianHillConfig
         )  # mypy does not automatically catch type
-        match testcase_nml.get("nh_test_name"):
-            case "APE_nwp" | "wk82":
+        match test_name:
+            case "APE_nwp" | "APE_aes" | "wk82":
                 log.info("Flat topography")
                 config = flat_topo.FlatTopographyConfig()
             case "jabw" | "jabw_s":

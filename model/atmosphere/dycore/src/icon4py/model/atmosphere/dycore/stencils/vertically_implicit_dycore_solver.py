@@ -439,7 +439,7 @@ def vertically_implicit_solver_at_predictor_step(
     end_cell_index_halo_lvl1: gtx.int32,
     vertical_start_index_model_top: gtx.int32,
     vertical_end_index_model_surface: gtx.int32,
-):
+) -> None:
     _interpolate_contravariant_correction_from_edges_on_model_levels_to_cells_on_half_levels(
         contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         e_bln_c_s=e_bln_c_s,
