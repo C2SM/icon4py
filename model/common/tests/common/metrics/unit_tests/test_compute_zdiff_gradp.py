@@ -18,6 +18,7 @@ import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_zdiff_gradp import (
     compute_zdiff_gradp,
+    compute_zdiff_gradp_exact,
     compute_zdiff_gradp_v2,
 )
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
@@ -127,7 +128,9 @@ def _main_reference(  # noqa: PLR0912
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("compute_fn", [compute_zdiff_gradp, compute_zdiff_gradp_v2])
+@pytest.mark.parametrize(
+    "compute_fn", [compute_zdiff_gradp, compute_zdiff_gradp_v2, compute_zdiff_gradp_exact]
+)
 def test_compute_zdiff_gradp(  # noqa: PLR0917
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
@@ -190,11 +193,14 @@ def test_compute_zdiff_gradp(  # noqa: PLR0917
 
 
 @pytest.mark.level("unit")
-@pytest.mark.parametrize("validation_enabled", ["1", "0"])
+@pytest.mark.parametrize("validation_enabled", [True, False])
 def test_compute_zdiff_gradp_endpoint_forcing(
-    monkeypatch: pytest.MonkeyPatch, validation_enabled: str
+    monkeypatch: pytest.MonkeyPatch, validation_enabled: bool
 ) -> None:
-    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", validation_enabled)
+    if validation_enabled:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    else:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
 
     nedges = 4
     ncells = 4
@@ -260,6 +266,18 @@ def test_compute_zdiff_gradp_endpoint_forcing(
         horizontal_start_1=gtx.int32(hs1),
     )
 
+    exact_zdiff, exact_vert = compute_zdiff_gradp_exact(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+
     baseline_zdiff, baseline_vert = compute_zdiff_gradp(
         e2c=e2c,
         z_me=z_me,
@@ -275,6 +293,68 @@ def test_compute_zdiff_gradp_endpoint_forcing(
     assert np.allclose(candidate_zdiff, golden_zdiff)
     assert np.array_equal(candidate_vert, golden_vert)
 
+    assert np.allclose(exact_zdiff, golden_zdiff)
+    assert np.array_equal(exact_vert, golden_vert)
+
     assert not np.allclose(baseline_zdiff, golden_zdiff) or not np.array_equal(
         baseline_vert, golden_vert
     )
+
+
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("compute_fn", [compute_zdiff_gradp_v2, compute_zdiff_gradp_exact])
+def test_compute_zdiff_gradp_nan_validation(
+    monkeypatch: pytest.MonkeyPatch, compute_fn: Callable[..., tuple[np.ndarray, np.ndarray]]
+) -> None:
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    z_me[0, 0] = np.nan
+
+    flat_idx = np.zeros((nedges,), dtype=np.int32)
+
+    # Validation ON (default): ValueError before compute.
+    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    with pytest.raises(ValueError):
+        compute_fn(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+
+    # Validation OFF: defined nlev-1 fallback, no crash.
+    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
+    zdiff_gradp, vertoffset_gradp = compute_fn(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert zdiff_gradp.shape == (nedges, 2, nlev)
+    assert vertoffset_gradp.shape == (nedges, 2, nlev)
+    assert np.all(np.isfinite(vertoffset_gradp))

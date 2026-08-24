@@ -141,7 +141,7 @@ def compute_zdiff_gradp(
 
 
 def _validation_enabled() -> bool:
-    return os.environ.get("ICON4PY_VALIDATE_ZDIFF_GRADP") == "1"
+    return os.environ.get("ICON4PY_VALIDATE_ZDIFF_GRADP", "1") != "0"
 
 
 def _batched_searchsorted_v2(
@@ -164,28 +164,82 @@ def _validate_zdiff_gradp_inputs(  # noqa: PLR0917
     z_aux2: data_alloc.NDArray,
     fi: data_alloc.NDArray,
     nlev: int,
+    nedges: int,
 ) -> None:
-    # Strict z_ifc decrease over [fi..nlev] in the original (top->bottom) orientation
-    # is equivalent to strict increase of the ascending slices z_ifc_e* up to nlev-fi.
+    # All checks are device reductions AND-ed on-device into a single 0-d boolean;
+    # one host sync (the final bool(...)) per call.
+
+    # E1: strict z_ifc decrease over [fi..nlev] in the original (top->bottom)
+    # orientation is equivalent to strict increase of the ascending slices up to nlev-fi.
     k_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
     valid_ifc = k_idx < (nlev - fi)[:, None]
-    if not ((z_ifc_e0[:, :-1] < z_ifc_e0[:, 1:]) | ~valid_ifc).all():
-        raise ValueError("Strict z_ifc decrease over [fi..nlev] violated for cell 0.")
-    if not ((z_ifc_e1[:, :-1] < z_ifc_e1[:, 1:]) | ~valid_ifc).all():
-        raise ValueError("Strict z_ifc decrease over [fi..nlev] violated for cell 1.")
+    e1_ok_0 = ((z_ifc_e0[:, :-1] < z_ifc_e0[:, 1:]) | ~valid_ifc).all()
+    e1_ok_1 = ((z_ifc_e1[:, :-1] < z_ifc_e1[:, 1:]) | ~valid_ifc).all()
 
-    if not (
+    # Finiteness of all searched arrays.
+    finite_ok = (
         array_ns.isfinite(z_ifc_e0).all()
-        and array_ns.isfinite(z_ifc_e1).all()
-        and array_ns.isfinite(z_me).all()
-        and array_ns.isfinite(z_aux2).all()
-    ):
-        raise ValueError("Searched arrays contain non-finite values.")
+        & array_ns.isfinite(z_ifc_e1).all()
+        & array_ns.isfinite(z_me).all()
+        & array_ns.isfinite(z_aux2).all()
+    )
 
+    # E3: z_me non-increasing over [fi+1, nlev-1].
     k_idx_me = array_ns.arange(nlev - 1, dtype=array_ns.int64)[None, :]
     valid_me = (k_idx_me >= fi[:, None] + 1) & (k_idx_me < nlev - 1)
-    if not ((z_me[:, :-1] >= z_me[:, 1:]) | ~valid_me).all():
-        raise ValueError("z_me non-increasing over [fi+1, nlev-1] violated.")
+    e3_ok = ((z_me[:, :-1] >= z_me[:, 1:]) | ~valid_me).all()
+
+    # A2 premise: float64 row-offset safety.
+    global_max = array_ns.max(
+        array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()])
+    )
+    global_min = array_ns.min(
+        array_ns.stack([z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()])
+    )
+    max_num = global_max - global_min + 1.0
+    a2_ok = max_num * nedges < 2.0**53
+
+    # Min-level-spacing vs ULP at max_num.
+    spacing_0 = array_ns.where(
+        valid_ifc,
+        z_ifc_e0[:, 1:] - z_ifc_e0[:, :-1],
+        array_ns.asarray(array_ns.inf, dtype=z_ifc_e0.dtype),
+    )
+    spacing_1 = array_ns.where(
+        valid_ifc,
+        z_ifc_e1[:, 1:] - z_ifc_e1[:, :-1],
+        array_ns.asarray(array_ns.inf, dtype=z_ifc_e1.dtype),
+    )
+    min_spacing = array_ns.min(array_ns.stack([spacing_0.min(), spacing_1.min()]))
+    ulp_at_max = array_ns.nextafter(max_num, array_ns.inf) - max_num
+    spacing_ok = min_spacing > ulp_at_max
+
+    combined = e1_ok_0
+    for check in (e1_ok_1, finite_ok, e3_ok, a2_ok, spacing_ok):
+        combined = array_ns.logical_and(combined, check)
+
+    if not bool(combined):
+        raise ValueError(
+            "compute_zdiff_gradp_v2 input validation failed: strict z_ifc decrease, "
+            "z_me monotonicity, finiteness, A2 float-offset premise, or min-spacing-vs-ULP violated."
+        )
+
+
+def _validate_exact_inputs(
+    array_ns: ModuleType,
+    z_ifc_e0: data_alloc.NDArray,
+    z_ifc_e1: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
+    z_aux2: data_alloc.NDArray,
+) -> None:
+    finite_ok = (
+        array_ns.isfinite(z_ifc_e0).all()
+        & array_ns.isfinite(z_ifc_e1).all()
+        & array_ns.isfinite(z_me).all()
+        & array_ns.isfinite(z_aux2).all()
+    )
+    if not bool(finite_ok):
+        raise ValueError("Searched arrays contain non-finite values.")
 
 
 def compute_zdiff_gradp_v2(
@@ -223,12 +277,11 @@ def compute_zdiff_gradp_v2(
     z_ifc_e0 = z_ifc_asc[e2c_0]
     z_ifc_e1 = z_ifc_asc[e2c_1]
 
+    if _validation_enabled():
+        _validate_zdiff_gradp_inputs(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges)
+
     fill_high = max(z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()) + 1.0
     fill_low = min(z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()) - 1.0
-
-    if _validation_enabled():
-        _validate_zdiff_gradp_inputs(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev)
-
     jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
     fi_sliced = fi[hs:]
 
@@ -327,5 +380,212 @@ def compute_zdiff_gradp_v2(
             (jk1_aux_1 - jk_idx).astype(gtx.int32),
             vertoffset_gradp[hs1:, 1, :],
         )
+
+    return zdiff_gradp, vertoffset_gradp
+
+
+def _exact_query_succ(
+    z_ifc_k: data_alloc.NDArray, v: data_alloc.NDArray, array_ns: ModuleType
+) -> data_alloc.NDArray:
+    """Build suffix-minimum successor table for exact bracket matching.
+
+    Args:
+        z_ifc_k: (chunk, nlev+1) array with z_ifc in main's k-order (decreasing in a).
+        v: (chunk, nq) query values.
+        array_ns: array namespace module (numpy or cupy).
+
+    Returns:
+        succ: (chunk, nq, nlev) integer array where succ[e, q, t] is the first
+            candidate index a >= t satisfying the bracket predicate, or the
+            unconditional deepest level nlev-1. Uses int8 for nlev <= 127,
+            int16 for nlev <= 32767, otherwise int32.
+    """
+    _chunk, nlev_p1 = z_ifc_k.shape
+    nlev = nlev_p1 - 1
+
+    a_idx = array_ns.arange(nlev, dtype=array_ns.int64)
+    z_ifc_k = z_ifc_k.astype(array_ns.float64)
+    v = v.astype(array_ns.float64)
+
+    # Bracket predicate: z_ifc_k[a] >= v >= z_ifc_k[a+1] (z_ifc_k decreasing).
+    upper = z_ifc_k[:, None, :-1]
+    lower = z_ifc_k[:, None, 1:]
+    qv = v[:, :, None]
+    bracket = (upper >= qv) & (qv >= lower)
+    unconditional = a_idx[None, None, :] == (nlev - 1)
+    idx = array_ns.where(bracket | unconditional, a_idx[None, None, :], nlev)
+
+    if nlev <= 127:
+        idx = idx.astype(array_ns.int8)
+    elif nlev <= 32767:
+        idx = idx.astype(array_ns.int16)
+    else:
+        idx = idx.astype(array_ns.int32)
+
+    rev = idx[:, :, ::-1]
+    pref_min = array_ns.minimum.accumulate(rev, axis=2)
+    return pref_min[:, :, ::-1]
+
+
+def _exact_phase1_cell0(
+    succ: data_alloc.NDArray, fi: data_alloc.NDArray, array_ns: ModuleType
+) -> data_alloc.NDArray:
+    """Phase-1 cell-0: no carry; gather succ[:, jk, fi] for every jk."""
+    fi_idx = fi[:, None, None].astype(array_ns.int64)
+    jk1 = array_ns.take_along_axis(succ, fi_idx, axis=2)[:, :, 0]
+    return jk1.astype(array_ns.int64)
+
+
+def _exact_carry_loop(
+    succ: data_alloc.NDArray,
+    fi: data_alloc.NDArray,
+    active: data_alloc.NDArray,
+    array_ns: ModuleType,
+) -> data_alloc.NDArray:
+    """Carry loop replicating main's jk_start lower-bound semantics.
+
+    succ: (chunk, nq, nlev) successor table.
+    fi: (chunk,) starting lower bound per edge.
+    active: (chunk, nlev) guard controlling whether the carry advances at jk.
+
+    Returns jk1_out: (chunk, nlev) selected candidate for each jk.
+    """
+    chunk, _, nlev = succ.shape
+    t = fi.astype(array_ns.int64).copy()
+    jk1_out = array_ns.empty((chunk, nlev), dtype=array_ns.int64)
+    for jk in range(nlev):
+        src = succ[:, 0:1, :] if succ.shape[1] == 1 else succ[:, jk : jk + 1, :]
+        jk1 = array_ns.take_along_axis(src, t[:, None, None], axis=2)[:, 0, 0]
+        jk1_out[:, jk] = jk1
+        t = array_ns.where(active[:, jk], jk1, t)
+    return jk1_out
+
+
+def compute_zdiff_gradp_exact(
+    *,
+    e2c: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    flat_idx: data_alloc.NDArray,
+    topography: data_alloc.NDArray,
+    nlev: int,
+    horizontal_start: gtx.int32,
+    horizontal_start_1: gtx.int32,
+    chunk_size: int | None = None,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """Exact-semantics broadcast variant of compute_zdiff_gradp.
+
+    Replicates main's bracket predicate and jk_start carry exactly for all
+    finite inputs with nlev <= 127 (int8 successor tables; int16 fallback for
+    larger nlev). Validation is always-on with opt-out via
+    ICON4PY_VALIDATE_ZDIFF_GRADP=0.
+    """
+    array_ns = data_alloc.array_namespace(z_mc)
+    nedges = e2c.shape[0]
+
+    hs = int(horizontal_start)
+    hs1 = int(horizontal_start_1)
+    if hs1 < hs:
+        raise ValueError("horizontal_start_1 must be greater than or equal to horizontal_start.")
+
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0
+
+    fi = flat_idx.astype(array_ns.int64)
+    e2c_0 = e2c[:, 0].astype(array_ns.int64)
+    e2c_1 = e2c[:, 1].astype(array_ns.int64)
+
+    # z_ifc in main's k-order (decreasing with k) for both cells.
+    z_ifc_e0 = z_ifc[e2c_0, :]
+    z_ifc_e1 = z_ifc[e2c_1, :]
+
+    if _validation_enabled():
+        _validate_exact_inputs(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
+
+    # Output assembly identical to v2's D6.
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    zdiff_gradp[hs:, :, :] = array_ns.expand_dims(z_me, axis=1)[hs:, :, :] - z_mc[e2c][hs:, :, :]
+    vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
+
+    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    edge_hs_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs
+    edge_hs1_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs1
+    valid_jk = (jk_idx > fi[:, None]) & edge_hs_mask[:, None]
+    phase2_active = valid_jk & (z_me < z_aux2[:, None]) & edge_hs1_mask[:, None]
+
+    if chunk_size is None:
+        mem_per_edge = nlev * 2 * (nlev + 1)
+        chunk_size = max(1, min(nedges, (256 * 1024 * 1024) // mem_per_edge))
+
+    for start in range(0, nedges, chunk_size):
+        end = min(start + chunk_size, nedges)
+        chunk = slice(start, end)
+        z_ifc_k0 = z_ifc_e0[chunk, :].astype(array_ns.float64)
+        z_ifc_k1 = z_ifc_e1[chunk, :].astype(array_ns.float64)
+        z_me_c = z_me[chunk, :].astype(array_ns.float64)
+        fi_c = fi[chunk]
+        valid_jk_c = valid_jk[chunk, :]
+
+        # Phase 1, cell 0: fresh scan at every jk.
+        succ0 = _exact_query_succ(z_ifc_k0, z_me_c, array_ns)
+        jk1_0 = _exact_phase1_cell0(succ0, fi_c, array_ns)
+        z_mc_e0 = z_mc[e2c_0[chunk]]
+        zdiff_gradp[chunk, 0, :] = array_ns.where(
+            valid_jk_c,
+            z_me_c - array_ns.take_along_axis(z_mc_e0, jk1_0, axis=1),
+            zdiff_gradp[chunk, 0, :],
+        )
+        vertoffset_gradp[chunk, 0, :] = array_ns.where(
+            valid_jk_c,
+            (jk1_0 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[chunk, 0, :],
+        )
+
+        # Phase 1, cell 1: carry t = jk_start between jk iterations.
+        succ1 = _exact_query_succ(z_ifc_k1, z_me_c, array_ns)
+        jk1_1 = _exact_carry_loop(succ1, fi_c, valid_jk_c, array_ns)
+        z_mc_e1 = z_mc[e2c_1[chunk]]
+        zdiff_gradp[chunk, 1, :] = array_ns.where(
+            valid_jk_c,
+            z_me_c - array_ns.take_along_axis(z_mc_e1, jk1_1, axis=1),
+            zdiff_gradp[chunk, 1, :],
+        )
+        vertoffset_gradp[chunk, 1, :] = array_ns.where(
+            valid_jk_c,
+            (jk1_1 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[chunk, 1, :],
+        )
+
+        # Phase 2: applies to edges [hs1:] only.
+        if hs1 < nedges:
+            phase2_active_c = phase2_active[chunk, :]
+            z_aux2_v = z_aux2[chunk, None].astype(array_ns.float64)
+
+            succ2_0 = _exact_query_succ(z_ifc_k0, z_aux2_v, array_ns)
+            jk1_aux_0 = _exact_carry_loop(succ2_0, fi_c, phase2_active_c, array_ns)
+            zdiff_gradp[chunk, 0, :] = array_ns.where(
+                phase2_active_c,
+                z_aux2_v - array_ns.take_along_axis(z_mc_e0, jk1_aux_0, axis=1),
+                zdiff_gradp[chunk, 0, :],
+            )
+            vertoffset_gradp[chunk, 0, :] = array_ns.where(
+                phase2_active_c,
+                (jk1_aux_0 - jk_idx).astype(gtx.int32),
+                vertoffset_gradp[chunk, 0, :],
+            )
+
+            succ2_1 = _exact_query_succ(z_ifc_k1, z_aux2_v, array_ns)
+            jk1_aux_1 = _exact_carry_loop(succ2_1, fi_c, phase2_active_c, array_ns)
+            zdiff_gradp[chunk, 1, :] = array_ns.where(
+                phase2_active_c,
+                z_aux2_v - array_ns.take_along_axis(z_mc_e1, jk1_aux_1, axis=1),
+                zdiff_gradp[chunk, 1, :],
+            )
+            vertoffset_gradp[chunk, 1, :] = array_ns.where(
+                phase2_active_c,
+                (jk1_aux_1 - jk_idx).astype(gtx.int32),
+                vertoffset_gradp[chunk, 1, :],
+            )
 
     return zdiff_gradp, vertoffset_gradp
