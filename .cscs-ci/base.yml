@@ -221,8 +221,8 @@ variables:
         # 2 GH200 chips (= 144 cores; 1 chip/kernel times out), 12 tasks per
         # chip (4-rank MPI test groups), 1h = node-sharing limit.
         SLURM_TIMELIMIT: '01:00:00'
-        SLURM_GPUS_PER_NODE: "2"
-        SLURM_NTASKS: "24"
+        SLURM_GPUS_PER_NODE: 2
+        SLURM_NTASKS: 24
     - when: on_success
   artifacts:
     when: always
