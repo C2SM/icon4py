@@ -34,7 +34,7 @@ tracer_config:
 tracer_advection:
   horizontal_advection_type: no_advection
   horizontal_advection_limiter: no_limiter
-  vertical_advection_type: ppm_3rd_order
+  vertical_advection_type: third_order_ppm
   vertical_advection_limiter: semi_monotonic
 graupel:
 muphys:

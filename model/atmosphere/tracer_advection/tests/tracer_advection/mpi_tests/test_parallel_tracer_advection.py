@@ -82,7 +82,7 @@ from ..utils import (
             4,
             tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
             tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            tracer_advection.VerticalAdvectionType.THIRD_ORDER_PPM,
             tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
         (
@@ -91,7 +91,7 @@ from ..utils import (
             4,
             tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
             tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            tracer_advection.VerticalAdvectionType.THIRD_ORDER_PPM,
             tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
     ],

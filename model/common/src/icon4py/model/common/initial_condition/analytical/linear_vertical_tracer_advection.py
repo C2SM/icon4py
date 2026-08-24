@@ -106,7 +106,8 @@ def compute_max_velocity(
         velocity_field=velocity_field,
         model_top_height=model_top_height,
     )
-    return data_alloc.array_namespace(w).max(data_alloc.array_namespace(w).abs(w))
+    array_ns = data_alloc.array_namespace(w)
+    return array_ns.abs(w).max().item()
 
 
 def _compute_idealized_vertical_velocity_field(

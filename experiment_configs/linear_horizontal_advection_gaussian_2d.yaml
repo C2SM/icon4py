@@ -32,7 +32,7 @@ diffusion:
 tracer_config:
   qv: true
 tracer_advection:
-  horizontal_advection_type: linear_2nd_order
+  horizontal_advection_type: second_order_linear_miura
   horizontal_advection_limiter: positive_definite
   vertical_advection_type: no_advection
   vertical_advection_limiter: no_limiter

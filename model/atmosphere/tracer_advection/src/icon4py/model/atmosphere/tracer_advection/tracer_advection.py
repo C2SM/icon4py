@@ -90,7 +90,7 @@ class VerticalAdvectionType(Enum):
     #: 1st order upwind
     FIRST_ORDER_UPWIND = 1
     #: 3rd order PPM
-    PPM_3RD_ORDER = 3
+    THIRD_ORDER_PPM = 3
 
 
 @config_io.register_enum
@@ -513,7 +513,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 metric_state=metric_state,
                 backend=backend,
             )
-        case VerticalAdvectionType.PPM_3RD_ORDER:
+        case VerticalAdvectionType.THIRD_ORDER_PPM:
             boundary_conditions = tracer_advection_vertical.NoFluxCondition(
                 grid=grid, backend=backend
             )
