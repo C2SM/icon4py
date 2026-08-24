@@ -430,9 +430,17 @@ def _exact_query_succ(
             f"compute_zdiff_gradp_exact successor tables support nlev <= 32767, got {nlev}."
         )
 
-    rev = idx[:, :, ::-1]
-    pref_min = array_ns.minimum.accumulate(rev, axis=2)
-    return pref_min[:, :, ::-1]
+    # Hillis-Steele style doubling scan for the suffix minimum along the
+    # candidate axis. cupy does not implement ufunc.accumulate, so we compute
+    # succ[jk, t] = min(idx[jk, a] for a in [t, nlev)) explicitly with
+    # log2(nlev) elementwise shifted-minimum steps. The RHS slices are fully
+    # evaluated before the LHS assignment, so overlapping read/write views are safe.
+    S = idx.copy()
+    step = 1
+    while step < nlev:
+        S[..., :-step] = array_ns.minimum(S[..., :-step], S[..., step:])
+        step *= 2
+    return S
 
 
 def _exact_phase1_cell0(
