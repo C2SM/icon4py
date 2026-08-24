@@ -24,10 +24,6 @@ from .utils import download_test_data
 
 
 class Experiments:
-    # TODO(havogt): the following references need to be checked (and moved to the shared directory),
-    # currently they are not verifying
-    # muphys/full_muphys/r2b04.tar.gz
-    # muphys/full_muphys/r2b05.tar.gz
     # Note: don't use the 'tiny' experiment from graupel_only,
     # as it is not sensitive to saturation adjustment
     # TODO(havogt): double-check that all other experiments actually are sensitive,
