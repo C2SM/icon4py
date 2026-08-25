@@ -240,23 +240,6 @@ def driver_benchmark_grid_manager(
     )
 
 
-@pytest.fixture
-def driver_benchmark_driver_and_states(
-    driver_benchmark_config: driver_config.ExperimentConfig,
-    driver_benchmark_grid_manager: gm.GridManager,
-    process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend | None,
-) -> tuple[driver.Icon4pyDriver, driver_states.DriverStates]:
-    icon4py_driver = driver.initialize_driver(
-        config=driver_benchmark_config,
-        grid_manager=driver_benchmark_grid_manager,
-        process_props=process_props,
-        backend=backend,
-    )
-    ds = _assemble_driver_states(icon4py_driver)
-    return icon4py_driver, ds
-
-
 @pytest.mark.mpi
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
@@ -307,18 +290,25 @@ def test_benchmark_driver_init(  # noqa: PLR0917 [too-many-positional-arguments]
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_benchmark_driver_timeloop(
+def test_benchmark_driver_timeloop(  # noqa: PLR0917 [too-many-positional-arguments]
     request: pytest.FixtureRequest,
-    driver_benchmark_driver_and_states: tuple[driver.Icon4pyDriver, driver_states.DriverStates],
+    driver_benchmark_config: driver_config.ExperimentConfig,
+    driver_benchmark_grid_manager: gm.GridManager,
     process_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-    icon4py_driver, _ = driver_benchmark_driver_and_states
-    assert icon4py_driver.config.driver.enable_output is False
+    assert driver_benchmark_config.driver.enable_output is False
 
     def _setup() -> tuple[tuple[Any, ...], dict[str, Any]]:
-        fresh_driver, ds = driver_benchmark_driver_and_states
-        return (fresh_driver, ds), {}
+        icon4py_driver = driver.initialize_driver(
+            config=driver_benchmark_config,
+            grid_manager=driver_benchmark_grid_manager,
+            process_props=process_props,
+            backend=backend,
+        )
+        ds = _assemble_driver_states(icon4py_driver)
+        return (icon4py_driver, ds), {}
 
     def _timed(fresh_driver: driver.Icon4pyDriver, ds: driver_states.DriverStates) -> None:
         fresh_driver.time_integration(ds)
