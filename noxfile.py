@@ -176,7 +176,7 @@ def benchmark_driver_mpi(session: nox.Session) -> None:
     """Run the distributed driver benchmark under MPI."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
-    rank = resolve_rank() or 0
+    rank = resolve_rank()
     with session.chdir("model/driver"):
         session.run(
             "pytest",
@@ -185,8 +185,6 @@ def benchmark_driver_mpi(session: nox.Session) -> None:
             "--only-mpi",
             "-m",
             "continuous_benchmarking",
-            "-k",
-            "test_benchmark_driver",
             "--benchmark-json",
             f"pytest_benchmark_results_{session.python}_{rank}.json",
             "tests/driver/mpi_tests/test_benchmark_driver.py",
@@ -213,10 +211,10 @@ def _driver_bencher_testbed() -> str:
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
 def __bencher_driver_baseline_CI(session: nox.Session) -> None:
     """Upload the distributed driver benchmark baseline to bencher."""
-    rank = resolve_rank() or 0
-    if not is_upload_rank(rank):
+    if not is_upload_rank(resolve_rank()):
         return
 
+    rank = resolve_rank()
     session.run(
         *f"bencher run \
         --threshold-measure latency \
@@ -242,10 +240,10 @@ def __bencher_driver_baseline_CI(session: nox.Session) -> None:
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
 def __bencher_driver_feature_branch_CI(session: nox.Session) -> None:
     """Upload the distributed driver benchmark feature-branch results to bencher."""
-    rank = resolve_rank() or 0
-    if not is_upload_rank(rank):
+    if not is_upload_rank(resolve_rank()):
         return
 
+    rank = resolve_rank()
     bencher_testbed = _driver_bencher_testbed()
     session.run(
         *f"bencher run \
