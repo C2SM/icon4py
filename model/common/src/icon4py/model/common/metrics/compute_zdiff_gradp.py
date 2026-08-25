@@ -192,14 +192,13 @@ def _compute_v2_validation(  # noqa: PLR0917
     nlev: int,
     nedges: int,
     *,
-    tie_free: data_alloc.NDArray | None = None,
+    tie_free: data_alloc.NDArray,
 ) -> data_alloc.NDArray:
     """Return a (2,) device boolean array [finite_ok, full_ok] for v2's full validation set.
 
-    If ``tie_free`` is provided (a 0-d device bool from the fast path's
-    precomputed searchsorted positions), the function skips the expensive
-    interior-tie searchsorted passes and folds the supplied flag into
-    ``full_ok``.  This keeps validation to a single stacked sync.
+    ``tie_free`` is a 0-d device bool from the fast path's precomputed
+    searchsorted positions; it is folded into ``full_ok``.  This keeps
+    validation to a single stacked sync.
     """
     finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
     e3_ok = _check_e3(array_ns, z_me, fi, nlev)
@@ -231,29 +230,6 @@ def _compute_v2_validation(  # noqa: PLR0917
     min_spacing = array_ns.min(array_ns.stack([spacing_0.min(), spacing_1.min()]))
     ulp_at_max = array_ns.nextafter(max_num, array_ns.inf) - max_num
     spacing_ok = min_spacing > ulp_at_max
-
-    if tie_free is None:
-        fill_high = global_max + 1.0
-        fill_low = global_min - 1.0
-        z_ifc_mask = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
-            nlev + 1 - fi[:, None]
-        )
-        z_me_mask = array_ns.arange(nlev, dtype=array_ns.int64)[None, :] <= fi[:, None]
-
-        def _interior_tie_free(a: data_alloc.NDArray, v: data_alloc.NDArray) -> data_alloc.NDArray:
-            pos = _batched_searchsorted_v2(a, v, array_ns)
-            return _interior_tie_free_from_positions(a, v, pos, fi, nlev, array_ns)
-
-        z_ifc_e0_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e0)
-        z_ifc_e1_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e1)
-        z_me_m = array_ns.where(z_me_mask, fill_low, z_me)
-        z_aux2_v = z_aux2[:, None]
-
-        tie_free_0 = _interior_tie_free(z_ifc_e0_m, z_me_m)
-        tie_free_1 = _interior_tie_free(z_ifc_e1_m, z_me_m)
-        tie_free_aux_0 = _interior_tie_free(z_ifc_e0_m, z_aux2_v)
-        tie_free_aux_1 = _interior_tie_free(z_ifc_e1_m, z_aux2_v)
-        tie_free = tie_free_0 & tie_free_1 & tie_free_aux_0 & tie_free_aux_1
 
     full_ok = e1_ok_0
     for check in (e1_ok_1, e3_ok, a2_ok, spacing_ok, tie_free):
@@ -297,28 +273,56 @@ def _interior_tie_free_from_positions(  # noqa: PLR0917
     eq_right = v == right
     eq_left = (pos > 0) & (v == left)
     max_interior = (nlev - fi - 1)[:, None]
-    interior_right = eq_right & (pos >= 2) & (pos <= max_interior)
+    interior_right = eq_right & (pos >= 1) & (pos <= max_interior)
     interior_left = eq_left & ((pos - 1) >= 2) & ((pos - 1) <= max_interior)
     return array_ns.logical_not(array_ns.any(interior_right | interior_left))
 
 
-def _validate_zdiff_gradp_inputs(  # noqa: PLR0917
-    array_ns: ModuleType,
-    z_ifc_e0: data_alloc.NDArray,
-    z_ifc_e1: data_alloc.NDArray,
-    z_me: data_alloc.NDArray,
-    z_aux2: data_alloc.NDArray,
-    fi: data_alloc.NDArray,
+def _compute_tie_free_from_bundle(
+    bundle: dict[str, data_alloc.NDArray | None],
     nlev: int,
-    nedges: int,
-) -> None:
-    combined = _compute_v2_validation(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges)
-    if not bool(combined[0] & combined[1]):
-        raise ValueError(
-            "compute_zdiff_gradp_v2 input validation failed: strict z_ifc decrease, "
-            "z_me monotonicity, finiteness, A2 float-offset premise, min-spacing-vs-ULP, "
-            "or exact interior tie (v2 would pick the shallower/deeper index differently from main) violated."
+    array_ns: ModuleType,
+) -> data_alloc.NDArray:
+    """Return the 0-d interior-tie flag from a precomputed v2 bundle."""
+    tie_free_0 = _interior_tie_free_from_positions(
+        bundle["z_ifc_e0_m"],
+        bundle["z_me_m"],
+        bundle["pos_0"],
+        bundle["fi_sliced"],
+        nlev,
+        array_ns,
+    )
+    tie_free_1 = _interior_tie_free_from_positions(
+        bundle["z_ifc_e1_m"],
+        bundle["z_me_m"],
+        bundle["pos_1"],
+        bundle["fi_sliced"],
+        nlev,
+        array_ns,
+    )
+    if bundle["z_aux2_v"] is not None:
+        assert bundle["z_ifc_e0_m1"] is not None
+        assert bundle["z_ifc_e1_m1"] is not None
+        assert bundle["pos_aux_0"] is not None
+        assert bundle["pos_aux_1"] is not None
+        tie_free_aux_0 = _interior_tie_free_from_positions(
+            bundle["z_ifc_e0_m1"],
+            bundle["z_aux2_v"],
+            bundle["pos_aux_0"],
+            bundle["fi_sliced1"],
+            nlev,
+            array_ns,
         )
+        tie_free_aux_1 = _interior_tie_free_from_positions(
+            bundle["z_ifc_e1_m1"],
+            bundle["z_aux2_v"],
+            bundle["pos_aux_1"],
+            bundle["fi_sliced1"],
+            nlev,
+            array_ns,
+        )
+        return tie_free_0 & tie_free_1 & tie_free_aux_0 & tie_free_aux_1
+    return tie_free_0 & tie_free_1
 
 
 def _validate_exact_inputs(
@@ -456,42 +460,7 @@ def compute_zdiff_gradp_v2(  # noqa: PLR0915
     if _validation_enabled() and not _precomputed_validation_ok:
         # Interior-tie check derived from the same positions the fast path
         # will use for assembly, so validation adds no extra searchsorted.
-        tie_free_0 = _interior_tie_free_from_positions(
-            bundle["z_ifc_e0_m"],
-            bundle["z_me_m"],
-            bundle["pos_0"],
-            bundle["fi_sliced"],
-            nlev,
-            array_ns,
-        )
-        tie_free_1 = _interior_tie_free_from_positions(
-            bundle["z_ifc_e1_m"],
-            bundle["z_me_m"],
-            bundle["pos_1"],
-            bundle["fi_sliced"],
-            nlev,
-            array_ns,
-        )
-        if bundle["z_aux2_v"] is not None:
-            tie_free_aux_0 = _interior_tie_free_from_positions(
-                bundle["z_ifc_e0_m1"],
-                bundle["z_aux2_v"],
-                bundle["pos_aux_0"],
-                bundle["fi_sliced1"],
-                nlev,
-                array_ns,
-            )
-            tie_free_aux_1 = _interior_tie_free_from_positions(
-                bundle["z_ifc_e1_m1"],
-                bundle["z_aux2_v"],
-                bundle["pos_aux_1"],
-                bundle["fi_sliced1"],
-                nlev,
-                array_ns,
-            )
-            tie_free = tie_free_0 & tie_free_1 & tie_free_aux_0 & tie_free_aux_1
-        else:
-            tie_free = tie_free_0 & tie_free_1
+        tie_free = _compute_tie_free_from_bundle(bundle, nlev, array_ns)
         combined = _compute_v2_validation(
             array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges, tie_free=tie_free
         )
@@ -501,7 +470,6 @@ def compute_zdiff_gradp_v2(  # noqa: PLR0915
                 "z_me monotonicity, finiteness, A2 float-offset premise, min-spacing-vs-ULP, "
                 "or exact interior tie (v2 would pick the shallower/deeper index differently from main) violated."
             )
-
     jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
     fi_sliced = bundle["fi_sliced"]
     assert fi_sliced is not None
@@ -1113,42 +1081,7 @@ def compute_zdiff_gradp_dispatch(
         bundle = _compute_zdiff_gradp_v2_bundle(
             array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, hs, hs1
         )
-        tie_free_0 = _interior_tie_free_from_positions(
-            bundle["z_ifc_e0_m"],
-            bundle["z_me_m"],
-            bundle["pos_0"],
-            bundle["fi_sliced"],
-            nlev,
-            array_ns,
-        )
-        tie_free_1 = _interior_tie_free_from_positions(
-            bundle["z_ifc_e1_m"],
-            bundle["z_me_m"],
-            bundle["pos_1"],
-            bundle["fi_sliced"],
-            nlev,
-            array_ns,
-        )
-        if bundle["z_aux2_v"] is not None:
-            tie_free_aux_0 = _interior_tie_free_from_positions(
-                bundle["z_ifc_e0_m1"],
-                bundle["z_aux2_v"],
-                bundle["pos_aux_0"],
-                bundle["fi_sliced1"],
-                nlev,
-                array_ns,
-            )
-            tie_free_aux_1 = _interior_tie_free_from_positions(
-                bundle["z_ifc_e1_m1"],
-                bundle["z_aux2_v"],
-                bundle["pos_aux_1"],
-                bundle["fi_sliced1"],
-                nlev,
-                array_ns,
-            )
-            tie_free = tie_free_0 & tie_free_1 & tie_free_aux_0 & tie_free_aux_1
-        else:
-            tie_free = tie_free_0 & tie_free_1
+        tie_free = _compute_tie_free_from_bundle(bundle, nlev, array_ns)
         combined = _compute_v2_validation(
             array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges, tie_free=tie_free
         )

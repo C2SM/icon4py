@@ -271,7 +271,35 @@ def test_compute_zdiff_gradp_endpoint_forcing(
         horizontal_start_1=hs1,
     )
 
-    candidate_zdiff, candidate_vert = compute_zdiff_gradp_v2(
+    if validation_enabled:
+        with pytest.raises(ValueError):
+            compute_zdiff_gradp_v2(
+                e2c=e2c,
+                z_me=z_me,
+                z_mc=z_mc,
+                z_ifc=z_ifc,
+                flat_idx=flat_idx,
+                topography=topography,
+                nlev=nlev,
+                horizontal_start=gtx.int32(hs),
+                horizontal_start_1=gtx.int32(hs1),
+            )
+    else:
+        candidate_zdiff, candidate_vert = compute_zdiff_gradp_v2(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+        assert np.allclose(candidate_zdiff, golden_zdiff)
+        assert np.array_equal(candidate_vert, golden_vert)
+
+    dispatch_zdiff, dispatch_vert = compute_zdiff_gradp_dispatch(
         e2c=e2c,
         z_me=z_me,
         z_mc=z_mc,
@@ -282,6 +310,12 @@ def test_compute_zdiff_gradp_endpoint_forcing(
         horizontal_start=gtx.int32(hs),
         horizontal_start_1=gtx.int32(hs1),
     )
+    assert np.allclose(dispatch_zdiff, golden_zdiff)
+    assert np.array_equal(dispatch_vert, golden_vert)
+    if validation_enabled:
+        assert _zdiff_mod._LAST_DISPATCH_PATH == "exact"
+    else:
+        assert _zdiff_mod._LAST_DISPATCH_PATH == "fast"
 
     exact_zdiff, exact_vert = compute_zdiff_gradp_exact(
         e2c=e2c,
@@ -294,8 +328,10 @@ def test_compute_zdiff_gradp_endpoint_forcing(
         horizontal_start=gtx.int32(hs),
         horizontal_start_1=gtx.int32(hs1),
     )
+    assert np.allclose(exact_zdiff, golden_zdiff)
+    assert np.array_equal(exact_vert, golden_vert)
 
-    baseline_zdiff, baseline_vert = compute_zdiff_gradp(
+    exact2_zdiff, exact2_vert = compute_zdiff_gradp_exact_v2(
         e2c=e2c,
         z_me=z_me,
         z_mc=z_mc,
@@ -306,12 +342,9 @@ def test_compute_zdiff_gradp_endpoint_forcing(
         horizontal_start=gtx.int32(hs),
         horizontal_start_1=gtx.int32(hs1),
     )
-
-    assert np.allclose(candidate_zdiff, golden_zdiff)
-    assert np.array_equal(candidate_vert, golden_vert)
-
-    assert np.allclose(exact_zdiff, golden_zdiff)
-    assert np.array_equal(exact_vert, golden_vert)
+    assert np.allclose(exact2_zdiff, golden_zdiff)
+    assert np.array_equal(exact2_vert, golden_vert)
+    assert _zdiff_mod._LAST_EXACT_V2_PATH == "fast"
 
     exact3_zdiff, exact3_vert = compute_zdiff_gradp_exact_v3(
         e2c=e2c,
@@ -328,6 +361,204 @@ def test_compute_zdiff_gradp_endpoint_forcing(
     assert np.array_equal(exact3_vert, golden_vert)
     assert _zdiff_mod._LAST_EXACT_V3_PATH == "fast"
 
+    baseline_zdiff, baseline_vert = compute_zdiff_gradp(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert not np.allclose(baseline_zdiff, golden_zdiff) or not np.array_equal(
+        baseline_vert, golden_vert
+    )
+
+
+def _build_f4_nlev1_tie_phase2_inactive_inputs() -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    int,
+    int,
+    int,
+    int,
+    int,
+]:
+    """F4: nlev-1 endpoint tie with phase-2 inactive at the tie level."""
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    # cell1 = 1; topography[1] is set close to topography[0] below.
+    fi = 1
+    tie_level = nlev - 1
+    tie_k = fi + 3
+
+    # Keep cell1 topography close to cell0 so z_aux2[e0] is well below the tie.
+    topography = np.array([1000.0, 1005.0, 2000.0, 1500.0], dtype=np.float64)
+
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+
+    # Force the tie at the top of the deepest real level (ascending pos == 1).
+    z_me[e0, tie_k] = z_ifc[cell0, tie_level]
+
+    # Keep z_me non-increasing so E3 holds.
+    for k in range(tie_k + 1, nlev):
+        z_me[e0, k] = z_ifc[cell0, tie_level] - (k - tie_k) * 10.0
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("validation_enabled", [True, False])
+def test_compute_zdiff_gradp_nlev1_tie_phase2_inactive(
+    monkeypatch: pytest.MonkeyPatch, validation_enabled: bool
+) -> None:
+    """R59/F4: a nlev-1 phase-1 tie with phase-2 inactive is caught."""
+    if validation_enabled:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    else:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
+
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, _e0, _cell0 = (
+        _build_f4_nlev1_tie_phase2_inactive_inputs()
+    )
+
+    golden_zdiff, golden_vert = _main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+    if validation_enabled:
+        with pytest.raises(ValueError):
+            compute_zdiff_gradp_v2(
+                e2c=e2c,
+                z_me=z_me,
+                z_mc=z_mc,
+                z_ifc=z_ifc,
+                flat_idx=flat_idx,
+                topography=topography,
+                nlev=nlev,
+                horizontal_start=gtx.int32(hs),
+                horizontal_start_1=gtx.int32(hs1),
+            )
+    else:
+        v2_zdiff, v2_vert = compute_zdiff_gradp_v2(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+        assert not (np.allclose(v2_zdiff, golden_zdiff) and np.array_equal(v2_vert, golden_vert))
+
+    dispatch_zdiff, dispatch_vert = compute_zdiff_gradp_dispatch(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    if validation_enabled:
+        assert np.allclose(dispatch_zdiff, golden_zdiff)
+        assert np.array_equal(dispatch_vert, golden_vert)
+        assert _zdiff_mod._LAST_DISPATCH_PATH == "exact"
+    else:
+        assert not (
+            np.allclose(dispatch_zdiff, golden_zdiff) and np.array_equal(dispatch_vert, golden_vert)
+        )
+        assert _zdiff_mod._LAST_DISPATCH_PATH == "fast"
+
+    exact_zdiff, exact_vert = compute_zdiff_gradp_exact(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert np.allclose(exact_zdiff, golden_zdiff)
+    assert np.array_equal(exact_vert, golden_vert)
+
+    exact2_zdiff, exact2_vert = compute_zdiff_gradp_exact_v2(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert np.allclose(exact2_zdiff, golden_zdiff)
+    assert np.array_equal(exact2_vert, golden_vert)
+    assert _zdiff_mod._LAST_EXACT_V2_PATH == "fast"
+
+    exact3_zdiff, exact3_vert = compute_zdiff_gradp_exact_v3(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert np.allclose(exact3_zdiff, golden_zdiff)
+    assert np.array_equal(exact3_vert, golden_vert)
+    assert _zdiff_mod._LAST_EXACT_V3_PATH == "fast"
+
+    baseline_zdiff, baseline_vert = compute_zdiff_gradp(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
     assert not np.allclose(baseline_zdiff, golden_zdiff) or not np.array_equal(
         baseline_vert, golden_vert
     )
@@ -693,8 +924,8 @@ def test_compute_zdiff_gradp_dispatch_routing(monkeypatch: pytest.MonkeyPatch) -
             assert np.allclose(dispatch_zdiff, golden_zdiff)
             assert np.array_equal(dispatch_vert, golden_vert)
 
-    # Endpoint forcing: E1/E3 valid -> dispatch routes to v2 (fast) and matches golden.
-    _check_case(_build_endpoint_forcing_inputs, "fast", True)
+    # Endpoint forcing: nlev-1 endpoint tie detected -> dispatch routes to exact fallback.
+    _check_case(_build_endpoint_forcing_inputs, "exact", True)
     # P1 interior tie: E1/E3 valid but E2 tie detected -> dispatch routes to exact fallback.
     _check_case(_build_p1_interior_tie_inputs, "exact", True)
     _check_case(_build_p2_zero_thickness_inputs, "exact", True)
