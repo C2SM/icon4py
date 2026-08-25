@@ -123,6 +123,41 @@ def pytest_addoption(parser: pytest.Parser):
 
     with contextlib.suppress(ValueError):
         parser.addoption(
+            "--driver-benchmark-experiment",
+            action="store",
+            default="jw",
+            help="Experiment used by the driver benchmark (e.g. 'jw').",
+        )
+
+    with contextlib.suppress(ValueError):
+        parser.addoption(
+            "--driver-benchmark-steps",
+            action="store",
+            type=int,
+            default=1,
+            help="Number of time steps timed by the driver benchmark.",
+        )
+
+    with contextlib.suppress(ValueError):
+        parser.addoption(
+            "--driver-benchmark-rounds",
+            action="store",
+            type=int,
+            default=5,
+            help="Fixed number of pytest-benchmark rounds for the driver benchmark.",
+        )
+
+    with contextlib.suppress(ValueError):
+        parser.addoption(
+            "--driver-benchmark-warmup-rounds",
+            action="store",
+            type=int,
+            default=2,
+            help="Number of pytest-benchmark warmup rounds for the driver benchmark.",
+        )
+
+    with contextlib.suppress(ValueError):
+        parser.addoption(
             "--mpi-subcomm-size",
             action="store",
             type=int,
