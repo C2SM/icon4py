@@ -10,17 +10,23 @@
 
 This variant is mechanically equivalent to ``compute_zdiff_gradp_exact_v2``:
 zero assumed premises, exact match to main's element-by-element semantics for
-any finite input (including ties and E3 violations). It uses a fused GT4Py
-field operator that broadcasts a dense (Edge, K) query against sparse
-(Edge, Cand) interface columns and reduces the candidate axis with a first-match
-suffix minimum.
+any finite input.  The GT4Py field operator computes the first-match
+suffix-minimum ``M(start, k) = min { a >= start : a == nlev-1 or bracket(a) }``
+for a dense (Edge, K) query against sparse (Edge, Cand) interface columns.
+
+Where main carries ``jk_start`` between query levels (phase-1 cell 1 and both
+phase-2 cells), the driver re-invokes the operator once per level with a
+single-column query and ``start`` equal to the current carried lower bound.
+This is exact for non-monotonic z_ifc columns (disjoint brackets) because the
+carry is never reconstructed from coarser per-level information: each level
+queries ``M(start, k)`` directly.  The cost is O(nlev) small operator launches;
+the variant is intended as a correctness reference, not a GPU performance path.
 """
 
-from types import ModuleType
 from typing import Any
 
 import gt4py.next as gtx
-from gt4py.next import max_over, min_over, where
+from gt4py.next import min_over, where
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_zdiff_gradp import _check_finite, _validation_enabled
@@ -35,159 +41,98 @@ EdgeKIntField = gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.int32]
 
 
 @gtx.field_operator
-def _zdiff_match_bounds(  # noqa: PLR0917
+def _zdiff_first_match(  # noqa: PLR0917
     query: EdgeKField,
     upper: EdgeCandField,
     lower: EdgeCandField,
     cand_idx: EdgeCandIntField,
-    fi: EdgeIntField,
+    start: EdgeIntField,
     nlev: gtx.int32,
-) -> tuple[EdgeKIntField, EdgeKIntField]:
-    """First-match and last-real-match bracket bounds for one (cell, query) pair.
+) -> EdgeKIntField:
+    """First-match bracket bound for one (cell, query) pair.
 
-    For each edge ``e`` and query level ``jk`` returns the smallest candidate
-    index ``a >= fi[e]`` that satisfies the bracket predicate, plus the largest
-    candidate index satisfying the bracket predicate *without* the unconditional
-    deepest-level fallback. These two bounds are enough to reproduce main's
-    ``jk_start`` carry semantics in the driver.
+    For each edge ``e`` and query level ``k`` returns the smallest candidate
+    index ``a >= start[e]`` that satisfies the bracket predicate, with the
+    deepest level ``a == nlev - 1`` as an unconditional member.  This is
+    exactly main's ``jk_start`` lower-bound scan for one query level.
     """
     deepest = nlev - 1
-    in_range = cand_idx >= fi
+    in_range = cand_idx >= start
     bracket = (upper >= query) & (query >= lower)
     unconditional = cand_idx == deepest
     gated = in_range & (unconditional | bracket)
-    first_match = min_over(where(gated, cand_idx, nlev), axis=dims.CandDim)
-    last_real_match = max_over(where(in_range & bracket, cand_idx, -1), axis=dims.CandDim)
-    return first_match, last_real_match
+    return min_over(where(gated, cand_idx, nlev), axis=dims.CandDim)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def _zdiff_match_bounds_program(  # noqa: PLR0917
+def _zdiff_first_match_program(  # noqa: PLR0917
     query: EdgeKField,
     upper: EdgeCandField,
     lower: EdgeCandField,
     cand_idx: EdgeCandIntField,
-    fi: EdgeIntField,
+    start: EdgeIntField,
     nlev: gtx.int32,
     out_first: EdgeKIntField,
-    out_last: EdgeKIntField,
 ) -> None:
-    """GT4Py program wrapper for ``_zdiff_match_bounds``.
+    """GT4Py program wrapper for ``_zdiff_first_match``.
 
     A program is required for compiled (gtfn) backends; for the embedded
     backend the program delegates to the field operator directly.
     """
-    _zdiff_match_bounds(
+    _zdiff_first_match(
         query,
         upper,
         lower,
         cand_idx,
-        fi,
+        start,
         nlev,
-        out=(out_first, out_last),
+        out=out_first,
     )
 
 
-def _apply_carry_phase1(  # noqa: PLR0917
-    first: data_alloc.NDArray,
-    last: data_alloc.NDArray,
-    active: data_alloc.NDArray,
-    fi: data_alloc.NDArray,
-    nlev: int,
-    array_ns: ModuleType,
-) -> data_alloc.NDArray:
-    """Apply main's jk_start carry for phase-1 cell-1.
-
-    Active levels are contiguous from ``fi + 1`` to ``nlev - 1``.
-    """
-    result = first.copy()
-    nedges = result.shape[0]
-    result[array_ns.arange(nedges), fi] = fi
-    for k in range(1, nlev):
-        start = result[:, k - 1]
-        selected = array_ns.where(
-            start <= first[:, k],
-            first[:, k],
-            array_ns.where(start <= last[:, k], start, nlev - 1),
-        )
-        result[:, k] = array_ns.where(active[:, k], selected, result[:, k])
-    return result
-
-
-def _apply_carry_phase2(  # noqa: PLR0917
-    first: data_alloc.NDArray,
-    last: data_alloc.NDArray,
-    active: data_alloc.NDArray,
-    fi: data_alloc.NDArray,
-    nlev: int,
-    array_ns: ModuleType,
-) -> data_alloc.NDArray:
-    """Apply main's jk_start carry for phase-2.
-
-    The carry advances only on active levels; inactive levels propagate the
-    last active result so that later active levels see the correct start.
-    """
-    result = first.copy()
-    nedges = result.shape[0]
-    result[array_ns.arange(nedges), fi] = fi
-    for k in range(1, nlev):
-        start = result[:, k - 1]
-        selected = array_ns.where(
-            start <= first[:, k],
-            first[:, k],
-            array_ns.where(start <= last[:, k], start, nlev - 1),
-        )
-        result[:, k] = array_ns.where(active[:, k], selected, start)
-    return result
-
-
-def _run_match_bounds(  # noqa: PLR0917
+def _run_first_match(  # noqa: PLR0917
     backend: Any,
     query: data_alloc.NDArray,
     upper: data_alloc.NDArray,
     lower: data_alloc.NDArray,
     cand_idx: data_alloc.NDArray,
-    fi: data_alloc.NDArray,
+    start: data_alloc.NDArray,
     nlev: int,
     out_first: gtx.Field,
-    out_last: gtx.Field,
-    connectivity: gtx.Connectivity,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    """Wrap inputs as GT4Py fields and invoke the match-bounds program."""
+    cand_connectivity: gtx.Connectivity,
+) -> data_alloc.NDArray:
     query_f = gtx.as_field((dims.EdgeDim, dims.KDim), query, allocator=backend)  # type: ignore[arg-type]
     upper_f = gtx.as_field((dims.EdgeDim, dims.CandDim), upper, allocator=backend)  # type: ignore[arg-type]
     lower_f = gtx.as_field((dims.EdgeDim, dims.CandDim), lower, allocator=backend)  # type: ignore[arg-type]
     cand_idx_f = gtx.as_field((dims.EdgeDim, dims.CandDim), cand_idx, allocator=backend)  # type: ignore[arg-type]
-    fi_f = gtx.as_field((dims.EdgeDim,), fi, allocator=backend)  # type: ignore[arg-type]
+    start_f = gtx.as_field((dims.EdgeDim,), start, allocator=backend)  # type: ignore[arg-type]
 
     if backend is None:
-        _zdiff_match_bounds_program(
+        _zdiff_first_match_program(
             query_f,
             upper_f,
             lower_f,
             cand_idx_f,
-            fi_f,
+            start_f,
             gtx.int32(nlev),
             out_first,
-            out_last,
-            offset_provider={"Cand": connectivity},  # type: ignore[dict-item]
+            offset_provider={"Cand": cand_connectivity},  # type: ignore[dict-item]
         )
     else:
-        _zdiff_match_bounds_program.with_backend(backend)(
+        _zdiff_first_match_program.with_backend(backend)(
             query_f,
             upper_f,
             lower_f,
             cand_idx_f,
-            fi_f,
+            start_f,
             gtx.int32(nlev),
             out_first,
-            out_last,
-            offset_provider={"Cand": connectivity},  # type: ignore[dict-item]
+            offset_provider={"Cand": cand_connectivity},  # type: ignore[dict-item]
         )
-    return out_first.ndarray.copy(), out_last.ndarray.copy()  # type: ignore[attr-defined]
+    return out_first.ndarray.copy()  # type: ignore[attr-defined]
 
 
-def compute_zdiff_gradp_gt4py(
+def compute_zdiff_gradp_gt4py(  # noqa: PLR0915
     *,
     e2c: data_alloc.NDArray,
     z_me: data_alloc.NDArray,
@@ -256,27 +201,34 @@ def compute_zdiff_gradp_gt4py(
     ).copy()
     fi_i32 = flat_idx.astype(array_ns.int32)
 
-    # Reusable output fields and identity connectivity for the candidate axis.
+    # Reusable output fields for the first-match operator.
     out_first = gtx.as_field(
         (dims.EdgeDim, dims.KDim),
         array_ns.zeros((nedges, nlev), dtype=array_ns.int32),
         allocator=backend,
     )
-    out_last = gtx.as_field(
+    out_first_1col = gtx.as_field(
         (dims.EdgeDim, dims.KDim),
-        array_ns.zeros((nedges, nlev), dtype=array_ns.int32),
+        array_ns.zeros((nedges, 1), dtype=array_ns.int32),
         allocator=backend,
     )
+    # GT4Py requires an offset-provider entry for the local ``CandDim`` even
+    # though the operator only reduces over it (no neighbor access).  The
+    # connectivity values are level indices; they are not read as a neighbor
+    # table because the reduction is axis-only, but the declaration must be
+    # present for the local dimension to resolve.
     cand_connectivity = gtx.as_connectivity(
         [dims.EdgeDim, dims.CandDim],
         dims.EdgeDim,
         cand_idx,
         allocator=backend,
     )
+    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    valid_jk = jk_idx > fi[:, None]
 
     # Phase-1 queries: z_me for every (edge, level).
     query1 = z_me.astype(array_ns.float64)
-    first_0, _last_0 = _run_match_bounds(
+    first_0 = _run_first_match(
         backend,
         query1,
         upper0,
@@ -285,27 +237,32 @@ def compute_zdiff_gradp_gt4py(
         fi_i32,
         nlev,
         out_first,
-        out_last,
-        cand_connectivity,
-    )
-    first_1, last_1 = _run_match_bounds(
-        backend,
-        query1,
-        upper1,
-        lower1,
-        cand_idx,
-        fi_i32,
-        nlev,
-        out_first,
-        out_last,
         cand_connectivity,
     )
 
-    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
-    valid_jk = jk_idx > fi[:, None]
-
-    # Cell-1 phase-1 needs main's jk_start carry semantics.
-    jk1_1 = _apply_carry_phase1(first_1, last_1, valid_jk, fi, nlev, array_ns)
+    # Cell-1 phase-1 needs main's jk_start carry semantics.  Re-invoke the
+    # first-match operator once per level with start equal to the current
+    # carried lower bound; this is exact even for non-monotonic z_ifc columns
+    # because each level queries M(start, k) directly.
+    current_start = fi_i32.copy()
+    first_1 = array_ns.empty((nedges, nlev), dtype=array_ns.int32)
+    for jk in range(nlev):
+        query_col = query1[:, jk : jk + 1]
+        out_col = _run_first_match(
+            backend,
+            query_col,
+            upper1,
+            lower1,
+            cand_idx,
+            current_start,
+            nlev,
+            out_first_1col,
+            cand_connectivity,
+        )
+        first_1[:, jk] = out_col[:, 0]
+        current_start = array_ns.where(valid_jk[:, jk], out_col[:, 0], current_start).astype(
+            array_ns.int32
+        )
 
     z_mc_e0 = z_mc[e2c_0]
     z_mc_e1 = z_mc[e2c_1]
@@ -326,48 +283,63 @@ def compute_zdiff_gradp_gt4py(
     zdiff_gradp[hs:, 1, :] = array_ns.where(
         valid_jk[hs:, :],
         z_me[hs:]
-        - array_ns.take_along_axis(z_mc_e1[hs:], jk1_1[hs:].astype(array_ns.int64), axis=1),
+        - array_ns.take_along_axis(z_mc_e1[hs:], first_1[hs:].astype(array_ns.int64), axis=1),
         zdiff_gradp[hs:, 1, :],
     )
     vertoffset_gradp[hs:, 1, :] = array_ns.where(
         valid_jk[hs:, :],
-        (jk1_1[hs:] - jk_idx).astype(gtx.int32),
+        (first_1[hs:] - jk_idx).astype(gtx.int32),
         vertoffset_gradp[hs:, 1, :],
     )
 
-    # Phase-2 queries: z_aux2 is constant per edge, broadcast to (Edge, K).
+    # Phase-2 queries: z_aux2 is constant per edge, but main still carries
+    # jk_start between active levels, so both cell columns are driven by the
+    # same per-level re-invocation scheme as phase-1 cell 1.
     if hs1 < nedges:
-        z_aux2_v = (
+        z_aux2_v_full = (
             array_ns.broadcast_to(z_aux2[:, None], (nedges, nlev)).copy().astype(array_ns.float64)
         )
-        first_aux_0, last_aux_0 = _run_match_bounds(
-            backend,
-            z_aux2_v,
-            upper0,
-            lower0,
-            cand_idx,
-            fi_i32,
-            nlev,
-            out_first,
-            out_last,
-            cand_connectivity,
-        )
-        first_aux_1, last_aux_1 = _run_match_bounds(
-            backend,
-            z_aux2_v,
-            upper1,
-            lower1,
-            cand_idx,
-            fi_i32,
-            nlev,
-            out_first,
-            out_last,
-            cand_connectivity,
-        )
-
         active2 = valid_jk & (z_me < z_aux2[:, None])
-        jk1_aux_0 = _apply_carry_phase2(first_aux_0, last_aux_0, active2, fi, nlev, array_ns)
-        jk1_aux_1 = _apply_carry_phase2(first_aux_1, last_aux_1, active2, fi, nlev, array_ns)
+
+        current_start = fi_i32.copy()
+        first_aux_0 = array_ns.empty((nedges, nlev), dtype=array_ns.int32)
+        for jk in range(nlev):
+            query_col = z_aux2_v_full[:, jk : jk + 1]
+            out_col = _run_first_match(
+                backend,
+                query_col,
+                upper0,
+                lower0,
+                cand_idx,
+                current_start,
+                nlev,
+                out_first_1col,
+                cand_connectivity,
+            )
+            first_aux_0[:, jk] = out_col[:, 0]
+            current_start = array_ns.where(active2[:, jk], out_col[:, 0], current_start).astype(
+                array_ns.int32
+            )
+
+        current_start = fi_i32.copy()
+        first_aux_1 = array_ns.empty((nedges, nlev), dtype=array_ns.int32)
+        for jk in range(nlev):
+            query_col = z_aux2_v_full[:, jk : jk + 1]
+            out_col = _run_first_match(
+                backend,
+                query_col,
+                upper1,
+                lower1,
+                cand_idx,
+                current_start,
+                nlev,
+                out_first_1col,
+                cand_connectivity,
+            )
+            first_aux_1[:, jk] = out_col[:, 0]
+            current_start = array_ns.where(active2[:, jk], out_col[:, 0], current_start).astype(
+                array_ns.int32
+            )
 
         phase2_mask = active2[hs1:, :]
 
@@ -375,13 +347,13 @@ def compute_zdiff_gradp_gt4py(
             phase2_mask,
             z_aux2[hs1:, None]
             - array_ns.take_along_axis(
-                z_mc_e0[hs1:], jk1_aux_0[hs1:].astype(array_ns.int64), axis=1
+                z_mc_e0[hs1:], first_aux_0[hs1:].astype(array_ns.int64), axis=1
             ),
             zdiff_gradp[hs1:, 0, :],
         )
         vertoffset_gradp[hs1:, 0, :] = array_ns.where(
             phase2_mask,
-            (jk1_aux_0[hs1:] - jk_idx).astype(gtx.int32),
+            (first_aux_0[hs1:] - jk_idx).astype(gtx.int32),
             vertoffset_gradp[hs1:, 0, :],
         )
 
@@ -389,13 +361,13 @@ def compute_zdiff_gradp_gt4py(
             phase2_mask,
             z_aux2[hs1:, None]
             - array_ns.take_along_axis(
-                z_mc_e1[hs1:], jk1_aux_1[hs1:].astype(array_ns.int64), axis=1
+                z_mc_e1[hs1:], first_aux_1[hs1:].astype(array_ns.int64), axis=1
             ),
             zdiff_gradp[hs1:, 1, :],
         )
         vertoffset_gradp[hs1:, 1, :] = array_ns.where(
             phase2_mask,
-            (jk1_aux_1[hs1:] - jk_idx).astype(gtx.int32),
+            (first_aux_1[hs1:] - jk_idx).astype(gtx.int32),
             vertoffset_gradp[hs1:, 1, :],
         )
 

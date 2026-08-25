@@ -29,12 +29,13 @@ def _check_finite(
     z_me: data_alloc.NDArray,
     z_aux2: data_alloc.NDArray,
 ) -> data_alloc.NDArray:
-    return (
-        array_ns.isfinite(z_ifc_e0).all()
-        & array_ns.isfinite(z_ifc_e1).all()
-        & array_ns.isfinite(z_me).all()
-        & array_ns.isfinite(z_aux2).all()
-    )
+    # Stack the four reductions into one device bool so only one host sync
+    # is needed when validation is enabled (matches the exact-variant contract).
+    finite_0 = array_ns.isfinite(z_ifc_e0).all()
+    finite_1 = array_ns.isfinite(z_ifc_e1).all()
+    finite_me = array_ns.isfinite(z_me).all()
+    finite_aux2 = array_ns.isfinite(z_aux2).all()
+    return array_ns.stack([finite_0, finite_1, finite_me, finite_aux2]).all()
 
 
 def _check_e3(

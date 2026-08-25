@@ -145,6 +145,7 @@ def _main_reference(  # noqa: PLR0912
         compute_zdiff_gradp_exact_v2,
         compute_zdiff_gradp_exact_v3,
         compute_zdiff_gradp_dispatch,
+        compute_zdiff_gradp_gt4py,
     ],
 )
 def test_compute_zdiff_gradp(  # noqa: PLR0917
@@ -445,6 +446,57 @@ def _build_p3_e3_violation_inputs() -> tuple[
     z_me[e0, fi + 4] = 0.5 * (z_ifc[cell0, fi - 2] + z_ifc[cell0, fi - 1])
     z_me[e0, nlev - 1] = z_ifc[cell0, 0] - 100.0
     return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, 0
+
+
+def _build_p4_non_monotone_inputs() -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    int,
+    int,
+    int,
+    int,
+    int,
+]:
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    fi = 2
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+    # Introduce a non-monotonic segment inside [fi, nlev] of cell0: the column
+    # increases between levels fi+1 and fi+2, creating disjoint brackets.
+    z_ifc[cell0, fi + 2] = z_ifc[cell0, fi + 1] + 50.0
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+
+    # Pick queries that land in the gap created by the increasing segment so
+    # a fresh per-jk scan and a carried lower bound disagree on at least one
+    # level.  Values are chosen strictly between the surrounding interfaces.
+    z_me[e0, fi + 1] = 0.5 * (z_ifc[cell0, fi] + z_ifc[cell0, fi + 1])
+    z_me[e0, fi + 2] = 0.5 * (z_ifc[cell0, fi + 1] + z_ifc[cell0, fi + 2])
+    z_me[e0, fi + 3] = 0.5 * (z_ifc[cell0, fi + 2] + z_ifc[cell0, fi + 3])
+    z_me[e0, fi + 4] = 0.5 * (z_ifc[cell0, fi + 3] + z_ifc[cell0, fi + 4])
+    z_me[e0, nlev - 1] = z_ifc[cell0, 0] - 100.0
+
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
 
 
 @pytest.mark.level("unit")
@@ -1219,7 +1271,7 @@ def test_compute_zdiff_gradp_gt4py_random_small() -> None:
 def test_compute_zdiff_gradp_gt4py_edge_cases(
     monkeypatch: pytest.MonkeyPatch, validation_enabled: bool
 ) -> None:
-    """GT4Py variant matches exact_v2/main on P1/P2/P3 edge cases."""
+    """GT4Py variant matches exact_v2/main on P1/P2/P3/P4 edge cases."""
     if validation_enabled:
         monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
     else:
@@ -1229,6 +1281,7 @@ def test_compute_zdiff_gradp_gt4py_edge_cases(
         _build_p1_interior_tie_inputs,
         _build_p2_zero_thickness_inputs,
         _build_p3_e3_violation_inputs,
+        _build_p4_non_monotone_inputs,
     ):
         e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, _e0, _cell0 = builder()
 
@@ -1259,6 +1312,81 @@ def test_compute_zdiff_gradp_gt4py_edge_cases(
 
         np.testing.assert_array_equal(gt4py_zdiff, golden_zdiff)
         np.testing.assert_array_equal(gt4py_vert, golden_vert)
+
+
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("validation_enabled", [True, False])
+def test_compute_zdiff_gradp_gt4py_non_monotone(
+    monkeypatch: pytest.MonkeyPatch, validation_enabled: bool
+) -> None:
+    """P4: non-monotonic z_ifc column; gt4py is exact, v2 raises on E1."""
+    if validation_enabled:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    else:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
+
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0 = (
+        _build_p4_non_monotone_inputs()
+    )
+
+    # Sanity-check that z_ifc is non-monotonic on the forced edge/cell.
+    fi = int(flat_idx[e0])
+    assert z_ifc[cell0, fi + 2] > z_ifc[cell0, fi + 1]
+
+    golden_zdiff, golden_vert = _main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+    gt4py_zdiff, gt4py_vert = compute_zdiff_gradp_gt4py(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+        backend=None,
+    )
+    np.testing.assert_array_equal(gt4py_zdiff, golden_zdiff)
+    np.testing.assert_array_equal(gt4py_vert, golden_vert)
+
+    exact2_zdiff, exact2_vert = compute_zdiff_gradp_exact_v2(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    np.testing.assert_array_equal(exact2_zdiff, golden_zdiff)
+    np.testing.assert_array_equal(exact2_vert, golden_vert)
+
+    if validation_enabled:
+        with pytest.raises(ValueError, match="strict z_ifc decrease"):
+            compute_zdiff_gradp_v2(
+                e2c=e2c,
+                z_me=z_me,
+                z_mc=z_mc,
+                z_ifc=z_ifc,
+                flat_idx=flat_idx,
+                topography=topography,
+                nlev=nlev,
+                horizontal_start=gtx.int32(hs),
+                horizontal_start_1=gtx.int32(hs1),
+            )
 
 
 @pytest.mark.level("unit")
