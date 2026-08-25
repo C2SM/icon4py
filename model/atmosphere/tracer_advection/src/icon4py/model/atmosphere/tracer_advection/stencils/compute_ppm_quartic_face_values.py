@@ -37,7 +37,9 @@ def _compute_ppm_quartic_face_values(
         + zgeo1 * (p_cc - p_cc(dims.KDim - 1))
         + zgeo2
         * (
-            (wpfloat(2.0) * p_cellhgt_mc_now * zgeo1) * (zgeo3 - zgeo4) * (p_cc - p_cc(dims.KDim - 1))
+            (wpfloat(2.0) * p_cellhgt_mc_now * zgeo1)
+            * (zgeo3 - zgeo4)
+            * (p_cc - p_cc(dims.KDim - 1))
             - zgeo3 * p_cellhgt_mc_now(dims.KDim - 1) * z_slope
             + zgeo4 * p_cellhgt_mc_now * z_slope(dims.KDim - 1)
         )

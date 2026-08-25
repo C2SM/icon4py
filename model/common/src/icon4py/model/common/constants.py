@@ -12,8 +12,8 @@ from typing import Final
 from gt4py.next import float64
 from numpy import finfo as float_info
 
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.config import config_io
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),

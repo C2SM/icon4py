@@ -22,9 +22,7 @@ def _compute_ffsl_backtrajectory_length_indicator(
 ) -> fa.EdgeKField[gtx.int32]:
     traj_length = sqrt(p_vn * p_vn + p_vt * p_vt) * p_dt
     e2c_length = where(
-        
         p_vn >= wpfloat(0.0), edge_cell_length[dims.E2CDim(0)], edge_cell_length[dims.E2CDim(1)]
-    
     )
     opt_famask_dsl = where(traj_length > wpfloat(1.25) * e2c_length, 1, 0)
     return opt_famask_dsl

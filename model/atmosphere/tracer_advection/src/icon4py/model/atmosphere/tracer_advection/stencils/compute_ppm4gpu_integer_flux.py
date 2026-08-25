@@ -32,15 +32,33 @@ def _sum_neighbor_contributions_all(
     js_gt4 = js >= wpfloat(4.0)
 
     prod_p0 = where(mask1 & js_gt0, p_cc * p_cellmass_now, wpfloat(0.0))
-    prod_p1 = where(mask1 & js_gt1, p_cc(dims.KDim + 1) * p_cellmass_now(dims.KDim + 1), wpfloat(0.0))
-    prod_p2 = where(mask1 & js_gt2, p_cc(dims.KDim + 2) * p_cellmass_now(dims.KDim + 2), wpfloat(0.0))
-    prod_p3 = where(mask1 & js_gt3, p_cc(dims.KDim + 3) * p_cellmass_now(dims.KDim + 3), wpfloat(0.0))
-    prod_p4 = where(mask1 & js_gt4, p_cc(dims.KDim + 4) * p_cellmass_now(dims.KDim + 4), wpfloat(0.0))
-    prod_m0 = where(mask2 & js_gt0, p_cc(dims.KDim - 1) * p_cellmass_now(dims.KDim - 1), wpfloat(0.0))
-    prod_m1 = where(mask2 & js_gt1, p_cc(dims.KDim - 2) * p_cellmass_now(dims.KDim - 2), wpfloat(0.0))
-    prod_m2 = where(mask2 & js_gt2, p_cc(dims.KDim - 3) * p_cellmass_now(dims.KDim - 3), wpfloat(0.0))
-    prod_m3 = where(mask2 & js_gt3, p_cc(dims.KDim - 4) * p_cellmass_now(dims.KDim - 4), wpfloat(0.0))
-    prod_m4 = where(mask2 & js_gt4, p_cc(dims.KDim - 5) * p_cellmass_now(dims.KDim - 5), wpfloat(0.0))
+    prod_p1 = where(
+        mask1 & js_gt1, p_cc(dims.KDim + 1) * p_cellmass_now(dims.KDim + 1), wpfloat(0.0)
+    )
+    prod_p2 = where(
+        mask1 & js_gt2, p_cc(dims.KDim + 2) * p_cellmass_now(dims.KDim + 2), wpfloat(0.0)
+    )
+    prod_p3 = where(
+        mask1 & js_gt3, p_cc(dims.KDim + 3) * p_cellmass_now(dims.KDim + 3), wpfloat(0.0)
+    )
+    prod_p4 = where(
+        mask1 & js_gt4, p_cc(dims.KDim + 4) * p_cellmass_now(dims.KDim + 4), wpfloat(0.0)
+    )
+    prod_m0 = where(
+        mask2 & js_gt0, p_cc(dims.KDim - 1) * p_cellmass_now(dims.KDim - 1), wpfloat(0.0)
+    )
+    prod_m1 = where(
+        mask2 & js_gt1, p_cc(dims.KDim - 2) * p_cellmass_now(dims.KDim - 2), wpfloat(0.0)
+    )
+    prod_m2 = where(
+        mask2 & js_gt2, p_cc(dims.KDim - 3) * p_cellmass_now(dims.KDim - 3), wpfloat(0.0)
+    )
+    prod_m3 = where(
+        mask2 & js_gt3, p_cc(dims.KDim - 4) * p_cellmass_now(dims.KDim - 4), wpfloat(0.0)
+    )
+    prod_m4 = where(
+        mask2 & js_gt4, p_cc(dims.KDim - 5) * p_cellmass_now(dims.KDim - 5), wpfloat(0.0)
+    )
 
     prod_jks = (
         prod_p0
