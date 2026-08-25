@@ -62,7 +62,7 @@ class SimpleFieldSource(factory.FieldSource):
         self._vertical_grid = vertical_grid
         self._metadata = {}
         self._initial_data = data_
-        self._exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange
+        self._exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange()
 
         for key, value in data_.items():
             self.register_provider(factory.PrecomputedFieldProvider(fields={key: value[0]}))
@@ -175,7 +175,7 @@ def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> N
         field_src=cell_coordinate_source,
         backend=cell_coordinate_source.backend,
         grid=cell_coordinate_source,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
     x = provider.fields["x"]
     assert isinstance(x, gtx.Field)
@@ -201,7 +201,7 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
         field_src=height_coordinate_source,
         backend=height_coordinate_source.backend,
         grid=height_coordinate_source,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
     x = provider.fields["output_f"]
     assert isinstance(x, gtx.Field)

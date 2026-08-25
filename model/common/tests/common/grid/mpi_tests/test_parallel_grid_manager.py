@@ -121,7 +121,6 @@ def _make_single_rank_geometry(
         metadata=geometry_attributes.attrs,
         config=geometry_config.GeometryConfig(),
         process_props=decomp_defs.SingleNodeProcessProperties(),
-        exchange=decomp_defs.single_node_exchange,
     )
     return grid_manager, grid_geometry
 
@@ -149,10 +148,6 @@ def _make_multi_rank_geometry(
         metadata=geometry_attributes.attrs,
         config=geometry_config.GeometryConfig(),
         process_props=process_props,
-        exchange=decomp_defs.create_exchange(process_props, grid_manager.decomposition_info),
-        global_reductions=decomp_defs.create_reduction(
-            process_props, grid_manager.decomposition_info
-        ),
     )
     return grid_manager, grid_geometry
 
@@ -318,7 +313,7 @@ def _compare_interpolation_fields_single_multi_rank(
         config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.SingleNodeExchange(),
+        process_props=decomp_defs.SingleNodeProcessProperties(),
     )
     _log.info(
         f"rank = {process_props.rank} : single node grid has size "
@@ -343,7 +338,7 @@ def _compare_interpolation_fields_single_multi_rank(
         config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.create_exchange(process_props, multi_rank_gm.decomposition_info),
+        process_props=process_props,
     )
 
     field_ref = single_rank_interpolation.get(attrs_name)
@@ -471,7 +466,7 @@ def _compare_metrics_fields_single_multi_rank(
         config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.SingleNodeExchange(),
+        process_props=decomp_defs.SingleNodeProcessProperties(),
     )
     single_rank_metrics = metrics_factory.MetricsFieldsFactory(
         grid=single_rank_geometry.grid,
@@ -489,7 +484,7 @@ def _compare_metrics_fields_single_multi_rank(
         config=experiment.config.metrics,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        exchange=decomp_defs.SingleNodeExchange(),
+        process_props=decomp_defs.SingleNodeProcessProperties(),
     )
     _log.info(
         f"rank = {process_props.rank} : single node grid has size "
@@ -518,7 +513,7 @@ def _compare_metrics_fields_single_multi_rank(
         config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.create_exchange(process_props, multi_rank_gm.decomposition_info),
+        process_props=process_props,
     )
     multi_rank_metrics = metrics_factory.MetricsFieldsFactory(
         grid=multi_rank_geometry.grid,
@@ -536,9 +531,7 @@ def _compare_metrics_fields_single_multi_rank(
         config=experiment.config.metrics,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        exchange=mpi_decomposition.GHexMultiNodeExchange(
-            process_props, multi_rank_gm.decomposition_info
-        ),
+        process_props=process_props,
     )
 
     field_ref = single_rank_metrics.get(attrs_name)
@@ -718,7 +711,7 @@ def test_metrics_mask_prog_halo_c(
         config=experiment.config.interpolation,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=decomp_defs.create_exchange(process_props, multi_rank_gm.decomposition_info),
+        process_props=process_props,
     )
     multi_rank_metrics = metrics_factory.MetricsFieldsFactory(
         grid=multi_rank_geometry.grid,
@@ -736,9 +729,7 @@ def test_metrics_mask_prog_halo_c(
         config=experiment.config.metrics,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        exchange=mpi_decomposition.GHexMultiNodeExchange(
-            process_props, multi_rank_gm.decomposition_info
-        ),
+        process_props=process_props,
     )
 
     attrs_name = metrics_attributes.MASK_PROG_HALO_C
