@@ -138,7 +138,9 @@ class Icon4pyDriver:
             program=compute_airmass.compute_airmass,
             backend=self.backend,
             constant_args={
-                "ddqz_z_full_in": self.static_field_factories.metrics.get(metrics_attr.DDQZ_Z_FULL),
+                "ddqz_z_full_in": self.static_field_factories.metrics.export_field(
+                    metrics_attr.DDQZ_Z_FULL
+                ),
                 "deepatmo_t1mc_in": data_alloc.constant_field(
                     self.grid, 1.0, dims.KDim, allocator=self._allocator
                 ),

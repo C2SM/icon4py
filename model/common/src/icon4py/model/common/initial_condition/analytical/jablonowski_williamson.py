@@ -298,7 +298,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         # hydrostatic pressure diagnosis and the moist-iteration first guess, so the
         # iteration converges to the same fixed point as Fortran.
         virtual_temperature = gtx.as_field(
-            (dims.CellDim, dims.KDim), theta_v_dp * exner_dp, allocator=allocator
+            (dims.CellDim, dims.KDim), theta_v_dp * exner_dp, allocator=allocator, dtype=ta.wpfloat
         )
         pressure_ndarray = pressure_diagnostics.diagnose_pressure_surface_to_top_ndarray(
             grid=grid,

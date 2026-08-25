@@ -36,7 +36,7 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
         "rho": (1.5e-10, 2.2e-10 if test_utils.wp_is_dp else 2e-6),
     },
     test_defs.Experiments.GAUSS3D: {
-        "vn": (4.1e-13 if test_utils.wp_is_dp else 4e-4, 0.0),
+        "vn": (4.1e-13 if test_utils.wp_is_dp else 4.5e-4, 0.0),
         "w": (8.1e-14 if test_utils.wp_is_dp else 8e-5, 0.0),
         "exner": (1.3e-10, 1.3e-10 if test_utils.wp_is_dp else 1e-6),
         "theta_v": (9.3e-8, 3.1e-10 if test_utils.wp_is_dp else 1.1e-6),

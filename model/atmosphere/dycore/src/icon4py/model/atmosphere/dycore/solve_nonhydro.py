@@ -66,7 +66,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import dataclass_scalars_to_wp, vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -398,6 +398,15 @@ class NonHydrostaticConfig:
     ] = 80000.0
 
     def __post_init__(self) -> None:
+        dataclass_scalars_to_wp(
+            self,
+            attributes=[
+                field.name
+                for field in self.__dataclass_fields__.values()
+                if "float" in repr(field.type)
+            ],
+        )
+
         self._validate()
 
     @classmethod

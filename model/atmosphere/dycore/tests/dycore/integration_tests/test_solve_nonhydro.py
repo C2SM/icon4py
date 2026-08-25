@@ -353,8 +353,8 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     test_utils.assert_dallclose(
         prognostic_state_nnew.vn.asnumpy()[edge_start_nudging_level_2:, :],
         vn_new_reference[edge_start_nudging_level_2:, :],
-        atol=6e-15 if test_utils.wp_is_dp else 1e-4,
-        rtol=1e-12 if test_utils.wp_is_dp else 0.2,
+        atol=6e-15 if test_utils.wp_is_dp else 2e-4,
+        rtol=1e-12,
     )
     # stencil 29
     test_utils.assert_dallclose(
@@ -366,8 +366,8 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     test_utils.assert_dallclose(
         solve_nonhydro.z_vn_avg.asnumpy()[edge_start_lateral_boundary_level_5:, :],
         sp_exit.z_vn_avg().asnumpy()[edge_start_lateral_boundary_level_5:, :],
-        atol=5e-14 if test_utils.wp_is_dp else 1e-4,
-        rtol=1e-12 if test_utils.wp_is_dp else 2e-2,
+        atol=5e-14 if test_utils.wp_is_dp else 2e-4,
+        rtol=1e-12,
     )
     # stencil 30
     test_utils.assert_dallclose(
@@ -441,8 +441,8 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     test_utils.assert_dallclose(
         diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels.asnumpy(),
         sp_exit.w_concorr_c().asnumpy(),
-        atol=1e-15 if test_utils.wp_is_dp else 1e-5,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-2,
+        atol=1e-15 if test_utils.wp_is_dp else 4e-5,
+        rtol=1e-12,
     )
 
     # end
@@ -451,7 +451,7 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         prognostic_state_nnew.w.asnumpy(),
         sp_exit.w_new().asnumpy(),
         atol=7e-14 if test_utils.wp_is_dp else 5e-5,
-        rtol=1e-12 if test_utils.wp_is_dp else 0.2,
+        rtol=1e-12,
     )
 
     test_utils.assert_dallclose(
@@ -771,8 +771,8 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     test_utils.assert_dallclose(  # this is completely off in single! At least some are by factors of 100 larger
         prognostic_state_nnew.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-12 if test_utils.wp_is_dp else 1.0,
-        atol=1e-13 if test_utils.wp_is_dp else 2e-3,
+        rtol=1e-12,
+        atol=1e-13 if test_utils.wp_is_dp else 3e-3,
     )
 
     test_utils.assert_dallclose(
@@ -783,7 +783,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         prognostic_state_nnew.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14 if test_utils.wp_is_dp else 1e-4,
-        rtol=1e-12 if test_utils.wp_is_dp else 0.1,
+        rtol=1e-12,
     )
 
     test_utils.assert_dallclose(
@@ -929,8 +929,8 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     test_utils.assert_dallclose(
         prep_adv.vn_traj.asnumpy(),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        atol=1e-12 if test_utils.wp_is_dp else 1e-4,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-2,
+        atol=1e-12 if test_utils.wp_is_dp else 2e-4,
+        rtol=1e-12,
     )
 
     test_utils.assert_dallclose(
@@ -951,15 +951,15 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     test_utils.assert_dallclose(
         prognostic_states.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        atol=1e-13 if test_utils.wp_is_dp else 4e-5,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-1,
+        atol=1e-13 if test_utils.wp_is_dp else 1e-4,
+        rtol=1e-12,
     )
 
     test_utils.assert_dallclose(
         prognostic_states.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        atol=5e-13 if test_utils.wp_is_dp else 2e-4,
-        rtol=1e-12 if test_utils.wp_is_dp else 1e-2,
+        atol=5e-13 if test_utils.wp_is_dp else 3e-4,
+        rtol=1e-12,
     )
     test_utils.assert_dallclose(
         diagnostic_state_nh.exner_dynamical_increment.asnumpy(),
@@ -1748,8 +1748,8 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(  # noqa: PLR0917 [to
     test_utils.assert_dallclose(
         z_vn_avg_ref.asnumpy(),
         z_vn_avg.asnumpy(),
-        atol=0 if test_utils.wp_is_dp else 8e-7,
-        rtol=1.0e-6 if test_utils.wp_is_dp else 0.01,
+        atol=0 if test_utils.wp_is_dp else 2e-6,
+        rtol=1.0e-6,
     )
 
     # same tolerances as in Liskov
