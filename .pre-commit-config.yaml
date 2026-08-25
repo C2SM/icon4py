@@ -26,6 +26,7 @@ repos:
           - mdformat-frontmatter
           - mdformat-gfm
           - mdformat-gfm-alerts
+          - mdformat-myst
           - mdformat-ruff
           - mdformat-tables
         args: [--number]
