@@ -642,12 +642,82 @@ def test_compute_zdiff_gradp_dispatch_routing(monkeypatch: pytest.MonkeyPatch) -
 
     # Endpoint forcing: E1/E3 valid -> dispatch routes to v2 (fast) and matches golden.
     _check_case(_build_endpoint_forcing_inputs, "fast", True)
-    # P1 interior tie: E1/E3 valid -> dispatch routes to v2 (fast) and diverges from golden.
-    _check_case(_build_p1_interior_tie_inputs, "fast", False)
-    # P2 zero-thickness level: E1 invalid -> dispatch routes to exact_v2 fallback.
+    # P1 interior tie: E1/E3 valid but E2 tie detected -> dispatch routes to exact fallback.
+    _check_case(_build_p1_interior_tie_inputs, "exact", True)
     _check_case(_build_p2_zero_thickness_inputs, "exact", True)
     # P3 E3 violation: E3 invalid -> dispatch routes to exact_v2 fallback.
     _check_case(_build_p3_e3_violation_inputs, "exact", True)
+
+
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("validation_enabled", [True, False])
+def test_compute_zdiff_gradp_interior_tie(
+    monkeypatch: pytest.MonkeyPatch, validation_enabled: bool
+) -> None:
+    """P1: an exact z_me == z_ifc interior interface is caught and routed to exact."""
+    if validation_enabled:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    else:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
+
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, _e0, _cell0 = (
+        _build_p1_interior_tie_inputs()
+    )
+
+    golden_zdiff, golden_vert = _main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+    if validation_enabled:
+        with pytest.raises(ValueError, match="exact interior tie"):
+            compute_zdiff_gradp_v2(
+                e2c=e2c,
+                z_me=z_me,
+                z_mc=z_mc,
+                z_ifc=z_ifc,
+                flat_idx=flat_idx,
+                topography=topography,
+                nlev=nlev,
+                horizontal_start=gtx.int32(hs),
+                horizontal_start_1=gtx.int32(hs1),
+            )
+
+        dispatch_zdiff, dispatch_vert = compute_zdiff_gradp_dispatch(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+        assert np.allclose(dispatch_zdiff, golden_zdiff)
+        assert np.array_equal(dispatch_vert, golden_vert)
+        assert _zdiff_mod._LAST_DISPATCH_PATH == "exact"
+    else:
+        v2_zdiff, v2_vert = compute_zdiff_gradp_v2(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+        )
+        v2_matches = np.allclose(v2_zdiff, golden_zdiff) and np.array_equal(v2_vert, golden_vert)
+        assert not v2_matches
 
 
 def _build_endpoint_forcing_inputs() -> tuple[

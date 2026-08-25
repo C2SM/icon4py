@@ -220,8 +220,49 @@ def _compute_v2_validation(  # noqa: PLR0917
     ulp_at_max = array_ns.nextafter(max_num, array_ns.inf) - max_num
     spacing_ok = min_spacing > ulp_at_max
 
+    fill_high = global_max + 1.0
+    fill_low = global_min - 1.0
+    z_ifc_mask = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
+        nlev + 1 - fi[:, None]
+    )
+    z_me_mask = array_ns.arange(nlev, dtype=array_ns.int64)[None, :] <= fi[:, None]
+
+    def _interior_tie_free(a: data_alloc.NDArray, v: data_alloc.NDArray) -> data_alloc.NDArray:
+        """Return a 0-d bool: no query exactly equals an interior interface.
+
+        ``a`` is the masked ascending z_ifc row used by v2 (shape
+        (nedges, nlev + 1)); ``v`` are the queries (shape (nedges, nq)).
+        A tie at ascending index ``pos`` maps to original level index
+        ``nlev - pos``.  Interior means ``fi < m < nlev - 1``, i.e.
+        ``2 <= pos <= nlev - fi - 1``; this excludes the topography interface,
+        the top of the deepest level, and everything at or below ``fi``.
+        """
+        pos = _batched_searchsorted_v2(a, v, array_ns)
+        last = nlev
+        right_idx = array_ns.clip(pos, 0, last)
+        right = array_ns.take_along_axis(a, right_idx, axis=1)
+        left_idx = array_ns.clip(pos - 1, 0, last)
+        left = array_ns.take_along_axis(a, left_idx, axis=1)
+        eq_right = v == right
+        eq_left = (pos > 0) & (v == left)
+        max_interior = (nlev - fi - 1)[:, None]
+        interior_right = eq_right & (pos >= 2) & (pos <= max_interior)
+        interior_left = eq_left & ((pos - 1) >= 2) & ((pos - 1) <= max_interior)
+        return array_ns.logical_not(array_ns.any(interior_right | interior_left))
+
+    z_ifc_e0_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e0)
+    z_ifc_e1_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e1)
+    z_me_m = array_ns.where(z_me_mask, fill_low, z_me)
+    z_aux2_v = z_aux2[:, None]
+
+    tie_free_0 = _interior_tie_free(z_ifc_e0_m, z_me_m)
+    tie_free_1 = _interior_tie_free(z_ifc_e1_m, z_me_m)
+    tie_free_aux_0 = _interior_tie_free(z_ifc_e0_m, z_aux2_v)
+    tie_free_aux_1 = _interior_tie_free(z_ifc_e1_m, z_aux2_v)
+    tie_free = tie_free_0 & tie_free_1 & tie_free_aux_0 & tie_free_aux_1
+
     full_ok = e1_ok_0
-    for check in (e1_ok_1, e3_ok, a2_ok, spacing_ok):
+    for check in (e1_ok_1, e3_ok, a2_ok, spacing_ok, tie_free):
         full_ok = array_ns.logical_and(full_ok, check)
 
     # Single stacked array: two bool() reads on the default stream share one sync.
@@ -254,7 +295,8 @@ def _validate_zdiff_gradp_inputs(  # noqa: PLR0917
     if not bool(combined[0] & combined[1]):
         raise ValueError(
             "compute_zdiff_gradp_v2 input validation failed: strict z_ifc decrease, "
-            "z_me monotonicity, finiteness, A2 float-offset premise, or min-spacing-vs-ULP violated."
+            "z_me monotonicity, finiteness, A2 float-offset premise, min-spacing-vs-ULP, "
+            "or exact interior tie (v2 would pick the shallower/deeper index differently from main) violated."
         )
 
 
@@ -313,7 +355,8 @@ def compute_zdiff_gradp_v2(
         if not bool(combined[0] & combined[1]):
             raise ValueError(
                 "compute_zdiff_gradp_v2 input validation failed: strict z_ifc decrease, "
-                "z_me monotonicity, finiteness, A2 float-offset premise, or min-spacing-vs-ULP violated."
+                "z_me monotonicity, finiteness, A2 float-offset premise, min-spacing-vs-ULP, "
+                "or exact interior tie (v2 would pick the shallower/deeper index differently from main) violated."
             )
     fill_high = (
         array_ns.max(array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()]))
