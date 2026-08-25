@@ -24,6 +24,7 @@ export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE="1"
 export GT4PY_BUILD_CACHE_LIFETIME=persistent
 export DACE_compiler_build_folder_mode="development"
 export PYTHONOPTIMIZE=2
+export DACE_compiler_cuda_chiplet_number=6
 
 export ICON4PY_DRIVER_LOGGING_LEVEL="warning"
 
@@ -47,14 +48,17 @@ elif [[ "$ICON_GRID" == *"R02B07"* ]]; then
     SUFFIX="R02B07"
 fi
 
-export GT4PY_BUILD_CACHE_DIR="MI300A_JW_external8G_${SUFFIX}_persistent_ntasks${SLURM_NTASKS}"
+export ICON4PY_GPU_THREAD_BLOCK_SIZE_2D="256,1,1"
+export ICON4PY_GPU_THREAD_BLOCK_SIZE_1D="256,1,1"
+export GT4PY_VERTICAL_LOOP_BLOCKING="4"
+
+export GT4PY_BUILD_CACHE_DIR="MI300A_JW_external8G_fixedamdheuristics8_daceXCDfixed_${SUFFIX}_persistent_ntasks${SLURM_NTASKS}"
 
 export GT4PY_SKIP_DACE_WARNINGS=0
 
 export LD_LIBRARY_PATH=$(pwd):${LD_LIBRARY_PATH}
 
 export OUTPUT_PATH=$(pwd)/standalone_driver_output_${GT4PY_BUILD_CACHE_DIR}_wall
-
 
 # Optimization flags
 export ICON4PY_BACKEND_WORKSPACE_SIZE=8589934592 # 8Gib external workspace storage per device

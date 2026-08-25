@@ -8,6 +8,7 @@ export PYTHONOPTIMIZE="2"
 export HCC_AMDGPU_TARGET="gfx942"
 export ROCM_HOME="/user-environment/env/default"
 export HIPCC="$(which hipcc)"
+export CUPY_ACCELERATORS=cub
 
 # Auto-detect ROCm version from hipcc instead of hardcoding.
 # hipcc --version prints e.g. "HIP version: 7.2.26103-9999" → "7.2.26103".

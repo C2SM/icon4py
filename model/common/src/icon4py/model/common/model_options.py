@@ -79,12 +79,28 @@ def get_dace_options(
             optimization_args["gpu_block_size_2d"] = (64, 6)
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
-    if device == model_backends.DeviceType.ROCM:
-        # optimization_args["gpu_memory_pool"] = False
-        # optimization_args["make_persistent"] = True
-        optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
-        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
-        optimization_args["amd_heuristic"] = True
+    if backend_descriptor["device"] == model_backends.DeviceType.ROCM:
+        if backend_config is None:
+            # Only needed when no external workspace is provided (i.e.
+            # ICON4PY_BACKEND_WORKSPACE_SIZE is not set); the external
+            # workspace already avoids the runtime allocation overhead.
+            optimization_args["gpu_memory_pool"] = False
+            optimization_args["make_persistent"] = True
+    #     # AMD MI300A: (256,1,1) for 2D maps gives ~20% speedup on the solver.
+    #     # All threads on Cell dimension maximizes coalescing on MI300A.
+    #     # optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
+    #     # Setting a block size of (256,1,1) for 1D maps doesn't give a significant
+    #     # speedup on MI300A but it doesn't hurt either
+    #     # optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
+        optimization_args["gpu_block_size_2d"] = os.getenv("ICON4PY_GPU_THREAD_BLOCK_SIZE_2D", "256, 1, 1")
+        optimization_args["gpu_block_size_1d"] = os.getenv("ICON4PY_GPU_THREAD_BLOCK_SIZE_1D", "256, 1, 1")
+    if os.getenv("GT4PY_HORIZONTAL_LOOP_BLOCKING", "0") != "0":
+        optimization_args["blocking_dims"] = list(dimension.horizontal_dims())
+        optimization_args["blocking_size"] = int(os.getenv("GT4PY_HORIZONTAL_LOOP_BLOCKING"))
+        optimization_args["blocking_only_if_independent_nodes"] = False
+    if os.getenv("GT4PY_VERTICAL_LOOP_BLOCKING", "0") != "0":
+        optimization_args["blocking_dims"] = list(dimension.vertical_dims())
+        optimization_args["blocking_size"] = int(os.getenv("GT4PY_VERTICAL_LOOP_BLOCKING"))
         optimization_args["blocking_only_if_independent_nodes"] = False
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
