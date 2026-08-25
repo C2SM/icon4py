@@ -25,7 +25,12 @@ from icon4py.model.common.states import (
     tracer_states,
 )
 from icon4py.model.driver import config as driver_config, driver, driver_states, driver_utils
-from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
+from icon4py.model.testing import (
+    benchmark as benchmark_utils,
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+    grid_utils,
+)
 from icon4py.model.testing.fixtures.datatest import backend, process_props
 
 
@@ -102,12 +107,14 @@ def _warmup_rounds(request: pytest.FixtureRequest) -> int:
 def _make_config(
     request: pytest.FixtureRequest,
     experiment: test_defs.ExperimentDescription,
+    grid: test_defs.GridDescription,
     process_props: decomp_defs.ProcessProperties,
 ) -> driver_config.ExperimentConfig:
     dt_utils.download_experiment(experiment, process_props)
     experiment_path = dt_utils.get_path_for_experiment(experiment, process_props)
     config = driver_config.read_experiment_config_from_fortran(experiment_path)
     steps = _num_steps(request)
+    benchmark_utils.validate_grid_override(experiment.grid.name, grid.name, steps)
     return config.with_overrides(
         driver={
             "enable_output": False,
@@ -220,9 +227,10 @@ def driver_benchmark_grid(
 def driver_benchmark_config(
     request: pytest.FixtureRequest,
     driver_benchmark_experiment: test_defs.ExperimentDescription,
+    driver_benchmark_grid: test_defs.GridDescription,
     process_props: decomp_defs.ProcessProperties,
 ) -> driver_config.ExperimentConfig:
-    return _make_config(request, driver_benchmark_experiment, process_props)
+    return _make_config(request, driver_benchmark_experiment, driver_benchmark_grid, process_props)
 
 
 @pytest.fixture

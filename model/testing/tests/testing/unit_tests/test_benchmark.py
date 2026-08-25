@@ -46,3 +46,20 @@ def test_is_upload_rank_false_for_nonzero(_clear_rank_env, monkeypatch):
 
 def test_is_upload_rank_explicit_none():
     assert benchmark.is_upload_rank(None) is True
+
+
+def test_is_upload_rank_from_env_when_missing(_clear_rank_env):
+    assert benchmark.is_upload_rank(benchmark.resolve_rank()) is True
+
+
+def test_validate_grid_override_allows_same_grid():
+    benchmark.validate_grid_override("R02B04_GLOBAL", "R02B04_GLOBAL", 5)
+
+
+def test_validate_grid_override_allows_different_grid_single_step():
+    benchmark.validate_grid_override("R02B04_GLOBAL", "R02B06_GLOBAL", 1)
+
+
+def test_validate_grid_override_rejects_different_grid_multi_step():
+    with pytest.raises(ValueError, match="dtime rescaling"):
+        benchmark.validate_grid_override("R02B04_GLOBAL", "R02B06_GLOBAL", 5)

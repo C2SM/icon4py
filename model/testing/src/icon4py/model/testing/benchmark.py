@@ -11,7 +11,7 @@
 import os
 
 
-__all__ = ["is_upload_rank", "resolve_rank"]
+__all__ = ["is_upload_rank", "resolve_rank", "validate_grid_override"]
 
 
 def resolve_rank() -> int | None:
@@ -28,6 +28,26 @@ def resolve_rank() -> int | None:
     if rank is None:
         return None
     return int(rank)
+
+
+def validate_grid_override(
+    experiment_grid_name: str,
+    override_grid_name: str,
+    num_steps: int,
+) -> None:
+    """Fail fast when a grid override would run multi-step without dtime rescaling.
+
+    The experiment config (including ``dtime``) is authored for
+    ``experiment_grid_name``. Running it on a different grid without rescaling
+    the timestep can violate CFL stability. Grid overrides are therefore
+    restricted to single-step runs until dtime rescaling is implemented.
+    """
+    if experiment_grid_name != override_grid_name and num_steps != 1:
+        raise ValueError(
+            f"Grid override '{override_grid_name}' differs from experiment grid "
+            f"'{experiment_grid_name}'; multi-step overrides require dtime "
+            f"rescaling. Use --driver-benchmark-steps=1 or implement dtime rescaling."
+        )
 
 
 def is_upload_rank(rank: int | None = None) -> bool:
