@@ -158,8 +158,16 @@ def test_driver(
     - vertical extent: ICON runs graupel on jks_cloudy..nlev; muphys runs the full column.
 
     The muphys granule itself is validated in isolation against the aes-graupel savepoints
-    in test_muphys_datatest.py.
+    in test_muphys_datatest.py. EXCLAIM_APE_AES is currently xfailed, see the body.
     """
+    if experiment_description == test_defs.Experiments.EXCLAIM_APE_AES:
+        # TODO(jcanton): the v08 archive was generated with turbulent mixing switched on
+        # (aes_vdf_config(1)%use_tmx = .TRUE.), unlike v07, so its trajectory diverges
+        # from a driver run that has no turbulence at all: vn drifts by ~1e-1 over the
+        # time step. This branch only ports the tmx granule; PR #1360 plugs it into the
+        # driver, at which point this case validates again.
+        pytest.xfail("Driver does not run tmx yet, which the v08 reference includes (PR #1360)")
+
     allocator = model_backends.get_allocator(backend)
 
     grid_file_path = grid_utils._download_grid_file(experiment_description.grid)

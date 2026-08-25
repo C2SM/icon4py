@@ -35,6 +35,7 @@ members = [
   "icon4py-atmosphere-microphysics",
   "icon4py-atmosphere-muphys",
   "icon4py-atmosphere-physics-driver",
+  "icon4py-atmosphere-tmx",
   "icon4py-atmosphere-tracer-advection",
   "icon4py-bindings",
   "icon4py-common",
@@ -1765,6 +1766,7 @@ dependencies = [
   {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-atmosphere-physics-driver"},
+  {name = "icon4py-atmosphere-tmx"},
   {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common"},
   {name = "icon4py-driver"}
@@ -1880,6 +1882,7 @@ requires-dist = [
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
   {name = "icon4py-atmosphere-physics-driver", editable = "model/atmosphere/subgrid_scale_physics/physics_driver"},
+  {name = "icon4py-atmosphere-tmx", editable = "model/atmosphere/subgrid_scale_physics/tmx"},
   {name = "icon4py-atmosphere-tracer-advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-bindings", marker = "extra == 'fortran'", editable = "bindings"},
   {name = "icon4py-common", editable = "model/common"},
@@ -2104,6 +2107,23 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
+  {name = "icon4py-common", editable = "model/common"},
+  {name = "packaging", specifier = ">=20.0"}
+]
+
+[[package]]
+dependencies = [
+  {name = "gt4py"},
+  {name = "icon4py-common"},
+  {name = "packaging"}
+]
+name = "icon4py-atmosphere-tmx"
+source = {editable = "model/atmosphere/subgrid_scale_physics/tmx"}
+version = "0.4.1"
+
+[package.metadata]
+requires-dist = [
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
