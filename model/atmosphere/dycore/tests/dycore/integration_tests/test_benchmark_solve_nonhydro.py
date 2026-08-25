@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import functools
 from typing import TYPE_CHECKING, Any
+import os
 
 import gt4py.next as gtx
+from gt4py.next.instrumentation import metrics as gtx_metrics
 import pytest
 
 
@@ -32,7 +34,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory, nonhydro_states, prognostic_state as prognostics
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
     interpolation_field_source,
@@ -322,7 +324,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
     solve_nonhydro_timestep_variants = functools.partial(
-        solve_nonhydro.time_step,
+        device_utils.synchronized_function(solve_nonhydro.time_step, allocator=allocator),
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_states=prognostic_states,
         prep_adv=prep_adv,
@@ -338,3 +340,6 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
     )
+
+    if gtx_metrics.sources:
+        gtx_metrics.dump_json(os.getenv("GT4PY_METRICS_OUTPUT_PATH", "gt4py_metrics.json"))

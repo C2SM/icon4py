@@ -86,6 +86,9 @@ def get_dace_options(
         optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
         optimization_args["amd_heuristic"] = True
         optimization_args["blocking_only_if_independent_nodes"] = False
+    else:
+        optimization_args.setdefault("gpu_block_size_2d", (128, 2, 1))
+        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
