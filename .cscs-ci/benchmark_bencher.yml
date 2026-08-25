@@ -18,6 +18,31 @@ include:
   variables:
     NOX_SESSION: "__bencher_feature_branch_CI-${PYVERSION_SHORT}"
 
+.bencher_driver_feature_tests:
+  extends: [.test_runner_mpi, .test_template_aarch64]
+  stage: benchmark
+  script:
+    - export PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
+    - export FEATURE_BRANCH=$(curl -s https://api.github.com/repos/C2SM/icon4py/pulls/$PR_ID | jq -r '.head.ref')
+    - export GITHUB_ACTIONS=true
+    - export GITHUB_EVENT_NAME=pull_request
+    - export GITHUB_STEP_SUMMARY=$CI_PROJECT_DIR/step_summary.log
+    - export GITHUB_SHA=$CI_COMMIT_SHA
+    - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json
+    - |
+      echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
+    - .cscs-ci/scripts/ci-mpi-wrapper.sh nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID --driver-benchmark-experiment=$DRIVER_BENCHMARK_EXPERIMENT --driver-benchmark-steps=$DRIVER_BENCHMARK_STEPS --driver-benchmark-rounds=$DRIVER_BENCHMARK_ROUNDS --driver-benchmark-warmup-rounds=$DRIVER_BENCHMARK_WARMUP_ROUNDS -k "${TEST_SELECTION}"
+  variables:
+    NOX_SESSION: "__bencher_driver_feature_branch_CI-${PYVERSION_SHORT}"
+    TEST_SELECTION: "test_benchmark_driver"
+    DRIVER_BENCHMARK_EXPERIMENT: "jw"
+    DRIVER_BENCHMARK_STEPS: 10
+    DRIVER_BENCHMARK_ROUNDS: 5
+    DRIVER_BENCHMARK_WARMUP_ROUNDS: 2
+    BACKEND: "dace_gpu"
+    GRID: "R02B04_GLOBAL"
+    SLURM_TIMELIMIT: '02:00:00'
+
 benchmark_bencher_stencils_feature_aarch64:
   extends: [.test_runner_serial, .test_template_aarch64, .bencher_feature_tests]
   variables:
@@ -28,3 +53,25 @@ benchmark_bencher_granules_feature_aarch64:
   extends: [.test_runner_serial, .test_template_aarch64, .bencher_feature_tests]
   variables:
     TEST_SELECTION: "${GRANULE_TEST_SELECTION}"
+
+benchmark_bencher_driver_feature_intra_aarch64:
+  extends: [.bencher_driver_feature_tests, .retry_on_transient_failure]
+  variables:
+    SLURM_NTASKS: 4
+    SLURM_JOB_NUM_NODES: 1
+    ICON4PY_TEST_MPI_SUBCOMM_SIZE: $SLURM_NTASKS
+  rules:
+    - if: $ICON4PY_DISABLE_DRIVER_BENCHMARK == "1" || $ICON4PY_DISABLE_DRIVER_BENCHMARK == "true"
+      when: never
+    - when: on_success
+
+benchmark_bencher_driver_feature_inter_aarch64:
+  extends: [.bencher_driver_feature_tests, .retry_on_transient_failure]
+  variables:
+    SLURM_NTASKS: 8
+    SLURM_JOB_NUM_NODES: 2
+    ICON4PY_TEST_MPI_SUBCOMM_SIZE: $SLURM_NTASKS
+  rules:
+    - if: $ICON4PY_DISABLE_DRIVER_BENCHMARK == "1" || $ICON4PY_DISABLE_DRIVER_BENCHMARK == "true"
+      when: never
+    - when: on_success

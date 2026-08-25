@@ -16,6 +16,8 @@ from typing import Final, Literal, TypedDict, get_args
 
 import nox
 
+from icon4py.model.testing.benchmark import is_upload_rank, resolve_rank
+
 
 # -- nox configuration --
 def _use_active_venv() -> bool:
@@ -39,11 +41,7 @@ _VENV_BACKEND_KWARG: Final[_VenvBackendKwargs] = (
 )
 NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 
-_rank = (
-    os.environ.get("PMI_RANK")
-    or os.environ.get("OMPI_COMM_WORLD_RANK")
-    or os.environ.get("SLURM_PROCID")
-)
+_rank = resolve_rank()
 if _rank is not None:
     nox.options.envdir = f".nox/mpi-rank-{_rank}"
 
@@ -166,6 +164,105 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
             "BENCHER_HOST": os.environ[
                 "BENCHER_HOST"
             ].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
+        },
+        external=True,
+        silent=True,
+    )
+
+
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+def benchmark_driver_mpi(session: nox.Session) -> None:
+    """Run the distributed driver benchmark under MPI."""
+    _install_session_venv(session, extras=["all"], groups=["test"])
+
+    rank = resolve_rank() or 0
+    with session.chdir("model/driver"):
+        session.run(
+            "pytest",
+            "-sv",
+            "-n0",
+            "--only-mpi",
+            "-m",
+            "continuous_benchmarking",
+            "-k",
+            "test_benchmark_driver",
+            "--benchmark-json",
+            f"pytest_benchmark_results_{session.python}_{rank}.json",
+            "tests/driver/mpi_tests/test_benchmark_driver.py",
+            *session.posargs,
+        )
+
+
+def _driver_bencher_testbed() -> str:
+    """Build the bencher testbed string for the driver benchmark."""
+    comm_size = os.environ.get("SLURM_NTASKS") or os.environ.get("OMPI_COMM_WORLD_SIZE") or "1"
+    nodes = os.environ.get("SLURM_JOB_NUM_NODES", "1")
+    experiment = os.environ.get("DRIVER_BENCHMARK_EXPERIMENT", "jw")
+    grid = os.environ.get("GRID", "default")
+    return (
+        f"{os.environ['RUNNER']}:"
+        f"{os.environ['SYSTEM_TAG']}:"
+        f"{os.environ['BACKEND']}:"
+        f"{experiment}:"
+        f"{grid}:"
+        f"{comm_size}n{nodes}N"
+    )
+
+
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
+def __bencher_driver_baseline_CI(session: nox.Session) -> None:
+    """Upload the distributed driver benchmark baseline to bencher."""
+    rank = resolve_rank() or 0
+    if not is_upload_rank(rank):
+        return
+
+    session.run(
+        *f"bencher run \
+        --threshold-measure latency \
+        --threshold-test percentage \
+        --threshold-max-sample-size 64 \
+        --threshold-upper-boundary 0.1 \
+        --thresholds-reset \
+        --err \
+        --file pytest_benchmark_results_{session.python}_{rank}.json".split(),
+        env={
+            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),
+            "BENCHER_BRANCH": "main",
+            "BENCHER_TESTBED": _driver_bencher_testbed(),
+            "BENCHER_ADAPTER": "python_pytest",
+            "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),
+            "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
+        },
+        external=True,
+        silent=True,
+    )
+
+
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
+def __bencher_driver_feature_branch_CI(session: nox.Session) -> None:
+    """Upload the distributed driver benchmark feature-branch results to bencher."""
+    rank = resolve_rank() or 0
+    if not is_upload_rank(rank):
+        return
+
+    bencher_testbed = _driver_bencher_testbed()
+    session.run(
+        *f"bencher run \
+        --start-point main \
+        --start-point-clone-thresholds \
+        --start-point-reset \
+        --err \
+        --github-actions {os.environ['GD_COMMENT_TOKEN']} \
+        --ci-number {os.environ['PR_ID']} \
+        --ci-id run-{bencher_testbed.replace(':', '_')}-{int(datetime.now().strftime('%Y%m%d%H%M%S%f'))} \
+        --file pytest_benchmark_results_{session.python}_{rank}.json".split(),
+        env={
+            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),
+            "BENCHER_BRANCH": os.environ["FEATURE_BRANCH"].strip(),
+            "BENCHER_TESTBED": bencher_testbed,
+            "BENCHER_ADAPTER": "python_pytest",
+            "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),
             "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
         },
         external=True,
