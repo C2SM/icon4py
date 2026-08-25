@@ -28,6 +28,7 @@ from icon4py.model.common.metrics.compute_zdiff_gradp import (
     compute_zdiff_gradp_exact_v3,
     compute_zdiff_gradp_v2,
 )
+from icon4py.model.common.metrics.compute_zdiff_gradp_gt4py import compute_zdiff_gradp_gt4py
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
@@ -1135,3 +1136,185 @@ def test_first_match_scan_reference_boundary_cases() -> None:
         for q in range(nlev):
             if q <= flat_idx[e]:
                 assert jk1_ref[e, q] == jk1_fresh[e, q]
+
+
+def _build_random_zdiff_inputs(
+    nedges: int, ncells: int, nlev: int, seed: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Build deterministic pseudo-realistic inputs for small-scale tests."""
+    rng = np.random.default_rng(seed)
+    topography = np.clip(rng.uniform(0.0, 3000.0, ncells), 0.0, 3000.0).astype(np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c0 = np.arange(nedges) % ncells
+    c1 = (c0 + 1) % ncells
+    e2c = np.stack([c0, c1], axis=1).astype(np.int64)
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    flat_idx = np.full((nedges,), nlev // 4, dtype=np.int32)
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography
+
+
+@pytest.mark.level("unit")
+def test_compute_zdiff_gradp_gt4py_random_small() -> None:
+    """GT4Py variant matches exact_v2 bitwise on a random small input."""
+    nedges = 64
+    ncells = 48
+    nlev = 8
+    hs = 10
+    hs1 = 30
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography = _build_random_zdiff_inputs(
+        nedges, ncells, nlev, seed=42
+    )
+
+    golden_zdiff, golden_vert = _main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+    gt4py_zdiff, gt4py_vert = compute_zdiff_gradp_gt4py(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+        backend=None,
+    )
+
+    exact_zdiff, exact_vert = compute_zdiff_gradp_exact_v2(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+
+    np.testing.assert_array_equal(gt4py_zdiff, exact_zdiff)
+    np.testing.assert_array_equal(gt4py_vert, exact_vert)
+    assert np.allclose(gt4py_zdiff, golden_zdiff)
+    np.testing.assert_array_equal(gt4py_vert, golden_vert)
+
+
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("validation_enabled", [True, False])
+def test_compute_zdiff_gradp_gt4py_edge_cases(
+    monkeypatch: pytest.MonkeyPatch, validation_enabled: bool
+) -> None:
+    """GT4Py variant matches exact_v2/main on P1/P2/P3 edge cases."""
+    if validation_enabled:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    else:
+        monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
+
+    for builder in (
+        _build_p1_interior_tie_inputs,
+        _build_p2_zero_thickness_inputs,
+        _build_p3_e3_violation_inputs,
+    ):
+        e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, _e0, _cell0 = builder()
+
+        golden_zdiff, golden_vert = _main_reference(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=hs,
+            horizontal_start_1=hs1,
+        )
+
+        gt4py_zdiff, gt4py_vert = compute_zdiff_gradp_gt4py(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+            backend=None,
+        )
+
+        np.testing.assert_array_equal(gt4py_zdiff, golden_zdiff)
+        np.testing.assert_array_equal(gt4py_vert, golden_vert)
+
+
+@pytest.mark.level("unit")
+@pytest.mark.parametrize("validation_enabled", [True, False])
+def test_compute_zdiff_gradp_gt4py_nan_validation(
+    monkeypatch: pytest.MonkeyPatch, validation_enabled: bool
+) -> None:
+    """GT4Py variant follows the shared validation policy for NaN inputs."""
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    z_me[0, 2] = np.nan
+    flat_idx = np.full((nedges,), 1, dtype=np.int32)
+
+    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "1")
+    with pytest.raises(ValueError):
+        compute_zdiff_gradp_gt4py(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=gtx.int32(hs),
+            horizontal_start_1=gtx.int32(hs1),
+            backend=None,
+        )
+
+    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
+    zdiff_gradp, vertoffset_gradp = compute_zdiff_gradp_gt4py(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+        backend=None,
+    )
+    assert zdiff_gradp.shape == (nedges, 2, nlev)
+    assert vertoffset_gradp.shape == (nedges, 2, nlev)
+    assert np.all(np.isfinite(vertoffset_gradp))
