@@ -1,0 +1,65 @@
+geometry: {}
+metrics: {}
+interpolation: {}
+vertical_grid:
+  num_levels: 50
+  model_top_height: 20000.0
+  lowest_layer_thickness: 0.0
+topography:
+  config:
+    type: flat
+initial_condition:
+  config:
+    type: weisman_klemp
+    max_wind_speed: 15.0
+    bubble_center_x: 50000.0
+    bubble_center_y: 50000.0
+    bubble_center_z: 1400.0
+    bubble_horizontal_width: 10000.0
+    bubble_vertical_width: 1400.0
+    bubble_amplitude: 2.0
+    bubble_radius: 1.0
+nonhydrostatic:
+  fourth_order_divdamp_factor: 0.004
+  fourth_order_divdamp_factor2: 0.004
+  fourth_order_divdamp_factor3: 0.004
+  fourth_order_divdamp_factor4: 0.004
+diffusion:
+  hdiff_efdt_ratio: 24.0
+  smagorinski_scaling_factor: 0.025
+  apply_zdiffusion_t: False
+  shear_type: vertical_horizontal_of_horizontal_vertical_wind
+  a_hshr: 2.0
+prescribed_tendencies:
+  data_path:
+driver:
+  experiment_name: horizontal_advection_convergence_test
+  profiling_options:
+  enable_output: True
+  output_interval: 60
+  timesteps_per_file: 1000
+  output_mode: gather
+  output_backend: netcdf
+  dtime: 1.0
+  do_prep_adv: True
+  enable_statistics_logging: True
+  start_of_simulation: 0001-01-01T00:00:00
+  start_of_timestepping: 0001-01-01T00:00:00
+  end_of_simulation:
+    type: relative
+    value: 7200.0
+tracer_config:
+  qv: true
+  qc: true
+  qr: true
+  qi: true
+  qs: true
+  qg: true
+tracer_advection:
+  horizontal_advection_type: linear_2nd_order
+  horizontal_advection_limiter: positive_definite
+  vertical_advection_type: ppm_3rd_order
+  vertical_advection_limiter: semi_monotonic
+graupel:
+muphys: {}
+tmx: {}

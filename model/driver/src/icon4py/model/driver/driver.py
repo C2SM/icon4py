@@ -157,6 +157,7 @@ class Icon4pyDriver:
     def _store_output(
         self,
         prognostic_state: prognostics.PrognosticState,
+        tracers: tracer_states.TracerState | None,
         simulation_current_datetime: time.AbsoluteTime,
     ) -> None:
         """Assemble the prognostic + diagnostic fields and hand them to the IO monitor.
@@ -173,6 +174,7 @@ class Icon4pyDriver:
         if not self.io_monitor.captures_next_store():
             self.io_monitor.store({}, simulation_current_datetime)
             return
+        log.debug("Packing and writing")
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
             metrics = self.static_field_factories.metrics
             interpolation = self.static_field_factories.interpolation
@@ -184,8 +186,11 @@ class Icon4pyDriver:
                 rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
             )
             state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
+            if tracers is not None:
+                state_to_store.update(driver_io.tracer_fields_to_dataarrays(tracers))
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_STORE.value]:
             self.io_monitor.store(state_to_store, simulation_current_datetime)
+        log.debug("Completed packing and writing")
 
     def time_integration(
         self,
@@ -211,9 +216,11 @@ class Icon4pyDriver:
             if self.io_monitor is not None:
                 # write the initial state; the simulation datetime is still the start here
                 # (it is advanced below, per step)
+                log.debug(f"writing initial state to output, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}")
                 self._store_output(
-                    prognostic_states.current, self.model_time_variables.simulation_current_datetime
+                    prognostic_states.current, tracers.current, self.model_time_variables.simulation_current_datetime
                 )
+                log.debug(f"Completed writing initial state to output, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}")
 
             self._diffuse_before_time_loop(diffusion_diagnostic_state, prognostic_states.current)
 
@@ -261,10 +268,13 @@ class Icon4pyDriver:
                     self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
 
                 if self.io_monitor is not None:
+                    log.debug(f"writing output for current time step {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}")
                     self._store_output(
                         prognostic_states.current,
+                        tracers.current,
                         self.model_time_variables.simulation_current_datetime,
                     )
+                    log.debug(f"Completed writing output for current time step {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}")
             if self.io_monitor is not None:
                 self.io_monitor.report_timings()
         finally:
@@ -352,6 +362,8 @@ class Icon4pyDriver:
                 assert tracer_next_field is not None, (
                     f"tracer '{tracer_current.name}' active in current state but missing in next state"
                 )
+                log.debug(f"Running {self.granules.tracer_advection.__class__} for tracer '{tracer_current.name}'")
+                log.info(f"Max of fluxes: {self.global_reductions.max(self._xp.abs(tracer_prep_adv.mass_flx_me.ndarray))}, {self.global_reductions.max(self._xp.abs(tracer_prep_adv.vn_traj.ndarray))}, {self.global_reductions.max(self._xp.abs(tracer_prep_adv.mass_flx_ic.ndarray))}")
                 self.granules.tracer_advection.run(
                     diagnostic_state=tracer_advection_diagnostic_state,
                     prep_adv=tracer_prep_adv,
@@ -762,6 +774,8 @@ def initialize_driver(
         log.info("Initializing IO monitor")
         io_monitor = driver_io.create_io_monitor(
             output_path=config.driver.output_path,
+            output_interval=config.driver.output_interval,
+            timesteps_per_file=config.driver.timesteps_per_file,
             grid_file_path=pathlib.Path(grid_manager.file_path),
             grid=grid_manager.grid,
             vertical_grid=vertical_grid,

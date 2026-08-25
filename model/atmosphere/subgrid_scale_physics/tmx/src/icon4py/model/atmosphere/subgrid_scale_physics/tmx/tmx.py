@@ -161,6 +161,7 @@ from icon4py.model.common.math.stencils.update_two_cell_kdim_fields_with_tendenc
 )
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.config import config_io
 
 
 if typing.TYPE_CHECKING:
@@ -183,6 +184,8 @@ values are taken from ``vdiff_config_init`` in ``mo_turb_vdiff_config.f90``.
 log = logging.getLogger(__name__)
 
 
+
+@config_io.register_enum
 class TurbulenceSolverType(int, enum.Enum):
     """
     Type of the vertical diffusion solver.
@@ -194,6 +197,7 @@ class TurbulenceSolverType(int, enum.Enum):
     IMPLICIT = 2  # implicit time stepping
 
 
+@config_io.register_enum
 class EnergyType(int, enum.Enum):
     """
     Type of energy diffused by the temperature (heat) diffusion.

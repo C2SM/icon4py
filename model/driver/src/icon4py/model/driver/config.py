@@ -193,6 +193,20 @@ class DriverConfig:
             icon_equivalent=None,
         ),
     ] = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
+    output_interval: typing.Annotated[
+        time.NumTimeSteps,
+        common_conf_opt.ConfigOption(
+            description="Number of interval time steps for output.",
+            icon_equivalent=None,
+        ),
+    ] = dataclasses.field(default_factory=lambda: time.NumTimeSteps(1))
+    timesteps_per_file: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description="Number of interval time steps for a output file.",
+            icon_equivalent=None,
+        ),
+    ] = 1
     apply_extra_second_order_divdamp: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(

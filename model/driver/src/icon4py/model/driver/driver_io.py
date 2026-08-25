@@ -33,7 +33,7 @@ from icon4py.model.common.diagnostic_calculations.stencils import diagnose_tempe
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
-from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
+from icon4py.model.common.states import data as state_data, prognostic_state as prognostics, tracer_states as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -100,8 +100,17 @@ DIAGNOSTIC_VARIABLES: Final[list[str]] = [
     "pressure",
 ]
 
+TRACER_VARIABLES: Final[list[str]] = [
+    "qv",
+    "qc",
+    "qi",
+    "qr",
+    "qs",
+    "qg",
+]
+
 #: All output variables (prognostic + diagnostic), written together into the same file.
-DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [*PROGNOSTIC_VARIABLES, *DIAGNOSTIC_VARIABLES]
+DEFAULT_OUTPUT_VARIABLES: Final[list[str]] = [*PROGNOSTIC_VARIABLES, *DIAGNOSTIC_VARIABLES, *TRACER_VARIABLES]
 
 
 class DiagnosticsComputer:
@@ -246,6 +255,30 @@ def diagnostic_fields_to_dataarrays(
     return state
 
 
+def tracer_fields_to_dataarrays(
+    tracer_state: tracers.TracerState,
+    variables: list[str] | None = None,
+) -> dict[str, xr.DataArray]:
+    selected = TRACER_VARIABLES if variables is None else variables
+   
+    state: dict[str, xr.DataArray] = {}
+    for name in selected:
+        try:
+            metadata = state_data.COMMON_TRACER_CF_ATTRIBUTES[name]
+        except KeyError as err:
+            raise ValueError(
+                f"Unknown tracer output variable '{name}'. "
+                f"Known variables are: {TRACER_VARIABLES}."
+            ) from err
+        field = getattr(tracer_state, metadata["icon_var_name"])
+        state[name] = io_utils.to_data_array(
+            field,
+            metadata,
+            is_on_half_levels=metadata.get("is_on_half_levels", False),
+            to_host=True,
+        )
+    return state
+
 # --------------------------------------------------------------------------------------
 # Monitor factory
 # --------------------------------------------------------------------------------------
@@ -260,6 +293,7 @@ def create_io_monitor(
     dtime: datetime.timedelta,
     variables: list[str] | None = None,
     output_interval: common_io.OutputInterval = time.NumTimeSteps(1),
+    timesteps_per_file: int = 1,
     output_backend: common_io.OutputBackend = common_io.OutputBackend.ZARR,
     output_mode: common_io.OutputMode = common_io.OutputMode.DISTRIBUTED,
     process_props: decomposition_defs.ProcessProperties,
@@ -279,6 +313,7 @@ def create_io_monitor(
             output_interval=output_interval,
             basename=DEFAULT_OUTPUT_BASENAME,
             variables=output_variables,
+            timesteps_per_file=timesteps_per_file,
             backend=output_backend,
             mode=output_mode,
             nc_title="ICON4Py output",
