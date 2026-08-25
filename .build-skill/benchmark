@@ -1,0 +1,2216 @@
+#! /usr/bin/env python3
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ruff: noqa: PLR0912, PLR0915, PLR0917, RUF059, PLC0415, B007, PTH103, PTH118, PTH123
+"""Benchmark contract implementation for compute_zdiff_gradp optimization."""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import json
+import os
+import sys
+import time
+
+import gt4py.next as gtx
+import numpy as np
+
+import icon4py.model.common.metrics.compute_zdiff_gradp as _zdiff_mod
+from icon4py.model.common.metrics.compute_zdiff_gradp import (
+    _batched_searchsorted_v2,
+    _exact_phase1_cell0,
+    _exact_v2_chunk_size,
+    _exact_v2_edge_chunks,
+    _first_match_scan_reference,
+    compute_zdiff_gradp,
+    compute_zdiff_gradp_dispatch,
+    compute_zdiff_gradp_exact,
+    compute_zdiff_gradp_exact_v2,
+    compute_zdiff_gradp_exact_v3,
+    compute_zdiff_gradp_v2,
+)
+from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
+from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+SEED = 20260824
+FULL_HEIGHT = 30000.0
+EXTRAPOL_DIST = 5.0
+TIER_A_MAIN_REF_CAP_SECONDS = 300.0
+
+
+def _log(msg: str) -> None:
+    print(msg, file=sys.stderr)
+
+
+def _sync(array_ns) -> None:
+    if array_ns.__name__ == "cupy":
+        array_ns.cuda.Device().synchronize()
+
+
+def _to_namespace(arrays, array_ns):
+    return [array_ns.asarray(a) for a in arrays]
+
+
+def _to_numpy(arr):
+    return arr if isinstance(arr, np.ndarray) else arr.get()
+
+
+def build_inputs(nedges, ncells, nlev, seed):
+    rng = np.random.default_rng(seed)
+
+    walk = 1500.0 + np.cumsum(rng.normal(0.0, 20.0, ncells))
+    topography = np.clip(walk, 0.0, 3000.0)
+
+    raw = np.exp(-np.arange(nlev + 1, dtype=np.float64) / 240.0)
+    profile = (raw - raw[-1]) / (raw[0] - raw[-1])
+    thick_base = -np.diff(profile)
+    thick = thick_base[None, :] * rng.lognormal(0.0, 0.15, (ncells, nlev))
+    thick /= thick.sum(axis=1, keepdims=True)
+
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    z_ifc[:, nlev] = topography
+    for k in range(nlev - 1, -1, -1):
+        z_ifc[:, k] = z_ifc[:, k + 1] + (FULL_HEIGHT - topography) * thick[:, k]
+
+    c0 = np.mod(np.arange(nedges), ncells)
+    c1 = (c0 + 1) % ncells
+    cliff = rng.random(nedges) < 0.25
+    c1[cliff] = rng.integers(0, ncells, size=int(cliff.sum()))
+    e2c = np.stack([c0, c1], axis=1)
+
+    alpha = rng.uniform(0.3, 0.7, nedges)
+    c_lin_e = np.stack([alpha, 1.0 - alpha], axis=1)
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+
+    k_lev = np.arange(nlev + 1, dtype=np.int32)
+    flat_idx = compute_flat_max_idx(e2c=e2c, z_me=z_me, z_ifc=z_ifc, k_lev=k_lev)
+
+    hs = int(0.2 * nedges)
+    hs1 = int(0.5 * nedges)
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1
+
+
+def _endpoint_count(e2c, z_ifc, flat_idx, z_aux2, hs1, nedges, nlev):
+    count = 0
+    for je in range(hs1, nedges):
+        for c in (0, 1):
+            if z_aux2[je] > z_ifc[e2c[je, c], flat_idx[je]]:
+                count += 1
+    return count
+
+
+def main_reference(
+    *,
+    e2c,
+    z_me,
+    z_mc,
+    z_ifc,
+    flat_idx,
+    topography,
+    nlev,
+    horizontal_start,
+    horizontal_start_1,
+):
+    """Element-by-element reference matching main-branch scan semantics."""
+    array_ns = np
+    nedges = e2c.shape[0]
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - EXTRAPOL_DIST
+
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    jk_field = array_ns.arange(nlev, dtype=np.int32)
+    zdiff_gradp[horizontal_start:, :, :] = (
+        array_ns.expand_dims(z_me, axis=1)[horizontal_start:, :, :]
+        - z_mc[e2c][horizontal_start:, :, :]
+    )
+    vertidx_gradp = array_ns.broadcast_to(jk_field[None, None, :], (nedges, 2, nlev)).copy()
+    vertoffset_gradp = array_ns.broadcast_to(jk_field[None, None, :], (nedges, 2, nlev)).copy()
+
+    for je in range(horizontal_start, nedges):
+        for jk in range(int(flat_idx[je]) + 1, nlev):
+            param = array_ns.zeros((nlev,), dtype=bool)
+            for jk1 in range(int(flat_idx[je]), nlev):
+                if jk1 == nlev - 1 or (
+                    z_me[je, jk] <= z_ifc[e2c[je, 0], jk1]
+                    and z_me[je, jk] >= z_ifc[e2c[je, 0], jk1 + 1]
+                ):
+                    param[jk1] = True
+            idx = int(array_ns.where(param)[0][0])
+            vertidx_gradp[je, 0, jk] = idx
+            zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], idx]
+
+        jk_start = int(flat_idx[je])
+        for jk in range(int(flat_idx[je]) + 1, nlev):
+            for jk1 in range(jk_start, nlev):
+                if jk1 == nlev - 1 or (
+                    z_me[je, jk] <= z_ifc[e2c[je, 1], jk1]
+                    and z_me[je, jk] >= z_ifc[e2c[je, 1], jk1 + 1]
+                ):
+                    vertidx_gradp[je, 1, jk] = jk1
+                    zdiff_gradp[je, 1, jk] = z_me[je, jk] - z_mc[e2c[je, 1], jk1]
+                    jk_start = jk1
+                    break
+
+    for je in range(horizontal_start_1, nedges):
+        jk_start = int(flat_idx[je])
+        for jk in range(int(flat_idx[je]) + 1, nlev):
+            if z_me[je, jk] < z_aux2[je]:
+                for jk1 in range(jk_start, nlev):
+                    if jk1 == nlev - 1 or (
+                        z_aux2[je] <= z_ifc[e2c[je, 0], jk1]
+                        and z_aux2[je] >= z_ifc[e2c[je, 0], jk1 + 1]
+                    ):
+                        vertidx_gradp[je, 0, jk] = jk1
+                        zdiff_gradp[je, 0, jk] = z_aux2[je] - z_mc[e2c[je, 0], jk1]
+                        jk_start = jk1
+                        break
+
+        jk_start = int(flat_idx[je])
+        for jk in range(int(flat_idx[je]) + 1, nlev):
+            if z_me[je, jk] < z_aux2[je]:
+                for jk1 in range(jk_start, nlev):
+                    if jk1 == nlev - 1 or (
+                        z_aux2[je] <= z_ifc[e2c[je, 1], jk1]
+                        and z_aux2[je] >= z_ifc[e2c[je, 1], jk1 + 1]
+                    ):
+                        vertidx_gradp[je, 1, jk] = jk1
+                        zdiff_gradp[je, 1, jk] = z_aux2[je] - z_mc[e2c[je, 1], jk1]
+                        jk_start = jk1
+                        break
+
+    vertoffset_gradp = vertidx_gradp - vertoffset_gradp
+    return zdiff_gradp, vertoffset_gradp
+
+
+def run_variant(fn, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1):
+    return fn(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+
+def _reference_scan_outputs(e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1):
+    """Defensive Python reference: first-match scan + D6 assembly on numpy.
+
+    This is independent of the successor-table machinery and is used as an
+    oracle for the cupy exact_v3 kernel path.  It assumes E3 holds for the
+    input, which is true for the standard Tier-A generator inputs.
+    """
+    nedges = e2c.shape[0]
+    z_aux1 = np.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - EXTRAPOL_DIST
+    fi = flat_idx.astype(np.int64)
+    e2c_0 = e2c[:, 0].astype(np.int64)
+    e2c_1 = e2c[:, 1].astype(np.int64)
+
+    z_ifc_e0 = np.asarray(z_ifc[e2c_0, :], dtype=np.float64)
+    z_ifc_e1 = np.asarray(z_ifc[e2c_1, :], dtype=np.float64)
+    z_me_np = np.asarray(z_me, dtype=np.float64)
+
+    jk_idx = np.arange(nlev, dtype=np.int64)[None, :]
+    edge_hs_mask = np.arange(nedges, dtype=np.int64) >= hs
+    edge_hs1_mask = np.arange(nedges, dtype=np.int64) >= hs1
+    valid_jk = (jk_idx > fi[:, None]) & edge_hs_mask[:, None]
+    phase2_active = valid_jk & (z_me_np < z_aux2[:, None]) & edge_hs1_mask[:, None]
+
+    zdiff_gradp = np.zeros_like(z_mc[e2c])
+    zdiff_gradp[hs:, :, :] = np.expand_dims(z_me_np, axis=1)[hs:, :, :] - z_mc[e2c][hs:, :, :]
+    vertoffset_gradp = np.zeros((nedges, 2, nlev), dtype=np.int32)
+
+    jk1_0 = _first_match_scan_reference(z_ifc_e0, z_me_np, fi)
+    zdiff_gradp[:, 0, :] = np.where(
+        valid_jk,
+        z_me_np - np.take_along_axis(z_mc[e2c_0], jk1_0, axis=1),
+        zdiff_gradp[:, 0, :],
+    )
+    vertoffset_gradp[:, 0, :] = np.where(
+        valid_jk,
+        (jk1_0 - jk_idx).astype(np.int32),
+        vertoffset_gradp[:, 0, :],
+    )
+
+    jk1_1 = _first_match_scan_reference(z_ifc_e1, z_me_np, fi)
+    zdiff_gradp[:, 1, :] = np.where(
+        valid_jk,
+        z_me_np - np.take_along_axis(z_mc[e2c_1], jk1_1, axis=1),
+        zdiff_gradp[:, 1, :],
+    )
+    vertoffset_gradp[:, 1, :] = np.where(
+        valid_jk,
+        (jk1_1 - jk_idx).astype(np.int32),
+        vertoffset_gradp[:, 1, :],
+    )
+
+    if hs1 < nedges:
+        z_aux2_v = z_aux2[:, None]
+        jk1_aux_0 = _first_match_scan_reference(z_ifc_e0, z_aux2_v, fi)
+        zdiff_gradp[:, 0, :] = np.where(
+            phase2_active,
+            z_aux2_v - np.take_along_axis(z_mc[e2c_0], jk1_aux_0, axis=1),
+            zdiff_gradp[:, 0, :],
+        )
+        vertoffset_gradp[:, 0, :] = np.where(
+            phase2_active,
+            (jk1_aux_0 - jk_idx).astype(np.int32),
+            vertoffset_gradp[:, 0, :],
+        )
+
+        jk1_aux_1 = _first_match_scan_reference(z_ifc_e1, z_aux2_v, fi)
+        zdiff_gradp[:, 1, :] = np.where(
+            phase2_active,
+            z_aux2_v - np.take_along_axis(z_mc[e2c_1], jk1_aux_1, axis=1),
+            zdiff_gradp[:, 1, :],
+        )
+        vertoffset_gradp[:, 1, :] = np.where(
+            phase2_active,
+            (jk1_aux_1 - jk_idx).astype(np.int32),
+            vertoffset_gradp[:, 1, :],
+        )
+
+    return zdiff_gradp, vertoffset_gradp
+
+
+def fingerprint_info(flat_idx, nlev, z_me, z_aux2, z_ifc, e2c, hs1, nedges):
+    bc = np.bincount(np.asarray(flat_idx), minlength=nlev)
+    bins = {
+        "0": int(bc[0]),
+        "1..9": int(bc[1:10].sum()),
+        "10..29": int(bc[10:30].sum()),
+        "30..49": int(bc[30:50].sum()),
+        "50..59": int(bc[50:60].sum()),
+    }
+    jk = np.arange(nlev)[None, :]
+    nudg = np.arange(nedges)[:, None] >= hs1
+    z_me_np = np.asarray(z_me if isinstance(z_me, np.ndarray) else z_me.get())
+    z_aux2_np = np.asarray(z_aux2 if isinstance(z_aux2, np.ndarray) else z_aux2.get())
+    flat_idx_np = np.asarray(flat_idx if isinstance(flat_idx, np.ndarray) else flat_idx.get())
+    p2 = (jk > flat_idx_np[:, None]) & nudg & (z_me_np < z_aux2_np[:, None])
+    ep = _endpoint_count(e2c, z_ifc, flat_idx, z_aux2, hs1, nedges, nlev)
+    return {
+        "bins": bins,
+        "phase2_active": int(p2.any(1).sum()),
+        "endpoint_count": ep,
+    }
+
+
+def build_endpoint_forcing_inputs():
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    cell1 = 1
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    topography[cell1] = FULL_HEIGHT - (nlev - 2) * (FULL_HEIGHT - topography[cell0]) / nlev + 6.0
+
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = FULL_HEIGHT - k * (FULL_HEIGHT - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+
+    flat_idx = np.zeros((nedges,), dtype=np.int32)
+    flat_idx[e0] = nlev - 2
+    z_me[e0, nlev - 1] = z_ifc[cell0, nlev - 1]
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+def run_endpoint_forcing():
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0 = (
+        build_endpoint_forcing_inputs()
+    )
+
+    z_aux1 = np.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - EXTRAPOL_DIST
+
+    assert flat_idx[e0] < nlev - 1
+    assert z_aux2[e0] > z_ifc[cell0, flat_idx[e0]]
+    for c in (0, 1):
+        for jk in range(flat_idx[e0] + 1, nlev):
+            assert z_me[e0, jk] <= z_ifc[e2c[e0, c], flat_idx[e0]]
+    assert e0 >= hs1
+    assert z_me[e0, nlev - 1] < z_aux2[e0]
+
+    golden_zdiff, golden_vert = main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+    candidate_zdiff, candidate_vert = run_variant(
+        compute_zdiff_gradp_v2, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    exact_zdiff, exact_vert = run_variant(
+        compute_zdiff_gradp_exact, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    exact2_zdiff, exact2_vert = run_variant(
+        compute_zdiff_gradp_exact_v2, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    exact3_zdiff, exact3_vert = run_variant(
+        compute_zdiff_gradp_exact_v3, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    dispatch_zdiff, dispatch_vert = run_variant(
+        compute_zdiff_gradp_dispatch, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    baseline_zdiff, baseline_vert = run_variant(
+        compute_zdiff_gradp, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+
+    candidate_matches = np.allclose(candidate_zdiff, golden_zdiff) and np.array_equal(
+        candidate_vert, golden_vert
+    )
+    exact_matches = np.allclose(exact_zdiff, golden_zdiff) and np.array_equal(
+        exact_vert, golden_vert
+    )
+    exact2_matches = np.allclose(exact2_zdiff, golden_zdiff) and np.array_equal(
+        exact2_vert, golden_vert
+    )
+    exact3_matches = np.allclose(exact3_zdiff, golden_zdiff) and np.array_equal(
+        exact3_vert, golden_vert
+    )
+    dispatch_matches = np.allclose(dispatch_zdiff, golden_zdiff) and np.array_equal(
+        dispatch_vert, golden_vert
+    )
+    baseline_diverges = not np.allclose(baseline_zdiff, golden_zdiff) or not np.array_equal(
+        baseline_vert, golden_vert
+    )
+    ep = int(
+        (z_aux2[e0] > z_ifc[e2c[e0, 0], flat_idx[e0]])
+        + (z_aux2[e0] > z_ifc[e2c[e0, 1], flat_idx[e0]])
+    )
+    return {
+        "endpoint_count": ep,
+        "candidate_matches_golden": bool(candidate_matches),
+        "baseline_diverges": bool(baseline_diverges),
+        "exact_matches_golden": bool(exact_matches),
+        "exact2_matches_golden": bool(exact2_matches),
+        "exact2_path": _zdiff_mod._LAST_EXACT_V2_PATH,
+        "exact3_matches_golden": bool(exact3_matches),
+        "exact3_path": _zdiff_mod._LAST_EXACT_V3_PATH,
+        "dispatch_matches_golden": bool(dispatch_matches),
+        "dispatch_path": _zdiff_mod._LAST_DISPATCH_PATH,
+    }
+
+
+def build_p1_interior_tie_inputs():
+    """P1: interior z_me/z_ifc tie; E1 holds."""
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    fi = 2
+    tie_level = fi + 1
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = FULL_HEIGHT - k * (FULL_HEIGHT - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    # Query exactly equals an interior interface on the forced edge, between fi and nlev.
+    # z_ifc itself remains strictly decreasing (E1 holds); the tie is z_me == z_ifc.
+    z_me[e0, fi + 1] = z_ifc[cell0, tie_level]
+
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+    flat_idx[e0] = fi
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+def build_p2_zero_thickness_inputs():
+    """P2: one zero-thickness level; all finite, query between neighbors."""
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    fi = 1
+    thin_level = 4
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = FULL_HEIGHT - k * (FULL_HEIGHT - top) / nlev
+
+    # Zero-thickness level in cell0.
+    z_ifc[cell0, thin_level + 1] = z_ifc[cell0, thin_level]
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+    # Query strictly between surrounding interfaces.
+    z_me[e0, fi + 1] = 0.5 * (z_ifc[cell0, thin_level - 1] + z_ifc[cell0, thin_level + 2])
+
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0
+
+
+def build_p3_e3_violation_inputs():
+    """P3: z_me strictly increasing over [fi+1, nlev-1] on one edge; E1 holds."""
+    nedges = 4
+    ncells = 4
+    nlev = 8
+    hs = 0
+    hs1 = 2
+    e0 = 2
+    cell0 = 0
+    fi = 2
+
+    topography = np.array([1000.0, 1000.0, 2000.0, 1500.0], dtype=np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = FULL_HEIGHT - k * (FULL_HEIGHT - top) / nlev
+
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    e2c = np.array([[0, 1], [2, 3], [0, 1], [2, 3]], dtype=np.int64)
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+
+    flat_idx = np.full((nedges,), fi, dtype=np.int32)
+
+    # Force strictly increasing z_me over the active segment, crossing bracket
+    # boundaries upward so the carry semantics differ from a fresh per-jk scan.
+    z_me[e0, fi + 1] = 0.5 * (z_ifc[cell0, fi + 1] + z_ifc[cell0, fi + 2])
+    z_me[e0, fi + 2] = 0.5 * (z_ifc[cell0, fi] + z_ifc[cell0, fi + 1])
+    z_me[e0, fi + 3] = 0.5 * (z_ifc[cell0, fi - 1] + z_ifc[cell0, fi])
+    z_me[e0, fi + 4] = 0.5 * (z_ifc[cell0, fi - 2] + z_ifc[cell0, fi - 1])
+    z_me[e0, nlev - 1] = z_ifc[cell0, 0] - 100.0
+
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, 0
+
+
+def run_weird_input_probe(builder, name):
+    """Run one weird-input probe; return record dict per the amended schema."""
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, e0, cell0 = builder()
+
+    golden_zdiff, golden_vert = main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+
+    os.environ["ICON4PY_VALIDATE_ZDIFF_GRADP"] = "1"
+
+    exact_zdiff, exact_vert = run_variant(
+        compute_zdiff_gradp_exact, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    exact_matches = np.allclose(exact_zdiff, golden_zdiff) and np.array_equal(
+        exact_vert, golden_vert
+    )
+    if not exact_matches:
+        _log(f"Probe {name}: exact does not match golden")
+        sys.exit(1)
+
+    exact2_zdiff, exact2_vert = run_variant(
+        compute_zdiff_gradp_exact_v2, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    exact2_matches = np.allclose(exact2_zdiff, golden_zdiff) and np.array_equal(
+        exact2_vert, golden_vert
+    )
+    exact2_path = _zdiff_mod._LAST_EXACT_V2_PATH
+    exact3_zdiff, exact3_vert = run_variant(
+        compute_zdiff_gradp_exact_v3, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    exact3_matches = np.allclose(exact3_zdiff, golden_zdiff) and np.array_equal(
+        exact3_vert, golden_vert
+    )
+    exact3_path = _zdiff_mod._LAST_EXACT_V3_PATH
+    if not exact3_matches:
+        _log(f"Probe {name}: exact_v3 does not match golden")
+        sys.exit(1)
+    if not exact2_matches:
+        _log(f"Probe {name}: exact_v2 does not match golden")
+        sys.exit(1)
+
+    dispatch_zdiff, dispatch_vert = run_variant(
+        compute_zdiff_gradp_dispatch, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    dispatch_matches = np.allclose(dispatch_zdiff, golden_zdiff) and np.array_equal(
+        dispatch_vert, golden_vert
+    )
+    dispatch_path = _zdiff_mod._LAST_DISPATCH_PATH
+
+    record = {
+        "name": name,
+        "exact_matches_golden": True,
+        "exact2_matches_golden": True,
+        "exact2_path": exact2_path,
+        "exact3_matches_golden": True,
+        "exact3_path": exact3_path,
+        "dispatch_matches_golden": bool(dispatch_matches),
+        "dispatch_path": dispatch_path,
+    }
+
+    if name == "P1":
+        candidate_zdiff, candidate_vert = run_variant(
+            compute_zdiff_gradp_v2, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+        )
+        v2_diverges = not (
+            np.allclose(candidate_zdiff, golden_zdiff)
+            and np.array_equal(candidate_vert, golden_vert)
+        )
+        if not v2_diverges:
+            _log("Probe P1: v2 unexpectedly matched golden")
+            sys.exit(1)
+        record["v2_diverges"] = True
+        if dispatch_matches:
+            _log("Probe P1: dispatch unexpectedly matched golden")
+            sys.exit(1)
+        if dispatch_path != "fast":
+            _log("Probe P1: dispatch did not route to v2 fast path")
+            sys.exit(1)
+        if exact3_path != "fast":
+            _log("Probe P1: exact_v3 did not use fast path")
+            sys.exit(1)
+    elif name == "P2":
+        try:
+            run_variant(
+                compute_zdiff_gradp_v2, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+            )
+            v2_raised = False
+        except ValueError:
+            v2_raised = True
+        if not v2_raised:
+            _log("Probe P2: v2 did not raise")
+            sys.exit(1)
+        record["v2_raised"] = True
+        if not dispatch_matches:
+            _log("Probe P2: dispatch did not match golden")
+            sys.exit(1)
+        if dispatch_path != "exact":
+            _log("Probe P2: dispatch did not route to exact_v2")
+            sys.exit(1)
+
+    elif name == "P3":
+        try:
+            run_variant(
+                compute_zdiff_gradp_v2, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+            )
+            v2_raised = False
+        except ValueError:
+            v2_raised = True
+        if not v2_raised:
+            _log("Probe P3: v2 did not raise")
+            sys.exit(1)
+        if exact2_path != "carry":
+            _log("Probe P3: exact_v2 did not use carry path")
+            sys.exit(1)
+        if dispatch_path != "exact":
+            _log("Probe P3: dispatch did not route to exact_v2")
+            sys.exit(1)
+        if exact3_path != "carry":
+            _log("Probe P3: exact_v3 did not use carry path")
+            sys.exit(1)
+        record["exact3_path"] = "carry"
+        record["v2_raised"] = True
+        record["exact2_path"] = "carry"
+        record["dispatch_path"] = "exact"
+
+    else:
+        raise RuntimeError(f"Unknown probe {name}")
+
+    return record
+
+
+def count_mismatches(a, b):
+    a_np = np.asarray(a if isinstance(a, np.ndarray) else a.get())
+    b_np = np.asarray(b if isinstance(b, np.ndarray) else b.get())
+    return int((a_np != b_np).sum())
+
+
+def count_mismatches_close(a, b):
+    a_np = np.asarray(a if isinstance(a, np.ndarray) else a.get())
+    b_np = np.asarray(b if isinstance(b, np.ndarray) else b.get())
+    return int((~np.isclose(a_np, b_np)).sum())
+
+
+def run_self_check():
+    nedges, ncells, nlev = 49152, 32768, 60
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(nedges, ncells, nlev, SEED)
+    info = fingerprint_info(
+        flat_idx, nlev, z_me, z_aux2_from(topography, e2c), z_ifc, e2c, hs1, nedges
+    )
+    expected = {
+        "0": 18,
+        "1..9": 2500,
+        "10..29": 3829,
+        "30..49": 1898,
+        "50..59": 40907,
+    }
+    ok = info["bins"] == expected and info["endpoint_count"] == 0
+    if not ok:
+        _log(f"Self-check failed: {info}")
+        sys.exit(1)
+    if info["phase2_active"] != 4326:
+        _log(f"Self-check phase2_active mismatch: {info['phase2_active']} != 4326")
+        sys.exit(1)
+    return info
+
+
+def z_aux2_from(topography, e2c):
+    return np.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]]) - EXTRAPOL_DIST
+
+
+def _build_tier_a_inputs():
+    nedges, ncells, nlev = 4096, 2731, 60
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(nedges, ncells, nlev, SEED)
+    return e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+
+
+def run_tier_a():
+    nedges, ncells, nlev = 4096, 2731, 60
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(nedges, ncells, nlev, SEED)
+    z_aux2 = z_aux2_from(topography, e2c)
+    info = fingerprint_info(flat_idx, nlev, z_me, z_aux2, z_ifc, e2c, hs1, nedges)
+    if info["endpoint_count"] != 0:
+        _log(f"Tier A endpoint count nonzero: {info['endpoint_count']}")
+        sys.exit(1)
+
+    t0 = time.perf_counter()
+    golden = main_reference(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+    main_ref_seconds = time.perf_counter() - t0
+
+    scale_change = None
+    if main_ref_seconds > TIER_A_MAIN_REF_CAP_SECONDS:
+        nedges_before = nedges
+        nedges = nedges // 2
+        ncells = ncells // 2
+        scale_change = {"nedges_before": nedges_before, "nedges_after": nedges}
+        e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(
+            nedges, ncells, nlev, SEED
+        )
+        z_aux2 = z_aux2_from(topography, e2c)
+        info = fingerprint_info(flat_idx, nlev, z_me, z_aux2, z_ifc, e2c, hs1, nedges)
+        if info["endpoint_count"] != 0:
+            _log(f"Tier A reduced endpoint count nonzero: {info['endpoint_count']}")
+            sys.exit(1)
+        t0 = time.perf_counter()
+        golden = main_reference(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=hs,
+            horizontal_start_1=hs1,
+        )
+        main_ref_seconds = time.perf_counter() - t0
+
+    variants = {}
+    variant_results = {}
+    for name, fn in [
+        ("numpy-baseline", compute_zdiff_gradp),
+        ("numpy-candidate", compute_zdiff_gradp_v2),
+        ("numpy-exact", compute_zdiff_gradp_exact),
+        ("numpy-exact2", compute_zdiff_gradp_exact_v2),
+        ("numpy-exact3", compute_zdiff_gradp_exact_v3),
+        ("numpy-dispatch", compute_zdiff_gradp_dispatch),
+    ]:
+        result = run_variant(fn, e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1)
+        variant_results[name] = result
+        mismatches_zdiff = count_mismatches_close(result[0], golden[0])
+        mismatches_vert = count_mismatches(result[1], golden[1])
+        variants[name] = {"mismatches_vs_golden": mismatches_zdiff + mismatches_vert}
+        if mismatches_zdiff or mismatches_vert:
+            _log(f"Tier A {name} mismatch: zdiff={mismatches_zdiff}, vert={mismatches_vert}")
+            sys.exit(1)
+
+    # Defensive reference-scan check: independent Python scan == exact2 machinery.
+    reference_outputs = _reference_scan_outputs(
+        e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1
+    )
+    ref_vs_exact2_zdiff = count_mismatches_close(
+        reference_outputs[0], variant_results["numpy-exact2"][0]
+    )
+    ref_vs_exact2_vert = count_mismatches(reference_outputs[1], variant_results["numpy-exact2"][1])
+    if ref_vs_exact2_zdiff or ref_vs_exact2_vert:
+        _log(
+            f"Tier A reference scan mismatch vs numpy-exact2: "
+            f"zdiff={ref_vs_exact2_zdiff}, vert={ref_vs_exact2_vert}"
+        )
+        sys.exit(1)
+    variants["numpy-exact2"]["reference_scan_mismatches"] = ref_vs_exact2_zdiff + ref_vs_exact2_vert
+
+    try:
+        import cupy as cp
+
+        e2c_cu, z_me_cu, z_mc_cu, z_ifc_cu, flat_idx_cu, topography_cu = _to_namespace(
+            [e2c, z_me, z_mc, z_ifc, flat_idx, topography], cp
+        )
+        for name, fn in [
+            ("cupy-baseline", compute_zdiff_gradp),
+            ("cupy-candidate", compute_zdiff_gradp_v2),
+            ("cupy-exact", compute_zdiff_gradp_exact),
+            ("cupy-exact2", compute_zdiff_gradp_exact_v2),
+            ("cupy-exact3", compute_zdiff_gradp_exact_v3),
+            ("cupy-dispatch", compute_zdiff_gradp_dispatch),
+        ]:
+            result = run_variant(
+                fn, e2c_cu, z_me_cu, z_mc_cu, z_ifc_cu, flat_idx_cu, topography_cu, nlev, hs, hs1
+            )
+            mismatches_zdiff = count_mismatches_close(result[0], golden[0])
+            mismatches_vert = count_mismatches(result[1], golden[1])
+            variants[name] = {"mismatches_vs_golden": mismatches_zdiff + mismatches_vert}
+            if mismatches_zdiff or mismatches_vert:
+                _log(f"Tier A {name} mismatch: zdiff={mismatches_zdiff}, vert={mismatches_vert}")
+                sys.exit(1)
+            if name == "cupy-exact3":
+                exact3_vs_exact2_zdiff = count_mismatches_close(
+                    result[0], variant_results["numpy-exact2"][0]
+                )
+                exact3_vs_exact2_vert = count_mismatches(
+                    result[1], variant_results["numpy-exact2"][1]
+                )
+                if exact3_vs_exact2_zdiff or exact3_vs_exact2_vert:
+                    _log(
+                        f"Tier A cupy-exact3 mismatch vs numpy-exact2: "
+                        f"zdiff={exact3_vs_exact2_zdiff}, vert={exact3_vs_exact2_vert}"
+                    )
+                    sys.exit(1)
+                variants[name]["mismatches_vs_numpy_exact2"] = (
+                    exact3_vs_exact2_zdiff + exact3_vs_exact2_vert
+                )
+    except ImportError:
+        pass
+
+    endpoint_forcing = run_endpoint_forcing()
+    if (
+        not endpoint_forcing["candidate_matches_golden"]
+        or not endpoint_forcing["exact_matches_golden"]
+        or not endpoint_forcing["exact2_matches_golden"]
+        or not endpoint_forcing["exact3_matches_golden"]
+        or not endpoint_forcing["baseline_diverges"]
+    ):
+        _log(f"Endpoint forcing failed: {endpoint_forcing}")
+        sys.exit(1)
+
+    probes = [
+        run_weird_input_probe(build_p1_interior_tie_inputs, "P1"),
+        run_weird_input_probe(build_p2_zero_thickness_inputs, "P2"),
+        run_weird_input_probe(build_p3_e3_violation_inputs, "P3"),
+    ]
+
+    result = {
+        "endpoint_count": info["endpoint_count"],
+        "fingerprint": info["bins"],
+        "main_reference_seconds": float(main_ref_seconds),
+        "variants": variants,
+        "endpoint_forcing": endpoint_forcing,
+        "weird_input_probes": probes,
+    }
+    if scale_change is not None:
+        result["scale_change"] = scale_change
+    return result
+
+
+def _time_variant(fn, args, array_ns, timed_reps):
+    times = []
+    for _ in range(timed_reps):
+        _sync(array_ns)
+        t0 = time.perf_counter()
+        run_variant(fn, *args)
+        _sync(array_ns)
+        t1 = time.perf_counter()
+        times.append((t1 - t0) * 1000.0)
+    return times
+
+
+def run_tier_b(dev: bool):
+    if dev:
+        nedges, ncells, nlev = 49152, 32768, 60
+        timed_reps = 5
+    else:
+        nedges, ncells, nlev = 491520, 327680, 60
+        timed_reps = 25
+
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(nedges, ncells, nlev, SEED)
+    z_aux2 = z_aux2_from(topography, e2c)
+    info = fingerprint_info(flat_idx, nlev, z_me, z_aux2, z_ifc, e2c, hs1, nedges)
+    if info["endpoint_count"] != 0:
+        _log(f"Tier B endpoint count nonzero: {info['endpoint_count']}")
+        sys.exit(1)
+
+    backends = [("numpy", np)]
+    try:
+        import cupy as cp
+
+        backends.append(("cupy", cp))
+    except ImportError:
+        pass
+
+    # Per-backend inputs and variant definitions.
+    backend_inputs = {}
+    variant_defs = []
+    for backend_name, array_ns in backends:
+        e2c_b, z_me_b, z_mc_b, z_ifc_b, flat_idx_b, topography_b = _to_namespace(
+            [e2c, z_me, z_mc, z_ifc, flat_idx, topography], array_ns
+        )
+        backend_inputs[backend_name] = (
+            array_ns,
+            e2c_b,
+            z_me_b,
+            z_mc_b,
+            z_ifc_b,
+            flat_idx_b,
+            topography_b,
+        )
+        variant_defs.append(
+            (f"{backend_name}-baseline", compute_zdiff_gradp, False),
+        )
+        variant_defs.append(
+            (f"{backend_name}-candidate", compute_zdiff_gradp_v2, True),
+        )
+        variant_defs.append((f"{backend_name}-exact", compute_zdiff_gradp_exact, True))
+        variant_defs.append((f"{backend_name}-exact2", compute_zdiff_gradp_exact_v2, True))
+        variant_defs.append((f"{backend_name}-exact3", compute_zdiff_gradp_exact_v3, True))
+        variant_defs.append((f"{backend_name}-dispatch", compute_zdiff_gradp_dispatch, True))
+
+    # Bitwise equality check before timing (validation default ON is fine here).
+    results = {}
+    for name, fn, _ in variant_defs:
+        backend_name = name.split("-")[0]
+        args = backend_inputs[backend_name][1:]
+        results[name] = run_variant(fn, *args, nlev, hs, hs1)
+
+    baseline_by_backend = {}
+    for name, _, _ in variant_defs:
+        backend_name = name.split("-")[0]
+        if "-baseline" in name:
+            baseline_by_backend[backend_name] = results[name]
+
+    for name, result in results.items():
+        backend_name = name.split("-")[0]
+        baseline = baseline_by_backend[backend_name]
+        mismatches_zdiff = count_mismatches_close(result[0], baseline[0])
+        mismatches_vert = count_mismatches(result[1], baseline[1])
+        if mismatches_zdiff or mismatches_vert:
+            _log(
+                f"Tier B {name} mismatch vs baseline: zdiff={mismatches_zdiff}, vert={mismatches_vert}"
+            )
+            sys.exit(1)
+
+    # Standard Tier-B inputs are E3-valid, so exact_v2 must use the fast path.
+    # Standard Tier-B inputs are E3-valid, so exact_v2 and dispatch must use the fast path.
+    if _zdiff_mod._LAST_EXACT_V2_PATH != "fast":
+        _log("Tier B exact_v2 did not record fast path")
+        sys.exit(1)
+    if _zdiff_mod._LAST_DISPATCH_PATH != "fast":
+        _log("Tier B dispatch did not route to v2 fast path")
+        sys.exit(1)
+    if _zdiff_mod._LAST_EXACT_V3_PATH != "fast":
+        _log("Tier B exact_v3 did not record fast path")
+        sys.exit(1)
+    # Timed validation on/off matrix.
+    timings: dict[str, dict[str, list[float]]] = {
+        name: {"on": [], "off": []} for name, _, _ in variant_defs
+    }
+
+    for mode_idx, mode in enumerate(("off", "on")):
+        os.environ["ICON4PY_VALIDATE_ZDIFF_GRADP"] = "0" if mode == "off" else "1"
+
+        # Per-mode warmup: 3 reps per variant before any timed reps.
+        for name, fn, has_modes in variant_defs:
+            if mode_idx == 1 and not has_modes:
+                continue
+            backend_name = name.split("-")[0]
+            array_ns, *args = backend_inputs[backend_name]
+            base_args = (*args, nlev, hs, hs1)
+            for _ in range(3):
+                run_variant(fn, *base_args)
+            _sync(array_ns)
+
+        # Timed reps: round-robin across variants within this mode.
+        for _ in range(timed_reps):
+            for name, fn, has_modes in variant_defs:
+                if mode_idx == 1 and not has_modes:
+                    continue
+                backend_name = name.split("-")[0]
+                array_ns, *args = backend_inputs[backend_name]
+                base_args = (*args, nlev, hs, hs1)
+                _sync(array_ns)
+                t0 = time.perf_counter()
+                run_variant(fn, *base_args)
+                _sync(array_ns)
+                t1 = time.perf_counter()
+                timings[name][mode].append((t1 - t0) * 1000.0)
+
+    # Baseline has no validation modes; its on/off entries are identical.
+    for name, _, has_modes in variant_defs:
+        if not has_modes:
+            timings[name]["on"] = timings[name]["off"][:]
+    variants = {}
+    for name, _, has_modes in variant_defs:
+        backend_name = name.split("-")[0]
+        baseline = baseline_by_backend[backend_name]
+        mismatches_zdiff = count_mismatches_close(results[name][0], baseline[0])
+        mismatches_vert = count_mismatches(results[name][1], baseline[1])
+        times_on = timings[name]["on"]
+        times_off = timings[name]["off"]
+        median_on = float(np.median(times_on))
+        median_off = float(np.median(times_off))
+        variants[name] = {
+            "validation_on": {"median_ms": median_on, "min_ms": float(np.min(times_on))},
+            "validation_off": {"median_ms": median_off, "min_ms": float(np.min(times_off))},
+            "validation_overhead_ms": median_on - median_off,
+            "validation_overhead_ratio": median_on / median_off if median_off > 0 else float("inf"),
+            "mismatches_vs_baseline": mismatches_zdiff + mismatches_vert,
+            "path": (
+                _zdiff_mod._LAST_EXACT_V2_PATH
+                if "exact2" in name
+                else (
+                    _zdiff_mod._LAST_EXACT_V3_PATH
+                    if "exact3" in name
+                    else (_zdiff_mod._LAST_DISPATCH_PATH if "dispatch" in name else None)
+                )
+            ),
+        }
+
+    return {
+        "endpoint_count": info["endpoint_count"],
+        "variants": variants,
+    }
+
+
+def _profile_exact_query_succ(z_ifc_k, v, array_ns):
+    """Replicate _exact_query_succ with per-phase wall timing."""
+    _chunk, nlev_p1 = z_ifc_k.shape
+    nlev = nlev_p1 - 1
+
+    a_idx = array_ns.arange(nlev, dtype=array_ns.int64)
+    z_ifc_k = z_ifc_k.astype(array_ns.float64)
+    v = v.astype(array_ns.float64)
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    upper = z_ifc_k[:, None, :-1]
+    lower = z_ifc_k[:, None, 1:]
+    qv = v[:, :, None]
+    bracket = (upper >= qv) & (qv >= lower)
+    unconditional = a_idx[None, None, :] == (nlev - 1)
+    idx = array_ns.where(bracket | unconditional, a_idx[None, None, :], nlev)
+    _sync(array_ns)
+    match_matrix_ms = (time.perf_counter() - t0) * 1000.0
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    if nlev <= 127:
+        idx = idx.astype(array_ns.int8)
+    elif nlev <= 32767:
+        idx = idx.astype(array_ns.int16)
+    else:
+        raise ValueError(
+            f"compute_zdiff_gradp_exact successor tables support nlev <= 32767, got {nlev}."
+        )
+    _sync(array_ns)
+    idx_construct_ms = (time.perf_counter() - t0) * 1000.0
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    S = idx.copy()
+    step = 1
+    while step < nlev:
+        S[..., :-step] = array_ns.minimum(S[..., :-step], S[..., step:])
+        step *= 2
+    _sync(array_ns)
+    doubling_scan_ms = (time.perf_counter() - t0) * 1000.0
+
+    return S, {
+        "match_matrix_ms": match_matrix_ms,
+        "idx_construct_ms": idx_construct_ms,
+        "doubling_scan_ms": doubling_scan_ms,
+    }
+
+
+def _profile_exact_carry_loop(succ, fi, active, array_ns):
+    """Replicate _exact_carry_loop with operation counting and timing."""
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    chunk, _nq, nlev = succ.shape
+    single_query = _nq == 1
+    t = fi.astype(array_ns.int64).copy()
+    jk1_out = array_ns.empty((chunk, nlev), dtype=array_ns.int64)
+    ops = 0
+    for jk in range(nlev):
+        src = succ[:, 0:1, :] if single_query else succ[:, jk : jk + 1, :]
+        jk1 = array_ns.take_along_axis(src, t[:, None, None], axis=2)[:, 0, 0]
+        ops += 1
+        jk1_out[:, jk] = jk1
+        ops += 1
+        t = array_ns.where(active[:, jk], jk1, t)
+        ops += 1
+    _sync(array_ns)
+    elapsed_ms = (time.perf_counter() - t0) * 1000.0
+    return jk1_out, {"time_ms": elapsed_ms, "ops": ops}
+
+
+def _profile_exact_variant(
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1, chunk_size=None
+):
+    """Profile exact variant phase times without modifying product code."""
+    array_ns = data_alloc.array_namespace(z_mc)
+    nedges = e2c.shape[0]
+
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0
+
+    fi = flat_idx.astype(array_ns.int64)
+    e2c_0 = e2c[:, 0].astype(array_ns.int64)
+    e2c_1 = e2c[:, 1].astype(array_ns.int64)
+
+    z_ifc_e0 = z_ifc[e2c_0, :]
+    z_ifc_e1 = z_ifc[e2c_1, :]
+
+    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    edge_hs_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs
+    edge_hs1_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs1
+    valid_jk = (jk_idx > fi[:, None]) & edge_hs_mask[:, None]
+    phase2_active = valid_jk & (z_me < z_aux2[:, None]) & edge_hs1_mask[:, None]
+
+    if chunk_size is None:
+        mem_per_edge = nlev * 2 * (nlev + 1)
+        chunk_size = max(1, min(nedges, (256 * 1024 * 1024) // mem_per_edge))
+
+    timers = {
+        "query_match_matrix_ms": 0.0,
+        "query_idx_construct_ms": 0.0,
+        "query_doubling_scan_ms": 0.0,
+        "carry_loop_p1_c1_ms": 0.0,
+        "carry_loop_p1_c1_ops": 0,
+        "carry_loop_p2_c0_ms": 0.0,
+        "carry_loop_p2_c0_ops": 0,
+        "carry_loop_p2_c1_ms": 0.0,
+        "carry_loop_p2_c1_ops": 0,
+        "base_write_ms": 0.0,
+        "output_assembly_ms": 0.0,
+    }
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    zdiff_gradp[hs:, :, :] = array_ns.expand_dims(z_me, axis=1)[hs:, :, :] - z_mc[e2c][hs:, :, :]
+    vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
+    _sync(array_ns)
+    timers["base_write_ms"] = (time.perf_counter() - t0) * 1000.0
+
+    for start in range(0, nedges, chunk_size):
+        end = min(start + chunk_size, nedges)
+        chunk = slice(start, end)
+        z_ifc_k0 = z_ifc_e0[chunk, :].astype(array_ns.float64)
+        z_ifc_k1 = z_ifc_e1[chunk, :].astype(array_ns.float64)
+        z_me_c = z_me[chunk, :].astype(array_ns.float64)
+        fi_c = fi[chunk]
+        valid_jk_c = valid_jk[chunk, :]
+
+        # Phase 1, cell 0: fresh scan at every jk.
+        succ0, t = _profile_exact_query_succ(z_ifc_k0, z_me_c, array_ns)
+        timers["query_match_matrix_ms"] += t["match_matrix_ms"]
+        timers["query_idx_construct_ms"] += t["idx_construct_ms"]
+        timers["query_doubling_scan_ms"] += t["doubling_scan_ms"]
+
+        jk1_0 = _exact_phase1_cell0(succ0, fi_c, array_ns)
+        z_mc_e0 = z_mc[e2c_0[chunk]]
+
+        _sync(array_ns)
+        t0 = time.perf_counter()
+        zdiff_gradp[chunk, 0, :] = array_ns.where(
+            valid_jk_c,
+            z_me_c - array_ns.take_along_axis(z_mc_e0, jk1_0, axis=1),
+            zdiff_gradp[chunk, 0, :],
+        )
+        vertoffset_gradp[chunk, 0, :] = array_ns.where(
+            valid_jk_c,
+            (jk1_0 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[chunk, 0, :],
+        )
+        _sync(array_ns)
+        timers["output_assembly_ms"] += (time.perf_counter() - t0) * 1000.0
+
+        # Phase 1, cell 1: carry t = jk_start between jk iterations.
+        succ1, t = _profile_exact_query_succ(z_ifc_k1, z_me_c, array_ns)
+        timers["query_match_matrix_ms"] += t["match_matrix_ms"]
+        timers["query_idx_construct_ms"] += t["idx_construct_ms"]
+        timers["query_doubling_scan_ms"] += t["doubling_scan_ms"]
+
+        jk1_1, t_carry = _profile_exact_carry_loop(succ1, fi_c, valid_jk_c, array_ns)
+        timers["carry_loop_p1_c1_ms"] += t_carry["time_ms"]
+        timers["carry_loop_p1_c1_ops"] += t_carry["ops"]
+        z_mc_e1 = z_mc[e2c_1[chunk]]
+
+        _sync(array_ns)
+        t0 = time.perf_counter()
+        zdiff_gradp[chunk, 1, :] = array_ns.where(
+            valid_jk_c,
+            z_me_c - array_ns.take_along_axis(z_mc_e1, jk1_1, axis=1),
+            zdiff_gradp[chunk, 1, :],
+        )
+        vertoffset_gradp[chunk, 1, :] = array_ns.where(
+            valid_jk_c,
+            (jk1_1 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[chunk, 1, :],
+        )
+        _sync(array_ns)
+        timers["output_assembly_ms"] += (time.perf_counter() - t0) * 1000.0
+
+        # Phase 2: applies to edges [hs1:] only.
+        if hs1 < nedges:
+            phase2_active_c = phase2_active[chunk, :]
+            z_aux2_v = z_aux2[chunk, None].astype(array_ns.float64)
+
+            succ2_0, t = _profile_exact_query_succ(z_ifc_k0, z_aux2_v, array_ns)
+            timers["query_match_matrix_ms"] += t["match_matrix_ms"]
+            timers["query_idx_construct_ms"] += t["idx_construct_ms"]
+            timers["query_doubling_scan_ms"] += t["doubling_scan_ms"]
+
+            jk1_aux_0, t_carry = _profile_exact_carry_loop(succ2_0, fi_c, phase2_active_c, array_ns)
+            timers["carry_loop_p2_c0_ms"] += t_carry["time_ms"]
+            timers["carry_loop_p2_c0_ops"] += t_carry["ops"]
+
+            _sync(array_ns)
+            t0 = time.perf_counter()
+            zdiff_gradp[chunk, 0, :] = array_ns.where(
+                phase2_active_c,
+                z_aux2_v - array_ns.take_along_axis(z_mc_e0, jk1_aux_0, axis=1),
+                zdiff_gradp[chunk, 0, :],
+            )
+            vertoffset_gradp[chunk, 0, :] = array_ns.where(
+                phase2_active_c,
+                (jk1_aux_0 - jk_idx).astype(gtx.int32),
+                vertoffset_gradp[chunk, 0, :],
+            )
+            _sync(array_ns)
+            timers["output_assembly_ms"] += (time.perf_counter() - t0) * 1000.0
+
+            succ2_1, t = _profile_exact_query_succ(z_ifc_k1, z_aux2_v, array_ns)
+            timers["query_match_matrix_ms"] += t["match_matrix_ms"]
+            timers["query_idx_construct_ms"] += t["idx_construct_ms"]
+            timers["query_doubling_scan_ms"] += t["doubling_scan_ms"]
+
+            jk1_aux_1, t_carry = _profile_exact_carry_loop(succ2_1, fi_c, phase2_active_c, array_ns)
+            timers["carry_loop_p2_c1_ms"] += t_carry["time_ms"]
+            timers["carry_loop_p2_c1_ops"] += t_carry["ops"]
+
+            _sync(array_ns)
+            t0 = time.perf_counter()
+            zdiff_gradp[chunk, 1, :] = array_ns.where(
+                phase2_active_c,
+                z_aux2_v - array_ns.take_along_axis(z_mc_e1, jk1_aux_1, axis=1),
+                zdiff_gradp[chunk, 1, :],
+            )
+            vertoffset_gradp[chunk, 1, :] = array_ns.where(
+                phase2_active_c,
+                (jk1_aux_1 - jk_idx).astype(gtx.int32),
+                vertoffset_gradp[chunk, 1, :],
+            )
+            _sync(array_ns)
+            timers["output_assembly_ms"] += (time.perf_counter() - t0) * 1000.0
+
+    return zdiff_gradp, vertoffset_gradp, timers, chunk_size
+
+
+def _profile_v2_variant(e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1):
+    """Profile v2 variant phase times for reference."""
+    array_ns = data_alloc.array_namespace(z_mc)
+    nedges = e2c.shape[0]
+
+    timers = {
+        "gathers_ms": 0.0,
+        "fills_ms": 0.0,
+        "searchsorted_ms": 0.0,
+        "output_assembly_ms": 0.0,
+    }
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0
+    fi = flat_idx.astype(array_ns.int64)
+    e2c_0 = e2c[:, 0].astype(array_ns.int64)
+    e2c_1 = e2c[:, 1].astype(array_ns.int64)
+    z_ifc_asc = z_ifc[:, ::-1].copy()
+    z_ifc_e0 = z_ifc_asc[e2c_0]
+    z_ifc_e1 = z_ifc_asc[e2c_1]
+    z_mc_e0 = z_mc[e2c_0]
+    z_mc_e1 = z_mc[e2c_1]
+    _sync(array_ns)
+    timers["gathers_ms"] = (time.perf_counter() - t0) * 1000.0
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
+    fill_high = (
+        array_ns.max(array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()]))
+        + 1.0
+    )
+    fill_low = (
+        array_ns.min(array_ns.stack([z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()]))
+        - 1.0
+    )
+    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    fi_sliced = fi[hs:]
+    z_ifc_mask = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
+        nlev + 1 - fi_sliced[:, None]
+    )
+    z_me_mask = array_ns.arange(nlev, dtype=array_ns.int64)[None, :] <= fi_sliced[:, None]
+    z_ifc_e0_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e0[hs:])
+    z_ifc_e1_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e1[hs:])
+    z_me_m = array_ns.where(z_me_mask, fill_low, z_me[hs:])
+    valid_jk = jk_idx > fi_sliced[:, None]
+    _sync(array_ns)
+    timers["fills_ms"] = (time.perf_counter() - t0) * 1000.0
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    pos_0 = _batched_searchsorted_v2(z_ifc_e0_m, z_me_m, array_ns)
+    jk1_0 = array_ns.clip(nlev - pos_0, fi_sliced[:, None], nlev - 1)
+    pos_1 = _batched_searchsorted_v2(z_ifc_e1_m, z_me_m, array_ns)
+    jk1_1 = array_ns.clip(nlev - pos_1, fi_sliced[:, None], nlev - 1)
+    _sync(array_ns)
+    timers["searchsorted_ms"] = (time.perf_counter() - t0) * 1000.0
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    zdiff_gradp[hs:, :, :] = array_ns.expand_dims(z_me, axis=1)[hs:, :, :] - z_mc[e2c][hs:, :, :]
+    zdiff_gradp[hs:, 0, :] = array_ns.where(
+        valid_jk,
+        z_me[hs:] - array_ns.take_along_axis(z_mc_e0[hs:], jk1_0.astype(array_ns.int64), axis=1),
+        zdiff_gradp[hs:, 0, :],
+    )
+    vertoffset_gradp[hs:, 0, :] = array_ns.where(
+        valid_jk,
+        (jk1_0 - jk_idx).astype(gtx.int32),
+        vertoffset_gradp[hs:, 0, :],
+    )
+    zdiff_gradp[hs:, 1, :] = array_ns.where(
+        valid_jk,
+        z_me[hs:] - array_ns.take_along_axis(z_mc_e1[hs:], jk1_1.astype(array_ns.int64), axis=1),
+        zdiff_gradp[hs:, 1, :],
+    )
+    vertoffset_gradp[hs:, 1, :] = array_ns.where(
+        valid_jk,
+        (jk1_1 - jk_idx).astype(gtx.int32),
+        vertoffset_gradp[hs:, 1, :],
+    )
+    _sync(array_ns)
+    timers["output_assembly_ms"] = (time.perf_counter() - t0) * 1000.0
+
+    if hs1 < nedges:
+        _sync(array_ns)
+        t0 = time.perf_counter()
+        fi_sliced1 = fi[hs1:]
+        z_aux2_v = z_aux2[hs1:, None]
+        z_ifc_mask1 = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
+            nlev + 1 - fi_sliced1[:, None]
+        )
+        z_ifc_e0_m1 = array_ns.where(z_ifc_mask1, fill_high, z_ifc_e0[hs1:])
+        z_ifc_e1_m1 = array_ns.where(z_ifc_mask1, fill_high, z_ifc_e1[hs1:])
+        _sync(array_ns)
+        timers["fills_ms"] += (time.perf_counter() - t0) * 1000.0
+
+        _sync(array_ns)
+        t0 = time.perf_counter()
+        pos_aux_0 = _batched_searchsorted_v2(z_ifc_e0_m1, z_aux2_v, array_ns)
+        jk1_aux_0 = array_ns.clip(nlev - pos_aux_0, fi_sliced1[:, None], nlev - 1)
+        jk1_aux_0 = array_ns.where(
+            pos_aux_0 >= (nlev + 1 - fi_sliced1)[:, None],
+            nlev - 1,
+            jk1_aux_0,
+        )
+        pos_aux_1 = _batched_searchsorted_v2(z_ifc_e1_m1, z_aux2_v, array_ns)
+        jk1_aux_1 = array_ns.clip(nlev - pos_aux_1, fi_sliced1[:, None], nlev - 1)
+        jk1_aux_1 = array_ns.where(
+            pos_aux_1 >= (nlev + 1 - fi_sliced1)[:, None],
+            nlev - 1,
+            jk1_aux_1,
+        )
+        _sync(array_ns)
+        timers["searchsorted_ms"] += (time.perf_counter() - t0) * 1000.0
+
+        _sync(array_ns)
+        t0 = time.perf_counter()
+        phase2_mask = valid_jk[(hs1 - hs) :] & (z_me[hs1:] < z_aux2_v)
+        zdiff_gradp[hs1:, 0, :] = array_ns.where(
+            phase2_mask,
+            z_aux2_v
+            - array_ns.take_along_axis(z_mc_e0[hs1:], jk1_aux_0.astype(array_ns.int64), axis=1),
+            zdiff_gradp[hs1:, 0, :],
+        )
+        vertoffset_gradp[hs1:, 0, :] = array_ns.where(
+            phase2_mask,
+            (jk1_aux_0 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[hs1:, 0, :],
+        )
+        zdiff_gradp[hs1:, 1, :] = array_ns.where(
+            phase2_mask,
+            z_aux2_v
+            - array_ns.take_along_axis(z_mc_e1[hs1:], jk1_aux_1.astype(array_ns.int64), axis=1),
+            zdiff_gradp[hs1:, 1, :],
+        )
+        vertoffset_gradp[hs1:, 1, :] = array_ns.where(
+            phase2_mask,
+            (jk1_aux_1 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[hs1:, 1, :],
+        )
+        _sync(array_ns)
+        timers["output_assembly_ms"] += (time.perf_counter() - t0) * 1000.0
+
+    return zdiff_gradp, vertoffset_gradp, timers
+
+
+def _profile_exact_v2_query_succ(z_ifc_k, v, array_ns, *, _sample_intermediates=False):
+    """Replicate _exact_query_succ with per-phase wall timing.
+
+    Phases match the user's requested decomposition:
+      (a) match-bitflow boolean mask build
+      (b) idx = where(M, arange, large)
+      (c) doubling suffix-minimum scan
+      (d) astype to int8/int16
+    """
+    _chunk, nlev_p1 = z_ifc_k.shape
+    nlev = nlev_p1 - 1
+
+    a_idx = array_ns.arange(nlev, dtype=array_ns.int64)
+
+    z_ifc_k_f64 = z_ifc_k.astype(array_ns.float64)
+    v_f64 = v.astype(array_ns.float64)
+
+    upper = z_ifc_k_f64[:, None, :-1]
+    lower = z_ifc_k_f64[:, None, 1:]
+    qv = v_f64[:, :, None]
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    bracket = (upper >= qv) & (qv >= lower)
+    unconditional = a_idx[None, None, :] == (nlev - 1)
+    M = bracket | unconditional
+    _sync(array_ns)
+    match_matrix_ms = (time.perf_counter() - t0) * 1000.0
+
+    if nlev <= 127:
+        idx_dtype = array_ns.int8
+    elif nlev <= 32767:
+        idx_dtype = array_ns.int16
+    else:
+        raise ValueError(
+            f"compute_zdiff_gradp_exact successor tables support nlev <= 32767, got {nlev}."
+        )
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    a_idx_typed = a_idx.astype(idx_dtype)
+    fill_large = array_ns.asarray(nlev, dtype=idx_dtype)
+    _sync(array_ns)
+    dtype_downcast_ms = (time.perf_counter() - t0) * 1000.0
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    idx = array_ns.where(M, a_idx_typed[None, None, :], fill_large)
+    _sync(array_ns)
+    idx_construct_ms = (time.perf_counter() - t0) * 1000.0
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    S = idx.copy()
+    step = 1
+    while step < nlev:
+        S[..., :-step] = array_ns.minimum(S[..., :-step], S[..., step:])
+        step *= 2
+    _sync(array_ns)
+    doubling_scan_ms = (time.perf_counter() - t0) * 1000.0
+
+    timings = {
+        "match_matrix_ms": match_matrix_ms,
+        "idx_construct_ms": idx_construct_ms,
+        "doubling_scan_ms": doubling_scan_ms,
+        "dtype_downcast_ms": dtype_downcast_ms,
+    }
+    if _sample_intermediates:
+        samples = {
+            "query_match_mask": _sample_array("query_match_mask", M),
+            "query_idx": _sample_array("query_idx", idx),
+            "query_succ": _sample_array("query_succ", S),
+        }
+        return S, timings, samples
+    return S, timings
+
+
+def _profile_exact_v2_variant(e2c, z_me, z_mc, z_ifc, flat_idx, topography, nlev, hs, hs1):
+    """Profile compute_zdiff_gradp_exact_v2 fast path with per-phase timing."""
+    array_ns = data_alloc.array_namespace(z_mc)
+    nedges = e2c.shape[0]
+
+    timers = {
+        k: 0.0
+        for k in [
+            "input_gathers_ms",
+            "base_write_ms",
+            "p1c0_match_matrix_ms",
+            "p1c0_idx_construct_ms",
+            "p1c0_doubling_scan_ms",
+            "p1c0_dtype_downcast_ms",
+            "p1c0_jk1_gather_ms",
+            "p1c1_match_matrix_ms",
+            "p1c1_idx_construct_ms",
+            "p1c1_doubling_scan_ms",
+            "p1c1_dtype_downcast_ms",
+            "p1c1_jk1_gather_ms",
+            "p2c0_match_matrix_ms",
+            "p2c0_idx_construct_ms",
+            "p2c0_doubling_scan_ms",
+            "p2c0_dtype_downcast_ms",
+            "p2c0_jk1_gather_ms",
+            "p2c1_match_matrix_ms",
+            "p2c1_idx_construct_ms",
+            "p2c1_doubling_scan_ms",
+            "p2c1_dtype_downcast_ms",
+            "p2c1_jk1_gather_ms",
+            "output_assembly_ms",
+        ]
+    }
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0
+    fi = flat_idx.astype(array_ns.int64)
+    e2c_0 = e2c[:, 0].astype(array_ns.int64)
+    e2c_1 = e2c[:, 1].astype(array_ns.int64)
+    z_ifc_e0 = z_ifc[e2c_0, :]
+    z_ifc_e1 = z_ifc[e2c_1, :]
+    _sync(array_ns)
+    timers["input_gathers_ms"] = (time.perf_counter() - t0) * 1000.0
+
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    zdiff_gradp[hs:, :, :] = array_ns.expand_dims(z_me, axis=1)[hs:, :, :] - z_mc[e2c][hs:, :, :]
+    vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
+    _sync(array_ns)
+    timers["base_write_ms"] = (time.perf_counter() - t0) * 1000.0
+
+    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    edge_hs_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs
+    edge_hs1_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs1
+    valid_jk = (jk_idx > fi[:, None]) & edge_hs_mask[:, None]
+    phase2_active = valid_jk & (z_me < z_aux2[:, None]) & edge_hs1_mask[:, None]
+
+    itemsize = 1 if nlev <= 127 else 2
+    chunk_size = _exact_v2_chunk_size(nlev, itemsize)
+
+    def _time_jk1_and_assemble(prefix, chunk, S, fi_c, active_c, z_mc_ec, query_v, cell):
+        _sync(array_ns)
+        t0 = time.perf_counter()
+        jk1 = _exact_phase1_cell0(S, fi_c, array_ns).astype(array_ns.int64)
+        _sync(array_ns)
+        timers[f"{prefix}_jk1_gather_ms"] += (time.perf_counter() - t0) * 1000.0
+
+        _sync(array_ns)
+        t0 = time.perf_counter()
+        zdiff_gradp[chunk, cell, :] = array_ns.where(
+            active_c,
+            query_v - array_ns.take_along_axis(z_mc_ec, jk1, axis=1),
+            zdiff_gradp[chunk, cell, :],
+        )
+        vertoffset_gradp[chunk, cell, :] = array_ns.where(
+            active_c,
+            (jk1 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[chunk, cell, :],
+        )
+        _sync(array_ns)
+        timers["output_assembly_ms"] += (time.perf_counter() - t0) * 1000.0
+
+    # Phase 1, cell 0: no carry.
+    p1c0_chunks = 0
+    for chunk in _exact_v2_edge_chunks(hs, nedges, chunk_size):
+        p1c0_chunks += 1
+        z_ifc_k0 = z_ifc_e0[chunk, :].astype(array_ns.float64)
+        z_me_c = z_me[chunk, :].astype(array_ns.float64)
+        fi_c = fi[chunk]
+        valid_jk_c = valid_jk[chunk, :]
+        z_mc_e0 = z_mc[e2c_0[chunk]]
+        S0, qt = _profile_exact_v2_query_succ(z_ifc_k0, z_me_c, array_ns)
+        timers["p1c0_match_matrix_ms"] += qt["match_matrix_ms"]
+        timers["p1c0_idx_construct_ms"] += qt["idx_construct_ms"]
+        timers["p1c0_doubling_scan_ms"] += qt["doubling_scan_ms"]
+        timers["p1c0_dtype_downcast_ms"] += qt["dtype_downcast_ms"]
+        _time_jk1_and_assemble("p1c0", chunk, S0, fi_c, valid_jk_c, z_mc_e0, z_me_c, 0)
+
+    # Phase 1, cell 1: fast path uses fresh scan.
+    p1c1_chunks = 0
+    for chunk in _exact_v2_edge_chunks(hs, nedges, chunk_size):
+        p1c1_chunks += 1
+        z_ifc_k1 = z_ifc_e1[chunk, :].astype(array_ns.float64)
+        z_me_c = z_me[chunk, :].astype(array_ns.float64)
+        fi_c = fi[chunk]
+        valid_jk_c = valid_jk[chunk, :]
+        z_mc_e1 = z_mc[e2c_1[chunk]]
+        S1, qt = _profile_exact_v2_query_succ(z_ifc_k1, z_me_c, array_ns)
+        timers["p1c1_match_matrix_ms"] += qt["match_matrix_ms"]
+        timers["p1c1_idx_construct_ms"] += qt["idx_construct_ms"]
+        timers["p1c1_doubling_scan_ms"] += qt["doubling_scan_ms"]
+        timers["p1c1_dtype_downcast_ms"] += qt["dtype_downcast_ms"]
+        _time_jk1_and_assemble("p1c1", chunk, S1, fi_c, valid_jk_c, z_mc_e1, z_me_c, 1)
+
+    # Phase 2: edges [hs1:] only.
+    p2c0_chunks = 0
+    p2c1_chunks = 0
+    if hs1 < nedges:
+        z_aux2_v_full = z_aux2[:, None].astype(array_ns.float64)
+        for chunk in _exact_v2_edge_chunks(hs1, nedges, chunk_size):
+            p2c0_chunks += 1
+            p2c1_chunks += 1
+            z_ifc_k0 = z_ifc_e0[chunk, :].astype(array_ns.float64)
+            z_ifc_k1 = z_ifc_e1[chunk, :].astype(array_ns.float64)
+            fi_c = fi[chunk]
+            phase2_active_c = phase2_active[chunk, :]
+            z_aux2_v = z_aux2_v_full[chunk]
+            z_mc_e0 = z_mc[e2c_0[chunk]]
+            z_mc_e1 = z_mc[e2c_1[chunk]]
+            S2_0, qt = _profile_exact_v2_query_succ(z_ifc_k0, z_aux2_v, array_ns)
+            timers["p2c0_match_matrix_ms"] += qt["match_matrix_ms"]
+            timers["p2c0_idx_construct_ms"] += qt["idx_construct_ms"]
+            timers["p2c0_doubling_scan_ms"] += qt["doubling_scan_ms"]
+            timers["p2c0_dtype_downcast_ms"] += qt["dtype_downcast_ms"]
+            _time_jk1_and_assemble("p2c0", chunk, S2_0, fi_c, phase2_active_c, z_mc_e0, z_aux2_v, 0)
+            S2_1, qt = _profile_exact_v2_query_succ(z_ifc_k1, z_aux2_v, array_ns)
+            timers["p2c1_match_matrix_ms"] += qt["match_matrix_ms"]
+            timers["p2c1_idx_construct_ms"] += qt["idx_construct_ms"]
+            timers["p2c1_doubling_scan_ms"] += qt["doubling_scan_ms"]
+            timers["p2c1_dtype_downcast_ms"] += qt["dtype_downcast_ms"]
+            _time_jk1_and_assemble("p2c1", chunk, S2_1, fi_c, phase2_active_c, z_mc_e1, z_aux2_v, 1)
+
+    return (
+        zdiff_gradp,
+        vertoffset_gradp,
+        timers,
+        chunk_size,
+        {
+            "p1c0_chunks": p1c0_chunks,
+            "p1c1_chunks": p1c1_chunks,
+            "p2c0_chunks": p2c0_chunks,
+            "p2c1_chunks": p2c1_chunks,
+        },
+    )
+
+
+def _sample_array(name, arr):
+    return {
+        "name": name,
+        "dtype": str(arr.dtype),
+        "shape": arr.shape,
+        "size": int(arr.size),
+        "nbytes": int(arr.nbytes),
+    }
+
+
+def _mem_info(array_ns):
+    if array_ns.__name__ == "cupy":
+        try:
+            pool = array_ns.get_default_memory_pool()
+            return {"used_bytes": int(pool.used_bytes), "total_bytes": int(pool.total_bytes)}
+        except Exception:
+            return {"used_bytes": None, "total_bytes": None}
+    return {"used_bytes": None, "total_bytes": None}
+
+
+def run_profile_exact_v2(*, dev: bool):
+    """Run exact-v2 fast-path phase profiler at Tier B scale."""
+    if dev:
+        nedges, ncells, nlev = 49152, 32768, 60
+    else:
+        nedges, ncells, nlev = 491520, 327680, 60
+
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(nedges, ncells, nlev, SEED)
+    z_aux2 = z_aux2_from(topography, e2c)
+    info = fingerprint_info(flat_idx, nlev, z_me, z_aux2, z_ifc, e2c, hs1, nedges)
+    if info["endpoint_count"] != 0:
+        _log(f"Profile exact-v2 endpoint count nonzero: {info['endpoint_count']}")
+        sys.exit(1)
+
+    backend_name = "numpy"
+    try:
+        import cupy as cp
+
+        backend_name = "cupy"
+        array_ns = cp
+        e2c_b, z_me_b, z_mc_b, z_ifc_b, flat_idx_b, topography_b = _to_namespace(
+            [e2c, z_me, z_mc, z_ifc, flat_idx, topography], cp
+        )
+    except ImportError:
+        array_ns = np
+        e2c_b, z_me_b, z_mc_b, z_ifc_b, flat_idx_b, topography_b = (
+            e2c,
+            z_me,
+            z_mc,
+            z_ifc,
+            flat_idx,
+            topography,
+        )
+
+    # Total exact_v2 time with validation off (standard benchmark timing mode).
+    prev_validate = os.environ.get("ICON4PY_VALIDATE_ZDIFF_GRADP")
+    os.environ["ICON4PY_VALIDATE_ZDIFF_GRADP"] = "0"
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    exact_v2_result = compute_zdiff_gradp_exact_v2(
+        e2c=e2c_b,
+        z_me=z_me_b,
+        z_mc=z_mc_b,
+        z_ifc=z_ifc_b,
+        flat_idx=flat_idx_b,
+        topography=topography_b,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+    _sync(array_ns)
+    exact_v2_total_ms = (time.perf_counter() - t0) * 1000.0
+    if prev_validate is None:
+        os.environ.pop("ICON4PY_VALIDATE_ZDIFF_GRADP", None)
+    else:
+        os.environ["ICON4PY_VALIDATE_ZDIFF_GRADP"] = prev_validate
+    if _zdiff_mod._LAST_EXACT_V2_PATH != "fast":
+        _log("Profile exact-v2: exact_v2 did not use fast path")
+        sys.exit(1)
+    # Phased reconstruction.
+    (
+        zdiff_gradp_prof,
+        vertoffset_gradp_prof,
+        timers,
+        chunk_size_used,
+        chunk_counts,
+    ) = _profile_exact_v2_variant(
+        e2c_b, z_me_b, z_mc_b, z_ifc_b, flat_idx_b, topography_b, nlev, hs, hs1
+    )
+
+    exact_v2_matches = np.allclose(
+        _to_numpy(exact_v2_result[0]), _to_numpy(zdiff_gradp_prof)
+    ) and np.array_equal(_to_numpy(exact_v2_result[1]), _to_numpy(vertoffset_gradp_prof))
+    if not exact_v2_matches:
+        _log("Profile exact-v2: phased result does not match compute_zdiff_gradp_exact_v2")
+        sys.exit(1)
+
+    # Full-width _exact_query_succ timings for comparison (one per table).
+    z_ifc_e0_full = z_ifc_b[e2c_b[:, 0].astype(array_ns.int64), :]
+    z_ifc_e1_full = z_ifc_b[e2c_b[:, 1].astype(array_ns.int64), :]
+
+    def _try_full_width(fn, label):
+        try:
+            _sync(array_ns)
+            t0 = time.perf_counter()
+            result = fn()
+            _sync(array_ns)
+            return result, (time.perf_counter() - t0) * 1000.0, None
+        except Exception as exc:
+            _log(f"Profile exact-v2: full-width {label} failed: {exc}")
+            return None, None, str(exc)
+
+    p1c0_result, p1c0_full_ms, _ = _try_full_width(
+        lambda: _profile_exact_v2_query_succ(
+            z_ifc_e0_full, z_me_b, array_ns, _sample_intermediates=True
+        ),
+        "p1c0",
+    )
+    if p1c0_result is not None:
+        S_p1c0_full, _p1c0_timings, p1c0_samples = p1c0_result
+    else:
+        S_p1c0_full = None
+        p1c0_samples = None
+    S_p1c1_full, p1c1_full_ms, _ = _try_full_width(
+        lambda: _profile_exact_v2_query_succ(z_ifc_e1_full, z_me_b, array_ns),
+        "p1c1",
+    )
+
+    z_aux2_full = (array_ns.maximum(topography_b[e2c_b[:, 0]], topography_b[e2c_b[:, 1]]) - 5.0)[
+        :, None
+    ]
+
+    S_p2c0_full, p2c0_full_ms, _ = _try_full_width(
+        lambda: _profile_exact_v2_query_succ(z_ifc_e0_full[hs1:], z_aux2_full[hs1:], array_ns),
+        "p2c0",
+    )
+    S_p2c1_full, p2c1_full_ms, _ = _try_full_width(
+        lambda: _profile_exact_v2_query_succ(z_ifc_e1_full[hs1:], z_aux2_full[hs1:], array_ns),
+        "p2c1",
+    )
+
+    sampled_arrays = [
+        _sample_array("z_ifc_e0", z_ifc_e0_full),
+        _sample_array("z_mc[e2c]", z_mc_b[e2c_b]),
+        _sample_array("z_me", z_me_b),
+    ]
+    if S_p1c0_full is not None:
+        sampled_arrays.append(_sample_array("p1c0_full_succ", S_p1c0_full))
+    if isinstance(p1c0_samples, dict):
+        sampled_arrays.extend(p1c0_samples.values())
+    peak_mem = _mem_info(array_ns)
+    with contextlib.suppress(Exception):
+        del S_p1c0_full, S_p1c1_full, S_p2c0_full, S_p2c1_full
+    _sync(array_ns)
+    peak_mem_after_free = _mem_info(array_ns)
+    total_query_ms = (
+        timers["p1c0_match_matrix_ms"]
+        + timers["p1c0_idx_construct_ms"]
+        + timers["p1c0_doubling_scan_ms"]
+        + timers["p1c0_dtype_downcast_ms"]
+        + timers["p1c1_match_matrix_ms"]
+        + timers["p1c1_idx_construct_ms"]
+        + timers["p1c1_doubling_scan_ms"]
+        + timers["p1c1_dtype_downcast_ms"]
+        + timers["p2c0_match_matrix_ms"]
+        + timers["p2c0_idx_construct_ms"]
+        + timers["p2c0_doubling_scan_ms"]
+        + timers["p2c0_dtype_downcast_ms"]
+        + timers["p2c1_match_matrix_ms"]
+        + timers["p2c1_idx_construct_ms"]
+        + timers["p2c1_doubling_scan_ms"]
+        + timers["p2c1_dtype_downcast_ms"]
+    )
+
+    return {
+        "iteration_id": os.environ.get("BUILD_SKILL_ITERATION_ID", "iter-002"),
+        "mode": "profile-exact-v2",
+        "dev": dev,
+        "backend": backend_name,
+        "nedges": nedges,
+        "ncells": ncells,
+        "nlev": nlev,
+        "chunk_size": chunk_size_used,
+        "chunk_counts": chunk_counts,
+        "exact_v2_total_ms": exact_v2_total_ms,
+        "exact_v2_matches_profile": bool(exact_v2_matches),
+        "full_width_query_ms": {
+            "p1c0": p1c0_full_ms,
+            "p1c1": p1c1_full_ms,
+            "p2c0": p2c0_full_ms,
+            "p2c1": p2c1_full_ms,
+        },
+        "peak_memory_bytes": peak_mem,
+        "peak_memory_after_free_bytes": peak_mem_after_free,
+        "sampled_arrays": sampled_arrays,
+        "total_query_ms": total_query_ms,
+        **timers,
+    }
+
+
+def _print_profile_exact_v2(profile):
+    lines = [
+        "=" * 60,
+        "EXACT-V2 FAST PATH PROFILE",
+        f"iteration_id: {profile['iteration_id']}",
+        f"scale: nedges={profile['nedges']}, ncells={profile['ncells']}, "
+        f"nlev={profile['nlev']}, backend={profile['backend']}, dev={profile['dev']}",
+        f"chunk_size: {profile['chunk_size']}",
+        f"chunk_counts: {profile['chunk_counts']}",
+        f"exact_v2_total_ms: {profile['exact_v2_total_ms']:.3f}",
+        f"exact_v2_matches_profile: {profile['exact_v2_matches_profile']}",
+        f"total_query_ms (chunked sum): {profile['total_query_ms']:.3f}",
+        "",
+        "Chunked per-query phases (sum across chunks):",
+    ]
+    for table in ("p1c0", "p1c1", "p2c0", "p2c1"):
+        lines.append(f"  {table}:")
+        lines.extend(
+            f"    {phase}: {profile[f'{table}_{phase}_ms']:.3f} ms"
+            for phase in (
+                "match_matrix",
+                "idx_construct",
+                "doubling_scan",
+                "dtype_downcast",
+                "jk1_gather",
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "Other phases:",
+            f"  input_gathers_ms: {profile['input_gathers_ms']:.3f}",
+            f"  base_write_ms: {profile['base_write_ms']:.3f}",
+            f"  output_assembly_ms: {profile['output_assembly_ms']:.3f}",
+            "",
+            "Full-width single-table query times:",
+            f"  p1c0: {profile['full_width_query_ms']['p1c0']:.3f} ms"
+            if profile["full_width_query_ms"]["p1c0"] is not None
+            else "  p1c0: failed",
+            f"  p1c1: {profile['full_width_query_ms']['p1c1']:.3f} ms"
+            if profile["full_width_query_ms"]["p1c1"] is not None
+            else "  p1c1: failed",
+            f"  p2c0: {profile['full_width_query_ms']['p2c0']:.3f} ms"
+            if profile["full_width_query_ms"]["p2c0"] is not None
+            else "  p2c0: failed",
+            f"  p2c1: {profile['full_width_query_ms']['p2c1']:.3f} ms"
+            if profile["full_width_query_ms"]["p2c1"] is not None
+            else "  p2c1: failed",
+            "",
+            "Peak GPU memory (bytes):",
+            f"  used:  {profile['peak_memory_bytes']['used_bytes']}",
+            f"  total: {profile['peak_memory_bytes']['total_bytes']}",
+            f"  used after free: {profile['peak_memory_after_free_bytes']['used_bytes']}",
+            "",
+            "Sampled resident arrays:",
+        ]
+    )
+    lines.extend(
+        f"  {sample['name']}: dtype={sample['dtype']}, shape={sample['shape']}, "
+        f"size={sample['size']}, nbytes={sample['nbytes']}"
+        for sample in profile["sampled_arrays"]
+    )
+    lines.append("=" * 60)
+
+    text = "\n".join(lines)
+    print(text)
+
+    json_text = json.dumps(profile, default=str)
+    print(f"PROFILE {json_text}")
+
+    log_dir = os.environ.get("BUILD_SKILL_LOG_DIR")
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+        iteration_id = profile["iteration_id"]
+        text_path = os.path.join(log_dir, f"profile-exact-v2-{iteration_id}.txt")
+        jsonl_path = os.path.join(log_dir, f"profile-exact-v2-{iteration_id}.jsonl")
+        with open(text_path, "w") as f:
+            f.write(text + "\n")
+        with open(jsonl_path, "w") as f:
+            f.write(f"PROFILE {json_text}\n")
+
+
+def run_profile_exact(*, dev: bool):
+    """Run exact-variant phase profiler at Tier B scale."""
+    if dev:
+        nedges, ncells, nlev = 49152, 32768, 60
+    else:
+        nedges, ncells, nlev = 491520, 327680, 60
+
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography, hs, hs1 = build_inputs(nedges, ncells, nlev, SEED)
+    z_aux2 = z_aux2_from(topography, e2c)
+    info = fingerprint_info(flat_idx, nlev, z_me, z_aux2, z_ifc, e2c, hs1, nedges)
+    if info["endpoint_count"] != 0:
+        _log(f"Profile exact endpoint count nonzero: {info['endpoint_count']}")
+        sys.exit(1)
+
+    backend_name = "numpy"
+    try:
+        import cupy as cp
+
+        backend_name = "cupy"
+        array_ns = cp
+        e2c_b, z_me_b, z_mc_b, z_ifc_b, flat_idx_b, topography_b = _to_namespace(
+            [e2c, z_me, z_mc, z_ifc, flat_idx, topography], cp
+        )
+    except ImportError:
+        array_ns = np
+        e2c_b, z_me_b, z_mc_b, z_ifc_b, flat_idx_b, topography_b = (
+            e2c,
+            z_me,
+            z_mc,
+            z_ifc,
+            flat_idx,
+            topography,
+        )
+
+    mem_per_edge = nlev * 2 * (nlev + 1)
+    chunk_size = max(1, min(nedges, (256 * 1024 * 1024) // mem_per_edge))
+
+    # Total exact variant time.
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    exact_result = compute_zdiff_gradp_exact(
+        e2c=e2c_b,
+        z_me=z_me_b,
+        z_mc=z_mc_b,
+        z_ifc=z_ifc_b,
+        flat_idx=flat_idx_b,
+        topography=topography_b,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+        chunk_size=chunk_size,
+    )
+    _sync(array_ns)
+    exact_total_ms = (time.perf_counter() - t0) * 1000.0
+
+    # Exact per-phase timing.
+    zdiff_gradp_prof, vertoffset_gradp_prof, timers, chunk_size = _profile_exact_variant(
+        e2c_b, z_me_b, z_mc_b, z_ifc_b, flat_idx_b, topography_b, nlev, hs, hs1, chunk_size
+    )
+    profile_result = (zdiff_gradp_prof, vertoffset_gradp_prof)
+    exact_matches = np.allclose(
+        _to_numpy(exact_result[0]), _to_numpy(profile_result[0])
+    ) and np.array_equal(_to_numpy(exact_result[1]), _to_numpy(profile_result[1]))
+    if not exact_matches:
+        _log("Profile exact: phased result does not match compute_zdiff_gradp_exact")
+        sys.exit(1)
+
+    # Total v2 variant time.
+    _sync(array_ns)
+    t0 = time.perf_counter()
+    v2_result = compute_zdiff_gradp_v2(
+        e2c=e2c_b,
+        z_me=z_me_b,
+        z_mc=z_mc_b,
+        z_ifc=z_ifc_b,
+        flat_idx=flat_idx_b,
+        topography=topography_b,
+        nlev=nlev,
+        horizontal_start=hs,
+        horizontal_start_1=hs1,
+    )
+    _sync(array_ns)
+    v2_total_ms = (time.perf_counter() - t0) * 1000.0
+
+    # V2 per-phase timing.
+    zdiff_gradp_v2prof, vertoffset_gradp_v2prof, v2_timers = _profile_v2_variant(
+        e2c_b, z_me_b, z_mc_b, z_ifc_b, flat_idx_b, topography_b, nlev, hs, hs1
+    )
+    v2_profile_result = (zdiff_gradp_v2prof, vertoffset_gradp_v2prof)
+
+    v2_matches = np.allclose(
+        _to_numpy(v2_result[0]), _to_numpy(v2_profile_result[0])
+    ) and np.array_equal(_to_numpy(v2_result[1]), _to_numpy(v2_profile_result[1]))
+    if not v2_matches:
+        _log("Profile exact: phased v2 result does not match compute_zdiff_gradp_v2")
+        sys.exit(1)
+
+    assumed_launch_latency_us = 10.0
+    total_carry_ops = (
+        timers["carry_loop_p1_c1_ops"]
+        + timers["carry_loop_p2_c0_ops"]
+        + timers["carry_loop_p2_c1_ops"]
+    )
+    total_carry_ms = (
+        timers["carry_loop_p1_c1_ms"]
+        + timers["carry_loop_p2_c0_ms"]
+        + timers["carry_loop_p2_c1_ms"]
+    )
+    launch_latency_ms = total_carry_ops * assumed_launch_latency_us / 1000.0
+
+    return {
+        "iteration_id": os.environ.get("BUILD_SKILL_ITERATION_ID", "iter-002"),
+        "mode": "profile-exact",
+        "dev": dev,
+        "backend": backend_name,
+        "nedges": nedges,
+        "ncells": ncells,
+        "nlev": nlev,
+        "chunk_size": chunk_size,
+        "exact_total_ms": exact_total_ms,
+        "v2_total_ms": v2_total_ms,
+        "exact_matches_profile": bool(exact_matches),
+        "v2_matches_profile": bool(v2_matches),
+        "assumed_launch_latency_us": assumed_launch_latency_us,
+        "total_carry_ops": total_carry_ops,
+        "total_carry_ms": total_carry_ms,
+        "estimated_launch_latency_ms": launch_latency_ms,
+        "estimated_launch_latency_share_carry_pct": (
+            (launch_latency_ms / total_carry_ms * 100.0) if total_carry_ms > 0 else 0.0
+        ),
+        "estimated_launch_latency_share_exact_pct": (
+            (launch_latency_ms / exact_total_ms * 100.0) if exact_total_ms > 0 else 0.0
+        ),
+        **timers,
+        **{f"v2_{k}": v for k, v in v2_timers.items()},
+    }
+
+
+def _print_profile(profile):
+    total_carry_ops = profile["total_carry_ops"]
+    total_carry_ms = profile["total_carry_ms"]
+    launch_latency_ms = profile["estimated_launch_latency_ms"]
+
+    lines = [
+        "=" * 60,
+        "EXACT VARIANT PROFILE",
+        f"iteration_id: {profile['iteration_id']}",
+        f"scale: nedges={profile['nedges']}, ncells={profile['ncells']}, "
+        f"nlev={profile['nlev']}, backend={profile['backend']}, dev={profile['dev']}",
+        f"chunk_size: {profile['chunk_size']}",
+        f"exact_total_ms: {profile['exact_total_ms']:.3f}",
+        f"v2_total_ms: {profile['v2_total_ms']:.3f}",
+        f"exact_matches_profile: {profile['exact_matches_profile']}",
+        f"v2_matches_profile: {profile['v2_matches_profile']}",
+        "",
+        "Exact per-query phases (per cell x per chunk aggregate):",
+        f"  match-matrix build: {profile['query_match_matrix_ms']:.3f} ms",
+        f"  int8 idx construction: {profile['query_idx_construct_ms']:.3f} ms",
+        f"  doubling scan: {profile['query_doubling_scan_ms']:.3f} ms",
+        "",
+        "Carry loops:",
+        f"  phase-1 cell-1: {profile['carry_loop_p1_c1_ms']:.3f} ms, "
+        f"ops={profile['carry_loop_p1_c1_ops']}",
+        f"  phase-2 cell-0: {profile['carry_loop_p2_c0_ms']:.3f} ms, "
+        f"ops={profile['carry_loop_p2_c0_ops']}",
+        f"  phase-2 cell-1: {profile['carry_loop_p2_c1_ms']:.3f} ms, "
+        f"ops={profile['carry_loop_p2_c1_ops']}",
+        f"  total carry ops: {total_carry_ops}",
+        f"  total carry time: {total_carry_ms:.3f} ms",
+        f"  assumed launch latency: {profile['assumed_launch_latency_us']:.1f} us/launch",
+        f"  estimated launch-latency time: {launch_latency_ms:.3f} ms",
+        f"  estimated launch-latency share of carry time: "
+        f"{profile['estimated_launch_latency_share_carry_pct']:.1f}%",
+        f"  estimated launch-latency share of exact total: "
+        f"{profile['estimated_launch_latency_share_exact_pct']:.1f}%",
+        "",
+        "Output assembly:",
+        f"  base write: {profile['base_write_ms']:.3f} ms",
+        f"  output assembly: {profile['output_assembly_ms']:.3f} ms",
+        "",
+        "V2 reference phases:",
+        f"  gathers: {profile['v2_gathers_ms']:.3f} ms",
+        f"  fills: {profile['v2_fills_ms']:.3f} ms",
+        f"  searchsorted: {profile['v2_searchsorted_ms']:.3f} ms",
+        f"  output assembly: {profile['v2_output_assembly_ms']:.3f} ms",
+        "=" * 60,
+    ]
+
+    text = "\n".join(lines)
+    print(text)
+
+    json_text = json.dumps(profile, indent=2)
+    for line in json_text.splitlines():
+        print(f"PROFILE {line}")
+
+    log_dir = os.environ.get("BUILD_SKILL_LOG_DIR")
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+        iteration_id = profile["iteration_id"]
+        text_path = os.path.join(log_dir, f"profile-{iteration_id}.txt")
+        jsonl_path = os.path.join(log_dir, f"profile-{iteration_id}.jsonl")
+        with open(text_path, "w") as f:
+            f.write(text + "\n")
+        with open(jsonl_path, "w") as f:
+            for line in json_text.splitlines():
+                f.write(f"PROFILE {line}\n")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--dev", action="store_true", help="Reduce Tier B scale/reps for local dev."
+    )
+    parser.add_argument(
+        "--profile-exact",
+        action="store_true",
+        help="Run exact-variant phase profiler.",
+    )
+    parser.add_argument(
+        "--profile-exact-v2",
+        action="store_true",
+        dest="profile_exact_v2",
+        help="Run exact-v2 fast-path phase profiler.",
+    )
+    args = parser.parse_args()
+
+    if args.profile_exact:
+        profile = run_profile_exact(dev=args.dev)
+        _print_profile(profile)
+        return
+
+    if args.profile_exact_v2:
+        profile = run_profile_exact_v2(dev=args.dev)
+        _print_profile_exact_v2(profile)
+        return
+
+    iteration_id = os.environ.get("BUILD_SKILL_ITERATION_ID", "iter-002")
+
+    self_check = run_self_check()
+    _log("Self-check passed.")
+
+    tier_a = run_tier_a()
+    _log("Tier A passed.")
+
+    tier_b = run_tier_b(dev=args.dev)
+    _log("Tier B completed.")
+
+    result = {
+        "iteration_id": iteration_id,
+        "seed": SEED,
+        "self_check": {
+            "endpoint_count": self_check["endpoint_count"],
+            "ok": True,
+            "fingerprint": self_check["bins"],
+            "phase2_active": self_check["phase2_active"],
+        },
+        "tierA": tier_a,
+        "tierB": tier_b,
+    }
+
+    json_line = json.dumps(result)
+    print(json_line)
+
+    log_dir = os.environ.get("BUILD_SKILL_LOG_DIR")
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+        log_path = os.path.join(log_dir, f"benchmark-{iteration_id}.json")
+        with open(log_path, "w") as f:
+            f.write(json_line + "\n")
+
+
+if __name__ == "__main__":
+    main()
