@@ -2098,6 +2098,7 @@ requires-dist = [
 
 [[package]]
 dependencies = [
+  {name = "gt4py"},
   {name = "icon4py-common"},
   {name = "packaging"}
 ]
@@ -2107,6 +2108,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2115,6 +2117,7 @@ requires-dist = [
 dependencies = [
   {name = "gt4py"},
   {name = "icon4py-common"},
+  {name = "numpy"},
   {name = "packaging"}
 ]
 name = "icon4py-atmosphere-tmx"
@@ -2125,6 +2128,7 @@ version = "0.4.1"
 requires-dist = [
   {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", editable = "model/common"},
+  {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
 ]
 
@@ -2295,6 +2299,7 @@ dependencies = [
   {name = "icon4py-atmosphere-dycore"},
   {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-atmosphere-physics-driver"},
+  {name = "icon4py-atmosphere-tmx"},
   {name = "icon4py-common", extra = ["io"]},
   {name = "packaging"},
   {name = "typer"}
@@ -2311,6 +2316,7 @@ requires-dist = [
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
   {name = "icon4py-atmosphere-physics-driver", editable = "model/atmosphere/subgrid_scale_physics/physics_driver"},
+  {name = "icon4py-atmosphere-tmx", editable = "model/atmosphere/subgrid_scale_physics/tmx"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"},
   {name = "typer", specifier = ">=0.20.0"}

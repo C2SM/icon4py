@@ -25,8 +25,13 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import (
+    surface_fluxes as tmx_surface_fluxes,
+    tmx as tmx_module,
+)
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
+    constants,
     initial_condition,
     prescribed_tendencies,
     time,
@@ -346,6 +351,12 @@ class ExperimentConfig:
     tracer_advection: tracer_advection.AdvectionConfig | None = None
     graupel: graupel.SingleMomentSixClassIconGraupelConfig | None = None
     muphys: muphys_config.MuphysConfig | None = None
+    tmx: tmx_module.TmxConfig | None = None
+    # The surface-flux members of the testcase namelist and the prescribed aquaplanet
+    # SST [K]; parsed only when tmx runs. The provider itself is assembled in
+    # driver_utils because it binds the live pressure_ifc buffer of the entry state.
+    tmx_surface_flux: tmx_surface_fluxes.PrescribedFluxConfig | None = None
+    surface_temperature: float | None = None
 
     def __post_init__(self) -> None:
         # The file-based initial condition needs the clock of the driver to know which
@@ -375,6 +386,20 @@ class ExperimentConfig:
             else:
                 replacements[key] = value
         return dataclasses.replace(self, **replacements)
+
+
+def _ape_surface_temperature(input_dict: dict[str, Any]) -> float:
+    """The globally constant aquaplanet SST [K] of the testcase namelist.
+
+    Port of 'ape_sst_const' (mo_ape_params.f90:173-183): ``tmelt + ape_sst_val``.
+    Only the constant-SST case is supported; the latitude-dependent
+    'sst1'..'sst_qobs' profiles would need a per-cell field.
+    """
+    testcase = input_dict["nh_testcase_nml"]
+    sst_case = testcase["ape_sst_case"]
+    if sst_case != "sst_const":
+        raise NotImplementedError(f"Only 'sst_const' is supported, got '{sst_case}'.")
+    return constants.MELTING_TEMPERATURE + float(testcase["ape_sst_val"])
 
 
 def read_experiment_config_from_fortran(
@@ -483,6 +508,29 @@ def read_experiment_config_from_fortran(
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
+    # AES vdf/turbulent mixing, gated symmetrically to muphys above: the presence of
+    # the echoed aes_vdf_nml enables TMX, and TmxConfig is parsed positionally from
+    # that namelist (TmxConfig.from_fortran_dict). The v08 exclaim_ape_aesPhys
+    # reference runs graupel AND vdf, so both processes are needed for comparability.
+    tmx_cfg = (
+        tmx_module.TmxConfig.from_fortran_dict(atm_dict) if "aes_vdf_nml" in atm_dict else None
+    )
+
+    # The fixed-surface-flux members of nh_testcase_nml select how the tmx surface
+    # fluxes are produced (isrfc_type = 1 in the serialized idealized experiments);
+    # the SST is only needed for the surface density in that branch.
+    tmx_surface_flux_cfg = (
+        tmx_surface_fluxes.PrescribedFluxConfig.from_fortran_dict(input_dict)
+        if tmx_cfg is not None
+        else None
+    )
+    surface_temperature = (
+        _ape_surface_temperature(input_dict)
+        if tmx_surface_flux_cfg is not None
+        and tmx_surface_flux_cfg.isrfc_type == tmx_surface_fluxes.FIXED_SURFACE_FLUXES
+        else None
+    )
+
     return ExperimentConfig(
         geometry=geometry_cfg,
         metrics=metrics_cfg,
@@ -495,6 +543,9 @@ def read_experiment_config_from_fortran(
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         muphys=muphys_cfg,
+        tmx=tmx_cfg,
+        tmx_surface_flux=tmx_surface_flux_cfg,
+        surface_temperature=surface_temperature,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
             atm_dict=atm_dict, data_path=config_file_path

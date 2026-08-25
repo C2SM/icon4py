@@ -92,3 +92,6 @@ tracer_config:
 tracer_advection:
 graupel:
 muphys:
+tmx:
+tmx_surface_flux:
+surface_temperature:

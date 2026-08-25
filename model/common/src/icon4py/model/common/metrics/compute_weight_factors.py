@@ -8,7 +8,7 @@
 
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.math.vertical_operations import with_boundaries_on_half_levels_on_cells
 from icon4py.model.common.type_alias import wpfloat
@@ -133,3 +133,108 @@ def compute_wgtfacq_e_dsl(
     wgtfacq_e_dsl[:, nlev - 2] = z_aux_e[:, 2]
 
     return wgtfacq_e_dsl[:, -3:]
+
+
+def compute_wgtfacq1_c(
+    z_ifc: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    """
+    Compute weighting factors for quadratic extrapolation to the model top.
+
+    The top-boundary counterpart of :func:`compute_wgtfacq_c_dsl`
+    (mo_vertical_grid.f90:953-967); the same coefficients are computed (and
+    discarded) as ``z_aux_c[:, 3:6]`` inside :func:`compute_wgtfacq_e_dsl`.
+
+    Args:
+        z_ifc: geometric height at the vertical interface of cells.
+    Returns:
+        (ncells, 3): row k multiplies full level k (``wgtfacq1_c(jc, k+1, jb)``).
+    """
+    array_ns = data_alloc.array_namespace(z_ifc)
+    z1, z2, z3 = _compute_z1_z2_z3(z_ifc, 0, 1, 2, 3)
+    w3 = z1 * z2 / (z2 - z3) / (z1 - z3)
+    w2 = (z1 - w3 * (z1 - z3)) / (z1 - z2)
+    w1 = 1.0 - (w2 + w3)
+    return array_ns.stack([w1, w2, w3], axis=1)
+
+
+def compute_wgtfacq1_e(
+    *,
+    e2c: data_alloc.NDArray,
+    wgtfacq1_c: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    exchange: decomposition.ExchangeRuntime,
+) -> data_alloc.NDArray:
+    """
+    Interpolate the top-boundary quadratic extrapolation weights from cells to edges.
+
+    The top-boundary counterpart of :func:`compute_wgtfacq_e_dsl`
+    (mo_vertical_grid.f90:989-1014). Skip-value neighbors (``e2c == -1``) carry
+    zero ``c_lin_e`` weight, so the garbage index contributes nothing.
+
+    Args:
+        e2c: Edge to Cell offset
+        wgtfacq1_c: (ncells, 3) cell weights in Fortran coefficient order
+        c_lin_e: cell-to-edge linear interpolation weights
+    Returns:
+        (nedges, 3): row k multiplies full level k (``wgtfacq1_e(je, k+1, jb)``).
+    """
+    array_ns = data_alloc.array_namespace(e2c)
+    wgtfacq1_e = array_ns.sum(c_lin_e[:, :, array_ns.newaxis] * wgtfacq1_c[e2c], axis=1)
+    exchange.exchange(dims.EdgeDim, wgtfacq1_e, stream=decomposition.BLOCK)
+    return wgtfacq1_e
+
+
+def compute_inv_ddqz_z_half(ddqz_z_half: data_alloc.NDArray) -> data_alloc.NDArray:
+    """Element-wise inverse of ``ddqz_z_half`` (cells, half levels)."""
+    return 1.0 / ddqz_z_half
+
+
+def compute_inv_ddqz_z_full_e(ddqz_z_full_e: data_alloc.NDArray) -> data_alloc.NDArray:
+    """Element-wise inverse of ``ddqz_z_full_e`` (edges, full levels)."""
+    return 1.0 / ddqz_z_full_e
+
+
+def compute_inv_ddqz_z_half_e(
+    *,
+    e2c: data_alloc.NDArray,
+    inv_ddqz_z_half: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    exchange: decomposition.ExchangeRuntime,
+) -> data_alloc.NDArray:
+    """Interpolate ``inv_ddqz_z_half`` from cells to edges (``c_lin_e`` weights).
+
+    Note: the *inverse* is interpolated (matching ICON), not the inverse of the
+    interpolated thickness. Skip-value neighbors carry zero ``c_lin_e`` weight.
+    """
+    array_ns = data_alloc.array_namespace(e2c)
+    result = array_ns.sum(c_lin_e[:, :, array_ns.newaxis] * inv_ddqz_z_half[e2c], axis=1)
+    exchange.exchange(dims.EdgeDim, result, stream=decomposition.BLOCK)
+    return result
+
+
+def compute_inv_ddqz_z_half_v(
+    *,
+    v2c: data_alloc.NDArray,
+    inv_ddqz_z_half: data_alloc.NDArray,
+    cells_aw_verts: data_alloc.NDArray,
+    exchange: decomposition.ExchangeRuntime,
+) -> data_alloc.NDArray:
+    """Interpolate ``inv_ddqz_z_half`` from cells to vertices (area weighting).
+
+    Note: the *inverse* is interpolated (matching ICON), not the inverse of the
+    interpolated thickness.
+    """
+    array_ns = data_alloc.array_namespace(v2c)
+    result = array_ns.sum(cells_aw_verts[:, :, array_ns.newaxis] * inv_ddqz_z_half[v2c], axis=1)
+    exchange.exchange(dims.VertexDim, result, stream=decomposition.BLOCK)
+    return result
+
+
+def compute_geopot_agl_ifc(z_ifc: data_alloc.NDArray) -> data_alloc.NDArray:
+    """Geopotential above ground level at cell interface levels [m2 s-2].
+
+    ``grav * (z_ifc - z_sfc)`` with the surface height taken from the bottom
+    interface row (``z_ifc[:, -1]``).
+    """
+    return constants.GRAV * (z_ifc - z_ifc[:, -1:])

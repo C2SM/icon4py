@@ -903,6 +903,118 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(compute_wgtfacq_e)
 
+        compute_wgtfacq1_c = factory.NumpyDataProvider(
+            func=weight_factors.compute_wgtfacq1_c,
+            domain=gtx.domain(
+                {
+                    dims.CellDim: (0, self._grid.num_cells),
+                    dims.KDim: (0, 3),
+                }
+            ),
+            fields=(attrs.WGTFACQ1_C,),
+            deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
+        )
+        self.register_provider(compute_wgtfacq1_c)
+
+        compute_wgtfacq1_e = factory.NumpyDataProvider(
+            func=functools.partial(
+                weight_factors.compute_wgtfacq1_e,
+                exchange=self._exchange,
+            ),
+            deps={
+                "wgtfacq1_c": attrs.WGTFACQ1_C,
+                "c_lin_e": interpolation_attributes.C_LIN_E,
+            },
+            connectivities={"e2c": dims.E2CDim},
+            domain=gtx.domain(
+                {
+                    dims.EdgeDim: (0, self._grid.num_edges),
+                    dims.KDim: (0, 3),
+                }
+            ),
+            fields=(attrs.WGTFACQ1_E,),
+        )
+        self.register_provider(compute_wgtfacq1_e)
+
+        inv_ddqz_z_half = factory.NumpyDataProvider(
+            func=weight_factors.compute_inv_ddqz_z_half,
+            deps={"ddqz_z_half": attrs.DDQZ_Z_HALF},
+            domain=gtx.domain(
+                {
+                    dims.CellDim: (0, self._grid.num_cells),
+                    dims.KHalfDim: (0, self._grid.num_levels + 1),
+                }
+            ),
+            fields=(attrs.INV_DDQZ_Z_HALF,),
+        )
+        self.register_provider(inv_ddqz_z_half)
+
+        inv_ddqz_z_full_e = factory.NumpyDataProvider(
+            func=weight_factors.compute_inv_ddqz_z_full_e,
+            deps={"ddqz_z_full_e": attrs.DDQZ_Z_FULL_E},
+            domain=gtx.domain(
+                {
+                    dims.EdgeDim: (0, self._grid.num_edges),
+                    dims.KDim: (0, self._grid.num_levels),
+                }
+            ),
+            fields=(attrs.INV_DDQZ_Z_FULL_E,),
+        )
+        self.register_provider(inv_ddqz_z_full_e)
+
+        inv_ddqz_z_half_e = factory.NumpyDataProvider(
+            func=functools.partial(
+                weight_factors.compute_inv_ddqz_z_half_e,
+                exchange=self._exchange,
+            ),
+            deps={
+                "inv_ddqz_z_half": attrs.INV_DDQZ_Z_HALF,
+                "c_lin_e": interpolation_attributes.C_LIN_E,
+            },
+            connectivities={"e2c": dims.E2CDim},
+            domain=gtx.domain(
+                {
+                    dims.EdgeDim: (0, self._grid.num_edges),
+                    dims.KHalfDim: (0, self._grid.num_levels + 1),
+                }
+            ),
+            fields=(attrs.INV_DDQZ_Z_HALF_E,),
+        )
+        self.register_provider(inv_ddqz_z_half_e)
+
+        inv_ddqz_z_half_v = factory.NumpyDataProvider(
+            func=functools.partial(
+                weight_factors.compute_inv_ddqz_z_half_v,
+                exchange=self._exchange,
+            ),
+            deps={
+                "inv_ddqz_z_half": attrs.INV_DDQZ_Z_HALF,
+                "cells_aw_verts": interpolation_attributes.CELL_AW_VERTS,
+            },
+            connectivities={"v2c": dims.V2CDim},
+            domain=gtx.domain(
+                {
+                    dims.VertexDim: (0, self._grid.num_vertices),
+                    dims.KHalfDim: (0, self._grid.num_levels + 1),
+                }
+            ),
+            fields=(attrs.INV_DDQZ_Z_HALF_V,),
+        )
+        self.register_provider(inv_ddqz_z_half_v)
+
+        geopot_agl_ifc = factory.NumpyDataProvider(
+            func=weight_factors.compute_geopot_agl_ifc,
+            deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
+            domain=gtx.domain(
+                {
+                    dims.CellDim: (0, self._grid.num_cells),
+                    dims.KHalfDim: (0, self._grid.num_levels + 1),
+                }
+            ),
+            fields=(attrs.GEOPOT_AGL_IFC,),
+        )
+        self.register_provider(geopot_agl_ifc)
+
         compute_maxslp_maxhgtd = factory.ProgramFieldProvider(
             func=mf.compute_maxslp_maxhgtd.with_backend(self._backend),
             deps={
