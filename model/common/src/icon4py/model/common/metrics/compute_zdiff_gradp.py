@@ -19,6 +19,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 _LAST_EXACT_V2_PATH: str | None = None
 _LAST_EXACT_V3_PATH: str | None = None
+_LAST_EXACT_V4_PATH: str | None = None
 _LAST_DISPATCH_PATH: str | None = None
 _EXACT_V2_MAX_TABLE_BYTES: int = 1 << 30
 
@@ -1222,6 +1223,188 @@ def _exact_carry_loop(
         jk1_out[:, jk] = jk1
         t = array_ns.where(active[:, jk], jk1, t)
     return jk1_out
+
+
+def _exact_v4_first_match(
+    z_ifc_col: data_alloc.NDArray,
+    queries: data_alloc.NDArray,
+    fi: data_alloc.NDArray,
+    array_ns: ModuleType,
+) -> data_alloc.NDArray:
+    """Return main's first-match index for each (edge, query).
+
+    For edge ``e`` and query ``q`` the result is the smallest candidate
+    index ``i >= fi[e]`` such that ``i == nlev - 1`` or
+    ``z_ifc_col[e, i] >= queries[e, q] >= z_ifc_col[e, i + 1]``.  This is a
+    literal broadcast transcription of main's first-match scan: build the
+    gated candidate mask, replace ungated entries by ``nlev``, and take the
+    minimum along the candidate axis.
+
+    The int32 work array keeps the transient memory per element at five bytes
+    (boolean gate + int32 index), which together with
+    ``_exact_v2_edge_chunks`` keeps the full-scale peak under the
+    ``_EXACT_V2_MAX_TABLE_BYTES`` cap.
+    """
+    _chunk, nlev_p1 = z_ifc_col.shape
+    nlev = nlev_p1 - 1
+    i_idx = array_ns.arange(nlev, dtype=array_ns.int32)
+    nlev_fill = array_ns.asarray(nlev, dtype=array_ns.int32)
+
+    z_ifc_col = z_ifc_col.astype(array_ns.float64)
+    queries = queries.astype(array_ns.float64)
+
+    upper = z_ifc_col[:, None, :-1]
+    lower = z_ifc_col[:, None, 1:]
+    qv = queries[:, :, None]
+
+    bracket = (upper >= qv) & (qv >= lower)
+    unconditional = i_idx[None, None, :] == (nlev - 1)
+    fi_mask = i_idx[None, None, :] >= fi[:, None, None]
+
+    gated = fi_mask & (bracket | unconditional)
+    idx = array_ns.where(gated, i_idx[None, None, :], nlev_fill)
+    return idx.min(axis=-1).astype(array_ns.int64)
+
+
+def compute_zdiff_gradp_exact_v4(
+    *,
+    e2c: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    flat_idx: data_alloc.NDArray,
+    topography: data_alloc.NDArray,
+    nlev: int,
+    horizontal_start: gtx.int32,
+    horizontal_start_1: gtx.int32,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """Exact variant: premise-free broadcast first-match.
+
+    The fast path evaluates main's literal bracket predicate for every
+    candidate index ``i >= flat_idx`` and takes the first match as the
+    minimum gated index.  Because the query is constant per edge in phase 2
+    and phase 1 cell 0 carries nothing, the fresh first-match equals main's
+    output there unconditionally.  Under E3 the same holds for phase 1 cell 1
+    (D6-E3 proof), so an E3 check selects fast versus carry; when E3 fails the
+    implementation delegates to ``compute_zdiff_gradp_exact_v2``'s carry loop,
+    preserving exactness on all finite inputs.
+
+    Validation follows ``_validation_enabled()``: when enabled, finiteness and
+    E3 are checked with one stacked device sync; when disabled the fast path is
+    taken without any check and the defined ``nlev - 1`` fallback applies on
+    non-finite input.
+    """
+    global _LAST_EXACT_V4_PATH  # noqa: PLW0603
+    array_ns = data_alloc.array_namespace(z_mc)
+    nedges = e2c.shape[0]
+
+    hs = int(horizontal_start)
+    hs1 = int(horizontal_start_1)
+    if hs1 < hs:
+        raise ValueError("horizontal_start_1 must be greater than or equal to horizontal_start.")
+
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0
+
+    fi = flat_idx.astype(array_ns.int64)
+    e2c_0 = e2c[:, 0].astype(array_ns.int64)
+    e2c_1 = e2c[:, 1].astype(array_ns.int64)
+
+    z_ifc_e0 = z_ifc[e2c_0, :]
+    z_ifc_e1 = z_ifc[e2c_1, :]
+
+    if _validation_enabled():
+        finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
+        e3_ok = _check_e3(array_ns, z_me, fi, nlev)
+        combined = finite_ok & e3_ok
+        if not bool(combined):
+            if not bool(finite_ok):
+                raise ValueError("Searched arrays contain non-finite values.")
+            _LAST_EXACT_V4_PATH = "carry"
+            return compute_zdiff_gradp_exact_v2(
+                e2c=e2c,
+                z_me=z_me,
+                z_mc=z_mc,
+                z_ifc=z_ifc,
+                flat_idx=flat_idx,
+                topography=topography,
+                nlev=nlev,
+                horizontal_start=horizontal_start,
+                horizontal_start_1=horizontal_start_1,
+            )
+
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    zdiff_gradp[hs:, :, :] = array_ns.expand_dims(z_me, axis=1)[hs:, :, :] - z_mc[e2c][hs:, :, :]
+    vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
+
+    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    edge_hs_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs
+    edge_hs1_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs1
+    valid_jk = (jk_idx > fi[:, None]) & edge_hs_mask[:, None]
+    phase2_active = valid_jk & (z_me < z_aux2[:, None]) & edge_hs1_mask[:, None]
+
+    # int32 transient: boolean gate (1 byte) + int32 index (4 bytes), bounded
+    # by sizing chunks as if the work array were 2 * nlev * nlev * int32.
+    chunk_size = _exact_v2_chunk_size(nlev, 4)
+
+    for chunk in _exact_v2_edge_chunks(hs, nedges, chunk_size):
+        jk1_0 = _exact_v4_first_match(z_ifc_e0[chunk, :], z_me[chunk, :], fi[chunk], array_ns)
+        z_mc_e0 = z_mc[e2c_0[chunk]]
+        zdiff_gradp[chunk, 0, :] = array_ns.where(
+            valid_jk[chunk, :],
+            z_me[chunk, :] - array_ns.take_along_axis(z_mc_e0, jk1_0, axis=1),
+            zdiff_gradp[chunk, 0, :],
+        )
+        vertoffset_gradp[chunk, 0, :] = array_ns.where(
+            valid_jk[chunk, :],
+            (jk1_0 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[chunk, 0, :],
+        )
+
+    for chunk in _exact_v2_edge_chunks(hs, nedges, chunk_size):
+        jk1_1 = _exact_v4_first_match(z_ifc_e1[chunk, :], z_me[chunk, :], fi[chunk], array_ns)
+        z_mc_e1 = z_mc[e2c_1[chunk]]
+        zdiff_gradp[chunk, 1, :] = array_ns.where(
+            valid_jk[chunk, :],
+            z_me[chunk, :] - array_ns.take_along_axis(z_mc_e1, jk1_1, axis=1),
+            zdiff_gradp[chunk, 1, :],
+        )
+        vertoffset_gradp[chunk, 1, :] = array_ns.where(
+            valid_jk[chunk, :],
+            (jk1_1 - jk_idx).astype(gtx.int32),
+            vertoffset_gradp[chunk, 1, :],
+        )
+
+    if hs1 < nedges:
+        for chunk in _exact_v2_edge_chunks(hs1, nedges, chunk_size):
+            z_aux2_v = z_aux2[chunk, None]
+            jk1_aux_0 = _exact_v4_first_match(z_ifc_e0[chunk, :], z_aux2_v, fi[chunk], array_ns)
+            jk1_aux_1 = _exact_v4_first_match(z_ifc_e1[chunk, :], z_aux2_v, fi[chunk], array_ns)
+            z_mc_e0 = z_mc[e2c_0[chunk]]
+            z_mc_e1 = z_mc[e2c_1[chunk]]
+            zdiff_gradp[chunk, 0, :] = array_ns.where(
+                phase2_active[chunk, :],
+                z_aux2_v - array_ns.take_along_axis(z_mc_e0, jk1_aux_0, axis=1),
+                zdiff_gradp[chunk, 0, :],
+            )
+            vertoffset_gradp[chunk, 0, :] = array_ns.where(
+                phase2_active[chunk, :],
+                (jk1_aux_0 - jk_idx).astype(gtx.int32),
+                vertoffset_gradp[chunk, 0, :],
+            )
+            zdiff_gradp[chunk, 1, :] = array_ns.where(
+                phase2_active[chunk, :],
+                z_aux2_v - array_ns.take_along_axis(z_mc_e1, jk1_aux_1, axis=1),
+                zdiff_gradp[chunk, 1, :],
+            )
+            vertoffset_gradp[chunk, 1, :] = array_ns.where(
+                phase2_active[chunk, :],
+                (jk1_aux_1 - jk_idx).astype(gtx.int32),
+                vertoffset_gradp[chunk, 1, :],
+            )
+
+    _LAST_EXACT_V4_PATH = "fast"
+    return zdiff_gradp, vertoffset_gradp
 
 
 def compute_zdiff_gradp_exact(
