@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
+from collections.abc import Iterator
 from types import ModuleType
 from typing import Any
 
@@ -49,7 +50,9 @@ def _check_e3(
     return ((z_me[:, :-1] >= z_me[:, 1:]) | ~valid_me).all()
 
 
-def _batched_searchsorted(a, v, array_ns):
+def _batched_searchsorted(
+    a: data_alloc.NDArray, v: data_alloc.NDArray, array_ns: ModuleType
+) -> data_alloc.NDArray:
     m, n = a.shape
     max_num = max(float(a.max() - a.min()), float(v.max() - v.min())) + 1
     r = max_num * array_ns.arange(m, dtype=a.dtype)[:, None]
@@ -59,7 +62,7 @@ def _batched_searchsorted(a, v, array_ns):
 
 def compute_zdiff_gradp(
     *,
-    e2c,
+    e2c: data_alloc.NDArray,
     z_me: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
@@ -188,8 +191,16 @@ def _compute_v2_validation(  # noqa: PLR0917
     fi: data_alloc.NDArray,
     nlev: int,
     nedges: int,
+    *,
+    tie_free: data_alloc.NDArray | None = None,
 ) -> data_alloc.NDArray:
-    """Return a (2,) device boolean array [finite_ok, full_ok] for v2's full validation set."""
+    """Return a (2,) device boolean array [finite_ok, full_ok] for v2's full validation set.
+
+    If ``tie_free`` is provided (a 0-d device bool from the fast path's
+    precomputed searchsorted positions), the function skips the expensive
+    interior-tie searchsorted passes and folds the supplied flag into
+    ``full_ok``.  This keeps validation to a single stacked sync.
+    """
     finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
     e3_ok = _check_e3(array_ns, z_me, fi, nlev)
 
@@ -221,46 +232,28 @@ def _compute_v2_validation(  # noqa: PLR0917
     ulp_at_max = array_ns.nextafter(max_num, array_ns.inf) - max_num
     spacing_ok = min_spacing > ulp_at_max
 
-    fill_high = global_max + 1.0
-    fill_low = global_min - 1.0
-    z_ifc_mask = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
-        nlev + 1 - fi[:, None]
-    )
-    z_me_mask = array_ns.arange(nlev, dtype=array_ns.int64)[None, :] <= fi[:, None]
+    if tie_free is None:
+        fill_high = global_max + 1.0
+        fill_low = global_min - 1.0
+        z_ifc_mask = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
+            nlev + 1 - fi[:, None]
+        )
+        z_me_mask = array_ns.arange(nlev, dtype=array_ns.int64)[None, :] <= fi[:, None]
 
-    def _interior_tie_free(a: data_alloc.NDArray, v: data_alloc.NDArray) -> data_alloc.NDArray:
-        """Return a 0-d bool: no query exactly equals an interior interface.
+        def _interior_tie_free(a: data_alloc.NDArray, v: data_alloc.NDArray) -> data_alloc.NDArray:
+            pos = _batched_searchsorted_v2(a, v, array_ns)
+            return _interior_tie_free_from_positions(a, v, pos, fi, nlev, array_ns)
 
-        ``a`` is the masked ascending z_ifc row used by v2 (shape
-        (nedges, nlev + 1)); ``v`` are the queries (shape (nedges, nq)).
-        A tie at ascending index ``pos`` maps to original level index
-        ``nlev - pos``.  Interior means ``fi < m < nlev - 1``, i.e.
-        ``2 <= pos <= nlev - fi - 1``; this excludes the topography interface,
-        the top of the deepest level, and everything at or below ``fi``.
-        """
-        pos = _batched_searchsorted_v2(a, v, array_ns)
-        last = nlev
-        right_idx = array_ns.clip(pos, 0, last)
-        right = array_ns.take_along_axis(a, right_idx, axis=1)
-        left_idx = array_ns.clip(pos - 1, 0, last)
-        left = array_ns.take_along_axis(a, left_idx, axis=1)
-        eq_right = v == right
-        eq_left = (pos > 0) & (v == left)
-        max_interior = (nlev - fi - 1)[:, None]
-        interior_right = eq_right & (pos >= 2) & (pos <= max_interior)
-        interior_left = eq_left & ((pos - 1) >= 2) & ((pos - 1) <= max_interior)
-        return array_ns.logical_not(array_ns.any(interior_right | interior_left))
+        z_ifc_e0_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e0)
+        z_ifc_e1_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e1)
+        z_me_m = array_ns.where(z_me_mask, fill_low, z_me)
+        z_aux2_v = z_aux2[:, None]
 
-    z_ifc_e0_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e0)
-    z_ifc_e1_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e1)
-    z_me_m = array_ns.where(z_me_mask, fill_low, z_me)
-    z_aux2_v = z_aux2[:, None]
-
-    tie_free_0 = _interior_tie_free(z_ifc_e0_m, z_me_m)
-    tie_free_1 = _interior_tie_free(z_ifc_e1_m, z_me_m)
-    tie_free_aux_0 = _interior_tie_free(z_ifc_e0_m, z_aux2_v)
-    tie_free_aux_1 = _interior_tie_free(z_ifc_e1_m, z_aux2_v)
-    tie_free = tie_free_0 & tie_free_1 & tie_free_aux_0 & tie_free_aux_1
+        tie_free_0 = _interior_tie_free(z_ifc_e0_m, z_me_m)
+        tie_free_1 = _interior_tie_free(z_ifc_e1_m, z_me_m)
+        tie_free_aux_0 = _interior_tie_free(z_ifc_e0_m, z_aux2_v)
+        tie_free_aux_1 = _interior_tie_free(z_ifc_e1_m, z_aux2_v)
+        tie_free = tie_free_0 & tie_free_1 & tie_free_aux_0 & tie_free_aux_1
 
     full_ok = e1_ok_0
     for check in (e1_ok_1, e3_ok, a2_ok, spacing_ok, tie_free):
@@ -280,6 +273,33 @@ def _batched_searchsorted_v2(
     r = max_num * array_ns.arange(m, dtype=array_ns.float64)[:, None]
     p = array_ns.searchsorted((a + r).ravel(), (v + r).ravel()).reshape(v.shape)
     return p - n * array_ns.arange(m, dtype=p.dtype)[:, None]
+
+
+def _interior_tie_free_from_positions(  # noqa: PLR0917
+    a: data_alloc.NDArray,
+    v: data_alloc.NDArray,
+    pos: data_alloc.NDArray,
+    fi: data_alloc.NDArray,
+    nlev: int,
+    array_ns: ModuleType,
+) -> data_alloc.NDArray:
+    """Return a 0-d bool: no query exactly equals an interior interface.
+
+    Same predicate as ``_interior_tie_free`` but uses the searchsorted
+    positions ``pos`` already computed by the v2 fast path, avoiding a
+    second batched searchsorted pass.
+    """
+    last = nlev
+    right_idx = array_ns.clip(pos, 0, last)
+    right = array_ns.take_along_axis(a, right_idx, axis=1)
+    left_idx = array_ns.clip(pos - 1, 0, last)
+    left = array_ns.take_along_axis(a, left_idx, axis=1)
+    eq_right = v == right
+    eq_left = (pos > 0) & (v == left)
+    max_interior = (nlev - fi - 1)[:, None]
+    interior_right = eq_right & (pos >= 2) & (pos <= max_interior)
+    interior_left = eq_left & ((pos - 1) >= 2) & ((pos - 1) <= max_interior)
+    return array_ns.logical_not(array_ns.any(interior_right | interior_left))
 
 
 def _validate_zdiff_gradp_inputs(  # noqa: PLR0917
@@ -313,7 +333,83 @@ def _validate_exact_inputs(
         raise ValueError("Searched arrays contain non-finite values.")
 
 
-def compute_zdiff_gradp_v2(
+def _compute_zdiff_gradp_v2_bundle(  # noqa: PLR0917
+    array_ns: ModuleType,
+    z_ifc_e0: data_alloc.NDArray,
+    z_ifc_e1: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
+    z_aux2: data_alloc.NDArray,
+    fi: data_alloc.NDArray,
+    nlev: int,
+    hs: int,
+    hs1: int,
+) -> dict[str, data_alloc.NDArray | None]:
+    """Compute fill bounds, masks, and searchsorted positions for v2's fast path.
+
+    Returns a dict that can be passed back to ``compute_zdiff_gradp_v2`` via
+    ``_precomputed`` so dispatch (and future callers) avoid recomputing these
+    quantities.  Phase-2 entries are ``None`` when ``hs1 >= nedges``.
+    """
+    fill_high = (
+        array_ns.max(array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()]))
+        + 1.0
+    )
+    fill_low = (
+        array_ns.min(array_ns.stack([z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()]))
+        - 1.0
+    )
+
+    nedges = z_ifc_e0.shape[0]
+    fi_sliced = fi[hs:]
+    z_ifc_mask = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
+        nlev + 1 - fi_sliced[:, None]
+    )
+    z_me_mask = array_ns.arange(nlev, dtype=array_ns.int64)[None, :] <= fi_sliced[:, None]
+
+    z_ifc_e0_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e0[hs:])
+    z_ifc_e1_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e1[hs:])
+    z_me_m = array_ns.where(z_me_mask, fill_low, z_me[hs:])
+
+    pos_0 = _batched_searchsorted_v2(z_ifc_e0_m, z_me_m, array_ns)
+    pos_1 = _batched_searchsorted_v2(z_ifc_e1_m, z_me_m, array_ns)
+
+    if hs1 < nedges:
+        fi_sliced1 = fi[hs1:]
+        z_aux2_v = z_aux2[hs1:, None]
+        z_ifc_mask1 = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
+            nlev + 1 - fi_sliced1[:, None]
+        )
+        z_ifc_e0_m1 = array_ns.where(z_ifc_mask1, fill_high, z_ifc_e0[hs1:])
+        z_ifc_e1_m1 = array_ns.where(z_ifc_mask1, fill_high, z_ifc_e1[hs1:])
+        pos_aux_0 = _batched_searchsorted_v2(z_ifc_e0_m1, z_aux2_v, array_ns)
+        pos_aux_1 = _batched_searchsorted_v2(z_ifc_e1_m1, z_aux2_v, array_ns)
+    else:
+        fi_sliced1 = None
+        z_aux2_v = None
+        z_ifc_e0_m1 = z_ifc_e1_m1 = None
+        pos_aux_0 = pos_aux_1 = None
+
+    return {
+        "fill_high": fill_high,
+        "fill_low": fill_low,
+        "fi_sliced": fi_sliced,
+        "fi_sliced1": fi_sliced1,
+        "z_ifc_mask": z_ifc_mask,
+        "z_me_mask": z_me_mask,
+        "z_ifc_e0_m": z_ifc_e0_m,
+        "z_ifc_e1_m": z_ifc_e1_m,
+        "z_me_m": z_me_m,
+        "z_aux2_v": z_aux2_v,
+        "z_ifc_e0_m1": z_ifc_e0_m1,
+        "z_ifc_e1_m1": z_ifc_e1_m1,
+        "pos_0": pos_0,
+        "pos_1": pos_1,
+        "pos_aux_0": pos_aux_0,
+        "pos_aux_1": pos_aux_1,
+    }
+
+
+def compute_zdiff_gradp_v2(  # noqa: PLR0915
     *,
     e2c: data_alloc.NDArray,
     z_me: data_alloc.NDArray,
@@ -325,6 +421,7 @@ def compute_zdiff_gradp_v2(
     horizontal_start: gtx.int32,
     horizontal_start_1: gtx.int32,
     _precomputed_validation_ok: bool = False,
+    _precomputed: dict[str, data_alloc.NDArray | None] | None = None,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     array_ns = data_alloc.array_namespace(z_mc)
     nedges = e2c.shape[0]
@@ -349,9 +446,54 @@ def compute_zdiff_gradp_v2(
     z_ifc_e0 = z_ifc_asc[e2c_0]
     z_ifc_e1 = z_ifc_asc[e2c_1]
 
+    if _precomputed is None:
+        bundle = _compute_zdiff_gradp_v2_bundle(
+            array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, hs, hs1
+        )
+    else:
+        bundle = _precomputed
+
     if _validation_enabled() and not _precomputed_validation_ok:
+        # Interior-tie check derived from the same positions the fast path
+        # will use for assembly, so validation adds no extra searchsorted.
+        tie_free_0 = _interior_tie_free_from_positions(
+            bundle["z_ifc_e0_m"],
+            bundle["z_me_m"],
+            bundle["pos_0"],
+            bundle["fi_sliced"],
+            nlev,
+            array_ns,
+        )
+        tie_free_1 = _interior_tie_free_from_positions(
+            bundle["z_ifc_e1_m"],
+            bundle["z_me_m"],
+            bundle["pos_1"],
+            bundle["fi_sliced"],
+            nlev,
+            array_ns,
+        )
+        if bundle["z_aux2_v"] is not None:
+            tie_free_aux_0 = _interior_tie_free_from_positions(
+                bundle["z_ifc_e0_m1"],
+                bundle["z_aux2_v"],
+                bundle["pos_aux_0"],
+                bundle["fi_sliced1"],
+                nlev,
+                array_ns,
+            )
+            tie_free_aux_1 = _interior_tie_free_from_positions(
+                bundle["z_ifc_e1_m1"],
+                bundle["z_aux2_v"],
+                bundle["pos_aux_1"],
+                bundle["fi_sliced1"],
+                nlev,
+                array_ns,
+            )
+            tie_free = tie_free_0 & tie_free_1 & tie_free_aux_0 & tie_free_aux_1
+        else:
+            tie_free = tie_free_0 & tie_free_1
         combined = _compute_v2_validation(
-            array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges
+            array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges, tie_free=tie_free
         )
         if not bool(combined[0] & combined[1]):
             raise ValueError(
@@ -359,30 +501,16 @@ def compute_zdiff_gradp_v2(
                 "z_me monotonicity, finiteness, A2 float-offset premise, min-spacing-vs-ULP, "
                 "or exact interior tie (v2 would pick the shallower/deeper index differently from main) violated."
             )
-    fill_high = (
-        array_ns.max(array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()]))
-        + 1.0
-    )
-    fill_low = (
-        array_ns.min(array_ns.stack([z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()]))
-        - 1.0
-    )
+
     jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
-    fi_sliced = fi[hs:]
-
-    z_ifc_mask = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
-        nlev + 1 - fi_sliced[:, None]
-    )
-    z_me_mask = array_ns.arange(nlev, dtype=array_ns.int64)[None, :] <= fi_sliced[:, None]
-
-    z_ifc_e0_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e0[hs:])
-    z_ifc_e1_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e1[hs:])
-    z_me_m = array_ns.where(z_me_mask, fill_low, z_me[hs:])
-
+    fi_sliced = bundle["fi_sliced"]
+    assert fi_sliced is not None
     valid_jk = jk_idx > fi_sliced[:, None]
 
     # Phase 1, cell 0
-    pos_0 = _batched_searchsorted_v2(z_ifc_e0_m, z_me_m, array_ns)
+    pos_0 = bundle["pos_0"]
+    assert pos_0 is not None
+
     jk1_0 = array_ns.clip(nlev - pos_0, fi_sliced[:, None], nlev - 1)
     z_mc_e0 = z_mc[e2c_0]
     base_zdiff_c = z_me[hs:] - z_mc_e0[hs:]
@@ -396,16 +524,16 @@ def compute_zdiff_gradp_v2(
         (jk1_0 - jk_idx).astype(gtx.int32),
         vertoffset_gradp[hs:, 0, :],
     )
-
     # Phase 1, cell 1
-    pos_1 = _batched_searchsorted_v2(z_ifc_e1_m, z_me_m, array_ns)
+    pos_1 = bundle["pos_1"]
+    assert pos_1 is not None
+
     jk1_1 = array_ns.clip(nlev - pos_1, fi_sliced[:, None], nlev - 1)
     z_mc_e1 = z_mc[e2c_1]
-    base_zdiff_c = z_me[hs:] - z_mc_e1[hs:]
     zdiff_gradp[hs:, 1, :] = array_ns.where(
         valid_jk,
         z_me[hs:] - array_ns.take_along_axis(z_mc_e1[hs:], jk1_1.astype(array_ns.int64), axis=1),
-        base_zdiff_c,
+        zdiff_gradp[hs:, 1, :],
     )
     vertoffset_gradp[hs:, 1, :] = array_ns.where(
         valid_jk,
@@ -415,17 +543,14 @@ def compute_zdiff_gradp_v2(
 
     # Phase 2
     if hs1 < nedges:
-        fi_sliced1 = fi[hs1:]
-        z_aux2_v = z_aux2[hs1:, None]
+        fi_sliced1 = bundle["fi_sliced1"]
+        z_aux2_v = bundle["z_aux2_v"]
+        assert fi_sliced1 is not None
+        assert z_aux2_v is not None
 
-        z_ifc_mask1 = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
-            nlev + 1 - fi_sliced1[:, None]
-        )
+        pos_aux_0 = bundle["pos_aux_0"]
+        assert pos_aux_0 is not None
 
-        z_ifc_e0_m1 = array_ns.where(z_ifc_mask1, fill_high, z_ifc_e0[hs1:])
-        z_ifc_e1_m1 = array_ns.where(z_ifc_mask1, fill_high, z_ifc_e1[hs1:])
-
-        pos_aux_0 = _batched_searchsorted_v2(z_ifc_e0_m1, z_aux2_v, array_ns)
         jk1_aux_0 = array_ns.clip(nlev - pos_aux_0, fi_sliced1[:, None], nlev - 1)
         jk1_aux_0 = array_ns.where(
             pos_aux_0 >= (nlev + 1 - fi_sliced1)[:, None],
@@ -433,8 +558,10 @@ def compute_zdiff_gradp_v2(
             jk1_aux_0,
         )
 
-        pos_aux_1 = _batched_searchsorted_v2(z_ifc_e1_m1, z_aux2_v, array_ns)
+        pos_aux_1 = bundle["pos_aux_1"]
+        assert pos_aux_1 is not None
         jk1_aux_1 = array_ns.clip(nlev - pos_aux_1, fi_sliced1[:, None], nlev - 1)
+
         jk1_aux_1 = array_ns.where(
             pos_aux_1 >= (nlev + 1 - fi_sliced1)[:, None],
             nlev - 1,
@@ -474,7 +601,7 @@ def _exact_v2_chunk_size(nlev: int, itemsize: int) -> int:
     return max(1, _EXACT_V2_MAX_TABLE_BYTES // bytes_per_edge)
 
 
-def _exact_v2_edge_chunks(start: int, end: int, chunk_size: int):
+def _exact_v2_edge_chunks(start: int, end: int, chunk_size: int) -> Iterator[slice]:
     for s in range(start, end, chunk_size):
         yield slice(s, min(s + chunk_size, end))
 
@@ -980,8 +1107,50 @@ def compute_zdiff_gradp_dispatch(
     z_ifc_e1 = z_ifc_asc[e2c_1]
 
     if _validation_enabled():
+        # Compute the fast-path bundle once; derive the interior-tie check from
+        # the same searchsorted positions so dispatch does not pay for a second
+        # batched searchsorted pass.
+        bundle = _compute_zdiff_gradp_v2_bundle(
+            array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, hs, hs1
+        )
+        tie_free_0 = _interior_tie_free_from_positions(
+            bundle["z_ifc_e0_m"],
+            bundle["z_me_m"],
+            bundle["pos_0"],
+            bundle["fi_sliced"],
+            nlev,
+            array_ns,
+        )
+        tie_free_1 = _interior_tie_free_from_positions(
+            bundle["z_ifc_e1_m"],
+            bundle["z_me_m"],
+            bundle["pos_1"],
+            bundle["fi_sliced"],
+            nlev,
+            array_ns,
+        )
+        if bundle["z_aux2_v"] is not None:
+            tie_free_aux_0 = _interior_tie_free_from_positions(
+                bundle["z_ifc_e0_m1"],
+                bundle["z_aux2_v"],
+                bundle["pos_aux_0"],
+                bundle["fi_sliced1"],
+                nlev,
+                array_ns,
+            )
+            tie_free_aux_1 = _interior_tie_free_from_positions(
+                bundle["z_ifc_e1_m1"],
+                bundle["z_aux2_v"],
+                bundle["pos_aux_1"],
+                bundle["fi_sliced1"],
+                nlev,
+                array_ns,
+            )
+            tie_free = tie_free_0 & tie_free_1 & tie_free_aux_0 & tie_free_aux_1
+        else:
+            tie_free = tie_free_0 & tie_free_1
         combined = _compute_v2_validation(
-            array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges
+            array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges, tie_free=tie_free
         )
         finite_ok = combined[0]
         full_ok = combined[1]
@@ -1000,6 +1169,7 @@ def compute_zdiff_gradp_dispatch(
                 horizontal_start=horizontal_start,
                 horizontal_start_1=horizontal_start_1,
                 _precomputed_validation_ok=True,
+                _precomputed=bundle,
             )
         _LAST_DISPATCH_PATH = "exact"
         return compute_zdiff_gradp_exact_v2(
