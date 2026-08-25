@@ -8,13 +8,16 @@
 
 import os
 from types import ModuleType
+from typing import Any
 
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 _LAST_EXACT_V2_PATH: str | None = None
+_LAST_EXACT_V3_PATH: str | None = None
 _LAST_DISPATCH_PATH: str | None = None
 _EXACT_V2_MAX_TABLE_BYTES: int = 1 << 30
 
@@ -571,6 +574,325 @@ def compute_zdiff_gradp_exact_v2(  # noqa: PLR0915
             )
 
     _LAST_EXACT_V2_PATH = "carry" if use_carry else "fast"
+    return zdiff_gradp, vertoffset_gradp
+
+
+_EXACT_V3_FAST_BLOCK_SIZE: int = 256
+
+_EXACT_V3_FIRST_MATCH_KERNEL_SRC = r"""
+extern "C" __global__ void first_match_kernel(
+    const double* __restrict__ z_ifc,
+    const double* __restrict__ queries,
+    const long long* __restrict__ fi,
+    long long* __restrict__ out,
+    int nedges,
+    int nlev,
+    int nq
+)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int total = nedges * nq;
+    if (tid >= total) return;
+
+    int e = tid / nq;
+    int q = tid - e * nq;
+    long long fi_e = fi[e];
+    double query = queries[e * nq + q];
+
+    for (long long i = fi_e; i < nlev; ++i) {
+        if (i == nlev - 1) {
+            out[tid] = nlev - 1;
+            return;
+        }
+        double top = z_ifc[e * (nlev + 1) + i];
+        double bot = z_ifc[e * (nlev + 1) + i + 1];
+        if (top >= query && query >= bot) {
+            out[tid] = i;
+            return;
+        }
+    }
+
+    out[tid] = nlev - 1;
+}
+"""
+
+
+def _compile_exact_v3_kernel(array_ns: ModuleType) -> Any:
+    """Compile and cache the exact_v3 first-match RawKernel (cupy only)."""
+    if array_ns.__name__ != "cupy":
+        raise TypeError("_compile_exact_v3_kernel requires cupy.")
+    kernel = getattr(_compile_exact_v3_kernel, "_kernel", None)
+    if kernel is None:
+        kernel = array_ns.RawKernel(_EXACT_V3_FIRST_MATCH_KERNEL_SRC, "first_match_kernel")
+        _compile_exact_v3_kernel._kernel = kernel  # type: ignore[attr-defined]
+    return kernel
+
+
+def _launch_exact_v3_first_match_kernel(
+    array_ns: ModuleType,
+    z_ifc_k: data_alloc.NDArray,
+    queries: data_alloc.NDArray,
+    fi: data_alloc.NDArray,
+    nlev: int,
+) -> data_alloc.NDArray:
+    """Launch the cupy first-match scan kernel for one cell/query pair."""
+    kernel = _compile_exact_v3_kernel(array_ns)
+    nedges = int(z_ifc_k.shape[0])
+    nq = int(queries.shape[1])
+    out = array_ns.empty((nedges, nq), dtype=array_ns.int64)
+    total = nedges * nq
+    block = _EXACT_V3_FAST_BLOCK_SIZE
+    grid = (total + block - 1) // block
+    kernel(
+        (grid,),
+        (block,),
+        (z_ifc_k, queries, fi, out, nedges, nlev, nq),
+    )
+    return out
+
+
+def _first_match_scan_reference(
+    z_ifc_k: data_alloc.NDArray,
+    queries: data_alloc.NDArray,
+    fi: data_alloc.NDArray,
+) -> np.ndarray:
+    """Numpy reference for the exact_v3 per-edge first-match scan.
+
+    This implements the same predicate as the cupy RawKernel:
+
+        jk1[e, q] = min { i >= fi[e] : i == nlev-1
+                                   or (z_ifc_k[e, i] >= query[e, q]
+                                       >= z_ifc_k[e, i+1]) }
+
+    The scan starts at ``fi[e]``, uses the same inclusive bracket comparisons
+    as ``_exact_query_succ``, and treats the deepest level ``i == nlev-1`` as
+    an unconditional member.  Consequently it returns exactly the value that
+    the successor-table fast path gathers as ``succ[q, fi]``.
+    """
+    z_ifc_k = np.asarray(z_ifc_k, dtype=np.float64)
+    queries = np.asarray(queries, dtype=np.float64)
+    fi = np.asarray(fi, dtype=np.int64)
+    nedges, nlev_p1 = z_ifc_k.shape
+    nlev = nlev_p1 - 1
+    if queries.ndim == 1:
+        queries = queries[:, np.newaxis]
+    if queries.shape[0] != nedges:
+        raise ValueError("queries must have shape (nedges, nq) or (nedges,).")
+
+    out = np.full((nedges, queries.shape[1]), nlev - 1, dtype=np.int64)
+    found = np.zeros((nedges, queries.shape[1]), dtype=bool)
+
+    for i in range(nlev):
+        active = (i >= fi[:, np.newaxis]) & ~found
+        if i == nlev - 1:
+            out[active] = nlev - 1
+            break
+        bracket = (z_ifc_k[:, i][:, np.newaxis] >= queries) & (
+            queries >= z_ifc_k[:, i + 1][:, np.newaxis]
+        )
+        newly = active & bracket
+        out[newly] = i
+        found |= newly
+
+    return out
+
+
+def _exact_v3_assemble_cell(  # noqa: PLR0917
+    zdiff_gradp: data_alloc.NDArray,
+    vertoffset_gradp: data_alloc.NDArray,
+    jk1: data_alloc.NDArray,
+    z_mc_ec: data_alloc.NDArray,
+    query_v: data_alloc.NDArray,
+    active: data_alloc.NDArray,
+    jk_idx: data_alloc.NDArray,
+    cell: int,
+    array_ns: ModuleType,
+) -> None:
+    """Apply the D6 output-assembly pattern for one cell."""
+    zdiff_gradp[:, cell, :] = array_ns.where(
+        active,
+        query_v - array_ns.take_along_axis(z_mc_ec, jk1, axis=1),
+        zdiff_gradp[:, cell, :],
+    )
+    vertoffset_gradp[:, cell, :] = array_ns.where(
+        active,
+        (jk1 - jk_idx).astype(gtx.int32),
+        vertoffset_gradp[:, cell, :],
+    )
+
+
+def compute_zdiff_gradp_exact_v3(
+    *,
+    e2c: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    flat_idx: data_alloc.NDArray,
+    topography: data_alloc.NDArray,
+    nlev: int,
+    horizontal_start: gtx.int32,
+    horizontal_start_1: gtx.int32,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """Exact variant with a cupy first-match-scan fast path and no tables.
+
+    Semantics are identical to ``compute_zdiff_gradp_exact_v2``.  On numpy
+    the implementation delegates to ``compute_zdiff_gradp_exact_v2``.  On cupy
+    the fast path evaluates main's bracket predicate by a per-(edge, query)
+    linear scan starting at ``fi[e]``.
+
+    Correctness proof for the cupy fast path:
+
+    - The kernel predicate is exactly the table predicate from
+      ``_exact_query_succ``:
+      ``z_ifc_k[e, i] >= query[e, q] >= z_ifc_k[e, i+1]``.
+    - The scan starts at ``i = fi[e]``, matching the suffix-minimum gather
+      ``succ[q, fi]`` used by ``_exact_phase1_cell0``.
+    - ``i == nlev-1`` is returned unconditionally, matching the
+      ``unconditional`` column in ``_exact_query_succ``.
+    - Therefore the kernel returns ``min{i >= fi[e] : predicate holds}`` for
+      every (e, q).  This is byte-identical to ``succ[q, fi]``.
+    - Phase-1 cell-0 and both phase-2 queries are fresh in main as well,
+      so the fresh value is the correct value.
+    - Under E3, phase-1 cell-1's carried ``jk_start`` lower bound never
+      exceeds the fresh first-match (D6 E3 proof), so the fresh value equals
+      the carry value.
+    - Output assembly reuses the D6 pattern from exact_v2, so the final
+      fields are bitwise-identical to exact_v2 (and therefore to main-golden
+      on E3-valid inputs).
+    - If E3 does not hold, the function falls back to exact_v2's carry
+      machinery, preserving exactness.
+    """
+    global _LAST_EXACT_V3_PATH  # noqa: PLW0603
+    array_ns = data_alloc.array_namespace(z_mc)
+    nedges = e2c.shape[0]
+
+    hs = int(horizontal_start)
+    hs1 = int(horizontal_start_1)
+    if hs1 < hs:
+        raise ValueError("horizontal_start_1 must be greater than or equal to horizontal_start.")
+
+    # Numpy path: reuse exact_v2 machinery unchanged.
+    if array_ns.__name__ != "cupy":
+        out = compute_zdiff_gradp_exact_v2(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=horizontal_start,
+            horizontal_start_1=horizontal_start_1,
+        )
+        _LAST_EXACT_V3_PATH = _LAST_EXACT_V2_PATH
+        return out
+
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0
+
+    fi = flat_idx.astype(array_ns.int64)
+    e2c_0 = e2c[:, 0].astype(array_ns.int64)
+    e2c_1 = e2c[:, 1].astype(array_ns.int64)
+
+    z_ifc_e0 = z_ifc[e2c_0, :].astype(array_ns.float64)
+    z_ifc_e1 = z_ifc[e2c_1, :].astype(array_ns.float64)
+
+    # Validation identical to exact_v2: finiteness is always checked; E3 only
+    # selects the code path.  Both checks are fused into a single sync.
+    finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
+    e3_ok = _check_e3(array_ns, z_me, fi, nlev)
+    combined = finite_ok & e3_ok
+    if not bool(combined):
+        if not bool(finite_ok):
+            raise ValueError("Searched arrays contain non-finite values.")
+        _LAST_EXACT_V3_PATH = "carry"
+        return compute_zdiff_gradp_exact_v2(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=horizontal_start,
+            horizontal_start_1=horizontal_start_1,
+        )
+
+    _LAST_EXACT_V3_PATH = "fast"
+
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    zdiff_gradp[hs:, :, :] = array_ns.expand_dims(z_me, axis=1)[hs:, :, :] - z_mc[e2c][hs:, :, :]
+    vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
+
+    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    edge_hs_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs
+    edge_hs1_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs1
+    valid_jk = (jk_idx > fi[:, None]) & edge_hs_mask[:, None]
+    phase2_active = valid_jk & (z_me < z_aux2[:, None]) & edge_hs1_mask[:, None]
+
+    z_me_f64 = z_me.astype(array_ns.float64)
+    z_aux2_v = z_aux2[:, None].astype(array_ns.float64)
+
+    z_mc_e0 = z_mc[e2c_0]
+    z_mc_e1 = z_mc[e2c_1]
+
+    jk1_0 = _launch_exact_v3_first_match_kernel(array_ns, z_ifc_e0, z_me_f64, fi, nlev)
+    _exact_v3_assemble_cell(
+        zdiff_gradp,
+        vertoffset_gradp,
+        jk1_0,
+        z_mc_e0,
+        z_me_f64,
+        valid_jk,
+        jk_idx,
+        cell=0,
+        array_ns=array_ns,
+    )
+    del jk1_0
+
+    jk1_1 = _launch_exact_v3_first_match_kernel(array_ns, z_ifc_e1, z_me_f64, fi, nlev)
+    _exact_v3_assemble_cell(
+        zdiff_gradp,
+        vertoffset_gradp,
+        jk1_1,
+        z_mc_e1,
+        z_me_f64,
+        valid_jk,
+        jk_idx,
+        cell=1,
+        array_ns=array_ns,
+    )
+    del jk1_1
+
+    if hs1 < nedges:
+        jk1_aux_0 = _launch_exact_v3_first_match_kernel(array_ns, z_ifc_e0, z_aux2_v, fi, nlev)
+        _exact_v3_assemble_cell(
+            zdiff_gradp,
+            vertoffset_gradp,
+            jk1_aux_0,
+            z_mc_e0,
+            z_aux2_v,
+            phase2_active,
+            jk_idx,
+            cell=0,
+            array_ns=array_ns,
+        )
+        del jk1_aux_0
+
+        jk1_aux_1 = _launch_exact_v3_first_match_kernel(array_ns, z_ifc_e1, z_aux2_v, fi, nlev)
+        _exact_v3_assemble_cell(
+            zdiff_gradp,
+            vertoffset_gradp,
+            jk1_aux_1,
+            z_mc_e1,
+            z_aux2_v,
+            phase2_active,
+            jk_idx,
+            cell=1,
+            array_ns=array_ns,
+        )
+        del jk1_aux_1
+
     return zdiff_gradp, vertoffset_gradp
 
 

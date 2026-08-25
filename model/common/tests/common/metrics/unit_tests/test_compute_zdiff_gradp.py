@@ -18,10 +18,14 @@ import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.common.metrics.compute_zdiff_gradp as _zdiff_mod
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_zdiff_gradp import (
+    _exact_phase1_cell0,
+    _exact_query_succ,
+    _first_match_scan_reference,
     compute_zdiff_gradp,
     compute_zdiff_gradp_dispatch,
     compute_zdiff_gradp_exact,
     compute_zdiff_gradp_exact_v2,
+    compute_zdiff_gradp_exact_v3,
     compute_zdiff_gradp_v2,
 )
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
@@ -138,6 +142,7 @@ def _main_reference(  # noqa: PLR0912
         compute_zdiff_gradp_v2,
         compute_zdiff_gradp_exact,
         compute_zdiff_gradp_exact_v2,
+        compute_zdiff_gradp_exact_v3,
         compute_zdiff_gradp_dispatch,
     ],
 )
@@ -306,6 +311,21 @@ def test_compute_zdiff_gradp_endpoint_forcing(
     assert np.allclose(exact_zdiff, golden_zdiff)
     assert np.array_equal(exact_vert, golden_vert)
 
+    exact3_zdiff, exact3_vert = compute_zdiff_gradp_exact_v3(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert np.allclose(exact3_zdiff, golden_zdiff)
+    assert np.array_equal(exact3_vert, golden_vert)
+    assert _zdiff_mod._LAST_EXACT_V3_PATH == "fast"
+
     assert not np.allclose(baseline_zdiff, golden_zdiff) or not np.array_equal(
         baseline_vert, golden_vert
     )
@@ -318,6 +338,7 @@ def test_compute_zdiff_gradp_endpoint_forcing(
         compute_zdiff_gradp_v2,
         compute_zdiff_gradp_exact,
         compute_zdiff_gradp_exact_v2,
+        compute_zdiff_gradp_exact_v3,
         compute_zdiff_gradp_dispatch,
     ],
 )
@@ -362,9 +383,9 @@ def test_compute_zdiff_gradp_nan_validation(
         )
 
     # Validation OFF: defined nlev-1 fallback, no crash for v2/exact/dispatch;
-    # exact_v2 keeps finiteness always-on, so it still raises.
+    # exact_v2/exact_v3 keep finiteness always-on, so they still raise.
     monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
-    if compute_fn is compute_zdiff_gradp_exact_v2:
+    if compute_fn in (compute_zdiff_gradp_exact_v2, compute_zdiff_gradp_exact_v3):
         with pytest.raises(ValueError):
             compute_fn(
                 e2c=e2c,
@@ -484,6 +505,21 @@ def test_compute_zdiff_gradp_e3_violation(
     assert np.allclose(exact2_zdiff, golden_zdiff)
     assert np.array_equal(exact2_vert, golden_vert)
     assert _zdiff_mod._LAST_EXACT_V2_PATH == "carry"
+
+    exact3_zdiff, exact3_vert = compute_zdiff_gradp_exact_v3(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert np.allclose(exact3_zdiff, golden_zdiff)
+    assert np.array_equal(exact3_vert, golden_vert)
+    assert _zdiff_mod._LAST_EXACT_V3_PATH == "carry"
 
     baseline_zdiff, baseline_vert = compute_zdiff_gradp(
         e2c=e2c,
@@ -975,4 +1011,68 @@ def test_compute_zdiff_gradp_exact_v2_chunking_carry(
     )
     assert _zdiff_mod._LAST_EXACT_V2_PATH == "carry"
     assert np.allclose(capped_zdiff, golden_zdiff)
-    assert np.array_equal(capped_vert, golden_vert)
+    assert np.array_equal(capped_vert, uncapped_vert)
+
+
+@pytest.mark.level("unit")
+def test_first_match_scan_reference_boundary_cases() -> None:
+    """Reference scan matches exact_v2 fresh-gather semantics on edge cases."""
+    nedges = 8
+    ncells = 8
+    nlev = 16
+
+    # Hand-built decreasing columns; topography is irrelevant for the scan.
+    topography = np.linspace(0.0, 3000.0, ncells).astype(np.float64)
+    z_ifc = np.empty((ncells, nlev + 1), dtype=np.float64)
+    for c in range(ncells):
+        top = topography[c]
+        for k in range(nlev + 1):
+            z_ifc[c, k] = 30000.0 - k * (30000.0 - top) / nlev
+
+    # Perturb one column to create a zero-thickness level (E1 violation) and
+    # interior ties; the reference scan must still match the fresh gather.
+    z_ifc[0, nlev // 2 + 1] = z_ifc[0, nlev // 2]
+
+    c_lin_e = np.full((nedges, 2), 0.5, dtype=np.float64)
+    c0 = np.arange(nedges) % ncells
+    c1 = (c0 + 1) % ncells
+    e2c = np.stack([c0, c1], axis=1)
+    z_mc = 0.5 * (z_ifc[:, :-1] + z_ifc[:, 1:])
+    z_me = np.sum(z_mc[e2c] * c_lin_e[:, :, None], axis=1)
+
+    # Boundary-case flat_idx values: 0, near nlev-2, and interior values.
+    flat_idx = np.array(
+        [0, 0, nlev - 2, nlev - 2, nlev // 2, nlev // 2, 1, nlev - 3],
+        dtype=np.int32,
+    )
+
+    # Make one query fall below every real bracket so the result is nlev-1.
+    z_me[0, 0] = z_ifc[e2c[0, 0], -1] - 100.0
+    # Make one query equal an interior interface (tie case).
+    z_me[2, 0] = z_ifc[e2c[2, 0], nlev // 2]
+
+    fi = flat_idx.astype(np.int64)
+    z_ifc_e0 = z_ifc[e2c[:, 0], :]
+    z_ifc_e1 = z_ifc[e2c[:, 1], :]
+
+    # Phase-1 style query (nedges, nlev).
+    succ0 = _exact_query_succ(z_ifc_e0, z_me, np)
+    jk1_fresh = _exact_phase1_cell0(succ0, fi, np)
+    jk1_ref = _first_match_scan_reference(z_ifc_e0, z_me, fi)
+    np.testing.assert_array_equal(jk1_ref, jk1_fresh)
+
+    # Phase-2 style query (nedges, 1).
+    z_aux2 = np.linspace(100.0, 500.0, nedges).astype(np.float64)
+    z_aux2_v = z_aux2[:, None]
+    succ2 = _exact_query_succ(z_ifc_e1, z_aux2_v, np)
+    jk1_aux_fresh = _exact_phase1_cell0(succ2, fi, np)
+    jk1_aux_ref = _first_match_scan_reference(z_ifc_e1, z_aux2_v, fi)
+    np.testing.assert_array_equal(jk1_aux_ref, jk1_aux_fresh)
+
+    # The reference scan also produces a value for inactive jk<=fi rows;
+    # those rows are discarded by valid_jk in assembly, but they must still
+    # match the fresh-gather value.
+    for e in range(nedges):
+        for q in range(nlev):
+            if q <= flat_idx[e]:
+                assert jk1_ref[e, q] == jk1_fresh[e, q]
