@@ -382,37 +382,22 @@ def test_compute_zdiff_gradp_nan_validation(
             horizontal_start_1=gtx.int32(hs1),
         )
 
-    # Validation OFF: defined nlev-1 fallback, no crash for v2/exact/dispatch;
-    # exact_v2/exact_v3 keep finiteness always-on, so they still raise.
+    # Validation OFF: defined nlev-1 fallback, no crash for all variants.
     monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
-    if compute_fn in (compute_zdiff_gradp_exact_v2, compute_zdiff_gradp_exact_v3):
-        with pytest.raises(ValueError):
-            compute_fn(
-                e2c=e2c,
-                z_me=z_me,
-                z_mc=z_mc,
-                z_ifc=z_ifc,
-                flat_idx=flat_idx,
-                topography=topography,
-                nlev=nlev,
-                horizontal_start=gtx.int32(hs),
-                horizontal_start_1=gtx.int32(hs1),
-            )
-    else:
-        zdiff_gradp, vertoffset_gradp = compute_fn(
-            e2c=e2c,
-            z_me=z_me,
-            z_mc=z_mc,
-            z_ifc=z_ifc,
-            flat_idx=flat_idx,
-            topography=topography,
-            nlev=nlev,
-            horizontal_start=gtx.int32(hs),
-            horizontal_start_1=gtx.int32(hs1),
-        )
-        assert zdiff_gradp.shape == (nedges, 2, nlev)
-        assert vertoffset_gradp.shape == (nedges, 2, nlev)
-        assert np.all(np.isfinite(vertoffset_gradp))
+    zdiff_gradp, vertoffset_gradp = compute_fn(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert zdiff_gradp.shape == (nedges, 2, nlev)
+    assert vertoffset_gradp.shape == (nedges, 2, nlev)
+    assert np.all(np.isfinite(vertoffset_gradp))
 
 
 def _build_p3_e3_violation_inputs() -> tuple[
@@ -502,10 +487,6 @@ def test_compute_zdiff_gradp_e3_violation(
         horizontal_start=gtx.int32(hs),
         horizontal_start_1=gtx.int32(hs1),
     )
-    assert np.allclose(exact2_zdiff, golden_zdiff)
-    assert np.array_equal(exact2_vert, golden_vert)
-    assert _zdiff_mod._LAST_EXACT_V2_PATH == "carry"
-
     exact3_zdiff, exact3_vert = compute_zdiff_gradp_exact_v3(
         e2c=e2c,
         z_me=z_me,
@@ -517,10 +498,18 @@ def test_compute_zdiff_gradp_e3_violation(
         horizontal_start=gtx.int32(hs),
         horizontal_start_1=gtx.int32(hs1),
     )
-    assert np.allclose(exact3_zdiff, golden_zdiff)
-    assert np.array_equal(exact3_vert, golden_vert)
-    assert _zdiff_mod._LAST_EXACT_V3_PATH == "carry"
 
+    if validation_enabled:
+        assert np.allclose(exact2_zdiff, golden_zdiff)
+        assert np.array_equal(exact2_vert, golden_vert)
+        assert _zdiff_mod._LAST_EXACT_V2_PATH == "carry"
+        assert np.allclose(exact3_zdiff, golden_zdiff)
+        assert np.array_equal(exact3_vert, golden_vert)
+        assert _zdiff_mod._LAST_EXACT_V3_PATH == "carry"
+    else:
+        # Validation OFF: exact_v2/exact_v3 take the fast path without E3 check.
+        assert _zdiff_mod._LAST_EXACT_V2_PATH == "fast"
+        assert _zdiff_mod._LAST_EXACT_V3_PATH == "fast"
     baseline_zdiff, baseline_vert = compute_zdiff_gradp(
         e2c=e2c,
         z_me=z_me,

@@ -187,8 +187,8 @@ def _compute_v2_validation(  # noqa: PLR0917
     fi: data_alloc.NDArray,
     nlev: int,
     nedges: int,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    """Return (finite_ok, full_ok) for v2's full validation set with one host sync."""
+) -> data_alloc.NDArray:
+    """Return a (2,) device boolean array [finite_ok, full_ok] for v2's full validation set."""
     finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
     e3_ok = _check_e3(array_ns, z_me, fi, nlev)
 
@@ -224,7 +224,8 @@ def _compute_v2_validation(  # noqa: PLR0917
     for check in (e1_ok_1, e3_ok, a2_ok, spacing_ok):
         full_ok = array_ns.logical_and(full_ok, check)
 
-    return finite_ok, full_ok
+    # Single stacked array: two bool() reads on the default stream share one sync.
+    return array_ns.stack([finite_ok, full_ok])
 
 
 def _batched_searchsorted_v2(
@@ -249,10 +250,8 @@ def _validate_zdiff_gradp_inputs(  # noqa: PLR0917
     nlev: int,
     nedges: int,
 ) -> None:
-    finite_ok, full_ok = _compute_v2_validation(
-        array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges
-    )
-    if not bool(finite_ok & full_ok):
+    combined = _compute_v2_validation(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges)
+    if not bool(combined[0] & combined[1]):
         raise ValueError(
             "compute_zdiff_gradp_v2 input validation failed: strict z_ifc decrease, "
             "z_me monotonicity, finiteness, A2 float-offset premise, or min-spacing-vs-ULP violated."
@@ -308,10 +307,10 @@ def compute_zdiff_gradp_v2(
     z_ifc_e1 = z_ifc_asc[e2c_1]
 
     if _validation_enabled() and not _precomputed_validation_ok:
-        finite_ok, full_ok = _compute_v2_validation(
+        combined = _compute_v2_validation(
             array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges
         )
-        if not bool(finite_ok & full_ok):
+        if not bool(combined[0] & combined[1]):
             raise ValueError(
                 "compute_zdiff_gradp_v2 input validation failed: strict z_ifc decrease, "
                 "z_me monotonicity, finiteness, A2 float-offset premise, or min-spacing-vs-ULP violated."
@@ -448,6 +447,15 @@ def compute_zdiff_gradp_exact_v2(  # noqa: PLR0915
     horizontal_start: gtx.int32,
     horizontal_start_1: gtx.int32,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """Exact variant with E3 dispatch and 1 GiB-capped auto-chunking.
+
+    The fast path builds successor tables over edge chunks so that one
+    ``(chunk, nlev, nlev)`` int8 table plus its doubling-scan copy stays under
+    ``_EXACT_V2_MAX_TABLE_BYTES`` (~1 GiB). Results are identical to the
+    unchunked gather. Validation follows ``_validation_enabled()``: when enabled
+    finiteness raises before compute and E3 selects fast vs. carry path; when
+    disabled the fast path is taken without any check.
+    """
     global _LAST_EXACT_V2_PATH  # noqa: PLW0603
     array_ns = data_alloc.array_namespace(z_mc)
     nedges = e2c.shape[0]
@@ -471,17 +479,16 @@ def compute_zdiff_gradp_exact_v2(  # noqa: PLR0915
     z_ifc_e0 = z_ifc[e2c_0, :]
     z_ifc_e1 = z_ifc[e2c_1, :]
 
-    finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
-    e3_ok = _check_e3(array_ns, z_me, fi, nlev)
+    use_carry = False
+    if _validation_enabled():
+        finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
+        e3_ok = _check_e3(array_ns, z_me, fi, nlev)
 
-    combined = finite_ok & e3_ok
-    if not bool(combined):
-        if not bool(finite_ok):
-            raise ValueError("Searched arrays contain non-finite values.")
-        use_carry = True
-    else:
-        use_carry = False
-
+        combined = finite_ok & e3_ok
+        if not bool(combined):
+            if not bool(finite_ok):
+                raise ValueError("Searched arrays contain non-finite values.")
+            use_carry = True
     jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
     edge_hs_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs
     edge_hs1_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs1
@@ -797,27 +804,27 @@ def compute_zdiff_gradp_exact_v3(
     z_ifc_e0 = z_ifc[e2c_0, :].astype(array_ns.float64)
     z_ifc_e1 = z_ifc[e2c_1, :].astype(array_ns.float64)
 
-    # Validation identical to exact_v2: finiteness is always checked; E3 only
-    # selects the code path.  Both checks are fused into a single sync.
-    finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
-    e3_ok = _check_e3(array_ns, z_me, fi, nlev)
-    combined = finite_ok & e3_ok
-    if not bool(combined):
-        if not bool(finite_ok):
-            raise ValueError("Searched arrays contain non-finite values.")
-        _LAST_EXACT_V3_PATH = "carry"
-        return compute_zdiff_gradp_exact_v2(
-            e2c=e2c,
-            z_me=z_me,
-            z_mc=z_mc,
-            z_ifc=z_ifc,
-            flat_idx=flat_idx,
-            topography=topography,
-            nlev=nlev,
-            horizontal_start=horizontal_start,
-            horizontal_start_1=horizontal_start_1,
-        )
-
+    # Validation follows the same opt-out flag as other variants. When enabled,
+    # finiteness raises before compute and E3 selects fast vs. carry path.
+    if _validation_enabled():
+        finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
+        e3_ok = _check_e3(array_ns, z_me, fi, nlev)
+        combined = finite_ok & e3_ok
+        if not bool(combined):
+            if not bool(finite_ok):
+                raise ValueError("Searched arrays contain non-finite values.")
+            _LAST_EXACT_V3_PATH = "carry"
+            return compute_zdiff_gradp_exact_v2(
+                e2c=e2c,
+                z_me=z_me,
+                z_mc=z_mc,
+                z_ifc=z_ifc,
+                flat_idx=flat_idx,
+                topography=topography,
+                nlev=nlev,
+                horizontal_start=horizontal_start,
+                horizontal_start_1=horizontal_start_1,
+            )
     _LAST_EXACT_V3_PATH = "fast"
 
     zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
@@ -929,9 +936,11 @@ def compute_zdiff_gradp_dispatch(
     z_ifc_e1 = z_ifc_asc[e2c_1]
 
     if _validation_enabled():
-        finite_ok, full_ok = _compute_v2_validation(
+        combined = _compute_v2_validation(
             array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2, fi, nlev, nedges
         )
+        finite_ok = combined[0]
+        full_ok = combined[1]
         if not bool(finite_ok):
             raise ValueError("Searched arrays contain non-finite values.")
         if bool(full_ok):
