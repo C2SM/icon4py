@@ -208,7 +208,7 @@ def driver_benchmark_experiment(request: pytest.FixtureRequest) -> test_defs.Exp
     return _resolve_experiment(request)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def driver_benchmark_grid(
     request: pytest.FixtureRequest,
     driver_benchmark_experiment: test_defs.ExperimentDescription,
