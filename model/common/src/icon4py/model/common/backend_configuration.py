@@ -34,7 +34,7 @@ from gt4py.next.program_processors.runners.dace.workflow import common as gtx_wf
 from icon4py.model.common.utils import data_allocation
 
 
-_DEFAULT_ALIGNMENT: Final[int] = 256  # Matches DaCe's default transient-storage alignment
+_DEFAULT_ALIGNMENT: Final[int] = 256
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
