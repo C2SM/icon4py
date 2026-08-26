@@ -178,7 +178,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
         zd_vertidx = zd_vertidx[0, :]
 
-        zd_diffcoef = data_alloc.list2field(
+        zd_diffcoef = data_alloc.scattered_field(
             domain=cell_k_domain,
             values=zd_diffcoef,
             indices=(
@@ -188,7 +188,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             default_value=gtx.float64(0.0),
             allocator=allocator,
         )
-        zd_intcoef = data_alloc.list2field(
+        zd_intcoef = data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
             values=zd_intcoef.T,
             indices=(
@@ -199,7 +199,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             default_value=gtx.float64(0.0),
             allocator=allocator,
         )
-        zd_vertoffset = data_alloc.list2field(
+        zd_vertoffset = data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(

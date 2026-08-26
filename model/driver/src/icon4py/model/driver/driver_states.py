@@ -300,11 +300,11 @@ def assemble_driver_states(
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
 ) -> DriverStates:
     prognostic_state_next = prognostics.PrognosticState(
-        vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
-        w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),
-        exner=data_alloc.as_field(prognostic_state_now.exner, allocator=allocator),
-        rho=data_alloc.as_field(prognostic_state_now.rho, allocator=allocator),
-        theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
+        vn=data_alloc.reallocate(prognostic_state_now.vn, allocator=allocator),
+        w=data_alloc.reallocate(prognostic_state_now.w, allocator=allocator),
+        exner=data_alloc.reallocate(prognostic_state_now.exner, allocator=allocator),
+        rho=data_alloc.reallocate(prognostic_state_now.rho, allocator=allocator),
+        theta_v=data_alloc.reallocate(prognostic_state_now.theta_v, allocator=allocator),
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
     tracer_states = common_utils.TimeStepPair(
