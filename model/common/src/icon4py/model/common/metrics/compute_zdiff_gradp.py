@@ -20,6 +20,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 _LAST_EXACT_V2_PATH: str | None = None
 _LAST_EXACT_V3_PATH: str | None = None
 _LAST_EXACT_V4_PATH: str | None = None
+_LAST_EXACT_V5_PATH: str | None = None
+_EXACT_V5_KERNEL_CACHE: dict[int, Any] = {}
 _LAST_DISPATCH_PATH: str | None = None
 _EXACT_V2_MAX_TABLE_BYTES: int = 1 << 30
 
@@ -858,7 +860,7 @@ def _exact_v3_assemble_cell(  # noqa: PLR0917
     """Apply the D6 output-assembly pattern for one cell."""
     zdiff_gradp[:, cell, :] = array_ns.where(
         active,
-        query_v - array_ns.take_along_axis(z_mc_ec, jk1, axis=1),
+        query_v - array_ns.take_along_axis(z_mc_ec, jk1.astype(array_ns.int64), axis=1),
         zdiff_gradp[:, cell, :],
     )
     vertoffset_gradp[:, cell, :] = array_ns.where(
@@ -1406,6 +1408,232 @@ def compute_zdiff_gradp_exact_v4(
             )
 
     _LAST_EXACT_V4_PATH = "fast"
+    return zdiff_gradp, vertoffset_gradp
+
+
+_EXACT_V5_ELEMENTWISE_KERNEL_SRC = r"""
+int e = i / nq;
+int k = i - e * nq;
+int fi_e = FI[e];
+double v = Q[e * nq + k];
+for (int a = fi_e; a < nlev; ++a) {
+    if (a == nlev - 1) {
+        out = nlev - 1;
+        return;
+    }
+    double top = D[e * (nlev + 1) + a];
+    double bot = D[e * (nlev + 1) + a + 1];
+    if (top >= v && v >= bot) {
+        out = a;
+        return;
+    }
+}
+out = nlev - 1;
+"""
+
+
+def _get_exact_v5_elementwise_kernel(array_ns: ModuleType, nlev: int) -> Any:
+    """Return cached cupy ElementwiseKernel for exact_v5 first-match scan.
+
+    The kernel is keyed by ``nlev`` because the scalar ``nlev`` appears in
+    the source and the launch bounds; the per-edge ``fi`` is passed as a
+    raw array so the same kernel works for any ``nedges``.
+    """
+    if nlev not in _EXACT_V5_KERNEL_CACHE:
+        _EXACT_V5_KERNEL_CACHE[nlev] = array_ns.ElementwiseKernel(
+            "raw float64 D, raw float64 Q, raw int32 FI, int32 nedges, int32 nlev, int32 nq",
+            "int32 out",
+            _EXACT_V5_ELEMENTWISE_KERNEL_SRC,
+            f"exact_v5_first_match_nlev{nlev}",
+        )
+    return _EXACT_V5_KERNEL_CACHE[nlev]
+
+
+def _launch_exact_v5_first_match_kernel(
+    array_ns: ModuleType,
+    z_ifc_k: data_alloc.NDArray,
+    queries: data_alloc.NDArray,
+    fi: data_alloc.NDArray,
+    nlev: int,
+) -> data_alloc.NDArray:
+    """Launch the cupy ElementwiseKernel first-match scan for one cell/query pair.
+
+    Returns a (nedges, nq) int32 array; the caller casts to int64 at the
+    ``take_along_axis`` call.
+    """
+    kernel = _get_exact_v5_elementwise_kernel(array_ns, nlev)
+    nedges = int(z_ifc_k.shape[0])
+    nq = int(queries.shape[1])
+    z_ifc_k = array_ns.ascontiguousarray(z_ifc_k.astype(array_ns.float64))
+    queries = array_ns.ascontiguousarray(queries.astype(array_ns.float64))
+    fi_int32 = fi.astype(array_ns.int32)
+    out_flat = kernel(z_ifc_k, queries, fi_int32, nedges, nlev, nq, size=nedges * nq)
+    return out_flat.reshape(nedges, nq)
+
+
+def compute_zdiff_gradp_exact_v5(
+    *,
+    e2c: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    flat_idx: data_alloc.NDArray,
+    topography: data_alloc.NDArray,
+    nlev: int,
+    horizontal_start: gtx.int32,
+    horizontal_start_1: gtx.int32,
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """Exact variant with a cupy ElementwiseKernel first-match fast path.
+
+    Semantics are identical to ``compute_zdiff_gradp_exact_v4``: premise-free,
+    with finiteness/E3 gated by ``_validation_enabled()`` and E3-false falling
+    back to ``compute_zdiff_gradp_exact_v2``'s carry machinery.  On numpy the
+    implementation delegates to ``compute_zdiff_gradp_exact_v4``.  On cupy the
+    fast path evaluates main's bracket predicate by a single fused
+    ``ElementwiseKernel`` per (phase, cell) that computes the fresh first-match
+    directly, avoiding the successor-table materialisation of exact_v2/v4.
+
+    The cupy kernel correctness argument mirrors ``compute_zdiff_gradp_exact_v3``:
+    the per-thread scan starts at ``fi[e]``, uses the inclusive bracket
+    ``z_ifc_k[e, a] >= query >= z_ifc_k[e, a + 1]``, and treats ``a == nlev - 1``
+    as an unconditional member.  This returns ``min{a >= fi[e] : predicate}`` for
+    every (edge, query), which equals the successor-table gather ``succ[q, fi]``
+    used by exact_v2/v4.  Phase 1 cell 0 and both phase 2 cells have no carry in
+    main; phase 1 cell 1 equals main's carry under E3 (D6-E3 proof), so the E3
+    dispatch selects fast versus carry exactly as exact_v4 does.
+    """
+    global _LAST_EXACT_V5_PATH  # noqa: PLW0603
+    array_ns = data_alloc.array_namespace(z_mc)
+    nedges = e2c.shape[0]
+
+    hs = int(horizontal_start)
+    hs1 = int(horizontal_start_1)
+    if hs1 < hs:
+        raise ValueError("horizontal_start_1 must be greater than or equal to horizontal_start.")
+
+    # Numpy path: reuse exact_v4's readable broadcast fast path verbatim.
+    if array_ns.__name__ != "cupy":
+        out = compute_zdiff_gradp_exact_v4(
+            e2c=e2c,
+            z_me=z_me,
+            z_mc=z_mc,
+            z_ifc=z_ifc,
+            flat_idx=flat_idx,
+            topography=topography,
+            nlev=nlev,
+            horizontal_start=horizontal_start,
+            horizontal_start_1=horizontal_start_1,
+        )
+        _LAST_EXACT_V5_PATH = _LAST_EXACT_V4_PATH
+        return out
+
+    z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0
+
+    fi = flat_idx.astype(array_ns.int64)
+    e2c_0 = e2c[:, 0].astype(array_ns.int64)
+    e2c_1 = e2c[:, 1].astype(array_ns.int64)
+
+    # Gather the decreasing-k column per cell; advanced indexing yields a new
+    # C-contiguous array, but force contiguity explicitly for the raw kernel.
+    z_ifc_e0 = array_ns.ascontiguousarray(z_ifc[e2c_0, :].astype(array_ns.float64))
+    z_ifc_e1 = array_ns.ascontiguousarray(z_ifc[e2c_1, :].astype(array_ns.float64))
+
+    if _validation_enabled():
+        finite_ok = _check_finite(array_ns, z_ifc_e0, z_ifc_e1, z_me, z_aux2)
+        e3_ok = _check_e3(array_ns, z_me, fi, nlev)
+        combined = finite_ok & e3_ok
+        if not bool(combined):
+            if not bool(finite_ok):
+                raise ValueError("Searched arrays contain non-finite values.")
+            _LAST_EXACT_V5_PATH = "carry"
+            return compute_zdiff_gradp_exact_v2(
+                e2c=e2c,
+                z_me=z_me,
+                z_mc=z_mc,
+                z_ifc=z_ifc,
+                flat_idx=flat_idx,
+                topography=topography,
+                nlev=nlev,
+                horizontal_start=horizontal_start,
+                horizontal_start_1=horizontal_start_1,
+            )
+
+    _LAST_EXACT_V5_PATH = "fast"
+
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    zdiff_gradp[hs:, :, :] = array_ns.expand_dims(z_me, axis=1)[hs:, :, :] - z_mc[e2c][hs:, :, :]
+    vertoffset_gradp = array_ns.zeros((nedges, 2, nlev), dtype=gtx.int32)
+
+    jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
+    edge_hs_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs
+    edge_hs1_mask = array_ns.arange(nedges, dtype=array_ns.int64) >= hs1
+    valid_jk = (jk_idx > fi[:, None]) & edge_hs_mask[:, None]
+    phase2_active = valid_jk & (z_me < z_aux2[:, None]) & edge_hs1_mask[:, None]
+
+    z_me_f64 = z_me.astype(array_ns.float64)
+    z_aux2_v = z_aux2[:, None].astype(array_ns.float64)
+
+    z_mc_e0 = z_mc[e2c_0]
+    z_mc_e1 = z_mc[e2c_1]
+
+    jk1_0 = _launch_exact_v5_first_match_kernel(array_ns, z_ifc_e0, z_me_f64, fi, nlev)
+    _exact_v3_assemble_cell(
+        zdiff_gradp,
+        vertoffset_gradp,
+        jk1_0,
+        z_mc_e0,
+        z_me_f64,
+        valid_jk,
+        jk_idx,
+        cell=0,
+        array_ns=array_ns,
+    )
+    del jk1_0
+
+    jk1_1 = _launch_exact_v5_first_match_kernel(array_ns, z_ifc_e1, z_me_f64, fi, nlev)
+    _exact_v3_assemble_cell(
+        zdiff_gradp,
+        vertoffset_gradp,
+        jk1_1,
+        z_mc_e1,
+        z_me_f64,
+        valid_jk,
+        jk_idx,
+        cell=1,
+        array_ns=array_ns,
+    )
+    del jk1_1
+
+    if hs1 < nedges:
+        jk1_aux_0 = _launch_exact_v5_first_match_kernel(array_ns, z_ifc_e0, z_aux2_v, fi, nlev)
+        _exact_v3_assemble_cell(
+            zdiff_gradp,
+            vertoffset_gradp,
+            jk1_aux_0,
+            z_mc_e0,
+            z_aux2_v,
+            phase2_active,
+            jk_idx,
+            cell=0,
+            array_ns=array_ns,
+        )
+        del jk1_aux_0
+
+        jk1_aux_1 = _launch_exact_v5_first_match_kernel(array_ns, z_ifc_e1, z_aux2_v, fi, nlev)
+        _exact_v3_assemble_cell(
+            zdiff_gradp,
+            vertoffset_gradp,
+            jk1_aux_1,
+            z_mc_e1,
+            z_aux2_v,
+            phase2_active,
+            jk_idx,
+            cell=1,
+            array_ns=array_ns,
+        )
+        del jk1_aux_1
+
     return zdiff_gradp, vertoffset_gradp
 
 
