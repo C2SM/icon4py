@@ -9,24 +9,24 @@
 import gt4py.next as gtx
 from gt4py.next import astype, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
 def _compute_barycentric_backtrajectory_alt(
-    p_vn: fa.EdgeKField[wpfloat],
-    p_vt: fa.EdgeKField[wpfloat],
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    p_dthalf: wpfloat,
+    p_vn: fa.EdgeKField[ta.wpfloat],
+    p_vt: fa.EdgeKField[ta.wpfloat],
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    p_dthalf: ta.wpfloat,
 ) -> tuple[
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
 ]:
     lvn_pos = p_vn >= wpfloat(0.0)
 
@@ -61,17 +61,17 @@ def _compute_barycentric_backtrajectory_alt(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_barycentric_backtrajectory_alt(
-    p_vn: fa.EdgeKField[wpfloat],
-    p_vt: fa.EdgeKField[wpfloat],
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    p_distv_bary_1: fa.EdgeKField[vpfloat],
-    p_distv_bary_2: fa.EdgeKField[vpfloat],
-    p_dthalf: wpfloat,
+    p_vn: fa.EdgeKField[ta.wpfloat],
+    p_vt: fa.EdgeKField[ta.wpfloat],
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    p_distv_bary_1: fa.EdgeKField[ta.vpfloat],
+    p_distv_bary_2: fa.EdgeKField[ta.vpfloat],
+    p_dthalf: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

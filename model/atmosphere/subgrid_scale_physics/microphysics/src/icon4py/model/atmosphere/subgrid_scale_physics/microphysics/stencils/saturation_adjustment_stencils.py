@@ -14,19 +14,19 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics.stencils.microp
     latent_heat_vaporization,
     qsat_rho,
 )
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
 def _new_temperature_in_newton_iteration(
-    temperature: fa.CellKField[wpfloat],
-    qv: fa.CellKField[wpfloat],
-    rho: fa.CellKField[wpfloat],
-    lwdocvd: fa.CellKField[wpfloat],
-    next_temperature: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
+    temperature: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    lwdocvd: fa.CellKField[ta.wpfloat],
+    next_temperature: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
     """
     Update the temperature in saturation adjustment by Newton iteration. Moist enthalpy and mass are conserved.
     The latent heat is assumed to be constant with its value computed from the initial temperature.
@@ -53,13 +53,13 @@ def _new_temperature_in_newton_iteration(
 
 @gtx.field_operator
 def _update_temperature_by_newton_iteration(
-    temperature: fa.CellKField[wpfloat],
-    qv: fa.CellKField[wpfloat],
-    rho: fa.CellKField[wpfloat],
+    temperature: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
     newton_iteration_mask: fa.CellKField[bool],
-    lwdocvd: fa.CellKField[wpfloat],
-    next_temperature: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
+    lwdocvd: fa.CellKField[ta.wpfloat],
+    next_temperature: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
     current_temperature = where(
         newton_iteration_mask,
         _new_temperature_in_newton_iteration(
@@ -76,13 +76,13 @@ def _update_temperature_by_newton_iteration(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_temperature_by_newton_iteration(
-    temperature: fa.CellKField[wpfloat],
-    qv: fa.CellKField[wpfloat],
-    rho: fa.CellKField[wpfloat],
+    temperature: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
     newton_iteration_mask: fa.CellKField[bool],
-    lwdocvd: fa.CellKField[wpfloat],
-    next_temperature: fa.CellKField[wpfloat],
-    current_temperature: fa.CellKField[wpfloat],
+    lwdocvd: fa.CellKField[ta.wpfloat],
+    next_temperature: fa.CellKField[ta.wpfloat],
+    current_temperature: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -105,17 +105,17 @@ def update_temperature_by_newton_iteration(
 
 @gtx.field_operator
 def _update_temperature_qv_qc_tendencies(
-    dtime: wpfloat,
-    temperature: fa.CellKField[wpfloat],
-    current_temperature: fa.CellKField[wpfloat],
-    qv: fa.CellKField[wpfloat],
-    qc: fa.CellKField[wpfloat],
-    rho: fa.CellKField[wpfloat],
+    dtime: ta.wpfloat,
+    temperature: fa.CellKField[ta.wpfloat],
+    current_temperature: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
     subsaturated_mask: fa.CellKField[bool],
 ) -> tuple[
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
 ]:
     """
     Compute temperature, qv, and qc tendencies from the saturation adjustment.
@@ -147,16 +147,16 @@ def _update_temperature_qv_qc_tendencies(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_temperature_qv_qc_tendencies(
-    dtime: wpfloat,
-    temperature: fa.CellKField[wpfloat],
-    current_temperature: fa.CellKField[wpfloat],
-    qv: fa.CellKField[wpfloat],
-    qc: fa.CellKField[wpfloat],
-    rho: fa.CellKField[wpfloat],
+    dtime: ta.wpfloat,
+    temperature: fa.CellKField[ta.wpfloat],
+    current_temperature: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
     subsaturated_mask: fa.CellKField[bool],
-    temperature_tendency: fa.CellKField[wpfloat],
-    qv_tendency: fa.CellKField[wpfloat],
-    qc_tendency: fa.CellKField[wpfloat],
+    temperature_tendency: fa.CellKField[ta.wpfloat],
+    qv_tendency: fa.CellKField[ta.wpfloat],
+    qc_tendency: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -180,16 +180,16 @@ def update_temperature_qv_qc_tendencies(
 
 @gtx.field_operator
 def _compute_subsaturated_case_and_initialize_newton_iterations(
-    tolerance: wpfloat,
-    temperature: fa.CellKField[wpfloat],
-    qv: fa.CellKField[wpfloat],
-    qc: fa.CellKField[wpfloat],
-    rho: fa.CellKField[wpfloat],
+    tolerance: ta.wpfloat,
+    temperature: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
 ) -> tuple[
     fa.CellKField[bool],
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
     fa.CellKField[bool],
 ]:
     """
@@ -237,15 +237,15 @@ def _compute_subsaturated_case_and_initialize_newton_iterations(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_subsaturated_case_and_initialize_newton_iterations(
-    tolerance: wpfloat,
-    temperature: fa.CellKField[wpfloat],
-    qv: fa.CellKField[wpfloat],
-    qc: fa.CellKField[wpfloat],
-    rho: fa.CellKField[wpfloat],
+    tolerance: ta.wpfloat,
+    temperature: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],
+    qc: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
     subsaturated_mask: fa.CellKField[bool],
-    lwdocvd: fa.CellKField[wpfloat],
-    current_temperature: fa.CellKField[wpfloat],
-    next_temperature: fa.CellKField[wpfloat],
+    lwdocvd: fa.CellKField[ta.wpfloat],
+    current_temperature: fa.CellKField[ta.wpfloat],
+    next_temperature: fa.CellKField[ta.wpfloat],
     newton_iteration_mask: fa.CellKField[bool],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -274,10 +274,10 @@ def compute_subsaturated_case_and_initialize_newton_iterations(
 
 @gtx.field_operator
 def _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
-    tolerance: wpfloat,
-    current_temperature: fa.CellKField[wpfloat],
-    next_temperature: fa.CellKField[wpfloat],
-) -> tuple[fa.CellKField[bool], fa.CellKField[wpfloat]]:
+    tolerance: ta.wpfloat,
+    current_temperature: fa.CellKField[ta.wpfloat],
+    next_temperature: fa.CellKField[ta.wpfloat],
+) -> tuple[fa.CellKField[bool], fa.CellKField[ta.wpfloat]]:
     """
     Compute a mask for the next Newton iteration when the difference between new and old temperature is larger
     than the tolerance.
@@ -300,9 +300,9 @@ def _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
-    tolerance: wpfloat,
-    current_temperature: fa.CellKField[wpfloat],
-    next_temperature: fa.CellKField[wpfloat],
+    tolerance: ta.wpfloat,
+    current_temperature: fa.CellKField[ta.wpfloat],
+    next_temperature: fa.CellKField[ta.wpfloat],
     newton_iteration_mask: fa.CellKField[bool],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

@@ -9,18 +9,18 @@
 import gt4py.next as gtx
 from gt4py.next import maximum
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
 def _apply_horizontal_density_increment(
-    p_rhodz_new: fa.CellKField[wpfloat],
-    p_mflx_contra_v: fa.CellKField[wpfloat],
-    deepatmo_divzl: fa.KField[wpfloat],
-    deepatmo_divzu: fa.KField[wpfloat],
-    p_dtime: wpfloat,
-) -> fa.CellKField[wpfloat]:
+    p_rhodz_new: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    deepatmo_divzl: fa.KField[ta.wpfloat],
+    deepatmo_divzu: fa.KField[ta.wpfloat],
+    p_dtime: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
     return maximum(wpfloat(0.1) * p_rhodz_new, p_rhodz_new) - p_dtime * (
         p_mflx_contra_v(dims.KDim + 1) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
     )
@@ -28,12 +28,12 @@ def _apply_horizontal_density_increment(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_horizontal_density_increment(
-    p_rhodz_new: fa.CellKField[wpfloat],
-    p_mflx_contra_v: fa.CellKField[wpfloat],
-    deepatmo_divzl: fa.KField[wpfloat],
-    deepatmo_divzu: fa.KField[wpfloat],
-    rhodz_ast2: fa.CellKField[wpfloat],
-    p_dtime: wpfloat,
+    p_rhodz_new: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    deepatmo_divzl: fa.KField[ta.wpfloat],
+    deepatmo_divzu: fa.KField[ta.wpfloat],
+    rhodz_ast2: fa.CellKField[ta.wpfloat],
+    p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

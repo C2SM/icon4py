@@ -22,7 +22,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wind import (
     compute_diagnostics_from_normal_wind,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    model_backends,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon as icon_grid,
@@ -178,21 +183,21 @@ class VelocityAdvection:
 
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
         self._horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=vpfloat
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
         """
         Declared as z_v_grad_w in ICON. vn dw/dn + vt dw/dt. NOTE THAT IT ONLY HAS nlev LEVELS because w[nlevp1-1] is diagnostic.
         """
 
         self._contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=vpfloat
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
         """
         Declared as z_w_con_c_full in ICON. w - (vn dz/dn + vt dz/dt), z is topography height
         """
 
         self._vertical_cfl = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=vpfloat
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
 
     def _determine_local_domains(self) -> None:
@@ -237,8 +242,8 @@ class VelocityAdvection:
         contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
         horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
         tangential_wind_on_half_levels: fa.EdgeKField[vpfloat],
-        dtime: wpfloat,
-        cell_areas: fa.CellField[wpfloat],
+        dtime: ta.wpfloat,
+        cell_areas: fa.CellField[ta.wpfloat],
     ) -> None:
         """
         Compute some diagnostic variables that are used in the predictor step
@@ -327,8 +332,8 @@ class VelocityAdvection:
         prognostic_state: prognostics.PrognosticState,
         horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
         tangential_wind_on_half_levels: fa.EdgeKField[vpfloat],
-        dtime: wpfloat,
-        cell_areas: fa.CellField[wpfloat],
+        dtime: ta.wpfloat,
+        cell_areas: fa.CellField[ta.wpfloat],
     ) -> None:
         """
         Compute some diagnostic variables that are used in the corrector step

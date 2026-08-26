@@ -54,6 +54,7 @@ from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
+    type_alias as ta,
 )
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -88,11 +89,11 @@ class IntermediateFields:
     """
     Declared as z_gradh_exner in ICON.
     """
-    rho_at_edges_on_model_levels: fa.EdgeKField[wpfloat]
+    rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat]
     """
     Declared as z_rho_e in ICON.
     """
-    theta_v_at_edges_on_model_levels: fa.EdgeKField[wpfloat]
+    theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat]
     """
     Declared as z_theta_v_e in ICON.
     """
@@ -937,7 +938,7 @@ class SolveNonhydro:
             self._grid,
             dims.CellDim,
             dims.KDim,
-            dtype=vpfloat,
+            dtype=ta.vpfloat,
             extend={dims.KDim: 1},
             allocator=allocator,
         )
@@ -946,14 +947,14 @@ class SolveNonhydro:
         """
         self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
-                self._grid, dims.CellDim, dims.KDim, dtype=vpfloat, allocator=allocator
+                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
             )
         )
         """
         Declared as z_dexner_dz_c_1 in ICON.
         """
         self.nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_th_ddz_exner_c in ICON. theta' dpi0/dz + theta (1 - eta_impl) dpi'/dz.
@@ -962,45 +963,45 @@ class SolveNonhydro:
         term for updating w, and w at model top/bottom is diagnosed.
         """
         self.perturbed_rho_at_cells_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_rth_pr_1 in ICON.
         """
         self.perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_rth_pr_2 in ICON.
         """
         self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
-                self._grid, dims.CellDim, dims.KDim, dtype=vpfloat, allocator=allocator
+                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
             )
         )
         """
         Declared as z_dexner_dz_c_2 in ICON.
         """
         self.z_vn_avg = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=wpfloat, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=wpfloat, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as z_theta_v_fl_e in ICON.
         """
         self.z_rho_v = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, dtype=wpfloat, allocator=allocator
+            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.z_theta_v_v = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, dtype=wpfloat, allocator=allocator
+            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.k_field = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         )
         self._contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=vpfloat, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
@@ -1011,7 +1012,7 @@ class SolveNonhydro:
                 dims.KDim: (self._grid.num_levels - 1, self._grid.num_levels),
             },
             allocator=allocator,
-            dtype=vpfloat,
+            dtype=ta.vpfloat,
         )
         # using GT4Py internal API to create a 1D field view from the (num_edges, 1)-sized field
         self.hydrostatic_correction_on_lowest_level_1d_view = gtx_common._field(
@@ -1022,13 +1023,13 @@ class SolveNonhydro:
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
         self.rayleigh_damping_factor = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=wpfloat, allocator=allocator
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as z_raylfac in ICON.
         """
         self.interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=wpfloat, allocator=allocator
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as enh_divdamp_fac in ICON.

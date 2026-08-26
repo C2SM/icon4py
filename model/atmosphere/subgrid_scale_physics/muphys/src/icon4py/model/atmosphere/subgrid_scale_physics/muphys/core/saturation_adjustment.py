@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _saturation_adjustment(
-    te: fa.CellKField[wpfloat], rho: fa.CellKField[ta.wpfloat], q_in: Q
+    te: fa.CellKField[ta.wpfloat], rho: fa.CellKField[ta.wpfloat], q_in: Q
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],

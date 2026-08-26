@@ -9,7 +9,7 @@
 import gt4py.next as gtx
 from gt4py.next import abs, where  # noqa: A004
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -19,13 +19,13 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _compute_courant_number_below(
-    p_cellmass_now: fa.CellKField[wpfloat],
-    z_mass: fa.CellKField[wpfloat],
-    z_cfl: fa.CellKField[wpfloat],
+    p_cellmass_now: fa.CellKField[ta.wpfloat],
+    z_mass: fa.CellKField[ta.wpfloat],
+    z_cfl: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    wp_eps: wpfloat,
-) -> fa.CellKField[wpfloat]:
+    wp_eps: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
     z_mass_pos = z_mass > wpfloat(0.0)
 
     in_bounds_p0 = k <= nlev - 1
@@ -78,13 +78,13 @@ def _compute_courant_number_below(
 
 @gtx.field_operator
 def _compute_courant_number_above(
-    p_cellmass_now: fa.CellKField[wpfloat],
-    z_mass: fa.CellKField[wpfloat],
-    z_cfl: fa.CellKField[wpfloat],
+    p_cellmass_now: fa.CellKField[ta.wpfloat],
+    z_mass: fa.CellKField[ta.wpfloat],
+    z_cfl: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
-    wp_eps: wpfloat,
-) -> fa.CellKField[wpfloat]:
+    wp_eps: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
     z_mass_neg = z_mass <= wpfloat(0.0)
 
     in_bounds_m0 = k >= slevp1_ti + 1
@@ -139,15 +139,15 @@ def _compute_courant_number_above(
 
 @gtx.field_operator
 def _compute_ppm4gpu_courant_number(
-    p_mflx_contra_v: fa.CellKField[wpfloat],
-    p_cellmass_now: fa.CellKField[wpfloat],
-    z_cfl: fa.CellKField[wpfloat],
+    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_cellmass_now: fa.CellKField[ta.wpfloat],
+    z_cfl: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
     nlev: gtx.int32,
-    wp_eps: wpfloat,
-    p_dtime: wpfloat,
-) -> fa.CellKField[wpfloat]:
+    wp_eps: ta.wpfloat,
+    p_dtime: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
     z_mass = p_dtime * p_mflx_contra_v
 
     cfl_below = _compute_courant_number_below(
@@ -174,14 +174,14 @@ def _compute_ppm4gpu_courant_number(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_ppm4gpu_courant_number(
-    p_mflx_contra_v: fa.CellKField[wpfloat],
-    p_cellmass_now: fa.CellKField[wpfloat],
-    z_cfl: fa.CellKField[wpfloat],
+    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_cellmass_now: fa.CellKField[ta.wpfloat],
+    z_cfl: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
     nlev: gtx.int32,
-    wp_eps: wpfloat,
-    p_dtime: wpfloat,
+    wp_eps: ta.wpfloat,
+    p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
