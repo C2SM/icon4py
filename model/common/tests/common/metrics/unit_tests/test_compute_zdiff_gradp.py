@@ -27,6 +27,7 @@ from icon4py.model.common.metrics.compute_zdiff_gradp import (
     compute_zdiff_gradp_exact_v2,
     compute_zdiff_gradp_exact_v3,
     compute_zdiff_gradp_exact_v4,
+    compute_zdiff_gradp_exact_v5,
     compute_zdiff_gradp_v2,
 )
 from icon4py.model.common.metrics.compute_zdiff_gradp_gt4py import compute_zdiff_gradp_gt4py
@@ -146,6 +147,7 @@ def _main_reference(  # noqa: PLR0912
         compute_zdiff_gradp_exact_v2,
         compute_zdiff_gradp_exact_v3,
         compute_zdiff_gradp_exact_v4,
+        compute_zdiff_gradp_exact_v5,
         compute_zdiff_gradp_dispatch,
         compute_zdiff_gradp_gt4py,
     ],
@@ -378,6 +380,20 @@ def test_compute_zdiff_gradp_endpoint_forcing(
     assert np.array_equal(exact4_vert, golden_vert)
     assert _zdiff_mod._LAST_EXACT_V4_PATH == "fast"
 
+    exact5_zdiff, exact5_vert = compute_zdiff_gradp_exact_v5(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert np.allclose(exact5_zdiff, golden_zdiff)
+    assert np.array_equal(exact5_vert, golden_vert)
+    assert _zdiff_mod._LAST_EXACT_V5_PATH == "fast"
     baseline_zdiff, baseline_vert = compute_zdiff_gradp(
         e2c=e2c,
         z_me=z_me,
@@ -579,6 +595,21 @@ def test_compute_zdiff_gradp_nlev1_tie_phase2_inactive(
     assert np.allclose(exact4_zdiff, golden_zdiff)
     assert np.array_equal(exact4_vert, golden_vert)
     assert _zdiff_mod._LAST_EXACT_V4_PATH == "fast"
+
+    exact5_zdiff, exact5_vert = compute_zdiff_gradp_exact_v5(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert np.allclose(exact5_zdiff, golden_zdiff)
+    assert np.array_equal(exact5_vert, golden_vert)
+    assert _zdiff_mod._LAST_EXACT_V5_PATH == "fast"
     baseline_zdiff, baseline_vert = compute_zdiff_gradp(
         e2c=e2c,
         z_me=z_me,
@@ -604,6 +635,7 @@ def test_compute_zdiff_gradp_nlev1_tie_phase2_inactive(
         compute_zdiff_gradp_exact_v2,
         compute_zdiff_gradp_exact_v3,
         compute_zdiff_gradp_exact_v4,
+        compute_zdiff_gradp_exact_v5,
         compute_zdiff_gradp_dispatch,
     ],
 )
@@ -830,6 +862,21 @@ def test_compute_zdiff_gradp_e3_violation(
         exact4_vert, golden_vert
     )
 
+    exact5_zdiff, exact5_vert = compute_zdiff_gradp_exact_v5(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    exact5_matches = np.allclose(exact5_zdiff, golden_zdiff) and np.array_equal(
+        exact5_vert, golden_vert
+    )
+
     if validation_enabled:
         assert np.allclose(exact2_zdiff, golden_zdiff)
         assert np.array_equal(exact2_vert, golden_vert)
@@ -839,12 +886,16 @@ def test_compute_zdiff_gradp_e3_violation(
         assert _zdiff_mod._LAST_EXACT_V3_PATH == "carry"
         assert exact4_matches
         assert _zdiff_mod._LAST_EXACT_V4_PATH == "carry"
+        assert exact5_matches
+        assert _zdiff_mod._LAST_EXACT_V5_PATH == "carry"
     else:
         # Validation OFF: exact_v2/exact_v3/exact_v4 take the fast path without E3 check.
         assert _zdiff_mod._LAST_EXACT_V2_PATH == "fast"
         assert _zdiff_mod._LAST_EXACT_V3_PATH == "fast"
         assert _zdiff_mod._LAST_EXACT_V4_PATH == "fast"
+        assert _zdiff_mod._LAST_EXACT_V5_PATH == "fast"
         assert not exact4_matches
+        assert not exact5_matches
     baseline_zdiff, baseline_vert = compute_zdiff_gradp(
         e2c=e2c,
         z_me=z_me,
@@ -1025,6 +1076,20 @@ def test_compute_zdiff_gradp_interior_tie(
     assert np.array_equal(exact4_vert, golden_vert)
     assert _zdiff_mod._LAST_EXACT_V4_PATH == "fast"
 
+    exact5_zdiff, exact5_vert = compute_zdiff_gradp_exact_v5(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert np.allclose(exact5_zdiff, golden_zdiff)
+    assert np.array_equal(exact5_vert, golden_vert)
+    assert _zdiff_mod._LAST_EXACT_V5_PATH == "fast"
     if validation_enabled:
         with pytest.raises(ValueError, match="exact interior tie"):
             compute_zdiff_gradp_v2(
@@ -1684,6 +1749,20 @@ def test_compute_zdiff_gradp_gt4py_non_monotone(
     np.testing.assert_array_equal(exact4_zdiff, golden_zdiff)
     np.testing.assert_array_equal(exact4_vert, golden_vert)
 
+    exact5_zdiff, exact5_vert = compute_zdiff_gradp_exact_v5(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    np.testing.assert_array_equal(exact5_zdiff, golden_zdiff)
+    np.testing.assert_array_equal(exact5_vert, golden_vert)
+
     if validation_enabled:
         with pytest.raises(ValueError, match="strict z_ifc decrease"):
             compute_zdiff_gradp_v2(
@@ -1756,3 +1835,67 @@ def test_compute_zdiff_gradp_gt4py_nan_validation(
     assert zdiff_gradp.shape == (nedges, 2, nlev)
     assert vertoffset_gradp.shape == (nedges, 2, nlev)
     assert np.all(np.isfinite(vertoffset_gradp))
+
+
+@pytest.mark.level("unit")
+def test_compute_zdiff_gradp_exact_v5_numpy_equals_exact_v4(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """exact_v5 numpy path delegates to exact_v4 and is bitwise equal."""
+    monkeypatch.setenv("ICON4PY_VALIDATE_ZDIFF_GRADP", "0")
+    e2c, z_me, z_mc, z_ifc, flat_idx, topography = _build_random_zdiff_inputs(
+        nedges=64, ncells=48, nlev=8, seed=42
+    )
+    hs = 10
+    hs1 = 30
+    zdiff4, vert4 = compute_zdiff_gradp_exact_v4(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=8,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    zdiff5, vert5 = compute_zdiff_gradp_exact_v5(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=8,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    np.testing.assert_array_equal(zdiff4, zdiff5)
+    np.testing.assert_array_equal(vert4, vert5)
+
+
+@pytest.mark.level("unit")
+def test_exact_v5_kernel_compiles() -> None:
+    """The cupy ElementwiseKernel source compiles and runs on a tiny input.
+
+    Skipped when cupy is not importable (e.g. local numpy-only runs). The
+    tiny launch exercises the kernel's pointer arithmetic and the int32
+    output shape without needing real GPU test data.
+    """
+    cp = pytest.importorskip("cupy")
+    nedges, nlev, nq = 2, 4, 3
+    z_ifc = cp.ascontiguousarray(
+        cp.arange(nedges * (nlev + 1), dtype=cp.float64).reshape(nedges, nlev + 1)[:, ::-1]
+    )
+    queries = cp.array([[1.5, 2.5, 10.0], [3.5, 4.5, 10.0]], dtype=cp.float64)
+    fi = cp.array([0, 1], dtype=cp.int32)
+    kernel = _zdiff_mod._get_exact_v5_elementwise_kernel(cp, nlev)
+    out_flat = kernel(z_ifc, queries, fi, nedges, nlev, nq, size=nedges * nq)
+    out = out_flat.reshape(nedges, nq)
+    assert out.shape == (nedges, nq)
+    assert out.dtype == cp.int32
+    # Sanity: expected first-match values for the hand-built input.
+    np.testing.assert_array_equal(
+        out.get(),
+        np.array([[3, 3, 3], [1, 1, 1]], dtype=np.int32),
+    )
