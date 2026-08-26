@@ -1010,6 +1010,20 @@ def test_compute_zdiff_gradp_interior_tie(
         horizontal_start=hs,
         horizontal_start_1=hs1,
     )
+    exact4_zdiff, exact4_vert = compute_zdiff_gradp_exact_v4(
+        e2c=e2c,
+        z_me=z_me,
+        z_mc=z_mc,
+        z_ifc=z_ifc,
+        flat_idx=flat_idx,
+        topography=topography,
+        nlev=nlev,
+        horizontal_start=gtx.int32(hs),
+        horizontal_start_1=gtx.int32(hs1),
+    )
+    assert np.allclose(exact4_zdiff, golden_zdiff)
+    assert np.array_equal(exact4_vert, golden_vert)
+    assert _zdiff_mod._LAST_EXACT_V4_PATH == "fast"
 
     if validation_enabled:
         with pytest.raises(ValueError, match="exact interior tie"):

@@ -1236,14 +1236,15 @@ def _exact_v4_first_match(
     For edge ``e`` and query ``q`` the result is the smallest candidate
     index ``i >= fi[e]`` such that ``i == nlev - 1`` or
     ``z_ifc_col[e, i] >= queries[e, q] >= z_ifc_col[e, i + 1]``.  This is a
-    literal broadcast transcription of main's first-match scan: build the
-    gated candidate mask, replace ungated entries by ``nlev``, and take the
-    minimum along the candidate axis.
+    literal broadcast transcription of the reference loop's bracket predicate
+    (``_main_reference``): build the gated candidate mask, replace ungated
+    entries by ``nlev``, and take the minimum along the candidate axis.
 
-    The int32 work array keeps the transient memory per element at five bytes
-    (boolean gate + int32 index), which together with
-    ``_exact_v2_edge_chunks`` keeps the full-scale peak under the
-    ``_EXACT_V2_MAX_TABLE_BYTES`` cap.
+    The dominant transient is one int32 index plus one boolean gate per
+    element (five bytes/element); ``_exact_v2_chunk_size(nlev, 4)`` models
+    two int32 tables per edge (eight bytes/element) for margin.  The cap
+    holds for ICON nlev (<=137); beyond the ``nlev^2 > MAX_TABLE/8`` chunk
+    floor the soft cap is shared with ``compute_zdiff_gradp_exact_v2``.
     """
     _chunk, nlev_p1 = z_ifc_col.shape
     nlev = nlev_p1 - 1
@@ -1258,7 +1259,7 @@ def _exact_v4_first_match(
     qv = queries[:, :, None]
 
     bracket = (upper >= qv) & (qv >= lower)
-    unconditional = i_idx[None, None, :] == (nlev - 1)
+    unconditional = i_idx[None, None, :] == (nlev - 1)  # gated only if fi <= nlev-1
     fi_mask = i_idx[None, None, :] >= fi[:, None, None]
 
     gated = fi_mask & (bracket | unconditional)
@@ -1280,7 +1281,7 @@ def compute_zdiff_gradp_exact_v4(
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """Exact variant: premise-free broadcast first-match.
 
-    The fast path evaluates main's literal bracket predicate for every
+    The fast path evaluates the reference loop's bracket predicate for every
     candidate index ``i >= flat_idx`` and takes the first match as the
     minimum gated index.  Because the query is constant per edge in phase 2
     and phase 1 cell 0 carries nothing, the fresh first-match equals main's
@@ -1290,9 +1291,10 @@ def compute_zdiff_gradp_exact_v4(
     preserving exactness on all finite inputs.
 
     Validation follows ``_validation_enabled()``: when enabled, finiteness and
-    E3 are checked with one stacked device sync; when disabled the fast path is
-    taken without any check and the defined ``nlev - 1`` fallback applies on
-    non-finite input.
+    E3 are checked with one stacked device sync on the fast path (a second
+    sync occurs on the carry path, where the finite and E3 bits are read
+    separately); when disabled the fast path is taken without any check and
+    the defined ``nlev - 1`` fallback applies on non-finite input.
     """
     global _LAST_EXACT_V4_PATH  # noqa: PLW0603
     array_ns = data_alloc.array_namespace(z_mc)
