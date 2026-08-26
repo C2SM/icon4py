@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_louis_scaling_factor import (
-    MEAN_CELL_AREA_R2B8,
     init_louis_scaling_factor,
 )
 from icon4py.model.common import dimension as dims
@@ -31,7 +30,7 @@ class TestInitLouisScalingFactor(stencil_tests.StencilTest):
         cell_area: np.ndarray,
         **kwargs,
     ) -> dict:
-        return dict(scaling_factor_louis=MEAN_CELL_AREA_R2B8 / cell_area)
+        return dict(scaling_factor_louis=97294071.23714285 / cell_area)  # mean_cell_area_r2b8
 
     @stencil_tests.input_data_fixture
     def input_data(

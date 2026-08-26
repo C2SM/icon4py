@@ -5,16 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Final
-
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
-
-
-# Global mean of cell area for R2B8 [m^2] (from ICON's ``mo_tmx_smagorinsky.f90``)
-MEAN_CELL_AREA_R2B8: Final[wpfloat] = wpfloat(97294071.23714285)
 
 
 @gtx.field_operator
@@ -33,9 +27,9 @@ def _init_louis_scaling_factor(
     Returns:
         scaling factor for the Louis constant b
     """
-    # Note: has to be defined inside the field operator, module-level closure
-    # constants are not supported by the gtfn backend (keep in sync with
-    # MEAN_CELL_AREA_R2B8 above).
+    # Global mean cell area of the R2B8 grid [m^2] (``mean_area_R2B8`` in ICON's
+    # mo_tmx_smagorinsky.f90). Defined here because module-level closure constants
+    # are not supported by the gtfn backend.
     mean_cell_area_r2b8 = wpfloat("97294071.23714285")
     return mean_cell_area_r2b8 / cell_area
 

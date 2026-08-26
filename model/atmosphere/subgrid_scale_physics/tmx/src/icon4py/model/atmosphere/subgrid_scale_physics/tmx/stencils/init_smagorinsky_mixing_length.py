@@ -9,6 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import minimum, power
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -44,7 +45,7 @@ def _init_smagorinsky_mixing_length(
     Returns:
         square of the Smagorinsky mixing length at half levels
     """
-    kappa = wpfloat("0.4")  # von Karman constant
+    kappa = PhysicsConstants.von_karman
 
     z_agl = geopot_agl_ic * (wpfloat("1.0") / grav)
     les_filter = smag_constant * minimum(

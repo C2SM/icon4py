@@ -136,6 +136,10 @@ DEL_T_BG: Final[ta.wpfloat] = DELTA_TEMPERATURE
 HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE = 10000.0
 _H_SCAL_BG: Final[ta.wpfloat] = HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
 
+# Von Karman constant, called 'ckap' in ICON (mo_turb_vdiff_params.f90).
+VON_KARMAN_CONSTANT: Final[ta.wpfloat] = 0.4
+CKAP: Final[ta.wpfloat] = VON_KARMAN_CONSTANT
+
 # Math constants
 DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 
@@ -172,6 +176,7 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     grav_o_cpd = GRAV_O_CPD
     grav_o_rd = GRAV_O_RD
     p0ref = REFERENCE_PRESSURE
+    von_karman = VON_KARMAN_CONSTANT
     eps = DBL_EPS
 
 

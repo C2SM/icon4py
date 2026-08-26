@@ -6,24 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Surface-flux provider seam for TMX.
-
-The provider fills the surface-flux input buffers of the granule
-(:class:`~icon4py.model.atmosphere.subgrid_scale_physics.tmx.tmx_states.TmxSurfaceFluxState`)
-once per physics step.
-
-Two implementations live here:
-
-- :class:`ZeroFluxProvider` — pure plumbing, all fluxes zero.
-- :class:`PrescribedFluxProvider` — the ``isrfc_type = 1`` branch of the
-  Fortran surface scheme (fixed kinematic surface heat fluxes), which is what
-  the serialized idealized experiments actually run.
-
-The full ocean bulk-flux scheme (``isrfc_type = 0``: Louis exchange
-coefficients over a prescribed SST, ``mo_tmx_surface.f90`` / ``mo_vdf_sfc.f90``)
-is a follow-up implementation behind the same seam.
-"""
-
 from __future__ import annotations
 
 import dataclasses
@@ -54,9 +36,9 @@ class SurfaceFluxProvider(Protocol):
 
 
 class ZeroFluxProvider:
-    """Zero surface fluxes (the phase-2 seam's plumbing-only implementation).
+    """Zero surface fluxes.
 
-    Explicitly re-zeros every call instead of no-op'ing: this upholds the
+    Explicitly re-zeros every call: this upholds the
     "fluxes are set each step" contract even if the granule ever mutated the
     buffers in place. The buffers are 2-D, so the cost is negligible.
     """
@@ -131,17 +113,8 @@ class PrescribedFluxProvider:
     bulk-stress block; ``q_snocpymlt`` is a land-only quantity and stays zero
     as well.
 
-    The surface pressure is the bottom interface of the pressure field, as in
-    the Fortran binding ``psfc -> pres_ifc(:, nlevp1, :)``
-    (mo_interface_aes_tmx.f90:708). ``pressure_ifc`` is read afresh on every
-    ``compute`` call, so it must be the live buffer the caller updates each
-    step, not a snapshot.
-
-    Scope: a single prescribed surface temperature, i.e. the single-surface
-    (aquaplanet) case. The Fortran evaluates the fluxes per tile and
-    aggregates them with the tile fractions; with one tile of fraction 1 the
-    aggregation is the identity, which is the configuration the serialized
-    idealized experiments use.
+    ``pressure_ifc`` is read afresh on every ``compute`` call, so it must be
+    the live buffer the caller updates each step, not a snapshot.
     """
 
     def __init__(

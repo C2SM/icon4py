@@ -152,8 +152,6 @@ def test_params_derived_from_config() -> None:
     config = tmx.TmxConfig()
     params = tmx.TmxParams(config)
     assert params.rturb_prandtl == 1.0 / config.turb_prandtl
-    assert params.von_karman == 0.4
-    assert params.mean_cell_area_r2b8 == 97294071.23714285
 
 
 def _expected_shapes(

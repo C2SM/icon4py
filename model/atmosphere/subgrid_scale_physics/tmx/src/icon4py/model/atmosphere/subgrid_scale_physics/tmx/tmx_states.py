@@ -150,6 +150,10 @@ class TmxInputState:
     cv_air: fa.CellKField[ta.wpfloat]
     """Isometric specific heat of moist air (``cvair``) on full levels [J/(kg K)]."""
 
+    # TODO(jcanton): add the land and sea-ice fractions (``fract_land`` / ``fract_ice``).
+    # The granule allocates them as zero fields (aqua planet); they are read only when
+    # the Louis stability correction is switched off over land or ice.
+
 
 @dataclasses.dataclass(frozen=True)
 class TmxSurfaceFluxState:

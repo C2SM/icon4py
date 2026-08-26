@@ -23,10 +23,9 @@ def compute_static_energy_numpy(
     temperature: np.ndarray,
     height_above_ground: np.ndarray,
     *,
-    spec_heat: float,
     grav: float,
 ) -> np.ndarray:
-    return spec_heat * temperature + grav * height_above_ground
+    return constants.CPD * temperature + grav * height_above_ground
 
 
 class TestComputeStaticEnergy(stencil_tests.StencilTest):
@@ -39,14 +38,12 @@ class TestComputeStaticEnergy(stencil_tests.StencilTest):
         *,
         temperature: np.ndarray,
         height_above_ground: np.ndarray,
-        spec_heat: float,
         grav: float,
         **kwargs,
     ) -> dict:
         static_energy = compute_static_energy_numpy(
             temperature,
             height_above_ground,
-            spec_heat=spec_heat,
             grav=grav,
         )
         return dict(static_energy=static_energy)
@@ -67,7 +64,6 @@ class TestComputeStaticEnergy(stencil_tests.StencilTest):
             temperature=temperature,
             height_above_ground=height_above_ground,
             static_energy=static_energy,
-            spec_heat=constants.CPD,
             grav=constants.GRAV,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),

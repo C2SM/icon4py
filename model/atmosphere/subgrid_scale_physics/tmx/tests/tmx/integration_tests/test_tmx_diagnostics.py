@@ -21,6 +21,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
 from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
@@ -67,8 +68,6 @@ def test_tmx_init_and_run_diagnostics_single_step(
         grid=icon_grid,
         config=tmx_config,
         params=params,
-        # the vertical grid is not used by the Smagorinsky diagnostics (Stage A)
-        vertical_grid=None,
         metric_state=construct_metric_state(
             metrics_savepoint=metrics_savepoint,
             init_savepoint=init_savepoint,
@@ -79,6 +78,7 @@ def test_tmx_init_and_run_diagnostics_single_step(
         edge_params=grid_savepoint.construct_edge_geometry(),
         cell_params=grid_savepoint.construct_cell_geometry(),
         backend=backend,
+        exchange=decomposition.single_node_exchange,
     )
 
     # init fields, computed in the granule constructor (Smagorinsky_init in

@@ -61,8 +61,11 @@ def _interpolate_vn_to_half_levels_with_boundary(
     vn_ie_bottom = (
         wgtfacq_e_1 * vn(KDim - 1) + wgtfacq_e_2 * vn(KDim - 2) + wgtfacq_e_3 * vn(KDim - 3)
     )
-    vn_ie = concat_where(dims.KDim == 0, vn_ie_top, vn_ie_interior)
-    return concat_where(dims.KDim == nlev, vn_ie_bottom, vn_ie)
+    return concat_where(
+        dims.KDim == 0,
+        vn_ie_top,
+        concat_where(dims.KDim == nlev, vn_ie_bottom, vn_ie_interior),
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

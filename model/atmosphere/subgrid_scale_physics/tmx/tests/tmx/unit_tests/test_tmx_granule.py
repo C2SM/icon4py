@@ -29,6 +29,7 @@ import pytest
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
 from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import simple
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -253,12 +254,12 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
         grid=grid,
         config=config,
         params=params,
-        vertical_grid=None,
         metric_state=_metric_state(grid, allocator),
         interpolation_state=_interpolation_state(grid, allocator),
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend_like,
+        exchange=decomposition.single_node_exchange,
     )
 
     # init fields (computed in __init__)
@@ -417,12 +418,12 @@ def test_tmx_granule_full_run_smoke(
         grid=grid,
         config=config,
         params=tmx.TmxParams(config),
-        vertical_grid=None,
         metric_state=_metric_state(grid, allocator),
         interpolation_state=_interpolation_state(grid, allocator),
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend_like,
+        exchange=decomposition.single_node_exchange,
     )
 
     input_state = _input_state(grid, allocator)

@@ -5,8 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Final
-
 import gt4py.next as gtx
 from gt4py.next import abs, maximum, minimum, power, sqrt, where  # noqa: A004
 from gt4py.next.experimental import concat_where
@@ -14,11 +12,6 @@ from gt4py.next.experimental import concat_where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.type_alias import wpfloat
-
-
-# Threshold to avoid division by zero in the Richardson number
-# (``eps_louis`` in ICON's ``mo_tmx_smagorinsky.f90``)
-EPS_LOUIS: Final[wpfloat] = wpfloat(1.0e-28)
 
 
 @gtx.field_operator
@@ -56,9 +49,9 @@ def _stability_term_louis(
                                  min(1, (1 / (1 + b * scaling * |Ri|))^4))
         stability_term = sqrt(0.5 * mech_prod * stability_function)
     """
-    # Note: has to be defined inside the field operator, module-level closure
-    # constants are not supported by the gtfn backend (keep in sync with
-    # EPS_LOUIS above).
+    # Threshold to avoid division by zero in the Richardson number (``eps_louis``
+    # in ICON's mo_tmx_smagorinsky.f90). Defined here because module-level closure
+    # constants are not supported by the gtfn backend.
     eps_louis = wpfloat("1.0e-28")
     ri = wpfloat("2.0") * bruvais / maximum(eps_louis, mech_prod)
 

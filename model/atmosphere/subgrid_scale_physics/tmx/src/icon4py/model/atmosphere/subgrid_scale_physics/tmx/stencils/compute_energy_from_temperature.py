@@ -8,6 +8,9 @@
 import gt4py.next as gtx
 from gt4py.next import broadcast
 
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_static_energy import (
+    _compute_static_energy,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.physics.thermodynamics import _internal_energy
@@ -82,7 +85,9 @@ def _compute_energy_from_temperature(
             + grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd
         )
     else:
-        energy = PhysicsConstants.cpd * temperature + grav * height_above_ground
+        energy = _compute_static_energy(
+            temperature=temperature, height_above_ground=height_above_ground, grav=grav
+        )
     return energy
 
 

@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_smagorinsky_viscosity import (
-    EPS_LOUIS,
     compute_smagorinsky_viscosity,
 )
 from icon4py.model.common import dimension as dims
@@ -35,7 +34,7 @@ def stability_term_louis_numpy(
     rturb_prandtl: float,
     louis_constant_b: float,
 ) -> np.ndarray:
-    ri = 2.0 * bruvais / np.maximum(EPS_LOUIS, mech_prod)
+    ri = 2.0 * bruvais / np.maximum(1.0e-28, mech_prod)  # eps_louis
     stability_function = np.maximum(
         1.0 - ri * rturb_prandtl,
         np.minimum(
