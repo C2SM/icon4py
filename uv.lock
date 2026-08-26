@@ -2213,6 +2213,7 @@ dependencies = [
   {name = "numpy"},
   {name = "packaging"},
   {name = "pyyaml"},
+  {name = "rich"},
   {name = "serialbox4py"}
 ]
 name = "icon4py-common"
@@ -2244,6 +2245,7 @@ requires-dist = [
   {name = "packaging", specifier = ">=20.0"},
   {name = "pymetis", marker = "extra == 'io'", specifier = ">2022.1"},
   {name = "pyyaml", specifier = ">=6.0.3"},
+  {name = "rich", specifier = ">=15.0.0"},
   {name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0"},
   {name = "serialbox4py", specifier = ">=2.6.2"},
   {name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0"},
