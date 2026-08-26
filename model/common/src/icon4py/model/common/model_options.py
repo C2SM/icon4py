@@ -39,7 +39,7 @@ def get_dace_options(
     backend_config: backend_cfg.BackendConfig | None,
     **backend_descriptor: Any,
 ) -> model_backends.BackendDescriptor:
-    device = backend_descriptor.get("device")
+    device = backend_descriptor.get("device") or model_backends.CPU
     optimization_args = backend_descriptor.get("optimization_args", {})
     optimization_hooks = optimization_args.get("optimization_hooks", {})
 

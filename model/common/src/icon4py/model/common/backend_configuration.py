@@ -26,7 +26,6 @@ from __future__ import annotations
 import dataclasses
 import os
 from collections.abc import Iterable
-from types import ModuleType
 from typing import ClassVar, Final
 
 import gt4py.next as gtx
@@ -78,21 +77,6 @@ def backend_config_from_env() -> BackendConfig | None:
     )
 
 
-def _array_namespace_for(device: gtx.DeviceType) -> ModuleType:
-    """Return the array namespace for `device`, requiring cupy on GPU."""
-    if device == gtx.CUPY_DEVICE_TYPE:
-        try:
-            import cupy as cp  # type: ignore[import-not-found]  # noqa: PLC0415 [import-outside-top-level]
-        except ImportError as err:
-            raise RuntimeError(
-                f"GPU workspace requested but cupy is not available: {err!r}."
-            ) from err
-        return cp
-    import numpy as np  # noqa: PLC0415 [import-outside-top-level]
-
-    return np
-
-
 def _array_base_ptr(buf: data_allocation.NDArray) -> int:
     """Return the base pointer of `buf` from its array interface."""
     interface = getattr(buf, "__cuda_array_interface__", None) or getattr(
@@ -111,7 +95,7 @@ def _aligned_slab(nbytes: int, alignment: int, device: gtx.DeviceType) -> data_a
     contract enforced by
     `gt4py.next.program_processors.runners.dace.workflow.compilation._validate_external_workspace`.
     """
-    xp = _array_namespace_for(device)
+    xp = data_allocation.array_ns(use_cupy=(device != gtx.DeviceType.CPU))
     buf = xp.empty(nbytes + alignment, dtype=xp.uint8)
     ptr = _array_base_ptr(buf)
     offset = (-ptr) % alignment

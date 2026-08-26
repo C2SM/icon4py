@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import dataclasses
+import sys
 from collections.abc import Iterator
 
 import numpy as np
@@ -78,18 +79,6 @@ class TestBackendConfigFromEnv:
         assert config.workspace_alignment == 512
 
 
-class TestArrayNamespaceFor:
-    def test_returns_numpy_for_cpu(self) -> None:
-        assert bc._array_namespace_for(CPU) is np
-
-    def test_raises_runtime_error_when_cupy_not_available(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(bc.gtx, "CUPY_DEVICE_TYPE", bc.gtx.DeviceType.CUDA)
-        with pytest.raises(RuntimeError, match="cupy is not available"):
-            bc._array_namespace_for(bc.gtx.DeviceType.CUDA)
-
-
 class TestArrayBasePtr:
     def test_returns_int_for_numpy_array(self) -> None:
         arr = np.empty(64, dtype=np.uint8)
@@ -112,6 +101,13 @@ class TestAlignedSlab:
     def test_slab_has_correct_size(self, nbytes: int) -> None:
         slab = bc._aligned_slab(nbytes, 256, CPU)
         assert slab.nbytes == nbytes
+
+    def test_raises_runtime_error_when_cupy_not_available(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setitem(sys.modules, "cupy", None)
+        with pytest.raises(RuntimeError, match="cupy is not available:"):
+            bc._aligned_slab(1000, 256, bc.gtx.DeviceType.CUDA)
 
 
 class TestIconWorkspaceAllocator:
