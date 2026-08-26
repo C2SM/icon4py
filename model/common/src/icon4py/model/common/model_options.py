@@ -35,6 +35,69 @@ def _dace_remove_access_node_copies(sdfg: dace.SDFG) -> None:
     )
 
 
+def _set_program_specific_dace_options(
+    program_name: str,
+    device: model_backends.DeviceType | None,
+    backend_descriptor: model_backends.BackendDescriptor,
+    optimization_args: dict[str, Any],
+    optimization_hooks: dict[Any, Any],
+) -> None:
+    if program_name in (
+        "vertically_implicit_solver_at_corrector_step",
+        "vertically_implicit_solver_at_predictor_step",
+    ):
+        # Enable pass that removes access node (next_w) copies for vertically implicit solver programs
+        optimization_hooks.setdefault(
+            gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep,
+            _dace_remove_access_node_copies,
+        )
+        optimization_args.setdefault("scan_loop_unrolling", True)
+        optimization_args.setdefault("scan_loop_unrolling_factor", 0)
+    # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
+    # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
+    # due to it falling into a less optimized code generation (on santis).
+    if program_name == "compute_rho_theta_pgrad_and_update_vn":
+        backend_descriptor["use_zero_origin"] = True
+    if program_name == "graupel_run":
+        optimization_args["fuse_tasklets"] = True
+        if device != model_backends.DeviceType.ROCM:
+            optimization_args["gpu_maxnreg"] = 80
+            optimization_args["gpu_block_size_2d"] = (64, 6)
+        optimization_args["gpu_memory_pool"] = False
+        optimization_args["make_persistent"] = True
+
+
+def _set_device_specific_dace_options(
+    device: model_backends.DeviceType | None,
+    has_external_workspace: bool,
+    optimization_args: dict[str, Any],
+) -> None:
+    if device == model_backends.DeviceType.ROCM:
+        if not has_external_workspace:
+            # Only needed when no external workspace is provided (i.e.
+            # ICON4PY_BACKEND_WORKSPACE_SIZE is not set); the external
+            # workspace already avoids the runtime allocation overhead.
+            optimization_args["gpu_memory_pool"] = False
+            optimization_args["make_persistent"] = True
+        # AMD MI300A: (256,1,1) for 2D maps gives ~20% speedup on the solver.
+        # All threads on Cell dimension maximizes coalescing on MI300A.
+        optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
+        # Setting a block size of (256,1,1) for 1D maps doesn't give a significant
+        # speedup on MI300A but it doesn't hurt either
+        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
+        # Vertical blocking with length 4 is adding ~12% speedup on MI300A for dycore
+        optimization_args["blocking_dims"] = list(dimension.vertical_dims())
+        optimization_args["blocking_size"] = 4
+        optimization_args["blocking_only_if_independent_nodes"] = False
+        if os.getenv("CUPY_ACCELERATORS") == "":
+            log.warning(
+                'CUPY_ACCELERATORS environment variable should be set to "cub" otherwise reductions have degraded performance on AMD GPUs.'
+            )
+    elif device == model_backends.DeviceType.CUDA:
+        optimization_args.setdefault("gpu_block_size_2d", (128, 2, 1))
+        optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
+
+
 def get_dace_options(
     program_name: str,
     backend_config: backend_cfg.BackendConfig | None,
@@ -56,52 +119,15 @@ def get_dace_options(
             gtx_transformations.TransientMemoryMode.EXTERNAL
         )
 
-    if program_name in [
-        "vertically_implicit_solver_at_corrector_step",
-        "vertically_implicit_solver_at_predictor_step",
-    ]:
-        if gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep not in optimization_hooks:
-            # Enable pass that removes access node (next_w) copies for vertically implicit solver programs
-            optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
-                _dace_remove_access_node_copies
-            )
-        if "scan_loop_unrolling" not in optimization_args:
-            optimization_args["scan_loop_unrolling"] = True
-        if "scan_loop_unrolling_factor" not in optimization_args:
-            optimization_args["scan_loop_unrolling_factor"] = 0
-    # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
-    # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
-    # due to it falling into a less optimized code generation (on santis).
-    if program_name == "compute_rho_theta_pgrad_and_update_vn":
-        backend_descriptor["use_zero_origin"] = True
-    if program_name == "graupel_run":
-        optimization_args["fuse_tasklets"] = True
-        if device != model_backends.DeviceType.ROCM:
-            optimization_args["gpu_maxnreg"] = 80
-            optimization_args["gpu_block_size_2d"] = (64, 6)
-        optimization_args["gpu_memory_pool"] = False
-        optimization_args["make_persistent"] = True
-    if backend_descriptor["device"] == model_backends.DeviceType.ROCM:
-        if backend_config is None:
-            # Only needed when no external workspace is provided (i.e.
-            # ICON4PY_BACKEND_WORKSPACE_SIZE is not set); the external
-            # workspace already avoids the runtime allocation overhead.
-            optimization_args["gpu_memory_pool"] = False
-            optimization_args["make_persistent"] = True
-        # AMD MI300A: (256,1,1) for 2D maps gives ~20% speedup on the solver.
-        # All threads on Cell dimension maximizes coalescing on MI300A.
-        optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
-        # Setting a block size of (256,1,1) for 1D maps doesn't give a significant
-        # speedup on MI300A but it doesn't hurt either
-        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
-        # Vertical blocking with length 4 is adding ~12% speedup on MI300A for dycore
-        optimization_args["blocking_dims"] = list(dimension.vertical_dims())
-        optimization_args["blocking_size"] = 4
-        optimization_args["blocking_only_if_independent_nodes"] = False
-        if os.getenv("CUPY_ACCELERATORS") == "":
-            log.warning(
-                'CUPY_ACCELERATORS environment variable should be set to "cub" otherwise reductions have degraded performance on AMD GPUs.'
-            )
+    _set_program_specific_dace_options(
+        program_name, device, backend_descriptor, optimization_args, optimization_hooks
+    )
+    _set_device_specific_dace_options(
+        device,
+        has_external_workspace=backend_config is not None,
+        optimization_args=optimization_args,
+    )
+
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
