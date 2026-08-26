@@ -44,7 +44,7 @@ def test_is_upload_rank_false_for_nonzero(_clear_rank_env, monkeypatch):
     assert benchmark.is_upload_rank() is False
 
 
-def test_is_upload_rank_explicit_none():
+def test_is_upload_rank_explicit_none(_clear_rank_env):
     assert benchmark.is_upload_rank(None) is True
 
 
