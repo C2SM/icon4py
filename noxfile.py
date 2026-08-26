@@ -211,10 +211,10 @@ def _driver_bencher_testbed() -> str:
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
 def __bencher_driver_baseline_CI(session: nox.Session) -> None:
     """Upload the distributed driver benchmark baseline to bencher."""
-    if not is_upload_rank(resolve_rank()):
+    rank = resolve_rank()
+    if not is_upload_rank(rank):
         return
 
-    rank = resolve_rank()
     session.run(
         *f"bencher run \
         --threshold-measure latency \
@@ -240,10 +240,10 @@ def __bencher_driver_baseline_CI(session: nox.Session) -> None:
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
 def __bencher_driver_feature_branch_CI(session: nox.Session) -> None:
     """Upload the distributed driver benchmark feature-branch results to bencher."""
-    if not is_upload_rank(resolve_rank()):
+    rank = resolve_rank()
+    if not is_upload_rank(rank):
         return
 
-    rank = resolve_rank()
     bencher_testbed = _driver_bencher_testbed()
     session.run(
         *f"bencher run \
