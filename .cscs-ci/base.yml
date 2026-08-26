@@ -286,7 +286,6 @@ variables:
     OMPI_MCA_mpi_cuda_support: "0"
     SLURM_NTASKS: "1"
     SLURM_GPUS_PER_TASK: "1"
-    SLURM_PARTITION: "normal"
     SLURM_TIMELIMIT: "00:10:00"
   script:
     - cd /icon4py
