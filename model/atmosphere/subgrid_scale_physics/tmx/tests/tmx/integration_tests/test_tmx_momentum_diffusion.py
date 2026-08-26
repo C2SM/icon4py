@@ -92,7 +92,7 @@ def _setup_granule(
         edge_params=grid_savepoint.construct_edge_geometry(),
         cell_params=grid_savepoint.construct_cell_geometry(),
         backend=backend,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     # seed the Stage A diagnostics consumed by the momentum diffusion from the

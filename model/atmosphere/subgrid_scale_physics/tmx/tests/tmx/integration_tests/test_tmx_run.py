@@ -82,7 +82,7 @@ def test_tmx_full_run_single_step(
         edge_params=grid_savepoint.construct_edge_geometry(),
         cell_params=grid_savepoint.construct_cell_geometry(),
         backend=backend,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     diagnostic_state = tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator)

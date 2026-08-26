@@ -259,7 +259,7 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend_like,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     # init fields (computed in __init__)
@@ -423,7 +423,7 @@ def test_tmx_granule_full_run_smoke(
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend_like,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     input_state = _input_state(grid, allocator)
