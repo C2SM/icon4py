@@ -58,13 +58,13 @@ def verify_full_run_fields(
     # fields are covered by their atol rather than by RTOL.
     # final tendencies and Stage F diagnostics
     fields = (
-        (tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
-        (tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv", 3.0e-18),
-        (tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc", 6.0e-19),
-        (tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi", 8.0e-22),
-        (tendency_state.ddt_u, exit_savepoint.tend_ua(), "tend_ua", 2.0e-16),
-        (tendency_state.ddt_v, exit_savepoint.tend_va(), "tend_va", 4.0e-17),
-        (tendency_state.ddt_w, exit_savepoint.tend_wa(), "tend_wa", 2.0e-17),
+        (tendency_state.tend_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
+        (tendency_state.tend_qv, exit_savepoint.tend_qv(), "tend_qv", 3.0e-18),
+        (tendency_state.tend_qc, exit_savepoint.tend_qc(), "tend_qc", 6.0e-19),
+        (tendency_state.tend_qi, exit_savepoint.tend_qi(), "tend_qi", 8.0e-22),
+        (tendency_state.tend_u, exit_savepoint.tend_ua(), "tend_ua", 2.0e-16),
+        (tendency_state.tend_v, exit_savepoint.tend_va(), "tend_va", 4.0e-17),
+        (tendency_state.tend_w, exit_savepoint.tend_wa(), "tend_wa", 2.0e-17),
         (diagnostic_state.heating, exit_savepoint.heating(), "heating", 9.0e-13),
         (diagnostic_state.dissip_ke, exit_savepoint.dissip_ke(), "dissip_ke", 9.0e-13),
     )
@@ -113,6 +113,27 @@ def verify_full_run_fields(
             atol=atol,
             err_msg=name,
         )
+
+
+def assert_scaled_allclose(
+    actual: np.ndarray,
+    desired: np.ndarray,
+    *,
+    atol_scale: float = 1.0e-12,
+    rtol: float = 1.0e-10,
+    err_msg: str = "",
+) -> None:
+    """Compare two fields with an absolute floor scaled to the field magnitude.
+
+    A plain relative tolerance blows up on near-zero entries, and a fixed
+    absolute one has to be retuned per field; deriving the floor from
+    ``max(|desired|)`` keeps one tolerance meaningful across fields whose
+    magnitudes span many orders (wgtfac ~ 1, geopot_agl_ifc ~ 1e5).
+    """
+    scale = float(np.max(np.abs(desired))) if desired.size else 0.0
+    test_utils.assert_dallclose(
+        actual, desired, rtol=rtol, atol=atol_scale * max(scale, 1.0), err_msg=err_msg
+    )
 
 
 def flip_back(field: gtx.Field) -> np.ndarray:

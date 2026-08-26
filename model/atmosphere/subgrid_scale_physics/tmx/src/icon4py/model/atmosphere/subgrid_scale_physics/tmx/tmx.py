@@ -1964,7 +1964,7 @@ class Tmx:
         surface flux entering through the bottom-row right-hand side
         (qv: evapotranspiration, qc/qi: zero), followed by conservative
         horizontal nabla2 diffusion and the state update. The tendencies
-        (``ddt_qv/qc/qi``) are zeroed at entry and hold the total (vertical +
+        (``tend_qv/qc/qi``) are zeroed at entry and hold the total (vertical +
         horizontal) diffusion tendency on exit.
 
         Requires the Stage A diagnostics (``kh_ic``, ``km_ie``) of
@@ -1984,12 +1984,12 @@ class Tmx:
             (
                 "qv",
                 input_state.qv,
-                tendency_state.ddt_qv,
+                tendency_state.tend_qv,
                 new_state.qv,
                 surface_flux_state.evapotranspiration,
             ),
-            ("qc", input_state.qc, tendency_state.ddt_qc, new_state.qc, self._zero_surface_flux),
-            ("qi", input_state.qi, tendency_state.ddt_qi, new_state.qi, self._zero_surface_flux),
+            ("qc", input_state.qc, tendency_state.tend_qc, new_state.qc, self._zero_surface_flux),
+            ("qi", input_state.qi, tendency_state.tend_qi, new_state.qi, self._zero_surface_flux),
         )
         for name, state, tend, new, sfc_flx in tracers:
             self.init_cell_kdim_field_with_zero(field_with_zero_wp=tend)
@@ -2039,7 +2039,7 @@ class Tmx:
         side) and horizontally like the hydrometeors, and the new temperature
         is recovered from the new energy using the *new* moisture state of
         ``new_state`` -> ``new_state.temperature``,
-        ``tendency_state.ddt_temperature = (new_ta - ta) / dtime``.
+        ``tendency_state.tend_temperature = (new_ta - ta) / dtime``.
 
         The intermediate energy fields are kept on the granule for testing:
         ``self.energy`` (from the old temperature) and ``self.tend_energy``
@@ -2119,7 +2119,7 @@ class Tmx:
             qs=input_state.qs,
             qg=input_state.qg,
             new_temperature=new_state.temperature,
-            tend_temperature=tendency_state.ddt_temperature,
+            tend_temperature=tendency_state.tend_temperature,
             dtime=dtime,
         )
 
@@ -2143,8 +2143,8 @@ class Tmx:
         implicit vertical vn diffusion (surface momentum stress entering
         through the bottom-row right-hand side) accumulate the total edge
         tendency ``self.tot_tend``, which is RBF-interpolated to the cell
-        tendencies ``tendency_state.ddt_u/ddt_v``;
-        ``new_state.u/v = u/v + ddt_u/v * dtime``.
+        tendencies ``tendency_state.tend_u/tend_v``;
+        ``new_state.u/v = u/v + tend_u/v * dtime``.
 
         Only the implicit vertical solver is wired (the Fortran explicit
         branch of the hor-wind solve has no edge-based icon4py port yet).
@@ -2164,8 +2164,8 @@ class Tmx:
 
         # CALL init(tend_u/tend_v): the RBF interpolation only writes cells
         # 2..min_rlcell_int, everything outside must be zero
-        self.init_cell_kdim_field_with_zero(field_with_zero_wp=tendency_state.ddt_u)
-        self.init_cell_kdim_field_with_zero(field_with_zero_wp=tendency_state.ddt_v)
+        self.init_cell_kdim_field_with_zero(field_with_zero_wp=tendency_state.tend_u)
+        self.init_cell_kdim_field_with_zero(field_with_zero_wp=tendency_state.tend_v)
 
         # S7: CALL sync_patch_array(SYNC_C, patch, rho) in mo_vdf.f90
         log.debug("communication of rho (cells): start")
@@ -2211,14 +2211,14 @@ class Tmx:
 
         self.edge_2_cell_vector_rbf_interpolation(
             p_e_in=self.tot_tend,
-            p_u_out=tendency_state.ddt_u,
-            p_v_out=tendency_state.ddt_v,
+            p_u_out=tendency_state.tend_u,
+            p_v_out=tendency_state.tend_v,
         )
         self.update_horizontal_wind(
             field_1=input_state.u,
             field_2=input_state.v,
-            tendency_1=tendency_state.ddt_u,
-            tendency_2=tendency_state.ddt_v,
+            tendency_1=tendency_state.tend_u,
+            tendency_2=tendency_state.tend_v,
             new_field_1=new_state.u,
             new_field_2=new_state.v,
             dtime=dtime,
@@ -2227,9 +2227,9 @@ class Tmx:
         # S10/S11: CALL sync_patch_array_mult(SYNC_C, patch, 2, tend_u, tend_v)
         # and (..., new_state_u, new_state_v) in mo_vdf.f90 (both marked
         # "TODO: Are these necessary?" there; ported as-is)
-        log.debug("communication of ddt_u, ddt_v (cells): start")
-        self._exchange.exchange(dims.CellDim, tendency_state.ddt_u, tendency_state.ddt_v)
-        log.debug("communication of ddt_u, ddt_v (cells): end")
+        log.debug("communication of tend_u, tend_v (cells): start")
+        self._exchange.exchange(dims.CellDim, tendency_state.tend_u, tendency_state.tend_v)
+        log.debug("communication of tend_u, tend_v (cells): end")
         log.debug("communication of new u, v (cells): start")
         self._exchange.exchange(dims.CellDim, new_state.u, new_state.v)
         log.debug("communication of new u, v (cells): end")
@@ -2251,9 +2251,9 @@ class Tmx:
         Port of ``Compute_diffusion_vert_wind`` in mo_vdf.f90 (l. 1601): the
         implicit vertical w diffusion on half levels (minlvl = 2, with the
         w = 0 top/bottom boundary conditions folded into the matrix diagonal)
-        accumulates onto ``tendency_state.ddt_w``, then the horizontal D31/D32
+        accumulates onto ``tendency_state.tend_w``, then the horizontal D31/D32
         stress tendency at half-level edges is interpolated back to cells and
-        added; ``new_state.w = w + ddt_w * dtime`` on the interior half levels
+        added; ``new_state.w = w + tend_w * dtime`` on the interior half levels
         (rows 0 and nlev stay zero, the w = 0 boundary rows). The Fortran w
         solve is implicit regardless of the configured solver type.
 
@@ -2264,9 +2264,9 @@ class Tmx:
         """
         log.debug("tmx Stage E (Compute_diffusion_vert_wind): start")
 
-        # CALL init(tend) / init(new_state): ddt_w is accumulated and new_w is
+        # CALL init(tend) / init(new_state): tend_w is accumulated and new_w is
         # only written on the interior half levels
-        self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=tendency_state.ddt_w)
+        self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=tendency_state.tend_w)
         self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=new_state.w)
 
         self.compute_tangential_wind_full_levels(vn=diagnostic_state.vn)
@@ -2279,7 +2279,7 @@ class Tmx:
         self.modify_w_diffusion_matrix_boundary(km_c=diagnostic_state.km_c)
         self.solve_w_vertical_diffusion(
             var=input_state.w,
-            tend=tendency_state.ddt_w,
+            tend=tendency_state.tend_w,
             dtime=dtime,
         )
 
@@ -2296,7 +2296,7 @@ class Tmx:
         self.apply_w_horizontal_diffusion_and_update(
             w=input_state.w,
             new_w=new_state.w,
-            tend=tendency_state.ddt_w,
+            tend=tendency_state.tend_w,
             dtime=dtime,
         )
 
@@ -2327,11 +2327,11 @@ class Tmx:
         non-zero only over land) give the turbulent heating rate
         (``diagnostic_state.heating``), whose temperature tendency is added to
         the heat-diffusion tendency of Stage C:
-        ``tendency_state.ddt_temperature += heating / cv_air`` and
-        ``new_state.temperature = temperature + ddt_temperature * dtime``.
+        ``tendency_state.tend_temperature += heating / cv_air`` and
+        ``new_state.temperature = temperature + tend_temperature * dtime``.
 
         Requires the temperature diffusion tendency (Stage C,
-        ``tendency_state.ddt_temperature``) and the updated winds (Stage D,
+        ``tendency_state.tend_temperature``) and the updated winds (Stage D,
         ``new_state.u/v``) to be up to date.
         """
         log.debug("tmx Stage F (Update_energy_tendencies): start")
@@ -2347,7 +2347,7 @@ class Tmx:
             air_mass=input_state.air_mass,
             cv_air=input_state.cv_air,
             temperature=input_state.temperature,
-            tend_temperature=tendency_state.ddt_temperature,
+            tend_temperature=tendency_state.tend_temperature,
             q_snocpymlt=surface_flux_state.q_snocpymlt,
             dissip_ke=diagnostic_state.dissip_ke,
             heating=diagnostic_state.heating,
@@ -2358,9 +2358,11 @@ class Tmx:
         # S13: CALL sync_patch_array_mult(SYNC_C, patch, 2, new_state_ta,
         # tend_ta) in mo_vdf.f90 (marked "TODO: Are these necessary?" there;
         # ported as-is)
-        log.debug("communication of new temperature, ddt_temperature (cells): start")
-        self._exchange.exchange(dims.CellDim, new_state.temperature, tendency_state.ddt_temperature)
-        log.debug("communication of new temperature, ddt_temperature (cells): end")
+        log.debug("communication of new temperature, tend_temperature (cells): start")
+        self._exchange.exchange(
+            dims.CellDim, new_state.temperature, tendency_state.tend_temperature
+        )
+        log.debug("communication of new temperature, tend_temperature (cells): end")
 
         log.debug("tmx Stage F (Update_energy_tendencies): end")
 

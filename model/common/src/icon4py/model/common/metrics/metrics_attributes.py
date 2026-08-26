@@ -21,6 +21,13 @@ DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels
 DDQZ_Z_FULL: Final[str] = "functional_determinant_of_metrics_on_full_levels"
 DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on_edges"
 INV_DDQZ_Z_FULL: Final[str] = f"inverse_of_{DDQZ_Z_FULL}"
+INV_DDQZ_Z_HALF: Final[str] = f"inverse_of_{DDQZ_Z_HALF}"
+INV_DDQZ_Z_FULL_E: Final[str] = f"inverse_of_{DDQZ_Z_FULL_E}"
+INV_DDQZ_Z_HALF_E: Final[str] = f"inverse_of_{DDQZ_Z_HALF}_on_edges"
+INV_DDQZ_Z_HALF_V: Final[str] = f"inverse_of_{DDQZ_Z_HALF}_on_vertices"
+WGTFACQ1_C: Final[str] = "weighting_factor_for_quadratic_extrapolation_to_cell_top"
+WGTFACQ1_E: Final[str] = "weighting_factor_for_quadratic_extrapolation_to_edge_top"
+GEOPOT_AGL_IFC: Final[str] = "geopotential_above_ground_on_interface_levels"
 SCALING_FACTOR_FOR_3D_DIVDAMP: Final[str] = "scaling_factor_for_3d_divergence_damping"
 RAYLEIGH_W: Final[str] = "rayleigh_w"
 COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
@@ -362,6 +369,62 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="weighting_factor_for_quadratic_interpolation_to_edge_center",
+        dtype=ta.wpfloat,
+    ),
+    INV_DDQZ_Z_HALF: dict(
+        standard_name=INV_DDQZ_Z_HALF,
+        long_name="inv_ddqz_z_half",
+        units="m-1",
+        dims=(dims.CellDim, dims.KHalfDim),
+        icon_var_name="inv_ddqz_z_half",
+        dtype=ta.wpfloat,
+    ),
+    INV_DDQZ_Z_FULL_E: dict(
+        standard_name=INV_DDQZ_Z_FULL_E,
+        long_name="inv_ddqz_z_full_e",
+        units="m-1",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="inv_ddqz_z_full_e",
+        dtype=ta.wpfloat,
+    ),
+    INV_DDQZ_Z_HALF_E: dict(
+        standard_name=INV_DDQZ_Z_HALF_E,
+        long_name="inv_ddqz_z_half_e",
+        units="m-1",
+        dims=(dims.EdgeDim, dims.KHalfDim),
+        icon_var_name="inv_ddqz_z_half_e",
+        dtype=ta.wpfloat,
+    ),
+    INV_DDQZ_Z_HALF_V: dict(
+        standard_name=INV_DDQZ_Z_HALF_V,
+        long_name="inv_ddqz_z_half_v",
+        units="m-1",
+        dims=(dims.VertexDim, dims.KHalfDim),
+        icon_var_name="inv_ddqz_z_half_v",
+        dtype=ta.wpfloat,
+    ),
+    WGTFACQ1_C: dict(
+        standard_name=WGTFACQ1_C,
+        long_name="weighting_factor_for_quadratic_extrapolation_to_cell_top",
+        units="",
+        dims=(dims.CellDim, dims.KDim),
+        icon_var_name="wgtfacq1_c",
+        dtype=ta.wpfloat,
+    ),
+    WGTFACQ1_E: dict(
+        standard_name=WGTFACQ1_E,
+        long_name="weighting_factor_for_quadratic_extrapolation_to_edge_top",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="wgtfacq1_e",
+        dtype=ta.wpfloat,
+    ),
+    GEOPOT_AGL_IFC: dict(
+        standard_name=GEOPOT_AGL_IFC,
+        long_name="geopotential above ground level on interface levels",
+        units="m2 s-2",
+        dims=(dims.CellDim, dims.KHalfDim),
+        icon_var_name="geopot_agl_ifc",
         dtype=ta.wpfloat,
     ),
     MAXSLP: dict(

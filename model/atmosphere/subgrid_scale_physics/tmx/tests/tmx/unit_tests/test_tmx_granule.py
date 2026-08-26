@@ -318,7 +318,7 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
         dtime=dtime,
     )
 
-    for name in ("ddt_qv", "ddt_qc", "ddt_qi", "ddt_temperature"):
+    for name in ("tend_qv", "tend_qc", "tend_qi", "tend_temperature"):
         field = getattr(tendency_state, name).asnumpy()
         assert field.shape == (grid.num_cells, grid.num_levels), f"unexpected shape for '{name}'"
         assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
@@ -349,7 +349,7 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
     tot_tend = granule.tot_tend.asnumpy()
     assert tot_tend.shape == (grid.num_edges, grid.num_levels)
     assert np.all(np.isfinite(tot_tend))
-    for name in ("ddt_u", "ddt_v"):
+    for name in ("tend_u", "tend_v"):
         field = getattr(tendency_state, name).asnumpy()
         assert field.shape == (grid.num_cells, grid.num_levels), f"unexpected shape for '{name}'"
         assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
@@ -357,16 +357,16 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
         field = getattr(new_state, name).asnumpy()
         assert field.shape == (grid.num_cells, grid.num_levels), f"unexpected shape for '{name}'"
         assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
-    ddt_w = tendency_state.ddt_w.asnumpy()
-    assert ddt_w.shape == (grid.num_cells, grid.num_levels + 1)
-    assert np.all(np.isfinite(ddt_w))
+    tend_w = tendency_state.tend_w.asnumpy()
+    assert tend_w.shape == (grid.num_cells, grid.num_levels + 1)
+    assert np.all(np.isfinite(tend_w))
     new_w = new_state.w.asnumpy()
     assert new_w.shape == (grid.num_cells, grid.num_levels + 1)
     assert np.all(np.isfinite(new_w))
     # w = 0 boundary conditions: the top and bottom half-level rows of the new
     # w and its tendency are never written
-    np.testing.assert_array_equal(ddt_w[:, 0], 0.0)
-    np.testing.assert_array_equal(ddt_w[:, -1], 0.0)
+    np.testing.assert_array_equal(tend_w[:, 0], 0.0)
+    np.testing.assert_array_equal(tend_w[:, -1], 0.0)
     np.testing.assert_array_equal(new_w[:, 0], 0.0)
     np.testing.assert_array_equal(new_w[:, -1], 0.0)
 
@@ -442,7 +442,7 @@ def test_tmx_granule_full_run_smoke(
     )
 
     for state, names in (
-        (tendency_state, ("ddt_temperature", "ddt_qv", "ddt_qc", "ddt_qi", "ddt_u", "ddt_v")),
+        (tendency_state, ("tend_temperature", "tend_qv", "tend_qc", "tend_qi", "tend_u", "tend_v")),
         (new_state, ("temperature", "qv", "qc", "qi", "u", "v")),
     ):
         for name in names:
@@ -452,7 +452,7 @@ def test_tmx_granule_full_run_smoke(
                 grid.num_levels,
             ), f"unexpected shape for '{name}'"
             assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
-    for state, name in ((tendency_state, "ddt_w"), (new_state, "w")):
+    for state, name in ((tendency_state, "tend_w"), (new_state, "w")):
         field = getattr(state, name).asnumpy()
         assert field.shape == (grid.num_cells, grid.num_levels + 1)
         assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"

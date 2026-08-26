@@ -204,13 +204,13 @@ DIAGNOSTIC_FIELD_KINDS = {
 }
 
 TENDENCY_FIELD_KINDS = {
-    "ddt_temperature": "cell_full",
-    "ddt_qv": "cell_full",
-    "ddt_qc": "cell_full",
-    "ddt_qi": "cell_full",
-    "ddt_u": "cell_full",
-    "ddt_v": "cell_full",
-    "ddt_w": "cell_half",
+    "tend_temperature": "cell_full",
+    "tend_qv": "cell_full",
+    "tend_qc": "cell_full",
+    "tend_qi": "cell_full",
+    "tend_u": "cell_full",
+    "tend_v": "cell_full",
+    "tend_w": "cell_half",
 }
 
 

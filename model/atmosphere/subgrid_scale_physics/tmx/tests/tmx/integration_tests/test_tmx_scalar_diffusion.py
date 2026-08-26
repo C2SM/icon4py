@@ -158,9 +158,9 @@ def test_tmx_run_hydrometeor_diffusion_single_step(
     # fields were bit-identical to the reference on the v06 archive, which was
     # zero-filled there; on v08 they carry values and deviate at round-off.
     fields = (
-        (setup.tendency_state.ddt_qv, exit_savepoint.tend_qv(), "tend_qv", 5.0e-20),
-        (setup.tendency_state.ddt_qc, exit_savepoint.tend_qc(), "tend_qc", 5.0e-21),
-        (setup.tendency_state.ddt_qi, exit_savepoint.tend_qi(), "tend_qi", 3.0e-22),
+        (setup.tendency_state.tend_qv, exit_savepoint.tend_qv(), "tend_qv", 5.0e-20),
+        (setup.tendency_state.tend_qc, exit_savepoint.tend_qc(), "tend_qc", 5.0e-21),
+        (setup.tendency_state.tend_qi, exit_savepoint.tend_qi(), "tend_qi", 3.0e-22),
         (setup.new_state.qv, exit_savepoint.qv_new(), "qv_new", 2.0e-17),
         (setup.new_state.qc, exit_savepoint.qc_new(), "qc_new", 2.0e-18),
         (setup.new_state.qi, exit_savepoint.qi_new(), "qi_new", 7.0e-20),
@@ -238,7 +238,7 @@ def test_tmx_run_temperature_diffusion_single_step(
     fields = (
         (setup.granule.tend_energy, exit_savepoint.tend_energy(), "tend_energy", 5.0e-13),
         (new_state.temperature, exit_savepoint.ta_new(), "ta_new", 4.0e-13),
-        (setup.tendency_state.ddt_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
+        (setup.tendency_state.tend_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
     )
     for actual, desired, name, atol in fields:
         test_utils.assert_dallclose(

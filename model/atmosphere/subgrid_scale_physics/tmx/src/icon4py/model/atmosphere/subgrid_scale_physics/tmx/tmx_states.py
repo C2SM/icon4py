@@ -8,11 +8,15 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.grid import geometry_attributes
+from icon4py.model.common.interpolation import interpolation_attributes
+from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -22,6 +26,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.common.states import factory as states_factory
 
 
 """
@@ -88,6 +93,40 @@ class TmxMetricState:
     A grid-geometry field carried here because it is not part of the common
     ``grid_states.EdgeParams`` (used by the horizontal w diffusion, Stage E)."""
 
+    @classmethod
+    def from_sources(
+        cls,
+        *,
+        metrics: states_factory.FieldSource,
+        geometry: states_factory.FieldSource,
+        allocator: gtx_typing.Allocator | None = None,
+    ) -> TmxMetricState:
+        """Build the state from the metrics and geometry field factories."""
+        half = functools.partial(_as_kdim_field, allocator=allocator)
+        return cls(
+            ddqz_z_full=metrics.get(metrics_attributes.DDQZ_Z_FULL),
+            inv_ddqz_z_full=metrics.get(metrics_attributes.INV_DDQZ_Z_FULL),
+            ddqz_z_half=half(metrics.get(metrics_attributes.DDQZ_Z_HALF)),
+            inv_ddqz_z_half=half(metrics.get(metrics_attributes.INV_DDQZ_Z_HALF)),
+            inv_ddqz_z_full_e=metrics.get(metrics_attributes.INV_DDQZ_Z_FULL_E),
+            inv_ddqz_z_half_e=half(metrics.get(metrics_attributes.INV_DDQZ_Z_HALF_E)),
+            inv_ddqz_z_half_v=half(metrics.get(metrics_attributes.INV_DDQZ_Z_HALF_V)),
+            wgtfac_c=half(metrics.get(metrics_attributes.WGTFAC_C)),
+            wgtfac_e=half(metrics.get(metrics_attributes.WGTFAC_E)),
+            wgtfacq_c=_reverse_coefficient_rows(
+                metrics.get(metrics_attributes.WGTFACQ_C), allocator=allocator
+            ),
+            wgtfacq1_c=metrics.get(metrics_attributes.WGTFACQ1_C),
+            wgtfacq_e=_reverse_coefficient_rows(
+                metrics.get(metrics_attributes.WGTFACQ_E), allocator=allocator
+            ),
+            wgtfacq1_e=metrics.get(metrics_attributes.WGTFACQ1_E),
+            geopot_agl_ifc=half(metrics.get(metrics_attributes.GEOPOT_AGL_IFC)),
+            z_mc=metrics.get(metrics_attributes.Z_MC),
+            z_ifc=half(metrics.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL)),
+            edge_cell_length=geometry.get(geometry_attributes.EDGE_CELL_DISTANCE),
+        )
+
 
 @dataclasses.dataclass(frozen=True)
 class TmxInterpolationState:
@@ -111,6 +150,21 @@ class TmxInterpolationState:
     """RBF coefficients for the zonal wind component at cell centers (rbf_vec_coeff_c_1)."""
     rbf_coeff_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
     """RBF coefficients for the meridional wind component at cell centers (rbf_vec_coeff_c_2)."""
+
+    @classmethod
+    def from_sources(cls, *, interpolation: states_factory.FieldSource) -> TmxInterpolationState:
+        """Build the state from the interpolation field factory."""
+        return cls(
+            c_lin_e=interpolation.get(interpolation_attributes.C_LIN_E),
+            e_bln_c_s=interpolation.get(interpolation_attributes.E_BLN_C_S),
+            geofac_div=interpolation.get(interpolation_attributes.GEOFAC_DIV),
+            cells_aw_verts=interpolation.get(interpolation_attributes.CELL_AW_VERTS),
+            rbf_coeff_v1=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_V1),
+            rbf_coeff_v2=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_V2),
+            rbf_coeff_e=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_E),
+            rbf_coeff_c1=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C1),
+            rbf_coeff_c2=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2),
+        )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -345,19 +399,19 @@ class TmxNewState:
 class TmxTendencyState:
     """Tendencies computed by tmx."""
 
-    ddt_temperature: fa.CellKField[ta.wpfloat]
+    tend_temperature: fa.CellKField[ta.wpfloat]
     """Air temperature tendency on full levels [K/s]."""
-    ddt_qv: fa.CellKField[ta.wpfloat]
+    tend_qv: fa.CellKField[ta.wpfloat]
     """Specific humidity tendency on full levels [kg/(kg s)]."""
-    ddt_qc: fa.CellKField[ta.wpfloat]
+    tend_qc: fa.CellKField[ta.wpfloat]
     """Cloud water mixing ratio tendency on full levels [kg/(kg s)]."""
-    ddt_qi: fa.CellKField[ta.wpfloat]
+    tend_qi: fa.CellKField[ta.wpfloat]
     """Cloud ice mixing ratio tendency on full levels [kg/(kg s)]."""
-    ddt_u: fa.CellKField[ta.wpfloat]
+    tend_u: fa.CellKField[ta.wpfloat]
     """Zonal wind tendency on full levels [m/s^2]."""
-    ddt_v: fa.CellKField[ta.wpfloat]
+    tend_v: fa.CellKField[ta.wpfloat]
     """Meridional wind tendency on full levels [m/s^2]."""
-    ddt_w: fa.CellKField[ta.wpfloat]
+    tend_w: fa.CellKField[ta.wpfloat]
     """Vertical wind tendency on half levels [m/s^2]."""
 
     @classmethod
@@ -367,14 +421,40 @@ class TmxTendencyState:
         """Allocate a tendency state with all fields initialized to zero."""
         full, half, _ = _field_allocators(grid, allocator)
         return cls(
-            ddt_temperature=full(dims.CellDim),
-            ddt_qv=full(dims.CellDim),
-            ddt_qc=full(dims.CellDim),
-            ddt_qi=full(dims.CellDim),
-            ddt_u=full(dims.CellDim),
-            ddt_v=full(dims.CellDim),
-            ddt_w=half(dims.CellDim),
+            tend_temperature=full(dims.CellDim),
+            tend_qv=full(dims.CellDim),
+            tend_qc=full(dims.CellDim),
+            tend_qi=full(dims.CellDim),
+            tend_u=full(dims.CellDim),
+            tend_v=full(dims.CellDim),
+            tend_w=half(dims.CellDim),
         )
+
+
+def _as_kdim_field(field: gtx.Field, *, allocator: gtx_typing.Allocator | None) -> gtx.Field:
+    """Re-tag a factory half-level field from ``KHalfDim`` to the granule's ``KDim``.
+
+    The field factories type half-level fields on ``KHalfDim``; tmx (like the
+    serialized ICON reference data) types every vertical axis as ``KDim`` with
+    ``nlev + 1`` entries. Same values, different dimension tag.
+    """
+    horizontal_dim = field.domain.dims[0]
+    return gtx.as_field((horizontal_dim, dims.KDim), field.ndarray, allocator=allocator)
+
+
+def _reverse_coefficient_rows(
+    field: gtx.Field, *, allocator: gtx_typing.Allocator | None
+) -> gtx.Field:
+    """Reverse the three K rows of a wgtfacq field into Fortran coefficient order.
+
+    The metrics factory stores the bottom-extrapolation coefficients bottom-up
+    (row 0 multiplies full level ``nlev - 3``); the tmx metric state documents
+    them top-down (row k multiplies ``nlev - 1 - k``), see the field docstrings.
+    """
+    horizontal_dim = field.domain.dims[0]
+    array = data_alloc.as_numpy(field)
+    assert array.shape[1] == 3, f"expected 3 K rows, got {array.shape[1]}"
+    return gtx.as_field((horizontal_dim, dims.KDim), array[:, ::-1], allocator=allocator)
 
 
 def _field_allocators(
