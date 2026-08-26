@@ -145,7 +145,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
         assert all(field is None for field in [pg_edgeidx, pg_vertidx, pg_exdist])
         pg_exdist_dsl = gtx.zeros(pg_exdist_domain, dtype=gtx.float64, allocator=allocator)
     else:
-        pg_exdist_dsl = data_alloc.list2field(
+        pg_exdist_dsl = data_alloc.scattered_field(
             domain=pg_exdist_domain,
             values=pg_exdist,
             indices=(
