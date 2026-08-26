@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
+import os
 from collections.abc import Callable
 from typing import Any
 
@@ -16,7 +17,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
-from icon4py.model.common import backend_configuration as backend_cfg, model_backends
+from icon4py.model.common import backend_configuration as backend_cfg, dimension, model_backends
 
 
 log = logging.getLogger(__name__)
@@ -80,6 +81,27 @@ def get_dace_options(
             optimization_args["gpu_block_size_2d"] = (64, 6)
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
+    if backend_descriptor["device"] == model_backends.DeviceType.ROCM:
+        if backend_config is None:
+            # Only needed when no external workspace is provided (i.e.
+            # ICON4PY_BACKEND_WORKSPACE_SIZE is not set); the external
+            # workspace already avoids the runtime allocation overhead.
+            optimization_args["gpu_memory_pool"] = False
+            optimization_args["make_persistent"] = True
+        # AMD MI300A: (256,1,1) for 2D maps gives ~20% speedup on the solver.
+        # All threads on Cell dimension maximizes coalescing on MI300A.
+        optimization_args.setdefault("gpu_block_size_2d", (256, 1, 1))
+        # Setting a block size of (256,1,1) for 1D maps doesn't give a significant
+        # speedup on MI300A but it doesn't hurt either
+        optimization_args.setdefault("gpu_block_size_1d", (256, 1, 1))
+        # Vertical blocking with length 4 is adding ~12% speedup on MI300A for dycore
+        optimization_args["blocking_dims"] = list(dimension.vertical_dims())
+        optimization_args["blocking_size"] = 4
+        optimization_args["blocking_only_if_independent_nodes"] = False
+        if os.getenv("CUPY_ACCELERATORS") == "":
+            log.warning(
+                'CUPY_ACCELERATORS environment variable should be set to "cub" otherwise reductions have degraded performance on AMD GPUs.'
+            )
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
