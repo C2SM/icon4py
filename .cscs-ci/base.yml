@@ -75,7 +75,7 @@ variables:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_GPUS_PER_NODE: 1
-    SLURM_PARTITION: "shared"
+    SLURM_PARTITION: "normal"
     SLURM_CPU_BIND: "verbose"
     SLURM_TIMELIMIT: '00:30:00'
     SLURM_MPI_TYPE: pmix
@@ -169,6 +169,8 @@ variables:
     SLURM_NTASKS: 12
     ICON4PY_TEST_MPI_SUBCOMM_SIZE: 4
     SLURM_LABELIO: 1
+    SLURM_GPUS_PER_NODE: 4
+    SLURM_GRES_FLAGS: allow-task-sharing
     # Use this to reduce memory requirements from having one venv per rank.
     # Generally this is not recommended but in CI the cache will not get wiped
     # so this can be used safely.
@@ -251,16 +253,10 @@ variables:
         NVCC_APPEND_FLAGS: "--fmad=false"
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'
-        # TODO(msimberg): Use shared partition when time limit can be set to at
-        # most an hour. The shared partition only accepts jobs maximum an hour long.
-        SLURM_PARTITION: "normal"
     - if: $MODEL_MPI_SUBPACKAGE == 'driver' || ($MODEL_MPI_SUBPACKAGE == 'common' && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'))
       variables:
         # TODO(msimberg): Decrease this when there's more parallelism for compilation.
         SLURM_TIMELIMIT: '02:00:00'
-        # TODO(msimberg): Use shared partition when time limit can be set to at
-        # most an hour. The shared partition only accepts jobs maximum an hour long.
-        SLURM_PARTITION: "normal"
     - if: $MODEL_MPI_SUBPACKAGE == 'common'
       variables:
         SLURM_TIMELIMIT: '00:55:00'
@@ -290,7 +286,7 @@ variables:
     OMPI_MCA_mpi_cuda_support: "0"
     SLURM_NTASKS: "1"
     SLURM_GPUS_PER_TASK: "1"
-    SLURM_PARTITION: "shared"
+    SLURM_PARTITION: "normal"
     SLURM_TIMELIMIT: "00:10:00"
   script:
     - cd /icon4py
