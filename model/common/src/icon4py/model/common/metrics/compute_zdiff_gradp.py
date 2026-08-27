@@ -63,10 +63,11 @@ def _carry_first_match(
     t = fi.astype(array_ns.int32).copy()
     jk1 = array_ns.empty((nedges, nlev), dtype=array_ns.int32)
     constant_query = queries.ndim == 1
+    if constant_query:
+        bracket = (upper >= queries[:, None]) & (queries[:, None] >= lower)
     for k in range(nlev):
-        q = queries if constant_query else queries[:, k]
-        qv = q[:, None]
-        bracket = (upper >= qv) & (qv >= lower)
+        if not constant_query:
+            bracket = (upper >= queries[:, k, None]) & (queries[:, k, None] >= lower)
         in_range = cand[None, :] >= t[:, None]
         gated = in_range & (bracket | unconditional[None, :])
         first = array_ns.argmax(gated, axis=1).astype(array_ns.int32)
