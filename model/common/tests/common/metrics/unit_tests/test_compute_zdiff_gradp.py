@@ -17,7 +17,10 @@ import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.metrics.compute_zdiff_gradp import compute_zdiff_gradp
+from icon4py.model.common.metrics.compute_zdiff_gradp import (
+    compute_zdiff_gradp,
+    compute_zdiff_gradp_fast,
+)
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
@@ -374,7 +377,12 @@ def _build_p4_non_monotone_inputs() -> tuple[
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
+@pytest.mark.parametrize(
+    "candidate_func",
+    [compute_zdiff_gradp, compute_zdiff_gradp_fast],
+)
 def test_compute_zdiff_gradp(
+    candidate_func: Callable[..., tuple[np.ndarray, np.ndarray]],
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
@@ -404,7 +412,7 @@ def test_compute_zdiff_gradp(
         k_lev=k_lev.ndarray,
     )
 
-    zdiff_gradp_full_field, vertoffset_gradp_full_field = compute_zdiff_gradp(
+    zdiff_gradp_full_field, vertoffset_gradp_full_field = candidate_func(
         e2c=e2c,
         z_me=z_me,
         z_mc=z_mc.ndarray,
@@ -432,7 +440,13 @@ def test_compute_zdiff_gradp(
 
 
 @pytest.mark.level("unit")
-def test_compute_zdiff_gradp_random_small() -> None:
+@pytest.mark.parametrize(
+    "candidate_func",
+    [compute_zdiff_gradp, compute_zdiff_gradp_fast],
+)
+def test_compute_zdiff_gradp_random_small(
+    candidate_func: Callable[..., tuple[np.ndarray, np.ndarray]],
+) -> None:
     nedges = 64
     ncells = 48
     nlev = 8
@@ -454,7 +468,7 @@ def test_compute_zdiff_gradp_random_small() -> None:
         horizontal_start_1=hs1,
     )
 
-    candidate_zdiff, candidate_vert = compute_zdiff_gradp(
+    candidate_zdiff, candidate_vert = candidate_func(
         e2c=e2c,
         z_me=z_me,
         z_mc=z_mc,
@@ -470,7 +484,13 @@ def test_compute_zdiff_gradp_random_small() -> None:
 
 
 @pytest.mark.level("unit")
-def test_compute_zdiff_gradp_random_fullscale() -> None:
+@pytest.mark.parametrize(
+    "candidate_func",
+    [compute_zdiff_gradp, compute_zdiff_gradp_fast],
+)
+def test_compute_zdiff_gradp_random_fullscale(
+    candidate_func: Callable[..., tuple[np.ndarray, np.ndarray]],
+) -> None:
     nedges = 2000
     ncells = 1500
     nlev = 60
@@ -492,7 +512,7 @@ def test_compute_zdiff_gradp_random_fullscale() -> None:
         horizontal_start_1=hs1,
     )
 
-    candidate_zdiff, candidate_vert = compute_zdiff_gradp(
+    candidate_zdiff, candidate_vert = candidate_func(
         e2c=e2c,
         z_me=z_me,
         z_mc=z_mc,
@@ -509,6 +529,10 @@ def test_compute_zdiff_gradp_random_fullscale() -> None:
 
 @pytest.mark.level("unit")
 @pytest.mark.parametrize(
+    "candidate_func",
+    [compute_zdiff_gradp, compute_zdiff_gradp_fast],
+)
+@pytest.mark.parametrize(
     "builder",
     [
         _build_endpoint_forcing_inputs,
@@ -519,6 +543,7 @@ def test_compute_zdiff_gradp_random_fullscale() -> None:
     ],
 )
 def test_compute_zdiff_gradp_probes(
+    candidate_func: Callable[..., tuple[np.ndarray, np.ndarray]],
     builder: Callable[
         [],
         tuple[
@@ -550,7 +575,7 @@ def test_compute_zdiff_gradp_probes(
         horizontal_start_1=hs1,
     )
 
-    candidate_zdiff, candidate_vert = compute_zdiff_gradp(
+    candidate_zdiff, candidate_vert = candidate_func(
         e2c=e2c,
         z_me=z_me,
         z_mc=z_mc,
@@ -566,7 +591,13 @@ def test_compute_zdiff_gradp_probes(
 
 
 @pytest.mark.level("unit")
-def test_compute_zdiff_gradp_nlev1() -> None:
+@pytest.mark.parametrize(
+    "candidate_func",
+    [compute_zdiff_gradp, compute_zdiff_gradp_fast],
+)
+def test_compute_zdiff_gradp_nlev1(
+    candidate_func: Callable[..., tuple[np.ndarray, np.ndarray]],
+) -> None:
     nedges = 4
     ncells = 4
     nlev = 1
@@ -598,7 +629,7 @@ def test_compute_zdiff_gradp_nlev1() -> None:
         horizontal_start_1=hs1,
     )
 
-    candidate_zdiff, candidate_vert = compute_zdiff_gradp(
+    candidate_zdiff, candidate_vert = candidate_func(
         e2c=e2c,
         z_me=z_me,
         z_mc=z_mc,
