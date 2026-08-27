@@ -51,7 +51,7 @@ import types
 import typing
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
 from types import ModuleType
-from typing import Any, Literal, Protocol, TypeVar, overload
+from typing import Any, Literal, Protocol, TypeVar, cast, overload
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -200,7 +200,7 @@ class FieldSource(GridProvider, Protocol):
 
     @overload
     def get(
-        self, field_name: str, type_: Literal[RetrievalType.SCALAR] = RetrievalType.SCALAR
+        self, field_name: str, type_: Literal[RetrievalType.SCALAR]
     ) -> state_utils.ScalarType: ...
 
     @overload
@@ -270,13 +270,12 @@ class FieldSource(GridProvider, Protocol):
     def _provided_by_source(self, name) -> bool:
         return name in self._sources._providers or name in self._sources.metadata
 
-    def export_field(
-        self, field_name: str
-    ) -> state_utils.GTXFieldType | xa.DataArray | state_utils.ScalarType:
+    def export_field(self, field_name: str) -> state_utils.GTXFieldType:
         """Export a field from the factory in the dtype provided by the metadata."""
         field = self.get(field_name, RetrievalType.FIELD)
         dtype_metadata = self.metadata[field_name].get("dtype", ta.wpfloat)
-        return gtx.astype(field, dtype_metadata)
+        # `astype` is a `BuiltInFunction`, whose overloads are erased by the decorator.
+        return cast("state_utils.GTXFieldType", gtx.astype(field, dtype_metadata))
 
     def register_provider(self, provider: FieldProvider) -> None:
         # dependencies must be provider by this field source or registered in sources
