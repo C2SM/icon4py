@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_temperature_with_dissipation_heating import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.energy_update import (
     update_temperature_with_dissipation_heating,
 )
 from icon4py.model.common import dimension as dims

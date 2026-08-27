@@ -464,3 +464,59 @@ def test_tmx_granule_full_run_smoke(
         field = getattr(diagnostic_state, name).asnumpy()
         assert field.shape == (grid.num_cells,), f"unexpected shape for '{name}'"
         assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
+
+
+def test_tmx_granule_explicit_scalar_solver_smoke(
+    grid: base_grid.Grid,
+    backend_like: model_backends.BackendLike,
+) -> None:
+    """
+    Run the scalar diffusion stages with the explicit vertical solver.
+
+    The explicit solver ('diffuse_vertical_explicit' in mo_tmx_numerics.f90) is
+    not exercised by the AES datatests, which all run with ``solver_type = 2``,
+    and it takes no time step (its tendency is the residual of the
+    matrix-vector product), so its program has a different signature from the
+    implicit one. Only the horizontal wind diffusion has no explicit port.
+    """
+    allocator = model_backends.get_allocator(backend_like)
+    config = tmx.TmxConfig(solver_type=tmx.TurbulenceSolverType.EXPLICIT)
+    edge_params, cell_params = _geometry(grid, allocator)
+
+    granule = tmx.Tmx(
+        grid=grid,
+        config=config,
+        params=tmx.TmxParams(config),
+        metric_state=_metric_state(grid, allocator),
+        interpolation_state=_interpolation_state(grid, allocator),
+        edge_params=edge_params,
+        cell_params=cell_params,
+        backend=backend_like,
+        exchange=decomposition.SingleNodeExchange(),
+    )
+
+    input_state = _input_state(grid, allocator)
+    surface_flux_state = _surface_flux_state(grid, allocator)
+    diagnostic_state = tmx_states.TmxDiagnosticState.allocate(grid, allocator=allocator)
+    tendency_state = tmx_states.TmxTendencyState.allocate(grid, allocator=allocator)
+    new_state = tmx_states.TmxNewState.allocate(grid, allocator=allocator)
+    stage_kwargs = dict(
+        input_state=input_state,
+        surface_flux_state=surface_flux_state,
+        diagnostic_state=diagnostic_state,
+        tendency_state=tendency_state,
+        new_state=new_state,
+        dtime=300.0,
+    )
+
+    granule.run_diagnostics(input_state, diagnostic_state)
+    granule.run_hydrometeor_diffusion(**stage_kwargs)
+    granule.run_temperature_diffusion(**stage_kwargs)
+
+    for name in ("tend_qv", "tend_qc", "tend_qi", "tend_temperature"):
+        field = getattr(tendency_state, name).asnumpy()
+        assert field.shape == (grid.num_cells, grid.num_levels), f"unexpected shape for '{name}'"
+        assert np.all(np.isfinite(field)), f"non-finite values in '{name}'"
+
+    with pytest.raises(NotImplementedError):
+        granule.run_horizontal_wind_diffusion(**stage_kwargs)

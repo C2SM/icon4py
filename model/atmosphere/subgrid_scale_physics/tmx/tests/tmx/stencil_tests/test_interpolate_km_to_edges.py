@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_km_to_edges import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
     interpolate_km_to_edges,
 )
 from icon4py.model.common import dimension as dims

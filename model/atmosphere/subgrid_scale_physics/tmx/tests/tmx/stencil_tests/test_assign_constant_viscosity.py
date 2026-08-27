@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.assign_constant_viscosity import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
     assign_constant_viscosity,
 )
 from icon4py.model.common import dimension as dims

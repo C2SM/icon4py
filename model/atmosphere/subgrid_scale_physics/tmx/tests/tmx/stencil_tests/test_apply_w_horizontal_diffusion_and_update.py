@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.apply_w_horizontal_diffusion_and_update import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.wind_diffusion import (
     apply_w_horizontal_diffusion_and_update,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta

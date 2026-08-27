@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_louis_scaling_factor import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
     init_louis_scaling_factor,
 )
 from icon4py.model.common import dimension as dims

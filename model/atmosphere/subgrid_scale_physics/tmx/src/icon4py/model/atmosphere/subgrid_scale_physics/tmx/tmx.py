@@ -16,147 +16,26 @@ from typing import Any, Final
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.apply_explicit_vertical_diffusion_cells import (
-    apply_explicit_vertical_diffusion_cells,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.apply_horizontal_diffusion_and_update_scalar import (
-    apply_horizontal_diffusion_and_update_scalar,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.apply_w_horizontal_diffusion_and_update import (
-    apply_w_horizontal_diffusion_and_update,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.assign_constant_viscosity import (
-    assign_constant_viscosity,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_scalar_nabla2_flux import (
-    compute_scalar_nabla2_flux,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_shear_and_div_of_stress import (
-    compute_shear_and_div_of_stress,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_smagorinsky_viscosity import (
-    compute_smagorinsky_viscosity,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_surface_energy_flux import (
-    compute_surface_energy_flux,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_surface_flux_rhs import (
-    compute_surface_flux_rhs,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_temperature_from_energy_and_tendency import (
-    compute_temperature_from_energy_and_tendency,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vertical_integral_diagnostics import (
-    compute_vertical_integral_diagnostics,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vn_horizontal_stress_tendency import (
-    compute_vn_horizontal_stress_tendency,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vn_vertical_diffusion_rhs import (
-    compute_vn_vertical_diffusion_rhs,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_w_horizontal_stress_tendency import (
-    compute_w_horizontal_stress_tendency,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_w_vertical_diffusion_rhs import (
-    compute_w_vertical_diffusion_rhs,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_louis_scaling_factor import (
-    init_louis_scaling_factor,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_smagorinsky_mixing_length import (
-    init_smagorinsky_mixing_length,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_inverse_density_to_edges import (
-    interpolate_inverse_density_to_edges,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_km_to_edges import (
-    interpolate_km_to_edges,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_km_to_full_level_cells import (
-    interpolate_km_to_full_level_cells,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_km_to_vertices import (
-    interpolate_km_to_vertices,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_shear_to_half_level_cells import (
-    interpolate_shear_to_half_level_cells,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.modify_w_diffusion_matrix_boundary import (
-    modify_w_diffusion_matrix_boundary,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.prepare_tridiagonal_matrix_cells import (
-    prepare_tridiagonal_matrix_cells,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.prepare_tridiagonal_matrix_cells_half import (
-    prepare_tridiagonal_matrix_cells_half,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.prepare_tridiagonal_matrix_edges import (
-    prepare_tridiagonal_matrix_edges,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.solve_vertical_diffusion_cells import (
-    solve_vertical_diffusion_cells,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.solve_vertical_diffusion_edges import (
-    solve_vertical_diffusion_edges,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_exchange_coefficient_diagnostics import (
-    update_exchange_coefficient_diagnostics,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.update_temperature_with_dissipation_heating import (
-    update_temperature_with_dissipation_heating,
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import (
+    diagnostics as diag_stencils,
+    energy_update as energy_stencils,
+    scalar_diffusion as scalar_stencils,
+    wind_diffusion as wind_stencils,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
-from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
-    cell_2_edge_interpolation,
-)
-from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
-    compute_cell_2_vertex_interpolation,
-)
-from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
-    compute_tangential_wind_wp,
-)
-from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
-    edge_2_cell_vector_rbf_interpolation,
-)
-from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_with_boundaries_wp import (
-    interpolate_cell_field_to_half_levels_with_boundaries_wp,
-)
 from icon4py.model.common.interpolation.stencils.interpolate_cell_vector_to_edge_normal import (
     interpolate_cell_vector_to_edge_normal,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_with_boundaries_wp import (
-    interpolate_edge_field_to_half_levels_with_boundaries_wp,
-)
-from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp import (
-    interpolate_to_cell_center_vp,
-)
-from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
-    mo_intp_rbf_rbf_vec_interpol_vertex,
-)
-from icon4py.model.common.math.stencils.generic_math_operations import (
-    compute_reciprocal_on_cell_k,
-    subtract_cell_field_on_cell_k,
-)
+from icon4py.model.common.math.stencils.generic_math_operations import subtract_cell_field_on_cell_k
 from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
-from icon4py.model.common.math.stencils.update_two_cell_kdim_fields_with_tendency import (
-    update_two_cell_kdim_fields_with_tendency,
-)
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.physics.stencils.compute_brunt_vaisala_frequency import (
-    compute_brunt_vaisala_frequency,
-)
 from icon4py.model.common.physics.stencils.compute_energy_from_temperature import (
     compute_energy_from_temperature,
-)
-from icon4py.model.common.physics.stencils.compute_static_energy import compute_static_energy
-from icon4py.model.common.physics.stencils.compute_virtual_potential_temperature import (
-    compute_virtual_potential_temperature,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -583,7 +462,7 @@ class Tmx:
         # all half levels
         self.init_smagorinsky_mixing_length = setup_program(
             backend=backend,
-            program=init_smagorinsky_mixing_length,
+            program=diag_stencils.init_smagorinsky_mixing_length,
             constant_args={
                 "dz_ic": self._metric_state.ddqz_z_half,
                 "geopot_agl_ic": self._metric_state.geopot_agl_ifc,
@@ -606,7 +485,7 @@ class Tmx:
         # 3..min_rlcell_int
         self.init_louis_scaling_factor = setup_program(
             backend=backend,
-            program=init_louis_scaling_factor,
+            program=diag_stencils.init_louis_scaling_factor,
             constant_args={"cell_area": self._cell_params.area},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_lateral_boundary_level_3,
@@ -638,82 +517,39 @@ class Tmx:
 
         # ---------------------------------------------------------------------
         # Stage A step programs, in the Fortran call order of Compute_diagnostics
-        # (mo_vdf_atmo.f90 l. 343-482)
+        # (mo_vdf_atmo.f90 l. 343-482). One program per halo-exchange interval
+        # and horizontal dimension.
         # ---------------------------------------------------------------------
-        # compute_static_energy: tmx t_domain cells, all full levels
-        self.compute_static_energy = setup_program(
+        # compute_static_energy, get_virtual_potential_temperature,
+        # vert_intp_full2half_cell_3d (rho -> rho_ic) and brunt_vaisala_freq
+        self.compute_thermodynamic_diagnostics = setup_program(
             backend=backend,
-            program=compute_static_energy,
+            program=diag_stencils.compute_thermodynamic_diagnostics,
             constant_args={
                 "height_above_ground": self.ghf,
-                "grav": constants.GRAV,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # get_virtual_potential_temperature: cells rl 3..min_rlcell_int, all full levels
-        self.compute_virtual_potential_temperature = setup_program(
-            backend=backend,
-            program=compute_virtual_potential_temperature,
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_lateral_boundary_level_3,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # vert_intp_full2half_cell_3d (rho -> rho_ic): cells rl 2..min_rlcell_int-2,
-        # all half levels (top and bottom rows are extrapolated)
-        self.interpolate_cell_to_half_levels = setup_program(
-            backend=backend,
-            program=interpolate_cell_field_to_half_levels_with_boundaries_wp,
-            constant_args={
                 "wgtfac_c": self._metric_state.wgtfac_c,
+                "inv_ddqz_z_half": self._metric_state.inv_ddqz_z_half,
                 "wgtfacq1_c_1": wgtfacq1_c[0],
                 "wgtfacq1_c_2": wgtfacq1_c[1],
                 "wgtfacq1_c_3": wgtfacq1_c[2],
                 "wgtfacq_c_1": wgtfacq_c[0],
                 "wgtfacq_c_2": wgtfacq_c[1],
                 "wgtfacq_c_3": wgtfacq_c[2],
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_lateral_boundary_level_2,
-                "horizontal_end": self._cell_end_halo_level_2,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
-                "nlev": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # brunt_vaisala_freq: cells rl 3..min_rlcell_int, half levels 1..nlev-1
-        # (top and bottom rows are not computed)
-        self.compute_brunt_vaisala_frequency = setup_program(
-            backend=backend,
-            program=compute_brunt_vaisala_frequency,
-            constant_args={
-                "wgtfac_c": self._metric_state.wgtfac_c,
-                "inv_ddqz_z_half": self._metric_state.inv_ddqz_z_half,
                 "grav": constants.GRAV,
             },
             horizontal_sizes={
-                "horizontal_start": self._cell_start_lateral_boundary_level_3,
-                "horizontal_end": self._cell_end_local,
+                "cell_start_nudging": self._cell_start_nudging,
+                "cell_start_lateral_boundary_level_2": self._cell_start_lateral_boundary_level_2,
+                "cell_start_lateral_boundary_level_3": self._cell_start_lateral_boundary_level_3,
+                "cell_end_local": self._cell_end_local,
+                "cell_end_halo_level_2": self._cell_end_halo_level_2,
             },
             vertical_sizes={
-                "vertical_start": gtx.int32(1),
+                "vertical_start": gtx.int32(0),
+                "vertical_start_interior": gtx.int32(1),
                 "vertical_end": gtx.int32(num_levels),
+                "vertical_end_half": gtx.int32(num_levels + 1),
+                "nlev": gtx.int32(num_levels),
             },
             offset_provider={},
         )
@@ -737,65 +573,36 @@ class Tmx:
             },
             offset_provider=self._grid.connectivities,
         )
-        # cells2verts_scalar (w -> w_vert): vertices rl 2..min_rlvert_int,
-        # all half levels
-        self.compute_cell_2_vertex_interpolation = setup_program(
+        # cells2verts_scalar (w -> w_vert) and rbf_vec_interpol_vertex
+        # (vn -> u_vert, v_vert), the three fields synced afterwards
+        self.compute_vertex_wind_diagnostics = setup_program(
             backend=backend,
-            program=compute_cell_2_vertex_interpolation,
-            constant_args={"c_int": self._interpolation_state.cells_aw_verts},
-            horizontal_sizes={
-                "horizontal_start": self._vertex_start_lateral_boundary_level_2,
-                "horizontal_end": self._vertex_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
-            },
-            offset_provider=self._grid.connectivities,
-        )
-        # cells2edges_scalar (w -> w_ie): edges rl 2..min_rledge_int-2, all half levels
-        self.cell_2_edge_interpolation = setup_program(
-            backend=backend,
-            program=cell_2_edge_interpolation,
-            constant_args={"coeff": self._interpolation_state.c_lin_e},
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_lateral_boundary_level_2,
-                "horizontal_end": self._edge_end_halo_level_2,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
-            },
-            offset_provider=self._grid.connectivities,
-        )
-        # rbf_vec_interpol_vertex (vn -> u_vert, v_vert): vertices rl
-        # 2..min_rlvert_int, all full levels
-        self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
-            backend=backend,
-            program=mo_intp_rbf_rbf_vec_interpol_vertex,
+            program=diag_stencils.compute_vertex_wind_diagnostics,
             constant_args={
-                "ptr_coeff_1": self._interpolation_state.rbf_coeff_v1,
-                "ptr_coeff_2": self._interpolation_state.rbf_coeff_v2,
+                "cells_aw_verts": self._interpolation_state.cells_aw_verts,
+                "rbf_coeff_v1": self._interpolation_state.rbf_coeff_v1,
+                "rbf_coeff_v2": self._interpolation_state.rbf_coeff_v2,
             },
             horizontal_sizes={
-                "horizontal_start": self._vertex_start_lateral_boundary_level_2,
-                "horizontal_end": self._vertex_end_local,
+                "vertex_start_lateral_boundary_level_2": self._vertex_start_lateral_boundary_level_2,
+                "vertex_end_local": self._vertex_end_local,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(num_levels),
+                "vertical_end_half": gtx.int32(num_levels + 1),
             },
             offset_provider=self._grid.connectivities,
         )
-        # interpolate_normal_velocity_edge_interface (vn -> vn_ie): edges rl
-        # 2..min_rledge_int-3, all half levels. There is no icon4py zone for
-        # min_rledge_int-3 (third halo line); h_grid.Zone.END is the closest
-        # more-inclusive bound (identical on a single node, where there are no
-        # halo lines; the extra halo rows are unused boundary values anyway).
-        self.interpolate_vn_to_half_levels_with_boundary = setup_program(
+        # cells2edges_scalar (w -> w_ie),
+        # interpolate_normal_velocity_edge_interface (vn -> vn_ie),
+        # rbf_vec_interpol_edge (vn_ie -> vt_ie) and
+        # compute_velocity_gradient_tensor + compute_shear
+        self.compute_edge_shear_diagnostics = setup_program(
             backend=backend,
-            program=interpolate_edge_field_to_half_levels_with_boundaries_wp,
+            program=diag_stencils.compute_edge_shear_diagnostics,
             constant_args={
+                "c_lin_e": self._interpolation_state.c_lin_e,
                 "wgtfac_e": self._metric_state.wgtfac_e,
                 "wgtfacq1_e_1": wgtfacq1_e[0],
                 "wgtfacq1_e_2": wgtfacq1_e[1],
@@ -803,40 +610,7 @@ class Tmx:
                 "wgtfacq_e_1": wgtfacq_e[0],
                 "wgtfacq_e_2": wgtfacq_e[1],
                 "wgtfacq_e_3": wgtfacq_e[2],
-            },
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_lateral_boundary_level_2,
-                "horizontal_end": self._edge_end_end,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
-                "nlev": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # rbf_vec_interpol_edge (vn_ie -> vt_ie): edges rl 3..min_rledge_int-2,
-        # all half levels
-        self.compute_tangential_wind_wp = setup_program(
-            backend=backend,
-            program=compute_tangential_wind_wp,
-            constant_args={"rbf_vec_coeff_e": self._interpolation_state.rbf_coeff_e},
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_lateral_boundary_level_3,
-                "horizontal_end": self._edge_end_halo_level_2,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
-            },
-            offset_provider=self._grid.connectivities,
-        )
-        # compute_velocity_gradient_tensor + compute_shear: edges rl
-        # 4..min_rledge_int-2, all full levels
-        self.compute_shear_and_div_of_stress = setup_program(
-            backend=backend,
-            program=compute_shear_and_div_of_stress,
-            constant_args={
+                "rbf_vec_coeff_e": self._interpolation_state.rbf_coeff_e,
                 "primal_normal_vert_x": self._edge_params.primal_normal_vert[0],
                 "primal_normal_vert_y": self._edge_params.primal_normal_vert[1],
                 "dual_normal_vert_x": self._edge_params.dual_normal_vert[0],
@@ -848,60 +622,50 @@ class Tmx:
                 "inv_ddqz_z_full_e": self._metric_state.inv_ddqz_z_full_e,
             },
             horizontal_sizes={
-                "horizontal_start": self._edge_start_lateral_boundary_level_4,
-                "horizontal_end": self._edge_end_halo_level_2,
+                "edge_start_lateral_boundary_level_2": self._edge_start_lateral_boundary_level_2,
+                "edge_start_lateral_boundary_level_3": self._edge_start_lateral_boundary_level_3,
+                "edge_start_lateral_boundary_level_4": self._edge_start_lateral_boundary_level_4,
+                "edge_end_halo_level_2": self._edge_end_halo_level_2,
+                "edge_end_end": self._edge_end_end,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(num_levels),
+                "vertical_end_half": gtx.int32(num_levels + 1),
+                "nlev": gtx.int32(num_levels),
             },
             offset_provider=self._grid.connectivities,
         )
-        # get_horizontal_divergence_strain_rate_cell (div_of_stress -> div_c):
-        # cells rl grf_bdywidth_c+1..min_rlcell_int-1, all full levels.
-        # Note: the common stencil is vp-typed; tmx fields are wpfloat, so this
-        # only works while vpfloat == wpfloat (i.e. without mixed precision).
-        self.interpolate_to_cell_center_vp = setup_program(
+        # get_horizontal_divergence_strain_rate_cell (div_of_stress -> div_c) and
+        # interpolate_rate_of_strain_full2half_edge2cell (shear -> mech_prod)
+        self.compute_strain_rate_diagnostics = setup_program(
             backend=backend,
-            program=interpolate_to_cell_center_vp,
-            constant_args={"e_bln_c_s": self._interpolation_state.e_bln_c_s},
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_halo,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider=self._grid.connectivities,
-        )
-        # interpolate_rate_of_strain_full2half_edge2cell (shear -> mech_prod):
-        # cells rl 3..min_rlcell_int-1, half levels 1..nlev-1 (top and bottom
-        # rows are not computed)
-        self.interpolate_shear_to_half_level_cells = setup_program(
-            backend=backend,
-            program=interpolate_shear_to_half_level_cells,
+            program=diag_stencils.compute_strain_rate_diagnostics,
             constant_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
                 "wgtfac_c": self._metric_state.wgtfac_c,
             },
             horizontal_sizes={
-                "horizontal_start": self._cell_start_lateral_boundary_level_3,
-                "horizontal_end": self._cell_end_halo,
+                "cell_start_nudging": self._cell_start_nudging,
+                "cell_start_lateral_boundary_level_3": self._cell_start_lateral_boundary_level_3,
+                "cell_end_halo": self._cell_end_halo,
             },
             vertical_sizes={
-                "vertical_start": gtx.int32(1),
+                "vertical_start": gtx.int32(0),
+                "vertical_start_interior": gtx.int32(1),
                 "vertical_end": gtx.int32(num_levels),
             },
             offset_provider=self._grid.connectivities,
         )
         # Smagorinsky_model / Assign_constant_eddy_viscosity (-> km_ic, kh_ic):
         # cells rl 3..min_rlcell_int, all half levels (rows 0 and nlev are copies
-        # of the adjacent interior rows, fused into the stencils)
+        # of the adjacent interior rows, fused into the stencils). Not fused with
+        # the strain-rate diagnostics: the bottom row would read the mechanical
+        # production one full level below the last one.
         if self.config.use_km_const:
             self.compute_viscosity = setup_program(
                 backend=backend,
-                program=assign_constant_viscosity,
+                program=diag_stencils.assign_constant_viscosity,
                 constant_args={
                     "km_const": self.config.km_const,
                     "rturb_prandtl": self._params.rturb_prandtl,
@@ -920,7 +684,7 @@ class Tmx:
         else:
             self.compute_viscosity = setup_program(
                 backend=backend,
-                program=compute_smagorinsky_viscosity,
+                program=diag_stencils.compute_smagorinsky_viscosity,
                 constant_args={
                     "mixing_length_sq": self.mix_len_sq,
                     "scaling_factor_louis": self.louis_factor,
@@ -948,7 +712,7 @@ class Tmx:
         # on purpose, km_c is used in the diffusion later)
         self.interpolate_km_to_full_level_cells = setup_program(
             backend=backend,
-            program=interpolate_km_to_full_level_cells,
+            program=diag_stencils.interpolate_km_to_full_level_cells,
             constant_args={"km_min": self.config.km_min},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_lateral_boundary_level_4,
@@ -964,7 +728,7 @@ class Tmx:
         # 5 (= max_rlvert)..min_rlvert_int-1, all half levels
         self.interpolate_km_to_vertices = setup_program(
             backend=backend,
-            program=interpolate_km_to_vertices,
+            program=diag_stencils.interpolate_km_to_vertices,
             constant_args={
                 "cells_aw_verts": self._interpolation_state.cells_aw_verts,
                 "km_min": self.config.km_min,
@@ -983,7 +747,7 @@ class Tmx:
         # grf_bdywidth_e..min_rledge_int-1, all half levels
         self.interpolate_km_to_edges = setup_program(
             backend=backend,
-            program=interpolate_km_to_edges,
+            program=diag_stencils.interpolate_km_to_edges,
             constant_args={
                 "c_lin_e": self._interpolation_state.c_lin_e,
                 "km_min": self.config.km_min,
@@ -1044,13 +808,12 @@ class Tmx:
             },
             offset_provider={},
         )
-        # inverse air mass (the ``inv_mair`` loops of mo_vdf.f90): inv_mair
-        # scales the rows of the vertical diffusion matrix
-        # ('prepare_diffusion_matrix') and the surface flux right-hand side
-        self.compute_inverse_air_mass = setup_program(
+        # the ``inv_mair`` loops of mo_vdf.f90 and prepare_diffusion_matrix
+        # (zk = kh_ic): two bindings because zprefac is inlined at compile time
+        # (hydrometeors: 1, energy: zfactor)
+        prepare_scalar_diffusion_matrix_args: dict[str, Any] = dict(
             backend=backend,
-            program=compute_reciprocal_on_cell_k,
-            constant_args={"output_field": self._inv_air_mass},
+            program=scalar_stencils.prepare_scalar_diffusion_matrix,
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -1061,66 +824,35 @@ class Tmx:
             },
             offset_provider={},
         )
-        # prepare_diffusion_matrix (zk = kh_ic): two bindings because zprefac is
-        # inlined at compile time (hydrometeors: 1, energy: zfactor)
-        prepare_tridiagonal_matrix_constant_args = {
-            "inv_mair": self._inv_air_mass,
+        prepare_scalar_diffusion_matrix_fields = {
             "inv_dz": self._metric_state.inv_ddqz_z_half,
-        }
-        prepare_tridiagonal_matrix_sizes = dict(
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        self.prepare_tridiagonal_matrix_hydrometeors = setup_program(
-            backend=backend,
-            program=prepare_tridiagonal_matrix_cells,
-            constant_args={**prepare_tridiagonal_matrix_constant_args, "zprefac": 1.0},
-            **prepare_tridiagonal_matrix_sizes,
-        )
-        self.prepare_tridiagonal_matrix_energy = setup_program(
-            backend=backend,
-            program=prepare_tridiagonal_matrix_cells,
-            constant_args={**prepare_tridiagonal_matrix_constant_args, "zprefac": self._zfactor},
-            **prepare_tridiagonal_matrix_sizes,
-        )
-        # rhs(nlev) = -sfc_flx * prefac * inv_mair(nlev): single bottom K row;
-        # the other rows of self._rhs are zero-allocated and never written
-        # (Fortran: rhs(1) = +top_flx * inv_mair(1) with top_flx == 0)
-        self.compute_surface_flux_rhs = setup_program(
-            backend=backend,
-            program=compute_surface_flux_rhs,
-            constant_args={"inv_air_mass": self._inv_air_mass},
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(num_levels - 1),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # vertical solve: 'diffuse_vertical_implicit' or 'diffuse_vertical_explicit'
-        # in mo_tmx_numerics.f90, selected by the configured solver type
-        solve_vertical_diffusion_constant_args = {
+            "inv_air_mass": self._inv_air_mass,
             "a": self._matrix_a,
             "b": self._matrix_b,
             "c": self._matrix_c,
-            "rhs": self._rhs,
         }
-        self.solve_vertical_diffusion = setup_program(
+        self.prepare_diffusion_matrix_hydrometeors = setup_program(
+            constant_args={**prepare_scalar_diffusion_matrix_fields, "zprefac": 1.0},
+            **prepare_scalar_diffusion_matrix_args,
+        )
+        self.prepare_diffusion_matrix_energy = setup_program(
+            constant_args={**prepare_scalar_diffusion_matrix_fields, "zprefac": self._zfactor},
+            **prepare_scalar_diffusion_matrix_args,
+        )
+        # surface-flux right-hand side and vertical solve
+        # ('diffuse_vertical_implicit' or 'diffuse_vertical_explicit' in
+        # mo_tmx_numerics.f90, selected by the configured solver type)
+        self.solve_scalar_vertical_diffusion = setup_program(
             backend=backend,
-            program=solve_vertical_diffusion_cells
+            program=scalar_stencils.solve_scalar_vertical_diffusion
             if self.config.solver_type == TurbulenceSolverType.IMPLICIT
-            else apply_explicit_vertical_diffusion_cells,
-            constant_args=solve_vertical_diffusion_constant_args,
+            else scalar_stencils.apply_explicit_scalar_vertical_diffusion,
+            constant_args={
+                "a": self._matrix_a,
+                "b": self._matrix_b,
+                "c": self._matrix_c,
+                "inv_air_mass": self._inv_air_mass,
+            },
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -1136,10 +868,11 @@ class Tmx:
         # taken on halo-adjacent cells afterwards)
         self.compute_scalar_nabla2_flux = setup_program(
             backend=backend,
-            program=compute_scalar_nabla2_flux,
+            program=scalar_stencils.compute_scalar_nabla2_flux,
             constant_args={
                 "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
                 "rturb_prandtl": self._params.rturb_prandtl,
+                "nabla2_flux": self._nabla2_flux_e,
             },
             horizontal_sizes={
                 "horizontal_start": self._edge_start_nudging,
@@ -1152,9 +885,8 @@ class Tmx:
             offset_provider=self._grid.connectivities,
         )
         # flux divergence (geofac_div), tendency and state update
-        self.apply_horizontal_diffusion_and_update_scalar = setup_program(
+        horizontal_diffusion_args: dict[str, Any] = dict(
             backend=backend,
-            program=apply_horizontal_diffusion_and_update_scalar,
             constant_args={
                 "nabla2_flux": self._nabla2_flux_e,
                 "geofac_div": self._interpolation_state.geofac_div,
@@ -1169,9 +901,24 @@ class Tmx:
             },
             offset_provider=self._grid.connectivities,
         )
-        # temp_to_energy / energy_to_temp + final tendency (mo_vdf_atmo.f90 l.
-        # 634/694) and compute_flux_x (l. 753); the energy-type variant is
-        # inlined at compile time
+        self.apply_horizontal_diffusion_and_update_scalar = setup_program(
+            program=scalar_stencils.apply_horizontal_diffusion_and_update_scalar,
+            **horizontal_diffusion_args,
+        )
+        # the energy variant recovers the new temperature from the new energy
+        # ('energy_to_temp', mo_vdf_atmo.f90 l. 694) in the same program
+        horizontal_diffusion_args["constant_args"] = {
+            **horizontal_diffusion_args["constant_args"],
+            "height_above_ground": self.ghf,
+            "grav": constants.GRAV,
+            "use_internal_energy": use_internal_energy,
+        }
+        self.apply_horizontal_diffusion_and_update_temperature = setup_program(
+            program=scalar_stencils.apply_horizontal_diffusion_and_update_temperature,
+            **horizontal_diffusion_args,
+        )
+        # temp_to_energy (mo_vdf_atmo.f90 l. 634) and compute_flux_x (l. 753);
+        # the energy-type variant is inlined at compile time
         self.compute_energy_from_temperature = setup_program(
             backend=backend,
             program=compute_energy_from_temperature,
@@ -1192,29 +939,11 @@ class Tmx:
         )
         self.compute_surface_energy_flux = setup_program(
             backend=backend,
-            program=compute_surface_energy_flux,
+            program=scalar_stencils.compute_surface_energy_flux,
             constant_args={"use_internal_energy": use_internal_energy},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
-            },
-            offset_provider={},
-        )
-        self.compute_temperature_from_energy_and_tendency = setup_program(
-            backend=backend,
-            program=compute_temperature_from_energy_and_tendency,
-            constant_args={
-                "height_above_ground": self.ghf,
-                "grav": constants.GRAV,
-                "use_internal_energy": use_internal_energy,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
             },
             offset_provider={},
         )
@@ -1256,30 +985,13 @@ class Tmx:
         # ------------------------------------------------------------------
         # Stage D: horizontal wind (vn) diffusion
         # ------------------------------------------------------------------
-        # cells2edges_scalar(rho) + reciprocal (-> inv_rhoe)
-        self.interpolate_inverse_density_to_edges = setup_program(
-            backend=backend,
-            program=interpolate_inverse_density_to_edges,
-            constant_args={
-                "c_lin_e": self._interpolation_state.c_lin_e,
-                "inv_rhoe": self._inv_rhoe,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_nudging_level_2,
-                "horizontal_end": self._edge_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider=self._grid.connectivities,
-        )
+        # cells2edges_scalar(rho) + reciprocal (-> inv_rhoe) and
         # '1) First get the horizontal tendencies' (-> tot_tend)
         self.compute_vn_horizontal_stress_tendency = setup_program(
             backend=backend,
-            program=compute_vn_horizontal_stress_tendency,
+            program=wind_stencils.compute_inverse_density_and_vn_stress_tendency,
             constant_args={
-                "inv_rhoe": self._inv_rhoe,
+                "c_lin_e": self._interpolation_state.c_lin_e,
                 "primal_normal_vert_x": self._edge_params.primal_normal_vert[0],
                 "primal_normal_vert_y": self._edge_params.primal_normal_vert[1],
                 "dual_normal_vert_x": self._edge_params.dual_normal_vert[0],
@@ -1288,6 +1000,7 @@ class Tmx:
                 "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
                 "inv_vert_vert_length": self._edge_params.inverse_vertex_vertex_lengths,
                 "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
+                "inv_rhoe": self._inv_rhoe,
                 "tot_tend": self.tot_tend,
             },
             horizontal_sizes={
@@ -1300,20 +1013,22 @@ class Tmx:
             },
             offset_provider=self._grid.connectivities,
         )
-        # '2) Vertical tendency' rhs loops (interior, top and surface-stress
-        # bottom row fused; also fills inv_maire)
-        self.compute_vn_vertical_diffusion_rhs = setup_program(
+        # '2) Vertical tendency': right-hand side, tridiagonal matrix
+        # (prepare_diffusion_matrix on edges, zk = km_ie, lhalflvl=.FALSE.,
+        # zprefac absent -> 1) and 'diffuse_vertical_implicit', accumulating
+        # onto tot_tend
+        self.solve_vn_vertical_diffusion = setup_program(
             backend=backend,
-            program=compute_vn_vertical_diffusion_rhs,
+            program=wind_stencils.solve_vn_vertical_diffusion,
             constant_args={
                 "inv_rhoe": self._inv_rhoe,
                 "inv_ddqz_z_full_e": self._metric_state.inv_ddqz_z_full_e,
+                "inv_ddqz_z_half_e": self._metric_state.inv_ddqz_z_half_e,
                 "primal_normal_cell_x": self._edge_params.primal_normal_cell[0],
                 "primal_normal_cell_y": self._edge_params.primal_normal_cell[1],
                 "c_lin_e": self._interpolation_state.c_lin_e,
                 "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
-                "rhs": self._edge_rhs,
-                "inv_maire": self._inv_maire,
+                "tot_tend": self.tot_tend,
             },
             horizontal_sizes={
                 "horizontal_start": self._edge_start_nudging_level_2,
@@ -1326,184 +1041,43 @@ class Tmx:
             },
             offset_provider=self._grid.connectivities,
         )
-        # prepare_diffusion_matrix on edges (zk = km_ie, lhalflvl=.FALSE.,
-        # zprefac absent -> 1)
-        self.prepare_tridiagonal_matrix_vn = setup_program(
+        # rbf_vec_interpol_cell (tot_tend -> tend_u, tend_v; cells rl
+        # 2..min_rlcell_int, the Fortran default opt_rlstart = 2) and the final
+        # update loop of Compute_diffusion_hor_wind (tmx t_domain cells)
+        self.interpolate_and_update_horizontal_wind = setup_program(
             backend=backend,
-            program=prepare_tridiagonal_matrix_edges,
+            program=wind_stencils.interpolate_and_update_horizontal_wind,
             constant_args={
-                "inv_mair": self._inv_maire,
-                "inv_dz": self._metric_state.inv_ddqz_z_half_e,
-                "a": self._edge_matrix_a,
-                "b": self._edge_matrix_b,
-                "c": self._edge_matrix_c,
-                "zprefac": 1.0,
+                "rbf_coeff_c1": self._interpolation_state.rbf_coeff_c1,
+                "rbf_coeff_c2": self._interpolation_state.rbf_coeff_c2,
             },
             horizontal_sizes={
-                "horizontal_start": self._edge_start_nudging_level_2,
-                "horizontal_end": self._edge_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # 'diffuse_vertical_implicit' on edges (accumulates onto tot_tend);
-        # the tridiagonal solution only enters through the tendency
-        self.solve_vn_vertical_diffusion = setup_program(
-            backend=backend,
-            program=solve_vertical_diffusion_edges,
-            constant_args={
-                "a": self._edge_matrix_a,
-                "b": self._edge_matrix_b,
-                "c": self._edge_matrix_c,
-                "rhs": self._edge_rhs,
-                "new_var": self._diffused_vn,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_nudging_level_2,
-                "horizontal_end": self._edge_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # rbf_vec_interpol_cell (tot_tend -> tend_u, tend_v): cells rl
-        # 2..min_rlcell_int (Fortran default opt_rlstart = 2), all full levels
-        self.edge_2_cell_vector_rbf_interpolation = setup_program(
-            backend=backend,
-            program=edge_2_cell_vector_rbf_interpolation,
-            constant_args={
-                "ptr_coeff_1": self._interpolation_state.rbf_coeff_c1,
-                "ptr_coeff_2": self._interpolation_state.rbf_coeff_c2,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_lateral_boundary_level_2,
-                "horizontal_end": self._cell_end_local,
+                "cell_start_nudging": self._cell_start_nudging,
+                "cell_start_lateral_boundary_level_2": self._cell_start_lateral_boundary_level_2,
+                "cell_end_local": self._cell_end_local,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(num_levels),
             },
             offset_provider=self._grid.connectivities,
-        )
-        # final update loop of Compute_diffusion_hor_wind (mo_vdf.f90): tmx
-        # t_domain cells, all full levels; new_u/v = u/v + tend * dtime with
-        # the tendencies from the RBF cell interpolation of tot_tend
-        self.update_horizontal_wind = setup_program(
-            backend=backend,
-            program=update_two_cell_kdim_fields_with_tendency,
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
         )
 
         # ------------------------------------------------------------------
         # Stage E: vertical wind (w) diffusion
         # ------------------------------------------------------------------
-        # rbf_vec_interpol_edge on full levels (vn -> vt_e): edges rl
-        # 2 (Fortran default opt_rlstart)..min_rledge_int-1
-        self.compute_tangential_wind_full_levels = setup_program(
-            backend=backend,
-            program=compute_tangential_wind_wp,
-            constant_args={
-                "rbf_vec_coeff_e": self._interpolation_state.rbf_coeff_e,
-                "vt": self._vt_e,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._edge_start_lateral_boundary_level_2,
-                "horizontal_end": self._edge_end_halo,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider=self._grid.connectivities,
-        )
-        # rhs of the w solve (also fills inv_rho_ic and inv_mair_ic)
-        self.compute_w_vertical_diffusion_rhs = setup_program(
-            backend=backend,
-            program=compute_w_vertical_diffusion_rhs,
-            constant_args={
-                "inv_ddqz_z_half": self._metric_state.inv_ddqz_z_half,
-                "rhs": self._w_rhs,
-                "inv_rho_ic": self._inv_rho_ic,
-                "inv_mair_ic": self._inv_mair_ic,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(1),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # prepare_diffusion_matrix on half-level cells (zk = km_c,
-        # lhalflvl=.TRUE., minlvl=2, zprefac=2)
-        self.prepare_tridiagonal_matrix_w = setup_program(
-            backend=backend,
-            program=prepare_tridiagonal_matrix_cells_half,
-            constant_args={
-                "inv_mair": self._inv_mair_ic,
-                "inv_dz": self._metric_state.inv_ddqz_z_full,
-                "a": self._matrix_a,
-                "b": self._matrix_b,
-                "c": self._matrix_c,
-                "zprefac": 2.0,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(1),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # w = 0 top/bottom boundary-condition terms on the main diagonal
-        self.modify_w_diffusion_matrix_boundary = setup_program(
-            backend=backend,
-            program=modify_w_diffusion_matrix_boundary,
-            constant_args={
-                "b": self._matrix_b,
-                "inv_dz": self._metric_state.inv_ddqz_z_full,
-                "inv_mair_ic": self._inv_mair_ic,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(1),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # 'diffuse_vertical_implicit' on half-level cells (minlvl=2, i.e.
-        # vertical_start=1: the scan init is applied at the domain start, row 0
-        # stays untouched); the Fortran w solve is implicit regardless of the
-        # configured solver type
+        # right-hand side of the w solve, prepare_diffusion_matrix on half-level
+        # cells (zk = km_c, lhalflvl=.TRUE., minlvl=2, zprefac=2), the w = 0
+        # top/bottom boundary terms on the main diagonal and
+        # 'diffuse_vertical_implicit' (minlvl=2, i.e. vertical_start=1: the scan
+        # init is applied at the domain start, row 0 stays untouched)
         self.solve_w_vertical_diffusion = setup_program(
             backend=backend,
-            program=solve_vertical_diffusion_cells,
+            program=wind_stencils.solve_w_vertical_diffusion,
             constant_args={
-                "a": self._matrix_a,
-                "b": self._matrix_b,
-                "c": self._matrix_c,
-                "rhs": self._w_rhs,
-                "new_var": self._diffused_w,
+                "inv_ddqz_z_half": self._metric_state.inv_ddqz_z_half,
+                "inv_ddqz_z_full": self._metric_state.inv_ddqz_z_full,
+                "inv_rho_ic": self._inv_rho_ic,
             },
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
@@ -1515,16 +1089,17 @@ class Tmx:
             },
             offset_provider={},
         )
-        # '1) Get horizontal tendencies at half level edges' (D31/D32 stress):
-        # edges rl grf_bdywidth_e..min_rledge_int-1 (one halo line computed on
-        # purpose, the C2E gather of the update runs on halo-adjacent cells)
+        # rbf_vec_interpol_edge on full levels (vn -> vt_e) and '1) Get
+        # horizontal tendencies at half level edges' (D31/D32 stress): edges rl
+        # grf_bdywidth_e..min_rledge_int-1 (one halo line computed on purpose,
+        # the C2E gather of the update runs on halo-adjacent cells)
         self.compute_w_horizontal_stress_tendency = setup_program(
             backend=backend,
-            program=compute_w_horizontal_stress_tendency,
+            program=wind_stencils.compute_w_horizontal_stress_tendency,
             constant_args={
                 "inv_ddqz_z_half": self._metric_state.inv_ddqz_z_half,
                 "inv_ddqz_z_half_v": self._metric_state.inv_ddqz_z_half_v,
-                "vt_e": self._vt_e,
+                "rbf_vec_coeff_e": self._interpolation_state.rbf_coeff_e,
                 "primal_normal_cell_x": self._edge_params.primal_normal_cell[0],
                 "primal_normal_cell_y": self._edge_params.primal_normal_cell[1],
                 "dual_normal_vert_x": self._edge_params.dual_normal_vert[0],
@@ -1549,7 +1124,7 @@ class Tmx:
         # e_bln_c_s gather of hori_tend_e, tendency accumulation and w update
         self.apply_w_horizontal_diffusion_and_update = setup_program(
             backend=backend,
-            program=apply_w_horizontal_diffusion_and_update,
+            program=wind_stencils.apply_w_horizontal_diffusion_and_update,
             constant_args={
                 "hori_tend_e": self._hori_tend_e,
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
@@ -1585,7 +1160,7 @@ class Tmx:
         # tendency / update
         self.update_temperature_with_dissipation_heating = setup_program(
             backend=backend,
-            program=update_temperature_with_dissipation_heating,
+            program=energy_stencils.update_temperature_with_dissipation_heating,
             constant_args={"dissipation_factor": self.config.dissipation_factor},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
@@ -1598,39 +1173,27 @@ class Tmx:
             },
             offset_provider={},
         )
-        # Stage G: vertical-integral diagnostics ('compute_internal_energy_vi'
-        # and the accumulation loop of Update_diagnostics, mo_vdf_atmo.f90);
-        # the running integrals go to granule scratch fields, the bottom rows
-        # (the column integrals) are copied to the 2D diagnostics afterwards
-        self.compute_vertical_integral_diagnostics = setup_program(
+        # Stage G: the dry static energy recomputed from the updated
+        # temperature, the vertical-integral diagnostics ('compute_internal_
+        # energy_vi' and the accumulation loop of Update_diagnostics,
+        # mo_vdf_atmo.f90) that consume it, and the full-level km/kh diagnostic
+        # assembly (the km/kh loop of Update_diagnostics, mo_vdf.f90). The
+        # running integrals go to granule scratch fields, the bottom rows (the
+        # column integrals) are copied to the 2D diagnostics afterwards.
+        self.update_end_of_step_diagnostics = setup_program(
             backend=backend,
-            program=compute_vertical_integral_diagnostics,
+            program=diag_stencils.update_end_of_step_diagnostics,
             constant_args={
+                "height_above_ground": self.ghf,
                 "dz": self._metric_state.ddqz_z_full,
+                "grav": constants.GRAV,
+                "km_const": self.config.km_const,
+                "rturb_prandtl": self._params.rturb_prandtl,
+                "use_km_const": self.config.use_km_const,
                 "cptgz_vi": self._cptgz_vi_run,
                 "dissip_ke_vi": self._dissip_ke_vi_run,
                 "int_energy_vi": self._int_energy_vi_run,
                 "int_energy_vi_tend": self._int_energy_vi_tend_run,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # Stage G: full-level km/kh diagnostic assembly (the km/kh loop of
-        # Update_diagnostics, mo_vdf.f90; output-only diagnostics)
-        self.update_exchange_coefficient_diagnostics = setup_program(
-            backend=backend,
-            program=update_exchange_coefficient_diagnostics,
-            constant_args={
-                "km_const": self.config.km_const,
-                "rturb_prandtl": self._params.rturb_prandtl,
-                "use_km_const": self.config.use_km_const,
             },
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
@@ -1693,18 +1256,14 @@ class Tmx:
 
         # inverse air mass per unit area [m^2/kg] (``inv_mair``)
         self._inv_air_mass: fa.CellKField[ta.wpfloat] = _zeros_cell_k_field()
-        # rows of the tridiagonal vertical diffusion matrix (``a``, ``b``, ``c``)
+        # rows of the tridiagonal vertical diffusion matrix (``a``, ``b``, ``c``);
+        # the right-hand side and the tridiagonal solution are fused into the
+        # solve programs and never materialized (the Fortran discards the
+        # solution too: the new state is computed as state + tend * dtime after
+        # the horizontal diffusion)
         self._matrix_a: fa.CellKField[ta.wpfloat] = _zeros_cell_k_field()
         self._matrix_b: fa.CellKField[ta.wpfloat] = _zeros_cell_k_field()
         self._matrix_c: fa.CellKField[ta.wpfloat] = _zeros_cell_k_field()
-        # right-hand side of the vertical diffusion solve (``rhs``); only the
-        # bottom K row is ever written, all other rows must stay zero
-        self._rhs: fa.CellKField[ta.wpfloat] = _zeros_cell_k_field()
-        # scratch for the tridiagonal solution of the implicit solver, whose
-        # effect only enters through the tendency (the Fortran discards it too:
-        # the new state is computed as state + tend * dtime after the
-        # horizontal diffusion)
-        self._diffused_scalar: fa.CellKField[ta.wpfloat] = _zeros_cell_k_field()
         # horizontal turbulent diffusion flux at full-level edges (``nabla2_e``)
         self._nabla2_flux_e: fa.EdgeKField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, allocator=self._allocator
@@ -1715,8 +1274,6 @@ class Tmx:
         # total (vertical + horizontal) diffusion tendency of the energy
         # (``tend_energy``)
         self.tend_energy: fa.CellKField[ta.wpfloat] = _zeros_cell_k_field()
-        # energy after the diffusion update (``new_energy``)
-        self._new_energy: fa.CellKField[ta.wpfloat] = _zeros_cell_k_field()
         # grid-mean surface energy flux (``flux_x`` of 'compute_flux_x')
         self._flux_x: fa.CellField[ta.wpfloat] = data_alloc.zero_field(
             self._grid, dims.CellDim, allocator=self._allocator
@@ -1742,8 +1299,6 @@ class Tmx:
 
         # inverse air density at edge midpoints (``inv_rhoe``)
         self._inv_rhoe: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field()
-        # inverse air mass per unit area of the edge layers (``inv_maire``)
-        self._inv_maire: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field()
         # total (horizontal + vertical) vn diffusion tendency (``tot_tend``),
         # kept on the granule for testing. The Fortran zero fill at entry is
         # not replicated: the rows inside the Stage D edge domain are
@@ -1752,34 +1307,13 @@ class Tmx:
         # ever writes them (they are read by the C2E2C2E gather of the RBF
         # interpolation, as zeros, exactly as in the Fortran).
         self.tot_tend: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field()
-        # rows of the tridiagonal vn diffusion matrix (``za``, ``zb``, ``zc``)
-        self._edge_matrix_a: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field()
-        self._edge_matrix_b: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field()
-        self._edge_matrix_c: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field()
-        # right-hand side of the vn diffusion solve (``zrhs``); every row is
-        # written by 'compute_vn_vertical_diffusion_rhs' before the solve
-        self._edge_rhs: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field()
-        # scratch for the tridiagonal solution of the vn solve (discarded,
-        # only the tendency accumulated onto ``tot_tend`` is used)
-        self._diffused_vn: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field()
-        # tangential wind at edge midpoints on full levels (``vt_e``)
-        self._vt_e: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field()
         # horizontal D31/D32 stress tendency of w at half-level edges
         # (``hori_tend_e``); rows outside the computed domain (edge rows
         # outside grf_bdywidth_e..min_rledge_int-1 and the top/bottom half
         # levels) keep their allocation-time zeros and are never read
         self._hori_tend_e: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field(extend=1)
-        # right-hand side of the w diffusion solve (``rhs``); only the
-        # half-level rows 1..nlev-1 are written and read
-        self._w_rhs: fa.CellKField[ta.wpfloat] = _zeros_cell_khalf_field()
         # inverse air density at half-level cell centers (``inv_rho_ic``)
         self._inv_rho_ic: fa.CellKField[ta.wpfloat] = _zeros_cell_khalf_field()
-        # inverse air mass per unit area of the half-level layers
-        # (``inv_mair_ic``)
-        self._inv_mair_ic: fa.CellKField[ta.wpfloat] = _zeros_cell_khalf_field()
-        # scratch for the tridiagonal solution of the w solve (discarded,
-        # only the tendency is used)
-        self._diffused_w: fa.CellKField[ta.wpfloat] = _zeros_cell_khalf_field()
 
     def _coefficient_fields(
         self, field: gtx.Field, horizontal_dim: gtx.Dimension
@@ -1843,11 +1377,11 @@ class Tmx:
         """
         Compute the Smagorinsky diagnostics (Stage A).
 
-        Port of ``Compute_diagnostics`` in mo_vdf_atmo.f90 (l. 343-482), executed
-        in the Fortran order with halo exchanges at the Fortran sync points.
-        ``ghf``, ``mix_len_sq`` and ``louis_factor`` are granule-owned fields
-        computed at construction; the corresponding fields of
-        ``diagnostic_state`` are not written here.
+        Port of ``Compute_diagnostics`` in mo_vdf_atmo.f90 (l. 343-482), with
+        the halo exchanges at the Fortran sync points and one program per
+        exchange interval and horizontal dimension. ``ghf``, ``mix_len_sq`` and
+        ``louis_factor`` are granule-owned fields computed at construction; the
+        corresponding fields of ``diagnostic_state`` are not written here.
 
         Note: the Fortran zero-initializes u_vert/v_vert/w_vert and
         km_iv/km_c/km_ie/kh_ic/km_ic before (re)computing them on possibly
@@ -1857,21 +1391,14 @@ class Tmx:
         """
         log.debug("tmx Stage A (Compute_diagnostics): start")
 
-        self.compute_static_energy(
+        self.compute_thermodynamic_diagnostics(
             temperature=input_state.temperature,
-            static_energy=diagnostic_state.cptgz,
-        )
-        self.compute_virtual_potential_temperature(
             virtual_temperature=input_state.virtual_temperature,
             pressure=input_state.pressure,
+            rho=input_state.rho,
+            static_energy=diagnostic_state.cptgz,
             theta_v=diagnostic_state.theta_v,
-        )
-        self.interpolate_cell_to_half_levels(
-            interpolant=input_state.rho,
-            interpolation=diagnostic_state.rho_ic,
-        )
-        self.compute_brunt_vaisala_frequency(
-            theta_v=diagnostic_state.theta_v,
+            rho_ic=diagnostic_state.rho_ic,
             bruvais=diagnostic_state.bruvais,
         )
 
@@ -1891,18 +1418,12 @@ class Tmx:
         self._exchange.exchange(dims.EdgeDim, diagnostic_state.vn)
         log.debug("communication of vn (edges): end")
 
-        self.compute_cell_2_vertex_interpolation(
-            cell_in=input_state.w,
-            vert_out=diagnostic_state.w_vert,
-        )
-        self.cell_2_edge_interpolation(
-            in_field=input_state.w,
-            out_field=diagnostic_state.w_ie,
-        )
-        self.mo_intp_rbf_rbf_vec_interpol_vertex(
-            p_e_in=diagnostic_state.vn,
-            p_u_out=diagnostic_state.u_vert,
-            p_v_out=diagnostic_state.v_vert,
+        self.compute_vertex_wind_diagnostics(
+            w=input_state.w,
+            vn=diagnostic_state.vn,
+            w_vert=diagnostic_state.w_vert,
+            u_vert=diagnostic_state.u_vert,
+            v_vert=diagnostic_state.v_vert,
         )
 
         # S3: CALL sync_patch_array_mult(SYNC_V, patch, 3, w_vert, u_vert, v_vert)
@@ -1915,31 +1436,25 @@ class Tmx:
         )
         log.debug("communication of w_vert, u_vert, v_vert (vertices): end")
 
-        self.interpolate_vn_to_half_levels_with_boundary(
-            interpolant=diagnostic_state.vn,
-            interpolation=diagnostic_state.vn_ie,
-        )
-        self.compute_tangential_wind_wp(
-            vn=diagnostic_state.vn_ie,
-            vt=diagnostic_state.vt_ie,
-        )
-        self.compute_shear_and_div_of_stress(
+        # w_ie is computed here rather than before S3 (where the Fortran
+        # computes it): it only depends on the input w, and this is the group
+        # that consumes it.
+        self.compute_edge_shear_diagnostics(
+            w=input_state.w,
+            vn=diagnostic_state.vn,
             u_vert=diagnostic_state.u_vert,
             v_vert=diagnostic_state.v_vert,
             w_vert=diagnostic_state.w_vert,
-            w=input_state.w,
+            w_ie=diagnostic_state.w_ie,
             vn_ie=diagnostic_state.vn_ie,
             vt_ie=diagnostic_state.vt_ie,
-            w_ie=diagnostic_state.w_ie,
             shear=diagnostic_state.shear,
             div_stress=diagnostic_state.div_of_stress,
         )
-        self.interpolate_to_cell_center_vp(
-            interpolant=diagnostic_state.div_of_stress,
-            interpolation=diagnostic_state.div_c,
-        )
-        self.interpolate_shear_to_half_level_cells(
+        self.compute_strain_rate_diagnostics(
             shear=diagnostic_state.shear,
+            div_stress=diagnostic_state.div_of_stress,
+            div_c=diagnostic_state.div_c,
             mech_prod=diagnostic_state.mech_prod,
         )
 
@@ -1983,8 +1498,11 @@ class Tmx:
 
     def _solve_scalar_vertical_diffusion(
         self,
+        *,
+        sfc_flx: fa.CellField[ta.wpfloat],
         var: fa.CellKField[ta.wpfloat],
         tend: fa.CellKField[ta.wpfloat],
+        prefac: float,
         dtime: float,
     ) -> None:
         """
@@ -1992,23 +1510,18 @@ class Tmx:
 
         Dispatches on the configured solver type ('diffuse_vertical_implicit' /
         'diffuse_vertical_explicit' in mo_tmx_numerics.f90). The matrix rows
-        (``self._matrix_a/b/c``) and the right-hand side (``self._rhs``) are
-        bound at construction and must be up to date. The tridiagonal solution
-        of the implicit solver goes to the ``self._diffused_scalar`` scratch:
-        as in the Fortran, it only enters through the tendency.
+        (``self._matrix_a/b/c``) and the inverse air mass (``self._inv_air_mass``)
+        are bound at construction and must be up to date; the surface-flux
+        right-hand side is built inside the solve program. The explicit variant
+        takes no time step: its tendency is the residual of the matrix-vector
+        product, not a time integration.
         """
         if self.config.solver_type == TurbulenceSolverType.IMPLICIT:
-            self.solve_vertical_diffusion(
-                var=var,
-                new_var=self._diffused_scalar,
-                tend=tend,
-                dtime=dtime,
+            self.solve_scalar_vertical_diffusion(
+                sfc_flx=sfc_flx, var=var, tend=tend, prefac=prefac, dtime=dtime
             )
         else:
-            self.solve_vertical_diffusion(
-                var=var,
-                tend=tend,
-            )
+            self.solve_scalar_vertical_diffusion(sfc_flx=sfc_flx, var=var, tend=tend, prefac=prefac)
 
     def run_hydrometeor_diffusion(
         self,
@@ -2037,12 +1550,9 @@ class Tmx:
         """
         log.debug("tmx Stage B (Compute_diffusion_hydrometeors): start")
 
-        self.compute_inverse_air_mass(input_field=input_state.air_mass)
-        self.prepare_tridiagonal_matrix_hydrometeors(
+        self.prepare_diffusion_matrix_hydrometeors(
+            air_mass=input_state.air_mass,
             zk=diagnostic_state.kh_ic,
-            a=self._matrix_a,
-            b=self._matrix_b,
-            c=self._matrix_c,
         )
 
         tracers = (
@@ -2058,8 +1568,9 @@ class Tmx:
         )
         for name, state, tend, new, sfc_flx in tracers:
             self.init_cell_kdim_field_with_zero(field_with_zero_wp=tend)
-            self.compute_surface_flux_rhs(sfc_flx=sfc_flx, rhs=self._rhs, prefac=1.0)
-            self._solve_scalar_vertical_diffusion(var=state, tend=tend, dtime=dtime)
+            self._solve_scalar_vertical_diffusion(
+                sfc_flx=sfc_flx, var=state, tend=tend, prefac=1.0, dtime=dtime
+            )
 
             # S5: CALL sync_patch_array(SYNC_C, patch, state) in mo_vdf.f90
             # ("include halo points and boundary points because these values
@@ -2071,7 +1582,6 @@ class Tmx:
             self.compute_scalar_nabla2_flux(
                 scalar=state,
                 km_ie=diagnostic_state.km_ie,
-                nabla2_flux=self._nabla2_flux_e,
                 prefac=1.0,
             )
             self.apply_horizontal_diffusion_and_update_scalar(
@@ -2145,15 +1655,17 @@ class Tmx:
             flux_x=self._flux_x,
         )
 
-        self.compute_inverse_air_mass(input_field=input_state.air_mass)
-        self.prepare_tridiagonal_matrix_energy(
+        self.prepare_diffusion_matrix_energy(
+            air_mass=input_state.air_mass,
             zk=diagnostic_state.kh_ic,
-            a=self._matrix_a,
-            b=self._matrix_b,
-            c=self._matrix_c,
         )
-        self.compute_surface_flux_rhs(sfc_flx=self._flux_x, rhs=self._rhs, prefac=self._zfactor)
-        self._solve_scalar_vertical_diffusion(var=self.energy, tend=self.tend_energy, dtime=dtime)
+        self._solve_scalar_vertical_diffusion(
+            sfc_flx=self._flux_x,
+            var=self.energy,
+            tend=self.tend_energy,
+            prefac=self._zfactor,
+            dtime=dtime,
+        )
 
         # S6: CALL sync_patch_array(SYNC_C, patch, energy) in mo_vdf.f90
         log.debug("communication of energy (cells): start")
@@ -2163,19 +1675,12 @@ class Tmx:
         self.compute_scalar_nabla2_flux(
             scalar=self.energy,
             km_ie=diagnostic_state.km_ie,
-            nabla2_flux=self._nabla2_flux_e,
             prefac=self._zfactor,
         )
-        self.apply_horizontal_diffusion_and_update_scalar(
-            scalar=self.energy,
+        self.apply_horizontal_diffusion_and_update_temperature(
+            energy=self.energy,
             rho=input_state.rho,
-            new_scalar=self._new_energy,
-            tend=self.tend_energy,
-            dtime=dtime,
-        )
-
-        self.compute_temperature_from_energy_and_tendency(
-            energy=self._new_energy,
+            tend_energy=self.tend_energy,
             temperature=input_state.temperature,
             qv=new_state.qv,
             qc=new_state.qc,
@@ -2237,8 +1742,8 @@ class Tmx:
         self._exchange.exchange(dims.CellDim, input_state.rho)
         log.debug("communication of rho (cells): end")
 
-        self.interpolate_inverse_density_to_edges(rho=input_state.rho)
         self.compute_vn_horizontal_stress_tendency(
+            rho=input_state.rho,
             u_vert=diagnostic_state.u_vert,
             v_vert=diagnostic_state.v_vert,
             vn=diagnostic_state.vn,
@@ -2256,16 +1761,12 @@ class Tmx:
         )
         log.debug("communication of u_stress, v_stress (cells, 2D): end")
 
-        self.compute_vn_vertical_diffusion_rhs(
+        self.solve_vn_vertical_diffusion(
             w=input_state.w,
+            vn=diagnostic_state.vn,
             km_ie=diagnostic_state.km_ie,
             u_stress=surface_flux_state.u_stress,
             v_stress=surface_flux_state.v_stress,
-        )
-        self.prepare_tridiagonal_matrix_vn(zk=diagnostic_state.km_ie)
-        self.solve_vn_vertical_diffusion(
-            var=diagnostic_state.vn,
-            tend=self.tot_tend,
             dtime=dtime,
         )
 
@@ -2274,18 +1775,14 @@ class Tmx:
         self._exchange.exchange(dims.EdgeDim, self.tot_tend)
         log.debug("communication of tot_tend (edges): end")
 
-        self.edge_2_cell_vector_rbf_interpolation(
-            p_e_in=self.tot_tend,
-            p_u_out=tendency_state.tend_u,
-            p_v_out=tendency_state.tend_v,
-        )
-        self.update_horizontal_wind(
-            field_1=input_state.u,
-            field_2=input_state.v,
-            tendency_1=tendency_state.tend_u,
-            tendency_2=tendency_state.tend_v,
-            new_field_1=new_state.u,
-            new_field_2=new_state.v,
+        self.interpolate_and_update_horizontal_wind(
+            tot_tend=self.tot_tend,
+            u=input_state.u,
+            v=input_state.v,
+            tend_u=tendency_state.tend_u,
+            tend_v=tendency_state.tend_v,
+            new_u=new_state.u,
+            new_v=new_state.v,
             dtime=dtime,
         )
 
@@ -2334,16 +1831,11 @@ class Tmx:
         self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=tendency_state.tend_w)
         self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=new_state.w)
 
-        self.compute_tangential_wind_full_levels(vn=diagnostic_state.vn)
-        self.compute_w_vertical_diffusion_rhs(
+        self.solve_w_vertical_diffusion(
+            w=input_state.w,
             rho_ic=diagnostic_state.rho_ic,
             km_c=diagnostic_state.km_c,
             div_c=diagnostic_state.div_c,
-        )
-        self.prepare_tridiagonal_matrix_w(zk=diagnostic_state.km_c)
-        self.modify_w_diffusion_matrix_boundary(km_c=diagnostic_state.km_c)
-        self.solve_w_vertical_diffusion(
-            var=input_state.w,
             tend=tendency_state.tend_w,
             dtime=dtime,
         )
@@ -2357,6 +1849,7 @@ class Tmx:
             w_vert=diagnostic_state.w_vert,
             km_iv=diagnostic_state.km_iv,
             w_ie=diagnostic_state.w_ie,
+            vn=diagnostic_state.vn,
         )
         self.apply_w_horizontal_diffusion_and_update(
             w=input_state.w,
@@ -2451,7 +1944,7 @@ class Tmx:
           ``dissip_ke_vi``, ``int_energy_vi`` and ``int_energy_vi_tend``
           (from the old- and new-state internal energies),
         - the full-level exchange coefficient diagnostics ``km`` / ``kh``
-          (bottom row: ``km_const`` if ``use_km_const``, else zero — the
+          (bottom row: ``km_const`` if ``use_km_const``, else zero -- the
           surface exchange coefficients are out of scope).
 
         The 2m/10m diagnostics and the tile aggregation of the Fortran
@@ -2464,26 +1957,25 @@ class Tmx:
         """
         log.debug("tmx Stage G (Update_diagnostics): start")
 
-        # cptgz from the updated temperature (same program binding as Stage A)
-        self.compute_static_energy(
-            temperature=new_state.temperature,
-            static_energy=diagnostic_state.cptgz,
-        )
-        self.compute_vertical_integral_diagnostics(
-            static_energy=diagnostic_state.cptgz,
+        self.update_end_of_step_diagnostics(
+            new_temperature=new_state.temperature,
             dissip_ke=diagnostic_state.dissip_ke,
             rho=input_state.rho,
             temperature=input_state.temperature,
             qv=input_state.qv,
             qc=input_state.qc,
             qi=input_state.qi,
-            new_temperature=new_state.temperature,
             new_qv=new_state.qv,
             new_qc=new_state.qc,
             new_qi=new_state.qi,
             qr=input_state.qr,
             qs=input_state.qs,
             qg=input_state.qg,
+            km_ic=diagnostic_state.km_ic,
+            kh_ic=diagnostic_state.kh_ic,
+            static_energy=diagnostic_state.cptgz,
+            km=diagnostic_state.km,
+            kh=diagnostic_state.kh,
             dtime=dtime,
         )
         # extract the column integrals (the last full-level row of the running
@@ -2496,13 +1988,6 @@ class Tmx:
             (self._int_energy_vi_tend_run, diagnostic_state.int_energy_vi_tend),
         ):
             target.ndarray[...] = running_integral.ndarray[:, bottom]
-
-        self.update_exchange_coefficient_diagnostics(
-            km_ic=diagnostic_state.km_ic,
-            kh_ic=diagnostic_state.kh_ic,
-            km=diagnostic_state.km,
-            kh=diagnostic_state.kh,
-        )
 
         log.debug("tmx Stage G (Update_diagnostics): end")
 

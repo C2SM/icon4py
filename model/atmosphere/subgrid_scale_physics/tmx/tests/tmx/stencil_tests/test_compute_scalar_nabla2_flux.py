@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_scalar_nabla2_flux import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.scalar_diffusion import (
     compute_scalar_nabla2_flux,
 )
 from icon4py.model.common import dimension as dims

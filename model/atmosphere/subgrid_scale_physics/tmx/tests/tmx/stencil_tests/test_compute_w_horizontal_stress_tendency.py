@@ -9,9 +9,8 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_w_horizontal_stress_tendency import (
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.wind_diffusion import (
     compute_w_horizontal_stress_tendency,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -19,8 +18,26 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing import stencil_tests
 
 
+def tangential_wind_numpy(
+    *,
+    e2c2e: np.ndarray,
+    vn: np.ndarray,
+    rbf_vec_coeff_e: np.ndarray,
+) -> np.ndarray:
+    """
+    Reference for 'rbf_vec_interpol_edge' (mo_intp_rbf.f90): the tangential wind
+    at the edge midpoint is the rbf-weighted sum of the normal wind of the four
+    E2C2E neighbor edges.
+    """
+    coeff = np.expand_dims(rbf_vec_coeff_e, axis=-1)  # (n_edges, 4, 1)
+    return np.sum(coeff * vn[e2c2e], axis=1)
+
+
 class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
     """
+    Composition of the tangential wind reconstruction (vn -> vt_e, full levels)
+    with the horizontal D31/D32 stress tendency of w.
+
     Fortran (mo_vdf.f90, 'Compute_diffusion_vert_wind') computes hori_tend_e on
     half-level rows jk = 2..nlev (1-based) -> 0-based rows 1..nlev-1; rows 0 and
     nlev of the half-level output stay untouched.
@@ -43,7 +60,8 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
         km_iv: np.ndarray,
         inv_ddqz_z_half_v: np.ndarray,
         w_ie: np.ndarray,
-        vt_e: np.ndarray,
+        vn: np.ndarray,
+        rbf_vec_coeff_e: np.ndarray,
         primal_normal_cell_x: np.ndarray,
         primal_normal_cell_y: np.ndarray,
         dual_normal_vert_x: np.ndarray,
@@ -62,7 +80,11 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         e2c = connectivities[dims.E2C]  # (n_edges, 2)
         e2c2v = connectivities[dims.E2C2V]  # (n_edges, 4)
+        e2c2e = connectivities[dims.E2C2E]  # (n_edges, 4)
         nlev = u.shape[1]
+
+        # Full-level tangential wind the D_32 flux needs.
+        vt_e = tangential_wind_numpy(e2c2e=e2c2e, vn=vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
 
         # Half-level rows k = 1..nlev-1: full-level slices [k-1] = [:, :-1] and
         # [k] = [:, 1:]; half-level fields sliced at [:, 1:nlev].
@@ -186,7 +208,8 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
         w_ie = data_alloc.random_field(
             dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        vt_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        rbf_vec_coeff_e = data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim, dtype=ta.wpfloat)
 
         primal_normal_cell_x = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
         primal_normal_cell_y = data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
@@ -222,7 +245,8 @@ class TestComputeWHorizontalStressTendency(stencil_tests.StencilTest):
             km_iv=km_iv,
             inv_ddqz_z_half_v=inv_ddqz_z_half_v,
             w_ie=w_ie,
-            vt_e=vt_e,
+            vn=vn,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
             primal_normal_cell_x=primal_normal_cell_x,
             primal_normal_cell_y=primal_normal_cell_y,
             dual_normal_vert_x=dual_normal_vert_x,

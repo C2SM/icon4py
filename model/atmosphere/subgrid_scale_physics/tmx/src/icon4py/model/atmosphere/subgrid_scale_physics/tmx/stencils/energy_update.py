@@ -5,6 +5,17 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""
+Stencils of the tmx energy update.
+
+Ports ``Update_energy_tendencies`` (mo_vdf.f90 l. 1938, run by
+:meth:`Tmx.run_energy_update`): the kinetic energy dissipated by the horizontal
+wind diffusion plus the snow-on-canopy melt cooling at the lowest level give the
+turbulent heating rate, whose temperature tendency is added to the
+heat-diffusion tendency.
+"""
+
 import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
@@ -49,18 +60,13 @@ def _update_temperature_with_dissipation_heating(
     only over land; the Fortran zero fill of ``heating`` outside the computed
     domain ('CALL init(heating)') is not part of this stencil and must be done
     by the caller. ``tend_temperature`` holds the heat-diffusion temperature
-    tendency of 'Compute_diffusion_temperature' on entry (read-modify-write,
-    'out=(..., tend_temperature)') and the final tmx temperature tendency on
-    exit; ``new_u`` / ``new_v`` are the winds updated by the horizontal wind
-    diffusion.
+    tendency of 'Compute_diffusion_temperature' on entry (read-modify-write)
+    and the final tmx temperature tendency on exit; ``new_u`` / ``new_v`` are
+    the winds updated by the horizontal wind diffusion.
 
     The bottom row is selected with 'dims.KDim < nlev - 1' because
     'concat_where(dims.KDim == nlev - 1, ...)' is currently broken in GT4Py
-    1.1.11 (GridTools/gt4py#2205).
-
-    Domains (Fortran): jk = 1..nlev; the tmx ``t_domain`` cell range
-    (``grf_bdywidth_c + 1`` to ``min_rlcell_int``), which maps to the
-    horizontal domain ``(h_grid.Zone.NUDGING, h_grid.Zone.LOCAL)``.
+    (GridTools/gt4py#2205).
 
     Args:
         u: old zonal wind [m/s]
