@@ -23,12 +23,8 @@ from icon4py.model.common.type_alias import wpfloat
 def _interpolate_edge_field_to_half_levels_with_boundaries_wp(
     interpolant: fa.EdgeKField[wpfloat],
     wgtfac_e: fa.EdgeKField[wpfloat],
-    wgtfacq1_e_1: fa.EdgeField[wpfloat],
-    wgtfacq1_e_2: fa.EdgeField[wpfloat],
-    wgtfacq1_e_3: fa.EdgeField[wpfloat],
-    wgtfacq_e_1: fa.EdgeField[wpfloat],
-    wgtfacq_e_2: fa.EdgeField[wpfloat],
-    wgtfacq_e_3: fa.EdgeField[wpfloat],
+    wgtfacq1_e: fa.EdgeKField[wpfloat],
+    wgtfacq_e: fa.EdgeKField[wpfloat],
     nlev: gtx.int32,
 ) -> fa.EdgeKField[wpfloat]:
     """
@@ -41,12 +37,9 @@ def _interpolate_edge_field_to_half_levels_with_boundaries_wp(
     Args:
         interpolant: edge field on full levels (nlev levels)
         wgtfac_e: interpolation weight on half levels
-        wgtfacq1_e_1: top extrapolation weight for full level 0
-        wgtfacq1_e_2: top extrapolation weight for full level 1
-        wgtfacq1_e_3: top extrapolation weight for full level 2
-        wgtfacq_e_1: bottom extrapolation weight for full level nlev - 1
-        wgtfacq_e_2: bottom extrapolation weight for full level nlev - 2
-        wgtfacq_e_3: bottom extrapolation weight for full level nlev - 3
+        wgtfacq1_e: top extrapolation weights, one row per full level 0..2
+        wgtfacq_e: bottom extrapolation weights, one row per full level
+            nlev - 3..nlev - 1
         nlev: number of full levels
 
     Returns:
@@ -56,17 +49,13 @@ def _interpolate_edge_field_to_half_levels_with_boundaries_wp(
         dims.KDim == 0,
         extrapolate_quadratically_to_top_on_edges(
             interpolant=interpolant,
-            weight_0=wgtfacq1_e_1,
-            weight_1=wgtfacq1_e_2,
-            weight_2=wgtfacq1_e_3,
+            weights=wgtfacq1_e,
         ),
         concat_where(
             dims.KDim == nlev,
             extrapolate_quadratically_to_surface_on_edges(
                 interpolant=interpolant,
-                weight_0=wgtfacq_e_1,
-                weight_1=wgtfacq_e_2,
-                weight_2=wgtfacq_e_3,
+                weights=wgtfacq_e,
             ),
             _interpolate_edge_field_to_half_levels_wp(wgtfac_e=wgtfac_e, interpolant=interpolant),
         ),
@@ -77,12 +66,8 @@ def _interpolate_edge_field_to_half_levels_with_boundaries_wp(
 def interpolate_edge_field_to_half_levels_with_boundaries_wp(
     interpolant: fa.EdgeKField[wpfloat],
     wgtfac_e: fa.EdgeKField[wpfloat],
-    wgtfacq1_e_1: fa.EdgeField[wpfloat],
-    wgtfacq1_e_2: fa.EdgeField[wpfloat],
-    wgtfacq1_e_3: fa.EdgeField[wpfloat],
-    wgtfacq_e_1: fa.EdgeField[wpfloat],
-    wgtfacq_e_2: fa.EdgeField[wpfloat],
-    wgtfacq_e_3: fa.EdgeField[wpfloat],
+    wgtfacq1_e: fa.EdgeKField[wpfloat],
+    wgtfacq_e: fa.EdgeKField[wpfloat],
     interpolation: fa.EdgeKField[wpfloat],
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -93,12 +78,8 @@ def interpolate_edge_field_to_half_levels_with_boundaries_wp(
     _interpolate_edge_field_to_half_levels_with_boundaries_wp(
         interpolant=interpolant,
         wgtfac_e=wgtfac_e,
-        wgtfacq1_e_1=wgtfacq1_e_1,
-        wgtfacq1_e_2=wgtfacq1_e_2,
-        wgtfacq1_e_3=wgtfacq1_e_3,
-        wgtfacq_e_1=wgtfacq_e_1,
-        wgtfacq_e_2=wgtfacq_e_2,
-        wgtfacq_e_3=wgtfacq_e_3,
+        wgtfacq1_e=wgtfacq1_e,
+        wgtfacq_e=wgtfacq_e,
         nlev=nlev,
         out=interpolation,
         domain={

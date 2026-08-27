@@ -22,6 +22,21 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
 
+def _coefficient_field(
+    data_alloc: stencil_tests.DataAllocationWrapper,
+    horizontal_dim: gtx.Dimension,
+    size: int,
+    k_start: int,
+) -> gtx.Field:
+    """Three quadratic extrapolation coefficient rows, aligned to the levels they multiply."""
+    return gtx.as_field(
+        gtx.domain({horizontal_dim: (0, size), dims.KDim: (k_start, k_start + 3)}),
+        np.random.default_rng().uniform(size=(size, 3)),
+        dtype=wpfloat,
+        allocator=data_alloc.allocator,
+    )
+
+
 def compute_static_energy_numpy(
     temperature: np.ndarray, height_above_ground: np.ndarray, *, grav: float
 ) -> np.ndarray:
@@ -38,20 +53,16 @@ def interpolate_cell_field_to_half_levels_with_boundaries_numpy(
     interpolant: np.ndarray,
     wgtfac_c: np.ndarray,
     *,
-    wgtfacq1_c_1: np.ndarray,
-    wgtfacq1_c_2: np.ndarray,
-    wgtfacq1_c_3: np.ndarray,
-    wgtfacq_c_1: np.ndarray,
-    wgtfacq_c_2: np.ndarray,
-    wgtfacq_c_3: np.ndarray,
+    wgtfacq1_c: np.ndarray,
+    wgtfacq_c: np.ndarray,
 ) -> np.ndarray:
     nlev = interpolant.shape[1]
     interpolation = np.zeros((interpolant.shape[0], nlev + 1), dtype=interpolant.dtype)
     # Fortran jk = 1 (1-based) -> k = 0
     interpolation[:, 0] = (
-        wgtfacq1_c_1 * interpolant[:, 0]
-        + wgtfacq1_c_2 * interpolant[:, 1]
-        + wgtfacq1_c_3 * interpolant[:, 2]
+        wgtfacq1_c[:, 0] * interpolant[:, 0]
+        + wgtfacq1_c[:, 1] * interpolant[:, 1]
+        + wgtfacq1_c[:, 2] * interpolant[:, 2]
     )
     # Fortran jk = 2..nlev (1-based) -> k = 1..nlev-1
     interpolation[:, 1:nlev] = (
@@ -60,9 +71,9 @@ def interpolate_cell_field_to_half_levels_with_boundaries_numpy(
     )
     # Fortran jk = nlevp1 (1-based) -> k = nlev
     interpolation[:, nlev] = (
-        wgtfacq_c_1 * interpolant[:, nlev - 1]
-        + wgtfacq_c_2 * interpolant[:, nlev - 2]
-        + wgtfacq_c_3 * interpolant[:, nlev - 3]
+        wgtfacq_c[:, 2] * interpolant[:, nlev - 1]
+        + wgtfacq_c[:, 1] * interpolant[:, nlev - 2]
+        + wgtfacq_c[:, 0] * interpolant[:, nlev - 3]
     )
     return interpolation
 
@@ -123,12 +134,8 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         height_above_ground: np.ndarray,
         wgtfac_c: np.ndarray,
         inv_ddqz_z_half: np.ndarray,
-        wgtfacq1_c_1: np.ndarray,
-        wgtfacq1_c_2: np.ndarray,
-        wgtfacq1_c_3: np.ndarray,
-        wgtfacq_c_1: np.ndarray,
-        wgtfacq_c_2: np.ndarray,
-        wgtfacq_c_3: np.ndarray,
+        wgtfacq1_c: np.ndarray,
+        wgtfacq_c: np.ndarray,
         static_energy: np.ndarray,
         theta_v: np.ndarray,
         rho_ic: np.ndarray,
@@ -149,12 +156,8 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         rho_ic_full = interpolate_cell_field_to_half_levels_with_boundaries_numpy(
             rho,
             wgtfac_c,
-            wgtfacq1_c_1=wgtfacq1_c_1,
-            wgtfacq1_c_2=wgtfacq1_c_2,
-            wgtfacq1_c_3=wgtfacq1_c_3,
-            wgtfacq_c_1=wgtfacq_c_1,
-            wgtfacq_c_2=wgtfacq_c_2,
-            wgtfacq_c_3=wgtfacq_c_3,
+            wgtfacq1_c=wgtfacq1_c,
+            wgtfacq_c=wgtfacq_c,
         )
         bruvais_full = compute_brunt_vaisala_frequency_numpy(
             theta_v_full, wgtfac_c, inv_ddqz_z_half, grav=grav
@@ -224,12 +227,10 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
                 extend={dims.KDim: 1},
                 dtype=wpfloat,
             ),
-            wgtfacq1_c_1=data_alloc.random_field(dims.CellDim, dtype=wpfloat),
-            wgtfacq1_c_2=data_alloc.random_field(dims.CellDim, dtype=wpfloat),
-            wgtfacq1_c_3=data_alloc.random_field(dims.CellDim, dtype=wpfloat),
-            wgtfacq_c_1=data_alloc.random_field(dims.CellDim, dtype=wpfloat),
-            wgtfacq_c_2=data_alloc.random_field(dims.CellDim, dtype=wpfloat),
-            wgtfacq_c_3=data_alloc.random_field(dims.CellDim, dtype=wpfloat),
+            wgtfacq1_c=_coefficient_field(data_alloc, dims.CellDim, grid.num_cells, 0),
+            wgtfacq_c=_coefficient_field(
+                data_alloc, dims.CellDim, grid.num_cells, grid.num_levels - 3
+            ),
             static_energy=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             theta_v=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             rho_ic=data_alloc.zero_field(

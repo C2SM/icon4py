@@ -100,73 +100,73 @@ def difference_level_plus1_on_cells(
     return half_level_field - half_level_field(dims.KDim + 1)
 
 
+# TODO(jcanton): the dycore stencils `_extrapolate_quadratically_to_surface` (cells) and
+# `_extrapolate_at_top` (edges, misnamed: it is the surface extrapolation) repeat the
+# same three-term expression on the same coefficient representation. They should call
+# these operators instead. See https://github.com/C2SM/icon4py/issues/1449.
 @gtx.field_operator
 def extrapolate_quadratically_to_top_on_cells(
     interpolant: fa.CellKField[wpfloat],
-    weight_0: fa.CellField[wpfloat],
-    weight_1: fa.CellField[wpfloat],
-    weight_2: fa.CellField[wpfloat],
+    weights: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
     """
     Extrapolate quadratically to the top half level from the first three full levels.
 
-    ``weight_k`` multiplies the full level ``k``. Only valid at k == 0, where the
-    ``KDim + 1`` and ``KDim + 2`` shifts are in bounds.
+    ``weights`` holds three coefficient rows aligned to the levels they multiply: the row
+    at absolute K index ``j`` is the weight of full level ``j``, so the field is defined
+    on ``KDim in [0, 3)``. Only valid at k == 0, where the ``KDim + 1`` and ``KDim + 2``
+    shifts stay inside that range.
     """
     return (
-        weight_0 * interpolant
-        + weight_1 * interpolant(dims.KDim + 1)
-        + weight_2 * interpolant(dims.KDim + 2)
+        weights * interpolant
+        + weights(dims.KDim + 1) * interpolant(dims.KDim + 1)
+        + weights(dims.KDim + 2) * interpolant(dims.KDim + 2)
     )
 
 
 @gtx.field_operator
 def extrapolate_quadratically_to_top_on_edges(
     interpolant: fa.EdgeKField[wpfloat],
-    weight_0: fa.EdgeField[wpfloat],
-    weight_1: fa.EdgeField[wpfloat],
-    weight_2: fa.EdgeField[wpfloat],
+    weights: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
     """Edge counterpart of :func:`extrapolate_quadratically_to_top_on_cells`."""
     return (
-        weight_0 * interpolant
-        + weight_1 * interpolant(dims.KDim + 1)
-        + weight_2 * interpolant(dims.KDim + 2)
+        weights * interpolant
+        + weights(dims.KDim + 1) * interpolant(dims.KDim + 1)
+        + weights(dims.KDim + 2) * interpolant(dims.KDim + 2)
     )
 
 
 @gtx.field_operator
 def extrapolate_quadratically_to_surface_on_cells(
     interpolant: fa.CellKField[wpfloat],
-    weight_0: fa.CellField[wpfloat],
-    weight_1: fa.CellField[wpfloat],
-    weight_2: fa.CellField[wpfloat],
+    weights: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
     """
     Extrapolate quadratically to the surface half level from the last three full levels.
 
-    ``weight_k`` multiplies the full level ``nlev - 1 - k``. Only valid at
-    k == nlev, where the ``KDim - 1`` to ``KDim - 3`` shifts are in bounds.
+    ``weights`` holds three coefficient rows aligned to the levels they multiply: the row
+    at absolute K index ``j`` is the weight of full level ``j``, so the field is defined
+    on ``KDim in [nlev - 3, nlev)``. Only valid at k == nlev, where the ``KDim - 1`` to
+    ``KDim - 3`` shifts stay inside that range.
     """
     return (
-        weight_0 * interpolant(dims.KDim - 1)
-        + weight_1 * interpolant(dims.KDim - 2)
-        + weight_2 * interpolant(dims.KDim - 3)
+        weights(dims.KDim - 1) * interpolant(dims.KDim - 1)
+        + weights(dims.KDim - 2) * interpolant(dims.KDim - 2)
+        + weights(dims.KDim - 3) * interpolant(dims.KDim - 3)
     )
 
 
 @gtx.field_operator
 def extrapolate_quadratically_to_surface_on_edges(
     interpolant: fa.EdgeKField[wpfloat],
-    weight_0: fa.EdgeField[wpfloat],
-    weight_1: fa.EdgeField[wpfloat],
-    weight_2: fa.EdgeField[wpfloat],
+    weights: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
     """Edge counterpart of :func:`extrapolate_quadratically_to_surface_on_cells`."""
     return (
-        weight_0 * interpolant(dims.KDim - 1)
-        + weight_1 * interpolant(dims.KDim - 2)
-        + weight_2 * interpolant(dims.KDim - 3)
+        weights(dims.KDim - 1) * interpolant(dims.KDim - 1)
+        + weights(dims.KDim - 2) * interpolant(dims.KDim - 2)
+        + weights(dims.KDim - 3) * interpolant(dims.KDim - 3)
     )
 
 

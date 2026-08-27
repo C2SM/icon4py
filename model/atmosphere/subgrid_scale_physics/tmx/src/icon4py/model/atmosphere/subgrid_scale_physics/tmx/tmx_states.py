@@ -63,23 +63,21 @@ class TmxMetricState:
     wgtfacq_c: fa.CellKField[ta.wpfloat]
     """Extrapolation coefficients to the bottom surface half level at cell centers.
 
-    Rows k = 0..2 used, in Fortran coefficient order: row k multiplies the full
-    level nlev - 1 - k (``wgtfacq_c(jc, k+1, jb)`` in mo_vertical_grid.f90)."""
+    Three K rows aligned to the levels they multiply: the row at K index j is the
+    weight of full level j, so the field is defined on KDim in [nlev - 3, nlev).
+    This is what the metrics factory emits and what the dycore stencils consume."""
     wgtfacq1_c: fa.CellKField[ta.wpfloat]
     """Extrapolation coefficients to the top half level at cell centers.
 
-    Rows k = 0..2 used, in Fortran coefficient order: row k multiplies the full
-    level k (``wgtfacq1_c(jc, k+1, jb)`` in mo_vertical_grid.f90)."""
+    Three K rows aligned to the levels they multiply, i.e. KDim in [0, 3)."""
     wgtfacq_e: fa.EdgeKField[ta.wpfloat]
     """Extrapolation coefficients to the bottom surface half level at edges.
 
-    Rows k = 0..2 used, in Fortran coefficient order: row k multiplies the full
-    level nlev - 1 - k (``wgtfacq_e(je, k+1, jb)`` in mo_vertical_grid.f90)."""
+    Aligned to the levels they multiply, see :attr:`wgtfacq_c`."""
     wgtfacq1_e: fa.EdgeKField[ta.wpfloat]
     """Extrapolation coefficients to the top half level at edges.
 
-    Rows k = 0..2 used, in Fortran coefficient order: row k multiplies the full
-    level k (``wgtfacq1_e(je, k+1, jb)`` in mo_vertical_grid.f90)."""
+    Aligned to the levels they multiply, see :attr:`wgtfacq1_c`."""
     geopot_agl_ifc: fa.CellKField[ta.wpfloat]
     """Geopotential above ground level at cell centers on half levels [m^2/s^2]."""
     z_mc: fa.CellKField[ta.wpfloat]
@@ -113,13 +111,9 @@ class TmxMetricState:
             inv_ddqz_z_half_v=half(metrics.get(metrics_attributes.INV_DDQZ_Z_HALF_V)),
             wgtfac_c=half(metrics.get(metrics_attributes.WGTFAC_C)),
             wgtfac_e=half(metrics.get(metrics_attributes.WGTFAC_E)),
-            wgtfacq_c=_reverse_coefficient_rows(
-                metrics.get(metrics_attributes.WGTFACQ_C), allocator=allocator
-            ),
+            wgtfacq_c=metrics.get(metrics_attributes.WGTFACQ_C),
             wgtfacq1_c=metrics.get(metrics_attributes.WGTFACQ1_C),
-            wgtfacq_e=_reverse_coefficient_rows(
-                metrics.get(metrics_attributes.WGTFACQ_E), allocator=allocator
-            ),
+            wgtfacq_e=metrics.get(metrics_attributes.WGTFACQ_E),
             wgtfacq1_e=metrics.get(metrics_attributes.WGTFACQ1_E),
             geopot_agl_ifc=half(metrics.get(metrics_attributes.GEOPOT_AGL_IFC)),
             z_mc=metrics.get(metrics_attributes.Z_MC),
@@ -440,21 +434,6 @@ def _as_kdim_field(field: gtx.Field, *, allocator: gtx_typing.Allocator | None) 
     """
     horizontal_dim = field.domain.dims[0]
     return gtx.as_field((horizontal_dim, dims.KDim), field.ndarray, allocator=allocator)
-
-
-def _reverse_coefficient_rows(
-    field: gtx.Field, *, allocator: gtx_typing.Allocator | None
-) -> gtx.Field:
-    """Reverse the three K rows of a wgtfacq field into Fortran coefficient order.
-
-    The metrics factory stores the bottom-extrapolation coefficients bottom-up
-    (row 0 multiplies full level ``nlev - 3``); the tmx metric state documents
-    them top-down (row k multiplies ``nlev - 1 - k``), see the field docstrings.
-    """
-    horizontal_dim = field.domain.dims[0]
-    array = data_alloc.as_numpy(field)
-    assert array.shape[1] == 3, f"expected 3 K rows, got {array.shape[1]}"
-    return gtx.as_field((horizontal_dim, dims.KDim), array[:, ::-1], allocator=allocator)
 
 
 def _field_allocators(

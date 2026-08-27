@@ -14,7 +14,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
-import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.common import dimension as dims
@@ -115,20 +114,6 @@ def verify_full_run_fields(
         )
 
 
-def flip_back(field: gtx.Field) -> np.ndarray:
-    """
-    Reverse the K rows of a 3-row extrapolation coefficient field.
-
-    The metrics savepoint accessors (`wgtfacq_c`/`wgtfacq_e`) flip the Fortran
-    coefficient order (row k multiplies the k+1-th full level counted from the
-    relevant boundary); the tmx metric state stores the coefficients in Fortran
-    order, see the TmxMetricState docstrings.
-    """
-    array = field.asnumpy()
-    assert array.shape[1] == 3
-    return array[:, ::-1]
-
-
 def construct_metric_state(
     *,
     metrics_savepoint: sb.MetricSavepoint,
@@ -152,17 +137,9 @@ def construct_metric_state(
         inv_ddqz_z_half_v=init_savepoint.inv_ddqz_z_half_v(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_c=gtx.as_field(
-            (dims.CellDim, dims.KDim),
-            flip_back(metrics_savepoint.wgtfacq_c()),
-            allocator=allocator,
-        ),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         wgtfacq1_c=init_savepoint.wgtfacq1_c(),
-        wgtfacq_e=gtx.as_field(
-            (dims.EdgeDim, dims.KDim),
-            flip_back(metrics_savepoint.wgtfacq_e()),
-            allocator=allocator,
-        ),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e(),
         wgtfacq1_e=init_savepoint.wgtfacq1_e(),
         geopot_agl_ifc=init_savepoint.geopot_agl_ifc(),
         z_mc=metrics_savepoint.z_mc(),

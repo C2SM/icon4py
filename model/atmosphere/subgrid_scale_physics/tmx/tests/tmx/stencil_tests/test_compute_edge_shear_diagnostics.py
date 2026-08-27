@@ -19,6 +19,21 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing import stencil_tests
 
 
+def _coefficient_field(
+    data_alloc: stencil_tests.DataAllocationWrapper,
+    horizontal_dim: gtx.Dimension,
+    size: int,
+    k_start: int,
+) -> gtx.Field:
+    """Three quadratic extrapolation coefficient rows, aligned to the levels they multiply."""
+    return gtx.as_field(
+        gtx.domain({horizontal_dim: (0, size), dims.KDim: (k_start, k_start + 3)}),
+        np.random.default_rng().uniform(size=(size, 3)),
+        dtype=ta.wpfloat,
+        allocator=data_alloc.allocator,
+    )
+
+
 def cell_2_edge_interpolation_numpy(
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     in_field: np.ndarray,
@@ -33,29 +48,25 @@ def interpolate_edge_field_to_half_levels_with_boundaries_numpy(
     *,
     interpolant: np.ndarray,
     wgtfac_e: np.ndarray,
-    wgtfacq1_e_1: np.ndarray,
-    wgtfacq1_e_2: np.ndarray,
-    wgtfacq1_e_3: np.ndarray,
-    wgtfacq_e_1: np.ndarray,
-    wgtfacq_e_2: np.ndarray,
-    wgtfacq_e_3: np.ndarray,
+    wgtfacq1_e: np.ndarray,
+    wgtfacq_e: np.ndarray,
 ) -> np.ndarray:
     """Reference of ``_interpolate_edge_field_to_half_levels_with_boundaries_wp`` (vn -> vn_ie)."""
     nlev = interpolant.shape[1]
     interpolation = np.zeros((interpolant.shape[0], nlev + 1), dtype=interpolant.dtype)
     interpolation[:, 0] = (
-        wgtfacq1_e_1 * interpolant[:, 0]
-        + wgtfacq1_e_2 * interpolant[:, 1]
-        + wgtfacq1_e_3 * interpolant[:, 2]
+        wgtfacq1_e[:, 0] * interpolant[:, 0]
+        + wgtfacq1_e[:, 1] * interpolant[:, 1]
+        + wgtfacq1_e[:, 2] * interpolant[:, 2]
     )
     interpolation[:, 1:nlev] = (
         wgtfac_e[:, 1:nlev] * interpolant[:, 1:nlev]
         + (1.0 - wgtfac_e[:, 1:nlev]) * interpolant[:, 0 : nlev - 1]
     )
     interpolation[:, nlev] = (
-        wgtfacq_e_1 * interpolant[:, nlev - 1]
-        + wgtfacq_e_2 * interpolant[:, nlev - 2]
-        + wgtfacq_e_3 * interpolant[:, nlev - 3]
+        wgtfacq_e[:, 2] * interpolant[:, nlev - 1]
+        + wgtfacq_e[:, 1] * interpolant[:, nlev - 2]
+        + wgtfacq_e[:, 0] * interpolant[:, nlev - 3]
     )
     return interpolation
 
@@ -184,12 +195,8 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
         w_vert: np.ndarray,
         c_lin_e: np.ndarray,
         wgtfac_e: np.ndarray,
-        wgtfacq1_e_1: np.ndarray,
-        wgtfacq1_e_2: np.ndarray,
-        wgtfacq1_e_3: np.ndarray,
-        wgtfacq_e_1: np.ndarray,
-        wgtfacq_e_2: np.ndarray,
-        wgtfacq_e_3: np.ndarray,
+        wgtfacq1_e: np.ndarray,
+        wgtfacq_e: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
         primal_normal_vert_x: np.ndarray,
         primal_normal_vert_y: np.ndarray,
@@ -221,12 +228,8 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
         vn_ie_full = interpolate_edge_field_to_half_levels_with_boundaries_numpy(
             interpolant=vn,
             wgtfac_e=wgtfac_e,
-            wgtfacq1_e_1=wgtfacq1_e_1,
-            wgtfacq1_e_2=wgtfacq1_e_2,
-            wgtfacq1_e_3=wgtfacq1_e_3,
-            wgtfacq_e_1=wgtfacq_e_1,
-            wgtfacq_e_2=wgtfacq_e_2,
-            wgtfacq_e_3=wgtfacq_e_3,
+            wgtfacq1_e=wgtfacq1_e,
+            wgtfacq_e=wgtfacq_e,
         )
         vt_ie_full = compute_tangential_wind_numpy(
             connectivities, vn=vn_ie_full, rbf_vec_coeff_e=rbf_vec_coeff_e
@@ -304,12 +307,10 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
         wgtfac_e = data_alloc.random_field(
             dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
-        wgtfacq1_e_1 = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
-        wgtfacq1_e_2 = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
-        wgtfacq1_e_3 = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
-        wgtfacq_e_1 = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
-        wgtfacq_e_2 = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
-        wgtfacq_e_3 = data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat)
+        wgtfacq1_e = _coefficient_field(data_alloc, dims.EdgeDim, grid.num_edges, 0)
+        wgtfacq_e = _coefficient_field(
+            data_alloc, dims.EdgeDim, grid.num_edges, grid.num_levels - 3
+        )
         rbf_vec_coeff_e = data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim, dtype=ta.wpfloat)
 
         primal_normal_vert_x = data_alloc.random_field(
@@ -366,12 +367,8 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
             w_vert=w_vert,
             c_lin_e=c_lin_e,
             wgtfac_e=wgtfac_e,
-            wgtfacq1_e_1=wgtfacq1_e_1,
-            wgtfacq1_e_2=wgtfacq1_e_2,
-            wgtfacq1_e_3=wgtfacq1_e_3,
-            wgtfacq_e_1=wgtfacq_e_1,
-            wgtfacq_e_2=wgtfacq_e_2,
-            wgtfacq_e_3=wgtfacq_e_3,
+            wgtfacq1_e=wgtfacq1_e,
+            wgtfacq_e=wgtfacq_e,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             primal_normal_vert_x=primal_normal_vert_x,
             primal_normal_vert_y=primal_normal_vert_y,

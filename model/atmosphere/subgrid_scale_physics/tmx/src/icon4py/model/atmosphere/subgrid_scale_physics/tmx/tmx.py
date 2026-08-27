@@ -441,13 +441,6 @@ class Tmx:
         self._determine_horizontal_domains()
         self._allocate_local_fields()
 
-        # 2D views on the quadratic extrapolation coefficients (rows 0..2 in
-        # Fortran coefficient order, see the TmxMetricState docstrings); the
-        # stencils take them as three separate 2D fields.
-        wgtfacq1_c = self._coefficient_fields(self._metric_state.wgtfacq1_c, dims.CellDim)
-        wgtfacq_c = self._coefficient_fields(self._metric_state.wgtfacq_c, dims.CellDim)
-        wgtfacq1_e = self._coefficient_fields(self._metric_state.wgtfacq1_e, dims.EdgeDim)
-        wgtfacq_e = self._coefficient_fields(self._metric_state.wgtfacq_e, dims.EdgeDim)
         # geometric height of the surface (bottom half level), 2D slice of z_ifc
         z_ifc_sfc = gtx.as_field(
             (dims.CellDim,),
@@ -529,12 +522,8 @@ class Tmx:
                 "height_above_ground": self.ghf,
                 "wgtfac_c": self._metric_state.wgtfac_c,
                 "inv_ddqz_z_half": self._metric_state.inv_ddqz_z_half,
-                "wgtfacq1_c_1": wgtfacq1_c[0],
-                "wgtfacq1_c_2": wgtfacq1_c[1],
-                "wgtfacq1_c_3": wgtfacq1_c[2],
-                "wgtfacq_c_1": wgtfacq_c[0],
-                "wgtfacq_c_2": wgtfacq_c[1],
-                "wgtfacq_c_3": wgtfacq_c[2],
+                "wgtfacq1_c": self._metric_state.wgtfacq1_c,
+                "wgtfacq_c": self._metric_state.wgtfacq_c,
                 "grav": constants.GRAV,
             },
             horizontal_sizes={
@@ -604,12 +593,8 @@ class Tmx:
             constant_args={
                 "c_lin_e": self._interpolation_state.c_lin_e,
                 "wgtfac_e": self._metric_state.wgtfac_e,
-                "wgtfacq1_e_1": wgtfacq1_e[0],
-                "wgtfacq1_e_2": wgtfacq1_e[1],
-                "wgtfacq1_e_3": wgtfacq1_e[2],
-                "wgtfacq_e_1": wgtfacq_e[0],
-                "wgtfacq_e_2": wgtfacq_e[1],
-                "wgtfacq_e_3": wgtfacq_e[2],
+                "wgtfacq1_e": self._metric_state.wgtfacq1_e,
+                "wgtfacq_e": self._metric_state.wgtfacq_e,
                 "rbf_vec_coeff_e": self._interpolation_state.rbf_coeff_e,
                 "primal_normal_vert_x": self._edge_params.primal_normal_vert[0],
                 "primal_normal_vert_y": self._edge_params.primal_normal_vert[1],
@@ -1314,15 +1299,6 @@ class Tmx:
         self._hori_tend_e: fa.EdgeKField[ta.wpfloat] = _zeros_edge_k_field(extend=1)
         # inverse air density at half-level cell centers (``inv_rho_ic``)
         self._inv_rho_ic: fa.CellKField[ta.wpfloat] = _zeros_cell_khalf_field()
-
-    def _coefficient_fields(
-        self, field: gtx.Field, horizontal_dim: gtx.Dimension
-    ) -> tuple[gtx.Field, gtx.Field, gtx.Field]:
-        """Extract the three 2D extrapolation coefficient fields from rows 0..2."""
-        return tuple(  # type: ignore[return-value]
-            gtx.as_field((horizontal_dim,), field.ndarray[:, k], allocator=self._allocator)
-            for k in range(3)
-        )
 
     def _determine_horizontal_domains(self) -> None:
         cell_domain = h_grid.domain(dims.CellDim)

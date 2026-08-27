@@ -23,12 +23,8 @@ from icon4py.model.common.type_alias import wpfloat
 def _interpolate_cell_field_to_half_levels_with_boundaries_wp(
     interpolant: fa.CellKField[wpfloat],
     wgtfac_c: fa.CellKField[wpfloat],
-    wgtfacq1_c_1: fa.CellField[wpfloat],
-    wgtfacq1_c_2: fa.CellField[wpfloat],
-    wgtfacq1_c_3: fa.CellField[wpfloat],
-    wgtfacq_c_1: fa.CellField[wpfloat],
-    wgtfacq_c_2: fa.CellField[wpfloat],
-    wgtfacq_c_3: fa.CellField[wpfloat],
+    wgtfacq1_c: fa.CellKField[wpfloat],
+    wgtfacq_c: fa.CellKField[wpfloat],
     nlev: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     """
@@ -41,12 +37,9 @@ def _interpolate_cell_field_to_half_levels_with_boundaries_wp(
     Args:
         interpolant: cell field on full levels (nlev levels)
         wgtfac_c: interpolation weight on half levels
-        wgtfacq1_c_1: top extrapolation weight for full level 0
-        wgtfacq1_c_2: top extrapolation weight for full level 1
-        wgtfacq1_c_3: top extrapolation weight for full level 2
-        wgtfacq_c_1: bottom extrapolation weight for full level nlev - 1
-        wgtfacq_c_2: bottom extrapolation weight for full level nlev - 2
-        wgtfacq_c_3: bottom extrapolation weight for full level nlev - 3
+        wgtfacq1_c: top extrapolation weights, one row per full level 0..2
+        wgtfacq_c: bottom extrapolation weights, one row per full level
+            nlev - 3..nlev - 1
         nlev: number of full levels
 
     Returns:
@@ -56,17 +49,13 @@ def _interpolate_cell_field_to_half_levels_with_boundaries_wp(
         dims.KDim == 0,
         extrapolate_quadratically_to_top_on_cells(
             interpolant=interpolant,
-            weight_0=wgtfacq1_c_1,
-            weight_1=wgtfacq1_c_2,
-            weight_2=wgtfacq1_c_3,
+            weights=wgtfacq1_c,
         ),
         concat_where(
             dims.KDim == nlev,
             extrapolate_quadratically_to_surface_on_cells(
                 interpolant=interpolant,
-                weight_0=wgtfacq_c_1,
-                weight_1=wgtfacq_c_2,
-                weight_2=wgtfacq_c_3,
+                weights=wgtfacq_c,
             ),
             _interpolate_cell_field_to_half_levels_wp(wgtfac_c=wgtfac_c, interpolant=interpolant),
         ),
@@ -77,12 +66,8 @@ def _interpolate_cell_field_to_half_levels_with_boundaries_wp(
 def interpolate_cell_field_to_half_levels_with_boundaries_wp(
     interpolant: fa.CellKField[wpfloat],
     wgtfac_c: fa.CellKField[wpfloat],
-    wgtfacq1_c_1: fa.CellField[wpfloat],
-    wgtfacq1_c_2: fa.CellField[wpfloat],
-    wgtfacq1_c_3: fa.CellField[wpfloat],
-    wgtfacq_c_1: fa.CellField[wpfloat],
-    wgtfacq_c_2: fa.CellField[wpfloat],
-    wgtfacq_c_3: fa.CellField[wpfloat],
+    wgtfacq1_c: fa.CellKField[wpfloat],
+    wgtfacq_c: fa.CellKField[wpfloat],
     interpolation: fa.CellKField[wpfloat],
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -93,12 +78,8 @@ def interpolate_cell_field_to_half_levels_with_boundaries_wp(
     _interpolate_cell_field_to_half_levels_with_boundaries_wp(
         interpolant=interpolant,
         wgtfac_c=wgtfac_c,
-        wgtfacq1_c_1=wgtfacq1_c_1,
-        wgtfacq1_c_2=wgtfacq1_c_2,
-        wgtfacq1_c_3=wgtfacq1_c_3,
-        wgtfacq_c_1=wgtfacq_c_1,
-        wgtfacq_c_2=wgtfacq_c_2,
-        wgtfacq_c_3=wgtfacq_c_3,
+        wgtfacq1_c=wgtfacq1_c,
+        wgtfacq_c=wgtfacq_c,
         nlev=nlev,
         out=interpolation,
         domain={

@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -58,6 +59,15 @@ def _metric_state(
             grid, *dimensions, low=0.3, high=0.7, extend=extend, allocator=allocator
         )
 
+    def coefficients(horizontal_dim, k_start):
+        """Three extrapolation coefficient rows, aligned to the levels they multiply."""
+        size = grid.size[horizontal_dim]
+        return gtx.as_field(
+            gtx.domain({horizontal_dim: (0, size), dims.KDim: (k_start, k_start + 3)}),
+            np.random.default_rng(0).uniform(0.3, 0.7, (size, 3)),
+            allocator=allocator,
+        )
+
     return tmx_states.TmxMetricState(
         ddqz_z_full=positive(dims.CellDim, dims.KDim),
         inv_ddqz_z_full=positive(dims.CellDim, dims.KDim),
@@ -68,10 +78,10 @@ def _metric_state(
         inv_ddqz_z_half_v=positive(dims.VertexDim, dims.KDim, extend={dims.KDim: 1}),
         wgtfac_c=weight(dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
         wgtfac_e=weight(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}),
-        wgtfacq_c=weight(dims.CellDim, dims.KDim),
-        wgtfacq1_c=weight(dims.CellDim, dims.KDim),
-        wgtfacq_e=weight(dims.EdgeDim, dims.KDim),
-        wgtfacq1_e=weight(dims.EdgeDim, dims.KDim),
+        wgtfacq_c=coefficients(dims.CellDim, grid.num_levels - 3),
+        wgtfacq1_c=coefficients(dims.CellDim, 0),
+        wgtfacq_e=coefficients(dims.EdgeDim, grid.num_levels - 3),
+        wgtfacq1_e=coefficients(dims.EdgeDim, 0),
         geopot_agl_ifc=data_alloc.random_field(
             grid,
             dims.CellDim,
