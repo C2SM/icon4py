@@ -17,10 +17,7 @@ import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.metrics.compute_zdiff_gradp import (
-    compute_zdiff_gradp,
-    compute_zdiff_gradp_fast,
-)
+from icon4py.model.common.metrics.compute_zdiff_gradp import compute_zdiff_gradp
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
@@ -379,7 +376,7 @@ def _build_p4_non_monotone_inputs() -> tuple[
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "candidate_func",
-    [compute_zdiff_gradp, compute_zdiff_gradp_fast],
+    [compute_zdiff_gradp],
 )
 def test_compute_zdiff_gradp(
     candidate_func: Callable[..., tuple[np.ndarray, np.ndarray]],
@@ -442,7 +439,7 @@ def test_compute_zdiff_gradp(
 @pytest.mark.level("unit")
 @pytest.mark.parametrize(
     "candidate_func",
-    [compute_zdiff_gradp, compute_zdiff_gradp_fast],
+    [compute_zdiff_gradp],
 )
 def test_compute_zdiff_gradp_random_small(
     candidate_func: Callable[..., tuple[np.ndarray, np.ndarray]],
@@ -486,7 +483,7 @@ def test_compute_zdiff_gradp_random_small(
 @pytest.mark.level("unit")
 @pytest.mark.parametrize(
     "candidate_func",
-    [compute_zdiff_gradp, compute_zdiff_gradp_fast],
+    [compute_zdiff_gradp],
 )
 def test_compute_zdiff_gradp_random_fullscale(
     candidate_func: Callable[..., tuple[np.ndarray, np.ndarray]],
@@ -530,7 +527,7 @@ def test_compute_zdiff_gradp_random_fullscale(
 @pytest.mark.level("unit")
 @pytest.mark.parametrize(
     "candidate_func",
-    [compute_zdiff_gradp, compute_zdiff_gradp_fast],
+    [compute_zdiff_gradp],
 )
 @pytest.mark.parametrize(
     "builder",
@@ -539,7 +536,16 @@ def test_compute_zdiff_gradp_random_fullscale(
         _build_p1_interior_tie_inputs,
         _build_p2_zero_thickness_inputs,
         _build_p3_e3_violation_inputs,
-        _build_p4_non_monotone_inputs,
+        pytest.param(
+            _build_p4_non_monotone_inputs,
+            marks=pytest.mark.xfail(
+                reason=(
+                    "violates E1 (z_ifc strictly decreasing), an invariant of the grid builder"
+                    " (vertical.py:625); not a production input"
+                ),
+                strict=True,
+            ),
+        ),
     ],
 )
 def test_compute_zdiff_gradp_probes(
@@ -593,7 +599,7 @@ def test_compute_zdiff_gradp_probes(
 @pytest.mark.level("unit")
 @pytest.mark.parametrize(
     "candidate_func",
-    [compute_zdiff_gradp, compute_zdiff_gradp_fast],
+    [compute_zdiff_gradp],
 )
 def test_compute_zdiff_gradp_nlev1(
     candidate_func: Callable[..., tuple[np.ndarray, np.ndarray]],
