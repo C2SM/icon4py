@@ -25,12 +25,12 @@ tests validate that pin against two independent sources:
 
 from __future__ import annotations
 
-import dataclasses
 from typing import TYPE_CHECKING
 
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.utils import fortran_config
 from icon4py.model.testing import definitions
 
@@ -60,7 +60,12 @@ def test_tmx_config_cross_checks_input_namelist_and_defaults(
 
     defaults = tmx.TmxConfig()
     checked_by_name = 0
-    for field_name in (f.name for f in dataclasses.fields(tmx.TmxConfig)):
+    for field_name, option in common_conf_opt.ConfigOption.iter_from_config_class(tmx.TmxConfig):
+        icon_option = option.icon_equivalent
+        if icon_option is None or icon_option.path != ("aes_vdf_nml", "aes_vdf_config"):
+            # read from another namelist (the surface fluxes come from
+            # 'nh_testcase_nml'), so not part of this order pin
+            continue
         config_value = getattr(tmx_config, field_name)
         if field_name in input_members:
             # explicitly set in the input namelist: the named input value must

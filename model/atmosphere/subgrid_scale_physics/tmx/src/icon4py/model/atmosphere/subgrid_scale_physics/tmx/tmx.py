@@ -204,6 +204,27 @@ class EnergyType(int, enum.Enum):
     INTERNAL = 2  # internal energy cv*T
 
 
+@config_io.register_enum
+class SurfaceFluxType(int, enum.Enum):
+    """
+    Treatment of the surface fluxes.
+
+    Note: called ``isrfc_type`` in ``mo_nh_testcases_nml.f90``.
+    """
+
+    INTERACTIVE = 0  # fluxes from the surface scheme
+    FIXED_HEAT_FLUXES = 1  # fixed kinematic surface heat fluxes
+
+
+# Fortran defaults of the fixed-surface-flux members of 'nh_testcase_nml', from the
+# initialization in mo_nh_testcases_nml.f90:280-282. They are needed as defaults
+# because the *input* namelist dict carries only the members the experiment sets
+# explicitly; unset ones reach the run through this Fortran initialization and never
+# appear in the dict.
+_ISRFC_TYPE_DEFAULT: Final = SurfaceFluxType.INTERACTIVE
+_SHFLX_DEFAULT: Final = 0.1
+_LHFLX_DEFAULT: Final = 0.0
+
 # number of members of the Fortran t_vdiff_config derived type
 # (mo_turb_vdiff_config.f90); the echoed aes_vdf_nml namelist holds this many
 # values per domain, in declaration order. Must be kept in sync with the
@@ -376,11 +397,43 @@ class TmxConfig:
         ),
     ] = 300.0
 
+    isrfc_type: typing.Annotated[
+        SurfaceFluxType,
+        common_conf_opt.ConfigOption(
+            description="Treatment of the surface fluxes (interactive or fixed heat fluxes).",
+            icon_equivalent=common_conf_opt.IconOption(
+                "isrfc_type", ("nh_testcase_nml",), read_from_icon=False
+            ),
+        ),
+    ] = _ISRFC_TYPE_DEFAULT
+
+    shflx: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Fixed kinematic sensible heat flux at the surface [K m/s].",
+            icon_equivalent=common_conf_opt.IconOption(
+                "shflx", ("nh_testcase_nml",), read_from_icon=False
+            ),
+        ),
+    ] = _SHFLX_DEFAULT
+
+    lhflx: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Fixed kinematic latent heat flux at the surface [m/s].",
+            icon_equivalent=common_conf_opt.IconOption(
+                "lhflx", ("nh_testcase_nml",), read_from_icon=False
+            ),
+        ),
+    ] = _LHFLX_DEFAULT
+
     def __post_init__(self) -> None:
         self._validate()
 
     @classmethod
-    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> TmxConfig:
+    def from_fortran_dict(
+        cls, *, atm_dict: dict[str, Any], input_dict: dict[str, Any], **overrides: Any
+    ) -> TmxConfig:
         """
         Construct the configuration from the echoed ICON namelists.
 
@@ -390,8 +443,13 @@ class TmxConfig:
         (pinned to mo_turb_vdiff_config.f90) instead of by name. Only the
         first domain is read. The guards below make a change of the Fortran
         type fail loudly instead of silently mis-assigning values.
+
+        The surface-flux options come from the *input* namelist dict instead,
+        which holds only the members the experiment sets explicitly, so absent
+        ones fall back to the Fortran defaults rather than being indexed
+        strictly.
         """
-        flat = atmo_dict["aes_vdf_nml"]["aes_vdf_config"]
+        flat = atm_dict["aes_vdf_nml"]["aes_vdf_config"]
         if len(flat) % _T_VDIFF_CONFIG_NUM_MEMBERS != 0:
             raise ValueError(
                 f"'aes_vdf_config' has {len(flat)} values, not a multiple of the "
@@ -405,12 +463,21 @@ class TmxConfig:
                 f"'aes_vdf_config', found {use_tmx!r}: either the run does not use tmx or "
                 "the t_vdiff_config member order changed."
             )
-        return common_conf_opt.construct_config_from_icon(cls, atmo_dict, **overrides)
+        testcase = input_dict.get("nh_testcase_nml", {})
+        surface_fluxes = {
+            "isrfc_type": SurfaceFluxType(int(testcase.get("isrfc_type", _ISRFC_TYPE_DEFAULT))),
+            "shflx": float(testcase.get("shflx", _SHFLX_DEFAULT)),
+            "lhflx": float(testcase.get("lhflx", _LHFLX_DEFAULT)),
+        }
+        return common_conf_opt.construct_config_from_icon(
+            cls, atm_dict, **(surface_fluxes | overrides)
+        )
 
     def _validate(self) -> None:
         """Apply consistency checks and validation on configuration parameters."""
         self.solver_type = TurbulenceSolverType(self.solver_type)
         self.energy_type = EnergyType(self.energy_type)
+        self.isrfc_type = SurfaceFluxType(self.isrfc_type)
 
         if self.turb_prandtl <= 0.0:
             raise ValueError(

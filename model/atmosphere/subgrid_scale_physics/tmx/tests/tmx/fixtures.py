@@ -53,12 +53,17 @@ def tmx_config(
     download_ser_data: None,  # downloads data as side-effect
 ) -> tmx.TmxConfig:
     """TmxConfig read from the experiment's converted (echoed) namelists."""
-    atmo_dict = load_fortran_dict(
+    atm_dict = load_fortran_dict(
         experiment_description=experiment_description,
         process_props=process_props,
         fname=fortran_config.ATM_DICT_FNAME,
     )
-    return tmx.TmxConfig.from_fortran_dict(atmo_dict)
+    input_dict = load_fortran_dict(
+        experiment_description=experiment_description,
+        process_props=process_props,
+        fname=fortran_config.INPUT_DICT_FNAME,
+    )
+    return tmx.TmxConfig.from_fortran_dict(atm_dict=atm_dict, input_dict=input_dict)
 
 
 # ISO 8601 duration, fixed-length components only (duplicated from

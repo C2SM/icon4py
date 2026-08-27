@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import surface_fluxes, tmx_states
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import surface_fluxes, tmx, tmx_states
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.grid import simple
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
@@ -85,9 +85,14 @@ def test_prescribed_surface_fluxes_match_fortran(
         process_props=process_props,
         fname=fortran_config.INPUT_DICT_FNAME,
     )
-    config = surface_fluxes.PrescribedFluxConfig.from_fortran_dict(input_dict)
+    atm_dict = load_fortran_dict(
+        experiment_description=experiment_description,
+        process_props=process_props,
+        fname=fortran_config.ATM_DICT_FNAME,
+    )
+    config = tmx.TmxConfig.from_fortran_dict(atm_dict=atm_dict, input_dict=input_dict)
     # the archive must be the fixed-flux case, otherwise this test is vacuous
-    assert config.isrfc_type == surface_fluxes.FIXED_SURFACE_FLUXES
+    assert config.isrfc_type is tmx.SurfaceFluxType.FIXED_HEAT_FLUXES
 
     entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
     reference = data_provider.from_savepoint_tmx_surface_fluxes(date=date)
@@ -119,25 +124,20 @@ def test_prescribed_surface_fluxes_match_fortran(
     assert abs(out.sensible_heat_flux.asnumpy()).min() > 0.0
 
 
-def test_prescribed_flux_config_defaults_match_fortran() -> None:
+def test_surface_flux_config_defaults_match_fortran() -> None:
     """The defaults mirror the initialization in mo_nh_testcases_nml.f90:280-282."""
-    config = surface_fluxes.PrescribedFluxConfig()
-    assert config.isrfc_type == 0
+    config = tmx.TmxConfig()
+    assert config.isrfc_type is tmx.SurfaceFluxType.INTERACTIVE
     assert config.shflx == 0.1
     assert config.lhflx == 0.0
-    # absent members fall back to those defaults, present ones win
-    from_dict = surface_fluxes.PrescribedFluxConfig.from_fortran_dict(
-        {"nh_testcase_nml": {"isrfc_type": 1}}
-    )
-    assert from_dict == surface_fluxes.PrescribedFluxConfig(isrfc_type=1, shflx=0.1, lhflx=0.0)
 
 
 def test_prescribed_flux_provider_rejects_interactive_surface() -> None:
-    """isrfc_type != 1 is the interactive surface scheme, which is not ported."""
+    """The interactive surface scheme is not ported."""
     grid = simple.simple_grid()
-    with pytest.raises(NotImplementedError, match="isrfc_type"):
+    with pytest.raises(NotImplementedError, match="FIXED_HEAT_FLUXES"):
         surface_fluxes.PrescribedFluxProvider(
-            config=surface_fluxes.PrescribedFluxConfig(isrfc_type=0),
+            config=tmx.TmxConfig(isrfc_type=tmx.SurfaceFluxType.INTERACTIVE),
             pressure_ifc=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
             ),

@@ -15,6 +15,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
 from icon4py.model.common import model_backends
+from icon4py.model.common.config import config_io
 
 
 if TYPE_CHECKING:
@@ -117,7 +118,7 @@ def test_config_from_fortran_dict() -> None:
             )
         }
     }
-    config = tmx.TmxConfig.from_fortran_dict(fortran_dict)
+    config = tmx.TmxConfig.from_fortran_dict(atm_dict=fortran_dict, input_dict={})
     assert config.solver_type is tmx.TurbulenceSolverType.EXPLICIT
     assert config.energy_type is tmx.EnergyType.DRY_STATIC
     assert config.dissipation_factor == 0.5
@@ -138,14 +139,18 @@ def test_config_from_fortran_dict() -> None:
 def test_config_from_fortran_dict_rejects_changed_member_count() -> None:
     record = _echoed_vdf_record()
     with pytest.raises(ValueError, match="not a multiple"):
-        tmx.TmxConfig.from_fortran_dict({"aes_vdf_nml": {"aes_vdf_config": [*record, 0.0]}})
+        tmx.TmxConfig.from_fortran_dict(
+            atm_dict={"aes_vdf_nml": {"aes_vdf_config": [*record, 0.0]}}, input_dict={}
+        )
 
 
 def test_config_from_fortran_dict_rejects_missing_use_tmx() -> None:
     record = _echoed_vdf_record()
     record[22] = False
     with pytest.raises(ValueError, match="use_tmx"):
-        tmx.TmxConfig.from_fortran_dict({"aes_vdf_nml": {"aes_vdf_config": record}})
+        tmx.TmxConfig.from_fortran_dict(
+            atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}}, input_dict={}
+        )
 
 
 def test_params_derived_from_config() -> None:
@@ -239,3 +244,26 @@ def test_state_allocation_produces_zero_fields_with_correct_shapes(
         field = getattr(state, name).asnumpy()
         assert field.shape == shapes[kind], f"Wrong shape for field '{name}'."
         assert np.all(field == 0.0), f"Field '{name}' is not zero-initialized."
+
+
+def test_config_round_trips_through_config_io() -> None:
+    """Every enum option is registered, so the config survives (un)structuring."""
+    config = tmx.TmxConfig()
+    unstructured = config_io.CONV.unstructure(config)
+
+    assert unstructured["solver_type"] == "implicit"
+    assert unstructured["energy_type"] == "internal"
+    assert unstructured["isrfc_type"] == "interactive"
+    assert config_io.CONV.structure(unstructured, tmx.TmxConfig) == config
+
+
+def test_surface_flux_options_come_from_the_input_namelist() -> None:
+    """Absent 'nh_testcase_nml' members fall back to the Fortran defaults."""
+    record = _echoed_vdf_record(solver_type=2, energy_type=2, turb_prandtl=0.33333333333)
+    config = tmx.TmxConfig.from_fortran_dict(
+        atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}},
+        input_dict={"nh_testcase_nml": {"isrfc_type": 1, "shflx": 0.2}},
+    )
+    assert config.isrfc_type is tmx.SurfaceFluxType.FIXED_HEAT_FLUXES
+    assert config.shflx == 0.2
+    assert config.lhflx == 0.0
