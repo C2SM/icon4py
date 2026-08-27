@@ -8,26 +8,7 @@
 
 import array_api_compat
 from gt4py import next as gtx
-from gt4py.next import common as gtx_common, typing as gtx_typing
-
-
-def relabel_dim(field: gtx.Field, old_dim: gtx.Dimension, new_dim: gtx.Dimension) -> gtx.Field:
-    """Return a view of `field` with `old_dim` relabelled as `new_dim`.
-
-    Args:
-        field: The field to relabel.
-        old_dim: The dimension to replace.
-        new_dim: The dimension to replace it with.
-    """
-    # TODO(havogt): this function is used for a workaround.
-    # using GT4Py internal API since `gtx.as_field` copies rather than aliases the buffer
-    return gtx_common._field(
-        field.ndarray,
-        domain={
-            (new_dim if dim == old_dim else dim): (rng.start, rng.stop)
-            for dim, rng in zip(field.domain.dims, field.domain.ranges, strict=True)
-        },
-    )
+from gt4py.next import typing as gtx_typing
 
 
 def flip(field: gtx.Field, dim: gtx.Dimension, allocator: gtx_typing.Allocator) -> gtx.Field:

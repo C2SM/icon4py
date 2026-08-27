@@ -26,7 +26,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
-from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils
 
 from .. import utils
@@ -1339,9 +1339,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(  # noqa: PLR0917 [too-many-posit
             theta_v=theta_v,
             ikoffset=metrics_savepoint.vertoffset_gradp(),
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
-            theta_v_ic=field_utils.relabel_dim(
-                theta_v_at_cells_on_half_levels, dims.KHalfDim, dims.KDim
-            ),
+            theta_v_ic=theta_v_at_cells_on_half_levels,
             inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
             inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
             z_hydro_corr=hydrostatic_correction,

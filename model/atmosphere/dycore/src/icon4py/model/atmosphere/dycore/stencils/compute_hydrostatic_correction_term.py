@@ -19,24 +19,29 @@ def _compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
     ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,
 ) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_21."""
-    # TODO(havogt): theta_v_ic is a half-level field, but dace cannot lower `as_offset` applied
-    # to a staggered access, so the caller passes it relabelled onto KDim.
     zdiff_gradp_wp = zdiff_gradp  # astype(zdiff_gradp, wpfloat) # TODO(): fix this cast
 
     theta_v_0 = theta_v(E2C[0])(as_offset(Koff, ikoffset[dims.E2CDim(0)]))
     theta_v_1 = theta_v(E2C[1])(as_offset(Koff, ikoffset[dims.E2CDim(1)]))
 
-    theta_v_ic_0 = theta_v_ic(E2C[0])(as_offset(Koff, ikoffset[dims.E2CDim(0)]))
-    theta_v_ic_1 = theta_v_ic(E2C[1])(as_offset(Koff, ikoffset[dims.E2CDim(1)]))
+    # Each `theta_v_ic` chain must stay written out. Binding the shifted access to a local
+    # emits a shared `let` that the dace lowering of `as_offset` cannot fuse, and the program
+    # then fails to compile.
+    theta_v_ic_0 = theta_v_ic(E2C[0])(dims.KDim - 0.5)(as_offset(Koff, ikoffset[dims.E2CDim(0)]))
+    theta_v_ic_1 = theta_v_ic(E2C[1])(dims.KDim - 0.5)(as_offset(Koff, ikoffset[dims.E2CDim(1)]))
 
-    theta_v_ic_p1_0 = theta_v_ic(E2C[0])(as_offset(Koff, ikoffset[dims.E2CDim(0)] + 1))
-    theta_v_ic_p1_1 = theta_v_ic(E2C[1])(as_offset(Koff, ikoffset[dims.E2CDim(1)] + 1))
+    theta_v_ic_p1_0 = theta_v_ic(E2C[0])(dims.KDim - 0.5)(
+        as_offset(Koff, ikoffset[dims.E2CDim(0)] + 1)
+    )
+    theta_v_ic_p1_1 = theta_v_ic(E2C[1])(dims.KDim - 0.5)(
+        as_offset(Koff, ikoffset[dims.E2CDim(1)] + 1)
+    )
 
     inv_ddqz_z_full_0_wp = astype(
         inv_ddqz_z_full(E2C[0])(as_offset(Koff, ikoffset[dims.E2CDim(0)])), wpfloat
@@ -69,7 +74,7 @@ def compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
     ikoffset: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], vpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,

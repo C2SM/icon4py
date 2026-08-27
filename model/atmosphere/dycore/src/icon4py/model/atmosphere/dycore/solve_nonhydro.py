@@ -64,7 +64,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.math import smagorinsky, vertical_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
-from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
@@ -1220,9 +1220,7 @@ class SolveNonhydro:
         log.debug("predictor: start stencil compute_rho_theta_pgrad_and_update_vn")
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
-            theta_v_ic=field_utils.relabel_dim(
-                diagnostic_state_nh.theta_v_at_cells_on_half_levels, dims.KHalfDim, dims.KDim
-            ),
+            theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
 
