@@ -28,12 +28,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.apply_w_horizon
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.assign_constant_viscosity import (
     assign_constant_viscosity,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_brunt_vaisala_frequency import (
-    compute_brunt_vaisala_frequency,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_energy_from_temperature import (
-    compute_energy_from_temperature,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_scalar_nabla2_flux import (
     compute_scalar_nabla2_flux,
 )
@@ -42,9 +36,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_shear_a
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_smagorinsky_viscosity import (
     compute_smagorinsky_viscosity,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_static_energy import (
-    compute_static_energy,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_surface_energy_flux import (
     compute_surface_energy_flux,
@@ -57,9 +48,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_tempera
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vertical_integral_diagnostics import (
     compute_vertical_integral_diagnostics,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_virtual_potential_temperature import (
-    compute_virtual_potential_temperature,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vn_horizontal_stress_tendency import (
     compute_vn_horizontal_stress_tendency,
@@ -160,6 +148,16 @@ from icon4py.model.common.math.stencils.update_two_cell_kdim_fields_with_tendenc
     update_two_cell_kdim_fields_with_tendency,
 )
 from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.physics.stencils.compute_brunt_vaisala_frequency import (
+    compute_brunt_vaisala_frequency,
+)
+from icon4py.model.common.physics.stencils.compute_energy_from_temperature import (
+    compute_energy_from_temperature,
+)
+from icon4py.model.common.physics.stencils.compute_static_energy import compute_static_energy
+from icon4py.model.common.physics.stencils.compute_virtual_potential_temperature import (
+    compute_virtual_potential_temperature,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 

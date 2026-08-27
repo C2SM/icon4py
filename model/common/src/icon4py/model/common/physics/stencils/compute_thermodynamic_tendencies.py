@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _calculate_virtual_temperature_tendency(
+def _compute_virtual_temperature_tendency(
     dtime: ta.wpfloat,
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
@@ -51,7 +51,7 @@ def _calculate_virtual_temperature_tendency(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_virtual_temperature_tendency(
+def compute_virtual_temperature_tendency(
     dtime: ta.wpfloat,
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
@@ -67,7 +67,7 @@ def calculate_virtual_temperature_tendency(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _calculate_virtual_temperature_tendency(
+    _compute_virtual_temperature_tendency(
         dtime=dtime,
         qv=qv,
         qc=qc,
@@ -86,7 +86,7 @@ def calculate_virtual_temperature_tendency(
 
 
 @gtx.field_operator
-def _calculate_exner_tendency(
+def _compute_exner_tendency(
     dtime: ta.wpfloat,
     virtual_temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
@@ -113,7 +113,7 @@ def _calculate_exner_tendency(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_exner_tendency(
+def compute_exner_tendency(
     dtime: ta.wpfloat,
     virtual_temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
@@ -124,7 +124,7 @@ def calculate_exner_tendency(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _calculate_exner_tendency(
+    _compute_exner_tendency(
         dtime=dtime,
         virtual_temperature=virtual_temperature,
         virtual_temperature_tendency=virtual_temperature_tendency,

@@ -9,11 +9,11 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_brunt_vaisala_frequency import (
-    compute_brunt_vaisala_frequency,
-)
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.physics.stencils.compute_brunt_vaisala_frequency import (
+    compute_brunt_vaisala_frequency,
+)
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests

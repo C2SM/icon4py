@@ -15,8 +15,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vertica
     compute_vertical_integral_diagnostics,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import base
-from icon4py.model.common.physics.thermodynamics import ThermodynamicConstants
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
@@ -34,17 +34,15 @@ def internal_energy_numpy(
     qtot = qliq + qice + qv
     cv = (
         (
-            ThermodynamicConstants.cvd * (1.0 - qtot)
-            + ThermodynamicConstants.cvv * qv
-            + ThermodynamicConstants.clw * qliq
-            + ThermodynamicConstants.ci * qice
+            PhysicsConstants.cvd * (1.0 - qtot)
+            + PhysicsConstants.cvv * qv
+            + PhysicsConstants.cpl * qliq
+            + PhysicsConstants.cpi * qice
         )
         * rho
         * dz
     )
-    return cv * t - rho * dz * (
-        qliq * ThermodynamicConstants.lvc + qice * ThermodynamicConstants.lsc
-    )
+    return cv * t - rho * dz * (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)
 
 
 class TestComputeVerticalIntegralDiagnostics(stencil_tests.StencilTest):

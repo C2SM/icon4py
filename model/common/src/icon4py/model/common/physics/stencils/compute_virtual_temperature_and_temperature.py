@@ -12,7 +12,7 @@ from icon4py.model.common.constants import PhysicsConstants
 
 
 @gtx.field_operator
-def _diagnose_virtual_temperature_and_temperature(
+def _compute_virtual_temperature_and_temperature(
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
     qi: fa.CellKField[ta.wpfloat],
@@ -29,7 +29,7 @@ def _diagnose_virtual_temperature_and_temperature(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def diagnose_virtual_temperature_and_temperature(
+def compute_virtual_temperature_and_temperature(
     qv: fa.CellKField[ta.wpfloat],
     # TODO(OngChia): This should be changed to a list hydrometeors with mass instead of directly specifying each hydrometeor, as in trHydroMass list in ICON. Otherwise, the input arguments may need to be changed when different microphysics is used.
     qc: fa.CellKField[ta.wpfloat],
@@ -46,7 +46,7 @@ def diagnose_virtual_temperature_and_temperature(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _diagnose_virtual_temperature_and_temperature(
+    _compute_virtual_temperature_and_temperature(
         qv=qv,
         qc=qc,
         qi=qi,

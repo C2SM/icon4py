@@ -8,7 +8,7 @@
 
 """Host-side orchestration of the hydrostatic pressure diagnosis.
 
-Wraps the ``diagnose_surface_pressure`` + ``diagnose_pressure`` stencils into the
+Wraps the ``compute_surface_pressure`` + ``compute_hydrostatic_pressure`` stencils into the
 sequence ICON performs in ``diagnose_pres_temp`` (mo_nh_diagnose_pres_temp.f90):
 the surface pressure is extrapolated from the lowest three levels, then the
 pressure is obtained by vertical integration of the virtual temperature.
@@ -25,11 +25,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.diagnostic_calculations.stencils import (
-    diagnose_pressure as diagnose_pressure_stencil,
-    diagnose_surface_pressure as diagnose_surface_pressure_stencil,
-)
 from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.physics.stencils import (
+    compute_hydrostatic_pressure as diagnose_pressure_stencil,
+    compute_surface_pressure as diagnose_surface_pressure_stencil,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -65,7 +65,7 @@ def diagnose_pressure_surface_to_top(
     cell_domain = h_grid.domain(dims.CellDim)
     horizontal_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
-    diagnose_surface_pressure_stencil.diagnose_surface_pressure.with_backend(backend)(
+    diagnose_surface_pressure_stencil.compute_surface_pressure.with_backend(backend)(
         exner=exner,
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,
@@ -80,7 +80,7 @@ def diagnose_pressure_surface_to_top(
     surface_pressure.ndarray[:] = pressure_on_cells_half_levels.ndarray[:, num_levels]
     pressure_on_cells_half_levels.ndarray[:, -1] = surface_pressure.ndarray
 
-    diagnose_pressure_stencil.diagnose_pressure.with_backend(backend)(
+    diagnose_pressure_stencil.compute_hydrostatic_pressure.with_backend(backend)(
         ddqz_z_full=ddqz_z_full,
         virtual_temperature=virtual_temperature,
         surface_pressure=surface_pressure,

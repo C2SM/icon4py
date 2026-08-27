@@ -14,31 +14,16 @@ of the muphys (graupel) microphysics and were promoted to ``icon4py.model.common
 so that other parameterizations (e.g. the AES turbulent mixing energy diffusion)
 can use them without depending on muphys.
 
-The constants are kept as members of a ``wpfloat``-based ``enum.Enum``
-(a GT4Py/gtfn requirement for symbols referenced inside field operators) with
-the exact literal values used by muphys, so results are bit-identical with the
-original muphys implementation. Note that some of these values differ in the
-last bit from the derived values in :mod:`icon4py.model.common.constants`
-(e.g. ``cvd = 717.60`` vs. ``CPD - RD``), hence they are not shared.
+The constants come from :class:`icon4py.model.common.constants.PhysicsConstants`
+(a ``wpfloat``-based ``enum.Enum``, which is what GT4Py/gtfn needs for symbols
+referenced inside field operators).
 """
-
-import enum
 
 import gt4py.next as gtx
 
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import wpfloat
-
-
-class ThermodynamicConstants(ta.wpfloat, enum.Enum):
-    """Thermodynamic constants of mo_aes_thermo.f90 (values as used by muphys)."""
-
-    cvd = 717.60  # [J/K/kg] specific heat of dry air at constant volume => cpd - rd
-    cvv = 1407.95  # [J/K/kg] specific heat of water vapor at constant volume => cpv - rv
-    clw = 4192.6641119999995  # specific heat capacity of liquid water => (rcpl + 1.0) * cpd
-    ci = 2108.0  # specific heat of ice
-    lvc = 3135383.2031928  # invariant part of vaporization enthalpy => alv - (cpv - clw) * tmelt
-    lsc = 2899657.201  # invariant part of sublimation enthalpy => als - (cpv - ci) * tmelt
 
 
 @gtx.field_operator
@@ -66,18 +51,16 @@ def _T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments] GT
     qtot = qliq + qice + qv  # total water specific mass
     cv = (
         (
-            ThermodynamicConstants.cvd * (wpfloat(1.0) - qtot)
-            + ThermodynamicConstants.cvv * qv
-            + ThermodynamicConstants.clw * qliq
-            + ThermodynamicConstants.ci * qice
+            PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
+            + PhysicsConstants.cvv * qv
+            + PhysicsConstants.cpl * qliq
+            + PhysicsConstants.cpi * qice
         )
         * rho
         * dz
     )  # Moist isometric specific heat
 
-    return (
-        u + rho * dz * (qliq * ThermodynamicConstants.lvc + qice * ThermodynamicConstants.lsc)
-    ) / cv
+    return (u + rho * dz * (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)) / cv
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -118,18 +101,16 @@ def _T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-argume
     qtot = qliq + qice + qv  # total water specific mass
     cv = (
         (
-            ThermodynamicConstants.cvd * (wpfloat(1.0) - qtot)
-            + ThermodynamicConstants.cvv * qv
-            + ThermodynamicConstants.clw * qliq
-            + ThermodynamicConstants.ci * qice
+            PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
+            + PhysicsConstants.cvv * qv
+            + PhysicsConstants.cpl * qliq
+            + PhysicsConstants.cpi * qice
         )
         * rho
         * dz
     )  # Moist isometric specific heat
 
-    return (
-        u + rho * dz * (qliq * ThermodynamicConstants.lvc + qice * ThermodynamicConstants.lsc)
-    ) / cv
+    return (u + rho * dz * (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)) / cv
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -171,15 +152,13 @@ def _internal_energy(  # noqa: PLR0917 [too-many-positional-arguments] GT4Py ope
     """
     qtot = qliq + qice + qv
     cv = (
-        ThermodynamicConstants.cvd * (wpfloat(1.0) - qtot)
-        + ThermodynamicConstants.cvv * qv
-        + ThermodynamicConstants.clw * qliq
-        + ThermodynamicConstants.ci * qice
+        PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
+        + PhysicsConstants.cvv * qv
+        + PhysicsConstants.cpl * qliq
+        + PhysicsConstants.cpi * qice
     )
 
-    return (
-        rho * dz * (cv * t - qliq * ThermodynamicConstants.lvc - qice * ThermodynamicConstants.lsc)
-    )
+    return rho * dz * (cv * t - qliq * PhysicsConstants.lvc - qice * PhysicsConstants.lsc)
 
 
 @gtx.field_operator
@@ -206,15 +185,13 @@ def _internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments] GT
     """
     qtot = qliq + qice + qv
     cv = (
-        ThermodynamicConstants.cvd * (wpfloat(1.0) - qtot)
-        + ThermodynamicConstants.cvv * qv
-        + ThermodynamicConstants.clw * qliq
-        + ThermodynamicConstants.ci * qice
+        PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
+        + PhysicsConstants.cvv * qv
+        + PhysicsConstants.cpl * qliq
+        + PhysicsConstants.cpi * qice
     )
 
-    return (
-        rho * dz * (cv * t - qliq * ThermodynamicConstants.lvc - qice * ThermodynamicConstants.lsc)
-    )
+    return rho * dz * (cv * t - qliq * PhysicsConstants.lvc - qice * PhysicsConstants.lsc)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

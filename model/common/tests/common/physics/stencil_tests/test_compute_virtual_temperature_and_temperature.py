@@ -12,15 +12,15 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
-from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
-    diagnose_virtual_temperature_and_temperature,
-)
 from icon4py.model.common.grid import base
+from icon4py.model.common.physics.stencils.compute_virtual_temperature_and_temperature import (
+    compute_virtual_temperature_and_temperature,
+)
 from icon4py.model.testing import stencil_tests
 
 
 class TestDiagnoseTemperature(stencil_tests.StencilTest):
-    PROGRAM = diagnose_virtual_temperature_and_temperature
+    PROGRAM = compute_virtual_temperature_and_temperature
     OUTPUTS = ("virtual_temperature", "temperature")
 
     @stencil_tests.static_reference

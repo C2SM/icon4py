@@ -16,15 +16,15 @@ import pytest
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import PhysicsConstants
-from icon4py.model.common.diagnostic_calculations.stencils import (
-    calculate_tendency,
-    diagnose_pressure,
-    diagnose_surface_pressure,
-    diagnose_temperature,
-    update_exner_and_theta_v,
-)
 from icon4py.model.common.grid import simple, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
+from icon4py.model.common.physics.stencils import (
+    compute_hydrostatic_pressure,
+    compute_surface_pressure,
+    compute_thermodynamic_tendencies,
+    compute_virtual_temperature_and_temperature,
+    update_exner_and_theta_v,
+)
 from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_states as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils
@@ -129,7 +129,9 @@ def test_diagnose_temperature(
     qs = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
     qg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
 
-    diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(backend)(
+    compute_virtual_temperature_and_temperature.compute_virtual_temperature_and_temperature.with_backend(
+        backend
+    )(
         qv=qv,
         qc=qc,
         qr=qr,
@@ -232,7 +234,7 @@ def test_diagnose_surface_pressure(
 
     cell_domain = h_grid.domain(dims.CellDim)
 
-    diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
+    compute_surface_pressure.compute_surface_pressure.with_backend(backend)(
         exner=exner,
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,
@@ -278,7 +280,7 @@ def test_diagnose_pressure(
 
     pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
 
-    diagnose_pressure.diagnose_pressure.with_backend(backend)(
+    compute_hydrostatic_pressure.compute_hydrostatic_pressure.with_backend(backend)(
         ddqz_z_full,
         virtual_temperature,
         surface_pressure,
@@ -356,7 +358,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
     end_cell_local = icon_grid.start_index(cell_domain(h_grid.Zone.END))
-    calculate_tendency.calculate_virtual_temperature_tendency.with_backend(backend)(
+    compute_thermodynamic_tendencies.compute_virtual_temperature_tendency.with_backend(backend)(
         dtime=dtime,
         qv=tracer_state.qv,
         qc=tracer_state.qc,
@@ -379,7 +381,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         + virtual_temperature_tendency.asnumpy() * dtime
     )
 
-    calculate_tendency.calculate_exner_tendency.with_backend(backend)(
+    compute_thermodynamic_tendencies.compute_exner_tendency.with_backend(backend)(
         dtime=dtime,
         virtual_temperature=diagnostic_state.virtual_temperature,
         virtual_temperature_tendency=virtual_temperature_tendency,
@@ -394,7 +396,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
 
     updated_exner = exner.asnumpy() + exner_tendency.asnumpy() * dtime
 
-    diagnose_surface_pressure.diagnose_surface_pressure.with_backend(backend)(
+    compute_surface_pressure.compute_surface_pressure.with_backend(backend)(
         gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
         gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         metrics_savepoint.ddqz_z_full(),
@@ -406,7 +408,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         offset_provider={},
     )
 
-    diagnose_pressure.diagnose_pressure.with_backend(backend)(
+    compute_hydrostatic_pressure.compute_hydrostatic_pressure.with_backend(backend)(
         metrics_savepoint.ddqz_z_full(),
         gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         diagnostic_state.surface_pressure,

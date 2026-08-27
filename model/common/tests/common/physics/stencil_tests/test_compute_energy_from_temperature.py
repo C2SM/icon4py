@@ -11,12 +11,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_energy_from_temperature import (
+from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.constants import PhysicsConstants
+from icon4py.model.common.grid import base
+from icon4py.model.common.physics.stencils.compute_energy_from_temperature import (
     compute_energy_from_temperature,
 )
-from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import base
-from icon4py.model.common.physics.thermodynamics import ThermodynamicConstants
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
@@ -27,12 +27,12 @@ def internal_energy_numpy(
     """Reference for 'internal_energy' (mo_aes_thermo.f90) with rho = dz = 1."""
     qtot = qliq + qice + qv
     cv = (
-        ThermodynamicConstants.cvd * (1.0 - qtot)
-        + ThermodynamicConstants.cvv * qv
-        + ThermodynamicConstants.clw * qliq
-        + ThermodynamicConstants.ci * qice
+        PhysicsConstants.cvd * (1.0 - qtot)
+        + PhysicsConstants.cvv * qv
+        + PhysicsConstants.cpl * qliq
+        + PhysicsConstants.cpi * qice
     )
-    return cv * t - qliq * ThermodynamicConstants.lvc - qice * ThermodynamicConstants.lsc
+    return cv * t - qliq * PhysicsConstants.lvc - qice * PhysicsConstants.lsc
 
 
 def energy_from_temperature_reference(

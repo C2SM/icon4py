@@ -15,8 +15,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_tempera
     compute_temperature_from_energy_and_tendency,
 )
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import base
-from icon4py.model.common.physics.thermodynamics import ThermodynamicConstants
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
@@ -27,12 +27,12 @@ def t_from_internal_energy_numpy(
     """Reference for 'T_from_internal_energy' (mo_aes_thermo.f90) with rho = dz = 1."""
     qtot = qliq + qice + qv
     cv = (
-        ThermodynamicConstants.cvd * (1.0 - qtot)
-        + ThermodynamicConstants.cvv * qv
-        + ThermodynamicConstants.clw * qliq
-        + ThermodynamicConstants.ci * qice
+        PhysicsConstants.cvd * (1.0 - qtot)
+        + PhysicsConstants.cvv * qv
+        + PhysicsConstants.cpl * qliq
+        + PhysicsConstants.cpi * qice
     )
-    return (u + (qliq * ThermodynamicConstants.lvc + qice * ThermodynamicConstants.lsc)) / cv
+    return (u + (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)) / cv
 
 
 def temperature_from_energy_reference(
