@@ -61,9 +61,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vertica
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_virtual_potential_temperature import (
     compute_virtual_potential_temperature,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vn_from_uv import (
-    compute_vn_from_uv,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.compute_vn_horizontal_stress_tendency import (
     compute_vn_horizontal_stress_tendency,
 )
@@ -139,6 +136,9 @@ from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpol
 )
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_with_boundaries_wp import (
     interpolate_cell_field_to_half_levels_with_boundaries_wp,
+)
+from icon4py.model.common.interpolation.stencils.interpolate_cell_vector_to_edge_normal import (
+    interpolate_cell_vector_to_edge_normal,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_with_boundaries_wp import (
     interpolate_edge_field_to_half_levels_with_boundaries_wp,
@@ -656,7 +656,7 @@ class Tmx:
         # all full levels
         self.compute_vn_from_uv = setup_program(
             backend=backend,
-            program=compute_vn_from_uv,
+            program=interpolate_cell_vector_to_edge_normal,
             constant_args={
                 "primal_normal_cell_x": self._edge_params.primal_normal_cell[0],
                 "primal_normal_cell_y": self._edge_params.primal_normal_cell[1],
@@ -1816,9 +1816,9 @@ class Tmx:
         log.debug("communication of input u, v (cells): end")
 
         self.compute_vn_from_uv(
-            u=input_state.u,
-            v=input_state.v,
-            vn=diagnostic_state.vn,
+            vector_x=input_state.u,
+            vector_y=input_state.v,
+            normal_component=diagnostic_state.vn,
         )
 
         # S2: CALL sync_patch_array(SYNC_E, patch, vn) in mo_vdf_atmo.f90
