@@ -115,27 +115,6 @@ def verify_full_run_fields(
         )
 
 
-def assert_scaled_allclose(
-    actual: np.ndarray,
-    desired: np.ndarray,
-    *,
-    atol_scale: float = 1.0e-12,
-    rtol: float = 1.0e-10,
-    err_msg: str = "",
-) -> None:
-    """Compare two fields with an absolute floor scaled to the field magnitude.
-
-    A plain relative tolerance blows up on near-zero entries, and a fixed
-    absolute one has to be retuned per field; deriving the floor from
-    ``max(|desired|)`` keeps one tolerance meaningful across fields whose
-    magnitudes span many orders (wgtfac ~ 1, geopot_agl_ifc ~ 1e5).
-    """
-    scale = float(np.max(np.abs(desired))) if desired.size else 0.0
-    test_utils.assert_dallclose(
-        actual, desired, rtol=rtol, atol=atol_scale * max(scale, 1.0), err_msg=err_msg
-    )
-
-
 def flip_back(field: gtx.Field) -> np.ndarray:
     """
     Reverse the K rows of a 3-row extrapolation coefficient field.

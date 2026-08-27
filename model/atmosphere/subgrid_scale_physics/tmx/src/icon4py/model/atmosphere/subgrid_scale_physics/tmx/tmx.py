@@ -82,9 +82,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_louis_scal
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.init_smagorinsky_mixing_length import (
     init_smagorinsky_mixing_length,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_cell_to_half_levels import (
-    interpolate_cell_to_half_levels,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_inverse_density_to_edges import (
     interpolate_inverse_density_to_edges,
 )
@@ -99,9 +96,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_km_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_shear_to_half_level_cells import (
     interpolate_shear_to_half_level_cells,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_vn_to_half_levels_with_boundary import (
-    interpolate_vn_to_half_levels_with_boundary,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.modify_w_diffusion_matrix_boundary import (
     modify_w_diffusion_matrix_boundary,
@@ -142,6 +136,12 @@ from icon4py.model.common.interpolation.stencils.compute_tangential_wind import 
 )
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
+)
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_with_boundaries_wp import (
+    interpolate_cell_field_to_half_levels_with_boundaries_wp,
+)
+from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_with_boundaries_wp import (
+    interpolate_edge_field_to_half_levels_with_boundaries_wp,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp import (
     interpolate_to_cell_center_vp,
@@ -611,7 +611,7 @@ class Tmx:
         # all half levels (top and bottom rows are extrapolated)
         self.interpolate_cell_to_half_levels = setup_program(
             backend=backend,
-            program=interpolate_cell_to_half_levels,
+            program=interpolate_cell_field_to_half_levels_with_boundaries_wp,
             constant_args={
                 "wgtfac_c": self._metric_state.wgtfac_c,
                 "wgtfacq1_c_1": wgtfacq1_c[0],
@@ -729,7 +729,7 @@ class Tmx:
         # halo lines; the extra halo rows are unused boundary values anyway).
         self.interpolate_vn_to_half_levels_with_boundary = setup_program(
             backend=backend,
-            program=interpolate_vn_to_half_levels_with_boundary,
+            program=interpolate_edge_field_to_half_levels_with_boundaries_wp,
             constant_args={
                 "wgtfac_e": self._metric_state.wgtfac_e,
                 "wgtfacq1_e_1": wgtfacq1_e[0],
@@ -1851,8 +1851,8 @@ class Tmx:
         log.debug("communication of w_vert, u_vert, v_vert (vertices): end")
 
         self.interpolate_vn_to_half_levels_with_boundary(
-            vn=diagnostic_state.vn,
-            vn_ie=diagnostic_state.vn_ie,
+            interpolant=diagnostic_state.vn,
+            interpolation=diagnostic_state.vn_ie,
         )
         self.compute_tangential_wind_wp(
             vn=diagnostic_state.vn_ie,

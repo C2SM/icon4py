@@ -5,21 +5,23 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.interpolate_cell_to_half_levels import (
-    interpolate_cell_to_half_levels,
-)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_with_boundaries_wp import (
+    interpolate_cell_field_to_half_levels_with_boundaries_wp,
+)
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-def interpolate_cell_to_half_levels_numpy(
+def interpolate_cell_field_to_half_levels_with_boundaries_numpy(
     interpolant: np.ndarray,
     wgtfac_c: np.ndarray,
     *,
@@ -52,8 +54,8 @@ def interpolate_cell_to_half_levels_numpy(
     return interpolation
 
 
-class TestInterpolateCellToHalfLevels(stencil_tests.StencilTest):
-    PROGRAM = interpolate_cell_to_half_levels
+class TestInterpolateCellFieldToHalfLevelsWithBoundariesWp(stencil_tests.StencilTest):
+    PROGRAM = interpolate_cell_field_to_half_levels_with_boundaries_wp
     OUTPUTS = ("interpolation",)
 
     @stencil_tests.static_reference
@@ -68,9 +70,9 @@ class TestInterpolateCellToHalfLevels(stencil_tests.StencilTest):
         wgtfacq_c_1: np.ndarray,
         wgtfacq_c_2: np.ndarray,
         wgtfacq_c_3: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
-        interpolation = interpolate_cell_to_half_levels_numpy(
+        interpolation = interpolate_cell_field_to_half_levels_with_boundaries_numpy(
             interpolant,
             wgtfac_c,
             wgtfacq1_c_1=wgtfacq1_c_1,

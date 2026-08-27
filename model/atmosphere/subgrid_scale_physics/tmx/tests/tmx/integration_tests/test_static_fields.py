@@ -40,11 +40,11 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import topography_savepoint
 
 from ..fixtures import *  # noqa: F403
-from .utils import assert_scaled_allclose, construct_interpolation_state, construct_metric_state
+from .utils import construct_interpolation_state, construct_metric_state
 
 
 if TYPE_CHECKING:
@@ -64,13 +64,27 @@ def icon_grid(grid_savepoint, backend):
     )
 
 
-# icon4py's batched-LU RBF solve differs from ICON's Cholesky at round-off; the
-# sanctioned tolerances live in common's test_rbf_interpolation.py.
-_RBF_ATOL_SCALE = {
+# Largest deviation measured against the v08 archive, rounded up to one
+# significant digit. Fields not listed here are reproduced bit for bit.
+# The rbf_coeff_* floors are the widest: icon4py's batched-LU solve differs from
+# ICON's Cholesky at round-off (same effect as the sanctioned tolerances in
+# common's test_rbf_interpolation.py).
+_ATOL = {
+    "inv_ddqz_z_full_e": 5.0e-18,
+    "inv_ddqz_z_half_e": 5.0e-18,
+    "inv_ddqz_z_half_v": 1.0e-17,
+    "wgtfac_e": 2.0e-16,
+    "wgtfacq_e": 4.0e-16,
+    "wgtfacq1_e": 4.0e-16,
+    "geopot_agl_ifc": 5.0e-11,
+    "c_lin_e": 2.0e-16,
+    "e_bln_c_s": 6.0e-14,
+    "cells_aw_verts": 2.0e-16,
+    "rbf_coeff_v1": 3.0e-10,
+    "rbf_coeff_v2": 3.0e-10,
+    "rbf_coeff_e": 5.0e-13,
     "rbf_coeff_c1": 5.0e-9,
     "rbf_coeff_c2": 5.0e-9,
-    "rbf_coeff_v1": 2.0e-9,
-    "rbf_coeff_v2": 2.0e-9,
 }
 
 
@@ -153,17 +167,12 @@ def test_factory_static_states_match_savepoints(
         interpolation=interpolation_source
     )
 
-    for field in dataclasses.fields(metric_ref):
-        assert_scaled_allclose(
-            getattr(metric_actual, field.name).asnumpy(),
-            getattr(metric_ref, field.name).asnumpy(),
-            err_msg=field.name,
-        )
-
-    for field in dataclasses.fields(interp_ref):
-        assert_scaled_allclose(
-            getattr(interp_actual, field.name).asnumpy(),
-            getattr(interp_ref, field.name).asnumpy(),
-            atol_scale=_RBF_ATOL_SCALE.get(field.name, 1.0e-9),
-            err_msg=field.name,
-        )
+    for state_actual, state_ref in ((metric_actual, metric_ref), (interp_actual, interp_ref)):
+        for field in dataclasses.fields(state_ref):
+            test_utils.assert_dallclose(
+                getattr(state_actual, field.name).asnumpy(),
+                getattr(state_ref, field.name).asnumpy(),
+                rtol=1.0e-12,
+                atol=_ATOL.get(field.name, 0.0),
+                err_msg=field.name,
+            )

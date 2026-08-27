@@ -101,6 +101,76 @@ def difference_level_plus1_on_cells(
 
 
 @gtx.field_operator
+def extrapolate_quadratically_to_top_on_cells(
+    interpolant: fa.CellKField[wpfloat],
+    weight_0: fa.CellField[wpfloat],
+    weight_1: fa.CellField[wpfloat],
+    weight_2: fa.CellField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    """
+    Extrapolate quadratically to the top half level from the first three full levels.
+
+    ``weight_k`` multiplies the full level ``k``. Only valid at k == 0, where the
+    ``KDim + 1`` and ``KDim + 2`` shifts are in bounds.
+    """
+    return (
+        weight_0 * interpolant
+        + weight_1 * interpolant(dims.KDim + 1)
+        + weight_2 * interpolant(dims.KDim + 2)
+    )
+
+
+@gtx.field_operator
+def extrapolate_quadratically_to_top_on_edges(
+    interpolant: fa.EdgeKField[wpfloat],
+    weight_0: fa.EdgeField[wpfloat],
+    weight_1: fa.EdgeField[wpfloat],
+    weight_2: fa.EdgeField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
+    """Edge counterpart of :func:`extrapolate_quadratically_to_top_on_cells`."""
+    return (
+        weight_0 * interpolant
+        + weight_1 * interpolant(dims.KDim + 1)
+        + weight_2 * interpolant(dims.KDim + 2)
+    )
+
+
+@gtx.field_operator
+def extrapolate_quadratically_to_surface_on_cells(
+    interpolant: fa.CellKField[wpfloat],
+    weight_0: fa.CellField[wpfloat],
+    weight_1: fa.CellField[wpfloat],
+    weight_2: fa.CellField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    """
+    Extrapolate quadratically to the surface half level from the last three full levels.
+
+    ``weight_k`` multiplies the full level ``nlev - 1 - k``. Only valid at
+    k == nlev, where the ``KDim - 1`` to ``KDim - 3`` shifts are in bounds.
+    """
+    return (
+        weight_0 * interpolant(dims.KDim - 1)
+        + weight_1 * interpolant(dims.KDim - 2)
+        + weight_2 * interpolant(dims.KDim - 3)
+    )
+
+
+@gtx.field_operator
+def extrapolate_quadratically_to_surface_on_edges(
+    interpolant: fa.EdgeKField[wpfloat],
+    weight_0: fa.EdgeField[wpfloat],
+    weight_1: fa.EdgeField[wpfloat],
+    weight_2: fa.EdgeField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
+    """Edge counterpart of :func:`extrapolate_quadratically_to_surface_on_cells`."""
+    return (
+        weight_0 * interpolant(dims.KDim - 1)
+        + weight_1 * interpolant(dims.KDim - 2)
+        + weight_2 * interpolant(dims.KDim - 3)
+    )
+
+
+@gtx.field_operator
 def with_boundaries_on_half_levels_on_cells(
     top: fa.CellKField[wpfloat],
     interior: fa.CellKField[wpfloat],
