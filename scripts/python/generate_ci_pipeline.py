@@ -119,16 +119,26 @@ def _validate_tokens(name: str, tokens: list[str], valid: list[str]) -> None:
         sys.exit(1)
 
 
-def _resolve_filter(cli_value: str | None, env_var: str, *, default: list[str]) -> list[str]:
+def _resolve_filter(
+    cli_value: str | None,
+    env_var: str,
+    *,
+    all_values: list[str],
+    default: list[str] | None = None,
+) -> list[str]:
     """Resolve a filter value from CLI arg, env var, or built-in default.
 
     When *cli_value* is provided (including empty string) it takes
     precedence.  Otherwise the environment variable is checked,
     falling back to *default*.
 
-    The token ``all`` expands to the full *default* list.  It must not be
-    combined with other values.
+    The token ``all`` expands to *all_values*.  It must not be combined with
+    other values.  *default* applies when nothing is requested and defaults to
+    *all_values*; pass it explicitly where the two differ.
     """
+    if default is None:
+        default = all_values
+
     if cli_value is not None:
         tokens = _parse_list(cli_value)
     else:
@@ -146,7 +156,7 @@ def _resolve_filter(cli_value: str | None, env_var: str, *, default: list[str]) 
                 file=sys.stderr,
             )
             sys.exit(1)
-        return list(default)
+        return list(all_values)
 
     return tokens
 
@@ -205,9 +215,12 @@ def _run_nox_collection(
     pytest_args: list[str],
     env: dict[str, str],
     timeout: float,
-    precision: str = "double",
+    variables: dict[str, str],
 ) -> bool:
     """Run a nox session with --collect-only and return whether to keep the cell.
+
+    *variables* are the cell's CI job variables; they are exported so that
+    collection sees the same environment as the generated job.
 
     Returns True when nox exits 0 (the cell collected at least one runnable
     test). Returns False when nox exits 1 (the cell collected zero tests).
@@ -229,9 +242,8 @@ def _run_nox_collection(
     ]
     full_env = os.environ.copy()
     full_env.update(env)
-    # Set ICON4PY_FLOAT_PRECISION for single-precision test collection
-    if precision == "single":
-        full_env["ICON4PY_FLOAT_PRECISION"] = "single"
+    # Collect under the same job variables the generated job will run with.
+    full_env.update(variables)
     result = subprocess.run(
         cmd,
         capture_output=True,
@@ -279,7 +291,6 @@ class _MatrixCell:
     matrix: dict[str, str]
     session: str
     pytest_args: list[str]
-    precision: str = "double"
 
 
 def _model_cells(
@@ -423,7 +434,6 @@ def _add_precision_variants(cells: list[_MatrixCell], precisions: list[str]) -> 
                 cell,
                 job_name=f"{cell.job_name}_single_precision",
                 variables={**cell.variables, "ICON4PY_FLOAT_PRECISION": "single"},
-                precision="single",
             )
             result.append(new_cell)
 
@@ -455,7 +465,7 @@ def _collect_cells(cells: list[_MatrixCell]) -> tuple[list[_MatrixCell], list[_M
                 cell.pytest_args,
                 env,
                 _COLLECTION_TIMEOUT_SECONDS,
-                cell.precision,
+                cell.variables,
             ): i
             for i, cell in enumerate(cells)
         }
@@ -563,51 +573,51 @@ def _generate_child_pipeline(
     GitLab limits each ``parallel:matrix`` to 200 instances; callers must
     ensure the expanded matrix does not exceed this limit.
     """
-    requested_sessions = _resolve_filter(sessions, "SESSIONS", default=ALL_SESSIONS)
+    requested_sessions = _resolve_filter(sessions, "SESSIONS", all_values=ALL_SESSIONS)
     _validate_tokens("SESSIONS", requested_sessions, ALL_SESSIONS)
 
     requested_model_subsets = _resolve_filter(
-        model_subsets, "MODEL_SUBSETS", default=ALL_MODEL_SUBSETS
+        model_subsets, "MODEL_SUBSETS", all_values=ALL_MODEL_SUBSETS
     )
     _validate_tokens("MODEL_SUBSETS", requested_model_subsets, ALL_MODEL_SUBSETS)
 
     requested_model_subpackages = _resolve_filter(
         model_subpackages,
         "MODEL_SUBPACKAGES",
-        default=ALL_MODEL_SUBPACKAGES,
+        all_values=ALL_MODEL_SUBPACKAGES,
     )
     _validate_tokens("MODEL_SUBPACKAGES", requested_model_subpackages, ALL_MODEL_SUBPACKAGES)
 
     requested_model_mpi_subpackages = _resolve_filter(
         model_mpi_subpackages,
         "MODEL_MPI_SUBPACKAGES",
-        default=ALL_MODEL_MPI_SUBPACKAGES,
+        all_values=ALL_MODEL_MPI_SUBPACKAGES,
     )
     _validate_tokens(
         "MODEL_MPI_SUBPACKAGES", requested_model_mpi_subpackages, ALL_MODEL_MPI_SUBPACKAGES
     )
 
     requested_model_mpi_subsets = _resolve_filter(
-        model_mpi_subsets, "MODEL_MPI_SUBSETS", default=ALL_MODEL_MPI_SUBSETS
+        model_mpi_subsets, "MODEL_MPI_SUBSETS", all_values=ALL_MODEL_MPI_SUBSETS
     )
     _validate_tokens("MODEL_MPI_SUBSETS", requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS)
 
-    requested_backends = _resolve_filter(backends, "BACKENDS", default=ALL_BACKENDS)
+    requested_backends = _resolve_filter(backends, "BACKENDS", all_values=ALL_BACKENDS)
     _validate_tokens("BACKENDS", requested_backends, ALL_BACKENDS)
 
-    requested_levels = _resolve_filter(levels, "LEVELS", default=ALL_LEVELS)
+    requested_levels = _resolve_filter(levels, "LEVELS", all_values=ALL_LEVELS)
     _validate_tokens("LEVELS", requested_levels, ALL_LEVELS)
 
-    requested_grids = _resolve_filter(grids, "GRIDS", default=ALL_GRIDS)
+    requested_grids = _resolve_filter(grids, "GRIDS", all_values=ALL_GRIDS)
     _validate_tokens("GRIDS", requested_grids, ALL_GRIDS)
 
     requested_tools_subsets = _resolve_filter(
-        tools_subsets, "TOOLS_SUBSETS", default=ALL_TOOLS_SUBSETS
+        tools_subsets, "TOOLS_SUBSETS", all_values=ALL_TOOLS_SUBSETS
     )
     _validate_tokens("TOOLS_SUBSETS", requested_tools_subsets, ALL_TOOLS_SUBSETS)
 
     requested_precisions = _resolve_filter(
-        precision_variants, "PRECISION_VARIANTS", default=["double"]
+        precision_variants, "PRECISION_VARIANTS", all_values=ALL_PRECISIONS, default=["double"]
     )
     _validate_tokens("PRECISION_VARIANTS", requested_precisions, ALL_PRECISIONS)
 

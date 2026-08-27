@@ -28,6 +28,7 @@ jobs:
             * `BACKENDS`: backends
             * `GRIDS`: grids for stencil tests (`simple`, `icon_regional`, or `icon_global`)
             * `LEVELS`: testing level for non-stencil tests (`unit` or `integration`)
+            * `PRECISION_VARIANTS`: `double`, `single`, or `double:single`
 
             For each option, `all` can be used as a shorthand for all possible values of that variable, e.g. `LEVELS=all`.
 
