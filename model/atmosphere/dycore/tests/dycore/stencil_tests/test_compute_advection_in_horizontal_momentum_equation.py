@@ -20,7 +20,7 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
-from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
+from .test_interpolate_to_cell_center_vp import interpolate_to_cell_center_numpy
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
 
 

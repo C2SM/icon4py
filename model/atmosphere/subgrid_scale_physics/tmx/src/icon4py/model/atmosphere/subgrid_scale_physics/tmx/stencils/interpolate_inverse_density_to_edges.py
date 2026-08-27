@@ -11,6 +11,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
+from icon4py.model.common.math.operators import _compute_reciprocal_on_edge_k
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -24,8 +25,8 @@ def _interpolate_inverse_density_to_edges(
 
     Port of the 'density at edge' block of 'Compute_diffusion_hor_wind'
     (mo_vdf.f90): 'cells2edges_scalar' with the linear E2C weights 'c_lin_e'
-    (reuses the common field operator '_cell_2_edge_interpolation') followed by
-    the in-place reciprocal loop:
+    followed by the in-place reciprocal loop; both steps are the common field
+    operators '_cell_2_edge_interpolation' and '_compute_reciprocal_on_edge_k':
 
         inv_rhoe = 1 / sum_{c in E2C} c_lin_e * rho(c)
 
@@ -41,7 +42,8 @@ def _interpolate_inverse_density_to_edges(
     Returns:
         inverse air density at edge midpoints on full levels [m^3/kg]
     """
-    return wpfloat("1.0") / _cell_2_edge_interpolation(rho, c_lin_e)
+    rho_e = _cell_2_edge_interpolation(rho, c_lin_e)
+    return _compute_reciprocal_on_edge_k(input_field=rho_e)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

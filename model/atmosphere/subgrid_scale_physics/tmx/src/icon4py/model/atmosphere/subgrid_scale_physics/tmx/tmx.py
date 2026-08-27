@@ -143,8 +143,8 @@ from icon4py.model.common.interpolation.stencils.compute_tangential_wind import 
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
-    interpolate_to_cell_center,
+from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp import (
+    interpolate_to_cell_center_vp,
 )
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
@@ -796,9 +796,9 @@ class Tmx:
         # cells rl grf_bdywidth_c+1..min_rlcell_int-1, all full levels.
         # Note: the common stencil is vp-typed; tmx fields are wpfloat, so this
         # only works while vpfloat == wpfloat (i.e. without mixed precision).
-        self.interpolate_to_cell_center = setup_program(
+        self.interpolate_to_cell_center_vp = setup_program(
             backend=backend,
-            program=interpolate_to_cell_center,
+            program=interpolate_to_cell_center_vp,
             constant_args={"e_bln_c_s": self._interpolation_state.e_bln_c_s},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
@@ -1869,7 +1869,7 @@ class Tmx:
             shear=diagnostic_state.shear,
             div_stress=diagnostic_state.div_of_stress,
         )
-        self.interpolate_to_cell_center(
+        self.interpolate_to_cell_center_vp(
             interpolant=diagnostic_state.div_of_stress,
             interpolation=diagnostic_state.div_c,
         )

@@ -25,8 +25,6 @@ INV_DDQZ_Z_HALF: Final[str] = f"inverse_of_{DDQZ_Z_HALF}"
 INV_DDQZ_Z_FULL_E: Final[str] = f"inverse_of_{DDQZ_Z_FULL_E}"
 INV_DDQZ_Z_HALF_E: Final[str] = f"inverse_of_{DDQZ_Z_HALF}_on_edges"
 INV_DDQZ_Z_HALF_V: Final[str] = f"inverse_of_{DDQZ_Z_HALF}_on_vertices"
-WGTFACQ1_C: Final[str] = "weighting_factor_for_quadratic_extrapolation_to_cell_top"
-WGTFACQ1_E: Final[str] = "weighting_factor_for_quadratic_extrapolation_to_edge_top"
 GEOPOT_AGL_IFC: Final[str] = "geopotential_above_ground_on_interface_levels"
 SCALING_FACTOR_FOR_3D_DIVDAMP: Final[str] = "scaling_factor_for_3d_divergence_damping"
 RAYLEIGH_W: Final[str] = "rayleigh_w"
@@ -64,6 +62,8 @@ VERTOFFSET_GRADP: Final[str] = "vertoffset_gradp"
 COEFF_GRADEKIN: Final[str] = "coeff_gradekin"
 WGTFACQ_C: Final[str] = "weighting_factor_for_quadratic_interpolation_to_cell_surface"
 WGTFACQ_E: Final[str] = "weighting_factor_for_quadratic_interpolation_to_edge_center"
+WGTFACQ1_C: Final[str] = "weighting_factor_for_quadratic_extrapolation_to_cell_top"
+WGTFACQ1_E: Final[str] = "weighting_factor_for_quadratic_extrapolation_to_edge_top"
 MAXSLP: Final[str] = "maxslp"
 MAXHGTD: Final[str] = "maxhgtd"
 MAXSLP_AVG: Final[str] = "maxslp_avg"
@@ -373,7 +373,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     INV_DDQZ_Z_HALF: dict(
         standard_name=INV_DDQZ_Z_HALF,
-        long_name="inv_ddqz_z_half",
+        long_name="inverse functional determinant at half level",
         units="m-1",
         dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="inv_ddqz_z_half",
@@ -381,7 +381,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     INV_DDQZ_Z_FULL_E: dict(
         standard_name=INV_DDQZ_Z_FULL_E,
-        long_name="inv_ddqz_z_full_e",
+        long_name="inverse functional determinant at full level on edges",
         units="m-1",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="inv_ddqz_z_full_e",
@@ -389,7 +389,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     INV_DDQZ_Z_HALF_E: dict(
         standard_name=INV_DDQZ_Z_HALF_E,
-        long_name="inv_ddqz_z_half_e",
+        long_name="inverse functional determinant at half level on edges",
         units="m-1",
         dims=(dims.EdgeDim, dims.KHalfDim),
         icon_var_name="inv_ddqz_z_half_e",
@@ -397,7 +397,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     INV_DDQZ_Z_HALF_V: dict(
         standard_name=INV_DDQZ_Z_HALF_V,
-        long_name="inv_ddqz_z_half_v",
+        long_name="inverse functional determinant at half level on vertices",
         units="m-1",
         dims=(dims.VertexDim, dims.KHalfDim),
         icon_var_name="inv_ddqz_z_half_v",

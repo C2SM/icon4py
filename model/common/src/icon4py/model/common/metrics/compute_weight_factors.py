@@ -8,7 +8,7 @@
 
 import gt4py.next as gtx
 
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.math.vertical_operations import with_boundaries_on_half_levels_on_cells
 from icon4py.model.common.type_alias import wpfloat
@@ -183,58 +183,3 @@ def compute_wgtfacq1_e(
     wgtfacq1_e = array_ns.sum(c_lin_e[:, :, array_ns.newaxis] * wgtfacq1_c[e2c], axis=1)
     exchange.exchange(dims.EdgeDim, wgtfacq1_e, stream=decomposition.BLOCK)
     return wgtfacq1_e
-
-
-def compute_inv_ddqz_z_half(ddqz_z_half: data_alloc.NDArray) -> data_alloc.NDArray:
-    """Element-wise inverse of ``ddqz_z_half`` (cells, half levels)."""
-    return 1.0 / ddqz_z_half
-
-
-def compute_inv_ddqz_z_full_e(ddqz_z_full_e: data_alloc.NDArray) -> data_alloc.NDArray:
-    """Element-wise inverse of ``ddqz_z_full_e`` (edges, full levels)."""
-    return 1.0 / ddqz_z_full_e
-
-
-def compute_inv_ddqz_z_half_e(
-    *,
-    e2c: data_alloc.NDArray,
-    inv_ddqz_z_half: data_alloc.NDArray,
-    c_lin_e: data_alloc.NDArray,
-    exchange: decomposition.ExchangeRuntime,
-) -> data_alloc.NDArray:
-    """Interpolate ``inv_ddqz_z_half`` from cells to edges (``c_lin_e`` weights).
-
-    Note: the *inverse* is interpolated (matching ICON), not the inverse of the
-    interpolated thickness. Skip-value neighbors carry zero ``c_lin_e`` weight.
-    """
-    array_ns = data_alloc.array_namespace(e2c)
-    result = array_ns.sum(c_lin_e[:, :, array_ns.newaxis] * inv_ddqz_z_half[e2c], axis=1)
-    exchange.exchange(dims.EdgeDim, result, stream=decomposition.BLOCK)
-    return result
-
-
-def compute_inv_ddqz_z_half_v(
-    *,
-    v2c: data_alloc.NDArray,
-    inv_ddqz_z_half: data_alloc.NDArray,
-    cells_aw_verts: data_alloc.NDArray,
-    exchange: decomposition.ExchangeRuntime,
-) -> data_alloc.NDArray:
-    """Interpolate ``inv_ddqz_z_half`` from cells to vertices (area weighting).
-
-    Note: the *inverse* is interpolated (matching ICON), not the inverse of the
-    interpolated thickness.
-    """
-    array_ns = data_alloc.array_namespace(v2c)
-    result = array_ns.sum(cells_aw_verts[:, :, array_ns.newaxis] * inv_ddqz_z_half[v2c], axis=1)
-    exchange.exchange(dims.VertexDim, result, stream=decomposition.BLOCK)
-    return result
-
-
-def compute_geopot_agl_ifc(z_ifc: data_alloc.NDArray) -> data_alloc.NDArray:
-    """Geopotential above ground level at cell interface levels [m2 s-2].
-
-    ``grav * (z_ifc - z_sfc)`` with the surface height taken from the bottom
-    interface row (``z_ifc[:, -1]``).
-    """
-    return constants.GRAV * (z_ifc - z_ifc[:, -1:])

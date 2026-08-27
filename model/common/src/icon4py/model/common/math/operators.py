@@ -59,6 +59,14 @@ def _compute_reciprocal_on_cell_k(
 
 
 @gtx.field_operator
+def _compute_reciprocal_on_edge_k(
+    input_field: fa.EdgeKField[ta.wpfloat],
+) -> fa.EdgeKField[ta.wpfloat]:
+    """Compute the elementwise reciprocal ``1 / input_field``."""
+    return wpfloat("1.0") / input_field
+
+
+@gtx.field_operator
 def _subtract_cell_field_on_cell_k(
     minuend: fa.CellKField[ta.wpfloat],
     subtrahend_cell: fa.CellField[ta.wpfloat],

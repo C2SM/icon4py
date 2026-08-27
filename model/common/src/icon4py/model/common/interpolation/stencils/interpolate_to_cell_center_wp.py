@@ -1,0 +1,48 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+import gt4py.next as gtx
+from gt4py.next import neighbor_sum
+
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2E
+from icon4py.model.common.type_alias import wpfloat
+
+
+@gtx.field_operator
+def _interpolate_to_cell_center_wp(
+    interpolant: fa.EdgeKField[wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
+) -> fa.CellKField[wpfloat]:
+    """Interpolate an edge field to the cell centers with the bilinear C2E weights.
+
+    Working-precision variant; the reduced-precision one lives in
+    :mod:`interpolate_to_cell_center_vp`.
+    """
+    return neighbor_sum(e_bln_c_s * interpolant(C2E), axis=dims.C2EDim)
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def interpolate_to_cell_center_wp(
+    interpolant: fa.EdgeKField[wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
+    interpolation: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _interpolate_to_cell_center_wp(
+        interpolant=interpolant,
+        e_bln_c_s=e_bln_c_s,
+        out=interpolation,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
