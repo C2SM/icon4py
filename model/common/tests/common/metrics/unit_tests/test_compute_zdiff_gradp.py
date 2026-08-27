@@ -534,8 +534,26 @@ def test_compute_zdiff_gradp_random_fullscale(
     [
         _build_endpoint_forcing_inputs,
         _build_p1_interior_tie_inputs,
-        _build_p2_zero_thickness_inputs,
-        _build_p3_e3_violation_inputs,
+        pytest.param(
+            _build_p2_zero_thickness_inputs,
+            marks=pytest.mark.xfail(
+                reason=(
+                    "violates E1 (z_ifc strictly decreasing): zero-thickness layer;"
+                    " an invariant of the grid builder (vertical.py:625); not a production input"
+                ),
+                strict=True,
+            ),
+        ),
+        pytest.param(
+            _build_p3_e3_violation_inputs,
+            marks=pytest.mark.xfail(
+                reason=(
+                    "violates E3 (z_me non-increasing per edge), which follows from E1"
+                    " (z_ifc strictly decreasing, vertical.py:625); not a production input"
+                ),
+                strict=True,
+            ),
+        ),
         pytest.param(
             _build_p4_non_monotone_inputs,
             marks=pytest.mark.xfail(

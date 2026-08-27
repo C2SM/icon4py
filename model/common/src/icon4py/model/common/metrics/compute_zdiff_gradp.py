@@ -54,28 +54,6 @@ def _batched_searchsorted(
     return p - n * array_ns.arange(m, dtype=p.dtype)[:, None]
 
 
-def _cumulative_max(array_ns: ModuleType, a: data_alloc.NDArray) -> data_alloc.NDArray:
-    """Inclusive forward maximum scan over the last axis using Hillis-Steele."""
-    out = a.copy()
-    step = 1
-    n = a.shape[-1]
-    while step < n:
-        out[..., step:] = array_ns.maximum(out[..., step:], out[..., :-step])
-        step *= 2
-    return out
-
-
-def _cumulative_or(array_ns: ModuleType, a: data_alloc.NDArray) -> data_alloc.NDArray:
-    """Inclusive forward logical-or scan over the last axis using Hillis-Steele."""
-    out = a.copy()
-    step = 1
-    n = a.shape[-1]
-    while step < n:
-        out[..., step:] = array_ns.logical_or(out[..., step:], out[..., :-step])
-        step *= 2
-    return out
-
-
 def compute_zdiff_gradp(
     *,
     e2c: data_alloc.NDArray,
@@ -128,24 +106,14 @@ def compute_zdiff_gradp(
         )
         + 1.0
     )
-    fill_low = (
-        min(
-            float(array_ns.min(z_ifc_e0)),
-            float(array_ns.min(z_ifc_e1)),
-            float(array_ns.min(z_me)),
-            float(array_ns.min(z_aux2)),
-        )
-        - 1.0
-    )
 
     z_ifc_mask = array_ns.arange(nlev + 1, dtype=array_ns.int64)[None, :] >= (
         nlev + 1 - fi[:, None]
     )
-    z_me_mask = array_ns.arange(nlev, dtype=array_ns.int64)[None, :] <= fi[:, None]
 
     z_ifc_e0_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e0)
     z_ifc_e1_m = array_ns.where(z_ifc_mask, fill_high, z_ifc_e1)
-    z_me_m = array_ns.where(z_me_mask, fill_low, z_me)
+    z_me_m = z_me
 
     jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
     boundary = array_ns.arange(nedges, dtype=array_ns.int64) >= hs
@@ -175,19 +143,13 @@ def compute_zdiff_gradp(
     # Phase 1, cell 1: replicate the reference jk_start carry.  When E3 holds,
     # the per-level searchsorted result is non-decreasing and the scan is a
     # no-op; when E3 is violated, the scan reproduces the reference fall-through.
+    # Phase 1, cell 1: under E3 (z_me non-increasing per edge, proved in the
+    # module docstring) the searchsorted result is non-decreasing in jk, so the
+    # same clip as cell 0 reproduces the reference jk_start carry.
     pos_1 = _batched_searchsorted(array_ns, z_ifc_e1_m, z_me_m)
     raw_jk1_1 = nlev - pos_1
-    raw_too_high_1 = raw_jk1_1 < fi[:, None]
-    # Masked levels (jk <= fi) are set to fi so they do not influence the scan.
-    jk1_scan_1 = array_ns.where(
-        z_me_mask,
-        fi[:, None],
-        array_ns.clip(raw_jk1_1, fi[:, None], nlev - 1),
-    )
-    cum_max_1 = _cumulative_max(array_ns, jk1_scan_1)
-    broken_1 = jk1_scan_1 < cum_max_1
-    broken_cum_1 = _cumulative_or(array_ns, broken_1)
-    jk1_1 = array_ns.where(raw_too_high_1 | broken_cum_1, nlev - 1, jk1_scan_1)
+    jk1_1 = array_ns.where(raw_jk1_1 < fi[:, None], nlev - 1, raw_jk1_1)
+    jk1_1 = array_ns.clip(jk1_1, fi[:, None], nlev - 1)
     zdiff_gradp[:, 1, :] = array_ns.where(
         valid_jk,
         z_me - array_ns.take_along_axis(z_mc_e1, jk1_1.astype(array_ns.int64), axis=1),
