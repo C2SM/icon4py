@@ -30,10 +30,15 @@ def test_registered_stencil_returns_its_gate(monkeypatch: pytest.MonkeyPatch) ->
     assert gate_registry.gate_for("compute_turbulent_length_scale") is gate
 
 
-def test_registry_contains_only_gates() -> None:
-    for name, gate in gate_registry.GATES.items():
-        assert isinstance(name, str)
-        assert isinstance(gate, (gate_registry.Exact, gate_registry.Tol))
+def test_registry_starts_empty() -> None:
+    """No stencil has landed yet, so any entry here would be one nobody measured.
+
+    The type contract of an entry is exercised by 'test_registered_stencil_returns_its_gate' and
+    by the 'Exact'/'Tol' tests below; looping over 'GATES' to check it would assert nothing while
+    the registry is empty. When the first stencil lands this assertion has to be replaced, which
+    is the review step the registry exists to force (port spec D11).
+    """
+    assert gate_registry.GATES == {}
 
 
 def test_exact_is_frozen() -> None:

@@ -15,11 +15,21 @@ a namelist. Every default is the compiled-in default of mo_turbdiff_config.f90.
 Carrying parameters the implementation refuses is deliberate. The granule interface is the
 contract and has to be expressible from Fortran, C and Python alike, so it accepts anything ICON
 can be configured to do; `FROZEN_SWITCHES` is where the implementation says which of those
-formulations were ported (port spec D5/D6). Twenty-two switches select alternatives that no
-configuration under 'icon/run/' uses -- verified by grep, not assumed -- and are refused with a
-'NotImplementedError' that names the one supported value, says what it means, and points at the
-Fortran scheme. Six further switches do vary operationally across the DWD and MeteoSwiss setups
-and are supported over the range those setups need.
+formulations were ported (port spec D5/D6). Twenty-nine switches select alternatives that were
+not ported and are refused with a 'NotImplementedError' that names the one supported value, says
+what it means, and points at the Fortran scheme. Eight more do vary operationally across the DWD
+and MeteoSwiss setups -- 'itype_sher', 'icldm_turb', 'imode_tkesso', 'imode_charpar',
+'frcsmot', 'a_hshr', 'ltkesso' and 'ltkeshs' -- and are supported over the range those setups
+need. Which values occur was verified by grepping all 648 configurations under 'icon/run/',
+not assumed.
+
+Every other formulation switch is accounted for too, because what D6 rules out is silence, not
+acceptance. Eight of them -- 'imode_pat_len', 'imode_snowsmot', 'lconst_z0', 'ldiff_qi',
+'ldiff_qs', 'loutsso', 'loutnst' and 'loutbms' -- are accepted at any value because no statement
+of the ported scheme reads them: each is either consumed by ICON code that is out of scope (port
+spec D1: port the scheme, not the interface) and reaches the granule only through a field the
+caller has already filled, or gates an output argument the ICON interfaces never pass. The doc
+comment of each field names the line that consumes it.
 """
 
 from __future__ import annotations
@@ -71,8 +81,10 @@ class FrozenSwitch:
 
 #: The reject list: switches frozen at their compiled-in default. The trailing comment of each
 #: entry is the declaration in 'icon/src/configure_model/mo_turbdiff_config.f90' the default and
-#: the meaning were read from. None of these is set in any of the 100+ configurations under
-#: 'icon/run/', and all but eight are not even reachable from 'turbdiff_nml'.
+#: the meaning were read from. Twelve are reachable from 'turbdiff_nml' (mo_turbdiff_nml.f90:
+#: 56-71); the other seventeen can only change by editing Fortran. Across all 648 configurations
+#: under 'icon/run/' only three settings differ from a value frozen here -- 'imode_frcsmot = 0',
+#: 'icldm_tran = -1' and 'lfreeslip = .TRUE.' -- and the entries below record where.
 FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
     FrozenSwitch("imode_turb", 1, "prognostic TKE equation"),  # :299
     FrozenSwitch("imode_tran", 0, "diagnostic TKE equation in the transfer scheme"),  # :298
@@ -143,6 +155,30 @@ FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
         "separated horizontal shear with a Richardson-number dependent length-scale correction "
         "and the trace constraint on the 2D strain tensor",
     ),  # :339
+    #: The only other value under 'icon/run/' is 0 in 'checksuite.nwp/
+    #: nwpexp.run_ICON_03_R19B7N8-ID2_ID1_lam', where 'frcsmot = 0.' switches the smoothing off
+    #: altogether, so the setting is inert there. That configuration is refused anyway, on its
+    #: 'imode_tkesso = 3'.
+    FrozenSwitch(
+        "imode_frcsmot",
+        2,
+        "vertical smoothing of the TKE forcing terms confined to the tropics by 'trop_mask'",
+    ),  # :140
+    #: The only other value under 'icon/run/' is -1 in 'checksuite.nwp/
+    #: nwpexp.run_ICON_02_R2B13_lam', which sets 'icldm_turb = -1' in the same breath and is
+    #: therefore already refused by the supported range of 'icldm_turb'.
+    FrozenSwitch(
+        "icldm_tran",
+        2,
+        "turbulent sub-grid condensation considered in the transfer scheme as well, as for "
+        "'icldm_turb = 2'",
+    ),  # :303
+    FrozenSwitch(
+        "itype_2m_diag",
+        1,
+        "2 m temperature and dew point diagnosed over the fictive roughness of a SYNOP lawn, "
+        "from a purely logarithmic profile",
+    ),  # :353
     FrozenSwitch(
         "lexpcor",
         False,
@@ -158,6 +194,27 @@ FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
         "lcirflx", False, "no non-turbulent fluxes from near-surface circulations"
     ),  # :281
     FrozenSwitch("ltkecon", False, "no convective buoyancy production in the TKE equation"),  # :266
+    FrozenSwitch(
+        "ltkenst", True, "production by near-surface thermals kept in the TKE equation"
+    ),  # :268
+    FrozenSwitch(
+        "loutshs",
+        True,
+        "separated horizontal shear production written to the 'tket_hshr' output",
+    ),  # :271
+    FrozenSwitch(
+        "lsflcnd",
+        True,
+        "surface flux density used as the lower boundary condition of the vertical diffusion, "
+        "rather than a surface concentration",
+    ),  # :280
+    #: Set '.TRUE.' by two idealized configurations, 'exp.exclaim_nh_weisman_klemp_sb' and
+    #: 'checksuite.nwp/nwpexp.run_ICON_02_R2B13_lam'; both are refused. Free slip is a
+    #: formulation of its own -- it zeroes the surface momentum flux (turb_utilities.f90:2492)
+    #: and replaces the near-surface diagnostics (turb_transfer.f90:1992,:2097) -- not a tuning.
+    FrozenSwitch(
+        "lfreeslip", False, "no free-slip lower boundary; the surface stays coupled"
+    ),  # :284
     #: Not a namelist switch and not a member of 't_turbdiff_config': a dummy argument of
     #: 'turbdiff' (turb_diffusion.f90:439) that ICON hardcodes to .FALSE. at both call sites,
     #: mo_nwp_turbdiff_interface.f90:584 and mo_nwp_phy_init.f90:1732, "not yet arranged for ICON".
@@ -254,7 +311,10 @@ class TurbulenceConfig:
     c_stm: float = 0.0
     #: Exponent yielding the effective surface area.
     e_surf: float = 1.0
-    #: Apply a horizontally homogeneous roughness length (idealized testcases only).
+    #: Apply a horizontally homogeneous roughness length (idealized testcases only). Read only
+    #: by 'mo_nwp_phy_init.f90:1450,:1872', which seeds the 'gz0' field the granule receives;
+    #: 'mo_nml_crosscheck.f90:426' only warns about it. No statement of the scheme tests it, so
+    #: it cannot change what the granule computes.
     lconst_z0: bool = False
     #: The horizontally homogeneous roughness length used if `lconst_z0` [m].
     const_z0: float = 0.001
@@ -306,7 +366,9 @@ class TurbulenceConfig:
 
     # 6. Switches (mo_turbdiff_config.f90:260-284)
 
-    #: Consider mechanical SSO-wake production in the TKE equation.
+    #: Consider mechanical SSO-wake production in the TKE equation. Both values are supported:
+    #: '.FALSE.' switches the SSO source term off, which ICON expresses by forcing
+    #: 'imode_tkesso = 0' (mo_turbdiff_nml.f90:158); `__post_init__` mirrors that assignment.
     ltkesso: bool = True
     #: Consider convective buoyancy production in the TKE equation.
     ltkecon: bool = False
@@ -314,13 +376,23 @@ class TurbulenceConfig:
     ltkeshs: bool = True
     #: Consider production by near-surface thermals in the TKE equation.
     ltkenst: bool = True
-    #: Consider mechanical SSO-wake production of TKE for output.
+    #: Consider mechanical SSO-wake production of TKE for output. Gates only the write of
+    #: 'tket_sso' (turb_diffusion.f90:956), which the ICON interfaces never pass, so 'loutmcsso'
+    #: is false either way and the switch cannot change what the granule computes.
     loutsso: bool = True
     #: Consider separated horizontal shear production of TKE for output.
     loutshs: bool = True
-    #: Consider production by near-surface thermals of TKE for output.
+    #: Consider production by near-surface thermals of TKE for output. Gates only the write of
+    #: 'tket_nstc' (turb_diffusion.f90:954), never passed either, so 'loutthcrc' is false and the
+    #: switch cannot change what the granule computes.
     loutnst: bool = False
-    #: Consider buoyancy and shear TKE production for additional output.
+    #: Consider buoyancy and shear TKE production for additional output. Gates the writes of
+    #: 'tket_buoy', 'tket_fshr' and 'tket_gshr' (turb_diffusion.f90:1684), none of which is
+    #: passed, and the fill of the scratch array 'ftm' (:1363). That fill is unobservable too:
+    #: 'ftm' is read at :1677 only under 'rsur_sher > 0', and then only at the one level the
+    #: 'ELSEIF' branch writes as well, and inside 'solve_turb_budgets'
+    #: (turb_utilities.f90:1285,:1459) only under 'lssintact', which is false while
+    #: 'imode_adshear' is frozen at 2. So it cannot change what the granule computes.
     loutbms: bool = False
     #: Consider minor turbulent sources in the enthalpy budget.
     ltmpcor: bool = False
@@ -332,9 +404,15 @@ class TurbulenceConfig:
     lsflcnd: bool = True
     #: Consider non-turbulent fluxes related to near-surface circulations.
     lcirflx: bool = False
-    #: Turbulent diffusion of cloud ice active.
+    #: Turbulent diffusion of cloud ice active. Read only by
+    #: 'mo_nwp_turbdiff_interface.f90:353', which decides whether 'qi' joins the 'ptr(:)' list
+    #: that reaches the granule as `TurbulenceInputState.tracers`. vertdiff diffuses the tracers
+    #: it is handed and never tests the switch, so it cannot change what the granule computes --
+    #: assembling the tracer list is the caller's job, the interface being out of scope (D1).
     ldiff_qi: bool = False
-    #: Turbulent diffusion of snow active.
+    #: Turbulent diffusion of snow active. As `ldiff_qi`, at
+    #: 'mo_nwp_turbdiff_interface.f90:386', and equally unable to change what the granule
+    #: computes.
     ldiff_qs: bool = False
     #: Free-slip lower boundary condition (idealized runs only).
     lfreeslip: bool = False
@@ -363,14 +441,18 @@ class TurbulenceConfig:
     imode_stbcalc: int = 1
     #: Type of the default condition at the lower boundary.
     ilow_def_cond: int = 2
-    #: Mode of determining the length scale of the surface patterns used for the circulation term.
+    #: Mode of determining the length scale of the surface patterns used for the circulation
+    #: term. Read only by 'mo_nwp_phy_init.f90:1570', which computes the 'l_pat' field the
+    #: granule receives, so it cannot change what the granule computes.
     imode_pat_len: int = 2
     #: Mode of calculating the separated horizontal shear, related to `ltkeshs` and `a_hshr`.
     imode_shshear: int = 2
     #: Mode of calculating the SSO source term for TKE production, related to `ltkesso`.
     #: Operationally 1 (DWD global) or 2.
     imode_tkesso: options.SsoTkeProductionType = options.SsoTkeProductionType.ORIGINAL
-    #: Mode of treating the aerodynamic surface smoothing by snow.
+    #: Mode of treating the aerodynamic surface smoothing by snow. Read only by
+    #: 'mo_nwp_turbtrans_interface.f90:336', which smooths the 'gz0_t' and 'sai_t' fields before
+    #: the call, so it cannot change what the granule computes.
     imode_snowsmot: int = 1
     #: Type of the 2m diagnostics for temperature and dewpoint, related to `z0m_dia`.
     itype_2m_diag: int = 1
@@ -398,6 +480,19 @@ class TurbulenceConfig:
             ("imode_charpar", options.CharnockParameterType),
         ):
             object.__setattr__(self, name, option(getattr(self, name)))
+
+        # Consistency rule of 'mo_turbdiff_nml.f90:158'. ICON derives 'imode_tkesso' from
+        # 'ltkesso' rather than rejecting the pair, because with the SSO source term off the mode
+        # is meaningless: 'turb_diffusion.f90:1573' reads 'imode_tkesso' only inside
+        # 'IF (ltkemcsso)'. Mirrored as the same assignment and not as a crosscheck, because
+        # 'ltkesso = .FALSE.' is a configuration ICON runs -- 'exp.exclaim_nh_weisman_klemp_sb'
+        # and 'checksuite.rcnl.dwd.de/exp.run_ICON-SCM_01_BOMEX.run' set it -- and refusing it
+        # would refuse a live setup. Omitting an additional TKE source term is not a formulation
+        # the port lacks: 'ltkecon' is frozen at '.FALSE.', so the same path is already the
+        # ported one for the convective term.
+        if not self.ltkesso:
+            object.__setattr__(self, "imode_tkesso", options.SsoTkeProductionType.OFF)
+
         self._validate()
 
     @classmethod
@@ -436,15 +531,20 @@ class TurbulenceConfig:
             ),
             "grid-scale and sub-grid condensation",
         )
-        _check_supported(
-            "imode_tkesso",
-            self.imode_tkesso,
-            (
-                options.SsoTkeProductionType.ORIGINAL,
-                options.SsoTkeProductionType.RICHARDSON_REDUCED,
-            ),
-            "the original and the Richardson-reduced SSO source term",
-        )
+        # Only meaningful while the SSO source term is on; '__post_init__' has already forced
+        # 'OFF' otherwise. So 'imode_tkesso = 0' is reachable only through that assignment, and
+        # writing it next to 'ltkesso = .TRUE.' -- a pair the Fortran accepts and then silently
+        # treats as no SSO term at all -- is refused instead of reproduced.
+        if self.ltkesso:
+            _check_supported(
+                "imode_tkesso",
+                self.imode_tkesso,
+                (
+                    options.SsoTkeProductionType.ORIGINAL,
+                    options.SsoTkeProductionType.RICHARDSON_REDUCED,
+                ),
+                "the original and the Richardson-reduced SSO source term",
+            )
         _check_supported(
             "imode_charpar",
             self.imode_charpar,

@@ -29,6 +29,7 @@ ModelSubpackagePath: TypeAlias = Literal[
     "atmosphere/dycore",
     "atmosphere/subgrid_scale_physics/microphysics",
     "atmosphere/subgrid_scale_physics/muphys",
+    "atmosphere/subgrid_scale_physics/turbulence",
     "common",
     "driver",
     "standalone_driver",

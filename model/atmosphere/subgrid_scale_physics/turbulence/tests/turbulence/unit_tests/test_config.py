@@ -16,6 +16,7 @@ refusal is anchored on, which are read from 'mo_turbdiff_config.f90'.
 """
 
 import dataclasses
+import inspect
 
 import pytest
 
@@ -45,18 +46,68 @@ EXPECTED_FROZEN_DEFAULTS = {
     "imode_nsf_wind": 1,  # :168
     "imode_stadlim": 2,  # :357
     "imode_shshear": 2,  # :339
+    "imode_frcsmot": 2,  # :140
+    "icldm_tran": 2,  # :303
+    "itype_2m_diag": 1,  # :353
     "lexpcor": False,  # :279
     "ltmpcor": False,  # :276
     "lcpfluc": False,  # :277
     "lcirflx": False,  # :281
     "ltkecon": False,  # :266
+    "ltkenst": True,  # :268
+    "loutshs": True,  # :271
+    "lsflcnd": True,  # :280
+    "lfreeslip": False,  # :284
     "l3dturb": False,  # not a namelist switch: hardcoded at mo_nwp_turbdiff_interface.f90:584
 }
+
+
+#: The switches no statement of the ported scheme reads, so the granule takes them at any value.
+#: Each is consumed by an ICON file that is out of scope (port spec D1) or gates an output
+#: argument the interfaces never pass; the doc comment of the field names the line. Listed here
+#: so that freezing one later has to be a deliberate edit in two places rather than a silent one.
+NO_BEARING_ON_THE_GRANULE = (
+    "imode_pat_len",
+    "imode_snowsmot",
+    "lconst_z0",
+    "ldiff_qi",
+    "ldiff_qs",
+    "loutsso",
+    "loutnst",
+    "loutbms",
+)
+
+
+#: The switches supported over a range rather than frozen: the six tabulated in port spec
+#: section 4.3, plus 'ltkesso', which 'mo_turbdiff_nml.f90:158' ties to 'imode_tkesso', and
+#: 'ltkeshs', which 'mo_nml_crosscheck.f90:432' ties to 'a_hshr'. Three configurations under
+#: 'icon/run/' set 'ltkeshs = .false.' with 'a_hshr = 0.', and two set 'ltkesso = .false.'.
+VARY_OPERATIONALLY = (
+    "itype_sher",
+    "icldm_turb",
+    "imode_tkesso",
+    "imode_charpar",
+    "frcsmot",
+    "a_hshr",
+    "ltkesso",
+    "ltkeshs",
+)
 
 
 def _off_default(value: int | bool) -> int | bool:
     """A value the frozen switch is not allowed to take."""
     return (not value) if isinstance(value, bool) else value + 1
+
+
+def _doc_comment(name: str) -> str:
+    """The '#:' block immediately above the declaration of a `TurbulenceConfig` field."""
+    lines = inspect.getsource(turbulence.TurbulenceConfig).splitlines()
+    (index,) = [i for i, line in enumerate(lines) if line.startswith(f"    {name}:")]
+    comment = []
+    while index > 0 and lines[index - 1].lstrip().startswith("#:"):
+        index -= 1
+        comment.insert(0, lines[index].lstrip()[2:].strip())
+    return " ".join(comment)
 
 
 # --- the reject list ------------------------------------------------------------------------
@@ -112,6 +163,42 @@ def test_every_frozen_switch_is_a_config_field() -> None:
     assert {switch.name for switch in turbulence.FROZEN_SWITCHES} <= fields
 
 
+@pytest.mark.parametrize("name", NO_BEARING_ON_THE_GRANULE)
+def test_switch_without_bearing_is_accepted_at_either_value(name: str) -> None:
+    default = getattr(turbulence.TurbulenceConfig(), name)
+    other = _off_default(default)
+    assert getattr(turbulence.TurbulenceConfig(**{name: other}), name) == other
+
+
+@pytest.mark.parametrize("name", NO_BEARING_ON_THE_GRANULE)
+def test_switch_without_bearing_says_why_in_its_doc_comment(name: str) -> None:
+    """D6 forbids silence, so a switch that is neither frozen nor range-checked must be argued.
+
+    The argument has two halves and both have to be there: which Fortran line consumes the switch,
+    and the conclusion that the granule cannot see it.
+    """
+    comment = _doc_comment(name)
+    assert ".f90:" in comment, f"{name}: no Fortran citation for the consuming line"
+    assert "change what the granule computes" in comment, f"{name}: no conclusion stated"
+
+
+def test_every_formulation_switch_is_accounted_for() -> None:
+    """Every switch of 'turbdiff_nml' is frozen, range-checked or argued to have no bearing.
+
+    The point of the reject list is that a formulation switch may not pass unremarked (port spec
+    D6); this is the test that notices when a new one does.
+    """
+    frozen = {switch.name for switch in turbulence.FROZEN_SWITCHES}
+    accounted = frozen | set(VARY_OPERATIONALLY) | set(NO_BEARING_ON_THE_GRANULE)
+    switches = {
+        field.name
+        for field in dataclasses.fields(turbulence.TurbulenceConfig)
+        if isinstance(field.default, bool)
+        or field.name.startswith(("imode_", "itype_", "icldm_", "ilow_"))
+    }
+    assert switches - accounted == set()
+
+
 # --- the switches that vary operationally ---------------------------------------------------
 
 
@@ -146,6 +233,34 @@ def test_accepts_operational_sso_tke_modes(value: int) -> None:
 def test_rejects_unported_sso_tke_modes(value: int) -> None:
     with pytest.raises(NotImplementedError, match="imode_tkesso"):
         turbulence.TurbulenceConfig(imode_tkesso=value)
+
+
+def test_switching_the_sso_source_term_off_forces_the_sso_mode_off() -> None:
+    """Reproduces the assignment at 'mo_turbdiff_nml.f90:158', which ICON makes silently."""
+    config = turbulence.TurbulenceConfig(ltkesso=False)
+    assert config.imode_tkesso is options.SsoTkeProductionType.OFF
+
+
+@pytest.mark.parametrize("value", [0, 1, 2, 3])
+def test_the_sso_mode_is_irrelevant_once_the_sso_source_term_is_off(value: int) -> None:
+    """ICON overwrites whatever was set, so no pair with 'ltkesso = .FALSE.' may be refused."""
+    config = turbulence.TurbulenceConfig(ltkesso=False, imode_tkesso=value)
+    assert config.imode_tkesso is options.SsoTkeProductionType.OFF
+
+
+def test_the_configuration_icon_cannot_produce_is_the_one_refused() -> None:
+    """'ltkesso = .TRUE.' with no SSO mode is a silent no-op in the Fortran; refuse it instead."""
+    with pytest.raises(NotImplementedError, match="imode_tkesso"):
+        turbulence.TurbulenceConfig(ltkesso=True, imode_tkesso=0)
+
+
+def test_the_sso_switch_survives_a_fortran_namelist_that_sets_both() -> None:
+    """The echo of 'mo_turbdiff_nml.f90' is written before line 158, so it shows the raw pair."""
+    config = turbulence.TurbulenceConfig.from_fortran_dict(
+        {"turbdiff_nml": {"ltkesso": False, "imode_tkesso": 2}}
+    )
+    assert config.ltkesso is False
+    assert config.imode_tkesso is options.SsoTkeProductionType.OFF
 
 
 @pytest.mark.parametrize("value", [2, 3])
