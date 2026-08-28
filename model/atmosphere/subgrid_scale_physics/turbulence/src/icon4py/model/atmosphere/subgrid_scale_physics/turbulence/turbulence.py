@@ -29,24 +29,189 @@ of the ported scheme reads them: each is either consumed by ICON code that is ou
 spec D1: port the scheme, not the interface) and reaches the granule only through a field the
 caller has already filled, or gates an output argument the ICON interfaces never pass. The doc
 comment of each field names the line that consumes it.
+
+`Turbulence` is the granule itself: it owns the working set and runs the ported stencils in the
+Fortran's order. Only the 'turbdiff' stage exists so far; see the class docstring.
 """
 
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Callable
 from typing import Any, Final
 
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import turbulence_options as options
-from icon4py.model.common import constants
+import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
+
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import (
+    turbulence_options as options,
+    turbulence_states as states,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_virtual_diffusion_increment_to_tke_profile import (
+    add_virtual_diffusion_increment_to_tke_profile,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_circulation_acceleration import (
+    compute_circulation_acceleration,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_cke_flux_at_main_levels import (
+    compute_cke_flux_at_main_levels,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_cke_flux_density import (
+    compute_cke_flux_density,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_conserved_variables_and_factors_at_main_levels import (
+    compute_conserved_variables_and_factors_at_main_levels,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_conserved_variables_and_factors_at_the_surface import (
+    compute_conserved_variables_and_factors_at_the_surface,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_coefficients_from_stability_lengths import (
+    compute_diffusion_coefficients_from_stability_lengths,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
+    compute_diffusion_inversion_factor,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_diffusion_coefficients import (
+    compute_effective_diffusion_coefficients,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_horizontal_shear_length_scale import (
+    compute_effective_horizontal_shear_length_scale,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_tke_diffusion_momentum import (
+    compute_explicit_tke_diffusion_momentum,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_tke_flux_density import (
+    compute_explicit_tke_flux_density,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_half_level_interpolation_weight import (
+    compute_half_level_interpolation_weight,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_horizontal_wind_including_the_zero_level import (
+    compute_horizontal_wind_including_the_zero_level,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_part_of_tke_diffusion_momentum import (
+    compute_implicit_part_of_tke_diffusion_momentum,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverse_layer_depth_and_tke_discretisation_momentum import (
+    compute_inverse_layer_depth_and_tke_discretisation_momentum,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverse_richardson_number_factor import (
+    compute_inverse_richardson_number_factor,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
+    compute_inverted_diffusion_momentum,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_layer_depth import (
+    compute_layer_depth,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_mechanical_forcing import (
+    compute_mechanical_forcing,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_saved_tke_profile import (
+    compute_saved_tke_profile,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_separated_horizontal_shear_tke_source import (
+    compute_separated_horizontal_shear_tke_source,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_sso_wake_energy_production import (
+    compute_sso_wake_energy_production,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths import (
+    compute_stability_lengths,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths_from_diffusion_coefficients import (
+    compute_stability_lengths_from_diffusion_coefficients,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_supersaturation_standard_deviation import (
+    compute_supersaturation_standard_deviation,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_transfer_ratios import (
+    compute_surface_transfer_ratios,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_thermal_forcing import (
+    compute_thermal_forcing,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_three_dimensional_shear_forcing import (
+    compute_three_dimensional_shear_forcing,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_tke_diffusion_right_hand_side import (
+    compute_tke_diffusion_right_hand_side,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_total_mechanical_forcing import (
+    compute_total_mechanical_forcing,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_length_scale import (
+    compute_turbulent_length_scale,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_velocity_scale import (
+    compute_turbulent_velocity_scale,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_velocity_scale_tendency import (
+    compute_turbulent_velocity_scale_tendency,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_uncorrected_horizontal_shear_length_scale import (
+    compute_uncorrected_horizontal_shear_length_scale,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_vertical_gradients_of_conserved_variables import (
+    compute_vertical_gradients_of_conserved_variables,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_virtual_tke_profile import (
+    compute_virtual_tke_profile,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.interpolate_supersaturation_deviation_to_main_levels import (
+    interpolate_supersaturation_deviation_to_main_levels,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.interpolate_variables_onto_half_levels import (
+    interpolate_variables_onto_half_levels,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.set_turbulent_velocity_scale_at_model_top import (
+    set_turbulent_velocity_scale_at_model_top,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_tke_diffusion_equation import (
+    solve_tke_diffusion_equation,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_part_of_tke_diffusion_momentum import (
+    subtract_implicit_part_of_tke_diffusion_momentum,
+)
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    model_backends,
+    model_options,
+    type_alias as ta,
+)
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 __all__ = [
     "FORTRAN_NAMELIST_GROUP",
     "FROZEN_SWITCHES",
+    "MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM",
+    "MOLECULAR_DIFFUSIVITY_FOR_SCALARS",
     "FrozenSwitch",
+    "Turbulence",
     "TurbulenceConfig",
     "TurbulenceParams",
 ]
+
+
+#: Kinematic viscosity of dry air, ICON's 'con_m' (mo_physical_constants.f90:115) [m2/s]. It and
+#: 'con_h' below are here rather than in 'icon4py.model.common.constants', which does not carry
+#: them; the section 3) and section 4) datatests each hold a copy for the same reason and should
+#: import these once a shared home is agreed.
+MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM: Final[float] = 1.50e-5
+
+#: Scalar conductivity of dry air, ICON's 'con_h' (mo_physical_constants.f90:116) [m2/s].
+MOLECULAR_DIFFUSIVITY_FOR_SCALARS: Final[float] = 2.20e-5
+
+#: Reciprocal of the gravitational acceleration [s2/m], ICON's 'edgrav'
+#: (mo_physical_constants.f90). The turbulent length scale is seeded with 'gz0 * edgrav'.
+_INVERSE_GRAVITY: Final[float] = 1.0 / constants.GRAV
+
+#: Height above which the implicit weight of the TKE diffusion is ramped up towards 'impl_s'
+#: (mo_nwp_phy_init.f90:781-795, :1541-1547) [m].
+_IMPLICIT_WEIGHT_RAMP_HEIGHT: Final[float] = 1500.0
 
 
 #: Group of the echoed ICON namelists that `TurbulenceConfig.from_fortran_dict` reads.
@@ -685,6 +850,1213 @@ class TurbulenceParams:
             object.__setattr__(self, name, value)
 
 
+class Turbulence:
+    """The NWP 1D turbulence granule: the ported stencils, wired up and run in Fortran order.
+
+    One instance owns one grid, one configuration and one working set. `run_turbdiff` executes
+    'SUBROUTINE turbdiff' (turb_diffusion.f90:281-2604); `run_turbtran` and `run_vertdiff` do
+    not exist yet -- see "What is not here" below.
+
+    NO 'lini' ANYWHERE. The Fortran threads 'iini'/'lini' through one entry point and branches
+    on it inside, which is how Fortran avoids duplicating a ninety-argument list. It is not the
+    same computation: the initialisation call of 'mo_nwp_phy_init.f90:1662' runs 'turbtran' on a
+    two-level slab ('ke=2, ke1=3'). On the call site this granule replaces,
+    'mo_nwp_turbdiff_interface.f90:582', 'iini' is the literal 0, so 'lini' is false by
+    construction and `run_turbdiff` is unconditional. If the cold start is ever needed it is a
+    method of its own, not a flag.
+
+    FOUR SECTIONS ARE NOT CALLED because they write nothing in any configuration this granule
+    accepts, which was measured over the whole 'nproma' slab at all four serialized dates and is
+    asserted by 'test_turbdiff_section_{1c,2b,5,7}.py':
+
+        1c  'IF (lini)' and 'IF (ltkeadapt)'   -- the cold start, and 'imode_tkemini == 2'
+        2b  the vertically resolved canopy     -- 'c_big'/'c_sml'/'r_air' absent, 'kcm = ke+1'
+        5   'IF (ltmpcor)' and 'IF (ldocirflx)' -- both frozen '.FALSE.' in `FROZEN_SWITCHES`
+        7   'IF (ldocirflx)'                    -- 'lcirflx', frozen '.FALSE.'
+
+    THE WORKING SET IS ALLOCATED ONCE, in `_allocate_local_fields`, which is where the Fortran's
+    per-call '!$ACC DATA' scaffolding disappears; it was measured at 8.7% of the scheme's GPU
+    cost (port spec 4.1).
+
+    LOCAL FIELDS ARE NAMED AFTER THE FORTRAN STORAGE THEY ARE, not after the quantity they hold,
+    because 'turbdiff' reuses six of its working arrays for unrelated quantities as it proceeds
+    and that reuse is load-bearing: section 9) hands the solver a row of 'frh' that section 6)
+    wrote and section 9) never touches, so a port that gave every quantity a fresh buffer would
+    quietly change the answer. The argument name at each call site says which role is meant, the
+    field name says which storage it lives in, and `_allocate_local_fields` carries the role
+    table -- the same discipline the savepoint reader uses
+    ('model/testing/serialbox.py::IconTurbdiffSectionSavepoint').
+
+    WHAT IS NOT HERE.
+
+    * `run_vertdiff` -- 'SUBROUTINE vertdiff' (turb_vertdiff.f90) has no ported stencils at all
+      (plan task 2.18). Nothing is stubbed for it on purpose: an empty method that returns
+      successfully is indistinguishable from a working one at the call site.
+    * `run` -- the composition 'turbtran -> turbdiff -> vertdiff' that the ICON interface makes.
+      It cannot be written before its two other stages exist.
+    * `run_turbtran` -- phase 3 of the plan.
+    """
+
+    def __init__(
+        self,
+        *,
+        grid: icon_grid.IconGrid,
+        config: TurbulenceConfig,
+        params: TurbulenceParams,
+        vertical_grid: v_grid.VerticalGrid,
+        metric_state: states.TurbulenceMetricState,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
+    ) -> None:
+        """Configure the granule and build its working set.
+
+        Args:
+            grid: The horizontal grid; supplies the cell count and the domain zones.
+            config: The turbulence configuration, already validated by its own '__post_init__'.
+            params: The closure constants derived from `config`.
+            vertical_grid: The vertical grid; 'vct_a' is what the implicit weight of the TKE
+                diffusion is built from, exactly as 'mo_nwp_phy_init.f90:1541-1547' builds it.
+            metric_state: The static geometry and horizontal masks.
+            backend: The GT4Py backend, or a descriptor of one.
+        """
+        self._grid = grid
+        self._vertical_grid = vertical_grid
+        self._config = config
+        self._params = params
+        self._metric_state = metric_state
+        self._backend = backend
+        self._allocator = model_backends.get_allocator(backend)
+        self._nlev = gtx.int32(grid.num_levels)
+
+        self._validate_the_configuration_the_stencils_can_express()
+        self._determine_derived_switches()
+        self._determine_horizontal_domains()
+        self._allocate_local_fields(self._allocator)
+        self._setup_turbdiff_programs()
+
+    # ------------------------------------------------------------------ configuration ---
+
+    def _validate_the_configuration_the_stencils_can_express(self) -> None:
+        """Refuse the configurations the ported stencils cannot represent.
+
+        `TurbulenceConfig` states which formulations the PORT supports; this states which of
+        those the assembled 'turbdiff' can actually run, which is narrower in five places. Each
+        of the five is a stencil that fuses a guarded Fortran block into an unguarded expression
+        -- correct only while the guard holds -- so the alternative is not a missing term but a
+        wrong number.
+        """
+        if (
+            self._config.itype_sher
+            is not options.ShearProductionType.VERTICAL_AND_VERTICAL_VELOCITY
+        ):
+            raise NotImplementedError(
+                f"Only itype_sher = 2 (mean shear including the vertical wind) is implemented in "
+                f"'run_turbdiff'; got {int(self._config.itype_sher)}. "
+                f"'compute_three_dimensional_shear_forcing' contains the "
+                f"'IF (itype_sher == 2)' block of turb_diffusion.f90:1330 unguarded."
+            )
+        if not self._config.ltkeshs:
+            raise NotImplementedError(
+                "Only ltkeshs = True (separated horizontal shear production) is implemented in "
+                "'run_turbdiff'; 'compute_total_mechanical_forcing' adds that term without a "
+                "guard (turb_diffusion.f90:1531-1536)."
+            )
+        if not self._config.ltkesso:
+            raise NotImplementedError(
+                "Only ltkesso = True (mechanical SSO-wake production) is implemented in "
+                "'run_turbdiff'; 'compute_total_mechanical_forcing' adds that term without a "
+                "guard (turb_diffusion.f90:1572-1596)."
+            )
+        if self._config.imode_tkesso is options.SsoTkeProductionType.ORIGINAL:
+            raise NotImplementedError(
+                "Only imode_tkesso = 2 or 3 (the Richardson-reduced SSO source term) is "
+                "implemented in 'run_turbdiff'; got 1. 'compute_total_mechanical_forcing' has "
+                "the Richardson factor of turb_diffusion.f90:1589 unguarded, and mode 1 "
+                "(:1587) omits it -- a factor of about 90 on the SSO contribution. "
+                "'TurbulenceConfig' accepts mode 1 because the granule interface is the "
+                "contract; the assembled stage cannot run it."
+            )
+        if self._config.c_diff <= 0.0:
+            raise NotImplementedError(
+                f"Only c_diff > 0 (the TKE diffusion runs) is implemented in 'run_turbdiff'; got "
+                f"{self._config.c_diff}. At c_diff = 0 'turbdiff' skips sections 6) and 8) to "
+                f"10) and zeroes 'tketens' instead (turb_diffusion.f90:2541), a branch the "
+                f"reference capture does not exercise."
+            )
+
+    def _determine_derived_switches(self) -> None:
+        """The host-side quantities 'turbdiff' derives from the namelist at :944-966.
+
+        'lcircterm' decides a PAIR of programs, not one: section 8)'s virtual TKE profile and
+        section 9)'s subtraction of it. Without the circulation term the Fortran aliases
+        'cur_prof' onto 'sav_prof' (:2390) and neither program runs -- there is no virtual
+        profile to build and none to remove. No stencil can enforce that, which is why the
+        choice is made once here and reaches section 9) as the field
+        '_current_virtual_profile' rather than as a second flag.
+        """
+        #: 'lcircterm' (:945, :959): the raw circulation term is an additional TKE source.
+        self._circulation_term_is_active = self._config.pat_len > 0.0 and self._config.ltkenst
+
+        #: 'c_diff_llim' (:2135-2139). Section 8) divides by the diffusion momentum section 6)
+        #: builds with this factor, so the factor is limited away from zero while that division
+        #: can happen; 'fakt' below undoes the limit again for the pure TKE diffusion.
+        self._tke_diffusion_factor = (
+            max(self._config.epsi, self._config.c_diff)
+            if self._circulation_term_is_active
+            else self._config.c_diff
+        )
+        #: 'fakt' (:2361), 'c_diff / c_diff_llim'.
+        self._tke_diffusion_limit_correction = self._config.c_diff / self._tke_diffusion_factor
+
+    def _determine_horizontal_domains(self) -> None:
+        """The column window 'turbdiff' computes, as ICON's interface chooses it.
+
+        'mo_nwp_turbdiff_interface.f90' calls with 'rl_start = grf_bdywidth_c + 1' and
+        'rl_end = min_rlcell_int', which is the nudging zone through the last prognostic cell.
+        Verified against the capture: the two indices are exactly 'ivstart' and 'ivend' of every
+        turbulence savepoint (2424 and 10700 for exp.mch_icon-ch2_small).
+        """
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+
+    # --------------------------------------------------------------------- working set ---
+
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
+        """Allocate the whole working set once, and derive what depends only on the grid.
+
+        THE ROLE TABLE. Six of these fields are one Fortran storage each and change meaning as
+        the routine proceeds; the argument name at the call site says which role is meant.
+
+            field         Fortran     roles, in order
+            ------------  ----------  ----------------------------------------------------------
+            _zaux_1       zaux(:,:,1) Exner factor on half levels (0)  -> 'upd_prof' (9)
+            _zaux_2       zaux(:,:,2) 'r_cpd' (0)                      -> 'sav_prof' (6)
+            _zaux_3       zaux(:,:,3) 'dQsat/dT' on half levels (0)    -> 'expl_mom' (6)
+            _zaux_4       zaux(:,:,4) 'g_tet_l' (0)                    -> 'impl_mom' (9)
+            _zaux_5       zaux(:,:,5) 'g_h2o' (0)                      -> 'invs_mom' (9)
+            _frh          frh         thermal forcing (1b) -> CKE flux density (6)
+                                      -> 'invs_fac' (9)
+            _frm          frm         mechanical forcing (1b, 2a)
+                                      -> CKE flux at main levels (6)
+            _hlp          hlp         interpolation weight (0) -> inverse layer depth (1a)
+                                      -> SSO wake production (2a) -> virtual TKE profile (8)
+            _dicke        dicke       layer depth (0) -> discretisation momentum (1a)
+            _len_scale    len_scale   turbulent master length scale (0)
+                                      -> right-hand side of the TKE solve (9)
+            _rcld         rcld        cloud cover on half levels (0) -> SDSS (3)
+
+        WHERE THE PORT NEEDS TWO FIELDS FOR ONE FORTRAN STORAGE. Three of the Fortran's
+        in-place rewrites read a NEIGHBOURING level of the array they write, and a GT4Py program
+        computes its whole domain from the values it is given, so in place is not the same
+        computation:
+
+        * 'zvari(:,:,1..5)' -- section 1a) replaces the quasi-conserved variables by their
+          vertical differences and reads level 'k-1' doing it. Hence '_conserved_*' and
+          '_gradient_*'.
+        * 'zvari(:,:,0)' -- section 3)'s circulation acceleration is pointwise, but keeping it
+          apart from the half-level pressure it overwrites costs one field and removes the
+          ordering constraint. Hence '_half_level_pressure' and '_circulation_acceleration'.
+        * the four quantities 'bound_level_interp' interpolates in place at :1066-1073, which
+          read main levels 'k-1' and 'k'. Hence '_*_on_main_levels' beside '_zaux_3', '_zaux_4',
+          '_zaux_5' and '_rcld'.
+
+        The one in-place rewrite the port KEEPS is section 9)'s
+        'subtract_implicit_part_of_tke_diffusion_momentum', which is pointwise and whose row
+        'nlev' must survive from section 6): see `run_turbdiff`.
+        """
+
+        def half() -> gtx.Field:
+            """A field on the 'nlev + 1' half levels."""
+            return data_alloc.zero_field(
+                self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            )
+
+        def main() -> gtx.Field:
+            """A field on the 'nlev' main levels."""
+            return data_alloc.zero_field(self._grid, dims.CellDim, dims.KDim, allocator=allocator)
+
+        def surface() -> gtx.Field:
+            """One value per column."""
+            return data_alloc.zero_field(self._grid, dims.CellDim, allocator=allocator)
+
+        # -- the quasi-conserved variables and their vertical gradients, 'zvari(:,:,1..5)'
+        self._conserved_zonal_wind = half()
+        self._conserved_meridional_wind = half()
+        self._conserved_liquid_water_potential_temperature = half()
+        self._conserved_total_water = half()
+        self._conserved_liquid_water = half()
+        self._gradient_zonal_wind = half()
+        self._gradient_meridional_wind = half()
+        self._gradient_liquid_water_potential_temperature = half()
+        self._gradient_total_water = half()
+        self._gradient_liquid_water = half()
+
+        # -- 'zvari(:,:,0)': half-level pressure, then the circulation acceleration
+        self._half_level_pressure = half()
+        self._circulation_acceleration = half()
+
+        # -- the thermodynamic factors at MAIN levels, which 'bound_level_interp' consumes.
+        # Allocated over the half levels because that is the shape of the Fortran storage they
+        # share with their interpolated selves; only rows 0..nlev-1 are ever written or read.
+        self._cloud_cover_on_main_levels = half()
+        self._dqsat_dt_on_main_levels = half()
+        self._buoyancy_factor_tet_l_on_main_levels = half()
+        self._buoyancy_factor_h2o_g_on_main_levels = half()
+
+        # -- the eleven reused storages (see the role table above)
+        self._zaux_1 = half()
+        self._zaux_2 = half()
+        self._zaux_3 = half()
+        self._zaux_4 = half()
+        self._zaux_5 = half()
+        self._frh = half()
+        self._frm = half()
+        self._hlp = half()
+        self._dicke = half()
+        self._len_scale = half()
+        self._rcld = half()
+
+        # -- single-role intermediates
+        #: 'ftm': the mechanical forcing by the mean flow alone. The Fortran keeps it in 'frm'
+        #: and only saves it under 'lssintact .OR. loutbms'; the port needs it as a field
+        #: because 'xri' is formed from it before the non-turbulent terms are added.
+        self._mean_shear_forcing = half()
+        #: 'xri' = 1/Ri**(2/3), main levels.
+        self._inverse_richardson_number_factor = main()
+        #: 'hor_scale', main levels.
+        self._effective_horizontal_shear_length_scale = main()
+        #: 'layr', one value per column.
+        self._uncorrected_horizontal_shear_length_scale = surface()
+        #: 'lays(:,1)' and 'lays(:,2)', the two surface transfer ratios.
+        self._surface_transfer_ratio_for_momentum = surface()
+        self._surface_transfer_ratio_for_scalars = surface()
+        #: The stability lengths section 2c) makes out of the diffusion coefficients and
+        #: section 3) replaces. In the Fortran both live in 'tkvm'/'tkvh'.
+        self._stability_length_for_momentum = half()
+        self._stability_length_for_scalars = half()
+        self._updated_stability_length_for_momentum = half()
+        self._updated_stability_length_for_scalars = half()
+        #: The diffusion coefficients as section 3) leaves them, before section 4)'s lower
+        #: limits. Also 'tkvm'/'tkvh' in the Fortran.
+        self._diffusion_coefficient_for_momentum = half()
+        self._diffusion_coefficient_for_scalars = half()
+        #: The explicit TKE flux density of section 9). The Fortran writes it into the
+        #: 'len_scale' storage and immediately overwrites it with the right-hand side, so it
+        #: reaches no savepoint and needs a field of its own here.
+        self._explicit_tke_flux_density = half()
+
+        # -- absolute-level slices, refilled by 'run_turbdiff' at the point in the sequence
+        # where the Fortran reads the row: see the '_extract_level' call sites there.
+        self._diffusion_coefficient_for_momentum_at_the_surface = surface()
+        self._diffusion_coefficient_for_scalars_at_the_surface = surface()
+        self._liquid_water_potential_temperature_above_the_surface = surface()
+        self._total_water_above_the_surface = surface()
+
+        # -- what depends only on the grid and the configuration
+        self._surface_height = surface()
+        self._surface_height.ndarray[...] = self._metric_state.hhl.ndarray[:, self._nlev]
+        self._surface_liquid_water = surface()  # 'liqs', zero at 'ilow_def_cond == 2'
+        self._horizontal_length_scale_limit = surface()
+        self._minimal_tke_forcing = surface()
+        self._compute_the_turb_setup_scales()
+        self._implicit_weight = self._build_the_implicit_weight(allocator)
+
+        #: Which profile section 9) diffuses. With the circulation term it is section 8)'s
+        #: virtual profile in the 'hlp' scratch; without it, 'turb_diffusion.f90:2390' points
+        #: 'cur_prof' at 'sav_prof' itself and section 8) does not run.
+        self._current_virtual_profile = (
+            self._hlp if self._circulation_term_is_active else self._zaux_2
+        )
+
+    def _compute_the_turb_setup_scales(self) -> None:
+        """'l_scal' and 'fc_min' of SUB 'turb_setup' (turb_utilities.f90:335-338).
+
+            l_scal(i) = MIN( z1d2*l_hori(i), tur_len )
+            fc_min(i) = (vel_min/MAX( l_hori(i), tur_len ))**2
+
+        'turb_setup' is not one of the numbered sections and is not ported as stencils, but
+        'turbdiff' reads both of these and they depend on nothing that changes with time --
+        'l_hori' is a metric field and the two parameters are namelist constants. So they are
+        derived once, here, in the array namespace of the backend rather than in a program.
+
+        The square is written as a product, as the Fortran's integer-exponent '**2' is: see the
+        package README on why 'x**2' is not 'x*x' on the GPU.
+        """
+        xp = data_alloc.import_array_ns(self._allocator)
+        l_hori = self._metric_state.l_hori.ndarray
+        self._horizontal_length_scale_limit.ndarray[...] = xp.minimum(
+            0.5 * l_hori, self._config.tur_len
+        )
+        velocity_scale = self._config.vel_min / xp.maximum(l_hori, self._config.tur_len)
+        self._minimal_tke_forcing.ndarray[...] = velocity_scale * velocity_scale
+
+    def _build_the_implicit_weight(self, allocator: gtx_typing.Allocator | None) -> gtx.Field:
+        """'tdc%impl_weight', the implicit weight of each flux level of the TKE diffusion.
+
+        Not a field of the turbulence scheme and not serialized: ICON fills it once at model
+        initialisation (mo_nwp_phy_init.f90:1541-1547) and never changes it, "using an over
+        implicit value (impl_s) near surface, reduced to in general slightly off-centered value
+        (impl_t) in about 1500 m height". Reproduced here from the same reference vertical
+        coordinate 'vct_a' that ICON takes 'k1500m' from (:781-795), on the host, because it is
+        a one-off over 'nlev' entries.
+        """
+        vct_a = self._vertical_grid.vct_a.asnumpy()
+        nlev = int(self._nlev)
+        ramp_level = 1
+        for level in range(nlev, 0, -1):  # Fortran 'DO jk = nlev,1,-1', one-based
+            if (
+                vct_a[level - 1] >= _IMPLICIT_WEIGHT_RAMP_HEIGHT
+                and vct_a[level] < _IMPLICIT_WEIGHT_RAMP_HEIGHT
+            ):
+                ramp_level = level
+        weight = [self._config.impl_t] * (nlev + 1)
+        for level in range(ramp_level + 1, nlev + 1):
+            weight[level - 1] = self._config.impl_t + (
+                self._config.impl_s - self._config.impl_t
+            ) * (level - ramp_level) / float(nlev - ramp_level)
+        weight[nlev] = self._config.impl_s
+        array_ns = data_alloc.import_array_ns(allocator)
+        return gtx.as_field(
+            (dims.KDim,), array_ns.asarray(weight, dtype=ta.wpfloat), allocator=allocator
+        )
+
+    # ------------------------------------------------------------------ program setup ---
+
+    def _program(
+        self,
+        program: gtx_typing.Program,
+        *,
+        constant_args: dict | None = None,
+        levels: tuple[int, int] | None = None,
+        shifted: bool = False,
+    ) -> Callable[..., None]:
+        """Bind one stencil to this granule's domain, its constants and its offset provider.
+
+        'setup_program' turns every scalar in 'constant_args' into a compile-time constant of
+        the generated code. THE ROW INDICES OF THE BOUNDARY-ROW PROGRAMS ARE DELIBERATELY NOT
+        AMONG THEM -- 'nlev' and 'uppermost_diffused_level' are passed at call time -- because
+        making one of those static while the domain bounds are static too miscompiles on
+        'dace_cpu': the concat_where replacement pass asks a one-dimensional producer for its
+        vertical offset and dies with
+
+            gt4py/next/program_processors/runners/dace/transformations/concat_where_mapper.py
+            :1043 in _replace_single_read: prod_offset = prod_offsets[dim][0]
+            dace/subsets.py:755 in __getitem__: IndexError: list index out of range
+
+        on the cell field that 'compute_vertical_gradients_of_conserved_variables' selects for
+        its surface row. Measured 2026-08-28: static 'nlev' with runtime domain bounds compiles,
+        runtime 'nlev' with static bounds compiles, both static does not. The three programs
+        whose boundary branch reads a cell field are the ones exposed, but the rule is applied
+        to all six that take a row index, because which branch is one-dimensional is a property
+        of a stencil that may change.
+
+        Args:
+            program: The GT4Py program.
+            constant_args: Fields and scalars that do not change between calls; the scalars are
+                inlined into the generated code by 'setup_program'.
+            levels: The half-open vertical domain, or None for a program with no vertical axis.
+            shifted: Whether the program reads a neighbouring vertical level.
+        """
+        return model_options.setup_program(
+            program=program,
+            backend=self._backend,
+            constant_args=constant_args,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell,
+                "horizontal_end": self._end_cell,
+            },
+            vertical_sizes=None
+            if levels is None
+            else {
+                "vertical_start": gtx.int32(levels[0]),
+                "vertical_end": gtx.int32(levels[1]),
+            },
+            offset_provider={dims.Koff.value: dims.KDim} if shifted else {},
+        )
+
+    def _setup_turbdiff_programs(self) -> None:
+        """Compile every stencil of 'turbdiff' with its domain and its constants bound.
+
+        The vertical domain of each program is stated HERE and nowhere else, so that the
+        translation of Fortran one-based inclusive 'DO k = a, b' into a zero-based half-open
+        GT4Py domain happens once per program. The comment on each line is the Fortran loop.
+        """
+        nlev = int(self._nlev)
+        config, params = self._config, self._params
+        metric = self._metric_state
+
+        cloud_diagnosis = {
+            "cloud_cover_shape_factor": config.c_scld,
+            "critical_normalized_supersaturation": config.q_crit,
+            "cloud_cover_at_saturation": config.clc_diag,
+            "relative_accuracy_limit": config.epsi,
+        }
+
+        # -- section 0) conserved variables, cloud cover, thermodynamic factors, length scales
+        self._compute_conserved_variables_and_factors_at_main_levels = self._program(
+            compute_conserved_variables_and_factors_at_main_levels,
+            constant_args=cloud_diagnosis,
+            levels=(0, nlev),  # 'k_st=1, k_en=ke'
+        )
+        self._compute_conserved_variables_and_factors_at_the_surface = self._program(
+            compute_conserved_variables_and_factors_at_the_surface,
+            constant_args=cloud_diagnosis,
+            levels=(nlev, nlev + 1),  # 'k_st=ke1, k_en=ke1'
+        )
+        self._compute_layer_depth = self._program(
+            compute_layer_depth,
+            constant_args={"half_level_height": metric.hhl},
+            levels=(0, nlev),  # 'DO k=1,ke'
+            shifted=True,
+        )
+        self._compute_horizontal_wind_including_the_zero_level = self._program(
+            compute_horizontal_wind_including_the_zero_level,
+            levels=(0, nlev + 1),  # 'DO k=1,ke' plus the separate 'ke1' row
+            shifted=True,
+        )
+        self._compute_half_level_interpolation_weight = self._program(
+            compute_half_level_interpolation_weight,
+            constant_args={"layer_pressure_thickness": metric.dp0},
+            levels=(1, nlev),  # 'bound_level_interp(..., k_st=2, k_en=ke)'
+            shifted=True,
+        )
+        self._interpolate_variables_onto_half_levels = self._program(
+            interpolate_variables_onto_half_levels,
+            levels=(1, nlev),  # 'bound_level_interp(..., k_st=2, k_en=ke)'
+            shifted=True,
+        )
+        self._compute_turbulent_length_scale = self._program(
+            compute_turbulent_length_scale,
+            constant_args={
+                "horizontal_length_scale_limit": self._horizontal_length_scale_limit,
+                "von_karman_constant": config.akt,
+                "minimal_length_scale": config.len_min,
+            },
+            levels=(0, nlev + 1),  # 'DO k=kcm-1,1,-1' then 'DO k=ke1,1,-1'
+            shifted=True,
+        )
+
+        # -- section 1a) vertical gradients
+        self._compute_surface_transfer_ratios = self._program(compute_surface_transfer_ratios)
+        self._compute_inverse_layer_depth_and_tke_discretisation_momentum = self._program(
+            compute_inverse_layer_depth_and_tke_discretisation_momentum,
+            constant_args={"hhl": metric.hhl},
+            levels=(1, nlev),  # 'DO k=ke,2,-1'
+            shifted=True,
+        )
+        self._compute_vertical_gradients_of_conserved_variables = self._program(
+            compute_vertical_gradients_of_conserved_variables,
+            levels=(1, nlev + 1),  # 'DO k=ke,2,-1' plus the separate 'ke1' row
+            shifted=True,
+        )
+
+        # -- section 1b) the two basic TKE forcing functions
+        self._compute_thermal_forcing = self._program(
+            compute_thermal_forcing,
+            levels=(1, nlev + 1),  # 'DO k=2,ke1'
+        )
+        self._compute_mechanical_forcing = self._program(
+            compute_mechanical_forcing,
+            constant_args={"min_forcing": self._minimal_tke_forcing},
+            levels=(1, nlev),  # 'DO k=2,kem' with 'kem = ke'
+        )
+
+        # -- section 2a) the three-dimensional shear complements
+        self._compute_three_dimensional_shear_forcing = self._program(
+            compute_three_dimensional_shear_forcing,
+            constant_args={"min_forcing": self._minimal_tke_forcing},
+            levels=(1, nlev),  # 'DO k=2,kem'
+        )
+        self._compute_inverse_richardson_number_factor = self._program(
+            compute_inverse_richardson_number_factor,
+            levels=(1, nlev),  # 'DO k=2,kem'
+        )
+        self._compute_uncorrected_horizontal_shear_length_scale = self._program(
+            compute_uncorrected_horizontal_shear_length_scale,
+            constant_args={
+                "horizontal_mesh_size": metric.l_hori,
+                "horizontal_shear_length_factor": config.a_hshr,
+                "karman_constant": config.akt,
+            },
+        )
+        self._compute_effective_horizontal_shear_length_scale = self._program(
+            compute_effective_horizontal_shear_length_scale,
+            constant_args={
+                "half_level_height": metric.hhl,
+                "surface_height": self._surface_height,
+            },
+            levels=(1, nlev),  # 'DO k=2,kem'
+        )
+        self._compute_separated_horizontal_shear_tke_source = self._program(
+            compute_separated_horizontal_shear_tke_source,
+            constant_args={"neutral_momentum_stability_function": params.sm_0},
+            levels=(1, nlev),  # 'DO k=2,kem'
+        )
+        self._compute_sso_wake_energy_production = self._program(
+            compute_sso_wake_energy_production,
+            levels=(0, nlev),  # 'DO k=1,kem' -- one MAIN level higher than the rest
+        )
+        self._compute_total_mechanical_forcing = self._program(
+            compute_total_mechanical_forcing,
+            constant_args={"layer_pressure_thickness": metric.dp0},
+            levels=(1, nlev),  # 'DO k=2,kem'
+            shifted=True,
+        )
+
+        # -- section 2c) final preparations
+        self._compute_stability_lengths_from_diffusion_coefficients = self._program(
+            compute_stability_lengths_from_diffusion_coefficients,
+            levels=(1, nlev),  # 'DO k=2,ke'
+        )
+
+        # -- section 3) the turbulent budgets ('solve_turb_budgets')
+        self._compute_turbulent_velocity_scale = self._program(
+            compute_turbulent_velocity_scale,
+            constant_args={
+                "d_m": config.d_mom,
+                "d_4": params.d_4,
+                "b_m": params.b_m,
+                "rim": params.rim,
+                "frcsecu": config.frcsecu,
+                "tkesecu": config.tkesecu,
+                "tkesmot": config.tkesmot,
+                "vel_min": config.vel_min,
+            },
+            levels=(1, nlev),  # 'DO k=k_st,k_en' with 'k_st=2, k_en=kem'
+        )
+        self._set_turbulent_velocity_scale_at_model_top = self._program(
+            set_turbulent_velocity_scale_at_model_top,
+            levels=(0, 1),  # 'tke(:,1) = tke(:,2)'
+            shifted=True,
+        )
+        self._compute_stability_lengths = self._program(
+            compute_stability_lengths,
+            constant_args={
+                "a_h": config.a_heat,
+                "a_m": config.a_mom,
+                "b_h": params.b_h,
+                "b_m": params.b_m,
+                "d_m": config.d_mom,
+                "d_1": params.d_1,
+                "d_2": params.d_2,
+                "d_3": params.d_3,
+                "d_4": params.d_4,
+                "d_5": params.d_5,
+                "d_6": params.d_6,
+                "rim": params.rim,
+                "frcsecu": config.frcsecu,
+                "stbsecu": config.stbsecu,
+            },
+            levels=(1, nlev),  # 'DO k=k_st,k_en'
+        )
+        self._compute_circulation_acceleration = self._program(
+            compute_circulation_acceleration,
+            constant_args={
+                "horizontal_grid_scale": metric.l_hori,
+                "gravitational_acceleration": constants.GRAV,
+            },
+            levels=(1, nlev + 1),  # 'DO k=k_st,k_sf' with 'k_sf=ke1'
+        )
+        self._compute_supersaturation_standard_deviation = self._program(
+            compute_supersaturation_standard_deviation,
+            constant_args={"d_h": config.d_heat},
+            levels=(1, nlev),  # 'DO k=k_st,k_en'
+        )
+        self._compute_diffusion_coefficients_from_stability_lengths = self._program(
+            compute_diffusion_coefficients_from_stability_lengths,
+            constant_args={"molecular_diffusivity_for_scalars": MOLECULAR_DIFFUSIVITY_FOR_SCALARS},
+            levels=(1, nlev),  # 'DO k=2,kem'
+        )
+
+        # -- section 4) lower limits of the diffusion coefficients
+        self._compute_effective_diffusion_coefficients = self._program(
+            compute_effective_diffusion_coefficients,
+            constant_args={
+                "height_of_half_levels": metric.hhl,
+                "surface_height": self._surface_height,
+                "tropics_mask": metric.trop_mask,
+                "inner_tropics_mask": metric.innertrop_mask,
+                "minimum_coefficient_for_momentum": max(
+                    MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM, config.tkmmin
+                ),
+                "minimum_coefficient_for_scalars": max(
+                    MOLECULAR_DIFFUSIVITY_FOR_SCALARS, config.tkhmin
+                ),
+                "stratospheric_minimum_for_momentum": config.tkmmin_strat,
+                "stratospheric_minimum_for_scalars": config.tkhmin_strat,
+            },
+            levels=(1, nlev),  # 'DO k=2,ke'
+        )
+
+        # -- section 6) preparations for the TKE diffusion
+        self._compute_saved_tke_profile = self._program(
+            compute_saved_tke_profile,
+            levels=(1, nlev + 1),  # 'DO k=2,ke1'
+        )
+        self._compute_explicit_tke_diffusion_momentum = self._program(
+            compute_explicit_tke_diffusion_momentum,
+            constant_args={
+                "half_level_height": metric.hhl,
+                "tke_diffusion_factor": self._tke_diffusion_factor,
+            },
+            levels=(2, nlev + 1),  # 'DO k=3,ke1'
+            shifted=True,
+        )
+        self._compute_cke_flux_density = self._program(
+            compute_cke_flux_density,
+            levels=(1, nlev + 1),  # 'DO k=2,ke1'
+        )
+        self._compute_cke_flux_at_main_levels = self._program(
+            compute_cke_flux_at_main_levels,
+            levels=(2, nlev + 1),  # 'DO k=3,ke1'
+            shifted=True,
+        )
+
+        # -- section 8) the circulation term as an extra TKE flux density
+        self._compute_virtual_tke_profile = self._program(
+            compute_virtual_tke_profile,
+            constant_args={"tke_diffusion_limit_correction": self._tke_diffusion_limit_correction},
+            levels=(1, nlev + 1),  # 'cur_prof(:,2)' then 'DO k=3,ke1'
+            shifted=True,
+        )
+
+        # -- section 9) the semi-implicit TKE diffusion
+        self._compute_implicit_part_of_tke_diffusion_momentum = self._program(
+            compute_implicit_part_of_tke_diffusion_momentum,
+            constant_args={"implicit_weight": self._implicit_weight},
+            levels=(2, nlev + 1),
+        )
+        self._subtract_implicit_part_of_tke_diffusion_momentum = self._program(
+            subtract_implicit_part_of_tke_diffusion_momentum,
+            levels=(2, nlev),
+        )
+        self._compute_inverted_diffusion_momentum = self._program(
+            compute_inverted_diffusion_momentum,
+            levels=(1, nlev),  # 'k_tp+1' to 'ke'
+            shifted=True,
+        )
+        self._compute_diffusion_inversion_factor = self._program(
+            compute_diffusion_inversion_factor,
+            levels=(2, nlev),
+            shifted=True,
+        )
+        self._compute_explicit_tke_flux_density = self._program(
+            compute_explicit_tke_flux_density,
+            levels=(2, nlev + 1),
+            shifted=True,
+        )
+        self._compute_tke_diffusion_right_hand_side = self._program(
+            compute_tke_diffusion_right_hand_side,
+            levels=(1, nlev + 1),
+            shifted=True,
+        )
+        self._solve_tke_diffusion_equation = self._program(
+            solve_tke_diffusion_equation,
+            levels=(1, nlev),
+            shifted=True,
+        )
+        self._add_virtual_diffusion_increment_to_tke_profile = self._program(
+            add_virtual_diffusion_increment_to_tke_profile,
+            levels=(1, nlev),
+        )
+
+        # -- section 10) the q tendency
+        self._compute_turbulent_velocity_scale_tendency = self._program(
+            compute_turbulent_velocity_scale_tendency,
+            levels=(1, nlev + 1),  # 'DO k=2,ke' plus the surface row
+        )
+
+        # -- section 11) the SDSS back onto main levels
+        self._interpolate_supersaturation_deviation_to_main_levels = self._program(
+            interpolate_supersaturation_deviation_to_main_levels,
+            levels=(0, nlev - 1),  # 'rcld(:,1)' then 'DO k=2,ke-1'
+            shifted=True,
+        )
+
+    # ------------------------------------------------------------------------- the stage ---
+
+    def run_turbdiff(
+        self,
+        *,
+        input_state: states.TurbulenceInputState,
+        surface_state: states.TurbulenceSurfaceState,
+        diagnostic_state: states.TurbulenceDiagnosticState,
+        tendency_state: states.TurbulenceTendencyState,
+        dt_tke: float,
+    ) -> None:
+        """Run 'SUBROUTINE turbdiff' once: the atmospheric TKE closure and its q-diffusion.
+
+        Reads `input_state` and `surface_state`, reads and writes `diagnostic_state`, writes
+        `tendency_state`. `input_state` is never written (ADR-0001); the turbulent velocity the
+        scheme produces goes to 'diagnostic_state.updated_tke', which is the 'ntur' time level
+        of the Fortran's 'tke(:,:,ntim)' while 'input_state.tke' is the 'nvor' one.
+
+        What is written, and what is left alone:
+
+            diagnostic_state.updated_tke   rows 0..nlev-1 by section 3); row 'nlev' copied from
+                                           the input, as 'turbdiff' leaves 'turbtran's value
+            diagnostic_state.tkvm, tkvh    rows 1..nlev-1 by section 4)
+            diagnostic_state.rhon          rows 1..nlev-1 and 'nlev' by section 0)
+            diagnostic_state.rcld          rows 0..nlev-2 by section 11)
+            tendency_state.ddt_tke         rows 1..nlev by section 10); row 0 keeps the
+                                           advection tendency it arrived with, which section 3)
+                                           read as 'tvt'
+            tendency_state.tket_hshr       rows 1..nlev-1 by section 2a)
+
+        'diagnostic_state.tfm', 'tfh' and 'tfv' are NOT written. The Fortran would overwrite
+        them in sections 3) and 4) under 'lsrfshear' and in section 2c) under "rsur_sher > 0",
+        and both are false for every configuration this granule accepts ('rsur_sher = 0' and
+        the frozen 'imode_suradap = 0'). Measured over the capture: all three keep the values
+        'turbtran' left, at every one of the fifteen section savepoints.
+
+        Args:
+            input_state: The atmospheric column and the external forcings. Read-only.
+            surface_state: The grid-mean surface state. Read-only.
+            diagnostic_state: The turbulence diagnostics; read and written.
+            tendency_state: Where the tendencies go. 'ddt_tke' is read on entry as the
+                advection tendency, exactly as the Fortran's 'INTENT(INOUT) tketens' is.
+            dt_tke: The time step of the TKE equation [s], ICON's 'dt_tke'.
+        """
+        nlev = int(self._nlev)
+        inverse_dt_tke = 1.0 / dt_tke  # 'fr_tke = z1/dt_tke' (turb_utilities.f90:317)
+
+        # 'lays' divides by the surface diffusion coefficients section 4) has not yet raised,
+        # so the two rows are taken before anything writes them.
+        _extract_level(
+            diagnostic_state.tkvm, nlev, self._diffusion_coefficient_for_momentum_at_the_surface
+        )
+        _extract_level(
+            diagnostic_state.tkvh, nlev, self._diffusion_coefficient_for_scalars_at_the_surface
+        )
+
+        # -- 0) conserved variables, cloud cover, thermodynamic factors, length scales -------
+
+        self._compute_conserved_variables_and_factors_at_main_levels(
+            temperature=input_state.t,
+            specific_humidity=input_state.qv,
+            cloud_water=input_state.qc,
+            pressure=input_state.prs,
+            exner_factor=input_state.epr,
+            supersaturation_deviation=diagnostic_state.rcld,
+            liquid_water_potential_temperature=self._conserved_liquid_water_potential_temperature,
+            total_water=self._conserved_total_water,
+            liquid_water=self._conserved_liquid_water,
+            cloud_cover=self._cloud_cover_on_main_levels,
+            specific_heat_ratio=self._zaux_2,
+            dqsat_dt=self._dqsat_dt_on_main_levels,
+            buoyancy_factor_tet_l=self._buoyancy_factor_tet_l_on_main_levels,
+            buoyancy_factor_h2o_g=self._buoyancy_factor_h2o_g_on_main_levels,
+        )
+
+        # The second 'adjust_satur_equil' call interpolates the lowest main level down to the
+        # zero level, so it needs that row as a cell field; and the four surface values it
+        # starts from are what 'turb_setup' put into 'zvari(:,ke1,:)' -- 'ps', 't_g', 'qv_s' and,
+        # at the frozen 'ilow_def_cond = 2', zero (turb_utilities.f90:341-350).
+        _extract_level(
+            self._conserved_liquid_water_potential_temperature,
+            nlev - 1,
+            self._liquid_water_potential_temperature_above_the_surface,
+        )
+        _extract_level(self._conserved_total_water, nlev - 1, self._total_water_above_the_surface)
+        self._compute_conserved_variables_and_factors_at_the_surface(
+            surface_pressure=surface_state.ps,
+            surface_temperature=surface_state.t_g,
+            surface_specific_humidity=surface_state.qv_s,
+            surface_liquid_water=self._surface_liquid_water,
+            liquid_water_potential_temperature_above=self._liquid_water_potential_temperature_above_the_surface,
+            total_water_above=self._total_water_above_the_surface,
+            laminar_reduction_factor_for_scalars=diagnostic_state.tfh,
+            supersaturation_deviation=diagnostic_state.rcld,
+            exner_factor=self._zaux_1,
+            liquid_water_potential_temperature=self._conserved_liquid_water_potential_temperature,
+            total_water=self._conserved_total_water,
+            liquid_water=self._conserved_liquid_water,
+            cloud_cover=self._rcld,
+            air_density=diagnostic_state.rhon,
+            specific_heat_ratio=self._zaux_2,
+            dqsat_dt=self._zaux_3,
+            buoyancy_factor_tet_l=self._zaux_4,
+            buoyancy_factor_h2o_g=self._zaux_5,
+        )
+
+        self._compute_layer_depth(layer_depth=self._dicke)
+        self._compute_horizontal_wind_including_the_zero_level(
+            zonal_wind=input_state.u,
+            meridional_wind=input_state.v,
+            laminar_reduction_factor_for_momentum=diagnostic_state.tfm,
+            nlev=self._nlev,
+            zonal_wind_on_conserved_variable_levels=self._conserved_zonal_wind,
+            meridional_wind_on_conserved_variable_levels=self._conserved_meridional_wind,
+        )
+
+        self._compute_half_level_interpolation_weight(interpolation_weight=self._hlp)
+        self._interpolate_variables_onto_half_levels(
+            cloud_cover=self._cloud_cover_on_main_levels,
+            exner_factor=input_state.epr,
+            dqsat_dt=self._dqsat_dt_on_main_levels,
+            buoyancy_factor_tet_l=self._buoyancy_factor_tet_l_on_main_levels,
+            buoyancy_factor_h2o_g=self._buoyancy_factor_h2o_g_on_main_levels,
+            pressure=input_state.prs,
+            air_density=input_state.rhoh,
+            interpolation_weight=self._hlp,
+            cloud_cover_on_half_levels=self._rcld,
+            exner_factor_on_half_levels=self._zaux_1,
+            dqsat_dt_on_half_levels=self._zaux_3,
+            buoyancy_factor_tet_l_on_half_levels=self._zaux_4,
+            buoyancy_factor_h2o_g_on_half_levels=self._zaux_5,
+            pressure_on_half_levels=self._half_level_pressure,
+            air_density_on_half_levels=diagnostic_state.rhon,
+        )
+        # Four of the seven interpolations are IN PLACE in the Fortran, over rows 1..nlev-1 of
+        # the storage that already held the main-level values. Row 0 is therefore the main-level
+        # value there, and the port has to put it back because it interpolates out of place.
+        _copy_level(self._cloud_cover_on_main_levels, 0, self._rcld)
+        _copy_level(self._dqsat_dt_on_main_levels, 0, self._zaux_3)
+        _copy_level(self._buoyancy_factor_tet_l_on_main_levels, 0, self._zaux_4)
+        _copy_level(self._buoyancy_factor_h2o_g_on_main_levels, 0, self._zaux_5)
+        # 'prss' is a pointer into 'zvari(:,:,0)' whose surface row 'turb_setup' filled with the
+        # surface pressure (turb_utilities.f90:341); section 3) reads it there.
+        _set_level(surface_state.ps, nlev, self._half_level_pressure)
+
+        self._compute_turbulent_length_scale(
+            layer_depth=self._dicke,
+            roughness_length_times_gravity=diagnostic_state.gz0,
+            nlev=self._nlev,
+            turbulent_length_scale=self._len_scale,
+        )
+
+        # -- 1a) the vertical gradients -------------------------------------------------------
+
+        self._compute_surface_transfer_ratios(
+            tvm=diagnostic_state.tvm,
+            tvh=diagnostic_state.tvh,
+            tkvm_at_surface=self._diffusion_coefficient_for_momentum_at_the_surface,
+            tkvh_at_surface=self._diffusion_coefficient_for_scalars_at_the_surface,
+            tfm=diagnostic_state.tfm,
+            tfh=diagnostic_state.tfh,
+            surface_transfer_ratio_for_momentum=self._surface_transfer_ratio_for_momentum,
+            surface_transfer_ratio_for_scalars=self._surface_transfer_ratio_for_scalars,
+        )
+        # 'hlp' stops being the interpolation weight here and 'dicke' stops being the layer
+        # depth; the length scale above was the last reader of both.
+        self._compute_inverse_layer_depth_and_tke_discretisation_momentum(
+            rhon=diagnostic_state.rhon,
+            inverse_layer_depth=self._hlp,
+            tke_discretisation_momentum=self._dicke,
+            inverse_tke_time_step=inverse_dt_tke,
+        )
+        # The gradients replace the variables in the Fortran's own storage, so the model top --
+        # which the difference quotient never writes -- carries the variable's value into the
+        # 'zvari' the routine returns.
+        for variable, gradient in (
+            (self._conserved_zonal_wind, self._gradient_zonal_wind),
+            (self._conserved_meridional_wind, self._gradient_meridional_wind),
+            (
+                self._conserved_liquid_water_potential_temperature,
+                self._gradient_liquid_water_potential_temperature,
+            ),
+            (self._conserved_total_water, self._gradient_total_water),
+            (self._conserved_liquid_water, self._gradient_liquid_water),
+        ):
+            _copy_level(variable, 0, gradient)
+        self._compute_vertical_gradients_of_conserved_variables(
+            zonal_wind=self._conserved_zonal_wind,
+            meridional_wind=self._conserved_meridional_wind,
+            liquid_water_potential_temperature=self._conserved_liquid_water_potential_temperature,
+            total_water=self._conserved_total_water,
+            liquid_water=self._conserved_liquid_water,
+            inverse_layer_depth=self._hlp,
+            surface_transfer_ratio_for_momentum=self._surface_transfer_ratio_for_momentum,
+            surface_transfer_ratio_for_scalars=self._surface_transfer_ratio_for_scalars,
+            nlev=self._nlev,
+            zonal_wind_gradient=self._gradient_zonal_wind,
+            meridional_wind_gradient=self._gradient_meridional_wind,
+            liquid_water_potential_temperature_gradient=self._gradient_liquid_water_potential_temperature,
+            total_water_gradient=self._gradient_total_water,
+            liquid_water_gradient=self._gradient_liquid_water,
+        )
+
+        # -- 1b) the two basic TKE forcing functions ------------------------------------------
+
+        self._compute_thermal_forcing(
+            buoyancy_factor_tet_l=self._zaux_4,
+            buoyancy_factor_h2o_g=self._zaux_5,
+            vertical_gradient_tet_l=self._gradient_liquid_water_potential_temperature,
+            vertical_gradient_h2o_g=self._gradient_total_water,
+            thermal_forcing=self._frh,
+        )
+        # Every row section 1b) writes into 'frm' is overwritten again by section 2a) at
+        # 'itype_sher = 2', which is the only value this granule accepts. The call is kept
+        # because the Fortran keeps it: 'frm' is INTENT(OUT)-like scratch and a future
+        # 'itype_sher < 2' would need exactly this value.
+        self._compute_mechanical_forcing(
+            vertical_gradient_u=self._gradient_zonal_wind,
+            vertical_gradient_v=self._gradient_meridional_wind,
+            mechanical_forcing=self._frm,
+        )
+
+        # -- 1c) DEAD: 'IF (lini)' and 'IF (ltkeadapt)', neither reachable here ----------------
+
+        # -- 2a) the three-dimensional shear complements --------------------------------------
+
+        self._compute_three_dimensional_shear_forcing(
+            vertical_gradient_u=self._gradient_zonal_wind,
+            vertical_gradient_v=self._gradient_meridional_wind,
+            dwdx=input_state.dwdx,
+            dwdy=input_state.dwdy,
+            horizontal_divergence=input_state.hdiv,
+            horizontal_deformation_square=input_state.hdef2,
+            mean_shear_forcing=self._mean_shear_forcing,
+        )
+        self._compute_inverse_richardson_number_factor(
+            mean_shear_forcing=self._mean_shear_forcing,
+            thermal_forcing=self._frh,
+            inverse_richardson_number_factor=self._inverse_richardson_number_factor,
+        )
+        self._compute_uncorrected_horizontal_shear_length_scale(
+            uncorrected_horizontal_shear_length_scale=self._uncorrected_horizontal_shear_length_scale,
+        )
+        self._compute_effective_horizontal_shear_length_scale(
+            uncorrected_horizontal_shear_length_scale=self._uncorrected_horizontal_shear_length_scale,
+            inverse_richardson_number_factor=self._inverse_richardson_number_factor,
+            turbulent_velocity_scale=input_state.tke,
+            effective_horizontal_shear_length_scale=self._effective_horizontal_shear_length_scale,
+        )
+        # The Fortran keeps the separated-shear source in 'hlp' and copies it to 'tket_hshr'
+        # under 'loutshs', which `FROZEN_SWITCHES` fixes '.TRUE.'. The port writes the output
+        # slot directly and reads it back below, because 'hlp' is about to become the SSO term.
+        self._compute_separated_horizontal_shear_tke_source(
+            effective_horizontal_shear_length_scale=self._effective_horizontal_shear_length_scale,
+            horizontal_divergence=input_state.hdiv,
+            horizontal_deformation_square=input_state.hdef2,
+            separated_horizontal_shear_tke_source=tendency_state.tket_hshr,
+        )
+        self._compute_sso_wake_energy_production(
+            sso_tendency_u=input_state.ut_sso,
+            sso_tendency_v=input_state.vt_sso,
+            wind_u=input_state.u,
+            wind_v=input_state.v,
+            sso_wake_energy_production=self._hlp,
+        )
+        self._compute_total_mechanical_forcing(
+            mean_shear_forcing=self._mean_shear_forcing,
+            separated_horizontal_shear_tke_source=tendency_state.tket_hshr,
+            sso_wake_energy_production=self._hlp,
+            momentum_diffusion_coefficient=diagnostic_state.tkvm,
+            inverse_richardson_number_factor=self._inverse_richardson_number_factor,
+            mechanical_forcing=self._frm,
+        )
+
+        # -- 2b) DEAD: the vertically resolved canopy, 'kcm = ke+1' ---------------------------
+
+        # -- 2c) final preparations ------------------------------------------------------------
+
+        self._compute_stability_lengths_from_diffusion_coefficients(
+            diffusion_coefficient_for_momentum=diagnostic_state.tkvm,
+            diffusion_coefficient_for_scalars=diagnostic_state.tkvh,
+            turbulent_velocity_scale=input_state.tke,
+            stability_length_for_momentum=self._stability_length_for_momentum,
+            stability_length_for_scalars=self._stability_length_for_scalars,
+        )
+
+        # -- 3) the turbulent budgets ('solve_turb_budgets') -----------------------------------
+
+        # The surface half level is 'turbtran's and 'turbdiff' does not touch it; with the two
+        # TKE time levels as two fields it has to be carried across explicitly.
+        _copy_level(input_state.tke, nlev, diagnostic_state.updated_tke)
+        self._compute_turbulent_velocity_scale(
+            master_length_scale=self._len_scale,
+            stability_length_for_momentum=self._stability_length_for_momentum,
+            stability_length_for_scalars=self._stability_length_for_scalars,
+            mechanical_forcing=self._frm,
+            thermal_forcing=self._frh,
+            previous_velocity_scale=input_state.tke,
+            transport_tendency=tendency_state.ddt_tke,
+            tke_time_step=dt_tke,
+            inverse_tke_time_step=inverse_dt_tke,
+            turbulent_velocity_scale=diagnostic_state.updated_tke,
+        )
+        # In place on purpose: the read set is row 1 and the write set is row 0.
+        self._set_turbulent_velocity_scale_at_model_top(
+            turbulent_velocity_scale=diagnostic_state.updated_tke,
+            turbulent_velocity_scale_with_top=diagnostic_state.updated_tke,
+        )
+        self._compute_stability_lengths(
+            master_length_scale=self._len_scale,
+            stability_length_for_momentum=self._stability_length_for_momentum,
+            stability_length_for_scalars=self._stability_length_for_scalars,
+            mechanical_forcing=self._frm,
+            thermal_forcing=self._frh,
+            turbulent_velocity_scale=diagnostic_state.updated_tke,
+            updated_stability_length_for_momentum=self._updated_stability_length_for_momentum,
+            updated_stability_length_for_scalars=self._updated_stability_length_for_scalars,
+        )
+        # BEFORE the SDSS: the circulation term is the last reader of the cloud cover and the
+        # SDSS is the next writer of the same storage. This is the one ordering constraint of
+        # section 3) that the port inherits rather than dissolves.
+        self._compute_circulation_acceleration(
+            cloud_cover=self._rcld,
+            master_length_scale=self._len_scale,
+            thermal_forcing=self._frh,
+            half_level_pressure=self._half_level_pressure,
+            air_density=diagnostic_state.rhon,
+            pattern_length_scale=surface_state.l_pat,
+            circulation_acceleration=self._circulation_acceleration,
+        )
+        self._compute_supersaturation_standard_deviation(
+            master_length_scale=self._len_scale,
+            stability_length_for_scalars=self._updated_stability_length_for_scalars,
+            exner_factor=self._zaux_1,
+            saturation_humidity_derivative=self._zaux_3,
+            gradient_of_liquid_water_potential_temperature=self._gradient_liquid_water_potential_temperature,
+            gradient_of_total_water=self._gradient_total_water,
+            supersaturation_standard_deviation=self._rcld,
+        )
+        self._compute_diffusion_coefficients_from_stability_lengths(
+            stability_length_for_momentum=self._updated_stability_length_for_momentum,
+            stability_length_for_scalars=self._updated_stability_length_for_scalars,
+            turbulent_velocity_scale=diagnostic_state.updated_tke,
+            diffusion_coefficient_for_momentum=self._diffusion_coefficient_for_momentum,
+            diffusion_coefficient_for_scalars=self._diffusion_coefficient_for_scalars,
+        )
+
+        # -- 4) lower limits of the diffusion coefficients --------------------------------------
+
+        self._compute_effective_diffusion_coefficients(
+            diffusion_coefficient_for_momentum=self._diffusion_coefficient_for_momentum,
+            diffusion_coefficient_for_scalars=self._diffusion_coefficient_for_scalars,
+            inverse_richardson_number=self._inverse_richardson_number_factor,
+            roughness_length_times_gravity=diagnostic_state.gz0,
+            pattern_length_scale=surface_state.l_pat,
+            surface_reduction_for_momentum=diagnostic_state.tkred_sfc,
+            surface_reduction_for_scalars=diagnostic_state.tkred_sfc_h,
+            effective_diffusion_coefficient_for_momentum=diagnostic_state.tkvm,
+            effective_diffusion_coefficient_for_scalars=diagnostic_state.tkvh,
+        )
+
+        # -- 5) DEAD: 'IF (ltmpcor)' and 'IF (ldocirflx)', both frozen '.FALSE.' -----------------
+
+        # -- 6) preparations for the TKE diffusion ------------------------------------------------
+
+        self._compute_saved_tke_profile(
+            turbulent_velocity_scale=diagnostic_state.updated_tke,
+            saved_tke_profile=self._zaux_2,
+        )
+        self._compute_explicit_tke_diffusion_momentum(
+            mixing_length=self._len_scale,
+            turbulent_velocity_scale=diagnostic_state.updated_tke,
+            air_density_at_main_levels=input_state.rhoh,
+            explicit_diffusion_momentum=self._zaux_3,
+        )
+        self._compute_cke_flux_density(
+            air_density=diagnostic_state.rhon,
+            scalar_diffusion_coefficient=diagnostic_state.tkvh,
+            circulation_acceleration=self._circulation_acceleration,
+            mixing_length=self._len_scale,
+            cke_flux_density=self._frh,
+        )
+        self._compute_cke_flux_at_main_levels(
+            cke_flux_density=self._frh,
+            mixing_length=self._len_scale,
+            cke_flux_at_main_levels=self._frm,
+        )
+
+        # -- 7) DEAD: 'IF (ldocirflx)', i.e. 'lcirflx', frozen '.FALSE.' --------------------------
+
+        # -- 8) the circulation term as an additional TKE flux density -----------------------------
+
+        # Section 8) and section 9)'s 'add_virtual_diffusion_increment_to_tke_profile' are a
+        # PAIR. Without the circulation term there is no virtual profile to build and none to
+        # remove: 'turb_diffusion.f90:2390' points 'cur_prof' at 'sav_prof' itself and both
+        # programs are skipped. Only the branch taken here has reference data.
+        if self._circulation_term_is_active:
+            self._compute_virtual_tke_profile(
+                saved_tke_profile=self._zaux_2,
+                cke_flux_at_main_levels=self._frm,
+                explicit_diffusion_momentum=self._zaux_3,
+                virtual_tke_profile=self._hlp,
+            )
+
+        # -- 9) the semi-implicit vertical diffusion of the TKE -------------------------------------
+
+        self._compute_implicit_part_of_tke_diffusion_momentum(
+            diffusion_momentum=self._zaux_3,
+            implicit_diffusion_momentum=self._zaux_4,
+        )
+        # IN PLACE, as the Fortran is. The subtraction is pointwise and covers one flux level
+        # less than the implicit part, so the surface row has to keep the value section 6) put
+        # there -- which it does only if this writes the storage it reads.
+        self._subtract_implicit_part_of_tke_diffusion_momentum(
+            diffusion_momentum=self._zaux_3,
+            implicit_diffusion_momentum=self._zaux_4,
+            explicit_diffusion_momentum=self._zaux_3,
+        )
+        self._compute_inverted_diffusion_momentum(
+            discretisation_momentum=self._dicke,
+            implicit_diffusion_momentum=self._zaux_4,
+            inverted_diffusion_momentum=self._zaux_5,
+        )
+        self._compute_diffusion_inversion_factor(
+            inverted_diffusion_momentum=self._zaux_5,
+            implicit_diffusion_momentum=self._zaux_4,
+            inversion_factor=self._frh,
+        )
+        self._compute_explicit_tke_flux_density(
+            explicit_diffusion_momentum=self._zaux_3,
+            implicit_diffusion_momentum=self._zaux_4,
+            current_tke_profile=self._current_virtual_profile,
+            nlev=self._nlev,
+            explicit_tke_flux_density=self._explicit_tke_flux_density,
+        )
+        # 'len_scale' stops being the master length scale here; section 6) was its last reader.
+        self._compute_tke_diffusion_right_hand_side(
+            discretisation_momentum=self._dicke,
+            current_tke_profile=self._current_virtual_profile,
+            explicit_tke_flux_density=self._explicit_tke_flux_density,
+            uppermost_diffused_level=gtx.int32(1),
+            nlev=self._nlev,
+            right_hand_side=self._len_scale,
+        )
+        self._solve_tke_diffusion_equation(
+            right_hand_side=self._len_scale,
+            implicit_diffusion_momentum=self._zaux_4,
+            inverted_diffusion_momentum=self._zaux_5,
+            inversion_factor=self._frh,
+            updated_tke_profile=self._zaux_1,
+        )
+        if self._circulation_term_is_active:
+            self._add_virtual_diffusion_increment_to_tke_profile(
+                saved_tke_profile=self._zaux_2,
+                updated_virtual_profile=self._zaux_1,
+                current_virtual_profile=self._hlp,
+                updated_tke_profile=self._zaux_1,
+            )
+
+        # -- 10) the q tendency of the TKE diffusion -------------------------------------------------
+
+        self._compute_turbulent_velocity_scale_tendency(
+            updated_tke_profile=self._zaux_1,
+            turbulent_velocity_scale=diagnostic_state.updated_tke,
+            inverse_tke_time_step=inverse_dt_tke,
+            nlev=self._nlev,
+            turbulent_velocity_scale_tendency=tendency_state.ddt_tke,
+        )
+
+        # -- 11) the SDSS back onto main levels --------------------------------------------------------
+
+        # The Fortran averages 'rcld' onto main levels in its own storage, so the two rows the
+        # averaging does not reach keep their half-level values. Out of place here, because the
+        # average reads the half level below the row it writes.
+        _copy_levels(self._rcld, slice(nlev - 1, nlev + 1), diagnostic_state.rcld)
+        self._interpolate_supersaturation_deviation_to_main_levels(
+            supersaturation_deviation_on_half_levels=self._rcld,
+            supersaturation_deviation_on_main_levels=diagnostic_state.rcld,
+        )
+
+
 def _as_scalar(name: str, value: Any) -> Any:
     """Unwrap the single-element arrays that the ICON namelist echo produces for scalars."""
     if isinstance(value, (list, tuple)):
@@ -705,3 +2077,37 @@ def _check_supported(name: str, value: int, supported: tuple[int, ...], meaning:
             f"Only {name} = {values} ({meaning}) is implemented; got {int(value)}. "
             f"Set {name} to {values} or use the Fortran scheme."
         )
+
+
+# --------------------------------------------------------------- absolute vertical levels ---
+#
+# The three helpers below address the whole vertical axis rather than a relative offset, which
+# is something GT4Py deliberately cannot express: an offset is always relative to the row being
+# computed, so a value the Fortran reads at a fixed 'k' -- 'tkvm(:,ke1)', 'zvari(:,ke,tet_l)' --
+# has to reach a stencil as a cell field the caller prepared. 'tests/turbulence/utils.py'
+# solves the same problem with 'surface_row', by way of the host; these write into fields the
+# granule allocated once, so nothing leaves the device.
+#
+# They are also what carries the Fortran's in-place storage reuse across the places where the
+# port has to compute out of place. `Turbulence._allocate_local_fields` lists which those are;
+# each call site below says which Fortran statement it stands in for.
+
+
+def _extract_level(source: gtx.Field, level: int, target: gtx.Field) -> None:
+    """Copy one vertical level of a (Cell, K) field into a cell field."""
+    target.ndarray[...] = source.ndarray[:, level]
+
+
+def _set_level(source: gtx.Field, level: int, target: gtx.Field) -> None:
+    """Write a cell field into one vertical level of a (Cell, K) field."""
+    target.ndarray[:, level] = source.ndarray[...]
+
+
+def _copy_level(source: gtx.Field, level: int, target: gtx.Field) -> None:
+    """Copy one vertical level from one (Cell, K) field to another."""
+    target.ndarray[:, level] = source.ndarray[:, level]
+
+
+def _copy_levels(source: gtx.Field, levels: slice, target: gtx.Field) -> None:
+    """Copy a range of vertical levels from one (Cell, K) field to another."""
+    target.ndarray[:, levels] = source.ndarray[:, levels]

@@ -315,6 +315,17 @@ class TurbulenceDiagnosticState:
     #: 'tur_len_scale' -- turbulent length scale, on half levels [m]. Output-only, and
     #: disassociated under the same condition as 'edr'.
     tur_len_scale: fa.CellKField[ta.wpfloat]
+    #: 'tke(:,:,ntur)' -- the turbulent velocity q = sqrt(2 * TKE) the scheme produces, on half
+    #: levels [m/s]. The counterpart of `TurbulenceInputState.tke`, which is 'tke(:,:,nvor)',
+    #: the level the iteration starts from.
+    #:
+    #: ICON runs with 'ntim = 1', so 'nvor == ntur' and the Fortran updates one array in place.
+    #: The port cannot: ADR-0001 forbids a physics component writing into its input state, and
+    #: the port spec lists the TKE time levels among the things that "need mapping onto discrete
+    #: fields" (9.2). So the two levels are two fields here and the granule reads one and writes
+    #: the other. Only the surface half level is neither: 'turbtran' owns it and 'turbdiff'
+    #: leaves it alone, so the granule copies it across before section 3) runs.
+    updated_tke: fa.CellKField[ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)

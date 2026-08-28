@@ -169,6 +169,10 @@ DECLARED_SHAPES: dict[type, dict[str, Shape]] = {
         "rhon": Shape.HALF,  # 'total density of air (at half levels)', :538
         "edr": Shape.HALF,  # :652
         "tur_len_scale": Shape.HALF,  # :653
+        # Not a dummy argument of its own: the Fortran writes the updated turbulent
+        # velocity back into 'tke(:,:,ntur)', which is the same storage as the input
+        # 'tke(:,:,nvor)' while 'ntim == 1'. ADR-0001 makes it a field of its own here.
+        "updated_tke": Shape.HALF,  # 'tke', :576
     },
     states.TurbulenceTendencyState: {
         "ddt_u": Shape.FULL,
