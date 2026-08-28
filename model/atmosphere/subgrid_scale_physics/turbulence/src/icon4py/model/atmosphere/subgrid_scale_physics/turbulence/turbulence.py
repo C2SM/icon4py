@@ -509,7 +509,8 @@ class TurbulenceParams:
     d_5: Final[float] = dataclasses.field(init=False)
     #: Auxiliary closure constant `d_3` + 3*`d_4`.
     d_6: Final[float] = dataclasses.field(init=False)
-    #: Critical Richardson number, 1 - Rf_c.
+    #: One minus the critical flux Richardson number, '1 - Rf_c'. The scheme tests against
+    #: '1 - rim', not against 'rim' (turb_utilities.f90:535).
     rim: Final[float] = dataclasses.field(init=False)
     #: Auxiliary closure constant of the stability functions.
     a_3: Final[float] = dataclasses.field(init=False)
@@ -521,7 +522,9 @@ class TurbulenceParams:
     sm_0: Final[float] = dataclasses.field(init=False)
     #: Stability function for scalars at neutral stratification.
     sh_0: Final[float] = dataclasses.field(init=False)
-    #: cp_v/cp_d - 1, or zero when the heat-capacity fluctuations are switched off.
+    #: cp_d/cp_v - 1, or zero when the heat-capacity fluctuations are switched off. ICON's
+    #: rcpv is defined that way round (mo_physical_constants.f90:144), asymmetrically with
+    #: rcpl below; cp_v/cp_d - 1 is a different constant, ICON's vtmpc2.
     tur_rcpv: Final[float] = dataclasses.field(init=False)
     #: cp_l/cp_d - 1, or zero when the heat-capacity fluctuations are switched off.
     tur_rcpl: Final[float] = dataclasses.field(init=False)

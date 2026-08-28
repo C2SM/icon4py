@@ -21,7 +21,7 @@ Arguments the interfaces never pass are left out. They are optional in the Fortr
 and carrying them in the granule interface would suggest a capability that has no reference
 data behind it:
 
-* turbdiff (11 of its 79 real dummy arguments): 'c_big', 'c_sml', 'r_air' -- the vertically
+* turbdiff (11 of its 79 dummy arguments): 'c_big', 'c_sml', 'r_air' -- the vertically
   resolved canopy, also switched off by the 'lporous = .FALSE.' parameter; 'tkhm', 'tkhh' --
   3D turbulence, hardcoded '.FALSE.' at mo_nwp_turbdiff_interface.f90:584; 'tket_sso',
   'tket_nstc', 'tket_buoy', 'tket_fshr', 'tket_gshr' -- TKE budget diagnostics ('tket_conv'
@@ -41,7 +41,7 @@ appears as one array. 'ptr(:)' is a 'modvar' array of pointers rather than a fie
 and '%at' components become the 'tracers' and 'ddt_tracers' tuples below, while its '%kstart'
 component is a scalar and belongs to the granule configuration.
 
-Precision: 'turb_diffusion.f90:610' is the only 'REAL(KIND=vp)' declaration in all four scheme
+Precision: 'turb_diffusion.f90:612' is the only 'REAL(KIND=vp)' declaration in all four scheme
 files, covering 'hdef2', 'hdiv', 'dwdx' and 'dwdy', which come from the mixed-precision dycore
 diffusion (mo_nh_diffusion.f90:847,:850,:1182,:1187). Exactly those four are typed 'vpfloat'
 here; everything else is 'wpfloat'. The default build is double, where 'vpfloat is wpfloat',
@@ -253,11 +253,17 @@ class TurbulenceDiagnosticState:
     #: on output of turbtran; on output of turbdiff the factor that removes the pure drag
     #: contribution of 'tkmmin'. The meaning of the slot differs between the two subroutines.
     tfm: fa.CellField[ta.wpfloat]
-    #: 'tfh' -- as 'tfm' for scalars on output of turbtran; the additional shear forcing from
-    #: low-level directional shear at the "P" level [1/s2] on output of turbdiff.
+    #: 'tfh' -- as 'tfm' for scalars on output of turbtran; on output of turbdiff, the spurious
+    #: shear forcing implied by clipping the diffusion coefficients at their lower limits
+    #: (LLDCs, "Lower Limits of Diffusion-Coefficients", mo_turbdiff_config.f90:170-174) at the
+    #: "P" level [1/s2]. It is an artefact of the tkhmin/tkmmin floor, not a physical shear mode
+    #: (turb_diffusion.f90:1979-1980).
     tfh: fa.CellField[ta.wpfloat]
-    #: 'tfv' -- additional shear forcing by near-surface thermal circulations at the "P" level
-    #: [1/s2].
+    #: 'tfv' -- additional shear forcing by non-turbulent subgrid circulations (NTCs) at the "P"
+    #: level [1/s2]: SSO wakes, separated horizontal shear, convective and near-surface thermal
+    #: circulations together. Computed as the total mechanical forcing minus the pure-mean-shear
+    #: forcing, 'frm - ftm' (turb_diffusion.f90:1677), i.e. the whole scale-interaction residual;
+    #: near-surface thermals alone have their own slot, 'tket_nstc'.
     tfv: fa.CellField[ta.wpfloat]
     #: 'tkred_sfc' -- reduction factor for the minimum momentum diffusion coefficient near the
     #: surface [1].
@@ -304,7 +310,7 @@ class TurbulenceDiagnosticState:
     rhon: fa.CellKField[ta.wpfloat]
     #: 'edr' -- eddy dissipation rate of TKE, on half levels [m2/s3]. A pointer argument that
     #: ICON leaves disassociated unless 'ldiagnose_tke' is set
-    #: (mo_nwp_turbdiff_interface.f90:308).
+    #: (mo_nwp_turbdiff_interface.f90:309).
     edr: fa.CellKField[ta.wpfloat]
     #: 'tur_len_scale' -- turbulent length scale, on half levels [m]. Output-only, and
     #: disassociated under the same condition as 'edr'.

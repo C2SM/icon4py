@@ -43,7 +43,7 @@ class ShearProductionType(int, enum.Enum):
     VERTICAL_AND_VERTICAL_VELOCITY = 2
     #: Legacy DWD setting. The dedicated case was removed from the scheme in 2014
     #: (turb_diffusion.f90:108) and no branch tests for it any more: every use site tests
-    #: '>= 1' or '== 2' (turb_diffusion.f90:1311,1343; turb_transfer.f90:1431;
+    #: '>= 1' or '== 2' (turb_diffusion.f90:1318,1350; turb_transfer.f90:1431;
     #: mo_nh_diffusion.f90:805,1172), so this behaves exactly like `VERTICAL_AND_HORIZONTAL`.
     LEGACY_VERTICAL_AND_HORIZONTAL = 3
 
