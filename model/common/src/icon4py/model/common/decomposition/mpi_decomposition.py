@@ -23,7 +23,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.decomposition.definitions import Reductions, SingleNodeExchange
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 try:
@@ -306,22 +306,27 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         stream: decomp_defs.StreamLike = decomp_defs.DEFAULT_STREAM,
     ) -> MultiNodeResult:
         """Synchronize with `stream` and start the halo exchange of `*fields`."""
-        assert dim in dims.horizontal_dims(), (
-            f"first dimension must be one of ({list(dims.horizontal_dims())})"
-        )
-
-        applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
-        if not ghex.__config__["gpu"]:
-            # No GPU support fall back to the regular exchange function.
-            handle = self._comm.exchange(applied_patterns)
-        else:
-            assert stream is not None
-            handle = self._comm.schedule_exchange(
-                patterns=applied_patterns,
-                stream=stream,
+        label = f"[{dim.value},{len(fields)}]"
+        # Spans until the matching `MultiNodeResult.finish()`, i.e. the whole time the
+        # communication is in flight.
+        comm_range = profiling.start_range(f"halo_exchange.comm{label}")
+        with profiling.annotate(f"halo_exchange.start{label}"):
+            assert dim in dims.horizontal_dims(), (
+                f"first dimension must be one of ({list(dims.horizontal_dims())})"
             )
+
+            applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
+            if not ghex.__config__["gpu"]:
+                # No GPU support fall back to the regular exchange function.
+                handle = self._comm.exchange(applied_patterns)
+            else:
+                assert stream is not None
+                handle = self._comm.schedule_exchange(
+                    patterns=applied_patterns,
+                    stream=stream,
+                )
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
-        return MultiNodeResult(handle, applied_patterns)
+        return MultiNodeResult(handle, applied_patterns, comm_range, label)
 
     def exchange(
         self,
@@ -355,19 +360,28 @@ def create_multinode_halo_exchange_wait(runtime: GHexMultiNodeExchange) -> HaloE
 class MultiNodeResult(decomp_defs.ExchangeResult):
     handle: Any
     pattern_refs: Any
+    comm_range_handle: profiling.RangeHandle = None
+    """Handle of the profiling range opened by `GHexMultiNodeExchange.start`, if any."""
+    comm_range_label: str = ""
+    """`[dim,nfields]` label of the exchange, used to name the profiling ranges."""
 
     def finish(
         self,
         stream: decomp_defs.StreamLike | decomp_defs.BlockType = decomp_defs.DEFAULT_STREAM,
     ) -> None:
         """Finish the initiated halo exchange and either block or schedule completion on `stream`."""
-        if (not ghex.__config__["gpu"]) or stream is decomp_defs.BLOCK:
-            # No GPU support or blocking wait requested -> use normal `wait()`.
-            self.handle.wait()
+        with profiling.annotate(f"halo_exchange.wait{self.comm_range_label}"):
+            if (not ghex.__config__["gpu"]) or stream is decomp_defs.BLOCK:
+                # No GPU support or blocking wait requested -> use normal `wait()`.
+                self.handle.wait()
 
-        else:
-            # Stream given, perform a scheduled wait.
-            self.handle.schedule_wait(stream)
+            else:
+                # Stream given, perform a scheduled wait.
+                self.handle.schedule_wait(stream)
+
+        if self.comm_range_handle is not None:
+            profiling.end_range(self.comm_range_handle)
+            self.comm_range_handle = None
 
     def is_ready(self) -> bool:
         return self.handle.is_ready()
