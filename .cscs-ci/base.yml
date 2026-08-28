@@ -169,8 +169,6 @@ variables:
     SLURM_NTASKS: 12
     ICON4PY_TEST_MPI_SUBCOMM_SIZE: 4
     SLURM_LABELIO: 1
-    SLURM_GPUS_PER_NODE: 4
-    SLURM_GRES_FLAGS: allow-task-sharing
     # Use this to reduce memory requirements from having one venv per rank.
     # Generally this is not recommended but in CI the cache will not get wiped
     # so this can be used safely.
