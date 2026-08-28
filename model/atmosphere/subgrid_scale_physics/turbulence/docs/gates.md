@@ -62,12 +62,12 @@ neither substitutes for the other. When you widen a gate on any stencil that fee
 `Reason` in the registry is a **closed** set. Every member names a mechanism by which GT4Py
 legitimately produces a different rounding than the Fortran:
 
-| `Reason` member | means |
-| --- | --- |
-| `TRANSCENDENTAL` | `exp`, `log`, `pow`, `tanh`, `**` resolve to a different libm implementation. |
-| `REASSOCIATION` | Inlining or fusion regrouped an expression tree, changing the order of `+`/`*`. |
+| `Reason` member           | means                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| `TRANSCENDENTAL`          | `exp`, `log`, `pow`, `tanh`, `**` resolve to a different libm implementation.                 |
+| `REASSOCIATION`           | Inlining or fusion regrouped an expression tree, changing the order of `+`/`*`.               |
 | `RECIPROCAL_SUBSTITUTION` | A division became a multiplication by a reciprocal — two roundings where the Fortran has one. |
-| `SCAN_LOWERING` | A `scan_operator` carry is accumulated differently than the sequential `k`-loop it came from. |
+| `SCAN_LOWERING`           | A `scan_operator` carry is accumulated differently than the sequential `k`-loop it came from. |
 
 The set is closed on purpose. **If none of these describes your disagreement, you have not found a
 tolerance case — you have found a bug.** Candidates, roughly in order of how often they turn out to
