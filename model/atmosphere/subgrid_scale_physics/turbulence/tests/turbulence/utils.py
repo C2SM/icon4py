@@ -231,6 +231,21 @@ def fields_that_changed(
 
     NaN never compares equal to NaN, deliberately -- a slot holding NaN at both boundaries has
     not been shown to be untouched.
+
+    IT CANNOT BE USED ACROSS 'turbdiff-exit'. Both savepoints have to come from the same
+    serialization hook. The section hook is one Fortran statement called fifteen times, so every
+    section pair sees one field table; 'turbdiff-exit' is a different hook with a different table,
+    and the two differ in ten names -- five 'turbdiff' locals ('td_hor_scale', 'td_layr',
+    'td_lays', 'td_nvor', 'td_xri') that never reach the interface and so are not at the exit
+    hook, and five interface fields ('td_gz0', 'td_tvm', 'td_tvh', 'td_tkred_sfc',
+    'td_tkred_sfc_h') that the section hook does not carry.
+
+    Given such a pair this function raises 'SerialboxError' on the first name the exit hook does
+    not have, which is the intended behaviour: the alternative -- skipping what one side lacks --
+    would return an answer that silently says nothing about ten fields, and "the output set is
+    exactly this" is a claim that must not be quietly narrowed. Section 11) is the only pair in
+    the port that crosses the exit hook; it does the skipping explicitly, in
+    '_fields_that_changed_across_the_exit_hook', and accounts for each of the ten names it drops.
     """
     ivstart, ivend = before.ivstart(), before.ivend()
     window = slice(ivstart, ivend)

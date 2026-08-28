@@ -43,6 +43,73 @@ asserted untouched rather than ignored. Import it as a module (`from .. import u
 docstring before writing a new section test; `tests/turbulence/gate_registry.py` needs an entry for
 each stencil before it can be compared against anything.
 
+### The shape of a section test
+
+Every section datatest module has the same four kinds of test, and a new one is expected to have
+them too. No single module is the whole pattern: section 1a) is where parts 1, 2 and 4 were first
+worked out, section 6) has the clearest part 3, and section 10) is where part 4 was generalised
+beyond `concat_where`.
+
+1. **One output-set test.** `utils.fields_that_changed(data_provider, before, after)` compares
+   every serialized name across the two savepoints and returns the ones that differ. Assert that
+   set. It is what bounds the stencils the module may contain, and it is a fact about the *run*
+   rather than about the Fortran — storage reuse, a resolved canopy, an unserialized `imode_*`
+   can all add or remove a write. Reading the source gives the same answer only when the
+   configuration cooperates. Note that this cannot be used across `turbdiff-exit`, which is a
+   different hook with a different field table; see the function's docstring.
+
+2. **One comparison test per stencil.** `utils.assert_agrees_with_icon` under the stencil's entry
+   in `gate_registry.py`. The output buffer starts as a copy of its entry state (`utils.copy_of`,
+   or `copy_of_raw_field` where the reader will not name the slot), so pass the whole slab and
+   let the rows the section does not write be part of the comparison. Mask the columns to
+   `ivstart:ivend`; pass `levels` only when a second stencil owns the other rows.
+
+3. **One property test pinning the boundary.** The rows above and below the section's vertical
+   domain must come out as the section found them
+   (`test_section_6_leaves_the_rows_above_its_domains_alone` is the model). This is what turns an off-by-one in
+   `vertical_start`/`vertical_end` into a failure instead of nothing, and it is the reason for
+   the copy-of-entry convention. Alongside it belong the branch-coverage statements: every
+   `IF`, `MERGE` and clip the capture never exercises, named by a test rather than hoped away
+   (port spec 5.4).
+
+4. **A poison test wherever a boundary row's entry value may equal its exit value.** Test 3 is
+   blind exactly there: if the correct value of a row equals what the buffer already held, the
+   comparison passes whether or not the port got the row right, and the boundary convention
+   cannot detect its own violation. Fill the row with NaN and require the result to stay
+   bit-exact. Two directions, and which one applies depends on whether the section must write
+   the row or must not:
+
+   | the row                                                                       | poison                                       | what a violation looks like                                          |
+   | ----------------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------- |
+   | the section MUST write it, and its entry value already equals its exit value  | that row of the **output** buffer            | the program fails to overwrite the NaN and the comparison sees it    |
+   | the section MUST NOT write it, and writing it would reproduce its entry value | that row of the **input** the row would read | the program reaches the row, multiplies by the NaN and writes it out |
+
+   Worked examples: section 10)'s `tketens(:,ke1)` is zero at both savepoints, so the Fortran's
+   `tketens(:,ke1) = z0` is invisible — output poison. Section 6)'s `frh` at the model top is
+   exactly zero *and* would compute exactly zero if the domain reached it, because `tkvh(:,0)`
+   is exactly zero — input poison on `tkvh(:,0)`. Section 1a) poisons `hlp(:,ke1)` for the third
+   reason a poison test is useful: to keep `concat_where` honest about evaluating only the branch
+   a row selects.
+
+   **Measure before writing one.** The question is answered from the archive, not from the
+   Fortran: compare the two savepoints row by row over `ivstart:ivend`, and re-run the program
+   with its vertical domain extended one row past the boundary and diff that row. If the row
+   already differs in some column, the data distinguishes it and a poison test there is noise —
+   say so in the module docstring and write nothing. Sections 1b), 4) and 8) were measured and
+   are in that position; each records the measurement rather than carrying a test. Sometimes the
+   boundary turns out to be enforced by something stronger than a test: section 4) cannot run
+   past the surface because `xri` is `ke` rows deep, and section 8)'s scan cannot run above row 0
+   because its `Koff[-1]` read would be out of bounds.
+
+### This file is a concurrency collision point
+
+`README.md`, `tests/turbulence/utils.py`, `gate_registry.py`, `conftest.py`, `turbulence.py` and
+`turbulence_states.py` are shared by every section. Two agents edited this README simultaneously
+in wave 2a and one of the two edits was lost, which is why it is on the do-not-touch list for a
+section agent: report the change you want in it and let it be applied centrally. The same applies
+to the gate registry — an unregistered stencil raises `UnregisteredStencilError` rather than
+defaulting silently, so a missing entry is a loud failure and not something to work around.
+
 ### Bit-exactness on the GPU backends
 
 The gates in `tests/turbulence/gate_registry.py` are `Exact()`, and they hold on `embedded`,

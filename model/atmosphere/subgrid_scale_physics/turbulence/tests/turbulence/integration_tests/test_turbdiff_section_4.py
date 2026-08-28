@@ -69,6 +69,25 @@ than left implicit:
 
 The port translates all three as written; these tests record that the data does not distinguish
 them, so that a capture which does fails loudly instead of quietly validating nothing.
+
+NO ROW OF THIS SECTION IS BLIND, AND THAT IS MEASURED
+------------------------------------------------------
+Section 4) is made of 'MAX' floors applied in place, so it is the obvious candidate for the
+exposure section 10) found: a row where the floor does not bind comes out equal to what went in,
+and a comparison that starts from the entry state cannot see whether the port wrote it.
+
+It does not happen at row granularity. 72 to 74 of the 79 rows the section writes DO contain
+columns where the floor leaves the coefficient alone -- and every one of those rows still
+differs in at least one column, on all four dates. There is no row of 'tkvm' or 'tkvh' that this
+section could skip entirely without the comparison noticing, so no output poison test is
+warranted.
+
+The two rows it must not write are safe for different reasons. Extending the vertical domain up
+to row 0 changes it in all 8276 columns, so 'test_section_4_leaves_the_model_top_and_the_surface
+_half_level_alone' can see that overrun. Extending it down to the surface half level is not
+merely visible but impossible: 'xri' is 'ke' rows deep, not 'ke1', so a 'vertical_end=ke1'
+raises out of bounds rather than computing anything. The surface boundary of this section is
+enforced by the shape of an input, not by a test.
 """
 
 from __future__ import annotations
@@ -83,19 +102,12 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import turbulence
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_diffusion_coefficients import (
     compute_effective_diffusion_coefficients,
 )
+from icon4py.model.common import constants
 from icon4py.model.testing import serialbox as sb
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
-
-#: Kinematic viscosity of dry air, 'con_m' (mo_physical_constants.f90:115) [m2/s]. It and
-#: 'con_h' below live here for the same reason section 3)'s copy of 'con_h' does: ICON's
-#: 'mo_physical_constants' has them and 'icon4py.model.common.constants' does not.
-MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM: Final[float] = 1.50e-5
-
-#: Scalar conductivity of dry air, 'con_h' (mo_physical_constants.f90:116) [m2/s].
-MOLECULAR_DIFFUSIVITY_FOR_SCALARS: Final[float] = 2.20e-5
 
 #: The four minimum diffusion coefficients the reference run was configured with [m2/s]. The
 #: first two are set by '&turbdiff_nml' of 'icon/run/exp.mch_icon-ch2_small'; the two
@@ -151,8 +163,8 @@ def _run_section_4(data_provider, date: str, backend) -> Section4:
         surface_reduction_for_scalars=entry.tkred_sfc_h(),
         tropics_mask=entry.trop_mask(),
         inner_tropics_mask=entry.innertrop_mask(),
-        minimum_coefficient_for_momentum=max(MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM, TKMMIN),
-        minimum_coefficient_for_scalars=max(MOLECULAR_DIFFUSIVITY_FOR_SCALARS, TKHMIN),
+        minimum_coefficient_for_momentum=max(constants.MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM, TKMMIN),
+        minimum_coefficient_for_scalars=max(constants.MOLECULAR_DIFFUSIVITY_FOR_SCALARS, TKHMIN),
         stratospheric_minimum_for_momentum=TKMMIN_STRAT,
         stratospheric_minimum_for_scalars=TKHMIN_STRAT,
         effective_diffusion_coefficient_for_momentum=tkvm,
@@ -445,7 +457,7 @@ def test_every_lower_limit_of_the_section_binds_somewhere(
     assert (np.maximum(0.25, np.sqrt(xri)) > 1.5).any(), "'MIN(x4*1.5, ...)' never clips"
 
     limit = TKHMIN_STRAT * ramp * np.minimum(1.5, np.maximum(0.25, np.sqrt(xri)))
-    constant_limit = max(MOLECULAR_DIFFUSIVITY_FOR_SCALARS, TKHMIN) * np.minimum(
+    constant_limit = max(constants.MOLECULAR_DIFFUSIVITY_FOR_SCALARS, TKHMIN) * np.minimum(
         2.5, np.maximum(0.01, scaled)
     )
     assert (limit > constant_limit).any(), "the stratospheric enhancement never wins"

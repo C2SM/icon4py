@@ -72,6 +72,23 @@ hoped away (port spec 5.4):
 
 Neither output selects a boundary row by a coefficient, so no stencil here uses 'concat_where'
 and all four are validated on 'embedded' as well as on the compiled backends.
+
+THE MODEL TOP OF 'frh' IS NOT OBSERVABLE, AND IS POISONED INSTEAD
+-----------------------------------------------------------------
+Three of the four programs start below row 0, and for two of them the reference data says so:
+running 'expl_mom' or 'frm' from one row higher changes that row in all 8276 computed columns.
+For 'frh' it does not. 'tkvh(:,0)' is exactly zero, so 'rhon*tkvh*a_circ*len_scale' is exactly
+zero at the model top, and the 'frh' this section inherits is exactly zero there too -- a
+'vertical_start=0' in 'compute_cke_flux_density' would produce exactly the reference and
+'test_section_6_leaves_the_rows_above_its_domains_alone' could not tell.
+'test_the_model_top_of_the_cke_flux_density_is_not_observable' measures that, and
+'test_the_model_top_row_of_the_diffusion_coefficient_is_not_read' closes it by filling
+'tkvh(:,0)' with NaN, which is section 10)'s input-poison pattern applied at the other end of
+the column.
+
+The blind row a section WRITES -- the exposure section 10) found in 'tketens(:,ke1)' -- does not
+occur here: every row each of the four programs writes differs between the two savepoints on all
+four dates, so no output poison test is warranted.
 """
 
 from __future__ import annotations
@@ -109,6 +126,10 @@ SECTION_6_OUTPUT_SLOTS = frozenset({"td_frh", "td_frm", "td_zaux"})
 #: Zero-based 'zaux' components this section writes: Fortran 'zaux(:,:,2)' is 'sav_prof' and
 #: 'zaux(:,:,3)' is 'expl_mom'. 'raw_zaux' takes the zero-based index.
 SAVED_TKE_PROFILE, EXPLICIT_DIFFUSION_MOMENTUM = 1, 2
+
+#: Zero-based row of the model top. None of the four programs writes it, and the one test below
+#: that names it is there because the reference data cannot show that of 'frh'.
+MODEL_TOP = 0
 
 #: Zero-based 'zvari' component holding what the Fortran still calls 'prss'. It entered
 #: 'turbdiff' as the half-level air pressure and 'solve_turb_budgets' replaced it in section 3)
@@ -163,7 +184,7 @@ class Section6(NamedTuple):
     cke_flux_at_main_levels: gtx.Field
 
 
-def _run_section_6(data_provider, date: str, backend) -> Section6:
+def _run_section_6(data_provider, date: str, backend, *, poison: str | None = None) -> Section6:
     """Run all four programs of section 6) on the 'turbdiff-5-exit' state of one timestep.
 
     The two flux-density programs are chained -- 'compute_cke_flux_at_main_levels' consumes the
@@ -173,6 +194,16 @@ def _run_section_6(data_provider, date: str, backend) -> Section6:
 
     The two 'zaux' programs are run in the opposite order to the Fortran, deliberately; see
     'test_the_two_zaux_programs_do_not_constrain_each_others_order'.
+
+    Args:
+        data_provider: The serialized archive.
+        date: One of 'utils.TURBDIFF_DATES'.
+        backend: The backend under test.
+        poison: 'model-top-diffusion-coefficient' fills row 0 of 'tkvh' with NaN, for the one
+            test that measures what this section does NOT read. It is a row
+            'compute_cke_flux_density' must leave out of its vertical domain, and the reference
+            data cannot say so on its own -- see
+            'test_the_model_top_of_the_cke_flux_density_is_not_observable'.
     """
     entry = data_provider.from_savepoint_turbdiff_entry(date=date)
     before = data_provider.from_savepoint_turbdiff_section(section="5", date=date)
@@ -181,6 +212,14 @@ def _run_section_6(data_provider, date: str, backend) -> Section6:
     horizontal = dict(
         horizontal_start=gtx.int32(before.ivstart()), horizontal_end=gtx.int32(before.ivend())
     )
+
+    scalar_diffusion_coefficient = before.tkvh()
+    if poison == "model-top-diffusion-coefficient":
+        values = scalar_diffusion_coefficient.asnumpy().copy()
+        values[:, MODEL_TOP] = np.nan
+        scalar_diffusion_coefficient = gtx.as_field(
+            scalar_diffusion_coefficient.domain, values, allocator=backend
+        )
 
     # 'zaux(:,:,2)' is 'r_cpd' and 'zaux(:,:,3)' is 'dQsat/dT' on the way in; this section takes
     # both over. The entry state is copied so that the rows it leaves alone can be asserted
@@ -216,7 +255,7 @@ def _run_section_6(data_provider, date: str, backend) -> Section6:
     )
     compute_cke_flux_density.with_backend(backend)(
         air_density=before.rhon(),
-        scalar_diffusion_coefficient=before.tkvh(),
+        scalar_diffusion_coefficient=scalar_diffusion_coefficient,
         circulation_acceleration=before.effective_gradient(CIRCULATION_ACCELERATION),
         mixing_length=before.mixing_length(),
         cke_flux_density=cke_flux_density,
@@ -510,6 +549,83 @@ def test_section_6_leaves_the_rows_above_its_domains_alone(
             reference.asnumpy()[run.columns, unwritten],
             err_msg=quantity,
         )
+
+
+@pytest.mark.datatest
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+def test_the_model_top_of_the_cke_flux_density_is_not_observable(
+    date: str, *, data_provider: sb.IconSerialDataProvider
+) -> None:
+    """'frh' at the model top is zero whether or not this section writes it -- measured.
+
+    The copy-of-entry convention makes 'test_section_6_leaves_the_rows_above_its_domains_alone'
+    able to see a program that writes a row it should not, but only when the value it would
+    write differs from the entry state. For 'frh' at row 0 it does not:
+    'tkvh(:,0)' is exactly zero -- the model top has no diffusion coefficient, which is section
+    2c)'s finding -- so the product 'rhon*tkvh*a_circ*len_scale' is exactly zero there, and the
+    'frh' this section inherits is exactly zero as well. A 'vertical_start=0' in
+    'compute_cke_flux_density' would therefore be invisible on all four dates.
+
+    That is measured here rather than argued, and closed by
+    'test_the_model_top_row_of_the_diffusion_coefficient_is_not_read' below. The two other
+    programs whose domain starts above row 0 do not need the same treatment: running 'expl_mom'
+    and 'frm' from row 1 changes that row in every one of the 8276 computed columns, so their
+    boundary is already distinguished by the data.
+
+    Section 2c)'s zero row is contagious. Anything downstream of it that multiplies by 'tkvm' or
+    'tkvh' inherits a model top the reference cannot check, and this is the first place in the
+    port where it has been paid for.
+    """
+    before = data_provider.from_savepoint_turbdiff_section(section="5", date=date)
+    after = data_provider.from_savepoint_turbdiff_section(section="6", date=date)
+    columns = slice(before.ivstart(), before.ivend())
+
+    assert not before.tkvh().asnumpy()[columns, MODEL_TOP].any(), (
+        "'tkvh' at the model top is no longer exactly zero, so the poison test below now "
+        "measures something weaker than it claims; re-derive the premise."
+    )
+    assert not before.thermal_forcing().asnumpy()[columns, MODEL_TOP].any()
+    assert not after.cke_flux_density().asnumpy()[columns, MODEL_TOP].any()
+
+
+@pytest.mark.datatest
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+def test_the_model_top_row_of_the_diffusion_coefficient_is_not_read(
+    date: str, *, data_provider: sb.IconSerialDataProvider, backend
+) -> None:
+    """'compute_cke_flux_density' starts below the model top, shown by poisoning what is there.
+
+    The row cannot be checked by comparing values, for the reason
+    'test_the_model_top_of_the_cke_flux_density_is_not_observable' measures: both the correct
+    answer and the wrong one are exactly zero. Filling 'tkvh(:,0)' with NaN removes the
+    coincidence -- a program whose vertical domain reached row 0 would multiply by the NaN and
+    write it into 'frh(:,0)', and the comparison here covers the whole slab, model top included,
+    so the NaN fails it. A correct vertical domain never touches the row and the result is
+    unchanged, bit for bit.
+
+    'frm' is compared as well although it cannot see the poison: it reads 'frh' only at rows
+    1..ke1-1. Asserting it anyway is what would catch a future fusion of the two programs that
+    widened the read.
+    """
+    run = _run_section_6(data_provider, date, backend, poison="model-top-diffusion-coefficient")
+
+    utils.assert_agrees_with_icon(
+        "compute_cke_flux_density",
+        "frh with the model-top row of 'tkvh' poisoned",
+        run.cke_flux_density,
+        run.after.cke_flux_density(),
+        columns=run.columns,
+    )
+    utils.assert_agrees_with_icon(
+        "compute_cke_flux_at_main_levels",
+        "frm with the model-top row of 'tkvh' poisoned",
+        run.cke_flux_at_main_levels,
+        run.after.cke_flux_at_main_levels(),
+        columns=run.columns,
+        levels=slice(2, run.ke1),
+    )
 
 
 @pytest.mark.datatest

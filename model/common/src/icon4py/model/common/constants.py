@@ -30,6 +30,16 @@ RD_O_CPD: Final[ta.wpfloat] = RD / CPD
 CPD_O_RD: Final[ta.wpfloat] = CPD / RD
 RD_O_CVD: Final[ta.wpfloat] = RD / CVD
 
+#: Kinematic viscosity of dry air [m2/s], 'con_m' in ICON (mo_physical_constants.f90). It is the
+#: molecular floor under the turbulent diffusion coefficient for momentum, where it stands for the
+#: transport that survives when the turbulence itself has died out.
+MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM: Final[ta.wpfloat] = 1.50e-5
+
+#: Scalar conductivity of dry air [m2/s], 'con_h' in ICON (mo_physical_constants.f90). The same
+#: floor for heat and moisture; ICON applies it where it does not apply 'con_m', so the two are
+#: not interchangeable.
+MOLECULAR_DIFFUSIVITY_FOR_SCALARS: Final[ta.wpfloat] = 2.20e-5
+
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[ta.wpfloat] = 461.51
 RV: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR

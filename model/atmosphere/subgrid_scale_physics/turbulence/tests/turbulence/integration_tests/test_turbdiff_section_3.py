@@ -114,12 +114,6 @@ from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
-#: Scalar conductivity of dry air, 'con_h' (mo_physical_constants.f90:116) [m2/s]. ICON's
-#: 'mo_physical_constants' has it and 'icon4py.model.common.constants' does not; it lives here
-#: until a shared home is agreed, because section 4) needs 'con_m' from the same block and a
-#: constant should be added once, for both.
-MOLECULAR_DIFFUSIVITY_FOR_SCALARS: Final[float] = 2.20e-5
-
 #: 'zvari' component indices (mo_turbdiff_config.f90:62-77), zero-based as the reader takes them.
 TET_L, H2O_G = 3, 4
 
@@ -286,7 +280,7 @@ def _run_section_3(data_provider, date: str, backend) -> Section3:
         stability_length_for_momentum=stability_m,
         stability_length_for_scalars=stability_h,
         turbulent_velocity_scale=velocity_scale,
-        molecular_diffusivity_for_scalars=MOLECULAR_DIFFUSIVITY_FOR_SCALARS,
+        molecular_diffusivity_for_scalars=constants.MOLECULAR_DIFFUSIVITY_FOR_SCALARS,
         diffusion_coefficient_for_momentum=tkvm,
         diffusion_coefficient_for_scalars=tkvh,
         horizontal_start=gtx.int32(columns.start),
@@ -505,7 +499,7 @@ def test_compute_stability_lengths_agrees_with_icon_through_the_next_fortran_sta
         "lsh, through 'tkvh = MAX(lsh*tke, con_h)'",
         np.maximum(
             run.stability_length_for_scalars.asnumpy()[window] * velocity_scale,
-            MOLECULAR_DIFFUSIVITY_FOR_SCALARS,
+            constants.MOLECULAR_DIFFUSIVITY_FOR_SCALARS,
         ),
         run.after.tkvh().asnumpy()[window],
     )

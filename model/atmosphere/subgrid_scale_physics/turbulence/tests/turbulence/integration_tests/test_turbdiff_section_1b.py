@@ -34,6 +34,22 @@ tolerance, that what the backend produced is one of the three admissible evaluat
 contraction, the first product fused, the second product fused -- and, in the same test, that the
 reference is the uncontracted one. When the 'Exact()' gate fails, those two assertions are what
 separates "somebody rebuilt without the flags" from "the translation is wrong".
+
+NO ROW OF THIS SECTION IS BLIND, AND THAT IS MEASURED
+------------------------------------------------------
+A comparison that starts from the entry state cannot see a row whose entry value already equals
+its exit value, which is the exposure section 10) found in 'tketens(:,ke1)' and closed with a
+NaN poison. Section 1b) does not have it, on either face:
+
+  * every row the section writes -- 'frh' rows 1..ke, 'frm' rows 1..ke-1 -- differs between
+    'turbdiff-1a-exit' and 'turbdiff-1b-exit' in every one of the 8276 computed columns, on all
+    four dates;
+  * every row it must NOT write is distinguished too. Extending each program's vertical domain
+    by one row and diffing that row changes it in all 8276 columns -- 'frh' at the model top,
+    'frm' at the model top, and 'frm' at the surface half level, which is the overrun the two
+    'leaves_..._alone' tests below exist to catch.
+
+So no poison test is written here: it would assert something the data already distinguishes.
 """
 
 from __future__ import annotations

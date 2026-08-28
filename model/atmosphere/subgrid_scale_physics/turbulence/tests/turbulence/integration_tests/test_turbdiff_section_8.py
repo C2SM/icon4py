@@ -53,6 +53,18 @@ Nothing here selects a boundary row by a coefficient -- the uppermost row is dis
 flag carried in the scan, as section 9)'s forward elimination does it -- so no 'concat_where' is
 involved and the one stencil is validated on 'embedded' as well as on the compiled backends.
 
+NO ROW OF THIS SECTION IS BLIND, AND THAT IS MEASURED
+-----------------------------------------------------
+'test_section_8_writes_exactly_these_rows' below states which rows change; what it does not say,
+and what the exposure section 10) found in 'tketens(:,ke1)' makes worth saying, is that each of
+them changes in EVERY one of the 8276 computed columns on all four dates. There is no row of
+'hlp' whose entry value already equals its exit value, so the copy-of-entry comparison is blind
+nowhere here and no NaN poison test is warranted.
+
+The one row the section must not write, the model top, is safer still: the scan reads
+'sav_prof' at 'Koff[-1]', so a 'vertical_start=0' is out of bounds rather than wrong. The
+boundary is enforced by the shift, not by the comparison.
+
 THESE TESTS ARE NOT MARKED 'embedded_too_slow', AND THAT IS A DECISION
 ---------------------------------------------------------------------
 The embedded backend runs a 'scan_operator' as a Python loop over 'nlev' rows, which costs 170 s
