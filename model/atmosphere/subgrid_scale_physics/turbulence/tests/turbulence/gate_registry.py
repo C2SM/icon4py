@@ -287,6 +287,13 @@ GATES: dict[str, Gate] = {
     # computed values of both 'tkvm' and 'tkvh'.
     "compute_effective_diffusion_coefficients": Exact(),
 
+    # turbdiff section 8) the virtual TKE profile that carries the circulation term into
+    # section 9's implicit solve. A genuine forward recurrence -- the only 'scan_operator' in
+    # wave 2b -- and bit-exact on 'embedded', 'gtfn_cpu' and 'dace_cpu', all four dates.
+    # A scan's carry is where a GPU re-association would show up first, so this is the entry to
+    # watch in the central GPU pass.
+    "compute_virtual_tke_profile": Exact(),
+
     # turbdiff section 10) the q tendency of the TKE diffusion. No transcendental and no
     # multiply-add exposure -- 'sqrt' is correctly rounded and '2*x' is exact -- so this was
     # established in plain numpy against the archive before any GT4Py was written, and the
