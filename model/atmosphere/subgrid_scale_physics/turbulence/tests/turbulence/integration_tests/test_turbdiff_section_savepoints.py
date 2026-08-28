@@ -32,6 +32,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, serialbox as sb
 
 from ..fixtures import *  # noqa: F403
@@ -318,9 +319,11 @@ def test_turbdiff_2b_is_dead_in_this_configuration(
     assert differing == []
 
     # 'raw_field()' is the escape hatch for a slot the reader refuses to name; it must hand back
-    # exactly what the serializer holds, unsqueezed and untruncated.
+    # exactly what the serializer holds, unsqueezed and untruncated. It hands it back in the
+    # backend's array namespace, so it is brought to the host before being compared -- 'cupy'
+    # refuses the implicit conversion 'np.asarray' would attempt on a GPU backend.
     assert np.array_equal(
-        np.asarray(before.raw_field("td_frm")),
+        data_alloc.as_numpy(before.raw_field("td_frm")),
         np.asarray(data_provider.serializer.read("td_frm", before.savepoint)),
     )
 

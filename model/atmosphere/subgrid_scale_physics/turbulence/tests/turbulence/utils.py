@@ -55,6 +55,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, serialbox as sb
 
 from . import gate_registry
@@ -123,12 +124,17 @@ def copy_of_raw_field(
     wraps it: the raw buffer is the untruncated 'nproma' slab, so it is cut down to the grid's
     cells here, which is what the named accessors do too.
 
+    'raw_field' hands back an array in the BACKEND'S array namespace, so on a GPU backend it
+    is a 'cupy.ndarray' and 'np.asarray' on it raises rather than copying ("Implicit
+    conversion to a NumPy array is not allowed"). It is brought to the host explicitly here,
+    and the transfer back to the device is left to 'gtx.as_field(..., allocator=backend)'.
+
     Args:
         savepoint: The section's entry savepoint.
         name: The serialized name, scheme prefix included ('td_frh', 'vd_frm').
         backend: The backend under test.
     """
-    buffer = np.asarray(savepoint.raw_field(name))[: savepoint.sizes[dims.CellDim]]
+    buffer = data_alloc.as_numpy(savepoint.raw_field(name))[: savepoint.sizes[dims.CellDim]]
     return gtx.as_field((dims.CellDim, dims.KDim), np.ascontiguousarray(buffer), allocator=backend)
 
 
@@ -239,5 +245,9 @@ def fields_that_changed(
 
 
 def _as_array(field: gtx.Field | np.ndarray) -> np.ndarray:
-    """The values of a GT4Py field as host memory, or a plain array unchanged."""
-    return field if isinstance(field, np.ndarray) else field.asnumpy()
+    """The values of a GT4Py field, or of a plain array, as host memory.
+
+    'data_alloc.as_numpy' rather than 'np.asarray' because on a GPU backend the array may be a
+    'cupy.ndarray', which refuses implicit conversion -- see 'copy_of_raw_field'.
+    """
+    return data_alloc.as_numpy(field)

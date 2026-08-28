@@ -43,6 +43,27 @@ asserted untouched rather than ignored. Import it as a module (`from .. import u
 docstring before writing a new section test; `tests/turbulence/gate_registry.py` needs an entry for
 each stencil before it can be compared against anything.
 
+### Bit-exactness on the GPU backends
+
+The gates in `tests/turbulence/gate_registry.py` are `Exact()`, and they hold on `embedded`,
+`gtfn_cpu`, `dace_cpu`, `gtfn_gpu` and `dace_gpu`. Three things had to be true for that, and only
+the first is obvious:
+
+- **No multiply-add contraction on either side.** The reference is built with `-Kieee -Mnofma -gpu=nofma`; the port sets `CXXFLAGS=-ffp-contract=off` and `CUDAFLAGS=--fmad=false` in
+  `tests/turbulence/conftest.py`. Both reach the compiler: GT4Py's CMake toolchain picks them up
+  for `gtfn_*`, and for `dace_*` GT4Py reads them itself and writes `compiler.cpu.args` /
+  `compiler.cuda.args` (`gt4py/next/program_processors/runners/dace/workflow/common.py`), which
+  also displaces DaCe's default `--use_fast_math`. Verified on `dace_gpu`: `compute_thermal_forcing`
+  (`a*b + c*d`, the expression that is sensitive to it) is bit-exact.
+- **Write a square as a product, never as `x**2`.** Fortran's integer-exponent `**` is a
+  multiplication; GT4Py's `**` becomes `math.pow`, and CUDA's `pow` carries up to 2 ulp of error.
+  See the docstring of `_compute_mechanical_forcing`, which is where it was measured.
+- **One persistent GT4Py build cache directory per backend.** GT4Py's cache key is the program,
+  the offset provider and the column axis -- not the backend and not the compiler flags -- so a
+  shared `GT4PY_BUILD_CACHE_DIR` serves a CPU-compiled program to a GPU run. `pytest_configure`
+  in `tests/turbulence/conftest.py` adds the `--backend` subdirectory; the flag set is in the
+  directory name the run scripts choose.
+
 ## Boundary rows: when to use `concat_where`
 
 Nearly every section of `turbdiff` treats the surface half level `ke1` differently from the
