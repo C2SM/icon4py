@@ -66,22 +66,25 @@ the first is obvious:
 
 ## Boundary rows: when to use `concat_where`
 
-Nearly every section of `turbdiff` treats the surface half level `ke1` differently from the
-half levels above it, and Raschendorfer writes the two cases as two separate ACC loops. That
-split is a Fortran artefact — the loops alias one array, so the boundary block has to run first
-— and it does not have to survive translation. The rule for the port:
+Nearly every section of `turbdiff` treats one end of the column differently from the rest — most
+often the surface half level `ke1`, in section 11) the model top — and Raschendorfer writes the
+two cases as two separate ACC loops. That split is a Fortran artefact — the loops alias one array,
+so the boundary block has to run first — and it does not have to survive translation. The rule for
+the port:
 
 **Merge into one `@gtx.program` with `concat_where` when the boundary row is a different
 *coefficient or expression* for the *same output field*. Keep separate programs when the
 boundary row writes a *different field*, or writes nothing.**
 
-Worked out on section 1a) and 1b), which is where each half of the rule was decided:
+Worked out on section 1a) and 1b), which is where each half of the rule was decided; section 11)
+is the first application at the other end of the column:
 
-| Fortran                                 | ported as                                                                 | why                                                                                                                                                                                                                                                                                     |
-| --------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `zvari(:,ke1,n)` and `zvari(:,k,n)`     | ONE program, `concat_where(dims.KDim == nlev, …)` on the reciprocal depth | Identical difference quotient `(zvari(k-1) - zvari(k)) * scale`; only `scale` differs (`lays` vs `hlp`). One field, one program.                                                                                                                                                        |
-| `hlp`/`dicke`, `DO k=ke,2,-1`           | one program, no `concat_where`                                            | Rows 0 and `ke1` are not written at all in this section, so there is no second case to select. Its own vertical domain says that.                                                                                                                                                       |
-| `frh` (`k=2,ke1`) and `frm` (`k=2,kem`) | TWO programs                                                              | Different fields, different formulas, disjoint inputs. Fusing them would need `concat_where(KDim < nlev, shear, frm)`, i.e. a read-modify-write turning "`frm(:,ke1)` is never written" into "`frm(:,ke1)` is rewritten with its old value". That is a semantic change, not a refactor. |
+| Fortran                                                            | ported as                                                                 | why                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zvari(:,ke1,n)` and `zvari(:,k,n)`                                | ONE program, `concat_where(dims.KDim == nlev, …)` on the reciprocal depth | Identical difference quotient `(zvari(k-1) - zvari(k)) * scale`; only `scale` differs (`lays` vs `hlp`). One field, one program.                                                                                                                                                                                           |
+| `hlp`/`dicke`, `DO k=ke,2,-1`                                      | one program, no `concat_where`                                            | Rows 0 and `ke1` are not written at all in this section, so there is no second case to select. Its own vertical domain says that.                                                                                                                                                                                          |
+| `frh` (`k=2,ke1`) and `frm` (`k=2,kem`)                            | TWO programs                                                              | Different fields, different formulas, disjoint inputs. Fusing them would need `concat_where(KDim < nlev, shear, frm)`, i.e. a read-modify-write turning "`frm(:,ke1)` is never written" into "`frm(:,ke1)` is rewritten with its old value". That is a semantic change, not a refactor.                                    |
+| `rcld(:,1)=rcld(:,2)` and `rcld(:,k)=(rcld(:,k)+rcld(:,k+1))*z1d2` | ONE program, `concat_where(dims.KDim == 0, …)` on the result              | Same two half levels read on every row, weighted `(0, 1)` at the model top and `(1/2, 1/2)` below. Only the coefficients differ, so one field, one program — the rule reads the same at `KDim == 0` as at `KDim == nlev`. The two rows the section does not write are left to the vertical domain, as `hlp`/`dicke` above. |
 
 ### What merging buys, and what it costs
 
@@ -130,3 +133,50 @@ Two things verified on `gtfn_cpu` and `dace_cpu` rather than assumed:
   `test_gradients_at_the_surface_do_not_read_the_geometric_depth` keeps measuring that, so a
   future GT4Py that evaluates both branches everywhere fails loudly instead of silently reading
   undefined rows.
+
+## Vertical recurrences: how to tell whether a `k`-loop is one
+
+`turbdiff` has roughly ten genuine sequential recurrences and around a hundred and seventy `k`
+loops, so the question "does this section need a `scan_operator`?" comes up in almost every
+section and is answered wrongly by the obvious signal.
+
+**A `!$ACC LOOP SEQ` is not evidence of a recurrence.** Raschendorfer marks a loop sequential for
+several reasons — scratch reuse, `k`-dependent branching, register pressure — and the port must
+not inherit the serialisation those bring. `solve_turb_budgets`' main loop
+(`turb_utilities.f90:1384`) is `LOOP SEQ` with no `k±1` access at all and is deliberately kept
+wide; section 6)'s only `LOOP SEQ` (`turb_diffusion.f90:2283`) is likewise offset-free, and is
+dead in the operational configuration besides. Conversely the two real recurrences of section 8)
+and section 9) are written as `LOOP SEQ` — but so is a lot else.
+
+**The test that does decide it.** A `k` iteration must *read what a previous `k` iteration of the
+same loop wrote*. Applied mechanically:
+
+1. Take the array the loop writes.
+2. Look for a read of **that same array** at `k±1` **inside the same loop nest**.
+3. If the `k±1` read is of a *different* array — even one the previous `!$ACC PARALLEL` region
+   just filled — there is no recurrence. A separate ACC region is a barrier, so what it produced
+   is an input, and the port has it as its own field: an ordinary `Koff[±1]` stencil.
+4. In-place writes at the *same* `k` (`dicke(i,k) = dicke(i,k)*tke(i,k)`) are pointwise, not
+   sequential.
+
+Section 6) fails the test at every one of its eight loops — five live, three dead — and is
+therefore plain field operators throughout. Three of the loops read a neighbouring half level:
+`expl_mom` reads the diffusion coefficient at `k-1`, `frm` reads `frh` at `k-1`, and the dead
+circulation source reads `frm` at `k+1`. In each case the array read is not the array written.
+That the four resulting stencils are bit-exact `Exact()` on `embedded`, `gtfn_cpu` and `dace_cpu`
+is the confirmation.
+
+**Aliasing that looks like a dependence.** `turbdiff` reuses storage aggressively, and the reuse
+imposes an ordering on the Fortran that has no counterpart here. Section 6) writes the TKE
+diffusion coefficient into `zaux(:,:,2)`, averages it onto the flux levels as `expl_mom`, and
+then overwrites the same slot with the saved TKE profile: the second loop *must* run before the
+third. In the port the coefficient is an intermediate inside
+`compute_explicit_tke_diffusion_momentum`, so the two programs are independent and
+`test_the_two_zaux_programs_do_not_constrain_each_others_order` asserts that they stay so. Expect
+this pattern; it is the same one section 1a) documents for `zvari`.
+
+**A consequence worth planning for.** An intermediate that the Fortran writes into a storage it
+later reuses does not reach a savepoint and has no oracle. The coefficient `c_diff*l*q` above is
+one, and the only way to validate it is through the quantity that consumes it. Do not build a
+stencil whose sole output is such an intermediate; fold it into its consumer, where the reference
+data can see it.
