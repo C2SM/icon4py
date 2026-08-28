@@ -19,15 +19,12 @@ that by comparing every serialized field across the two savepoints. That is what
 scope of the three stencils below; anything else that changed would mean the section does more
 than they do.
 
-EVERY COMPARISON IS MASKED TO 'ivstart:ivend'. The hook writes the whole 'nproma' slab but the
-scheme only loops over that window, and what lies outside is untouched memory holding plausible
-values rather than NaN, so an unmasked comparison fails looking exactly like a physics bug.
-
-Each output field is allocated as a COPY OF ITS ENTRY STATE and compared over the whole column,
-so the rows the Fortran leaves alone -- the model top of 'hlp', 'dicke' and the five gradients,
-and the surface row of 'hlp' and 'dicke' -- are asserted to be untouched rather than ignored.
-'lays' is undefined before this section, so it is allocated NaN-filled instead, which makes an
-unwritten column inside the window a failure rather than a coincidence.
+The two conventions every comparison below follows -- masked to 'ivstart:ivend', and each output
+field allocated as a copy of its entry state -- are stated once in 'tests/turbulence/utils.py'.
+What they buy here: the rows the Fortran leaves alone -- the model top of 'hlp', 'dicke' and the
+five gradients, and the surface row of 'hlp' and 'dicke' -- are asserted to be untouched rather
+than ignored. 'lays' is undefined before this section, so it is allocated NaN-filled instead,
+which makes an unwritten column inside the window a failure rather than a coincidence.
 
 'compute_vertical_gradients_of_conserved_variables' selects its reciprocal depth per row with
 'concat_where', which the embedded backend cannot execute (see 'model/testing/filters.py'), so its
@@ -53,19 +50,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
     compute_vertical_gradients_of_conserved_variables,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing import definitions, serialbox as sb
+from icon4py.model.testing import serialbox as sb
 
-from .. import gate_registry
+from .. import utils
 from ..fixtures import *  # noqa: F403
 
-
-#: The four timesteps 'exp.mch_icon-ch2_small' serializes.
-TURBDIFF_DATES = (
-    "2020-12-10T06:01:00.000",
-    "2020-12-10T06:01:20.000",
-    "2020-12-10T06:01:40.000",
-    "2020-12-10T06:02:00.000",
-)
 
 #: The storage slots section 1a) writes, as the four Fortran arrays they are serialized under.
 #: Asserted against the data by 'test_section_1a_writes_exactly_four_slots'.
@@ -81,100 +70,27 @@ CONSERVED_VARIABLES = (
     ("liquid_water", 5),  # liq
 )
 
-experiment_for_turbulence = pytest.mark.parametrize(
-    "experiment_description",
-    [definitions.Experiments.MCH_ICON_CH2_SMALL],
-    ids=lambda d: d.name,
-)
-
-
-def _copy_of(field: gtx.Field, backend) -> gtx.Field:
-    """A writable field with the same domain and contents, on the backend under test."""
-    return gtx.as_field(field.domain, field.asnumpy().copy(), allocator=backend)
-
-
-def _nan_like(field: gtx.Field, backend) -> gtx.Field:
-    """A writable field with the same domain, filled with NaN.
-
-    Adversarial on purpose: the slot this stands in for is undefined at the entry savepoint, so
-    a column the stencil fails to write must not accidentally hold a plausible value.
-    """
-    return gtx.as_field(field.domain, np.full_like(field.asnumpy(), np.nan), allocator=backend)
-
-
-def _surface_row(field: gtx.Field, nlev: int, backend) -> gtx.Field:
-    """Row 'nlev' of a half-level field as a 2D cell field.
-
-    GT4Py offsets are relative, so a fixed absolute-K input (Fortran 'tkvm(:,ke1)') has to be
-    pre-sliced by the caller.
-    """
-    return gtx.as_field((dims.CellDim,), field.asnumpy()[:, nlev].copy(), allocator=backend)
-
-
-def _assert_agrees(
-    stencil_name: str,
-    quantity: str,
-    computed: gtx.Field,
-    reference: gtx.Field,
-    *,
-    ivstart: int,
-    ivend: int,
-    levels: slice = slice(None),
-) -> None:
-    """Compare one output against the reference under the stencil's declared gate.
-
-    The gate is looked up rather than defaulted: a stencil with no entry in the registry is a
-    failure, because a silent 'Exact()' is indistinguishable from one nobody decided on.
-
-    'levels' restricts the comparison to the rows the named stencil is responsible for, so that
-    a failure names the program that produced it. It is ignored for the 2D surface fields,
-    which have no vertical axis to restrict.
-    """
-    gate = gate_registry.gate_for(stencil_name)
-    window = (slice(ivstart, ivend), levels)[: computed.asnumpy().ndim]
-    got = computed.asnumpy()[window]
-    want = reference.asnumpy()[window]
-
-    if isinstance(gate, gate_registry.Exact):
-        assert np.array_equal(got, want), (
-            f"'{stencil_name}' is gated 'Exact' but '{quantity}' differs from ICON: max abs "
-            f"{np.nanmax(np.abs(got - want))} over {np.count_nonzero(got != want)} of "
-            f"{got.size} values."
-        )
-    else:
-        np.testing.assert_allclose(got, want, rtol=gate.rtol, err_msg=quantity)
-
 
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_section_1a_writes_exactly_four_slots(
     date: str, *, data_provider: sb.IconSerialDataProvider
 ) -> None:
     """Section 1a) changes 'lays', 'hlp', 'dicke' and 'zvari', and nothing else.
 
-    This is what bounds the four stencils below. Reading the Fortran gives the same answer, but
-    the answer depends on the configuration -- a resolved canopy or a different 'imode_*' could
-    add a write -- so it is asserted against the capture rather than argued.
+    This is what bounds the stencils below; 'utils.fields_that_changed' says why the output set
+    is measured against the capture rather than read off the Fortran.
     """
     before = data_provider.from_savepoint_turbdiff_section(section="0", date=date)
     after = data_provider.from_savepoint_turbdiff_section(section="1a", date=date)
-    window = slice(before.ivstart(), before.ivend())
 
-    changed = set()
-    for name in data_provider.serializer.fields_at_savepoint(before.savepoint):
-        entry = np.asarray(data_provider.serializer.read(name, before.savepoint))
-        exit_ = np.asarray(data_provider.serializer.read(name, after.savepoint))
-        masked = window if entry.ndim >= 2 and entry.shape[0] > before.ivend() else slice(None)
-        if not np.array_equal(entry[masked], exit_[masked]):
-            changed.add(name)
-
-    assert changed == set(SECTION_1A_OUTPUT_SLOTS)
+    assert utils.fields_that_changed(data_provider, before, after) == SECTION_1A_OUTPUT_SLOTS
 
 
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_surface_transfer_ratios(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
@@ -183,14 +99,14 @@ def test_compute_surface_transfer_ratios(
     after = data_provider.from_savepoint_turbdiff_section(section="1a", date=date)
     nlev = entry.ke()
 
-    for_momentum = _nan_like(before.tfm(), backend)
-    for_scalars = _nan_like(before.tfh(), backend)
+    for_momentum = utils.nan_like(before.tfm(), backend)
+    for_scalars = utils.nan_like(before.tfh(), backend)
 
     compute_surface_transfer_ratios.with_backend(backend)(
         tvm=entry.tvm(),
         tvh=entry.tvh(),
-        tkvm_at_surface=_surface_row(before.tkvm(), nlev, backend),
-        tkvh_at_surface=_surface_row(before.tkvh(), nlev, backend),
+        tkvm_at_surface=utils.surface_row(before.tkvm(), nlev, backend),
+        tkvh_at_surface=utils.surface_row(before.tkvh(), nlev, backend),
         tfm=before.tfm(),
         tfh=before.tfh(),
         surface_transfer_ratio_for_momentum=for_momentum,
@@ -204,19 +120,18 @@ def test_compute_surface_transfer_ratios(
         ("lays(:,mom)", for_momentum, after.lays(0)),
         ("lays(:,sca)", for_scalars, after.lays(1)),
     ):
-        _assert_agrees(
+        utils.assert_agrees_with_icon(
             "compute_surface_transfer_ratios",
             quantity,
             computed,
             reference,
-            ivstart=before.ivstart(),
-            ivend=before.ivend(),
+            columns=slice(before.ivstart(), before.ivend()),
         )
 
 
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_inverse_layer_depth_and_tke_discretisation_momentum(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
@@ -225,8 +140,8 @@ def test_compute_inverse_layer_depth_and_tke_discretisation_momentum(
     after = data_provider.from_savepoint_turbdiff_section(section="1a", date=date)
     nlev = entry.ke()
 
-    inverse_layer_depth = _copy_of(before.hlp(), backend)
-    tke_discretisation_momentum = _copy_of(before.layer_depth(), backend)
+    inverse_layer_depth = utils.copy_of(before.hlp(), backend)
+    tke_discretisation_momentum = utils.copy_of(before.layer_depth(), backend)
 
     compute_inverse_layer_depth_and_tke_discretisation_momentum.with_backend(backend)(
         hhl=entry.hhl(),
@@ -245,20 +160,19 @@ def test_compute_inverse_layer_depth_and_tke_discretisation_momentum(
         ("hlp", inverse_layer_depth, after.hlp()),
         ("dicke", tke_discretisation_momentum, after.disc_mom()),
     ):
-        _assert_agrees(
+        utils.assert_agrees_with_icon(
             "compute_inverse_layer_depth_and_tke_discretisation_momentum",
             quantity,
             computed,
             reference,
-            ivstart=before.ivstart(),
-            ivend=before.ivend(),
+            columns=slice(before.ivstart(), before.ivend()),
         )
 
 
 @pytest.mark.datatest
 @pytest.mark.uses_concat_where
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_gradients_of_conserved_variables(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
@@ -284,6 +198,7 @@ def test_compute_gradients_of_conserved_variables(
     after = data_provider.from_savepoint_turbdiff_section(section="1a", date=date)
     nlev = entry.ke()
     ivstart, ivend = before.ivstart(), before.ivend()
+    columns = slice(ivstart, ivend)
 
     variables = {
         name: before.conserved_variable(component) for name, component in CONSERVED_VARIABLES
@@ -292,7 +207,9 @@ def test_compute_gradients_of_conserved_variables(
     # as a copy of its input is what reproduces the Fortran's initial state -- and keeping the two
     # buffers apart is what makes the claim that this is not a recurrence testable rather than
     # assumed.
-    gradients = {f"{name}_gradient": _copy_of(field, backend) for name, field in variables.items()}
+    gradients = {
+        f"{name}_gradient": utils.copy_of(field, backend) for name, field in variables.items()
+    }
 
     compute_vertical_gradients_of_conserved_variables.with_backend(backend)(
         **variables,
@@ -310,13 +227,12 @@ def test_compute_gradients_of_conserved_variables(
 
     for name, component in CONSERVED_VARIABLES:
         quantity = f"zvari(:,:,{component}) [{name}]"
-        _assert_agrees(
+        utils.assert_agrees_with_icon(
             "compute_vertical_gradients_of_conserved_variables",
             quantity,
             gradients[f"{name}_gradient"],
             after.vertical_gradient(component),
-            ivstart=ivstart,
-            ivend=ivend,
+            columns=columns,
             levels=slice(0, nlev + 1),
         )
         # Row 0 is asserted against the INPUT as well as against the reference above. The two
@@ -329,8 +245,8 @@ def test_compute_gradients_of_conserved_variables(
 
 @pytest.mark.datatest
 @pytest.mark.uses_concat_where
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_gradients_at_the_surface_do_not_read_the_geometric_depth(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
@@ -347,6 +263,7 @@ def test_gradients_at_the_surface_do_not_read_the_geometric_depth(
     after = data_provider.from_savepoint_turbdiff_section(section="1a", date=date)
     nlev = entry.ke()
     ivstart, ivend = before.ivstart(), before.ivend()
+    columns = slice(ivstart, ivend)
 
     poisoned = after.hlp().asnumpy().copy()
     poisoned[:, nlev] = np.nan
@@ -355,7 +272,9 @@ def test_gradients_at_the_surface_do_not_read_the_geometric_depth(
     variables = {
         name: before.conserved_variable(component) for name, component in CONSERVED_VARIABLES
     }
-    gradients = {f"{name}_gradient": _copy_of(field, backend) for name, field in variables.items()}
+    gradients = {
+        f"{name}_gradient": utils.copy_of(field, backend) for name, field in variables.items()
+    }
 
     compute_vertical_gradients_of_conserved_variables.with_backend(backend)(
         **variables,
@@ -372,12 +291,11 @@ def test_gradients_at_the_surface_do_not_read_the_geometric_depth(
     )
 
     for name, component in CONSERVED_VARIABLES:
-        _assert_agrees(
+        utils.assert_agrees_with_icon(
             "compute_vertical_gradients_of_conserved_variables",
             f"zvari(:,ke1,{component}) [{name}] with 'hlp(:,ke1)' poisoned",
             gradients[f"{name}_gradient"],
             after.vertical_gradient(component),
-            ivstart=ivstart,
-            ivend=ivend,
+            columns=columns,
             levels=slice(nlev, nlev + 1),
         )

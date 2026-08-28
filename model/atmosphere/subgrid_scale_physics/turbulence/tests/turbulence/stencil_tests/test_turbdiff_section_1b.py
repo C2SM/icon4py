@@ -19,26 +19,21 @@ off the source but measured: 'test_section_1b_writes_only_the_two_forcings' comp
 serialized field between the two savepoints, and only those two differ. The vertical ranges
 differ by one level and the difference is load-bearing -- see the two stencil docstrings.
 
-WHY THIS SECTION IS NOT BIT-EXACT
----------------------------------
-It is not bit-exact against this capture, and the mechanism is a fused multiply-add on both
-sides, in different places. The Fortran statement is a sum of two products, and a compiler is
-free to contract one of them into the addition:
+WHY BIT-EXACTNESS HERE IS ONE COMPILER FLAG DEEP ON EACH SIDE
+-------------------------------------------------------------
+Both forcings are 'a*b + c*d', the first fused expressions of the port, and a compiler on either
+side is free to contract one product into the addition -- which changes the result by one
+rounding and puts bit-exactness out of reach. Neither side does, but only because both were
+arranged for it: ICON's four turbulence translation units are compiled '-Kieee -Mnofma
+-gpu=nofma' for the v02 capture, and 'tests/turbulence/conftest.py' sets '-ffp-contract=off' for
+the compiled backends. Both stencils are gated 'Exact()' on that basis.
 
-    ICON        nvhpc, FCFLAGS '-g -O ... -acc=gpu', i.e. WITHOUT the '-Kieee -Mnofma' the port
-                spec calls for, emits 'fma(c, d, a*b)' -- the second product is fused.
-    gtfn_cpu    GCC at CMake Release, i.e. at GCC's default '-ffp-contract=fast' (gt4py.next
-                has no equivalent of gt4py.cartesian's '-ffp-contract=off'), emits
-                'fma(a, b, c*d)' -- the first product is fused.
-    embedded    numpy, no contraction at all.
-
-Three correctly rounded evaluations of one expression, differing only in which single rounding
-is elided. 'test_*_is_the_fortran_expression_up_to_one_contraction' asserts exactly that, bit
-for bit and with no tolerance: whatever the backend produced equals one of the three admissible
-evaluations. That is a stronger statement than any 'rtol', and it is what distinguishes "the
-translation is right and a compiler contracted it" from "the translation is wrong".
-
-The consequence for the gate registry is in the module-level 'PROPOSED_GATES' below.
+An agreement that rests on two build flags is not left to speak for itself.
+'test_*_is_the_fortran_expression_up_to_one_contraction' asserts, bit for bit and with no
+tolerance, that what the backend produced is one of the three admissible evaluations -- no
+contraction, the first product fused, the second product fused -- and, in the same test, that the
+reference is the uncontracted one. When the 'Exact()' gate fails, those two assertions are what
+separates "somebody rebuilt without the flags" from "the translation is wrong".
 """
 
 from __future__ import annotations
@@ -57,14 +52,12 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_thermal_forcing import (
     compute_thermal_forcing,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.testing import definitions, serialbox as sb
+from icon4py.model.testing import serialbox as sb
 
-from .. import gate_registry
+from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
-#: The four timesteps 'exp.mch_icon-ch2_small' serializes.
 #: Why an uncontracted reference matters enough to assert. The v02 capture was built with
 #: ICON_FCFLAGS='-Kieee -Mnofma -gpu=nofma' on the four turbulence translation units, so ICON
 #: contracts nothing and bit-exactness is reachable. 'make' is timestamp-driven: a later rebuild
@@ -77,41 +70,8 @@ _CONTRACTED_REFERENCE = (
 )
 
 
-TURBDIFF_DATES = (
-    "2020-12-10T06:01:00.000",
-    "2020-12-10T06:01:20.000",
-    "2020-12-10T06:01:40.000",
-    "2020-12-10T06:02:00.000",
-)
-
 #: 'zvari' component indices (mo_turbdiff_config.f90:62-77), zero-based as the reader takes them.
 U_M, V_M, TET_L, H2O_G = 1, 2, 3, 4
-
-#: What this task would put in 'tests/turbulence/gate_registry.py' if it owned that file. It does
-#: not -- several section ports run in parallel and the registry is edited by one hand -- so the
-#: proposal lives here and 'test_*_agrees_with_icon_within_its_gate' skips with it until the
-#: entry lands, at which point that test starts asserting instead.
-#:
-#: Both numbers are measured on exp.mch_icon-ch2_small, all four timesteps, gtfn_cpu and
-#: embedded, over 'ivstart:ivend' and the computed half levels only. The reason is NOT in
-#: 'gate_registry.Reason': FMA contraction is neither re-association (the operand order is
-#: unchanged) nor any of the other three members. Per docs/gates.md that makes this a finding to
-#: escalate, not a tolerance to grant -- either the reference is re-captured with '-Kieee
-#: -Mnofma', or the spec gains a fifth 'Reason'.
-PROPOSED_GATES = {
-    # frh = g_tet*d(tet_l) + g_h2o*d(h2o_g) is a difference of two same-sign-dominated terms and
-    # cancels hard: max rel err 9.1e-12 sits where |frh| ~ 1e-11 against terms of order 1e-1.
-    # Measured relative to the magnitude of the operands the number is ~1 ULP everywhere.
-    "compute_thermal_forcing": dict(rtol=1.0e-11, measured_max_rel_err=9.2e-12),
-    # frm = MAX(du**2 + dv**2, fc_min) has no cancellation, so the contraction stays at 1 ULP.
-    "compute_mechanical_forcing": dict(rtol=1.0e-15, measured_max_rel_err=2.3e-16),
-}
-
-experiment_for_turbulence = pytest.mark.parametrize(
-    "experiment_description",
-    [definitions.Experiments.MCH_ICON_CH2_SMALL],
-    ids=lambda d: d.name,
-)
 
 
 class Section1b(NamedTuple):
@@ -143,29 +103,17 @@ def _fma() -> Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray]:
     return lambda a, b, c: ufunc(a, b, c).astype(np.float64)
 
 
-def _output_field_from_entry_state(savepoint, name: str, num_cells: int, backend) -> gtx.Field:
-    """Allocate an output field holding what the Fortran storage held on entry to the section.
-
-    The convention for every section of this port: an output field starts as the *entry*
-    savepoint's contents of the same storage, so the whole slab can be compared against the exit
-    savepoint. Levels the section does not write must then come out unchanged, which turns a
-    wrong vertical domain into a failed assertion instead of an invisible one. Zero-filling or
-    NaN-filling would make those levels differ for a reason that says nothing about the stencil.
-    """
-    buffer = np.asarray(savepoint.raw_field(name))[:num_cells]
-    return gtx.as_field((dims.CellDim, dims.KDim), np.ascontiguousarray(buffer), allocator=backend)
-
-
 def _run_section_1b(data_provider, date: str, backend) -> Section1b:
     """Run both stencils of section 1b) on the 'turbdiff-1a-exit' state of one timestep."""
     entry = data_provider.from_savepoint_turbdiff_entry(date=date)
     before = data_provider.from_savepoint_turbdiff_section(section="1a", date=date)
     after = data_provider.from_savepoint_turbdiff_section(section="1b", date=date)
     ke, ke1 = entry.ke(), entry.ke1()
-    num_cells = before.g_tet_l().shape[0]
 
-    thermal_forcing = _output_field_from_entry_state(before, "td_frh", num_cells, backend)
-    mechanical_forcing = _output_field_from_entry_state(before, "td_frm", num_cells, backend)
+    # 'frh' and 'frm' have no accessor at 'turbdiff-1a-exit' -- this section is what gives them
+    # their meaning -- so their entry state comes from the raw storage.
+    thermal_forcing = utils.copy_of_raw_field(before, "td_frh", backend)
+    mechanical_forcing = utils.copy_of_raw_field(before, "td_frm", backend)
 
     # Fortran 'DO k=2,ke1' over one-based half levels is 'vertical_start=1, vertical_end=ke1'.
     compute_thermal_forcing.with_backend(backend)(
@@ -204,36 +152,9 @@ def _run_section_1b(data_provider, date: str, backend) -> Section1b:
     )
 
 
-def _assert_within_gate(stencil: str, computed: np.ndarray, expected: np.ndarray) -> None:
-    """Compare against the ICON reference under the gate declared for 'stencil'.
-
-    Skips while the stencil has no registry entry rather than defaulting to a tolerance: a
-    silent default is the drift 'gate_registry' exists to prevent, and inventing an entry here
-    would put the threshold in the one place review does not look for it.
-
-    The skip is temporary scaffolding, not the intended behaviour. Once the entries below land
-    in the registry, delete the 'except' branch so that a missing gate is a failure -- which is
-    what the section 1a) tests already do.
-    """
-    try:
-        gate = gate_registry.gate_for(stencil)
-    except gate_registry.UnregisteredStencilError:
-        proposal = PROPOSED_GATES[stencil]
-        pytest.skip(
-            f"'{stencil}' has no entry in 'gate_registry.GATES' yet; the measured proposal is "
-            f"{proposal}, and see this module's docstring for why 'Reason' has no member that "
-            "fits."
-        )
-
-    if isinstance(gate, gate_registry.Exact):
-        np.testing.assert_array_equal(computed, expected)
-    else:
-        np.testing.assert_allclose(computed, expected, rtol=gate.rtol, atol=0.0)
-
-
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_section_1b_writes_only_the_two_forcings(
     date: str, *, data_provider: sb.IconSerialDataProvider
 ) -> None:
@@ -245,25 +166,13 @@ def test_section_1b_writes_only_the_two_forcings(
     """
     before = data_provider.from_savepoint_turbdiff_section(section="1a", date=date)
     after = data_provider.from_savepoint_turbdiff_section(section="1b", date=date)
-    columns = slice(before.ivstart(), before.ivend())
 
-    def masked(savepoint, name: str) -> np.ndarray:
-        buffer = np.asarray(data_provider.serializer.read(name, savepoint.savepoint))
-        return buffer[columns] if buffer.ndim >= 2 else buffer
-
-    names = sorted(data_provider.serializer.fields_at_savepoint(before.savepoint))
-    differing = [
-        name
-        for name in names
-        if not np.array_equal(masked(before, name), masked(after, name), equal_nan=True)
-    ]
-
-    assert differing == ["td_frh", "td_frm"]
+    assert utils.fields_that_changed(data_provider, before, after) == {"td_frh", "td_frm"}
 
 
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_thermal_forcing_leaves_the_model_top_alone(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
@@ -277,8 +186,8 @@ def test_compute_thermal_forcing_leaves_the_model_top_alone(
 
 
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_mechanical_forcing_leaves_the_model_top_and_the_surface_alone(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
@@ -297,8 +206,8 @@ def test_compute_mechanical_forcing_leaves_the_model_top_and_the_surface_alone(
 
 
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_thermal_forcing_is_the_fortran_expression_up_to_one_contraction(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
@@ -336,8 +245,8 @@ def test_compute_thermal_forcing_is_the_fortran_expression_up_to_one_contraction
 
 
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_mechanical_forcing_is_the_fortran_expression_up_to_one_contraction(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
@@ -369,40 +278,46 @@ def test_compute_mechanical_forcing_is_the_fortran_expression_up_to_one_contract
 
 
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_thermal_forcing_agrees_with_icon_within_its_gate(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
     run = _run_section_1b(data_provider, date, backend)
     levels = slice(1, run.ke1)
 
-    _assert_within_gate(
+    utils.assert_agrees_with_icon(
         "compute_thermal_forcing",
-        run.thermal_forcing.asnumpy()[run.columns, levels],
-        run.after.thermal_forcing().asnumpy()[run.columns, levels],
+        "frh",
+        run.thermal_forcing,
+        run.after.thermal_forcing(),
+        columns=run.columns,
+        levels=levels,
     )
 
 
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_mechanical_forcing_agrees_with_icon_within_its_gate(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
     run = _run_section_1b(data_provider, date, backend)
     levels = slice(1, run.ke)
 
-    _assert_within_gate(
+    utils.assert_agrees_with_icon(
         "compute_mechanical_forcing",
-        run.mechanical_forcing.asnumpy()[run.columns, levels],
-        run.after.mech_forcing().asnumpy()[run.columns, levels],
+        "frm",
+        run.mechanical_forcing,
+        run.after.mech_forcing(),
+        columns=run.columns,
+        levels=levels,
     )
 
 
 @pytest.mark.datatest
-@experiment_for_turbulence
-@pytest.mark.parametrize("date", TURBDIFF_DATES)
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_the_fc_min_floor_is_never_reached_in_this_capture(
     date: str, *, data_provider: sb.IconSerialDataProvider
 ) -> None:

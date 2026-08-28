@@ -33,6 +33,16 @@ Stencil and integration tests validate against serialized ICON reference data fr
 `exp.mch_icon-ch2_small`. That data is **not** downloadable while the port is in progress; place a
 local capture under `$ICON4PY_TEST_DATA_PATH/` and `touch .extraction_complete` in it.
 
+### Shared plumbing for a section test
+
+`tests/turbulence/utils.py` holds what every section datatest needs — the serialized dates, the
+experiment marker, the output-buffer allocators and the gate-consulting comparison — and states the
+two conventions all of them follow: every comparison is masked to `ivstart:ivend`, and every output
+field is allocated as a copy of its entry state so that the rows the section does not write are
+asserted untouched rather than ignored. Import it as a module (`from .. import utils`) and read its
+docstring before writing a new section test; `tests/turbulence/gate_registry.py` needs an entry for
+each stencil before it can be compared against anything.
+
 ## Boundary rows: when to use `concat_where`
 
 Nearly every section of `turbdiff` treats the surface half level `ke1` differently from the
