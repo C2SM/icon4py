@@ -18,7 +18,7 @@ variables:
   LEVELS: "unit"
   GRIDS: "icon_regional"
   TOOLS_SUBSETS: "unittest"
-  PRECISION_VARIANTS: "double:single"
+  PRECISION_VARIANTS: "double"
 
 
 build_baseimage_aarch64:
