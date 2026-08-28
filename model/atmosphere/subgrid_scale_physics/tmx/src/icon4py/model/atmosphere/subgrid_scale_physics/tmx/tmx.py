@@ -44,8 +44,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if typing.TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     import icon4py.model.common.grid.states as grid_states
     from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
@@ -384,10 +382,7 @@ class Tmx:
         interpolation_state: tmx_states.TmxInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
+        backend: model_backends.BackendLike,
         exchange: decomposition.ExchangeRuntime,
     ) -> None:
         self._allocator = model_backends.get_allocator(backend)
@@ -436,9 +431,9 @@ class Tmx:
         # ---------------------------------------------------------------------
         # compute_mixing_length (mo_tmx_smagorinsky.f90): cells rl 3..min_rlcell_int,
         # all half levels
-        self.init_smagorinsky_mixing_length = setup_program(
+        self.compute_smagorinsky_mixing_length = setup_program(
             backend=backend,
-            program=diag_stencils.init_smagorinsky_mixing_length,
+            program=diag_stencils.compute_smagorinsky_mixing_length,
             constant_args={
                 "dz_ic": self._metric_state.ddqz_z_half,
                 "geopot_agl_ic": self._metric_state.geopot_agl_ifc,
@@ -459,9 +454,9 @@ class Tmx:
         )
         # compute_scaling_factor_louis (mo_tmx_smagorinsky.f90): cells rl
         # 3..min_rlcell_int
-        self.init_louis_scaling_factor = setup_program(
+        self.compute_scaling_factor_louis = setup_program(
             backend=backend,
-            program=diag_stencils.init_louis_scaling_factor,
+            program=diag_stencils.compute_scaling_factor_louis,
             constant_args={"cell_area": self._cell_params.area},
             horizontal_sizes={
                 "horizontal_start": self._cell_start_lateral_boundary_level_3,
@@ -476,7 +471,7 @@ class Tmx:
         # compute_static_energy). z_ifc_sfc is the surface slice z_ifc[:, nlev],
         # passed as a 2D field because GT4Py offsets are relative and cannot
         # address a fixed absolute K row.
-        self.init_height_above_ground = setup_program(
+        self.compute_height_above_ground = setup_program(
             backend=backend,
             program=subtract_cell_field_on_cell_k,
             constant_args={"minuend": self._metric_state.z_mc, "subtrahend_cell": z_ifc_sfc},
@@ -740,19 +735,16 @@ class Tmx:
         # Run the init programs (Smagorinsky_init in mo_tmx_smagorinsky.f90 and
         # compute_geopotential_height_above_ground in mo_vdf_atmo.f90)
         # ---------------------------------------------------------------------
-        self.init_smagorinsky_mixing_length(mixing_length_sq=self.mix_len_sq)
+        self.compute_smagorinsky_mixing_length(mixing_length_sq=self.mix_len_sq)
         if self.config.use_louis:
             # the Fortran init only computes the Louis scaling factor if the
             # Louis stability correction is enabled; the field stays zero otherwise
-            self.init_louis_scaling_factor(scaling_factor_louis=self.louis_factor)
-        self.init_height_above_ground(difference=self.ghf)
+            self.compute_scaling_factor_louis(scaling_factor_louis=self.louis_factor)
+        self.compute_height_above_ground(difference=self.ghf)
 
     def _setup_scalar_diffusion_programs(
         self,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
+        backend: model_backends.BackendLike,
         num_levels: int,
         use_internal_energy: bool,
     ) -> None:
@@ -919,10 +911,7 @@ class Tmx:
 
     def _setup_momentum_diffusion_programs(
         self,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
+        backend: model_backends.BackendLike,
         num_levels: int,
     ) -> None:
         """
@@ -1112,10 +1101,7 @@ class Tmx:
 
     def _setup_energy_and_diagnostics_programs(
         self,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
+        backend: model_backends.BackendLike,
         num_levels: int,
     ) -> None:
         """
@@ -1356,7 +1342,7 @@ class Tmx:
             virtual_temperature=input_state.virtual_temperature,
             pressure=input_state.pressure,
             rho=input_state.rho,
-            static_energy=diagnostic_state.cptgz,
+            dry_static_energy=diagnostic_state.cptgz,
             theta_v=diagnostic_state.theta_v,
             rho_ic=diagnostic_state.rho_ic,
             bruvais=diagnostic_state.bruvais,
@@ -1933,7 +1919,7 @@ class Tmx:
             qg=input_state.qg,
             km_ic=diagnostic_state.km_ic,
             kh_ic=diagnostic_state.kh_ic,
-            static_energy=diagnostic_state.cptgz,
+            dry_static_energy=diagnostic_state.cptgz,
             km=diagnostic_state.km,
             kh=diagnostic_state.kh,
             dtime=dtime,

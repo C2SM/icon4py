@@ -13,7 +13,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _compute_static_energy(
+def _compute_dry_static_energy(
     temperature: fa.CellKField[wpfloat],
     height_above_ground: fa.CellKField[wpfloat],
     grav: wpfloat,
@@ -23,11 +23,11 @@ def _compute_static_energy(
 
     Port of ``compute_static_energy`` in ICON's ``mo_vdf_atmo.f90``:
 
-        static_energy = cpd * temperature + grav * height_above_ground
+        dry_static_energy = cpd * temperature + grav * height_above_ground
 
     ``height_above_ground`` is the geometric height of the full levels above the
     surface (``ghf`` in the Fortran code, computed at init time by the granule's
-    ``init_height_above_ground`` program), so ``grav * height_above_ground`` is
+    ``compute_height_above_ground`` program), so ``grav * height_above_ground`` is
     the geopotential above ground.
 
     The Fortran subroutine loops over the tmx ``t_domain`` cell range
@@ -47,21 +47,21 @@ def _compute_static_energy(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_static_energy(
+def compute_dry_static_energy(
     temperature: fa.CellKField[wpfloat],
     height_above_ground: fa.CellKField[wpfloat],
-    static_energy: fa.CellKField[wpfloat],
+    dry_static_energy: fa.CellKField[wpfloat],
     grav: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_static_energy(
+    _compute_dry_static_energy(
         temperature=temperature,
         height_above_ground=height_above_ground,
         grav=grav,
-        out=static_energy,
+        out=dry_static_energy,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

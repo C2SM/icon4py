@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
-    init_smagorinsky_mixing_length,
+    compute_smagorinsky_mixing_length,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-def init_smagorinsky_mixing_length_numpy(
+def compute_smagorinsky_mixing_length_numpy(
     dz_ic: np.ndarray,
     geopot_agl_ic: np.ndarray,
     cell_area: np.ndarray,
@@ -41,7 +41,7 @@ def init_smagorinsky_mixing_length_numpy(
 
 
 class TestInitSmagorinskyMixingLength(stencil_tests.StencilTest):
-    PROGRAM = init_smagorinsky_mixing_length
+    PROGRAM = compute_smagorinsky_mixing_length
     OUTPUTS = ("mixing_length_sq",)
 
     @stencil_tests.static_reference
@@ -56,7 +56,7 @@ class TestInitSmagorinskyMixingLength(stencil_tests.StencilTest):
         grav: float,
         **kwargs,
     ) -> dict:
-        mixing_length_sq = init_smagorinsky_mixing_length_numpy(
+        mixing_length_sq = compute_smagorinsky_mixing_length_numpy(
             dz_ic,
             geopot_agl_ic,
             cell_area,

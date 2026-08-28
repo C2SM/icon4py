@@ -64,7 +64,9 @@ from icon4py.model.common.math.vertical_operations import (
 from icon4py.model.common.physics.stencils.compute_brunt_vaisala_frequency import (
     _compute_brunt_vaisala_frequency,
 )
-from icon4py.model.common.physics.stencils.compute_static_energy import _compute_static_energy
+from icon4py.model.common.physics.stencils.compute_dry_static_energy import (
+    _compute_dry_static_energy,
+)
 from icon4py.model.common.physics.stencils.compute_virtual_potential_temperature import (
     _compute_virtual_potential_temperature,
 )
@@ -76,7 +78,7 @@ from icon4py.model.common.type_alias import wpfloat
 # Smagorinsky_init (mo_tmx_smagorinsky.f90): run once, at granule construction
 # ---------------------------------------------------------------------------
 @gtx.field_operator
-def _init_smagorinsky_mixing_length(
+def _compute_smagorinsky_mixing_length(
     dz_ic: fa.CellKField[wpfloat],
     geopot_agl_ic: fa.CellKField[wpfloat],
     cell_area: fa.CellField[wpfloat],
@@ -121,7 +123,7 @@ def _init_smagorinsky_mixing_length(
 
 
 @gtx.field_operator
-def _init_louis_scaling_factor(
+def _compute_scaling_factor_louis(
     cell_area: fa.CellField[wpfloat],
 ) -> fa.CellField[wpfloat]:
     """
@@ -147,7 +149,7 @@ def _init_louis_scaling_factor(
 # the Fortran only computes the Louis scaling factor when the Louis stability
 # correction is enabled, and both programs run once, at granule construction.
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def init_smagorinsky_mixing_length(
+def compute_smagorinsky_mixing_length(
     dz_ic: fa.CellKField[wpfloat],
     geopot_agl_ic: fa.CellKField[wpfloat],
     cell_area: fa.CellField[wpfloat],
@@ -160,7 +162,7 @@ def init_smagorinsky_mixing_length(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _init_smagorinsky_mixing_length(
+    _compute_smagorinsky_mixing_length(
         dz_ic=dz_ic,
         geopot_agl_ic=geopot_agl_ic,
         cell_area=cell_area,
@@ -176,13 +178,13 @@ def init_smagorinsky_mixing_length(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def init_louis_scaling_factor(
+def compute_scaling_factor_louis(
     cell_area: fa.CellField[wpfloat],
     scaling_factor_louis: fa.CellField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ) -> None:
-    _init_louis_scaling_factor(
+    _compute_scaling_factor_louis(
         cell_area=cell_area,
         out=scaling_factor_louis,
         domain={
@@ -226,7 +228,7 @@ def _compute_thermodynamic_diagnostics(
         dry static energy, virtual potential temperature, air density at half
         levels and squared Brunt-Vaisala frequency
     """
-    static_energy = _compute_static_energy(
+    dry_static_energy = _compute_dry_static_energy(
         temperature=temperature, height_above_ground=height_above_ground, grav=grav
     )
     theta_v = _compute_virtual_potential_temperature(
@@ -242,7 +244,7 @@ def _compute_thermodynamic_diagnostics(
     bruvais = _compute_brunt_vaisala_frequency(
         theta_v=theta_v, wgtfac_c=wgtfac_c, inv_ddqz_z_half=inv_ddqz_z_half, grav=grav
     )
-    return static_energy, theta_v, rho_ic, bruvais
+    return dry_static_energy, theta_v, rho_ic, bruvais
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -256,7 +258,7 @@ def compute_thermodynamic_diagnostics(
     inv_ddqz_z_half: fa.CellKField[wpfloat],
     wgtfacq1_c: fa.CellKField[wpfloat],
     wgtfacq_c: fa.CellKField[wpfloat],
-    static_energy: fa.CellKField[wpfloat],
+    dry_static_energy: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     rho_ic: fa.CellKField[wpfloat],
     bruvais: fa.CellKField[wpfloat],
@@ -284,7 +286,7 @@ def compute_thermodynamic_diagnostics(
         wgtfacq_c=wgtfacq_c,
         grav=grav,
         nlev=nlev,
-        out=(static_energy, theta_v, rho_ic, bruvais),
+        out=(dry_static_energy, theta_v, rho_ic, bruvais),
         domain=(
             # cptgz: the tmx t_domain cells, all full levels
             {
@@ -1025,7 +1027,7 @@ def interpolate_km_to_edges(
 # ---------------------------------------------------------------------------
 @gtx.field_operator
 def _compute_vertical_integral_diagnostics(
-    static_energy: fa.CellKField[wpfloat],
+    dry_static_energy: fa.CellKField[wpfloat],
     dissip_ke: fa.CellKField[wpfloat],
     rho: fa.CellKField[wpfloat],
     dz: fa.CellKField[wpfloat],
@@ -1077,7 +1079,7 @@ def _compute_vertical_integral_diagnostics(
         rho=rho,
         dz=dz,
     )
-    cptgz_vi = _compute_vertical_integral(static_energy * rho * dz)
+    cptgz_vi = _compute_vertical_integral(dry_static_energy * rho * dz)
     dissip_ke_vi = _compute_vertical_integral(dissip_ke)
     int_energy_vi = _compute_vertical_integral(int_energy_new)
     int_energy_vi_old = _compute_vertical_integral(int_energy_old)
@@ -1171,12 +1173,12 @@ def _update_end_of_step_diagnostics(
         of the internal energy tendency, and the full-level eddy viscosity and
         diffusivity
     """
-    static_energy = _compute_static_energy(
+    dry_static_energy = _compute_dry_static_energy(
         temperature=new_temperature, height_above_ground=height_above_ground, grav=grav
     )
     cptgz_vi, dissip_ke_vi, int_energy_vi, int_energy_vi_tend = (
         _compute_vertical_integral_diagnostics(
-            static_energy=static_energy,
+            dry_static_energy=dry_static_energy,
             dissip_ke=dissip_ke,
             rho=rho,
             dz=dz,
@@ -1202,7 +1204,7 @@ def _update_end_of_step_diagnostics(
         use_km_const=use_km_const,
         nlev=nlev,
     )
-    return static_energy, cptgz_vi, dissip_ke_vi, int_energy_vi, int_energy_vi_tend, km, kh
+    return dry_static_energy, cptgz_vi, dissip_ke_vi, int_energy_vi, int_energy_vi_tend, km, kh
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -1224,7 +1226,7 @@ def update_end_of_step_diagnostics(
     qg: fa.CellKField[wpfloat],
     km_ic: fa.CellKField[wpfloat],
     kh_ic: fa.CellKField[wpfloat],
-    static_energy: fa.CellKField[wpfloat],
+    dry_static_energy: fa.CellKField[wpfloat],
     cptgz_vi: fa.CellKField[wpfloat],
     dissip_ke_vi: fa.CellKField[wpfloat],
     int_energy_vi: fa.CellKField[wpfloat],
@@ -1267,7 +1269,7 @@ def update_end_of_step_diagnostics(
         use_km_const=use_km_const,
         nlev=nlev,
         out=(
-            static_energy,
+            dry_static_energy,
             cptgz_vi,
             dissip_ke_vi,
             int_energy_vi,

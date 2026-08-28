@@ -10,7 +10,9 @@ from gt4py.next import broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
-from icon4py.model.common.physics.stencils.compute_static_energy import _compute_static_energy
+from icon4py.model.common.physics.stencils.compute_dry_static_energy import (
+    _compute_dry_static_energy,
+)
 from icon4py.model.common.physics.thermodynamics import _internal_energy
 from icon4py.model.common.type_alias import wpfloat
 
@@ -83,7 +85,7 @@ def _compute_energy_from_temperature(
             + grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd
         )
     else:
-        energy = _compute_static_energy(
+        energy = _compute_dry_static_energy(
             temperature=temperature, height_above_ground=height_above_ground, grav=grav
         )
     return energy

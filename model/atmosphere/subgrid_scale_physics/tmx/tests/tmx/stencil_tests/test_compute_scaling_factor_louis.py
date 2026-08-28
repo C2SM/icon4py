@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
-    init_louis_scaling_factor,
+    compute_scaling_factor_louis,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
@@ -20,7 +20,7 @@ from icon4py.model.testing import stencil_tests
 
 
 class TestInitLouisScalingFactor(stencil_tests.StencilTest):
-    PROGRAM = init_louis_scaling_factor
+    PROGRAM = compute_scaling_factor_louis
     OUTPUTS = ("scaling_factor_louis",)
 
     @stencil_tests.static_reference

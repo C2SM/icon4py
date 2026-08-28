@@ -37,7 +37,7 @@ def _coefficient_field(
     )
 
 
-def compute_static_energy_numpy(
+def compute_dry_static_energy_numpy(
     temperature: np.ndarray, height_above_ground: np.ndarray, *, grav: float
 ) -> np.ndarray:
     return PhysicsConstants.cpd * temperature + grav * height_above_ground
@@ -109,7 +109,7 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
     """
 
     PROGRAM = compute_thermodynamic_diagnostics
-    OUTPUTS = ("static_energy", "theta_v", "rho_ic", "bruvais")
+    OUTPUTS = ("dry_static_energy", "theta_v", "rho_ic", "bruvais")
     # The granule binds the vertical bounds and ``nlev`` at compile time; the
     # variant exercises that path, which is also the one dace can specialize.
     STATIC_PARAMS = {
@@ -136,7 +136,7 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         inv_ddqz_z_half: np.ndarray,
         wgtfacq1_c: np.ndarray,
         wgtfacq_c: np.ndarray,
-        static_energy: np.ndarray,
+        dry_static_energy: np.ndarray,
         theta_v: np.ndarray,
         rho_ic: np.ndarray,
         bruvais: np.ndarray,
@@ -149,7 +149,7 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         cell_end_halo_level_2: int,
         **kwargs: Any,
     ) -> dict:
-        static_energy_full = compute_static_energy_numpy(
+        dry_static_energy_full = compute_dry_static_energy_numpy(
             temperature, height_above_ground, grav=grav
         )
         theta_v_full = compute_virtual_potential_temperature_numpy(virtual_temperature, pressure)
@@ -164,8 +164,8 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         )
 
         # Each output keeps its initial value outside its own domain.
-        static_energy_out = static_energy.copy()
-        static_energy_out[cell_start_nudging:cell_end_local, 0:nlev] = static_energy_full[
+        dry_static_energy_out = dry_static_energy.copy()
+        dry_static_energy_out[cell_start_nudging:cell_end_local, 0:nlev] = dry_static_energy_full[
             cell_start_nudging:cell_end_local, 0:nlev
         ]
         theta_v_out = theta_v.copy()
@@ -182,7 +182,7 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         ]
 
         return dict(
-            static_energy=static_energy_out,
+            dry_static_energy=dry_static_energy_out,
             theta_v=theta_v_out,
             rho_ic=rho_ic_out,
             bruvais=bruvais_out,
@@ -231,7 +231,7 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
             wgtfacq_c=_coefficient_field(
                 data_alloc, dims.CellDim, grid.num_cells, grid.num_levels - 3
             ),
-            static_energy=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            dry_static_energy=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             theta_v=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
             rho_ic=data_alloc.zero_field(
                 dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat

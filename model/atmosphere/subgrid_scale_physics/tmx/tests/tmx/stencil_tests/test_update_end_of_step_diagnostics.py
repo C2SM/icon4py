@@ -22,7 +22,7 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-def compute_static_energy_numpy(
+def compute_dry_static_energy_numpy(
     temperature: np.ndarray,
     height_above_ground: np.ndarray,
     *,
@@ -58,7 +58,7 @@ def internal_energy_numpy(
 
 def vertical_integral_diagnostics_reference(
     *,
-    static_energy: np.ndarray,
+    dry_static_energy: np.ndarray,
     dissip_ke: np.ndarray,
     rho: np.ndarray,
     dz: np.ndarray,
@@ -84,7 +84,7 @@ def vertical_integral_diagnostics_reference(
     )
     int_energy_vi = np.cumsum(int_energy_new, axis=1)
     return dict(
-        cptgz_vi=np.cumsum(static_energy * rho * dz, axis=1),
+        cptgz_vi=np.cumsum(dry_static_energy * rho * dz, axis=1),
         dissip_ke_vi=np.cumsum(dissip_ke, axis=1),
         int_energy_vi=int_energy_vi,
         int_energy_vi_tend=(int_energy_vi - np.cumsum(int_energy_old, axis=1)) / dtime,
@@ -136,9 +136,11 @@ def end_of_step_diagnostics_reference(
 ) -> dict:
     # The dry static energy is recomputed from the updated temperature inside the
     # program, and the vertical integrals consume that value, not an input field.
-    static_energy = compute_static_energy_numpy(new_temperature, height_above_ground, grav=grav)
+    dry_static_energy = compute_dry_static_energy_numpy(
+        new_temperature, height_above_ground, grav=grav
+    )
     integrals = vertical_integral_diagnostics_reference(
-        static_energy=static_energy,
+        dry_static_energy=dry_static_energy,
         dissip_ke=dissip_ke,
         rho=rho,
         dz=dz,
@@ -162,7 +164,7 @@ def end_of_step_diagnostics_reference(
         rturb_prandtl=rturb_prandtl,
         use_km_const=use_km_const,
     )
-    return dict(static_energy=static_energy, **integrals, **coefficients)
+    return dict(dry_static_energy=dry_static_energy, **integrals, **coefficients)
 
 
 def end_of_step_diagnostics_input_data(
@@ -211,7 +213,7 @@ def end_of_step_diagnostics_input_data(
         qg=moisture_field(),
         km_ic=half_level_field(),
         kh_ic=half_level_field(),
-        static_energy=output_field(),
+        dry_static_energy=output_field(),
         cptgz_vi=output_field(),
         dissip_ke_vi=output_field(),
         int_energy_vi=output_field(),
@@ -239,7 +241,7 @@ STATIC_VARIANTS = {
 }
 
 OUTPUT_FIELDS = (
-    "static_energy",
+    "dry_static_energy",
     "cptgz_vi",
     "dissip_ke_vi",
     "int_energy_vi",
