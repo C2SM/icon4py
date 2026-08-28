@@ -89,6 +89,8 @@ _ATOL = {
 
 
 @pytest.mark.datatest
+# through 'compute_ddqz_z_half', as in common's 'test_factory_ddqz_z_half'
+@pytest.mark.uses_concat_where
 @pytest.mark.parametrize("experiment_description", [definitions.Experiments.EXCLAIM_APE_AES])
 def test_factory_static_states_match_savepoints(
     *,
