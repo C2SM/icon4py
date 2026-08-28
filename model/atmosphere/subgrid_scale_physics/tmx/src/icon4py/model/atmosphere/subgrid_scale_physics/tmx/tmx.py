@@ -86,7 +86,7 @@ class EnergyType(int, enum.Enum):
 
 
 @config_io.register_enum
-class SurfaceFluxType(int, enum.Enum):
+class SurfaceType(int, enum.Enum):
     """
     Treatment of the surface fluxes.
 
@@ -259,15 +259,15 @@ class TmxConfig:
         ),
     ] = 300.0
 
-    isrfc_type: typing.Annotated[
-        SurfaceFluxType,
+    surface_type: typing.Annotated[
+        SurfaceType,
         common_conf_opt.ConfigOption(
             description="Treatment of the surface fluxes (interactive or fixed heat fluxes).",
             icon_equivalent=common_conf_opt.IconOption(
                 "isrfc_type", ("nh_testcase_nml",), read_from_icon=False
             ),
         ),
-    ] = SurfaceFluxType.INTERACTIVE
+    ] = SurfaceType.INTERACTIVE
 
     shflx: typing.Annotated[
         float,
@@ -334,10 +334,16 @@ class TmxConfig:
                 "the t_vdiff_config member order changed."
             )
         testcase = input_dict.get("nh_testcase_nml", {})
-        converters = {"isrfc_type": SurfaceFluxType, "shflx": float, "lhflx": float}
+        # 'nh_testcase_nml' member -> (TmxConfig field, converter); members
+        # absent from the namelist keep the TmxConfig default
+        surface_options = {
+            "isrfc_type": ("surface_type", SurfaceType),
+            "shflx": ("shflx", float),
+            "lhflx": ("lhflx", float),
+        }
         surface_fluxes = {
-            name: convert(testcase[name])
-            for name, convert in converters.items()
+            field: convert(testcase[name])
+            for name, (field, convert) in surface_options.items()
             if name in testcase
         }
         return common_conf_opt.construct_config_from_icon(
@@ -348,7 +354,7 @@ class TmxConfig:
         """Apply consistency checks and validation on configuration parameters."""
         self.solver_type = TurbulenceSolverType(self.solver_type)
         self.energy_type = EnergyType(self.energy_type)
-        self.isrfc_type = SurfaceFluxType(self.isrfc_type)
+        self.surface_type = SurfaceType(self.surface_type)
 
         if self.turb_prandtl <= 0.0:
             raise ValueError(
@@ -407,6 +413,15 @@ class Tmx:
         )
         # compile-time variant selector of the energy conversion stencils
         use_internal_energy = self.config.energy_type == EnergyType.INTERNAL
+
+        if self.config.solver_type != TurbulenceSolverType.IMPLICIT:
+            # the scalar diffusion has an explicit port and stays usable through
+            # the per-step API; only the edge solve of the horizontal wind
+            # diffusion is missing, so 'run' cannot complete
+            log.warning(
+                "'solver_type' is explicit: 'run' and 'run_horizontal_wind_diffusion' "
+                "will raise, 'diffuse_vertical_explicit' has no edge-based port."
+            )
 
         # TODO(jcanton): remove when `tmx_surface` is ported.
         if not (self.config.use_louis_land and self.config.use_louis_ice):
@@ -488,7 +503,7 @@ class Tmx:
         )
 
         # ---------------------------------------------------------------------
-        # Stage A step programs, in the Fortran call order of Compute_diagnostics
+        # Diagnostics step programs, in the Fortran call order of Compute_diagnostics
         # (mo_vdf_atmo.f90 l. 343-482). One program per halo-exchange interval
         # and horizontal dimension.
         # ---------------------------------------------------------------------
@@ -750,7 +765,7 @@ class Tmx:
         use_internal_energy: bool,
     ) -> None:
         """
-        Bind the Stage B + C step programs (scalar diffusion:
+        Bind the scalar diffusion step programs (
         Compute_diffusion_hydrometeors l. 585 and Compute_diffusion_temperature
         l. 912 in mo_vdf.f90). All cell loops run on the tmx t_domain cell
         range (grf_bdywidth_c + 1 .. min_rlcell_int), all full levels, unless
@@ -802,12 +817,11 @@ class Tmx:
         )
         # surface-flux right-hand side and vertical solve
         # ('diffuse_vertical_implicit' or 'diffuse_vertical_explicit' in
-        # mo_tmx_numerics.f90, selected by the configured solver type)
-        self.solve_scalar_vertical_diffusion = setup_program(
+        # mo_tmx_numerics.f90). The two have different call signatures, so they
+        # stay separate programs; only the configured one is set up, and only
+        # that one is compiled.
+        scalar_vertical_diffusion_args: dict[str, Any] = dict(
             backend=backend,
-            program=scalar_stencils.solve_scalar_vertical_diffusion
-            if self.config.solver_type == TurbulenceSolverType.IMPLICIT
-            else scalar_stencils.apply_explicit_scalar_vertical_diffusion,
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
                 "horizontal_end": self._cell_end_local,
@@ -818,6 +832,16 @@ class Tmx:
             },
             offset_provider={},
         )
+        if self.config.solver_type == TurbulenceSolverType.IMPLICIT:
+            self.solve_scalar_vertical_diffusion = setup_program(
+                program=scalar_stencils.solve_scalar_vertical_diffusion,
+                **scalar_vertical_diffusion_args,
+            )
+        else:
+            self.apply_explicit_scalar_vertical_diffusion = setup_program(
+                program=scalar_stencils.apply_explicit_scalar_vertical_diffusion,
+                **scalar_vertical_diffusion_args,
+            )
         # nabla2_e = kh_ie * grad_horiz(scalar): edges rl grf_bdywidth_e..
         # min_rledge_int-1 (halo edges computed on purpose, the divergence is
         # taken on halo-adjacent cells afterwards)
@@ -907,10 +931,10 @@ class Tmx:
         num_levels: int,
     ) -> None:
         """
-        Bind the Stage D + E step programs (momentum diffusion:
+        Bind the momentum diffusion step programs (
         Compute_diffusion_hor_wind l. 1207 and Compute_diffusion_vert_wind
-        l. 1601 in mo_vdf.f90). The Stage D edge loops run on
-        rl grf_bdywidth_e + 1 .. min_rledge_int, all full levels; the Stage E
+        l. 1601 in mo_vdf.f90). The horizontal wind diffusion edge loops run on
+        rl grf_bdywidth_e + 1 .. min_rledge_int, all full levels; the vertical wind diffusion
         cell loops run on the tmx t_domain cell range (grf_bdywidth_c + 1 ..
         min_rlcell_int), half-level rows 2..nlev (1-based), unless noted
         otherwise.
@@ -933,7 +957,7 @@ class Tmx:
         )
 
         # ------------------------------------------------------------------
-        # Stage D: horizontal wind (vn) diffusion
+        # Horizontal wind (vn) diffusion
         # ------------------------------------------------------------------
         # cells2edges_scalar(rho) + reciprocal (-> inv_rhoe) and
         # '1) First get the horizontal tendencies' (-> tot_tend)
@@ -1010,7 +1034,7 @@ class Tmx:
         )
 
         # ------------------------------------------------------------------
-        # Stage E: vertical wind (w) diffusion
+        # Vertical wind (w) diffusion
         # ------------------------------------------------------------------
         # right-hand side of the w solve, prepare_diffusion_matrix on half-level
         # cells (zk = km_c, lhalflvl=.TRUE., minlvl=2, zprefac=2), the w = 0
@@ -1089,13 +1113,13 @@ class Tmx:
         num_levels: int,
     ) -> None:
         """
-        Bind the Stage F + G step programs (``Update_energy_tendencies``
+        Bind the energy update and end-of-step diagnostics step programs (``Update_energy_tendencies``
         l. 1938 in mo_vdf.f90 and the ``Update_diagnostics`` of
         mo_vdf_atmo.f90 l. 487 / mo_vdf.f90 l. 354). All loops run on the tmx
         t_domain cell range (grf_bdywidth_c + 1 .. min_rlcell_int), all full
         levels.
         """
-        # Stage F: kinetic-energy dissipation heating and final temperature
+        # Energy update: kinetic-energy dissipation heating and final temperature
         # tendency / update
         self.update_temperature_with_dissipation_heating = setup_program(
             backend=backend,
@@ -1112,7 +1136,7 @@ class Tmx:
             },
             offset_provider={},
         )
-        # Stage G: the dry static energy recomputed from the updated
+        # End-of-step diagnostics: the dry static energy recomputed from the updated
         # temperature, the vertical-integral diagnostics ('compute_internal_
         # energy_vi' and the accumulation loop of Update_diagnostics,
         # mo_vdf_atmo.f90) that consume it, and the full-level km/kh diagnostic
@@ -1158,7 +1182,7 @@ class Tmx:
         self.fract_land: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
         self.fract_ice: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
 
-        # scalar diffusion (Stages B and C) temporaries, matching the local
+        # scalar diffusion temporaries, matching the local
         # arrays of the scalar diffusion subroutines in mo_vdf.f90
 
         # inverse air mass per unit area [m^2/kg] (``inv_mair``)
@@ -1185,7 +1209,7 @@ class Tmx:
         # zero surface flux of the tracers without surface exchange (qc, qi)
         self._zero_surface_flux: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
 
-        # Stage G scratch: running (top-down) vertical integrals of the
+        # End-of-step diagnostics scratch: running (top-down) vertical integrals of the
         # ``*_vi`` diagnostics; the value at the last full level is the column
         # integral that is copied to the 2D fields of the diagnostic state
         # (rows of cells outside the computed domain stay zero, matching the
@@ -1197,7 +1221,7 @@ class Tmx:
             dims.CellDim, dims.KDim
         )
 
-        # momentum diffusion (Stages D and E) temporaries, matching the local
+        # momentum diffusion temporaries, matching the local
         # arrays of Compute_diffusion_hor_wind / Compute_diffusion_vert_wind
         # in mo_vdf.f90
 
@@ -1205,7 +1229,7 @@ class Tmx:
         self._inv_rhoe: fa.EdgeKField[ta.wpfloat] = zero_field(dims.EdgeDim, dims.KDim)
         # total (horizontal + vertical) vn diffusion tendency (``tot_tend``),
         # kept on the granule for testing. The Fortran zero fill at entry is
-        # not replicated: the rows inside the Stage D edge domain are
+        # not replicated: the rows inside the horizontal wind diffusion edge domain are
         # (over)written before they are read, halo rows are synced (S9), and
         # all other rows keep their allocation-time zeros because no stencil
         # ever writes them (they are read by the C2E2C2E gather of the RBF
@@ -1274,7 +1298,7 @@ class Tmx:
         diagnostic_state: tmx_states.TmxDiagnosticState,
     ) -> None:
         """
-        Compute the Smagorinsky diagnostics (Stage A).
+        Compute the Smagorinsky diagnostics.
 
         Port of ``Compute_diagnostics`` in mo_vdf_atmo.f90 (l. 343-482), with
         the halo exchanges at the Fortran sync points and one program per
@@ -1288,7 +1312,7 @@ class Tmx:
         computed domains keep their allocation-time zeros (or whatever a
         previous call left there); they must not be relied upon.
         """
-        log.debug("tmx Stage A (Compute_diagnostics): start")
+        log.debug("tmx diagnostics (Compute_diagnostics): start")
 
         self.compute_thermodynamic_diagnostics(
             temperature=input_state.temperature,
@@ -1393,7 +1417,7 @@ class Tmx:
             km_ie=diagnostic_state.km_ie,
         )
 
-        log.debug("tmx Stage A (Compute_diagnostics): end")
+        log.debug("tmx diagnostics (Compute_diagnostics): end")
 
     def _solve_scalar_vertical_diffusion(
         self,
@@ -1427,7 +1451,7 @@ class Tmx:
                 sfc_flx=sfc_flx, var=var, tend=tend, prefac=prefac, dtime=dtime, **matrix
             )
         else:
-            self.solve_scalar_vertical_diffusion(
+            self.apply_explicit_scalar_vertical_diffusion(
                 sfc_flx=sfc_flx, var=var, tend=tend, prefac=prefac, **matrix
             )
 
@@ -1442,7 +1466,7 @@ class Tmx:
         dtime: float,
     ) -> None:
         """
-        Compute the hydrometeor diffusion (Stage B).
+        Compute the hydrometeor diffusion.
 
         Port of ``Compute_diffusion_hydrometeors`` in mo_vdf.f90 (l. 585),
         without the optional CO2 tracer (``l_co2``, out of scope). For each of
@@ -1453,10 +1477,10 @@ class Tmx:
         (``tend_qv/qc/qi``) are zeroed at entry and hold the total (vertical +
         horizontal) diffusion tendency on exit.
 
-        Requires the Stage A diagnostics (``kh_ic``, ``km_ie``) of
+        Requires the diagnostics (``kh_ic``, ``km_ie``) of
         ``diagnostic_state`` to be up to date (``run_diagnostics``).
         """
-        log.debug("tmx Stage B (Compute_diffusion_hydrometeors): start")
+        log.debug("tmx hydrometeor diffusion (Compute_diffusion_hydrometeors): start")
 
         self.prepare_diffusion_matrix_hydrometeors(
             air_mass=input_state.air_mass,
@@ -1506,7 +1530,7 @@ class Tmx:
                 dtime=dtime,
             )
 
-        log.debug("tmx Stage B (Compute_diffusion_hydrometeors): end")
+        log.debug("tmx hydrometeor diffusion (Compute_diffusion_hydrometeors): end")
 
     def run_temperature_diffusion(
         self,
@@ -1519,7 +1543,7 @@ class Tmx:
         dtime: float,
     ) -> None:
         """
-        Compute the temperature (heat) diffusion (Stage C).
+        Compute the temperature (heat) diffusion.
 
         Port of ``Compute_diffusion_temperature`` in mo_vdf.f90 (l. 912):
         the temperature is converted to the configured energy (dry static or
@@ -1534,11 +1558,11 @@ class Tmx:
         ``self.energy`` (from the old temperature) and ``self.tend_energy``
         (total energy diffusion tendency).
 
-        Requires the Stage A diagnostics (``kh_ic``, ``km_ie``) of
+        Requires the diagnostics (``kh_ic``, ``km_ie``) of
         ``diagnostic_state`` and the hydrometeor diffusion results
-        (``new_state.qv/qc/qi``, Stage B) to be up to date.
+        (``new_state.qv/qc/qi``, hydrometeor diffusion) to be up to date.
         """
-        log.debug("tmx Stage C (Compute_diffusion_temperature): start")
+        log.debug("tmx temperature diffusion (Compute_diffusion_temperature): start")
 
         self.init_cell_kdim_field_with_zero(field_with_zero_wp=self.tend_energy)
 
@@ -1613,7 +1637,7 @@ class Tmx:
             dtime=dtime,
         )
 
-        log.debug("tmx Stage C (Compute_diffusion_temperature): end")
+        log.debug("tmx temperature diffusion (Compute_diffusion_temperature): end")
 
     def run_horizontal_wind_diffusion(
         self,
@@ -1626,7 +1650,7 @@ class Tmx:
         dtime: float,
     ) -> None:
         """
-        Compute the horizontal wind diffusion (Stage D).
+        Compute the horizontal wind diffusion.
 
         Port of ``Compute_diffusion_hor_wind`` in mo_vdf.f90 (l. 1207): the
         horizontal divergence of the 3D stress tensor acting on vn and the
@@ -1639,18 +1663,18 @@ class Tmx:
         Only the implicit vertical solver is wired (the Fortran explicit
         branch of the hor-wind solve has no edge-based icon4py port yet).
 
-        Requires the Stage A diagnostics (``vn``, ``u_vert``, ``v_vert``,
+        Requires the diagnostics (``vn``, ``u_vert``, ``v_vert``,
         ``km_c``, ``div_c``, ``km_iv``, ``km_ie``) of ``diagnostic_state`` to
         be up to date (``run_diagnostics``).
         """
         if self.config.solver_type != TurbulenceSolverType.IMPLICIT:
             raise NotImplementedError(
-                "tmx Stage D (Compute_diffusion_hor_wind) only implements the "
-                "implicit vertical diffusion solver ('diffuse_vertical_explicit' "
-                "on edges is not ported)."
+                "the horizontal wind diffusion (Compute_diffusion_hor_wind) only implements "
+                "the implicit vertical diffusion solver ('diffuse_vertical_explicit' on "
+                "edges is not ported)."
             )
 
-        log.debug("tmx Stage D (Compute_diffusion_hor_wind): start")
+        log.debug("tmx horizontal wind diffusion (Compute_diffusion_hor_wind): start")
 
         # CALL init(tend_u/tend_v): the RBF interpolation only writes cells
         # 2..min_rlcell_int, everything outside must be zero
@@ -1720,7 +1744,7 @@ class Tmx:
         self._exchange.exchange(dims.CellDim, new_state.u, new_state.v)
         log.debug("communication of new u, v (cells): end")
 
-        log.debug("tmx Stage D (Compute_diffusion_hor_wind): end")
+        log.debug("tmx horizontal wind diffusion (Compute_diffusion_hor_wind): end")
 
     def run_vertical_wind_diffusion(
         self,
@@ -1732,7 +1756,7 @@ class Tmx:
         dtime: float,
     ) -> None:
         """
-        Compute the vertical wind diffusion (Stage E).
+        Compute the vertical wind diffusion.
 
         Port of ``Compute_diffusion_vert_wind`` in mo_vdf.f90 (l. 1601): the
         implicit vertical w diffusion on half levels (minlvl = 2, with the
@@ -1743,12 +1767,12 @@ class Tmx:
         (rows 0 and nlev stay zero, the w = 0 boundary rows). The Fortran w
         solve is implicit regardless of the configured solver type.
 
-        Requires the Stage A diagnostics (``vn``, ``rho_ic``, ``km_c``,
+        Requires the diagnostics (``vn``, ``rho_ic``, ``km_c``,
         ``km_ic``, ``km_iv``, ``div_c``, ``u_vert``, ``v_vert``, ``w_vert``,
         ``w_ie``) of ``diagnostic_state`` to be up to date
         (``run_diagnostics``).
         """
-        log.debug("tmx Stage E (Compute_diffusion_vert_wind): start")
+        log.debug("tmx vertical wind diffusion (Compute_diffusion_vert_wind): start")
 
         # CALL init(tend) / init(new_state): tend_w is accumulated and new_w is
         # only written on the interior half levels
@@ -1791,7 +1815,7 @@ class Tmx:
         self._exchange.exchange(dims.CellDim, new_state.w)
         log.debug("communication of new w (cells): end")
 
-        log.debug("tmx Stage E (Compute_diffusion_vert_wind): end")
+        log.debug("tmx vertical wind diffusion (Compute_diffusion_vert_wind): end")
 
     def run_energy_update(
         self,
@@ -1804,23 +1828,23 @@ class Tmx:
         dtime: float,
     ) -> None:
         """
-        Update the temperature tendency with the dissipation heating (Stage F).
+        Update the temperature tendency with the dissipation heating.
 
         Port of ``Update_energy_tendencies`` in mo_vdf.f90 (l. 1938): the
         kinetic energy dissipated by the horizontal wind diffusion
-        (``dissip_ke``, from the old and the Stage D updated winds) plus the
+        (``dissip_ke``, from the old and the updated winds) plus the
         snow-on-canopy melt cooling at the lowest level (``-q_snocpymlt``,
         non-zero only over land) give the turbulent heating rate
         (``diagnostic_state.heating``), whose temperature tendency is added to
-        the heat-diffusion tendency of Stage C:
+        the heat-diffusion tendency of the temperature diffusion:
         ``tendency_state.tend_temperature += heating / cv_air`` and
         ``new_state.temperature = temperature + tend_temperature * dtime``.
 
-        Requires the temperature diffusion tendency (Stage C,
-        ``tendency_state.tend_temperature``) and the updated winds (Stage D,
+        Requires the temperature diffusion tendency (temperature diffusion,
+        ``tendency_state.tend_temperature``) and the updated winds (horizontal wind diffusion,
         ``new_state.u/v``) to be up to date.
         """
-        log.debug("tmx Stage F (Update_energy_tendencies): start")
+        log.debug("tmx energy update (Update_energy_tendencies): start")
 
         # CALL init(heating): zero fill of the whole array; the update stencil
         # only writes the domain cells
@@ -1850,7 +1874,7 @@ class Tmx:
         )
         log.debug("communication of new temperature, tend_temperature (cells): end")
 
-        log.debug("tmx Stage F (Update_energy_tendencies): end")
+        log.debug("tmx energy update (Update_energy_tendencies): end")
 
     def run_update_diagnostics(
         self,
@@ -1861,7 +1885,7 @@ class Tmx:
         dtime: float,
     ) -> None:
         """
-        Update the end-of-step diagnostics (Stage G).
+        Update the end-of-step diagnostics.
 
         Port of the atmospheric part of ``Update_diagnostics`` in
         mo_vdf_atmo.f90 (l. 487) and mo_vdf.f90 (l. 354):
@@ -1879,11 +1903,11 @@ class Tmx:
         ``Update_diagnostics`` belong to the surface scheme and are out of
         scope.
 
-        Requires all diffusion stages and the energy update (Stage F, for
+        Requires all diffusion steps and the energy update (for
         ``dissip_ke`` and the final ``new_state.temperature``) to be up to
         date.
         """
-        log.debug("tmx Stage G (Update_diagnostics): start")
+        log.debug("tmx end-of-step diagnostics (Update_diagnostics): start")
 
         self.update_end_of_step_diagnostics(
             cptgz_vi=self._cptgz_vi_run,
@@ -1921,7 +1945,7 @@ class Tmx:
         ):
             target.ndarray[...] = running_integral.ndarray[:, bottom]
 
-        log.debug("tmx Stage G (Update_diagnostics): end")
+        log.debug("tmx end-of-step diagnostics (Update_diagnostics): end")
 
     def run(
         self,
@@ -1934,7 +1958,7 @@ class Tmx:
         dtime: float,
     ) -> None:
         """
-        Run one tmx time step (Stages A to G).
+        Run one tmx time step (all steps below, in the Fortran order).
 
         Port of ``Compute`` in mo_vdf.f90, in the Fortran stage order:
         Smagorinsky diagnostics (A), hydrometeor diffusion (B), temperature
@@ -1948,7 +1972,7 @@ class Tmx:
         On exit, ``tendency_state`` holds the total tmx tendencies of
         temperature, qv/qc/qi, u/v and w, ``new_state`` the corresponding
         updated fields (``new = state + tend * dtime``) and
-        ``diagnostic_state`` the Stage A and Stage F/G diagnostics.
+        ``diagnostic_state`` the diagnostics, energy update and end-of-step diagnostics.
         """
         log.debug("tmx run (Compute): start")
 

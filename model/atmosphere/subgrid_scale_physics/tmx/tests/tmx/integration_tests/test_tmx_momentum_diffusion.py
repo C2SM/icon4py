@@ -9,13 +9,13 @@
 """Integration tests of the Tmx granule momentum diffusion stages (M5).
 
 Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys)
-and verifies one call of ``run_horizontal_wind_diffusion`` (Stage D) against
+and verifies one call of ``run_horizontal_wind_diffusion`` against
 the tmx-hor-wind-exit savepoint and one call of ``run_vertical_wind_diffusion``
-(Stage E) against the tmx-vert-wind-exit savepoint. Both stages are seeded
-from the tmx-diagnostics-exit savepoint (the Stage A diagnostics they consume)
-instead of running Stage A, so that failures do not cascade between the
-stages. Stage E only reads the input state and the Stage A diagnostics, so no
-Stage D outputs need to be seeded.
+against the tmx-vert-wind-exit savepoint. Both steps are seeded
+from the tmx-diagnostics-exit savepoint (the diagnostics they consume)
+instead of running them, so that failures do not cascade between the
+steps. The vertical wind diffusion only reads the input state and the diagnostics, so no
+horizontal wind diffusion outputs need to be seeded.
 """
 
 from __future__ import annotations
@@ -94,8 +94,8 @@ def _setup_granule(
         exchange=decomposition.SingleNodeExchange(),
     )
 
-    # seed the Stage A diagnostics consumed by the momentum diffusion from the
-    # diagnostics-exit savepoint instead of running Stage A (failures there
+    # seed the diagnostics consumed by the momentum diffusion from the
+    # diagnostics-exit savepoint instead of running them (failures there
     # must not cascade into these tests)
     diagnostic_state = dataclasses.replace(
         tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),

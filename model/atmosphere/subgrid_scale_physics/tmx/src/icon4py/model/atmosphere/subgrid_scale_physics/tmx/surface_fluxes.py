@@ -48,7 +48,7 @@ class ZeroFluxProvider:
 
 
 class PrescribedFluxProvider:
-    """Fixed kinematic surface heat fluxes (``SurfaceFluxType.FIXED_HEAT_FLUXES``).
+    """Fixed kinematic surface heat fluxes (``SurfaceType.FIXED_HEAT_FLUXES``).
 
     Port of the ``isrfc_type == 1`` early-return branch of
     'compute_sfc_fluxes' (mo_tmx_surface.f90:802-812), with the surface
@@ -78,10 +78,10 @@ class PrescribedFluxProvider:
         pressure_ifc: fa.CellKField[ta.wpfloat],
         surface_temperature: fa.CellField[ta.wpfloat],
     ) -> None:
-        if config.isrfc_type is not tmx.SurfaceFluxType.FIXED_HEAT_FLUXES:
+        if config.surface_type is not tmx.SurfaceType.FIXED_HEAT_FLUXES:
             raise NotImplementedError(
                 "PrescribedFluxProvider implements "
-                f"{tmx.SurfaceFluxType.FIXED_HEAT_FLUXES!r}, got {config.isrfc_type!r}."
+                f"{tmx.SurfaceType.FIXED_HEAT_FLUXES!r}, got {config.surface_type!r}."
             )
         self._config = config
         self._pressure_ifc = pressure_ifc

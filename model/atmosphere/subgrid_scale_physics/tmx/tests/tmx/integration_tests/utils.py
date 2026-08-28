@@ -55,7 +55,7 @@ def verify_full_run_fields(
     # RTOL is above the double-precision default of assert_dallclose but below
     # the largest relative deviation away from zero (km/kh, 3.9e-11), so those
     # fields are covered by their atol rather than by RTOL.
-    # final tendencies and Stage F diagnostics
+    # final tendencies and energy-update diagnostics
     fields = (
         (tendency_state.tend_temperature, exit_savepoint.tend_ta(), "tend_ta", 2.0e-15),
         (tendency_state.tend_qv, exit_savepoint.tend_qv(), "tend_qv", 3.0e-18),
@@ -76,7 +76,7 @@ def verify_full_run_fields(
             err_msg=name,
         )
 
-    # Stage G vertically integrated diagnostics (2D)
+    # end-of-step vertically integrated diagnostics (2D)
     integrals = (
         (diagnostic_state.cptgz_vi, exit_savepoint.cptgzvi(), "cptgzvi", 4.0e-6),
         (diagnostic_state.dissip_ke_vi, exit_savepoint.dissip_ke_vi(), "dissip_ke_vi", 3.0e-12),
@@ -97,7 +97,7 @@ def verify_full_run_fields(
             err_msg=name,
         )
 
-    # Stage G km/kh diagnostics: the bottom (nlev) row is excluded, it holds
+    # end-of-step km/kh diagnostics: the bottom (nlev) row is excluded, it holds
     # the tile-aggregated surface exchange coefficients in the Fortran
     # (km_sfc/kh_sfc from mo_vdf_diag_smag.f90, out of scope of the
     # atmosphere-only port; the granule writes zero there)

@@ -9,11 +9,11 @@
 """Smoke test of the Tmx granule on a synthetic grid.
 
 Constructs the granule with plausible (random but physically sane) metric,
-interpolation and geometry fields on the simple grid and runs the Stage A
+interpolation and geometry fields on the simple grid and runs the
 diagnostics, the scalar diffusion stages B (hydrometeors) and C (temperature),
 the momentum diffusion stages D (horizontal wind) and E (vertical wind), the
 energy update F and the diagnostics update G once, followed by a full
-``run()`` (Stages A to G). This only checks that the orchestration is wired
+``run()``. This only checks that the orchestration is wired
 correctly (programs execute, outputs are finite and have the right shapes);
 correctness against ICON is covered by the stencil tests and by the
 integration datatests (``integration_tests/``).

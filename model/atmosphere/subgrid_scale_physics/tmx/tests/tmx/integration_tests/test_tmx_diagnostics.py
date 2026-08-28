@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Integration test of the Tmx granule Stage A (Smagorinsky diagnostics).
+"""Integration test of the Tmx granule diagnostics (Smagorinsky).
 
 Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys),
 verifies the init fields against the tmx-init savepoint and one call of

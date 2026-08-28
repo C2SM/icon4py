@@ -92,7 +92,7 @@ def test_prescribed_surface_fluxes_match_fortran(
     )
     config = tmx.TmxConfig.from_fortran_dict(atm_dict=atm_dict, input_dict=input_dict)
     # the archive must be the fixed-flux case, otherwise this test is vacuous
-    assert config.isrfc_type is tmx.SurfaceFluxType.FIXED_HEAT_FLUXES
+    assert config.surface_type is tmx.SurfaceType.FIXED_HEAT_FLUXES
 
     entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
     reference = data_provider.from_savepoint_tmx_surface_fluxes(date=date)
@@ -127,7 +127,7 @@ def test_prescribed_surface_fluxes_match_fortran(
 def test_surface_flux_config_defaults_match_fortran() -> None:
     """The defaults mirror the initialization in mo_nh_testcases_nml.f90:280-282."""
     config = tmx.TmxConfig()
-    assert config.isrfc_type is tmx.SurfaceFluxType.INTERACTIVE
+    assert config.surface_type is tmx.SurfaceType.INTERACTIVE
     assert config.shflx == 0.1
     assert config.lhflx == 0.0
 
@@ -137,7 +137,7 @@ def test_prescribed_flux_provider_rejects_interactive_surface() -> None:
     grid = simple.simple_grid()
     with pytest.raises(NotImplementedError, match="FIXED_HEAT_FLUXES"):
         surface_fluxes.PrescribedFluxProvider(
-            config=tmx.TmxConfig(isrfc_type=tmx.SurfaceFluxType.INTERACTIVE),
+            config=tmx.TmxConfig(surface_type=tmx.SurfaceType.INTERACTIVE),
             pressure_ifc=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
             ),

@@ -89,7 +89,7 @@ class TmxMetricState:
     adjacent cells [m] (``t_grid_edges%edge_cell_length`` in mo_model_domain.f90).
 
     A grid-geometry field carried here because it is not part of the common
-    ``grid_states.EdgeParams`` (used by the horizontal w diffusion, Stage E)."""
+    ``grid_states.EdgeParams`` (used by the horizontal w diffusion)."""
 
     @classmethod
     def from_sources(

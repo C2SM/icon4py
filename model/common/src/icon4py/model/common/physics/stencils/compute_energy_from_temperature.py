@@ -13,7 +13,7 @@ from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.physics.stencils.compute_dry_static_energy import (
     _compute_dry_static_energy,
 )
-from icon4py.model.common.physics.thermodynamics import _internal_energy
+from icon4py.model.common.physics.thermodynamics import _compute_internal_energy
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -81,7 +81,9 @@ def _compute_energy_from_temperature(
         q_liquid = qc + qr
         q_solid = qi + qs + qg
         energy = (
-            _internal_energy(t=temperature, qv=qv, qliq=q_liquid, qice=q_solid, rho=one, dz=one)
+            _compute_internal_energy(
+                t=temperature, qv=qv, qliq=q_liquid, qice=q_solid, rho=one, dz=one
+            )
             + grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd
         )
     else:

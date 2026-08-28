@@ -247,7 +247,7 @@ def test_config_round_trips_through_config_io() -> None:
 
     assert unstructured["solver_type"] == "implicit"
     assert unstructured["energy_type"] == "internal"
-    assert unstructured["isrfc_type"] == "interactive"
+    assert unstructured["surface_type"] == "interactive"
     assert config_io.CONV.structure(unstructured, tmx.TmxConfig) == config
 
 
@@ -258,6 +258,6 @@ def test_surface_flux_options_come_from_the_input_namelist() -> None:
         atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}},
         input_dict={"nh_testcase_nml": {"isrfc_type": 1, "shflx": 0.2}},
     )
-    assert config.isrfc_type is tmx.SurfaceFluxType.FIXED_HEAT_FLUXES
+    assert config.surface_type is tmx.SurfaceType.FIXED_HEAT_FLUXES
     assert config.shflx == 0.2
     assert config.lhflx == 0.0

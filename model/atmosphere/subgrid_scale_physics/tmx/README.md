@@ -28,18 +28,18 @@ reference. The CO2 tracer diffusion (`l_co2`) is also out of scope.
 
 - `tmx.py`: configuration (`TmxConfig`, namelist `aes_vdf_nml`) and the `Tmx`
   granule class. `Tmx.run` executes one time step in the
-  Fortran stage order of `Compute` (`mo_vdf.f90`), with halo exchanges at the Fortran
-  sync points; each stage is also callable on its own:
+  Fortran step order of `Compute` (`mo_vdf.f90`), with halo exchanges at the Fortran
+  sync points; each step is also callable on its own:
 
-  | Stage | Granule method                  | Fortran                                             |
-  | ----- | ------------------------------- | --------------------------------------------------- |
-  | A     | `run_diagnostics`               | `Compute_diagnostics` (mo_vdf_atmo.f90)             |
-  | B     | `run_hydrometeor_diffusion`     | `Compute_diffusion_hydrometeors` (mo_vdf.f90)       |
-  | C     | `run_temperature_diffusion`     | `Compute_diffusion_temperature` (mo_vdf.f90)        |
-  | D     | `run_horizontal_wind_diffusion` | `Compute_diffusion_hor_wind` (mo_vdf.f90)           |
-  | E     | `run_vertical_wind_diffusion`   | `Compute_diffusion_vert_wind` (mo_vdf.f90)          |
-  | F     | `run_energy_update`             | `Update_energy_tendencies` (mo_vdf.f90)             |
-  | G     | `run_update_diagnostics`        | `Update_diagnostics` (mo_vdf_atmo.f90 / mo_vdf.f90) |
+  | Step                      | Granule method                  | Fortran                                             |
+  | ------------------------- | ------------------------------- | --------------------------------------------------- |
+  | Diagnostics               | `run_diagnostics`               | `Compute_diagnostics` (mo_vdf_atmo.f90)             |
+  | Hydrometeor diffusion     | `run_hydrometeor_diffusion`     | `Compute_diffusion_hydrometeors` (mo_vdf.f90)       |
+  | Temperature diffusion     | `run_temperature_diffusion`     | `Compute_diffusion_temperature` (mo_vdf.f90)        |
+  | Horizontal wind diffusion | `run_horizontal_wind_diffusion` | `Compute_diffusion_hor_wind` (mo_vdf.f90)           |
+  | Vertical wind diffusion   | `run_vertical_wind_diffusion`   | `Compute_diffusion_vert_wind` (mo_vdf.f90)          |
+  | Energy update             | `run_energy_update`             | `Update_energy_tendencies` (mo_vdf.f90)             |
+  | End-of-step diagnostics   | `run_update_diagnostics`        | `Update_diagnostics` (mo_vdf_atmo.f90 / mo_vdf.f90) |
 
 - `tmx_states.py`: frozen state dataclasses (metric, interpolation, input, surface flux,
   diagnostic, tendency and new-state containers). The Fortran (state, new_state,

@@ -9,9 +9,9 @@
 """Integration tests of the Tmx granule scalar diffusion stages (M4).
 
 Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys)
-and verifies one call of ``run_hydrometeor_diffusion`` (Stage B) against the
+and verifies one call of ``run_hydrometeor_diffusion`` against the
 tmx-hydro-exit savepoint and one call of ``run_temperature_diffusion``
-(Stage C) against the tmx-temperature-exit savepoint. Both stages are seeded
+against the tmx-temperature-exit savepoint. Both steps are seeded
 from the tmx-diagnostics-exit savepoint (``kh_ic``, ``km_ie``) and the
 temperature stage additionally from the tmx-hydro-exit savepoint (the new
 moisture state), so that failures do not cascade between the stages.
@@ -93,8 +93,8 @@ def _setup_granule(
         exchange=decomposition.SingleNodeExchange(),
     )
 
-    # seed the Stage A diagnostics consumed by the scalar diffusion from the
-    # diagnostics-exit savepoint instead of running Stage A (failures there
+    # seed the diagnostics consumed by the scalar diffusion from the
+    # diagnostics-exit savepoint instead of running them (failures there
     # must not cascade into these tests)
     diagnostic_state = dataclasses.replace(
         tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),
@@ -207,7 +207,7 @@ def test_tmx_run_temperature_diffusion_single_step(
 
     # seed the new moisture state (energy_type = 2 recovers the temperature
     # with the *new* tracers) from the hydro-exit savepoint instead of running
-    # Stage B
+    # the hydrometeor diffusion
     new_state = dataclasses.replace(
         setup.new_state,
         qv=hydro_exit_savepoint.qv_new(),

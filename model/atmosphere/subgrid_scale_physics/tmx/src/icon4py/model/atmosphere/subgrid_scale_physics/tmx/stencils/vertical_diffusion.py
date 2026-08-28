@@ -27,6 +27,8 @@ to an input field (``field * 0.0``); the anchor is always an inverse mass or
 density, which is strictly positive and finite on the tmx domains.
 """
 
+from typing import NamedTuple
+
 import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
@@ -39,6 +41,22 @@ from icon4py.model.common.math.tridiagonal import (
 from icon4py.model.common.type_alias import wpfloat
 
 
+class TridiagonalMatrixCells(NamedTuple):
+    """Sub-, main and super-diagonal of a tridiagonal matrix on cells."""
+
+    a: fa.CellKField[wpfloat]
+    b: fa.CellKField[wpfloat]
+    c: fa.CellKField[wpfloat]
+
+
+class TridiagonalMatrixEdges(NamedTuple):
+    """Sub-, main and super-diagonal of a tridiagonal matrix on edges."""
+
+    a: fa.EdgeKField[wpfloat]
+    b: fa.EdgeKField[wpfloat]
+    c: fa.EdgeKField[wpfloat]
+
+
 @gtx.field_operator
 def _prepare_tridiagonal_matrix_cells(
     inv_mair: fa.CellKField[wpfloat],
@@ -47,7 +65,7 @@ def _prepare_tridiagonal_matrix_cells(
     zprefac: wpfloat,
     minlvl: gtx.int32,
     maxlvl: gtx.int32,
-) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+) -> TridiagonalMatrixCells:
     """
     Rows of the full-level tridiagonal diffusion matrix on cells.
 
@@ -65,7 +83,7 @@ def _prepare_tridiagonal_matrix_cells(
     a = concat_where(dims.KDim > minlvl, a_interior, zero)
     c = concat_where(dims.KDim < maxlvl, c_interior, zero)
     b = wpfloat("0.0") - a - c
-    return a, b, c
+    return TridiagonalMatrixCells(a=a, b=b, c=c)
 
 
 @gtx.field_operator
@@ -76,7 +94,7 @@ def _prepare_tridiagonal_matrix_cells_half(
     zprefac: wpfloat,
     minlvl: gtx.int32,
     maxlvl: gtx.int32,
-) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+) -> TridiagonalMatrixCells:
     """
     Rows of the half-level tridiagonal diffusion matrix on cells (w solve).
 
@@ -97,7 +115,7 @@ def _prepare_tridiagonal_matrix_cells_half(
     a = concat_where(dims.KDim > minlvl, a_interior, zero)
     c = concat_where(dims.KDim < maxlvl, c_interior, zero)
     b = wpfloat("0.0") - a - c
-    return a, b, c
+    return TridiagonalMatrixCells(a=a, b=b, c=c)
 
 
 @gtx.field_operator
@@ -108,7 +126,7 @@ def _prepare_tridiagonal_matrix_edges(
     zprefac: wpfloat,
     minlvl: gtx.int32,
     maxlvl: gtx.int32,
-) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
+) -> TridiagonalMatrixEdges:
     """
     Rows of the full-level tridiagonal diffusion matrix on edges (vn solve).
 
@@ -121,41 +139,7 @@ def _prepare_tridiagonal_matrix_edges(
     a = concat_where(dims.KDim > minlvl, a_interior, zero)
     c = concat_where(dims.KDim < maxlvl, c_interior, zero)
     b = wpfloat("0.0") - a - c
-    return a, b, c
-
-
-@gtx.field_operator
-def _compute_surface_flux_rhs(
-    sfc_flx: fa.CellField[wpfloat],
-    inv_air_mass: fa.CellKField[wpfloat],
-    prefac: wpfloat,
-    maxlvl: gtx.int32,
-) -> fa.CellKField[wpfloat]:
-    """
-    Right-hand side of the scalar vertical diffusion solve.
-
-    Port of the right-hand-side rows of 'Compute_diffusion_hydrometeors' and
-    'Compute_diffusion_temperature' (mo_vdf.f90):
-
-        rhs(maxlvl) = - sfc_flx * prefac * inv_mair(maxlvl)
-
-    with ``prefac = 1`` for the hydrometeors and ``prefac = zfactor``
-    (``scale_turb_energy_flux`` if enabled, else 1) for the energy. All other
-    rows are zero: the Fortran zero-initializes ``rhs`` and only writes the
-    bottom row and the top row ``rhs(1) = + top_flx * inv_mair(1)``, where
-    ``top_flx`` is always zero in tmx.
-
-    Args:
-        sfc_flx: grid-mean surface flux of the diffused quantity (2D cell field)
-        inv_air_mass: inverse air mass per unit area at full levels [m^2/kg]
-        prefac: scaling factor of the turbulent flux
-        maxlvl: bottom row of the solve (``nlev - 1``)
-
-    Returns:
-        right-hand side of the vertical diffusion solve at all full levels
-    """
-    bottom = wpfloat("0.0") - sfc_flx * prefac * inv_air_mass
-    return concat_where(dims.KDim < maxlvl, inv_air_mass * wpfloat("0.0"), bottom)
+    return TridiagonalMatrixEdges(a=a, b=b, c=c)
 
 
 @gtx.field_operator

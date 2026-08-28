@@ -9,7 +9,7 @@
 """End-to-end integration test of the Tmx granule (M6).
 
 Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys)
-and verifies one full ``run`` (Stages A to G) from the tmx-entry /
+and verifies one full ``run`` from the tmx-entry /
 tmx-surface-fluxes savepoints against the tmx-exit savepoint (final
 tendencies, dissipation heating and vertically integrated diagnostics).
 Unlike the per-stage tests, nothing is seeded from intermediate savepoints:

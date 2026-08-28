@@ -27,7 +27,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
+def _compute_temperature_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
     u: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qliq: fa.CellKField[ta.wpfloat],
@@ -64,7 +64,7 @@ def _T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_temperature_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
     u: fa.CellKField[ta.wpfloat],  # Internal energy (extensive)
     qv: fa.CellKField[ta.wpfloat],  # Water vapor specific humidity
     qliq: fa.CellKField[ta.wpfloat],  # Specific mass of liquid phases
@@ -73,11 +73,13 @@ def T_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
     dz: fa.CellKField[ta.wpfloat],  # Extent of grid cell
     temperature: fa.CellKField[ta.wpfloat],  # output
 ):
-    _T_from_internal_energy(u=u, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=temperature)
+    _compute_temperature_from_internal_energy(
+        u=u, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=temperature
+    )
 
 
 @gtx.field_operator
-def _T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
+def _compute_temperature_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
     u: ta.wpfloat,
     qv: ta.wpfloat,
     qliq: ta.wpfloat,
@@ -114,7 +116,7 @@ def _T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-argume
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_temperature_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
     u: ta.wpfloat,  # Internal energy (extensive)
     qv: ta.wpfloat,  # Water vapor specific humidity
     qliq: ta.wpfloat,  # Specific mass of liquid phases
@@ -123,13 +125,13 @@ def T_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-argumen
     dz: ta.wpfloat,  # Extent of grid cell
     temperature: ta.wpfloat,  # output
 ):
-    _T_from_internal_energy_scalar(
+    _compute_temperature_from_internal_energy_scalar(
         u=u, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=temperature
     )
 
 
 @gtx.field_operator
-def _internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
+def _compute_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qliq: fa.CellKField[ta.wpfloat],
@@ -162,7 +164,7 @@ def _internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.field_operator
-def _internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
+def _compute_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
     t: ta.wpfloat,
     qv: ta.wpfloat,
     qliq: ta.wpfloat,
@@ -195,7 +197,7 @@ def _internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],  # Temperature
     qv: fa.CellKField[ta.wpfloat],  # Specific mass of vapor
     qliq: fa.CellKField[ta.wpfloat],  # Specific mass of liquid phases
@@ -204,4 +206,4 @@ def internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
     dz: fa.CellKField[ta.wpfloat],  # Extent of grid cell
     energy: fa.CellKField[ta.wpfloat],  # output
 ):
-    _internal_energy(t=t, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=energy)
+    _compute_internal_energy(t=t, qv=qv, qliq=qliq, qice=qice, rho=rho, dz=dz, out=energy)

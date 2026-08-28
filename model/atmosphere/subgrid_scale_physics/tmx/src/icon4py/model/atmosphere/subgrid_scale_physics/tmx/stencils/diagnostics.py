@@ -70,7 +70,7 @@ from icon4py.model.common.physics.stencils.compute_dry_static_energy import (
 from icon4py.model.common.physics.stencils.compute_virtual_potential_temperature import (
     _compute_virtual_potential_temperature,
 )
-from icon4py.model.common.physics.thermodynamics import _internal_energy
+from icon4py.model.common.physics.thermodynamics import _compute_internal_energy
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -1068,10 +1068,10 @@ def _compute_vertical_integral_diagnostics(
     here each output holds the running top-down sum, so its value at the last
     full level (k = nlev - 1) is the column integral the caller extracts.
     """
-    int_energy_old = _internal_energy(
+    int_energy_old = _compute_internal_energy(
         t=temperature, qv=qv, qliq=qc + qr, qice=qi + qs + qg, rho=rho, dz=dz
     )
-    int_energy_new = _internal_energy(
+    int_energy_new = _compute_internal_energy(
         t=new_temperature,
         qv=new_qv,
         qliq=new_qc + qr,

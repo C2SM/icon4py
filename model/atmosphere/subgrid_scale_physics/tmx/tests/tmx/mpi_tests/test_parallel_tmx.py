@@ -8,7 +8,7 @@
 
 """Parallel test of the Tmx granule.
 
-Runs one full ``Tmx.run`` (Stages A to G) distributed over the MPI ranks, with
+Runs one full ``Tmx.run`` distributed over the MPI ranks, with
 GHEX halo exchanges at the Fortran sync points, and verifies each rank's local
 fields (including halos) against that rank's slice of the multirank serialized
 reference (mpitask{N}_exclaim_ape_aesPhys). The reference data is produced by

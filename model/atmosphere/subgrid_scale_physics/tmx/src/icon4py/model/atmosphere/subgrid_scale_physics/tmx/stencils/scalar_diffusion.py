@@ -24,10 +24,10 @@ both are loop-invariant and shared by the three hydrometeors.
 
 import gt4py.next as gtx
 from gt4py.next import broadcast, neighbor_sum
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.vertical_diffusion import (
     _apply_explicit_vertical_diffusion_cells,
-    _compute_surface_flux_rhs,
     _prepare_tridiagonal_matrix_cells,
     _solve_vertical_diffusion_cells,
 )
@@ -35,8 +35,42 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.dimension import C2E, E2C, C2EDim, KDim
 from icon4py.model.common.math.operators import _compute_reciprocal_on_cell_k
-from icon4py.model.common.physics.thermodynamics import _T_from_internal_energy
+from icon4py.model.common.physics.thermodynamics import _compute_temperature_from_internal_energy
 from icon4py.model.common.type_alias import wpfloat
+
+
+@gtx.field_operator
+def _compute_surface_flux_rhs(
+    sfc_flx: fa.CellField[wpfloat],
+    inv_air_mass: fa.CellKField[wpfloat],
+    prefac: wpfloat,
+    maxlvl: gtx.int32,
+) -> fa.CellKField[wpfloat]:
+    """
+    Right-hand side of the scalar vertical diffusion solve.
+
+    Port of the right-hand-side rows of 'Compute_diffusion_hydrometeors' and
+    'Compute_diffusion_temperature' (mo_vdf.f90):
+
+        rhs(maxlvl) = - sfc_flx * prefac * inv_mair(maxlvl)
+
+    with ``prefac = 1`` for the hydrometeors and ``prefac = zfactor``
+    (``scale_turb_energy_flux`` if enabled, else 1) for the energy. All other
+    rows are zero: the Fortran zero-initializes ``rhs`` and only writes the
+    bottom row and the top row ``rhs(1) = + top_flx * inv_mair(1)``, where
+    ``top_flx`` is always zero in tmx.
+
+    Args:
+        sfc_flx: grid-mean surface flux of the diffused quantity (2D cell field)
+        inv_air_mass: inverse air mass per unit area at full levels [m^2/kg]
+        prefac: scaling factor of the turbulent flux
+        maxlvl: bottom row of the solve (``nlev - 1``)
+
+    Returns:
+        right-hand side of the vertical diffusion solve at all full levels
+    """
+    bottom = wpfloat("0.0") - sfc_flx * prefac * inv_air_mass
+    return concat_where(dims.KDim < maxlvl, inv_air_mass * wpfloat("0.0"), bottom)
 
 
 @gtx.field_operator
@@ -429,7 +463,7 @@ def _compute_temperature_from_energy_and_tendency(
         q_liquid = qc + qr
         q_solid = qi + qs + qg
         u = energy - grav * height_above_ground * PhysicsConstants.cvd / PhysicsConstants.cpd
-        new_temperature = _T_from_internal_energy(
+        new_temperature = _compute_temperature_from_internal_energy(
             u=u, qv=qv, qliq=q_liquid, qice=q_solid, rho=one, dz=one
         )
     else:
