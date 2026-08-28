@@ -15,12 +15,11 @@ a namelist. Every default is the compiled-in default of mo_turbdiff_config.f90.
 Carrying parameters the implementation refuses is deliberate. The granule interface is the
 contract and has to be expressible from Fortran, C and Python alike, so it accepts anything ICON
 can be configured to do; `FROZEN_SWITCHES` is where the implementation says which of those
-formulations were ported (port spec D5/D6). Twenty-nine switches select alternatives that were
+formulations were ported (port spec D5/D6). Thirty switches select alternatives that were
 not ported and are refused with a 'NotImplementedError' that names the one supported value, says
-what it means, and points at the Fortran scheme. Eight more do vary operationally across the DWD
-and MeteoSwiss setups -- 'itype_sher', 'icldm_turb', 'imode_tkesso', 'imode_charpar',
-'frcsmot', 'a_hshr', 'ltkesso' and 'ltkeshs' -- and are supported over the range those setups
-need. Which values occur was verified by grepping all 648 configurations under 'icon/run/',
+what it means, and points at the Fortran scheme. Seven more do vary operationally across the DWD
+and MeteoSwiss setups -- 'itype_sher', 'icldm_turb', 'imode_tkesso', 'imode_charpar', 'a_hshr',
+'ltkesso' and 'ltkeshs' -- and are supported over the range those setups need. Which values occur was verified by grepping all 648 configurations under 'icon/run/',
 not assumed.
 
 Every other formulation switch is accounted for too, because what D6 rules out is silence, not
@@ -65,8 +64,8 @@ class FrozenSwitch:
 
     #: Name of the switch, spelled as in 'mo_turbdiff_config.f90'.
     name: str
-    #: The single value the granule implements -- the compiled-in Fortran default.
-    supported_value: int | bool
+    #: The single value the granule implements -- usually the compiled-in Fortran default.
+    supported_value: int | bool | float
     #: What that value means physically, translated from the Fortran declaration.
     meaning: str
 
@@ -83,8 +82,10 @@ class FrozenSwitch:
 #: entry is the declaration in 'icon/src/configure_model/mo_turbdiff_config.f90' the default and
 #: the meaning were read from. Twelve are reachable from 'turbdiff_nml' (mo_turbdiff_nml.f90:
 #: 56-71); the other seventeen can only change by editing Fortran. Across all 648 configurations
-#: under 'icon/run/' only three settings differ from a value frozen here -- 'imode_frcsmot = 0',
-#: 'icldm_tran = -1' and 'lfreeslip = .TRUE.' -- and the entries below record where.
+#: under 'icon/run/' four settings differ from a value frozen here -- 'imode_frcsmot = 0',
+#: 'icldm_tran = -1', 'lfreeslip = .TRUE.' and 'frcsmot = 0.2' -- and the entries below record
+#: where. The last is by far the widest: 28 runscripts set it, and unlike the other three it is
+#: the Fortran default rather than a deviation from it.
 FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
     FrozenSwitch("imode_turb", 1, "prognostic TKE equation"),  # :299
     FrozenSwitch("imode_tran", 0, "diagnostic TKE equation in the transfer scheme"),  # :298
@@ -164,6 +165,28 @@ FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
         2,
         "vertical smoothing of the TKE forcing terms confined to the tropics by 'trop_mask'",
     ),  # :140
+    #: NOT a compiled-in default -- the Fortran default is 0.2 and 28 configurations under
+    #: 'icon/run/' set it, including 'exclaim_uncoupled_R02B0[56]L120', 'exclaim_ch_r04b09_dsl_sb'
+    #: and 'mch_bench_r19b0[78]_dev'. Frozen at 0 because 'vert_smooth'
+    #: ('turb_utilities.f90:3098-3227') is not ported, and refusing is the only alternative to
+    #: silently omitting a smoothing the caller asked for.
+    #:
+    #: The three MCH production experiments -- 'mch_icon-ch1', 'mch_icon-ch2' and 'mch_kenda-ch1'
+    #: -- all set 'frcsmot = 0.0', so this costs them nothing. It does lock out the global and
+    #: benchmark configurations, where 'trop_mask' is non-zero in the tropics and the smoothing
+    #: really runs.
+    #:
+    #: Lifting it needs a capture that exercises it, and THIS EXPERIMENT CANNOT PROVIDE ONE at any
+    #: 'frcsmot': at 'imode_frcsmot = 2' the call is guarded by 'ANY(trop_mask > 0)' and
+    #: 'trop_mask' is identically zero at all 8276 columns of the Swiss LAM domain. When porting
+    #: it: despite its '!$ACC LOOP SEQ', 'vert_smooth' is NOT a recurrence -- 'sav_tend' carries
+    #: the level above's value from before it was smoothed -- so it is an out-of-place three-point
+    #: stencil, a 'concat_where' over 'Koff[+-1]', not a 'scan_operator'.
+    FrozenSwitch(
+        "frcsmot",
+        0.0,
+        "no vertical smoothing of the TKE forcing terms; 'vert_smooth' is not ported",
+    ),  # :139
     #: The only other value under 'icon/run/' is -1 in 'checksuite.nwp/
     #: nwpexp.run_ICON_02_R2B13_lam', which sets 'icldm_turb = -1' in the same breath and is
     #: therefore already refused by the supported range of 'icldm_turb'.
@@ -555,11 +578,6 @@ class TurbulenceConfig:
             "the wind-dependent Charnock parameter, with and without the cyclone reduction",
         )
 
-        if not 0.0 <= self.frcsmot <= 1.0:
-            raise ValueError(
-                f"Invalid argument 'frcsmot': should be a smoothing fraction in [0, 1], "
-                f"got {self.frcsmot}."
-            )
         if self.a_hshr < 0.0:
             raise ValueError(
                 f"Invalid argument 'a_hshr': should be a non-negative length-scale factor, "
