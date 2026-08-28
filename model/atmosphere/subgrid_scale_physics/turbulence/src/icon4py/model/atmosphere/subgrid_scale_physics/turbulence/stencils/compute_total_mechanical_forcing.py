@@ -15,6 +15,7 @@ Matthias Raschendorfer (DWD).
 
     :1534  frm(i,k) = frm(i,k) + hlp(i,k)/tkvm(i,k)                    !extended shear
     :1575  wert = MAX( z0, -zbnd_val(hlp(i,k), hlp(i,k-1), dp0(i,k), dp0(i,k-1)) )
+    :1587  frm(i,k) = frm(i,k) + wert/tkvm(i,k)                        !imode_tkesso = 1
     :1589  frm(i,k) = frm(i,k) + wert/tkvm(i,k)*MIN(1.0_wp,MAX(0.01_wp,xri(i,k)))
 
 Both add an energy production rate divided by the momentum diffusion coefficient, which is what
@@ -39,11 +40,29 @@ It is the same interpolation section 0) performs with a precomputed weight
 ('compute_half_level_interpolation_weight'); this call site takes the unweighted branch, and the
 two are not the same number to the last bit, so the branch is part of the translation.
 
+TWO PROGRAMS, ONE PER 'imode_tkesso', AND WHY THEY ARE NOT ONE.
+
+'compute_total_mechanical_forcing' is 'imode_tkesso = 2' (and 3; see below);
+'compute_total_mechanical_forcing_without_richardson_reduction' is mode 1, which adds the SSO
+source unreduced (:1587). 'Turbulence' picks between them once, in '_setup_turbdiff_programs'.
+The DWD global setups 'glob_oper' and 'glob_eps' run mode 1, so refusing it would refuse two
+operational configurations over one absent factor.
+
+MODE 1 IS NOT VALIDATED AGAINST ICON EXCEPT WHERE THE TWO MODES COINCIDE. The capture ran mode
+2 or 3 -- established from the data by
+'test_the_capture_reduces_the_sso_source_by_the_richardson_number', not from a namelist -- so
+there is no reference for the mode-1 expression as such. What there is:
+'MIN(1, MAX(0.01, xri))' is exactly 1 wherever 'xri >= 1', and at those points the two modes
+are bit-identical, so mode 1 inherits the reference agreement of mode 2 there. Where the
+reduction bites they differ, and that part of mode 1 rests on the transcription alone. Both
+statements are measured in 'test_turbdiff_section_2a.py'.
+
+The two are written out separately rather than sharing a factored expression on purpose: mode 2
+is gated against ICON and mode 1 is not, and textual separation is what keeps a later edit to
+the unvalidated one from moving the validated one. The duplication is four lines.
+
 WHAT IS NOT PORTED, AND WHY IT HAS NO ORACLE HERE.
 
-  * 'imode_tkesso = 1', the SSO source without the Richardson-number reduction (:1587). The
-    capture ran 2 or 3, established from the data; mode 1 is off by a factor of 90 and is
-    excluded.
   * The distinction between 'imode_tkesso = 2' and '= 3' (:1589 vs :1591). Mode 3 multiplies by
     'MIN(1, l_hori/2000)', an additional reduction for meshes finer than 2 km. The capture's
     'l_hori' is 9863.8 m on every column, so that factor is exactly 1 and THE TWO MODES ARE
@@ -104,6 +123,36 @@ def _compute_total_mechanical_forcing(
     )
 
 
+@gtx.field_operator
+def _compute_total_mechanical_forcing_without_richardson_reduction(
+    mean_shear_forcing: fa.CellKField[wpfloat],
+    separated_horizontal_shear_tke_source: fa.CellKField[wpfloat],
+    sso_wake_energy_production: fa.CellKField[wpfloat],
+    layer_pressure_thickness: fa.CellKField[wpfloat],
+    momentum_diffusion_coefficient: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    """The same three terms at 'imode_tkesso = 1', where the SSO source enters unreduced.
+
+    A transcription of :1587 and, apart from the missing factor, identical to the operator
+    above. Deliberately not factored into a common helper -- see the module docstring.
+    """
+    sso_production_at_half_level = maximum(
+        wpfloat("0.0"),
+        -(
+            sso_wake_energy_production * layer_pressure_thickness(Koff[-1])
+            + sso_wake_energy_production(Koff[-1]) * layer_pressure_thickness
+        )
+        / (layer_pressure_thickness + layer_pressure_thickness(Koff[-1])),
+    )
+    with_separated_horizontal_shear = (
+        mean_shear_forcing + separated_horizontal_shear_tke_source / momentum_diffusion_coefficient
+    )
+    return (
+        with_separated_horizontal_shear
+        + sso_production_at_half_level / momentum_diffusion_coefficient
+    )
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_total_mechanical_forcing(
     mean_shear_forcing: fa.CellKField[wpfloat],
@@ -148,6 +197,40 @@ def compute_total_mechanical_forcing(
         layer_pressure_thickness=layer_pressure_thickness,
         momentum_diffusion_coefficient=momentum_diffusion_coefficient,
         inverse_richardson_number_factor=inverse_richardson_number_factor,
+        out=mechanical_forcing,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_total_mechanical_forcing_without_richardson_reduction(
+    mean_shear_forcing: fa.CellKField[wpfloat],
+    separated_horizontal_shear_tke_source: fa.CellKField[wpfloat],
+    sso_wake_energy_production: fa.CellKField[wpfloat],
+    layer_pressure_thickness: fa.CellKField[wpfloat],
+    momentum_diffusion_coefficient: fa.CellKField[wpfloat],
+    mechanical_forcing: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """Compute 'frm' as section 2a) leaves it at 'imode_tkesso = 1' [1/s2], on half levels.
+
+    UNVALIDATED AGAINST ICON DATA except where the two modes coincide -- the capture ran mode 2
+    or 3. See the module docstring; the arguments are those of
+    'compute_total_mechanical_forcing' without 'inverse_richardson_number_factor', which mode 1
+    does not read.
+    """
+    _compute_total_mechanical_forcing_without_richardson_reduction(
+        mean_shear_forcing=mean_shear_forcing,
+        separated_horizontal_shear_tke_source=separated_horizontal_shear_tke_source,
+        sso_wake_energy_production=sso_wake_energy_production,
+        layer_pressure_thickness=layer_pressure_thickness,
+        momentum_diffusion_coefficient=momentum_diffusion_coefficient,
         out=mechanical_forcing,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

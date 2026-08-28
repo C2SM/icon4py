@@ -42,12 +42,24 @@ the switches is serialized and the port must not assert its own assumption:
     imode_tkesso in {2, 3}  Ri-reduced SSO source -- the two are INDISTINGUISHABLE here
     ltkecon       = F       no convective circulation shear
 
+'imode_tkesso = 1' IS PORTED ANYWAY, and this capture ran mode 2 or 3
+------------------------------------------------------------------------
+'compute_total_mechanical_forcing_without_richardson_reduction' is the mode-1 formulation
+(turb_diffusion.f90:1587), which the DWD global setups 'glob_oper' and 'glob_eps' run and which
+this capture therefore cannot validate as such. It is not unvalidated everywhere, though, and
+the difference matters: 'MIN(1, MAX(0.01, xri))' is EXACTLY 1 wherever 'xri >= 1', and at those
+points the two modes are bit-identical, so mode 1 inherits mode 2's agreement with the reference
+there. Below the reduction bites and mode 1 rests on the transcription alone. Both halves are
+measured -- see the four 'unreduced' tests -- and the second is the port's exposure.
+
 WHAT THIS CAPTURE DOES NOT COVER (port spec 5.4)
 -------------------------------------------------
   * 'itype_sher' 0 and 1. Only the full three-dimensional form has an oracle here.
   * 'imode_shshear' 0 and 1. Only 2 has an oracle.
-  * 'imode_tkesso = 1', excluded by the data; and the difference between 2 and 3, which this
-    capture cannot see because its mesh is coarser than the 2 km the mode-3 factor keys on.
+  * 'imode_tkesso = 1' where the Richardson reduction is active. The capture ran mode 2 or 3,
+    so the reduced form is what it can gate; see the section above for the part of mode 1 that
+    IS covered. Also the difference between 2 and 3, which this capture cannot see because its
+    mesh is coarser than the 2 km the mode-3 factor keys on.
   * The convective circulation term (:1602-1614), dead at 'ltkecon = .FALSE.'.
   * The 'ftm' save of the traditional mean shear (:1375-1394): 'lssintact', 'loutbms' and
     'rsur_sher > 0' are all false, so the intermediate this port calls 'mean_shear_forcing' has
@@ -96,6 +108,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_total_mechanical_forcing import (
     compute_total_mechanical_forcing,
+    compute_total_mechanical_forcing_without_richardson_reduction,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_uncorrected_horizontal_shear_length_scale import (
     compute_uncorrected_horizontal_shear_length_scale,
@@ -179,6 +192,8 @@ class Section2a(NamedTuple):
     separated_horizontal_shear_tke_source: gtx.Field
     sso_wake_energy_production: gtx.Field
     mechanical_forcing: gtx.Field
+    #: The same 'frm' at 'imode_tkesso = 1', from the same inputs; see the module docstring.
+    mechanical_forcing_without_richardson_reduction: gtx.Field
 
 
 def _run_section_2a(
@@ -223,6 +238,7 @@ def _run_section_2a(
     separated_horizontal_shear_tke_source = utils.copy_of(before.tket_hshr(), backend)
     sso_wake_energy_production = utils.copy_of(before.hlp(), backend)
     mechanical_forcing = utils.copy_of(before.mech_forcing(), backend)
+    mechanical_forcing_without_richardson_reduction = utils.copy_of(before.mech_forcing(), backend)
 
     compute_three_dimensional_shear_forcing.with_backend(backend)(
         vertical_gradient_u=before.vertical_gradient(U_M),
@@ -300,6 +316,20 @@ def _run_section_2a(
         **horizontal,
         **half_levels,
     )
+    # The mode-1 alternative, on exactly the same inputs. It is run in every case rather than
+    # under a flag: the two outputs are compared against each other, and a comparison of two
+    # runs made from different chains would say nothing.
+    compute_total_mechanical_forcing_without_richardson_reduction.with_backend(backend)(
+        mean_shear_forcing=mean_shear_forcing,
+        separated_horizontal_shear_tke_source=separated_horizontal_shear_tke_source,
+        sso_wake_energy_production=sso_wake_energy_production,
+        layer_pressure_thickness=entry.dp0(),
+        momentum_diffusion_coefficient=before.tkvm(),
+        mechanical_forcing=mechanical_forcing_without_richardson_reduction,
+        offset_provider={dims.Koff.value: dims.KDim},
+        **horizontal,
+        **half_levels,
+    )
     return Section2a(
         entry=entry,
         before=before,
@@ -314,6 +344,9 @@ def _run_section_2a(
         separated_horizontal_shear_tke_source=separated_horizontal_shear_tke_source,
         sso_wake_energy_production=sso_wake_energy_production,
         mechanical_forcing=mechanical_forcing,
+        mechanical_forcing_without_richardson_reduction=(
+            mechanical_forcing_without_richardson_reduction
+        ),
     )
 
 
@@ -876,3 +909,133 @@ def test_section_2a_leaves_the_rows_outside_its_domains_alone(
                 reference.asnumpy()[run.columns, row],
                 err_msg=f"{quantity} row {row}",
             )
+
+
+# ---------------------------------------------------- 'imode_tkesso = 1', the unreduced source --
+
+
+def _richardson_reduction(run: Section2a) -> np.ndarray:
+    """'MIN(1, MAX(0.01, xri))' over the computed window, from the port's own 'xri'."""
+    here = slice(1, run.ke)
+    return np.minimum(
+        1.0, np.maximum(0.01, run.inverse_richardson_number_factor.asnumpy()[run.columns, here])
+    )
+
+
+@pytest.mark.datatest
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+def test_the_unreduced_sso_mode_matches_the_reduced_one_where_the_factor_is_one(
+    date: str, *, data_provider: sb.IconSerialDataProvider, backend
+) -> None:
+    """Where 'MIN(1, MAX(0.01, xri))' is exactly 1, mode 1 and mode 2 are the same number.
+
+    This is the whole ICON anchoring of 'imode_tkesso = 1'. The capture ran mode 2 or 3, so
+    there is no reference for the mode-1 expression as such; but at every point where the
+    reduction factor is exactly 1 the two formulations coincide bit for bit -- 'x * 1.0' is 'x'
+    in IEEE -- and mode 2 is gated against the reference by
+    'test_compute_total_mechanical_forcing_agrees_with_icon_within_its_gate'. So on those points
+    mode 1 agrees with ICON to exactly the same tolerance, and it is the points below 1 that
+    rest on the transcription alone.
+
+    The count is asserted, not assumed: if the reduction were active everywhere this test would
+    be vacuous and mode 1 would have no ICON anchoring at all.
+    """
+    run = _run_section_2a(data_provider, date, backend)
+    here = slice(1, run.ke)
+    inactive = _richardson_reduction(run) == 1.0
+
+    assert np.count_nonzero(inactive) > 0, (
+        "the Richardson reduction is active at every point of this capture, so nothing here "
+        "anchors 'imode_tkesso = 1' against ICON."
+    )
+    reduced = run.mechanical_forcing.asnumpy()[run.columns, here]
+    unreduced = run.mechanical_forcing_without_richardson_reduction.asnumpy()[run.columns, here]
+    np.testing.assert_array_equal(unreduced[inactive], reduced[inactive])
+
+
+@pytest.mark.datatest
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+def test_the_unreduced_sso_mode_differs_where_the_richardson_reduction_bites(
+    date: str, *, data_provider: sb.IconSerialDataProvider, backend
+) -> None:
+    """The two modes are not the same program, and this data separates them.
+
+    Without it the equality above would prove nothing: two identical programs would pass it too.
+    It also measures how large the gap is, which is what makes 'imode_tkesso' worth refusing
+    rather than approximating -- at 'xri = 0.01', the floor, the SSO source enters at a
+    hundredth of its unreduced value.
+    """
+    run = _run_section_2a(data_provider, date, backend)
+    here = slice(1, run.ke)
+    reduction = _richardson_reduction(run)
+
+    reduced = run.mechanical_forcing.asnumpy()[run.columns, here]
+    unreduced = run.mechanical_forcing_without_richardson_reduction.asnumpy()[run.columns, here]
+
+    assert np.count_nonzero(reduction < 1.0) > 0
+    assert np.count_nonzero(unreduced != reduced) > 0
+    # Mode 1 can only be the larger of the two: the reduction factor is at most 1 and the SSO
+    # source it multiplies is non-negative by its own 'MAX(0, ...)'.
+    assert np.all(unreduced[reduction < 1.0] >= reduced[reduction < 1.0])
+
+
+@pytest.mark.datatest
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+def test_the_unreduced_sso_mode_reproduces_its_fortran_transcription(
+    date: str, *, data_provider: sb.IconSerialDataProvider, backend
+) -> None:
+    """':1587' in numpy, on the chained run's own intermediates, bit for bit.
+
+    The oracle where ICON cannot be one. It is built from the fields this run produced --
+    'ftm', 'tket_hshr' and 'hlp' as the port computed them -- rather than from the reference's,
+    so it tests the last program of the chain alone and not the seven together; the gate tests
+    above do the latter for mode 2.
+    """
+    run = _run_section_2a(data_provider, date, backend)
+    here, above = slice(1, run.ke), slice(0, run.ke - 1)
+
+    def window(field, levels: slice = here) -> np.ndarray:
+        return field.asnumpy()[run.columns, levels]
+
+    momentum = window(run.before.tkvm())
+    sso = run.sso_wake_energy_production.asnumpy()[run.columns]
+    thickness = run.entry.dp0().asnumpy()[run.columns]
+    at_half_level = (sso[:, here] * thickness[:, above] + sso[:, above] * thickness[:, here]) / (
+        thickness[:, here] + thickness[:, above]
+    )
+    source = np.maximum(0.0, -at_half_level)
+    expected = (
+        window(run.mean_shear_forcing)
+        + window(run.separated_horizontal_shear_tke_source) / momentum
+        + source / momentum
+    )
+
+    np.testing.assert_array_equal(
+        window(run.mechanical_forcing_without_richardson_reduction), expected
+    )
+
+
+@pytest.mark.datatest
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+def test_the_unreduced_sso_mode_does_not_reproduce_this_capture(
+    date: str, *, data_provider: sb.IconSerialDataProvider, backend
+) -> None:
+    """Said with the ported program, not only with numpy: this capture is not 'imode_tkesso = 1'.
+
+    'test_the_capture_reduces_the_sso_source_by_the_richardson_number' establishes the same
+    thing from serialized quantities alone, which is what makes it evidence about ICON. This
+    one is about the port: the mode-1 program must be a DIFFERENT computation from the mode-2
+    one, or selecting between them in '_setup_turbdiff_programs' would be a no-op that no test
+    would notice.
+    """
+    run = _run_section_2a(data_provider, date, backend)
+    here = slice(1, run.ke)
+
+    unreduced = run.mechanical_forcing_without_richardson_reduction.asnumpy()[run.columns, here]
+    reference = run.after.mech_forcing().asnumpy()[run.columns, here]
+
+    assert not np.allclose(unreduced, reference, rtol=1.0e-6, atol=0.0)

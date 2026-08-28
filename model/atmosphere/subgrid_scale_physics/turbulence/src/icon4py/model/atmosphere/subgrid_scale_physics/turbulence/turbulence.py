@@ -140,6 +140,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_total_mechanical_forcing import (
     compute_total_mechanical_forcing,
+    compute_total_mechanical_forcing_without_richardson_reduction,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_length_scale import (
     compute_turbulent_length_scale,
@@ -932,10 +933,16 @@ class Turbulence:
         """Refuse the configurations the ported stencils cannot represent.
 
         `TurbulenceConfig` states which formulations the PORT supports; this states which of
-        those the assembled 'turbdiff' can actually run, which is narrower in five places. Each
-        of the five is a stencil that fuses a guarded Fortran block into an unguarded expression
+        those the assembled 'turbdiff' can actually run, which is narrower in four places. Each
+        of the four is a stencil that fuses a guarded Fortran block into an unguarded expression
         -- correct only while the guard holds -- so the alternative is not a missing term but a
         wrong number.
+
+        'imode_tkesso' used to be a fifth. It is not any more: mode 1 has its own program
+        ('compute_total_mechanical_forcing_without_richardson_reduction') and
+        '_setup_turbdiff_programs' selects it, so both values 'TurbulenceConfig' accepts run
+        here. Mode 1 is validated against ICON only where the reduction factor is exactly 1;
+        that stencil's module docstring says so.
         """
         if (
             self._config.itype_sher
@@ -958,15 +965,6 @@ class Turbulence:
                 "Only ltkesso = True (mechanical SSO-wake production) is implemented in "
                 "'run_turbdiff'; 'compute_total_mechanical_forcing' adds that term without a "
                 "guard (turb_diffusion.f90:1572-1596)."
-            )
-        if self._config.imode_tkesso is options.SsoTkeProductionType.ORIGINAL:
-            raise NotImplementedError(
-                "Only imode_tkesso = 2 or 3 (the Richardson-reduced SSO source term) is "
-                "implemented in 'run_turbdiff'; got 1. 'compute_total_mechanical_forcing' has "
-                "the Richardson factor of turb_diffusion.f90:1589 unguarded, and mode 1 "
-                "(:1587) omits it -- a factor of about 90 on the SSO contribution. "
-                "'TurbulenceConfig' accepts mode 1 because the granule interface is the "
-                "contract; the assembled stage cannot run it."
             )
         if self._config.c_diff <= 0.0:
             raise NotImplementedError(
@@ -1399,9 +1397,23 @@ class Turbulence:
             compute_sso_wake_energy_production,
             levels=(0, nlev),  # 'DO k=1,kem' -- one MAIN level higher than the rest
         )
+        # 'imode_tkesso' picks the program, and this is the only place the mode is read. Mode 1
+        # (turb_diffusion.f90:1587) adds the SSO source without the Richardson reduction and
+        # never touches 'xri', so its program does not take the field; binding 'xri' here rather
+        # than at the call site keeps 'run_turbdiff' free of the branch. 'setup_program' inlines
+        # only SCALARS as compile-time constants -- a field in 'constant_args' is bound by
+        # identity, and this one is allocated once and rewritten in place at every call, so
+        # binding it is the same as passing it.
+        richardson_reduction = (
+            {}
+            if config.imode_tkesso is options.SsoTkeProductionType.ORIGINAL
+            else {"inverse_richardson_number_factor": self._inverse_richardson_number_factor}
+        )
         self._compute_total_mechanical_forcing = self._program(
-            compute_total_mechanical_forcing,
-            constant_args={"layer_pressure_thickness": metric.dp0},
+            compute_total_mechanical_forcing_without_richardson_reduction
+            if config.imode_tkesso is options.SsoTkeProductionType.ORIGINAL
+            else compute_total_mechanical_forcing,
+            constant_args={"layer_pressure_thickness": metric.dp0, **richardson_reduction},
             levels=(1, nlev),  # 'DO k=2,kem'
             shifted=True,
         )
@@ -1894,12 +1906,13 @@ class Turbulence:
             wind_v=input_state.v,
             sso_wake_energy_production=self._hlp,
         )
+        # 'inverse_richardson_number_factor' is bound in '_setup_turbdiff_programs', because
+        # 'imode_tkesso = 1' selects a program that does not take it.
         self._compute_total_mechanical_forcing(
             mean_shear_forcing=self._mean_shear_forcing,
             separated_horizontal_shear_tke_source=tendency_state.tket_hshr,
             sso_wake_energy_production=self._hlp,
             momentum_diffusion_coefficient=diagnostic_state.tkvm,
-            inverse_richardson_number_factor=self._inverse_richardson_number_factor,
             mechanical_forcing=self._frm,
         )
 
