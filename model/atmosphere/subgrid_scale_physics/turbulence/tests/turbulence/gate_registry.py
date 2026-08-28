@@ -238,6 +238,11 @@ GATES: dict[str, Gate] = {
     "solve_tke_diffusion_equation": Exact(),
     "subtract_implicit_part_of_tke_diffusion_momentum": Exact(),
 
+    # turbdiff section 4) lower limits of the vertical diffusion coefficients. Measured
+    # bit-exact on 'embedded', 'gtfn_cpu' and 'dace_cpu', all four dates, over all 653804
+    # computed values of both 'tkvm' and 'tkvh'.
+    "compute_effective_diffusion_coefficients": Exact(),
+
     # turbdiff section 10) the q tendency of the TKE diffusion. No transcendental and no
     # multiply-add exposure -- 'sqrt' is correctly rounded and '2*x' is exact -- so this was
     # established in plain numpy against the archive before any GT4Py was written, and the
