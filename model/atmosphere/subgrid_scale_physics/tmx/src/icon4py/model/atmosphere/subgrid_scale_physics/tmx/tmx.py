@@ -12,7 +12,7 @@ import enum
 import functools
 import logging
 import typing
-from typing import Any
+from typing import Any, NamedTuple
 
 import gt4py.next as gtx
 from gt4py.next import common as gtx_common
@@ -34,7 +34,6 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_vector_to_edge
 from icon4py.model.common.interpolation.stencils.interpolate_wind_to_vertices import (
     interpolate_wind_to_vertices,
 )
-from icon4py.model.common.math.stencils.generic_math_operations import subtract_cell_field_on_cell_k
 from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
@@ -96,6 +95,16 @@ class SurfaceType(int, enum.Enum):
 
     INTERACTIVE = 0  # fluxes from the surface scheme
     FIXED_HEAT_FLUXES = 1  # fixed kinematic surface heat fluxes
+
+
+class _DiffusedTracer(NamedTuple):
+    """One hydrometeor of the scalar diffusion loop, with its per-step buffers."""
+
+    name: str
+    state: fa.CellKField[ta.wpfloat]
+    tendency: fa.CellKField[ta.wpfloat]
+    new_state: fa.CellKField[ta.wpfloat]
+    surface_flux: fa.CellField[ta.wpfloat]
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -376,9 +385,11 @@ class Tmx:
     Persistent derived fields (computed once at construction, read every step):
     - ``mix_len_sq``: squared Smagorinsky mixing length (half-level cells),
     - ``louis_factor``: cell-area scaling factor of the Louis constant b
-      (zero if ``config.use_louis`` is False, matching the Fortran init),
-    - ``ghf``: geometric height of the full levels above the surface
-      (recomputed every step in the Fortran code, but time-independent).
+      (zero if ``config.use_louis`` is False, matching the Fortran init).
+
+    The height of the full levels above the surface (``ghf`` in the Fortran,
+    recomputed every step there but time-independent) comes from the metrics
+    factory as ``metric_state.height_above_ground``.
     """
 
     def __init__(
@@ -450,7 +461,6 @@ class Tmx:
             # the Fortran init only computes the Louis scaling factor if the
             # Louis stability correction is enabled; the field stays zero otherwise
             self.compute_scaling_factor_louis(scaling_factor_louis=self.louis_factor)
-        self.compute_height_above_ground(difference=self.ghf)
 
     def _setup_init_and_diagnostics_programs(
         self,
@@ -462,13 +472,6 @@ class Tmx:
         (``Smagorinsky_init`` in mo_tmx_smagorinsky.f90 and
         ``Compute_diagnostics`` l. 343-482 in mo_vdf_atmo.f90).
         """
-        # geometric height of the surface (bottom half level), 2D slice of z_ifc
-        z_ifc_sfc = gtx.as_field(
-            (dims.CellDim,),
-            self._metric_state.z_ifc.ndarray[:, num_levels],
-            allocator=self._allocator,
-        )
-
         # ---------------------------------------------------------------------
         # Init programs (run once, at the end of __init__)
         # ---------------------------------------------------------------------
@@ -507,28 +510,6 @@ class Tmx:
             },
             offset_provider={},
         )
-        # compute_geopotential_height_above_ground (mo_vdf_atmo.f90): tmx t_domain
-        # cells (grf_bdywidth_c + 1 .. min_rlcell_int), all full levels.
-        # ghf = z_mc - z_ifc_sfc; despite the Fortran name it is the geometric
-        # height in meters (gravity is only applied later, e.g. in
-        # compute_static_energy). z_ifc_sfc is the surface slice z_ifc[:, nlev],
-        # passed as a 2D field because GT4Py offsets are relative and cannot
-        # address a fixed absolute K row.
-        self.compute_height_above_ground = setup_program(
-            backend=backend,
-            program=subtract_cell_field_on_cell_k,
-            constant_args={"minuend": self._metric_state.z_mc, "subtrahend_cell": z_ifc_sfc},
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_nudging,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-
         # ---------------------------------------------------------------------
         # Diagnostics step programs, in the Fortran call order of Compute_diagnostics
         # (mo_vdf_atmo.f90 l. 343-482). One program per halo-exchange interval
@@ -540,7 +521,7 @@ class Tmx:
             backend=backend,
             program=diag_stencils.compute_thermodynamic_diagnostics,
             constant_args={
-                "height_above_ground": self.ghf,
+                "height_above_ground": self._metric_state.height_above_ground,
                 "wgtfac_c": self._metric_state.wgtfac_c,
                 "inv_ddqz_z_half": self._metric_state.inv_ddqz_z_half,
                 "wgtfacq1_c": self._metric_state.wgtfacq1_c,
@@ -898,7 +879,7 @@ class Tmx:
         # ('energy_to_temp', mo_vdf_atmo.f90 l. 694) in the same program
         horizontal_diffusion_args["constant_args"] = {
             **horizontal_diffusion_args["constant_args"],
-            "height_above_ground": self.ghf,
+            "height_above_ground": self._metric_state.height_above_ground,
             "grav": constants.GRAV,
             "use_internal_energy": use_internal_energy,
         }
@@ -912,7 +893,7 @@ class Tmx:
             backend=backend,
             program=compute_energy_from_temperature,
             constant_args={
-                "height_above_ground": self.ghf,
+                "height_above_ground": self._metric_state.height_above_ground,
                 "grav": constants.GRAV,
                 "use_internal_energy": use_internal_energy,
             },
@@ -1159,7 +1140,7 @@ class Tmx:
             backend=backend,
             program=diag_stencils.update_end_of_step_diagnostics,
             constant_args={
-                "height_above_ground": self.ghf,
+                "height_above_ground": self._metric_state.height_above_ground,
                 "dz": self._metric_state.ddqz_z_full,
                 "grav": constants.GRAV,
                 "km_const": self.config.km_const,
@@ -1192,8 +1173,6 @@ class Tmx:
         )
         # cell-area scaling factor of the Louis constant b
         self.louis_factor: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
-        # geometric height of the full levels above the surface [m]
-        self.ghf: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
 
         # Constant zero placeholders. These are never written: they are read-only
         # inputs the atmosphere-only port has no source for, kept so the program
@@ -1327,7 +1306,7 @@ class Tmx:
 
         Port of ``Compute_diagnostics`` in mo_vdf_atmo.f90 (l. 343-482), with
         the halo exchanges at the Fortran sync points and one program per
-        exchange interval and horizontal dimension. ``ghf``, ``mix_len_sq`` and
+        exchange interval and horizontal dimension. ``mix_len_sq`` and
         ``louis_factor`` are granule-owned fields computed at construction; the
         corresponding fields of ``diagnostic_state`` are not written here.
 
@@ -1517,15 +1496,27 @@ class Tmx:
         )
 
         tracers = (
-            (
+            _DiffusedTracer(
                 "qv",
                 input_state.qv,
                 tendency_state.tend_qv,
                 new_state.qv,
                 surface_flux_state.evapotranspiration,
             ),
-            ("qc", input_state.qc, tendency_state.tend_qc, new_state.qc, self._zero_surface_flux),
-            ("qi", input_state.qi, tendency_state.tend_qi, new_state.qi, self._zero_surface_flux),
+            _DiffusedTracer(
+                "qc",
+                input_state.qc,
+                tendency_state.tend_qc,
+                new_state.qc,
+                self._zero_surface_flux,
+            ),
+            _DiffusedTracer(
+                "qi",
+                input_state.qi,
+                tendency_state.tend_qi,
+                new_state.qi,
+                self._zero_surface_flux,
+            ),
         )
         for name, state, tend, new, sfc_flx in tracers:
             self.init_cell_kdim_field_with_zero(field_with_zero_wp=tend)

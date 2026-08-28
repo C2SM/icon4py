@@ -18,18 +18,7 @@ from icon4py.model.common.interpolation.stencils.compute_tangential_wind import 
     compute_tangential_wind,
     compute_tangential_wind_wp,
 )
-from icon4py.model.testing import stencil_tests
-
-
-def compute_tangential_wind_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
-    vn: np.ndarray,
-    rbf_vec_coeff_e: np.ndarray,
-) -> np.ndarray:
-    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-    e2c2e = connectivities[dims.E2C2E]
-    vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
-    return vt
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 def tangential_wind_reference(
@@ -136,7 +125,7 @@ class TestComputeTangentialWind(stencil_tests.StencilTest):
         **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        vt = compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e)
+        vt = reference_funcs.compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e)
         return dict(vt=vt)
 
     @stencil_tests.input_data_fixture

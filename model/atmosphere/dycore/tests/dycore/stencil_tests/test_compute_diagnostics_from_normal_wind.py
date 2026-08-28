@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wi
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -35,17 +35,6 @@ from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
-
-
-def compute_tangential_wind_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
-    vn: np.ndarray,
-    rbf_vec_coeff_e: np.ndarray,
-) -> np.ndarray:
-    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-    e2c2e = connectivities[dims.E2C2E]
-    vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
-    return vt
 
 
 def compute_diagnostics_from_normal_wind_numpy(
@@ -83,7 +72,7 @@ def compute_diagnostics_from_normal_wind_numpy(
 
     tangential_wind = np.where(
         k_nlev >= vertical_start,
-        compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
+        reference_funcs.compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
         tangential_wind,
     )
 

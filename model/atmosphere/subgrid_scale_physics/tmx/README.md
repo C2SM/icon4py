@@ -45,8 +45,11 @@ reference. The CO2 tracer diffusion (`l_co2`) is also out of scope.
   diagnostic, tendency and new-state containers). The Fortran (state, new_state,
   tendency) triples map to `TmxInputState` / `TmxNewState` / `TmxTendencyState`.
 
-- `stencils/`: one GT4Py program per file, each documenting its Fortran provenance
-  (module, subroutine, loop bounds) and the horizontal/vertical domains.
+- `stencils/`: the GT4Py programs, grouped by the step that runs them
+  (`diagnostics`, `scalar_diffusion`, `wind_diffusion`, `energy_update`, plus the
+  shared tridiagonal machinery in `vertical_diffusion`). Each program documents its
+  Fortran provenance (module, subroutine, loop bounds) and its horizontal/vertical
+  domains. The stencil tests stay one file per program, as in dycore.
 
 - `docs/gt4py_patterns.md`: GT4Py findings and workarounds collected during the port.
 

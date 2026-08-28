@@ -62,15 +62,16 @@ def test_tmx_init_and_run_diagnostics_single_step(
     entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
     exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
 
+    metric_state = construct_metric_state(
+        metrics_savepoint=metrics_savepoint,
+        init_savepoint=init_savepoint,
+        grid_savepoint=grid_savepoint,
+        allocator=allocator,
+    )
     granule = tmx.Tmx(
         grid=icon_grid,
         config=tmx_config,
-        metric_state=construct_metric_state(
-            metrics_savepoint=metrics_savepoint,
-            init_savepoint=init_savepoint,
-            grid_savepoint=grid_savepoint,
-            allocator=allocator,
-        ),
+        metric_state=metric_state,
         interpolation_state=construct_interpolation_state(interpolation_savepoint),
         edge_params=grid_savepoint.construct_edge_geometry(),
         cell_params=grid_savepoint.construct_cell_geometry(),
@@ -79,7 +80,8 @@ def test_tmx_init_and_run_diagnostics_single_step(
     )
 
     # init fields, computed in the granule constructor (Smagorinsky_init in
-    # mo_tmx_smagorinsky.f90; ghf is only serialized at diagnostics-exit)
+    # mo_tmx_smagorinsky.f90). 'height_above_ground' now comes from the metrics
+    # factory; it is only serialized at diagnostics-exit.
     test_utils.assert_dallclose(
         granule.mix_len_sq.asnumpy(), init_savepoint.mix_len_sq().asnumpy(), err_msg="mix_len_sq"
     )
@@ -89,7 +91,9 @@ def test_tmx_init_and_run_diagnostics_single_step(
         err_msg="louis_factor",
     )
     test_utils.assert_dallclose(
-        granule.ghf.asnumpy(), exit_savepoint.ghf().asnumpy(), err_msg="ghf"
+        metric_state.height_above_ground.asnumpy(),
+        exit_savepoint.ghf().asnumpy(),
+        err_msg="height_above_ground",
     )
 
     diagnostic_state = tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator)

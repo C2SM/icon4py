@@ -289,6 +289,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddqz_z_half)
 
+        height_above_ground = factory.NumpyDataProvider(
+            func=mf.compute_height_above_ground,
+            domain=(dims.CellDim, dims.KDim),
+            fields=(attrs.HEIGHT_ABOVE_GROUND,),
+            deps={"z_mc": attrs.Z_MC, "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
+        )
+        self.register_provider(height_above_ground)
+
         ddqz_z_full_and_inverse = factory.ProgramFieldProvider(
             func=mf.compute_ddqz_z_full_and_inverse.with_backend(self._backend),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},

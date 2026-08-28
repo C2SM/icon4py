@@ -80,6 +80,8 @@ class TmxMetricState:
     Aligned to the levels they multiply, see :attr:`wgtfacq1_c`."""
     geopot_agl_ifc: fa.CellKField[ta.wpfloat]
     """Geopotential above ground level at cell centers on half levels [m^2/s^2]."""
+    height_above_ground: fa.CellKField[ta.wpfloat]
+    """Geometric height of the full levels above the surface [m] (``ghf``)."""
     z_mc: fa.CellKField[ta.wpfloat]
     """Geometric height at cell centers on full levels [m]."""
     z_ifc: fa.CellKField[ta.wpfloat]
@@ -116,6 +118,7 @@ class TmxMetricState:
             wgtfacq_e=metrics.get(metrics_attributes.WGTFACQ_E),
             wgtfacq1_e=metrics.get(metrics_attributes.WGTFACQ1_E),
             geopot_agl_ifc=half(metrics.get(metrics_attributes.GEOPOT_AGL_IFC)),
+            height_above_ground=metrics.get(metrics_attributes.HEIGHT_ABOVE_GROUND),
             z_mc=metrics.get(metrics_attributes.Z_MC),
             z_ifc=half(metrics.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL)),
             edge_cell_length=geometry.get(geometry_attributes.EDGE_CELL_DISTANCE),
@@ -242,8 +245,6 @@ class TmxDiagnosticState:
     """Virtual potential temperature at cell centers on full levels [K]."""
     cptgz: fa.CellKField[ta.wpfloat]
     """Dry static energy cp*T + g*z at cell centers on full levels [J/kg]."""
-    ghf: fa.CellKField[ta.wpfloat]
-    """Geopotential height above ground at full levels [m]."""
     div_c: fa.CellKField[ta.wpfloat]
     """Horizontal wind divergence at cell centers on full levels [1/s]."""
     km_c: fa.CellKField[ta.wpfloat]
@@ -316,7 +317,6 @@ class TmxDiagnosticState:
         return cls(
             theta_v=full(dims.CellDim),
             cptgz=full(dims.CellDim),
-            ghf=full(dims.CellDim),
             div_c=full(dims.CellDim),
             km_c=full(dims.CellDim),
             km=full(dims.CellDim),

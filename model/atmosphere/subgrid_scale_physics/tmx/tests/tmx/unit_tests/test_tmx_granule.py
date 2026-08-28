@@ -69,6 +69,7 @@ def _metric_state(
         )
 
     return tmx_states.TmxMetricState(
+        height_above_ground=positive(dims.CellDim, dims.KDim),
         ddqz_z_full=positive(dims.CellDim, dims.KDim),
         inv_ddqz_z_full=positive(dims.CellDim, dims.KDim),
         ddqz_z_half=positive(dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
@@ -277,9 +278,6 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
     louis_factor = granule.louis_factor.asnumpy()
     assert louis_factor.shape == (grid.num_cells,)
     assert np.all(louis_factor > 0.0)
-    ghf = granule.ghf.asnumpy()
-    assert ghf.shape == (grid.num_cells, grid.num_levels)
-    assert np.all(np.isfinite(ghf))
 
     diagnostic_state = tmx_states.TmxDiagnosticState.allocate(grid, allocator=allocator)
     input_state = _input_state(grid, allocator)

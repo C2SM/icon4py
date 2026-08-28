@@ -17,6 +17,7 @@ import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.metrics import metric_fields
 from icon4py.model.testing import test_utils
 
 
@@ -127,6 +128,8 @@ def construct_metric_state(
         ddqz_z_full = gtx.as_field(
             (dims.CellDim, dims.KDim), 1.0 / inv_ddqz_z_full.asnumpy(), allocator=allocator
         )
+    z_mc = metrics_savepoint.z_mc()
+    z_ifc = metrics_savepoint.z_ifc()
     return tmx_states.TmxMetricState(
         ddqz_z_full=ddqz_z_full,
         inv_ddqz_z_full=inv_ddqz_z_full,
@@ -142,8 +145,15 @@ def construct_metric_state(
         wgtfacq_e=metrics_savepoint.wgtfacq_e(),
         wgtfacq1_e=init_savepoint.wgtfacq1_e(),
         geopot_agl_ifc=init_savepoint.geopot_agl_ifc(),
-        z_mc=metrics_savepoint.z_mc(),
-        z_ifc=metrics_savepoint.z_ifc(),
+        # as the metrics factory computes it, so the datatest below validates
+        # the formula against the serialized 'ghf'
+        height_above_ground=gtx.as_field(
+            (dims.CellDim, dims.KDim),
+            metric_fields.compute_height_above_ground(z_mc=z_mc.ndarray, z_ifc=z_ifc.ndarray),
+            allocator=allocator,
+        ),
+        z_mc=z_mc,
+        z_ifc=z_ifc,
         # a grid-geometry field, not part of the common EdgeParams (see the
         # TmxMetricState docstring)
         edge_cell_length=grid_savepoint.edge_cell_length(),

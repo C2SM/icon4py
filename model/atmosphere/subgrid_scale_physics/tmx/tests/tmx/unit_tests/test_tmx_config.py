@@ -171,7 +171,6 @@ def _expected_shapes(
 DIAGNOSTIC_FIELD_KINDS = {
     "theta_v": "cell_full",
     "cptgz": "cell_full",
-    "ghf": "cell_full",
     "div_c": "cell_full",
     "km_c": "cell_full",
     "km": "cell_full",

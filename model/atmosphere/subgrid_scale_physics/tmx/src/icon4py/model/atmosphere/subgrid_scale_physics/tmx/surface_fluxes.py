@@ -47,6 +47,7 @@ class ZeroFluxProvider:
             getattr(out, field.name).ndarray[...] = 0.0
 
 
+@dataclasses.dataclass(frozen=True, kw_only=True)
 class PrescribedFluxProvider:
     """Fixed kinematic surface heat fluxes (``SurfaceType.FIXED_HEAT_FLUXES``).
 
@@ -71,33 +72,28 @@ class PrescribedFluxProvider:
     the live buffer the caller updates each step, not a snapshot.
     """
 
-    def __init__(
-        self,
-        *,
-        config: tmx.TmxConfig,
-        pressure_ifc: fa.CellKField[ta.wpfloat],
-        surface_temperature: fa.CellField[ta.wpfloat],
-    ) -> None:
-        if config.surface_type is not tmx.SurfaceType.FIXED_HEAT_FLUXES:
+    config: tmx.TmxConfig
+    pressure_ifc: fa.CellKField[ta.wpfloat]
+    surface_temperature: fa.CellField[ta.wpfloat]
+
+    def __post_init__(self) -> None:
+        if self.config.surface_type is not tmx.SurfaceType.FIXED_HEAT_FLUXES:
             raise NotImplementedError(
                 "PrescribedFluxProvider implements "
-                f"{tmx.SurfaceType.FIXED_HEAT_FLUXES!r}, got {config.surface_type!r}."
+                f"{tmx.SurfaceType.FIXED_HEAT_FLUXES!r}, got {self.config.surface_type!r}."
             )
-        self._config = config
-        self._pressure_ifc = pressure_ifc
-        self._surface_temperature = surface_temperature
 
     def compute(self, *, out: tmx_states.TmxSurfaceFluxState) -> None:
-        t_sfc = self._surface_temperature.ndarray
+        t_sfc = self.surface_temperature.ndarray
         # psfc: bottom interface of pressure_ifc (Fortran pres_ifc(:, nlevp1, :))
-        p_sfc = self._pressure_ifc.ndarray[:, -1]
+        p_sfc = self.pressure_ifc.ndarray[:, -1]
         q_sat = thermodynamic_functions.specific_humidity(
             thermodynamic_functions.sat_pres_water(t_sfc), p_sfc
         )
         rho_sfc = p_sfc / (constants.RD * t_sfc * (1.0 + constants.RV_O_RD_MINUS_1 * q_sat))
 
-        out.sensible_heat_flux.ndarray[...] = -self._config.shflx * constants.CVD * rho_sfc
-        out.evapotranspiration.ndarray[...] = -self._config.lhflx * rho_sfc
+        out.sensible_heat_flux.ndarray[...] = -self.config.shflx * constants.CVD * rho_sfc
+        out.evapotranspiration.ndarray[...] = -self.config.lhflx * rho_sfc
         out.u_stress.ndarray[...] = 0.0
         out.v_stress.ndarray[...] = 0.0
         out.q_snocpymlt.ndarray[...] = 0.0

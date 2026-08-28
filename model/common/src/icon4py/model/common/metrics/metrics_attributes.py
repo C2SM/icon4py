@@ -26,6 +26,7 @@ INV_DDQZ_Z_FULL_E: Final[str] = f"inverse_of_{DDQZ_Z_FULL_E}"
 INV_DDQZ_Z_HALF_E: Final[str] = f"inverse_of_{DDQZ_Z_HALF}_on_edges"
 INV_DDQZ_Z_HALF_V: Final[str] = f"inverse_of_{DDQZ_Z_HALF}_on_vertices"
 GEOPOT_AGL_IFC: Final[str] = "geopotential_above_ground_on_interface_levels"
+HEIGHT_ABOVE_GROUND: Final[str] = "height_above_ground"
 SCALING_FACTOR_FOR_3D_DIVDAMP: Final[str] = "scaling_factor_for_3d_divergence_damping"
 RAYLEIGH_W: Final[str] = "rayleigh_w"
 COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
@@ -425,6 +426,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="m2 s-2",
         dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="geopot_agl_ifc",
+        dtype=ta.wpfloat,
+    ),
+    HEIGHT_ABOVE_GROUND: dict(
+        standard_name=HEIGHT_ABOVE_GROUND,
+        long_name="geometric height of the full levels above the surface",
+        units="m",
+        dims=(dims.CellDim, dims.KDim),
+        icon_var_name="ghf",
         dtype=ta.wpfloat,
     ),
     MAXSLP: dict(

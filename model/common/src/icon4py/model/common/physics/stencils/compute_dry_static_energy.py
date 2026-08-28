@@ -26,9 +26,9 @@ def _compute_dry_static_energy(
         dry_static_energy = cpd * temperature + grav * height_above_ground
 
     ``height_above_ground`` is the geometric height of the full levels above the
-    surface (``ghf`` in the Fortran code, computed at init time by the granule's
-    ``compute_height_above_ground`` program), so ``grav * height_above_ground`` is
-    the geopotential above ground.
+    surface (``ghf`` in the Fortran code, provided by the metrics factory as
+    ``HEIGHT_ABOVE_GROUND``), so ``grav * height_above_ground`` is the
+    geopotential above ground.
 
     The Fortran subroutine loops over the tmx ``t_domain`` cell range
     (``grf_bdywidth_c + 1`` to ``min_rlcell_int``), which maps to the horizontal
