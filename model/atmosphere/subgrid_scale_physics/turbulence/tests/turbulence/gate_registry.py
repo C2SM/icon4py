@@ -238,6 +238,13 @@ GATES: dict[str, Gate] = {
     "solve_tke_diffusion_equation": Exact(),
     "subtract_implicit_part_of_tke_diffusion_momentum": Exact(),
 
+    # turbdiff section 10) the q tendency of the TKE diffusion. No transcendental and no
+    # multiply-add exposure -- 'sqrt' is correctly rounded and '2*x' is exact -- so this was
+    # established in plain numpy against the archive before any GT4Py was written, and the
+    # backends only had to confirm it. Measured on 'gtfn_cpu' and 'dace_cpu', all four dates;
+    # 'embedded' xfails the programs that use 'concat_where'.
+    "compute_turbulent_velocity_scale_tendency": Exact(),
+
     # turbdiff section 11) interpolation of the SDSS back to main levels.
     # Measured bit-exact on embedded, gtfn_cpu and dace_cpu, all four dates.
     "interpolate_supersaturation_deviation_to_main_levels": Exact(),
