@@ -238,6 +238,50 @@ GATES: dict[str, Gate] = {
     "solve_tke_diffusion_equation": Exact(),
     "subtract_implicit_part_of_tke_diffusion_momentum": Exact(),
 
+    # turbdiff section 2a) the 3D complements of the mechanical shear forcing. Measured on
+    # 'embedded', 'gtfn_cpu' and 'dace_cpu', which produce bit-identical results to each other --
+    # so, as in section 0, the disagreement is on ICON's side of the comparison and not in any
+    # backend's code generation.
+    #
+    # One transcendental drives all four tolerances: 'xri = EXP(2/3*LOG(frm/frh))'. Its 'LOG'
+    # argument spans roughly +-7, so 2/3 of it amplifies a 1-ulp 'LOG' error by about 4.7x, and
+    # 'xri' lands at most 8 ulp from nvhpc on 6.2% of values -- exactly what that predicts.
+    # Everything downstream inherits it by being chained to 'xri' and to nothing else.
+    #
+    # What makes these four honest rather than a shrug: substituting ICON's own 'xri' and leaving
+    # the rest of the chain alone makes 'hor_scale', 'tket_hshr' and 'frm' BIT-EXACT on all three
+    # backends at all four dates. That is asserted ungated by
+    # 'test_the_section_is_bit_exact_when_the_transcendental_comes_from_icon'.
+    #
+    # These are CPU measurements. CUDA's libm rounds 'exp' and 'log' differently and the GPU run
+    # may need them widened -- see the note in the package README about 'x**2' for the general
+    # shape of that problem.
+    "compute_uncorrected_horizontal_shear_length_scale": Exact(),
+    # 'hlp = ut_sso*u + vt_sso*v' is this section's 'a*b + c*d', so it carries the FMA canary.
+    "compute_sso_wake_energy_production": Exact(),
+    "compute_inverse_richardson_number_factor": Tol(
+        rtol=1e-14,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=1.0063e-15,  # 'xri', 2020-12-10T06:01:40
+    ),
+    "compute_effective_horizontal_shear_length_scale": Tol(
+        rtol=1e-14,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=1.0447e-15,  # 'hor_scale', 2020-12-10T06:01:40
+    ),
+    "compute_separated_horizontal_shear_tke_source": Tol(
+        rtol=2e-14,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=2.2050e-15,  # 'tket_hshr', 2020-12-10T06:01:00
+    ),
+    "compute_total_mechanical_forcing": Tol(
+        rtol=2e-14,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=1.7737e-15,  # 'frm', 2020-12-10T06:01:40
+    ),
+    # 'compute_three_dimensional_shear_forcing' writes the mean-flow shear intermediate, which is
+    # not compared against a savepoint of its own -- it has no ICON counterpart to gate.
+
     # turbdiff section 4) lower limits of the vertical diffusion coefficients. Measured
     # bit-exact on 'embedded', 'gtfn_cpu' and 'dace_cpu', all four dates, over all 653804
     # computed values of both 'tkvm' and 'tkvh'.
