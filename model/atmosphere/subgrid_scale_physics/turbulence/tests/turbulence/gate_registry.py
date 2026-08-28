@@ -133,10 +133,23 @@ class UnregisteredStencilError(LookupError):
     """Raised when a stencil is validated without a gate declared for it."""
 
 
-#: The gate for every turbulence stencil, keyed by stencil name. Empty until stencils exist; every
-#: one of them is added here as 'Exact()' when it lands, and downgraded only per
-#: 'DOWNGRADE_PROCEDURE_DOC'. A diff of this dict is the record of where the numerics moved.
-GATES: dict[str, Gate] = {}
+#: The gate for every turbulence stencil, keyed by stencil name. Every stencil is added here as
+#: 'Exact()' when it lands, and downgraded only per 'DOWNGRADE_PROCEDURE_DOC'. A diff of this dict
+#: is the record of where the numerics moved.
+#:
+#: Measured on 'exp.mch_icon-ch2_small', all four serialized timesteps, on the 'embedded' and
+#: 'gtfn_cpu' backends. The GPU backends ('dace_gpu', 'dace_cpu', 'gtfn_gpu') are validated
+#: separately on a GPU node and may need their own entries: nvcc contracts multiply-add by
+#: default ('--fmad=true'), which these CPU measurements cannot see.
+GATES: dict[str, Gate] = {
+    # turbdiff section 1a) -- vertical gradients of the conserved variables. Section 1a contains
+    # only '-', '*' and '/' with no multiply-add pattern, so bit-exactness here is not evidence
+    # that FMA contraction is absent; the first fused expression is in section 1b.
+    "compute_surface_transfer_ratios": Exact(),
+    "compute_inverse_layer_depth_and_tke_discretisation_momentum": Exact(),
+    "compute_vertical_gradients_of_conserved_variables": Exact(),
+    "compute_surface_gradients_of_conserved_variables": Exact(),
+}
 
 
 def gate_for(stencil_name: str) -> Gate:

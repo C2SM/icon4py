@@ -30,15 +30,26 @@ def test_registered_stencil_returns_its_gate(monkeypatch: pytest.MonkeyPatch) ->
     assert gate_registry.gate_for("compute_turbulent_length_scale") is gate
 
 
-def test_registry_starts_empty() -> None:
-    """No stencil has landed yet, so any entry here would be one nobody measured.
+def test_every_entry_declares_a_gate_of_the_expected_type() -> None:
+    """Stencils have landed, so the registry is no longer empty and its contents are checkable.
 
-    The type contract of an entry is exercised by 'test_registered_stencil_returns_its_gate' and
-    by the 'Exact'/'Tol' tests below; looping over 'GATES' to check it would assert nothing while
-    the registry is empty. When the first stencil lands this assertion has to be replaced, which
-    is the review step the registry exists to force (port spec D11).
+    This assertion replaced 'test_registry_starts_empty', which is the review step the registry
+    exists to force (port spec D11). It deliberately does not pin the set of keys: that would
+    make every new stencil edit this file twice, and the thing worth protecting is that no entry
+    is malformed, not that the count is a particular number.
     """
-    assert gate_registry.GATES == {}
+    assert gate_registry.GATES, "the registry is empty; stencils have landed, so entries are due"
+
+    for name, gate in gate_registry.GATES.items():
+        assert isinstance(gate, (gate_registry.Exact, gate_registry.Tol)), (
+            f"entry '{name}' is a {type(gate).__name__}, not a declared gate type"
+        )
+
+
+def test_every_entry_is_reachable_through_gate_for() -> None:
+    """A key nobody can look up is a gate nobody applies."""
+    for name, gate in gate_registry.GATES.items():
+        assert gate_registry.gate_for(name) is gate
 
 
 def test_exact_is_frozen() -> None:

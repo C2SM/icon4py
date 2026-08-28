@@ -29,10 +29,7 @@ dependencies = [
   # workspace members
   "icon4py-common~=0.2.0",
   # external dependencies
-  # NOTE: gt4py is not declared here yet. Nothing in this package imports it while it holds only
-  # configuration and state containers, and tach fails a declared-but-unused external dependency.
-  # Re-add the "gt4py==1.1.10" pin in the commit that lands the first stencil. It is installed
-  # regardless, pinned by icon4py-common.
+  "gt4py==1.1.10",
   "packaging>=20.0"
 ]
 description = "ICON NWP 1D turbulence."
