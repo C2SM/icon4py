@@ -695,58 +695,33 @@ class Tmx:
                 },
                 offset_provider={},
             )
-        # interpolate_eddy_viscosity2cell (km_ic -> km_c): cells rl
-        # grf_bdywidth_c..min_rlcell_int-1, all full levels (halo cells computed
-        # on purpose, km_c is used in the diffusion later)
-        self.interpolate_km_to_full_level_cells = setup_program(
+        # the km/kh loops that follow the kh_ic/km_ic exchange
+        # ('interpolate_eddy_viscosity2cell' / '2vertex' / '2edge' in
+        # mo_vdf_atmo.f90): one program, three entities. Halo rows are computed
+        # on purpose, they are read by the diffusion later.
+        self.interpolate_km = setup_program(
             backend=backend,
-            program=diag_stencils.interpolate_km_to_full_level_cells,
-            constant_args={"km_min": self.config.km_min},
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_lateral_boundary_level_4,
-                "horizontal_end": self._cell_end_halo,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider={},
-        )
-        # interpolate_eddy_viscosity2half_vertex (km_ic -> km_iv): vertices rl
-        # 5 (= max_rlvert)..min_rlvert_int-1, all half levels
-        self.interpolate_km_to_vertices = setup_program(
-            backend=backend,
-            program=diag_stencils.interpolate_km_to_vertices,
+            program=diag_stencils.interpolate_km,
             constant_args={
                 "cells_aw_verts": self._interpolation_state.cells_aw_verts,
-                "km_min": self.config.km_min,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._vertex_start_nudging,
-                "horizontal_end": self._vertex_end_halo,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
-            },
-            offset_provider=self._grid.connectivities,
-        )
-        # interpolate_eddy_viscosity2half_edge (km_ic -> km_ie): edges rl
-        # grf_bdywidth_e..min_rledge_int-1, all half levels
-        self.interpolate_km_to_edges = setup_program(
-            backend=backend,
-            program=diag_stencils.interpolate_km_to_edges,
-            constant_args={
                 "c_lin_e": self._interpolation_state.c_lin_e,
                 "km_min": self.config.km_min,
             },
             horizontal_sizes={
-                "horizontal_start": self._edge_start_nudging,
-                "horizontal_end": self._edge_end_halo,
+                # cells rl 4..min_rlcell_int-1
+                "cell_start": self._cell_start_lateral_boundary_level_4,
+                "cell_end": self._cell_end_halo,
+                # vertices rl 1..min_rlvert_int-1
+                "vertex_start": self._vertex_start_nudging,
+                "vertex_end": self._vertex_end_halo,
+                # edges rl grf_bdywidth_e..min_rledge_int-1
+                "edge_start": self._edge_start_nudging,
+                "edge_end": self._edge_end_halo,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
+                "vertical_end": gtx.int32(num_levels),
+                "vertical_end_half": gtx.int32(num_levels + 1),
             },
             offset_provider=self._grid.connectivities,
         )
@@ -1408,16 +1383,10 @@ class Tmx:
         self._exchange.exchange(dims.CellDim, diagnostic_state.kh_ic, diagnostic_state.km_ic)
         log.debug("communication of kh_ic, km_ic (cells): end")
 
-        self.interpolate_km_to_full_level_cells(
+        self.interpolate_km(
             km_ic=diagnostic_state.km_ic,
             km_c=diagnostic_state.km_c,
-        )
-        self.interpolate_km_to_vertices(
-            km_ic=diagnostic_state.km_ic,
             km_iv=diagnostic_state.km_iv,
-        )
-        self.interpolate_km_to_edges(
-            km_ic=diagnostic_state.km_ic,
             km_ie=diagnostic_state.km_ie,
         )
 

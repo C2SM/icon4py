@@ -892,27 +892,6 @@ def _interpolate_km_to_full_level_cells(
     return maximum(km_min, average_level_plus1_on_cells(km_ic))
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_km_to_full_level_cells(
-    km_ic: fa.CellKField[wpfloat],
-    km_c: fa.CellKField[wpfloat],
-    km_min: wpfloat,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _interpolate_km_to_full_level_cells(
-        km_ic=km_ic,
-        km_min=km_min,
-        out=km_c,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 @gtx.field_operator
 def _interpolate_km_to_vertices(
     km_ic: fa.CellKField[wpfloat],
@@ -940,29 +919,6 @@ def _interpolate_km_to_vertices(
     this domain are ever read.
     """
     return maximum(km_min, _compute_cell_2_vertex_interpolation(km_ic, cells_aw_verts))
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_km_to_vertices(
-    km_ic: fa.CellKField[wpfloat],
-    cells_aw_verts: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
-    km_iv: fa.VertexKField[wpfloat],
-    km_min: wpfloat,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _interpolate_km_to_vertices(
-        km_ic=km_ic,
-        cells_aw_verts=cells_aw_verts,
-        km_min=km_min,
-        out=km_iv,
-        domain={
-            dims.VertexDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
 
 
 @gtx.field_operator
@@ -997,24 +953,60 @@ def _interpolate_km_to_edges(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_km_to_edges(
+def interpolate_km(
     km_ic: fa.CellKField[wpfloat],
+    cells_aw_verts: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    km_c: fa.CellKField[wpfloat],
+    km_iv: fa.VertexKField[wpfloat],
     km_ie: fa.EdgeKField[wpfloat],
     km_min: wpfloat,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
+    cell_start: gtx.int32,
+    cell_end: gtx.int32,
+    vertex_start: gtx.int32,
+    vertex_end: gtx.int32,
+    edge_start: gtx.int32,
+    edge_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
+    vertical_end_half: gtx.int32,
 ) -> None:
+    """
+    Interpolate the half-level cell viscosity to the three grid entities.
+
+    The km/kh loops that follow the kh_ic/km_ic exchange in
+    ``Compute_diagnostics`` (mo_vdf_atmo.f90). All three read the same
+    (already exchanged) ``km_ic`` and nothing exchanges between them, so they
+    are one program; they still compile to one kernel each, because they write
+    a cell, a vertex and an edge field.
+    """
+    _interpolate_km_to_full_level_cells(
+        km_ic=km_ic,
+        km_min=km_min,
+        out=km_c,
+        domain={
+            dims.CellDim: (cell_start, cell_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+    _interpolate_km_to_vertices(
+        km_ic=km_ic,
+        cells_aw_verts=cells_aw_verts,
+        km_min=km_min,
+        out=km_iv,
+        domain={
+            dims.VertexDim: (vertex_start, vertex_end),
+            dims.KDim: (vertical_start, vertical_end_half),
+        },
+    )
     _interpolate_km_to_edges(
         km_ic=km_ic,
         c_lin_e=c_lin_e,
         km_min=km_min,
         out=km_ie,
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (edge_start, edge_end),
+            dims.KDim: (vertical_start, vertical_end_half),
         },
     )
 
