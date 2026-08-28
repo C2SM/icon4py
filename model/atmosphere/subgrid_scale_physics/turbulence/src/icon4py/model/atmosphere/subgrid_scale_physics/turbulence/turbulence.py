@@ -15,11 +15,12 @@ a namelist. Every default is the compiled-in default of mo_turbdiff_config.f90.
 Carrying parameters the implementation refuses is deliberate. The granule interface is the
 contract and has to be expressible from Fortran, C and Python alike, so it accepts anything ICON
 can be configured to do; `FROZEN_SWITCHES` is where the implementation says which of those
-formulations were ported (port spec D5/D6). Thirty switches select alternatives that were
+formulations were ported (port spec D5/D6). Twenty-nine switches select alternatives that were
 not ported and are refused with a 'NotImplementedError' that names the one supported value, says
-what it means, and points at the Fortran scheme. Seven more do vary operationally across the DWD
-and MeteoSwiss setups -- 'itype_sher', 'icldm_turb', 'imode_tkesso', 'imode_charpar', 'a_hshr',
-'ltkesso' and 'ltkeshs' -- and are supported over the range those setups need. Which values occur was verified by grepping all 648 configurations under 'icon/run/',
+what it means, and points at the Fortran scheme. Eight more do vary operationally across the DWD
+and MeteoSwiss setups -- 'itype_sher', 'icldm_turb', 'imode_tkesso', 'imode_charpar',
+'frcsmot', 'a_hshr', 'ltkesso' and 'ltkeshs' -- and are supported over the range those setups
+need. Which values occur was verified by grepping all 648 configurations under 'icon/run/',
 not assumed.
 
 Every other formulation switch is accounted for too, because what D6 rules out is silence, not
@@ -167,6 +168,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.interpol
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.set_turbulent_velocity_scale_at_model_top import (
     set_turbulent_velocity_scale_at_model_top,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.smooth_tke_forcing_vertically import (
+    smooth_tke_forcing_vertically,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_tke_diffusion_equation import (
     solve_tke_diffusion_equation,
 )
@@ -229,8 +233,8 @@ class FrozenSwitch:
 
     #: Name of the switch, spelled as in 'mo_turbdiff_config.f90'.
     name: str
-    #: The single value the granule implements -- usually the compiled-in Fortran default.
-    supported_value: int | bool | float
+    #: The single value the granule implements -- the compiled-in Fortran default.
+    supported_value: int | bool
     #: What that value means physically, translated from the Fortran declaration.
     meaning: str
 
@@ -247,10 +251,8 @@ class FrozenSwitch:
 #: entry is the declaration in 'icon/src/configure_model/mo_turbdiff_config.f90' the default and
 #: the meaning were read from. Twelve are reachable from 'turbdiff_nml' (mo_turbdiff_nml.f90:
 #: 56-71); the other seventeen can only change by editing Fortran. Across all 648 configurations
-#: under 'icon/run/' four settings differ from a value frozen here -- 'imode_frcsmot = 0',
-#: 'icldm_tran = -1', 'lfreeslip = .TRUE.' and 'frcsmot = 0.2' -- and the entries below record
-#: where. The last is by far the widest: 28 runscripts set it, and unlike the other three it is
-#: the Fortran default rather than a deviation from it.
+#: under 'icon/run/' only three settings differ from a value frozen here -- 'imode_frcsmot = 0',
+#: 'icldm_tran = -1' and 'lfreeslip = .TRUE.' -- and the entries below record where.
 FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
     FrozenSwitch("imode_turb", 1, "prognostic TKE equation"),  # :299
     FrozenSwitch("imode_tran", 0, "diagnostic TKE equation in the transfer scheme"),  # :298
@@ -330,28 +332,6 @@ FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
         2,
         "vertical smoothing of the TKE forcing terms confined to the tropics by 'trop_mask'",
     ),  # :140
-    #: NOT a compiled-in default -- the Fortran default is 0.2 and 28 configurations under
-    #: 'icon/run/' set it, including 'exclaim_uncoupled_R02B0[56]L120', 'exclaim_ch_r04b09_dsl_sb'
-    #: and 'mch_bench_r19b0[78]_dev'. Frozen at 0 because 'vert_smooth'
-    #: ('turb_utilities.f90:3098-3227') is not ported, and refusing is the only alternative to
-    #: silently omitting a smoothing the caller asked for.
-    #:
-    #: The three MCH production experiments -- 'mch_icon-ch1', 'mch_icon-ch2' and 'mch_kenda-ch1'
-    #: -- all set 'frcsmot = 0.0', so this costs them nothing. It does lock out the global and
-    #: benchmark configurations, where 'trop_mask' is non-zero in the tropics and the smoothing
-    #: really runs.
-    #:
-    #: Lifting it needs a capture that exercises it, and THIS EXPERIMENT CANNOT PROVIDE ONE at any
-    #: 'frcsmot': at 'imode_frcsmot = 2' the call is guarded by 'ANY(trop_mask > 0)' and
-    #: 'trop_mask' is identically zero at all 8276 columns of the Swiss LAM domain. When porting
-    #: it: despite its '!$ACC LOOP SEQ', 'vert_smooth' is NOT a recurrence -- 'sav_tend' carries
-    #: the level above's value from before it was smoothed -- so it is an out-of-place three-point
-    #: stencil, a 'concat_where' over 'Koff[+-1]', not a 'scan_operator'.
-    FrozenSwitch(
-        "frcsmot",
-        0.0,
-        "no vertical smoothing of the TKE forcing terms; 'vert_smooth' is not ported",
-    ),  # :139
     #: The only other value under 'icon/run/' is -1 in 'checksuite.nwp/
     #: nwpexp.run_ICON_02_R2B13_lam', which sets 'icldm_turb = -1' in the same breath and is
     #: therefore already refused by the supported range of 'icldm_turb'.
@@ -440,7 +420,12 @@ class TurbulenceConfig:
     #: Where the vertical smoothing of the TKE source terms applies if `frcsmot` > 0:
     #: 1 globally, 2 in the tropics only.
     imode_frcsmot: int = 2
-    #: Vertical smoothing factor for the TKE forcing. Operationally 0.0 (MCH) or 0.2 (DWD).
+    #: Vertical smoothing factor for the TKE forcing, in [0, 1]. Operationally 0.0 (MCH) or 0.2
+    #: (DWD, and the Fortran default: 28 configurations under 'icon/run/' set it). Above zero it
+    #: runs 'smooth_tke_forcing_vertically', which is the ONE stencil of this package with no
+    #: ICON reference behind it -- the capture is a Swiss LAM domain where 'trop_mask' is
+    #: identically zero, so no reference run made from it exercises the smoothing at any value of
+    #: this parameter. See that stencil's module docstring for what stands in place of one.
     frcsmot: float = 0.00
     #: Time smoothing factor for TKE and the diffusion coefficients.
     tkesmot: float = 0.15
@@ -743,6 +728,11 @@ class TurbulenceConfig:
             "the wind-dependent Charnock parameter, with and without the cyclone reduction",
         )
 
+        if not 0.0 <= self.frcsmot <= 1.0:
+            raise ValueError(
+                f"Invalid argument 'frcsmot': should be a smoothing fraction in [0, 1], "
+                f"got {self.frcsmot}."
+            )
         if self.a_hshr < 0.0:
             raise ValueError(
                 f"Invalid argument 'a_hshr': should be a non-negative length-scale factor, "
@@ -1048,7 +1038,7 @@ class Turbulence:
                                       -> right-hand side of the TKE solve (9)
             _rcld         rcld        cloud cover on half levels (0) -> SDSS (3)
 
-        WHERE THE PORT NEEDS TWO FIELDS FOR ONE FORTRAN STORAGE. Three of the Fortran's
+        WHERE THE PORT NEEDS TWO FIELDS FOR ONE FORTRAN STORAGE. Four of the Fortran's
         in-place rewrites read a NEIGHBOURING level of the array they write, and a GT4Py program
         computes its whole domain from the values it is given, so in place is not the same
         computation:
@@ -1062,6 +1052,10 @@ class Turbulence:
         * the four quantities 'bound_level_interp' interpolates in place at :1066-1073, which
           read main levels 'k-1' and 'k'. Hence '_*_on_main_levels' beside '_zaux_3', '_zaux_4',
           '_zaux_5' and '_rcld'.
+        * 'frm' and 'frh' under the optional vertical smoothing of section 2c), which reads both
+          neighbours of every row it writes -- the Fortran's own 'sav_tend' is what makes its
+          in-place sweep legitimate. Hence '_smoothed_mechanical_forcing' and
+          '_smoothed_thermal_forcing' beside '_frm' and '_frh'.
 
         The one in-place rewrite the port KEEPS is section 9)'s
         'subtract_implicit_part_of_tke_diffusion_momentum', which is pointwise and whose row
@@ -1133,6 +1127,12 @@ class Turbulence:
         #: 'lays(:,1)' and 'lays(:,2)', the two surface transfer ratios.
         self._surface_transfer_ratio_for_momentum = surface()
         self._surface_transfer_ratio_for_scalars = surface()
+        #: 'frm' and 'frh' after the optional vertical smoothing of section 2c). The Fortran
+        #: smooths in place; 'smooth_tke_forcing_vertically' reads both neighbours of every row
+        #: it writes, so the port needs a second field per profile. Sections 3) and 4) read
+        #: these, sections 6) and 9) go on reusing '_frm'/'_frh' for their unrelated roles --
+        #: exactly as the Fortran reuses the two storages.
+        self._smoothed_mechanical_forcing, self._smoothed_thermal_forcing = half(), half()
         #: The stability lengths section 2c) makes out of the diffusion coefficients and
         #: section 3) replaces. In the Fortran both live in 'tkvm'/'tkvh'.
         self._stability_length_for_momentum = half()
@@ -1407,6 +1407,24 @@ class Turbulence:
         )
 
         # -- section 2c) final preparations
+        #: 'vert_smooth' (turb_utilities.f90:3098), compiled only when it will run: 'setup_program'
+        #: compiles eagerly, and at 'frcsmot = 0' -- what the three MCH production experiments set
+        #: -- the routine is the identity and 'run_turbdiff' skips it.
+        self._smooth_tke_forcing_vertically = (
+            self._program(
+                smooth_tke_forcing_vertically,
+                constant_args={
+                    "smoothing_mask": metric.trop_mask,
+                    "smoothing_weight": config.frcsmot,
+                },
+                # The whole column: 'vert_smooth' writes 'k_tp+1 .. k_sf-1' and the port copies
+                # the two rows outside that through, because it cannot smooth in place.
+                levels=(0, nlev + 1),
+                shifted=True,
+            )
+            if config.frcsmot > 0.0
+            else None
+        )
         self._compute_stability_lengths_from_diffusion_coefficients = self._program(
             compute_stability_lengths_from_diffusion_coefficients,
             levels=(1, nlev),  # 'DO k=2,ke'
@@ -1575,6 +1593,41 @@ class Turbulence:
             levels=(0, nlev - 1),  # 'rcld(:,1)' then 'DO k=2,ke-1'
             shifted=True,
         )
+
+    def _smooth_the_tke_forcing(self) -> tuple[gtx.Field, gtx.Field]:
+        """The optional vertical smoothing of section 2c), turb_diffusion.f90:1720-1738.
+
+        A method rather than five lines of `run_turbdiff` because it is the one place in the
+        routine where a block of the Fortran changes WHICH FIELD the following sections read,
+        and because the Fortran's two guards are not both reproduced. ICON tests
+        "frcsmot > z0" and then, at 'imode_frcsmot = 2', "ANY(trop_mask > z0)". Only the first
+        is here: the second is a host-side reduction over the block, and skipping it costs
+        nothing but a kernel launch, since where 'trop_mask' vanishes so does
+        'versmot = frcsmot*trop_mask' and the smoothing is the identity there.
+
+        NOT VALIDATED AGAINST ICON DATA. 'smooth_tke_forcing_vertically' is the one stencil of
+        this granule with no reference capture behind it -- the capture's domain cannot exercise
+        it at any 'frcsmot' -- so at 'frcsmot > 0' the profiles that reach sections 3) and 4)
+        are unchecked. Its module docstring says why, and what stands in place of a reference.
+
+        Returns:
+            'frm' and 'frh' as the following sections must read them: the smoothed profiles
+            when the smoothing runs, the working fields themselves when it does not.
+        """
+        if self._smooth_tke_forcing_vertically is None:
+            return self._frm, self._frh
+
+        self._smooth_tke_forcing_vertically(
+            tke_forcing=self._frm,
+            nlev=self._nlev,
+            smoothed_tke_forcing=self._smoothed_mechanical_forcing,
+        )
+        self._smooth_tke_forcing_vertically(
+            tke_forcing=self._frh,
+            nlev=self._nlev,
+            smoothed_tke_forcing=self._smoothed_thermal_forcing,
+        )
+        return self._smoothed_mechanical_forcing, self._smoothed_thermal_forcing
 
     # ------------------------------------------------------------------------- the stage ---
 
@@ -1854,6 +1907,8 @@ class Turbulence:
 
         # -- 2c) final preparations ------------------------------------------------------------
 
+        mechanical_forcing, thermal_forcing = self._smooth_the_tke_forcing()
+
         self._compute_stability_lengths_from_diffusion_coefficients(
             diffusion_coefficient_for_momentum=diagnostic_state.tkvm,
             diffusion_coefficient_for_scalars=diagnostic_state.tkvh,
@@ -1871,8 +1926,8 @@ class Turbulence:
             master_length_scale=self._len_scale,
             stability_length_for_momentum=self._stability_length_for_momentum,
             stability_length_for_scalars=self._stability_length_for_scalars,
-            mechanical_forcing=self._frm,
-            thermal_forcing=self._frh,
+            mechanical_forcing=mechanical_forcing,
+            thermal_forcing=thermal_forcing,
             previous_velocity_scale=input_state.tke,
             transport_tendency=tendency_state.ddt_tke,
             tke_time_step=dt_tke,
@@ -1888,8 +1943,8 @@ class Turbulence:
             master_length_scale=self._len_scale,
             stability_length_for_momentum=self._stability_length_for_momentum,
             stability_length_for_scalars=self._stability_length_for_scalars,
-            mechanical_forcing=self._frm,
-            thermal_forcing=self._frh,
+            mechanical_forcing=mechanical_forcing,
+            thermal_forcing=thermal_forcing,
             turbulent_velocity_scale=diagnostic_state.updated_tke,
             updated_stability_length_for_momentum=self._updated_stability_length_for_momentum,
             updated_stability_length_for_scalars=self._updated_stability_length_for_scalars,
@@ -1900,7 +1955,7 @@ class Turbulence:
         self._compute_circulation_acceleration(
             cloud_cover=self._rcld,
             master_length_scale=self._len_scale,
-            thermal_forcing=self._frh,
+            thermal_forcing=thermal_forcing,
             half_level_pressure=self._half_level_pressure,
             air_density=diagnostic_state.rhon,
             pattern_length_scale=surface_state.l_pat,
