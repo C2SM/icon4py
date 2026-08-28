@@ -65,6 +65,18 @@ from ..fixtures import *  # noqa: F403
 
 
 #: The four timesteps 'exp.mch_icon-ch2_small' serializes.
+#: Why an uncontracted reference matters enough to assert. The v02 capture was built with
+#: ICON_FCFLAGS='-Kieee -Mnofma -gpu=nofma' on the four turbulence translation units, so ICON
+#: contracts nothing and bit-exactness is reachable. 'make' is timestamp-driven: a later rebuild
+#: that omits those flags recompiles them contracted, and then every 'a*b + c*d' gate in the port
+#: fails at ~1 eps with nothing to say why. This assertion says why.
+_CONTRACTED_REFERENCE = (
+    "the reference is FMA-contracted -- was build_serialize rebuilt without "
+    "ICON_FCFLAGS='-Kieee -Mnofma -gpu=nofma'? See docs/superpowers/notes/"
+    "2026-08-28-serialization-recipe.md section 11."
+)
+
+
 TURBDIFF_DATES = (
     "2020-12-10T06:01:00.000",
     "2020-12-10T06:01:20.000",
@@ -293,8 +305,12 @@ def test_compute_thermal_forcing_is_the_fortran_expression_up_to_one_contraction
     """The backend evaluated 'a*b + c*d' exactly, up to contracting at most one product.
 
     Bit for bit, with no tolerance. Three evaluations are admissible -- no contraction, the
-    first product fused, the second product fused -- and the reference itself is one of them
-    (the second), so this test pins the translation without pinning the compiler.
+    first product fused, the second product fused -- so this pins the translation without
+    pinning the compiler, and separates 'a compiler contracted' from 'the translation is wrong'
+    when the Exact() gate fails.
+
+    It also pins the reference to the uncontracted evaluation, which is the canary described on
+    '_CONTRACTED_REFERENCE'.
     """
     run = _run_section_1b(data_provider, date, backend)
     levels = slice(1, run.ke1)
@@ -313,11 +329,10 @@ def test_compute_thermal_forcing_is_the_fortran_expression_up_to_one_contraction
     matches = [name for name, value in admissible.items() if np.array_equal(computed, value)]
 
     assert matches, "the backend did not evaluate 'a*b + c*d' by any admissible rounding"
-    # The reference is the second variant; that is the whole reason this section is not exact.
     assert np.array_equal(
-        admissible["second product fused"],
+        admissible["no contraction"],
         run.after.thermal_forcing().asnumpy()[run.columns, levels],
-    )
+    ), _CONTRACTED_REFERENCE
 
 
 @pytest.mark.datatest
@@ -348,9 +363,9 @@ def test_compute_mechanical_forcing_is_the_fortran_expression_up_to_one_contract
 
     assert matches, "the backend did not evaluate 'u**2 + v**2' by any admissible rounding"
     assert np.array_equal(
-        np.maximum(admissible["v**2 fused"], floor),
+        np.maximum(admissible["no contraction"], floor),
         run.after.mech_forcing().asnumpy()[run.columns, levels],
-    )
+    ), _CONTRACTED_REFERENCE
 
 
 @pytest.mark.datatest

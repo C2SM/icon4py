@@ -238,5 +238,9 @@ class Experiments:
         long_name="MeteoSwiss icon-ch2 setup on a reduced domain, used to verify the operational "
         "icon-ch2; source of the NWP turbulence ('turbdiff') serialization",
         grid=Grids.MCH_OPR_R04B07_DOMAIN01,
-        version=1,
+        # v02 recaptured 2026-08-28 from a build with '-Kieee -Mnofma -gpu=nofma' on the
+        # turbulence translation units. v01 was compiled without them, so nvhpc contracted
+        # multiply-adds and the reference carried one fewer rounding than the expression as
+        # written -- which put bit-exactness out of reach for every 'a*b + c*d' in the scheme.
+        version=2,
     )

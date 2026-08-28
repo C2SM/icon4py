@@ -149,6 +149,10 @@ GATES: dict[str, Gate] = {
     "compute_inverse_layer_depth_and_tke_discretisation_momentum": Exact(),
     "compute_vertical_gradients_of_conserved_variables": Exact(),
     "compute_surface_gradients_of_conserved_variables": Exact(),
+    # turbdiff section 1b) -- the two TKE forcing terms. Both are 'a*b + c*d' expressions and
+    # were the reason the reference was recaptured without FMA contraction (v02).
+    "compute_thermal_forcing": Exact(),
+    "compute_mechanical_forcing": Exact(),
 }
 
 
