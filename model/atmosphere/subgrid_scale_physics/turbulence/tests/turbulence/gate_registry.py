@@ -194,6 +194,14 @@ GATES: dict[str, Gate] = {
     "compute_layer_depth": Exact(),
     "compute_turbulent_length_scale": Exact(),
 
+    # turbdiff section 2c) final preparations. The single live statement turns the diffusion
+    # coefficients back into stability lengths, and it is the exact inverse of section 3's
+    # 'compute_diffusion_coefficients_from_stability_lengths'. Bit-exactness here depends on
+    # reproducing ICON's reciprocal: it forms '1/tke' once and multiplies, and writing 'x / q'
+    # instead misses 156546 of 653804 values in 'ls_m' by up to 1 ulp. That all three backends
+    # agree is also evidence GT4Py did not substitute the reciprocal away.
+    "compute_stability_lengths_from_diffusion_coefficients": Exact(),
+
     # turbdiff section 3) turbulent budgets ('solve_turb_budgets').
     # PROVISIONAL: entered as the documented default so the section datatests can run at
     # all -- 'gate_for' refuses to default, so without an entry the tests error instead
