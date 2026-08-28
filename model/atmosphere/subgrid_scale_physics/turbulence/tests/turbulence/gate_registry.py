@@ -137,18 +137,24 @@ class UnregisteredStencilError(LookupError):
 #: 'Exact()' when it lands, and downgraded only per 'DOWNGRADE_PROCEDURE_DOC'. A diff of this dict
 #: is the record of where the numerics moved.
 #:
-#: Measured on 'exp.mch_icon-ch2_small', all four serialized timesteps, on the 'embedded' and
-#: 'gtfn_cpu' backends. The GPU backends ('dace_gpu', 'dace_cpu', 'gtfn_gpu') are validated
+#: Measured on 'exp.mch_icon-ch2_small', all four serialized timesteps, on the 'embedded',
+#: 'gtfn_cpu' and 'dace_cpu' backends. The GPU backends ('dace_gpu', 'gtfn_gpu') are validated
 #: separately on a GPU node and may need their own entries: nvcc contracts multiply-add by
 #: default ('--fmad=true'), which these CPU measurements cannot see.
+#:
+#: 'embedded' does not cover every entry. Stencils that select a boundary row with 'concat_where'
+#: xfail there in gt4py 1.1.10 (see the package README, "Boundary rows"), so their gate rests on
+#: the two compiled backends.
 GATES: dict[str, Gate] = {
     # turbdiff section 1a) -- vertical gradients of the conserved variables. Section 1a contains
     # only '-', '*' and '/' with no multiply-add pattern, so bit-exactness here is not evidence
     # that FMA contraction is absent; the first fused expression is in section 1b.
     "compute_surface_transfer_ratios": Exact(),
     "compute_inverse_layer_depth_and_tke_discretisation_momentum": Exact(),
+    # Covers the whole gradient profile including the surface row, which the Fortran writes in a
+    # separate loop and this port selects with 'concat_where' -- see the boundary-row convention
+    # in the package README.
     "compute_vertical_gradients_of_conserved_variables": Exact(),
-    "compute_surface_gradients_of_conserved_variables": Exact(),
     # turbdiff section 1b) -- the two TKE forcing terms. Both are 'a*b + c*d' expressions and
     # were the reason the reference was recaptured without FMA contraction (v02).
     "compute_thermal_forcing": Exact(),

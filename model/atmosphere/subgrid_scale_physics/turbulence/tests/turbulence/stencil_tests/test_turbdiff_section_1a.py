@@ -16,7 +16,7 @@ agree with it for the same reason it agrees with itself.
 THE OUTPUT SET IS ESTABLISHED, NOT ASSUMED. Section 1a) writes exactly four storage slots --
 'lays', 'hlp', 'dicke' and 'zvari' -- and 'test_section_1a_writes_exactly_four_slots' asserts
 that by comparing every serialized field across the two savepoints. That is what fixes the
-scope of the four stencils below; anything else that changed would mean the section does more
+scope of the three stencils below; anything else that changed would mean the section does more
 than they do.
 
 EVERY COMPARISON IS MASKED TO 'ivstart:ivend'. The hook writes the whole 'nproma' slab but the
@@ -28,6 +28,13 @@ so the rows the Fortran leaves alone -- the model top of 'hlp', 'dicke' and the 
 and the surface row of 'hlp' and 'dicke' -- are asserted to be untouched rather than ignored.
 'lays' is undefined before this section, so it is allocated NaN-filled instead, which makes an
 unwritten column inside the window a failure rather than a coincidence.
+
+'compute_vertical_gradients_of_conserved_variables' selects its reciprocal depth per row with
+'concat_where', which the embedded backend cannot execute (see 'model/testing/filters.py'), so its
+two tests carry 'uses_concat_where' and xfail there. The compiled backends still assert the whole
+gradient profile bit-exactly, and the second of the two tests pins the row selection itself by
+poisoning the row the surface branch must not read. Why the surface row is not a program of its
+own is written down in the package README, section "Boundary rows".
 """
 
 from __future__ import annotations
@@ -38,9 +45,6 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverse_layer_depth_and_tke_discretisation_momentum import (
     compute_inverse_layer_depth_and_tke_discretisation_momentum,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_gradients_of_conserved_variables import (
-    compute_surface_gradients_of_conserved_variables,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_transfer_ratios import (
     compute_surface_transfer_ratios,
@@ -252,23 +256,28 @@ def test_compute_inverse_layer_depth_and_tke_discretisation_momentum(
 
 
 @pytest.mark.datatest
+@pytest.mark.uses_concat_where
 @experiment_for_turbulence
 @pytest.mark.parametrize("date", TURBDIFF_DATES)
 def test_compute_gradients_of_conserved_variables(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
-    """The interior and the surface program together reproduce section 1a)'s 'zvari'.
+    """One program reproduces section 1a)'s whole 'zvari' profile, surface row included.
 
-    Each is run into its OWN copy of the five variables, not into a shared one. Sharing would
-    let a wrong vertical domain hide: an interior program reaching one row too far down writes
-    the surface row with the wrong factor, and whichever program ran second would quietly
-    overwrite the evidence. Run apart, each program is asserted both to reproduce ICON on the
-    rows it owns and to leave every other row exactly as it found it, which pins the two
-    domains from both sides. Their union is then the whole gradient profile.
+    The Fortran writes the surface row in a separate loop from the interior rows because the
+    reciprocal depth it divides by lives in a different array there; the arithmetic is the same
+    difference quotient. The port therefore keeps one program and selects the depth per row, so
+    the vertical boundary is stated once, inside the stencil, next to the Fortran it came from --
+    rather than twice, in whatever 'vertical_start'/'vertical_end' each caller happens to pass.
 
-    The scale factors -- 'hlp' and 'lays' -- are taken from the EXIT savepoint rather than from
-    the two stencils that produce them, so that a defect there cannot travel into this test and
-    a failure here means this translation is wrong.
+    That makes the boundary itself part of what this test checks. The output is allocated as a
+    COPY OF THE ENTRY VARIABLES and compared over the whole column, so the comparison distinguishes
+    all three ways the row selection can be wrong: the surface row taking the geometric depth, the
+    last interior row taking the Prandtl-layer depth, and the model top being written at all.
+
+    The scale factors -- 'hlp' and 'lays' -- are taken from the EXIT savepoint rather than from the
+    two stencils that produce them, so that a defect there cannot travel into this test and a
+    failure here means this translation is wrong.
     """
     entry = data_provider.from_savepoint_turbdiff_entry(date=date)
     before = data_provider.from_savepoint_turbdiff_section(section="0", date=date)
@@ -279,65 +288,96 @@ def test_compute_gradients_of_conserved_variables(
     variables = {
         name: before.conserved_variable(component) for name, component in CONSERVED_VARIABLES
     }
-    # The gradients replace the variables in the Fortran's own storage, so allocating each
-    # output as a copy of its input is what reproduces the Fortran's initial state -- and
-    # keeping the two buffers apart is what makes the claim that this is not a recurrence
-    # testable rather than assumed.
-    interior = {f"{name}_gradient": _copy_of(field, backend) for name, field in variables.items()}
-    surface = {f"{name}_gradient": _copy_of(field, backend) for name, field in variables.items()}
+    # The gradients replace the variables in the Fortran's own storage, so allocating each output
+    # as a copy of its input is what reproduces the Fortran's initial state -- and keeping the two
+    # buffers apart is what makes the claim that this is not a recurrence testable rather than
+    # assumed.
+    gradients = {f"{name}_gradient": _copy_of(field, backend) for name, field in variables.items()}
 
     compute_vertical_gradients_of_conserved_variables.with_backend(backend)(
         **variables,
-        **interior,
+        **gradients,
         inverse_layer_depth=after.hlp(),
+        surface_transfer_ratio_for_momentum=after.lays(0),
+        surface_transfer_ratio_for_scalars=after.lays(1),
+        nlev=gtx.int32(nlev),
         horizontal_start=gtx.int32(ivstart),
         horizontal_end=gtx.int32(ivend),
         vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(nlev),
-        offset_provider={dims.Koff.value: dims.KDim},
-    )
-    compute_surface_gradients_of_conserved_variables.with_backend(backend)(
-        **variables,
-        **surface,
-        surface_transfer_ratio_for_momentum=after.lays(0),
-        surface_transfer_ratio_for_scalars=after.lays(1),
-        horizontal_start=gtx.int32(ivstart),
-        horizontal_end=gtx.int32(ivend),
-        vertical_start=gtx.int32(nlev),
         vertical_end=gtx.int32(nlev + 1),
         offset_provider={dims.Koff.value: dims.KDim},
     )
 
-    # Which rows each program owns, and which it must leave as it found them. Row 0, the model
-    # top, is in the interior program's owned range because ICON leaves it alone there as well,
-    # so the reference is the right thing to hold it to.
-    responsibilities = (
-        (
-            "compute_vertical_gradients_of_conserved_variables",
-            interior,
-            slice(0, nlev),
-            slice(nlev, nlev + 1),
-        ),
-        (
-            "compute_surface_gradients_of_conserved_variables",
-            surface,
-            slice(nlev, nlev + 1),
-            slice(0, nlev),
-        ),
-    )
     for name, component in CONSERVED_VARIABLES:
         quantity = f"zvari(:,:,{component}) [{name}]"
-        for stencil, computed, owned, untouched in responsibilities:
-            _assert_agrees(
-                stencil,
-                quantity,
-                computed[f"{name}_gradient"],
-                after.vertical_gradient(component),
-                ivstart=ivstart,
-                ivend=ivend,
-                levels=owned,
-            )
-            assert np.array_equal(
-                computed[f"{name}_gradient"].asnumpy()[ivstart:ivend, untouched],
-                variables[name].asnumpy()[ivstart:ivend, untouched],
-            ), f"'{stencil}' wrote outside its vertical domain in '{quantity}'."
+        _assert_agrees(
+            "compute_vertical_gradients_of_conserved_variables",
+            quantity,
+            gradients[f"{name}_gradient"],
+            after.vertical_gradient(component),
+            ivstart=ivstart,
+            ivend=ivend,
+            levels=slice(0, nlev + 1),
+        )
+        # Row 0 is asserted against the INPUT as well as against the reference above. The two
+        # agree only because ICON leaves that row alone, which is the statement being made.
+        assert np.array_equal(
+            gradients[f"{name}_gradient"].asnumpy()[ivstart:ivend, 0],
+            variables[name].asnumpy()[ivstart:ivend, 0],
+        ), f"the model top of '{quantity}' was written; the Fortran loop starts at 'k = 2'."
+
+
+@pytest.mark.datatest
+@pytest.mark.uses_concat_where
+@experiment_for_turbulence
+@pytest.mark.parametrize("date", TURBDIFF_DATES)
+def test_gradients_at_the_surface_do_not_read_the_geometric_depth(
+    date: str, *, data_provider: sb.IconSerialDataProvider, backend
+) -> None:
+    """The surface row uses the Prandtl-layer depth and never touches 'hlp' there.
+
+    The merged program relies on 'concat_where' evaluating only the branch a row selects. That is
+    a property of GT4Py's domain inference, not of the expression, so it is measured rather than
+    assumed: 'hlp' is poisoned with NaN on the surface row -- where section 1a) never defines it
+    anyway -- and the surface gradients must stay bit-exact. If a backend ever computed the false
+    branch over the whole domain and selected afterwards, every value here would be NaN.
+    """
+    entry = data_provider.from_savepoint_turbdiff_entry(date=date)
+    before = data_provider.from_savepoint_turbdiff_section(section="0", date=date)
+    after = data_provider.from_savepoint_turbdiff_section(section="1a", date=date)
+    nlev = entry.ke()
+    ivstart, ivend = before.ivstart(), before.ivend()
+
+    poisoned = after.hlp().asnumpy().copy()
+    poisoned[:, nlev] = np.nan
+    inverse_layer_depth = gtx.as_field(after.hlp().domain, poisoned, allocator=backend)
+
+    variables = {
+        name: before.conserved_variable(component) for name, component in CONSERVED_VARIABLES
+    }
+    gradients = {f"{name}_gradient": _copy_of(field, backend) for name, field in variables.items()}
+
+    compute_vertical_gradients_of_conserved_variables.with_backend(backend)(
+        **variables,
+        **gradients,
+        inverse_layer_depth=inverse_layer_depth,
+        surface_transfer_ratio_for_momentum=after.lays(0),
+        surface_transfer_ratio_for_scalars=after.lays(1),
+        nlev=gtx.int32(nlev),
+        horizontal_start=gtx.int32(ivstart),
+        horizontal_end=gtx.int32(ivend),
+        vertical_start=gtx.int32(1),
+        vertical_end=gtx.int32(nlev + 1),
+        offset_provider={dims.Koff.value: dims.KDim},
+    )
+
+    for name, component in CONSERVED_VARIABLES:
+        _assert_agrees(
+            "compute_vertical_gradients_of_conserved_variables",
+            f"zvari(:,ke1,{component}) [{name}] with 'hlp(:,ke1)' poisoned",
+            gradients[f"{name}_gradient"],
+            after.vertical_gradient(component),
+            ivstart=ivstart,
+            ivend=ivend,
+            levels=slice(nlev, nlev + 1),
+        )

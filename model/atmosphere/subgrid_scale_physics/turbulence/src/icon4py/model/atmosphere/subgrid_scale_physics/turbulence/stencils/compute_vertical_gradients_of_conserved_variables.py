@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
@@ -14,17 +15,21 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _vertical_gradient_of_conserved_variable(
+def _gradient_of_conserved_variable(
     variable: fa.CellKField[wpfloat],
-    inverse_layer_depth: fa.CellKField[wpfloat],
+    inverse_depth: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
-    """Difference one quasi-conserved variable across the half-level layer.
+    """Difference one quasi-conserved variable across the layer centred on a half level.
 
-    The Fortran statement, run for each of the 'nmvar' variables in turn:
+    One expression covers the whole column. The Fortran writes it twice because the reciprocal
+    depth it divides by lives in two different arrays:
 
-        zvari(i,k,n) = (zvari(i,k-1,n) - zvari(i,k,n)) * hlp(i,k)
+        zvari(i,ke1,n) = (zvari(i,ke,n)   - zvari(i,ke1,n)) * lays(i,ivtp(n))   ! at the surface
+        zvari(i,k,n)   = (zvari(i,k-1,n)  - zvari(i,k,n))   * hlp(i,k)          ! above it
+
+    Here the caller selects the reciprocal depth per row and this operator stays single-valued.
     """
-    return (variable(Koff[-1]) - variable) * inverse_layer_depth
+    return (variable(Koff[-1]) - variable) * inverse_depth
 
 
 @gtx.field_operator
@@ -35,6 +40,9 @@ def _compute_vertical_gradients_of_conserved_variables(
     total_water: fa.CellKField[wpfloat],
     liquid_water: fa.CellKField[wpfloat],
     inverse_layer_depth: fa.CellKField[wpfloat],
+    surface_transfer_ratio_for_momentum: fa.CellField[wpfloat],
+    surface_transfer_ratio_for_scalars: fa.CellField[wpfloat],
+    nlev: gtx.int32,
 ) -> tuple[
     fa.CellKField[wpfloat],
     fa.CellKField[wpfloat],
@@ -47,10 +55,12 @@ def _compute_vertical_gradients_of_conserved_variables(
 
     Translated from ICON's turb_diffusion.f90, SUBROUTINE 'turbdiff', section
     "1a) Berechnung der benoetigten vertikalen Gradienten und Abspeichern auf 'zvari'"
-    ("Calculation of the required vertical gradients"), lines 1186-1203 at icon commit
-    26d6b98cce -- the part Matthias Raschendorfer heads "An den darueberliegenden
-    Nebenflaechen" ("At the half levels above it", above the lower boundary treated in
-    'compute_surface_gradients_of_conserved_variables').
+    ("Calculation of the required vertical gradients, and storing them in 'zvari'"), lines
+    1151-1203 at icon commit 26d6b98cce. Raschendorfer splits it into two blocks, "Am unteren
+    Modellrand" ("At the lower boundary of the model", :1162-1170) and "An den darueberliegenden
+    Nebenflaechen" ("At the half levels above it", :1186-1203). Both blocks evaluate the same
+    difference quotient into the same storage; only the reciprocal depth differs, so they are
+    one program here and the row selection is a 'concat_where' on the depth.
 
     The five variables are the ones turbulence treats as dynamically active, in the Fortran's
     own order (mo_turbdiff_config.f90:62-77): the two horizontal wind components at the mass
@@ -59,37 +69,63 @@ def _compute_vertical_gradients_of_conserved_variables(
     this section replaces them by their gradients on half levels, from which section 1b) builds
     the thermal and mechanical forcing of the TKE equation.
 
-    THE ROW-WISE OVERWRITE IS NOT A RECURRENCE. The Fortran writes each gradient back into the
-    storage its variable came in, sweeping upward within each variable, so 'zvari(k-1)' is
-    still the variable when 'zvari(k)' becomes the gradient. Every output row is therefore a
-    function of input rows only, which is what makes this an ordinary 'Koff[-1]' stencil rather
-    than a scan (port spec 3.2). The sweep direction is what keeps the aliasing safe in Fortran
-    and means nothing here.
+    THE TWO RECIPROCAL DEPTHS. Above the surface the difference spans a resolved layer, so it is
+    divided by that layer's geometric depth and 'inverse_layer_depth' ('hlp', from
+    'compute_inverse_layer_depth_and_tke_discretisation_momentum') is its reciprocal. The surface
+    row of each variable instead holds its Prandtl-layer lower boundary value, which section 0)
+    obtained from the second call of 'adjust_satur_equil' (the winds from the transfer-layer
+    reduction 'u(ke)*(1-tfm)'). That difference does not span a resolved layer; it is divided by
+    the effective depth of the Prandtl layer, whose reciprocal is the surface transfer ratio from
+    'compute_surface_transfer_ratios'. Momentum and scalars have different Prandtl-layer
+    resistances, hence two ratios; the Fortran selects between them with 'ivtp(n)', which maps
+    the two wind components to 'mom' and 'tet_l', 'h2o_g' and 'liq' to 'sca'.
 
-    Row 0, the model top, is not written: there is no main level above the first one to
-    difference against, which is why the Fortran loop stops at 'k = 2'. The surface row 'nlev'
-    is not written here either; it is a boundary condition rather than a difference quotient
-    and has its own program. Run this one with 'vertical_start = 1', 'vertical_end = nlev'.
+    THE ROW-WISE OVERWRITE IS NOT A RECURRENCE. The Fortran writes each gradient back into the
+    storage its variable came in, sweeping upward within each variable, so 'zvari(k-1)' is still
+    the variable when 'zvari(k)' becomes the gradient; likewise the surface block runs before the
+    interior one so that 'zvari(ke)' is still the variable when 'zvari(ke1)' is written. Every
+    output row is therefore a function of input rows only, which is what makes this an ordinary
+    'Koff[-1]' stencil rather than a scan (port spec 3.2). The sweep direction and the block order
+    are what keep the aliasing safe in Fortran and mean nothing here, where inputs and outputs are
+    separate fields.
+
+    Row 0, the model top, is not written: there is no main level above the first one to difference
+    against, which is why the Fortran loop stops at 'k = 2'. Run this with 'vertical_start = 1'
+    and 'vertical_end = nlev + 1'; 'nlev' must be that same last row, since it is what selects the
+    surface depth.
 
     Args:
-        zonal_wind: 'u_m', zonal wind at the mass centre [m/s], on main levels
-        meridional_wind: 'v_m', meridional wind at the mass centre [m/s], on main levels
-        liquid_water_potential_temperature: 'tet_l' [K], on main levels
-        total_water: 'h2o_g', specific total water content [kg/kg], on main levels
-        liquid_water: 'liq', specific liquid water content [kg/kg], on main levels
-        inverse_layer_depth: reciprocal depth of the half-level layer [1/m]
+        zonal_wind: 'u_m', zonal wind at the mass centre [m/s], on main levels, with its
+            Prandtl-layer boundary value in row 'nlev'
+        meridional_wind: 'v_m', meridional wind at the mass centre [m/s], likewise
+        liquid_water_potential_temperature: 'tet_l' [K], likewise
+        total_water: 'h2o_g', specific total water content [kg/kg], likewise
+        liquid_water: 'liq', specific liquid water content [kg/kg], likewise
+        inverse_layer_depth: 'hlp', reciprocal depth of the half-level layer [1/m]; read only on
+            rows 1 to 'nlev' - 1, which are the rows on which section 1a) defines it
+        surface_transfer_ratio_for_momentum: 'lays(:,mom)', reciprocal effective Prandtl-layer
+            depth for momentum [1/m]
+        surface_transfer_ratio_for_scalars: 'lays(:,sca)', the same for scalars [1/m]
+        nlev: 'ke', the index of the surface half level; the one row taking the Prandtl-layer
+            depth instead of the geometric one
 
     Returns:
         the five vertical gradients on half levels: [1/s], [1/s], [K/m], [kg/kg/m], [kg/kg/m]
     """
+    inverse_depth_for_momentum = concat_where(
+        dims.KDim == nlev, surface_transfer_ratio_for_momentum, inverse_layer_depth
+    )
+    inverse_depth_for_scalars = concat_where(
+        dims.KDim == nlev, surface_transfer_ratio_for_scalars, inverse_layer_depth
+    )
     return (
-        _vertical_gradient_of_conserved_variable(zonal_wind, inverse_layer_depth),
-        _vertical_gradient_of_conserved_variable(meridional_wind, inverse_layer_depth),
-        _vertical_gradient_of_conserved_variable(
-            liquid_water_potential_temperature, inverse_layer_depth
+        _gradient_of_conserved_variable(zonal_wind, inverse_depth_for_momentum),
+        _gradient_of_conserved_variable(meridional_wind, inverse_depth_for_momentum),
+        _gradient_of_conserved_variable(
+            liquid_water_potential_temperature, inverse_depth_for_scalars
         ),
-        _vertical_gradient_of_conserved_variable(total_water, inverse_layer_depth),
-        _vertical_gradient_of_conserved_variable(liquid_water, inverse_layer_depth),
+        _gradient_of_conserved_variable(total_water, inverse_depth_for_scalars),
+        _gradient_of_conserved_variable(liquid_water, inverse_depth_for_scalars),
     )
 
 
@@ -101,6 +137,9 @@ def compute_vertical_gradients_of_conserved_variables(
     total_water: fa.CellKField[wpfloat],
     liquid_water: fa.CellKField[wpfloat],
     inverse_layer_depth: fa.CellKField[wpfloat],
+    surface_transfer_ratio_for_momentum: fa.CellField[wpfloat],
+    surface_transfer_ratio_for_scalars: fa.CellField[wpfloat],
+    nlev: gtx.int32,
     zonal_wind_gradient: fa.CellKField[wpfloat],
     meridional_wind_gradient: fa.CellKField[wpfloat],
     liquid_water_potential_temperature_gradient: fa.CellKField[wpfloat],
@@ -118,6 +157,9 @@ def compute_vertical_gradients_of_conserved_variables(
         total_water=total_water,
         liquid_water=liquid_water,
         inverse_layer_depth=inverse_layer_depth,
+        surface_transfer_ratio_for_momentum=surface_transfer_ratio_for_momentum,
+        surface_transfer_ratio_for_scalars=surface_transfer_ratio_for_scalars,
+        nlev=nlev,
         out=(
             zonal_wind_gradient,
             meridional_wind_gradient,
