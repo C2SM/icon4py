@@ -511,6 +511,7 @@ def test_the_implicit_weight_profile_is_the_one_icon_initialised(
 @pytest.mark.datatest
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+@pytest.mark.embedded_too_slow
 def test_compute_implicit_part_of_tke_diffusion_momentum_agrees_with_icon(
     date: str,
     *,
@@ -539,6 +540,7 @@ def test_compute_implicit_part_of_tke_diffusion_momentum_agrees_with_icon(
 @pytest.mark.datatest
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+@pytest.mark.embedded_too_slow
 def test_subtract_implicit_part_of_tke_diffusion_momentum_agrees_with_icon(
     date: str,
     *,
@@ -566,6 +568,7 @@ def test_subtract_implicit_part_of_tke_diffusion_momentum_agrees_with_icon(
 @pytest.mark.datatest
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+@pytest.mark.embedded_too_slow
 def test_compute_inverted_diffusion_momentum_agrees_with_icon(
     date: str,
     *,
@@ -596,6 +599,7 @@ def test_compute_inverted_diffusion_momentum_agrees_with_icon(
 @pytest.mark.datatest
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+@pytest.mark.embedded_too_slow
 def test_compute_diffusion_inversion_factor_agrees_with_icon(
     date: str,
     *,
@@ -685,6 +689,7 @@ def test_compute_tke_diffusion_right_hand_side_agrees_with_icon(
 @pytest.mark.datatest
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+@pytest.mark.embedded_too_slow
 def test_the_updated_tke_profile_agrees_with_icon(
     date: str,
     *,

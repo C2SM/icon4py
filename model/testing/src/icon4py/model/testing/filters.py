@@ -63,6 +63,13 @@ item_marker_filters: dict[str, ItemFilter] = {
         condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
         action=functools.partial(pytest.xfail, "Embedded backend does not support concat_where."),
     ),
+    pytest.mark.embedded_too_slow.name: ItemFilter(
+        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
+        action=functools.partial(
+            pytest.skip,
+            "Embedded backend executes a scan as a Python loop, which is too slow for this test.",
+        ),
+    ),
     pytest.mark.gtfn_too_slow.name: ItemFilter(
         condition=lambda item: test_utils.is_gtfn_backend(
             test_utils.get_backend_fixture_value(item)

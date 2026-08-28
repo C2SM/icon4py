@@ -252,6 +252,7 @@ markers = [
   "uses_concat_where",
   "cpu_only",
   "infinite_concat_where",
+  "embedded_too_slow",
   "gtfn_too_slow",
   "continuous_benchmarking",
   "benchmark_only: benchmark only tests without verification"
