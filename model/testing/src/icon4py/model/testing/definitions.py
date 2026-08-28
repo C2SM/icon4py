@@ -233,3 +233,10 @@ class Experiments:
         long_name="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
     )
+    MCH_ICON_CH2_SMALL: Final = ExperimentDescription(
+        name="mch_icon-ch2_small",
+        long_name="MeteoSwiss icon-ch2 setup on a reduced domain, used to verify the operational "
+        "icon-ch2; source of the NWP turbulence ('turbdiff') serialization",
+        grid=Grids.MCH_OPR_R04B07_DOMAIN01,
+        version=1,
+    )

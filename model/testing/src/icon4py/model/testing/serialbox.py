@@ -1963,6 +1963,517 @@ class TopographySavepoint(IconSavepoint):
         return self._get_field("smooth_topography", dims.CellDim)
 
 
+class IconTurbdiffSavepoint(IconSavepoint):
+    """
+    Common part of the two savepoints of the NWP 1D turbulence scheme SUB 'turbdiff'
+    (turb_diffusion.f90:281), written by 'serialize_turbdiff_entry' and
+    'serialize_turbdiff_exit' in mo_icon4py_verification.f90.
+
+    Every Fortran line number quoted in this class and its two subclasses is as of 'icon'
+    commit 38e3720277, the commit that inserted the hooks and produced this capture. That is
+    two lines further down in turb_diffusion.f90 than the numbers the port spec quotes, which
+    are from the parent commit.
+
+    Every serialized name carries a 'td_' prefix: one serializer serves the whole icon4py
+    archive and its field table is global, so an unprefixed 'u' or 'w' would collide with the
+    rank-3 fields the dycore savepoints already register. The accessors drop the prefix, so
+    the method name is the Fortran dummy-argument name.
+
+    A savepoint is selected by ('date', 'id', 'block'): 'turbdiff' is called once per block of
+    'nproma' columns and per domain, and the hook writes one savepoint per call.
+
+    ONLY THE COLUMNS 'ivstart:ivend' HOLD COMPUTED VALUES. The hook writes the whole 'nproma'
+    slab, but 'turbdiff' only loops over 'ivstart:ivend' (2425..10700 of nproma=16224 for
+    exp.mch_icon-ch2_small). Outside that window the memory is untouched rather than NaN and
+    the values are plausible: 'tke' reaches -0.026 below 'ivstart' against a physical floor of
+    0.01 inside. Mask every comparison with 'ivstart()' and 'ivend()'.
+
+    The cell-field accessors return 'num_cells' columns, not 'nproma': 'IconSavepoint.
+    _reduce_to_dim_size' truncates the horizontal axis to the grid size, which happens to cut
+    exactly at 'ivend' here because the domain is one block and 'ivend == num_cells == 10700'.
+    That removes the untouched tail but not the lateral-boundary rows below 'ivstart'. The
+    truncation is only meaningful for a single-block capture ('nproma >= n_patch_cells', which
+    is how exp.mch_icon-ch2_small is configured and why 'block' is always 1); with several
+    blocks the row index is block-local and 'block()' would have to enter the mapping.
+    """
+
+    def _read_scalar(self, name: str):
+        """Read a serialized scalar; serialbox stores it as a length-one array."""
+        return self.serializer.read(name, self.savepoint).item()
+
+    def block(self) -> int:
+        """The block index 'iblock' this savepoint was written for; one-based, as in ICON."""
+        return self.savepoint.metainfo.to_dict()["block"]
+
+    def ivstart(self) -> int:
+        """
+        First computed column, as a zero-based Python index.
+
+        Fortran 'ivstart' is one-based and inclusive, so it is shifted by one here, following
+        '_read_int32_shift1'. Together with 'ivend()' this is a half-open Python range:
+        'field.ndarray[sp.ivstart() : sp.ivend()]' is exactly the computed part.
+        """
+        return self._read_scalar("td_ivstart") - 1
+
+    def ivend(self) -> int:
+        """
+        End of the computed columns, exclusive.
+
+        Fortran 'ivend' is one-based and inclusive, which is the same integer as the zero-based
+        exclusive bound, so unlike 'ivstart()' it is returned unshifted.
+        """
+        return self._read_scalar("td_ivend")
+
+    def gz0(self):
+        """Roughness length times gravity [m2/s2]."""
+        return self._get_field("td_gz0", dims.CellDim)
+
+    def tvm(self):
+        """Turbulent transfer velocity for momentum at the surface [m/s]."""
+        return self._get_field("td_tvm", dims.CellDim)
+
+    def tvh(self):
+        """Turbulent transfer velocity for heat at the surface [m/s]."""
+        return self._get_field("td_tvh", dims.CellDim)
+
+    def tfm(self):
+        """Laminar reduction factor for momentum [-]."""
+        return self._get_field("td_tfm", dims.CellDim)
+
+    def tfh(self):
+        """Laminar reduction factor for scalars [-]."""
+        return self._get_field("td_tfh", dims.CellDim)
+
+    def tfv(self):
+        """Laminar reduction factor for water vapour compared to heat [-]."""
+        return self._get_field("td_tfv", dims.CellDim)
+
+    def tke(self):
+        """
+        'q = SQRT(2*TKE)', the turbulent velocity and not the energy, on half levels [m/s].
+
+        Serialized as '(nvec, ke1, ntim)'. The NWP interface runs with 'ntim == 1' -- the
+        entry savepoint records it as 'td_ntim' -- so the trailing axis is a singleton and is
+        squeezed away, leaving a (CellDim, KDim) field of 'ke1' levels.
+        """
+        return self._get_field("td_tke", dims.CellDim, dims.KDim)
+
+    def tkvm(self):
+        """Turbulent diffusion coefficient for momentum, on half levels [m2/s]."""
+        return self._get_field("td_tkvm", dims.CellDim, dims.KDim)
+
+    def tkvh(self):
+        """Turbulent diffusion coefficient for heat and other scalars, on half levels [m2/s]."""
+        return self._get_field("td_tkvh", dims.CellDim, dims.KDim)
+
+    def tprn(self):
+        """
+        Turbulent Prandtl number on half levels [-].
+
+        Beware: in a capture like exp.mch_icon-ch2_small this is a '(1, 1)' dummy and not a
+        cell field. 'prm_diag%tprn' is only given the '(nproma, nlevp1, nblks_c)' shape when
+        the namelist selects a TMod that produces it; otherwise mo_nwp_phy_state.f90:4706-4709
+        allocates '(/1, 1, kblks/)', "shape for dummy array only". Check '.ndarray.shape'
+        against 'ke1()' before comparing anything. The field is built from the raw buffer
+        rather than through '_get_field' because squeezing a '(1, 1)' array leaves a scalar.
+        """
+        buffer = self.xp.asarray(self.serializer.read("td_tprn", self.savepoint), dtype=float)
+        return self._get_field_from_ndarray(buffer, dims.CellDim, dims.KDim)
+
+    def rcld(self):
+        """
+        Standard deviation of the local super-saturation, on half levels [-].
+
+        Genuine scheme input at entry: the zeroing loop in 'turb_setup' sits behind
+        'IF (iini > 0)' and the NWP interface calls with 'iini = 0'.
+        """
+        return self._get_field("td_rcld", dims.CellDim, dims.KDim)
+
+    def zvari(self, component: int):
+        """
+        One component of the scheme's main scratch array, on half levels.
+
+        'zvari(:,:,0:ndim)' with 'ndim = MAX(nmvar, naux) = 5' (mo_turbdiff_config.f90:91), so
+        the lower bound is zero and 'component' is the Fortran third index unchanged, 0..5.
+        Unlike 'zaux', no offset is needed.
+
+        The meaning changes as the routine proceeds (turb_diffusion.f90:594). At the entry
+        savepoint 1..5 hold the model variables at main levels and 0 the half-level pressure;
+        at the exit savepoint they hold the effective vertical gradients of the same
+        variables and 0 the gradient of the circulation kinetic energy. Component indices
+        (mo_turbdiff_config.f90:62-77): 'u_m=1', 'v_m=2', 'tem=tet=tet_l=3',
+        'vap=h2o_g=4', 'liq=5'.
+        """
+        return self._get_field_component("td_zvari", component, (dims.CellDim, dims.KDim))
+
+    @IconSavepoint.optionally_registered(dims.CellDim)
+    def tkred_sfc(self):
+        """Reduction factor for the minimum diffusion coefficients near the surface [-]."""
+        return self._get_field("td_tkred_sfc", dims.CellDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim)
+    def tkred_sfc_h(self):
+        """As 'tkred_sfc', for scalars [-]."""
+        return self._get_field("td_tkred_sfc_h", dims.CellDim)
+
+
+class IconTurbdiffEntrySavepoint(IconTurbdiffSavepoint):
+    """
+    State at the start of section 0) of SUB 'turbdiff' (turb_diffusion.f90:937).
+
+    The hook sits after SUB 'turb_setup' (turb_utilities.f90:249), so this savepoint is also
+    the reference for turb_setup's own output, which is serialized explicitly: 'lini',
+    'it_start', 'nvor', 'fr_tke', 'l_scal' and 'fc_min'.
+
+    The optional accessors below are the dummy arguments that are 'OPTIONAL' in 'turbdiff'
+    and were only written because 'PRESENT()' was true. Their device presence is a property
+    of the caller, not of the scheme, so a capture from a different namelist may lack them.
+    """
+
+    def nvec(self) -> int:
+        """'nproma': the horizontal extent of the slab, computed columns and untouched alike."""
+        return self._read_scalar("td_nvec")
+
+    def ke(self) -> int:
+        """Number of main (full) levels."""
+        return self._read_scalar("td_ke")
+
+    def ke1(self) -> int:
+        """Number of half levels, 'ke + 1'."""
+        return self._read_scalar("td_ke1")
+
+    def kcm(self) -> int:
+        """Level index above the roughness layer; 'ke1 + 1' when the canopy is switched off."""
+        return self._read_scalar("td_kcm")
+
+    def iini(self) -> int:
+        """Initialization type; the NWP interface always calls with 0 (no separate init)."""
+        return self._read_scalar("td_iini")
+
+    def ntur(self) -> int:
+        """Time index of 'tke' to be updated."""
+        return self._read_scalar("td_ntur")
+
+    def nprv(self) -> int:
+        """Time index of the previous 'tke'."""
+        return self._read_scalar("td_nprv")
+
+    def ntim(self) -> int:
+        """Number of 'tke' time levels; 1 for the NWP interface, see 'tke()'."""
+        return self._read_scalar("td_ntim")
+
+    def dt_var(self) -> float:
+        """Time step for the vertical diffusion of the model variables [s]."""
+        return self._read_scalar("td_dt_var")
+
+    def dt_tke(self) -> float:
+        """Time step for the TKE equation [s]."""
+        return self._read_scalar("td_dt_tke")
+
+    def ltkeinp(self) -> bool:
+        """TKE is taken as input rather than computed."""
+        return self._read_scalar("td_ltkeinp")
+
+    def l3dturb(self) -> bool:
+        """3D turbulence; hardcoded '.FALSE.' at mo_nwp_turbdiff_interface.f90:584."""
+        return self._read_scalar("td_l3dturb")
+
+    def lrunsso(self) -> bool:
+        """The SSO scheme runs, so 'ut_sso' and 'vt_sso' are meaningful."""
+        return self._read_scalar("td_lrunsso")
+
+    def lruncnv(self) -> bool:
+        """The convection scheme runs, so 'tket_conv' is meaningful."""
+        return self._read_scalar("td_lruncnv")
+
+    def lrunscm(self) -> bool:
+        """Single-column mode."""
+        return self._read_scalar("td_lrunscm")
+
+    def lini(self) -> bool:
+        """Output of 'turb_setup': this call is an initialization call."""
+        return self._read_scalar("td_lini")
+
+    def it_start(self) -> int:
+        """Output of 'turb_setup': first index of the security iteration loop."""
+        return self._read_scalar("td_it_start")
+
+    def nvor(self) -> int:
+        """Output of 'turb_setup': time index of the 'tke' the iteration starts from."""
+        return self._read_scalar("td_nvor")
+
+    def fr_tke(self) -> float:
+        """Output of 'turb_setup': '1 / dt_tke' [1/s]."""
+        return self._read_scalar("td_fr_tke")
+
+    def l_scal(self):
+        """Output of 'turb_setup': effective horizontal scale for the length-scale limit [m]."""
+        return self._get_field("td_l_scal", dims.CellDim)
+
+    def fc_min(self):
+        """Output of 'turb_setup': minimum value of the forcing of the TKE equation [1/s2]."""
+        return self._get_field("td_fc_min", dims.CellDim)
+
+    def l_hori(self):
+        """Horizontal grid spacing used as the turbulent length scale [m]."""
+        return self._get_field("td_l_hori", dims.CellDim)
+
+    def hhl(self):
+        """Height of the model half levels [m]; ICON passes 'p_metrics%z_ifc'."""
+        return self._get_field("td_hhl", dims.CellDim, dims.KDim)
+
+    def dp0(self):
+        """Pressure thickness of the main layers [Pa]."""
+        return self._get_field("td_dp0", dims.CellDim, dims.KDim)
+
+    def trop_mask(self):
+        """Mask for the tropics, used by the vertical smoothing of the length scale [-]."""
+        return self._get_field("td_trop_mask", dims.CellDim)
+
+    def innertrop_mask(self):
+        """Mask for the inner tropics [-]."""
+        return self._get_field("td_innertrop_mask", dims.CellDim)
+
+    def l_pat(self):
+        """Effective length scale of the near-surface thermal inhomogeneity pattern [m]."""
+        return self._get_field("td_l_pat", dims.CellDim)
+
+    def t_g(self):
+        """Surface temperature (grid-mean over the tiles) [K]."""
+        return self._get_field("td_t_g", dims.CellDim)
+
+    def qv_s(self):
+        """Specific humidity at the surface [kg/kg]."""
+        return self._get_field("td_qv_s", dims.CellDim)
+
+    def ps(self):
+        """Surface pressure [Pa]."""
+        return self._get_field("td_ps", dims.CellDim)
+
+    def u(self):
+        """Zonal wind at the mass centre, main levels [m/s]."""
+        return self._get_field("td_u", dims.CellDim, dims.KDim)
+
+    def v(self):
+        """Meridional wind at the mass centre, main levels [m/s]."""
+        return self._get_field("td_v", dims.CellDim, dims.KDim)
+
+    def t(self):
+        """Temperature, main levels [K]."""
+        return self._get_field("td_t", dims.CellDim, dims.KDim)
+
+    def qv(self):
+        """Specific humidity, main levels [kg/kg]."""
+        return self._get_field("td_qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        """Specific cloud water content, main levels [kg/kg]."""
+        return self._get_field("td_qc", dims.CellDim, dims.KDim)
+
+    def prs(self):
+        """Pressure, main levels [Pa]."""
+        return self._get_field("td_prs", dims.CellDim, dims.KDim)
+
+    def rhoh(self):
+        """Air density, main levels [kg/m3]."""
+        return self._get_field("td_rhoh", dims.CellDim, dims.KDim)
+
+    def epr(self):
+        """Exner pressure, main levels [-]."""
+        return self._get_field("td_epr", dims.CellDim, dims.KDim)
+
+    def tketens(self):
+        """
+        TKE tendency from advection, on half levels [m/s2].
+
+        'tketens' is 'INTENT(INOUT)' in 'turbdiff', so the entry value is serialized under
+        'td_tketens_in' to keep it apart from the exit value in the global field table.
+        """
+        return self._get_field("td_tketens_in", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def w(self):
+        """Vertical wind on half levels [m/s]."""
+        return self._get_field("td_w", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def hdef2(self):
+        """
+        Square of the horizontal deformation, half levels [1/s2].
+
+        Declared 'REAL(KIND=vp)' in the scheme (turb_diffusion.f90:612), together with 'hdiv',
+        'dwdx' and 'dwdy'; the default double build makes 'vp' equal to 'wp', so all four are
+        read as 'wpfloat' like everything else.
+        """
+        return self._get_field("td_hdef2", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def hdiv(self):
+        """Horizontal divergence, half levels [1/s]. 'REAL(vp)', see 'hdef2'."""
+        return self._get_field("td_hdiv", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def dwdx(self):
+        """Zonal derivative of the vertical wind, half levels [1/s]. 'REAL(vp)', see 'hdef2'."""
+        return self._get_field("td_dwdx", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def dwdy(self):
+        """Meridional derivative of the vertical wind, half levels [1/s]. 'REAL(vp)'."""
+        return self._get_field("td_dwdy", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def tket_conv(self):
+        """TKE forcing by convective buoyancy, half levels [m2/s3]."""
+        return self._get_field("td_tket_conv", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def u_tens(self):
+        """Zonal wind tendency at entry, main levels [m/s2]; see 'tketens' on the '_in' name."""
+        return self._get_field("td_u_tens_in", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def v_tens(self):
+        """Meridional wind tendency at entry, main levels [m/s2]."""
+        return self._get_field("td_v_tens_in", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def t_tens(self):
+        """Temperature tendency at entry, main levels [K/s]."""
+        return self._get_field("td_t_tens_in", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def ut_sso(self):
+        """Zonal wind tendency from the SSO scheme, main levels [m/s2]."""
+        return self._get_field("td_ut_sso", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def vt_sso(self):
+        """Meridional wind tendency from the SSO scheme, main levels [m/s2]."""
+        return self._get_field("td_vt_sso", dims.CellDim, dims.KDim)
+
+
+class IconTurbdiffExitSavepoint(IconTurbdiffSavepoint):
+    """
+    State at the end of SUB 'turbdiff' (turb_diffusion.f90:2549).
+
+    The hook sits between the closing '!$ACC WAIT' and the '!$ACC END DATA' so that the
+    '!$ACC CREATE' working set is still on the device: 'dicke', 'frh', 'frm', 'ftm', 'hlp',
+    'shv', 'zaux', 'len_scale' and 'edr' are routine locals that never reach an interface, and
+    they are serialized because without them a wrong value in a fused operator cannot be
+    localised.
+
+    'nvec', 'ke', 'ke1' and the control flags are only written by the entry savepoint; read
+    them from there for the same ('date', 'id', 'block').
+    """
+
+    def rhon(self):
+        """
+        Air density on half levels [kg/m3].
+
+        The model-top level (index 0) is not written by 'turbdiff': it holds untouched memory
+        even inside 'ivstart:ivend', around -0.025 in this capture. Masking to the horizontal
+        window is not enough for this field.
+        """
+        return self._get_field("td_rhon", dims.CellDim, dims.KDim)
+
+    def tketens(self):
+        """TKE tendency on half levels at exit [m/s2]; the entry value is 'td_tketens_in'."""
+        return self._get_field("td_tketens", dims.CellDim, dims.KDim)
+
+    def dicke(self):
+        """Layer thickness, later reused as a general work array, half levels [m]."""
+        return self._get_field("td_dicke", dims.CellDim, dims.KDim)
+
+    def frh(self):
+        """Thermal forcing of the TKE equation (buoyancy production), half levels [1/s2]."""
+        return self._get_field("td_frh", dims.CellDim, dims.KDim)
+
+    def frm(self):
+        """Dynamical forcing of the TKE equation (shear production), half levels [1/s2]."""
+        return self._get_field("td_frm", dims.CellDim, dims.KDim)
+
+    def ftm(self):
+        """Dynamical forcing without the additional 3D-shear terms, half levels [1/s2]."""
+        return self._get_field("td_ftm", dims.CellDim, dims.KDim)
+
+    def hlp(self):
+        """The scheme's general-purpose work array, half levels."""
+        return self._get_field("td_hlp", dims.CellDim, dims.KDim)
+
+    def shv(self):
+        """Stability function of the scalar variables, half levels [-]."""
+        return self._get_field("td_shv", dims.CellDim, dims.KDim)
+
+    def zaux(self, component: int):
+        """
+        One component of the thermodynamic and vertical-diffusion scratch, on half levels.
+
+        'zaux(nvec,ke1,ndim)' with 'ndim = 5' (turb_diffusion.f90:790) is ONE-based, unlike
+        'zvari', so 'component' here is zero-based: 'component = i' is Fortran 'zaux(:,:,i+1)'.
+
+        The array is reused. Sections 0) and 1) put 'exner', 'r_cpd', 'qst_t', 'g_tet' and
+        'g_h2o' into 1..5 (turb_diffusion.f90:991-995, :1021-1023); the vertical diffusion
+        later overwrites them with 'upd_prof', 'sav_prof', 'expl_mom' (:2095-2102) and
+        'impl_mom', 'invs_mom' (:2368-2369), which is what this savepoint sees.
+        """
+        return self._get_field_component("td_zaux", component, (dims.CellDim, dims.KDim))
+
+    def len_scale(self):
+        """
+        Turbulent master length scale, half levels [m].
+
+        Serialized from the 'len_scale' pointer (turb_diffusion.f90:691, assigned :854-856),
+        which targets either the caller's 'tur_len_scale' or the routine-local 'len_scale_tar'.
+        """
+        return self._get_field("td_len_scale", dims.CellDim, dims.KDim)
+
+    def edr(self):
+        """
+        Eddy dissipation rate, half levels [m2/s3].
+
+        Serialized from the 'ediss' pointer (turb_diffusion.f90:690, assigned :848-850), which
+        targets either the caller's 'edr' or the routine-local 'diss_tar'; named 'td_edr'
+        after the ICON interface variable.
+
+        Sign: mostly negative inside 'ivstart:ivend' -- 'ediss' enters the TKE budget as a
+        sink and the heating conversion at turb_diffusion.f90:2039-2041 divides it by 'cp_d'
+        directly. Settle the convention against the Fortran before comparing it with a
+        positive-definite Python 'edr'. The model-top level (index 0) is exactly zero.
+        """
+        return self._get_field("td_edr", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered()
+    def ldoexpcor(self) -> bool | None:
+        """Explicit correction of the vertical diffusion is applied."""
+        return self._read_scalar("td_ldoexpcor")
+
+    @IconSavepoint.optionally_registered()
+    def ldocirflx(self) -> bool | None:
+        """The circulation-term heat flux is applied."""
+        return self._read_scalar("td_ldocirflx")
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def u_tens(self):
+        """Zonal wind tendency at exit, main levels [m/s2]."""
+        return self._get_field("td_u_tens", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def v_tens(self):
+        """Meridional wind tendency at exit, main levels [m/s2]."""
+        return self._get_field("td_v_tens", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def t_tens(self):
+        """Temperature tendency at exit, main levels [K/s]."""
+        return self._get_field("td_t_tens", dims.CellDim, dims.KDim)
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def tket_hshr(self):
+        """TKE forcing by horizontal shear, half levels [m2/s3]."""
+        return self._get_field("td_tket_hshr", dims.CellDim, dims.KDim)
+
+
 class IconSerialDataProvider:
     def __init__(
         self,
@@ -2252,5 +2763,39 @@ class IconSerialDataProvider:
             self.serializer.savepoint["satad-exit"].date[date].location[location].as_savepoint()
         )
         return IconSatadExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_turbdiff_entry(
+        self, date: str, block: int = 1
+    ) -> IconTurbdiffEntrySavepoint:
+        """
+        Load data from the ICON savepoint at the start of section 0) of SUB 'turbdiff'
+        (turb_diffusion.f90:937), i.e. after SUB 'turb_setup'.
+
+        metadata to select a unique savepoint:
+        - date: <iso_string> of the model timestep
+        - id: the domain 'jg'; 1, as in every other reader here
+        - block: the one-based block index 'iblock'. 'turbdiff' is called once per block of
+          'nproma' columns, so a capture only has block 1 when 'nproma >= n_patch_cells'.
+        """
+        savepoint = (
+            self.serializer.savepoint["turbdiff-entry"].id[1].date[date].block[block].as_savepoint()
+        )
+        return IconTurbdiffEntrySavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_turbdiff_exit(self, date: str, block: int = 1) -> IconTurbdiffExitSavepoint:
+        """
+        Load data from the ICON savepoint at the end of SUB 'turbdiff'
+        (turb_diffusion.f90:2549), inside the '!$ACC DATA' region.
+
+        metadata to select a unique savepoint: see 'from_savepoint_turbdiff_entry'.
+        """
+        savepoint = (
+            self.serializer.savepoint["turbdiff-exit"].id[1].date[date].block[block].as_savepoint()
+        )
+        return IconTurbdiffExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
