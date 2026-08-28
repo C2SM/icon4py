@@ -13,20 +13,6 @@ Ports ``Compute_diagnostics`` (the Smagorinsky diagnostics of the atmosphere,
 mo_vdf_atmo.f90 l. 343-482, run by :meth:`Tmx.run_diagnostics`) and
 ``Update_diagnostics`` (the end-of-step diagnostics, mo_vdf_atmo.f90 l. 487 and
 mo_vdf.f90 l. 354, run by :meth:`Tmx.run_update_diagnostics`).
-
-The field operators are grouped into one program per halo-exchange interval and
-horizontal dimension, so that the intermediate fields the Fortran writes to
-memory stay inside the fused kernel. Field operators are only fused across a
-neighbor gather when the gathered field is also an output of the same program
-(otherwise the gather would be recomputed once per neighbor).
-
-Bottom rows are selected with ``concat_where(dims.KDim < nlev - 1, ...)`` rather
-than an equality test because ``concat_where(dims.KDim == nlev - 1, ...)`` is
-broken in GT4Py (GridTools/gt4py#2205), and constant branch values are anchored
-to a K-bounded field (``shifted * 0.0 + value``) instead of a bare
-``broadcast``: a broadcast has an unbounded K range, which raises "Cannot
-compute length of open 'UnitRange'" on the embedded backend and silently
-computes the wrong values with gtfn.
 """
 
 import gt4py.next as gtx
@@ -195,7 +181,7 @@ def compute_scaling_factor_louis(
 
 
 # ---------------------------------------------------------------------------
-# Compute_diagnostics, before the u/v cell exchange
+# Compute_diagnostics: thermodynamic cell diagnostics
 # ---------------------------------------------------------------------------
 @gtx.field_operator
 def _compute_thermodynamic_diagnostics(
@@ -220,10 +206,7 @@ def _compute_thermodynamic_diagnostics(
     Thermodynamic cell diagnostics of ``Compute_diagnostics`` (mo_vdf_atmo.f90).
 
     Fuses ``compute_static_energy``, ``get_virtual_potential_temperature``,
-    ``vert_intp_full2half_cell_3d`` (rho -> rho_ic) and ``brunt_vaisala_freq``,
-    the four cell loops the Fortran runs before the first halo exchange. The
-    Brunt-Vaisala frequency reads the virtual potential temperature this
-    operator computes.
+    ``vert_intp_full2half_cell_3d`` (rho -> rho_ic) and ``brunt_vaisala_freq``.
 
     Returns:
         dry static energy, virtual potential temperature, air density at half
@@ -289,24 +272,22 @@ def compute_thermodynamic_diagnostics(
         nlev=nlev,
         out=(dry_static_energy, theta_v, rho_ic, bruvais),
         domain=(
-            # cptgz: the tmx t_domain cells, all full levels
+            # dry_static_energy
             {
                 dims.CellDim: (cell_start_nudging, cell_end_local),
                 dims.KDim: (vertical_start, vertical_end),
             },
-            # theta_v: cells rl 3..min_rlcell_int, all full levels
+            # theta_v
             {
                 dims.CellDim: (cell_start_lateral_boundary_level_3, cell_end_local),
                 dims.KDim: (vertical_start, vertical_end),
             },
-            # rho_ic: cells rl 2..min_rlcell_int-2, all half levels (the top and
-            # bottom rows are extrapolated)
+            # rho_ic
             {
                 dims.CellDim: (cell_start_lateral_boundary_level_2, cell_end_halo_level_2),
                 dims.KDim: (vertical_start, vertical_end_half),
             },
-            # bruvais: cells rl 3..min_rlcell_int, half levels 1..nlev-1 (the top
-            # and bottom rows are not computed)
+            # bruvais
             {
                 dims.CellDim: (cell_start_lateral_boundary_level_3, cell_end_local),
                 dims.KDim: (vertical_start_interior, vertical_end),
@@ -316,7 +297,7 @@ def compute_thermodynamic_diagnostics(
 
 
 # ---------------------------------------------------------------------------
-# Compute_diagnostics, after the vertex exchange: edge diagnostics
+# Compute_diagnostics: edge diagnostics
 # ---------------------------------------------------------------------------
 @gtx.field_operator
 def _compute_shear_and_div_of_stress(
@@ -433,9 +414,7 @@ def _compute_edge_shear_diagnostics(
     Fuses ``cells2edges_scalar`` (w -> w_ie),
     ``interpolate_normal_velocity_edge_interface`` (vn -> vn_ie),
     ``rbf_vec_interpol_edge`` (vn_ie -> vt_ie) and the shear/divergence of the
-    stress tensor. ``w_ie`` only depends on the (already valid) input ``w``, so
-    moving it from before the vertex exchange to this group does not change the
-    results; it is the field the shear needs.
+    stress tensor.
 
     Returns:
         vertical velocity, normal and tangential velocity at half-level edges,
@@ -530,22 +509,22 @@ def compute_edge_shear_diagnostics(
         nlev=nlev,
         out=(w_ie, vn_ie, vt_ie, shear, div_stress),
         domain=(
-            # w_ie: edges rl 2..min_rledge_int-2, all half levels
+            # w_ie
             {
                 dims.EdgeDim: (edge_start_lateral_boundary_level_2, edge_end_halo_level_2),
                 dims.KDim: (vertical_start, vertical_end_half),
             },
-            # vn_ie: edges rl 2..min_rledge_int-3, all half levels
+            # vn_ie
             {
                 dims.EdgeDim: (edge_start_lateral_boundary_level_2, edge_end_halo_level_3),
                 dims.KDim: (vertical_start, vertical_end_half),
             },
-            # vt_ie: edges rl 3..min_rledge_int-2, all half levels
+            # vt_ie
             {
                 dims.EdgeDim: (edge_start_lateral_boundary_level_3, edge_end_halo_level_2),
                 dims.KDim: (vertical_start, vertical_end_half),
             },
-            # shear / div_stress: edges rl 4..min_rledge_int-2, all full levels
+            # shear / div_stress
             {
                 dims.EdgeDim: (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
                 dims.KDim: (vertical_start, vertical_end),
@@ -559,7 +538,7 @@ def compute_edge_shear_diagnostics(
 
 
 # ---------------------------------------------------------------------------
-# Compute_diagnostics, after the vertex exchange: cell diagnostics
+# Compute_diagnostics: cell diagnostics
 # ---------------------------------------------------------------------------
 @gtx.field_operator
 def _compute_strain_rate_diagnostics(
@@ -610,12 +589,12 @@ def compute_strain_rate_diagnostics(
         wgtfac_c=wgtfac_c,
         out=(div_c, mech_prod),
         domain=(
-            # div_c: cells rl grf_bdywidth_c+1..min_rlcell_int-1, all full levels
+            # div_c
             {
                 dims.CellDim: (cell_start_nudging, cell_end_halo),
                 dims.KDim: (vertical_start, vertical_end),
             },
-            # mech_prod: cells rl 3..min_rlcell_int-1, half levels 1..nlev-1
+            # mech_prod
             {
                 dims.CellDim: (cell_start_lateral_boundary_level_3, cell_end_halo),
                 dims.KDim: (vertical_start_interior, vertical_end),
@@ -867,8 +846,7 @@ def assign_constant_viscosity(
 
 
 # ---------------------------------------------------------------------------
-# Compute_diagnostics, after the km_ic/kh_ic cell exchange: one gather per
-# horizontal dimension, so nothing can be fused here
+# Compute_diagnostics: the eddy viscosity on cells, vertices and edges
 # ---------------------------------------------------------------------------
 @gtx.field_operator
 def _interpolate_km_to_full_level_cells(
@@ -1077,45 +1055,6 @@ def _compute_vertical_integral_diagnostics(
 
 
 @gtx.field_operator
-def _update_exchange_coefficient_diagnostics(
-    km_ic: fa.CellKField[wpfloat],
-    kh_ic: fa.CellKField[wpfloat],
-    km_const: wpfloat,
-    rturb_prandtl: wpfloat,
-    use_km_const: bool,
-    nlev: gtx.int32,
-) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    """
-    Assemble the full-level exchange coefficient diagnostics ``km`` / ``kh``.
-
-    Port of the km/kh loop of 'Update_diagnostics' in mo_vdf.f90 (these fields
-    are output-only diagnostics, nothing in tmx reads them):
-
-        km(k) = km_ic(k + 1),  kh(k) = kh_ic(k + 1)     for jk = 1..nlev-1
-        km(nlev) = km_const,   kh(nlev) = km_const * rturb_prandtl
-                                                        if use_km_const
-        km(nlev) = km_sfc,     kh(nlev) = kh_sfc        otherwise
-
-    The surface exchange coefficients ``km_sfc`` / ``kh_sfc`` are aggregated
-    from the surface tiles (mo_vdf_diag_smag.f90) and are out of scope of the
-    atmosphere-only port: the bottom row is set to zero when ``use_km_const``
-    is False. See the module docstring for the ``KDim < nlev - 1`` selector and
-    the anchored constant branches.
-    """
-    shifted_km = km_ic(KDim + 1)
-    shifted_kh = kh_ic(KDim + 1)
-    if use_km_const:
-        km_bottom = _broadcast_value_on_cell_k(km_const, shifted_km)
-        kh_bottom = _broadcast_value_on_cell_k(km_const * rturb_prandtl, shifted_kh)
-    else:
-        km_bottom = _broadcast_value_on_cell_k(wpfloat("0.0"), shifted_km)
-        kh_bottom = _broadcast_value_on_cell_k(wpfloat("0.0"), shifted_kh)
-    km = concat_where(dims.KDim < nlev - 1, shifted_km, km_bottom)
-    kh = concat_where(dims.KDim < nlev - 1, shifted_kh, kh_bottom)
-    return km, kh
-
-
-@gtx.field_operator
 def _update_end_of_step_diagnostics(
     new_temperature: fa.CellKField[wpfloat],
     height_above_ground: fa.CellKField[wpfloat],
@@ -1185,14 +1124,27 @@ def _update_end_of_step_diagnostics(
             dtime=dtime,
         )
     )
-    km, kh = _update_exchange_coefficient_diagnostics(
-        km_ic=km_ic,
-        kh_ic=kh_ic,
-        km_const=km_const,
-        rturb_prandtl=rturb_prandtl,
-        use_km_const=use_km_const,
-        nlev=nlev,
-    )
+    # the km/kh loop of 'Update_diagnostics' (mo_vdf.f90); output-only
+    # diagnostics, nothing in tmx reads them:
+    #     km(k) = km_ic(k + 1),  kh(k) = kh_ic(k + 1)   for jk = 1..nlev-1
+    #     km(nlev) = km_const,   kh(nlev) = km_const * rturb_prandtl
+    #                                                   if use_km_const
+    #     km(nlev) = km_sfc,     kh(nlev) = kh_sfc      otherwise
+    # km_sfc / kh_sfc are aggregated from the surface tiles
+    # (mo_vdf_diag_smag.f90) and are out of scope of the atmosphere-only port,
+    # so the bottom row is zero when 'use_km_const' is False.
+    # TODO(jcanton): select the bottom row with 'dims.KDim == nlev - 1' once
+    # GridTools/gt4py#2205 is fixed; the equality form is currently broken.
+    shifted_km = km_ic(KDim + 1)
+    shifted_kh = kh_ic(KDim + 1)
+    if use_km_const:
+        km_bottom = _broadcast_value_on_cell_k(km_const, shifted_km)
+        kh_bottom = _broadcast_value_on_cell_k(km_const * rturb_prandtl, shifted_kh)
+    else:
+        km_bottom = _broadcast_value_on_cell_k(wpfloat("0.0"), shifted_km)
+        kh_bottom = _broadcast_value_on_cell_k(wpfloat("0.0"), shifted_kh)
+    km = concat_where(dims.KDim < nlev - 1, shifted_km, km_bottom)
+    kh = concat_where(dims.KDim < nlev - 1, shifted_kh, kh_bottom)
     return dry_static_energy, cptgz_vi, dissip_ke_vi, int_energy_vi, int_energy_vi_tend, km, kh
 
 

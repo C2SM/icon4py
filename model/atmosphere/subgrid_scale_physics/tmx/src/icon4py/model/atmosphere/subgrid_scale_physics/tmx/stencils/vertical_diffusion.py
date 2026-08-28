@@ -15,17 +15,6 @@ wind diffusion (``Compute_diffusion_hor_wind``, edges on full levels) and the
 vertical wind diffusion (``Compute_diffusion_vert_wind``, cells on half levels).
 The callers assemble them into one program per halo-exchange interval, so the
 matrix rows and the right-hand side never leave the fused kernel.
-
-The boundary rows are selected with ``concat_where(dims.KDim > minlvl, ...)`` /
-``concat_where(dims.KDim < maxlvl, ...)`` rather than an equality test because
-``concat_where(dims.KDim == maxlvl, ...)`` is broken in GT4Py
-(GridTools/gt4py#2205). Both branches must be fields with a bounded K range;
-a bare scalar or ``broadcast`` leaves the range open, which raises "Cannot
-compute length of open 'UnitRange'" on the embedded backend and silently
-computes the wrong values with gtfn. The constant branches are therefore built
-with ``_broadcast_value_on_cell_k`` / ``_broadcast_value_on_edge_k``, which
-anchor the value to an input field's K range; the anchor is always an inverse
-mass or density, which is strictly positive and finite on the tmx domains.
 """
 
 from typing import NamedTuple
@@ -82,6 +71,9 @@ def _prepare_tridiagonal_matrix_cells(
     with a = 0 on the upper boundary row ``minlvl`` and c = 0 on the lower
     boundary row ``maxlvl``.
     """
+    # TODO(jcanton): select the boundary rows with an equality test once
+    # GridTools/gt4py#2205 is fixed; 'concat_where(dims.KDim == maxlvl, ...)'
+    # is currently broken, hence the '>' / '<' selectors.
     zero = _broadcast_value_on_cell_k(wpfloat("0.0"), inv_mair)
     a_interior = wpfloat("0.0") - zprefac * zk * inv_dz * inv_mair
     c_interior = wpfloat("0.0") - zprefac * zk(KDim + 1) * inv_dz(KDim + 1) * inv_mair

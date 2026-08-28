@@ -92,6 +92,7 @@ def _broadcast_value_on_cell_k(
     """
     A cell K field holding ``value`` on the K range of ``like``.
 
+    TODO(jcanton): drop this once a ``broadcast`` can carry a bounded K range.
     Workaround for GT4Py: both branches of a ``concat_where`` must be fields
     with a bounded K range. A bare scalar or a ``broadcast`` leaves the range
     open, which raises "Cannot compute length of open 'UnitRange'" on the

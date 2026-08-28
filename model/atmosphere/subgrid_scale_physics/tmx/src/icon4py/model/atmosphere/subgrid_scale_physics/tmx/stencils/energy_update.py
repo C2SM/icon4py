@@ -64,10 +64,6 @@ def _update_temperature_with_dissipation_heating(
     and the final tmx temperature tendency on exit; ``new_u`` / ``new_v`` are
     the winds updated by the horizontal wind diffusion.
 
-    The bottom row is selected with 'dims.KDim < nlev - 1' because
-    'concat_where(dims.KDim == nlev - 1, ...)' is currently broken in GT4Py
-    (GridTools/gt4py#2205).
-
     Args:
         u: old zonal wind [m/s]
         v: old meridional wind [m/s]
@@ -94,6 +90,8 @@ def _update_temperature_with_dissipation_heating(
         / dtime
         * (u * u - new_u * new_u + v * v - new_v * new_v)
     )
+    # TODO(jcanton): select the bottom row with 'dims.KDim == nlev - 1' once
+    # GridTools/gt4py#2205 is fixed; the equality form is currently broken.
     heating = concat_where(dims.KDim < nlev - 1, dissip_ke, dissip_ke - q_snocpymlt)
     new_tend = tend_temperature + heating / cv_air
     new_temperature = temperature + new_tend * dtime

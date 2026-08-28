@@ -1376,9 +1376,11 @@ class Tmx:
             )
 
         # S4: CALL sync_patch_array(SYNC_C, patch, kh_ic/km_ic) in
-        # mo_tmx_smagorinsky.f90 (l. 299-300); the constant-viscosity branch does
-        # not sync in the Fortran code, but the exchange is a no-op there anyway
-        # (the full halo is computed).
+        # mo_tmx_smagorinsky.f90 (l. 299-300). Unconditional, unlike the Fortran,
+        # which skips it in the constant-viscosity branch: both of our viscosity
+        # programs write cells rl 3..min_rlcell_int only, and 'interpolate_km'
+        # gathers from halo cells, so the halo rows have to come from here in
+        # either branch.
         log.debug("communication of kh_ic, km_ic (cells): start")
         self._exchange.exchange(dims.CellDim, diagnostic_state.kh_ic, diagnostic_state.km_ic)
         log.debug("communication of kh_ic, km_ic (cells): end")
@@ -1840,8 +1842,9 @@ class Tmx:
         """
         log.debug("tmx energy update (Update_energy_tendencies): start")
 
-        # CALL init(heating): zero fill of the whole array; the update stencil
-        # only writes the domain cells
+        # CALL init(heating). 'heating' is a caller-owned diagnostic and the
+        # update stencil writes only the tmx domain cells, so without this the
+        # rows outside would carry the previous step's values.
         self.init_cell_kdim_field_with_zero(field_with_zero_wp=diagnostic_state.heating)
         self.update_temperature_with_dissipation_heating(
             u=input_state.u,

@@ -13,28 +13,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants
     ThermodynamicConsts,
 )
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.physics.thermodynamics import (
-    _compute_internal_energy,
-    _compute_internal_energy_scalar,
-    _compute_temperature_from_internal_energy,
-    _compute_temperature_from_internal_energy_scalar,
-    compute_internal_energy,
-    compute_temperature_from_internal_energy,
-    compute_temperature_from_internal_energy_scalar,
-)
 from icon4py.model.common.type_alias import wpfloat
-
-
-__all__ = [
-    # Re-exports of the AES thermodynamics helpers that moved to icon4py.model.common
-    "_compute_internal_energy",
-    "_compute_internal_energy_scalar",
-    "_compute_temperature_from_internal_energy",
-    "_compute_temperature_from_internal_energy_scalar",
-    "compute_internal_energy",
-    "compute_temperature_from_internal_energy",
-    "compute_temperature_from_internal_energy_scalar",
-]
 
 
 @gtx.field_operator
