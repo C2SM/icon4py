@@ -11,7 +11,7 @@ import dataclasses
 import enum
 import logging
 import typing
-from typing import Any, Final
+from typing import Any
 
 import gt4py.next as gtx
 
@@ -28,6 +28,9 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
 from icon4py.model.common.interpolation.stencils.interpolate_cell_vector_to_edge_normal import (
     interpolate_cell_vector_to_edge_normal,
+)
+from icon4py.model.common.interpolation.stencils.interpolate_wind_to_vertices import (
+    interpolate_wind_to_vertices,
 )
 from icon4py.model.common.math.stencils.generic_math_operations import subtract_cell_field_on_cell_k
 from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
@@ -50,9 +53,9 @@ if typing.TYPE_CHECKING:
 """
 TMX (AES turbulent mixing) scheme, ported from ICON's ``src/atm_phy_aes/tmx``.
 
-This module provides the configuration (:class:`TmxConfig`), derived parameters
-(:class:`TmxParams`) and the granule class (:class:`Tmx`). Config default
-values are taken from ``vdiff_config_init`` in ``mo_turb_vdiff_config.f90``.
+This module provides the configuration (:class:`TmxConfig`) and the granule
+class (:class:`Tmx`). Config default values are taken from
+``vdiff_config_init`` in ``mo_turb_vdiff_config.f90``.
 """
 
 
@@ -93,25 +96,6 @@ class SurfaceFluxType(int, enum.Enum):
 
     INTERACTIVE = 0  # fluxes from the surface scheme
     FIXED_HEAT_FLUXES = 1  # fixed kinematic surface heat fluxes
-
-
-# Fortran defaults of the fixed-surface-flux members of 'nh_testcase_nml', from the
-# initialization in mo_nh_testcases_nml.f90:280-282. They are needed as defaults
-# because the *input* namelist dict carries only the members the experiment sets
-# explicitly; unset ones reach the run through this Fortran initialization and never
-# appear in the dict.
-_ISRFC_TYPE_DEFAULT: Final = SurfaceFluxType.INTERACTIVE
-_SHFLX_DEFAULT: Final = 0.1
-_LHFLX_DEFAULT: Final = 0.0
-
-# number of members of the Fortran t_vdiff_config derived type
-# (mo_turb_vdiff_config.f90); the echoed aes_vdf_nml namelist holds this many
-# values per domain, in declaration order. Must be kept in sync with the
-# 'unnamed_index' positions of the TmxConfig options below.
-_T_VDIFF_CONFIG_NUM_MEMBERS: Final = 42
-
-# position of 'use_tmx' in t_vdiff_config, used as an order canary
-_T_VDIFF_CONFIG_USE_TMX_INDEX: Final = 22
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -284,7 +268,7 @@ class TmxConfig:
                 "isrfc_type", ("nh_testcase_nml",), read_from_icon=False
             ),
         ),
-    ] = _ISRFC_TYPE_DEFAULT
+    ] = SurfaceFluxType.INTERACTIVE
 
     shflx: typing.Annotated[
         float,
@@ -294,7 +278,7 @@ class TmxConfig:
                 "shflx", ("nh_testcase_nml",), read_from_icon=False
             ),
         ),
-    ] = _SHFLX_DEFAULT
+    ] = 0.1
 
     lhflx: typing.Annotated[
         float,
@@ -304,7 +288,7 @@ class TmxConfig:
                 "lhflx", ("nh_testcase_nml",), read_from_icon=False
             ),
         ),
-    ] = _LHFLX_DEFAULT
+    ] = 0.0
 
     def __post_init__(self) -> None:
         self._validate()
@@ -325,28 +309,37 @@ class TmxConfig:
 
         The surface-flux options come from the *input* namelist dict instead,
         which holds only the members the experiment sets explicitly, so absent
-        ones fall back to the Fortran defaults rather than being indexed
+        ones are left out and keep the class default rather than being indexed
         strictly.
         """
+        # number of members of the Fortran t_vdiff_config derived type
+        # (mo_turb_vdiff_config.f90); the echoed aes_vdf_nml namelist holds this
+        # many values per domain, in declaration order. Must be kept in sync with
+        # the 'unnamed_index' positions of the options above.
+        num_members = 42
+        # position of 'use_tmx' in t_vdiff_config, used as an order canary
+        use_tmx_index = 22
+
         flat = atm_dict["aes_vdf_nml"]["aes_vdf_config"]
-        if len(flat) % _T_VDIFF_CONFIG_NUM_MEMBERS != 0:
+        if len(flat) % num_members != 0:
             raise ValueError(
                 f"'aes_vdf_config' has {len(flat)} values, not a multiple of the "
-                f"{_T_VDIFF_CONFIG_NUM_MEMBERS} members of t_vdiff_config: the Fortran "
-                "type changed and the pinned 'unnamed_index' positions must be revised."
+                f"{num_members} members of t_vdiff_config: the Fortran type changed "
+                "and the pinned 'unnamed_index' positions must be revised."
             )
-        use_tmx = flat[_T_VDIFF_CONFIG_USE_TMX_INDEX]
+        use_tmx = flat[use_tmx_index]
         if use_tmx is not True:
             raise ValueError(
-                f"expected 'use_tmx' (True) at position {_T_VDIFF_CONFIG_USE_TMX_INDEX} of "
+                f"expected 'use_tmx' (True) at position {use_tmx_index} of "
                 f"'aes_vdf_config', found {use_tmx!r}: either the run does not use tmx or "
                 "the t_vdiff_config member order changed."
             )
         testcase = input_dict.get("nh_testcase_nml", {})
+        converters = {"isrfc_type": SurfaceFluxType, "shflx": float, "lhflx": float}
         surface_fluxes = {
-            "isrfc_type": SurfaceFluxType(int(testcase.get("isrfc_type", _ISRFC_TYPE_DEFAULT))),
-            "shflx": float(testcase.get("shflx", _SHFLX_DEFAULT)),
-            "lhflx": float(testcase.get("lhflx", _LHFLX_DEFAULT)),
+            name: convert(testcase[name])
+            for name, convert in converters.items()
+            if name in testcase
         }
         return common_conf_opt.construct_config_from_icon(
             cls, atm_dict, **(surface_fluxes | overrides)
@@ -368,18 +361,6 @@ class TmxConfig:
             )
 
 
-@dataclasses.dataclass(frozen=True)
-class TmxParams:
-    """Calculates derived quantities depending on the tmx config."""
-
-    config: dataclasses.InitVar[TmxConfig]
-    rturb_prandtl: Final[float] = dataclasses.field(init=False)
-    """Reciprocal turbulent Prandtl number (``rturb_prandtl`` in mo_turb_vdiff_config.f90)."""
-
-    def __post_init__(self, config: TmxConfig) -> None:
-        object.__setattr__(self, "rturb_prandtl", 1.0 / config.turb_prandtl)
-
-
 class Tmx:
     """
     TMX (AES turbulent mixing) granule.
@@ -399,7 +380,6 @@ class Tmx:
         *,
         grid: base_grid.Grid,
         config: TmxConfig,
-        params: TmxParams,
         metric_state: tmx_states.TmxMetricState,
         interpolation_state: tmx_states.TmxInterpolationState,
         edge_params: grid_states.EdgeParams,
@@ -413,7 +393,6 @@ class Tmx:
         self._allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
         self.config = config
-        self._params = params
         self._grid = grid
         self._metric_state = metric_state
         self._interpolation_state = interpolation_state
@@ -422,6 +401,9 @@ class Tmx:
 
         assert self._cell_params.area is not None
 
+        # reciprocal turbulent Prandtl number (``rturb_prandtl`` in
+        # mo_turb_vdiff_config.f90)
+        self._rturb_prandtl = 1.0 / self.config.turb_prandtl
         # scaling factor of the turbulent energy flux (``zfactor`` in
         # 'Compute_diffusion_temperature', mo_vdf.f90)
         self._zfactor = (
@@ -430,6 +412,7 @@ class Tmx:
         # compile-time variant selector of the energy conversion stencils
         use_internal_energy = self.config.energy_type == EnergyType.INTERNAL
 
+        # TODO(jcanton): remove when `tmx_surface` is ported.
         if not (self.config.use_louis_land and self.config.use_louis_ice):
             log.warning(
                 "'use_louis_land' / 'use_louis_ice' make the Louis stability correction "
@@ -564,17 +547,18 @@ class Tmx:
         )
         # cells2verts_scalar (w -> w_vert) and rbf_vec_interpol_vertex
         # (vn -> u_vert, v_vert), the three fields synced afterwards
-        self.compute_vertex_wind_diagnostics = setup_program(
+        self.interpolate_wind_to_vertices = setup_program(
             backend=backend,
-            program=diag_stencils.compute_vertex_wind_diagnostics,
+            program=interpolate_wind_to_vertices,
             constant_args={
                 "cells_aw_verts": self._interpolation_state.cells_aw_verts,
                 "rbf_coeff_v1": self._interpolation_state.rbf_coeff_v1,
                 "rbf_coeff_v2": self._interpolation_state.rbf_coeff_v2,
             },
+            # vertices rl 2..min_rlvert_int
             horizontal_sizes={
-                "vertex_start_lateral_boundary_level_2": self._vertex_start_lateral_boundary_level_2,
-                "vertex_end_local": self._vertex_end_local,
+                "horizontal_start": self._vertex_start_lateral_boundary_level_2,
+                "horizontal_end": self._vertex_end_local,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
@@ -653,7 +637,7 @@ class Tmx:
                 program=diag_stencils.assign_constant_viscosity,
                 constant_args={
                     "km_const": self.config.km_const,
-                    "rturb_prandtl": self._params.rturb_prandtl,
+                    "rturb_prandtl": self._rturb_prandtl,
                 },
                 horizontal_sizes={
                     "horizontal_start": self._cell_start_lateral_boundary_level_3,
@@ -675,7 +659,7 @@ class Tmx:
                     "scaling_factor_louis": self.louis_factor,
                     "fract_land": self.fract_land,
                     "fract_ice": self.fract_ice,
-                    "rturb_prandtl": self._params.rturb_prandtl,
+                    "rturb_prandtl": self._rturb_prandtl,
                     "louis_constant_b": self.config.louis_constant_b,
                     "use_louis": self.config.use_louis,
                     "use_louis_land": self.config.use_louis_land,
@@ -856,7 +840,7 @@ class Tmx:
             program=scalar_stencils.compute_scalar_nabla2_flux,
             constant_args={
                 "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
-                "rturb_prandtl": self._params.rturb_prandtl,
+                "rturb_prandtl": self._rturb_prandtl,
                 "nabla2_flux": self._nabla2_flux_e,
             },
             horizontal_sizes={
@@ -1173,7 +1157,7 @@ class Tmx:
                 "dz": self._metric_state.ddqz_z_full,
                 "grav": constants.GRAV,
                 "km_const": self.config.km_const,
-                "rturb_prandtl": self._params.rturb_prandtl,
+                "rturb_prandtl": self._rturb_prandtl,
                 "use_km_const": self.config.use_km_const,
                 "cptgz_vi": self._cptgz_vi_run,
                 "dissip_ke_vi": self._dissip_ke_vi_run,
@@ -1394,7 +1378,7 @@ class Tmx:
         self._exchange.exchange(dims.EdgeDim, diagnostic_state.vn)
         log.debug("communication of vn (edges): end")
 
-        self.compute_vertex_wind_diagnostics(
+        self.interpolate_wind_to_vertices(
             w=input_state.w,
             vn=diagnostic_state.vn,
             w_vert=diagnostic_state.w_vert,

@@ -257,13 +257,11 @@ def test_tmx_granule_construction_and_diagnostics_smoke(
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)
     config = tmx.TmxConfig()
-    params = tmx.TmxParams(config)
     edge_params, cell_params = _geometry(grid, allocator)
 
     granule = tmx.Tmx(
         grid=grid,
         config=config,
-        params=params,
         metric_state=_metric_state(grid, allocator),
         interpolation_state=_interpolation_state(grid, allocator),
         edge_params=edge_params,
@@ -427,7 +425,6 @@ def test_tmx_granule_full_run_smoke(
     granule = tmx.Tmx(
         grid=grid,
         config=config,
-        params=tmx.TmxParams(config),
         metric_state=_metric_state(grid, allocator),
         interpolation_state=_interpolation_state(grid, allocator),
         edge_params=edge_params,
@@ -496,7 +493,6 @@ def test_tmx_granule_explicit_scalar_solver_smoke(
     granule = tmx.Tmx(
         grid=grid,
         config=config,
-        params=tmx.TmxParams(config),
         metric_state=_metric_state(grid, allocator),
         interpolation_state=_interpolation_state(grid, allocator),
         edge_params=edge_params,

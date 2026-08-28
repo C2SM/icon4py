@@ -71,7 +71,6 @@ def test_tmx_full_run_single_step(
     granule = tmx.Tmx(
         grid=icon_grid,
         config=tmx_config,
-        params=tmx.TmxParams(tmx_config),
         metric_state=construct_metric_state(
             metrics_savepoint=metrics_savepoint,
             init_savepoint=init_savepoint,

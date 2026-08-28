@@ -26,8 +26,8 @@ reference. The CO2 tracer diffusion (`l_co2`) is also out of scope.
 
 ## Structure
 
-- `tmx.py`: configuration (`TmxConfig`, namelist `aes_vdf_nml`), derived parameters
-  (`TmxParams`) and the `Tmx` granule class. `Tmx.run` executes one time step in the
+- `tmx.py`: configuration (`TmxConfig`, namelist `aes_vdf_nml`) and the `Tmx`
+  granule class. `Tmx.run` executes one time step in the
   Fortran stage order of `Compute` (`mo_vdf.f90`), with halo exchanges at the Fortran
   sync points; each stage is also callable on its own:
 

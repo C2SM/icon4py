@@ -28,7 +28,7 @@ def interpolate_to_cell_center_numpy(
 def interpolate_shear_to_half_level_cells_numpy(
     shear: np.ndarray, e_bln_c_s: np.ndarray, wgtfac_c: np.ndarray, c2e: np.ndarray
 ) -> np.ndarray:
-    """Reference of ``_interpolate_shear_to_half_level_cells`` (nlev + 1 levels)."""
+    """Reference of ``_interpolate_edge_field_to_cell_half_levels_wp`` (nlev + 1 levels)."""
     shear_c = interpolate_to_cell_center_numpy(shear, e_bln_c_s, c2e)
 
     # Full -> half level interpolation: half level k mixes full levels k and k - 1.

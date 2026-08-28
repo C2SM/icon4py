@@ -153,12 +153,6 @@ def test_config_from_fortran_dict_rejects_missing_use_tmx() -> None:
         )
 
 
-def test_params_derived_from_config() -> None:
-    config = tmx.TmxConfig()
-    params = tmx.TmxParams(config)
-    assert params.rturb_prandtl == 1.0 / config.turb_prandtl
-
-
 def _expected_shapes(
     grid: base_grid.Grid,
 ) -> dict[str, tuple[int, ...]]:
@@ -258,7 +252,7 @@ def test_config_round_trips_through_config_io() -> None:
 
 
 def test_surface_flux_options_come_from_the_input_namelist() -> None:
-    """Absent 'nh_testcase_nml' members fall back to the Fortran defaults."""
+    """Absent 'nh_testcase_nml' members keep the TmxConfig default."""
     record = _echoed_vdf_record(solver_type=2, energy_type=2, turb_prandtl=0.33333333333)
     config = tmx.TmxConfig.from_fortran_dict(
         atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}},

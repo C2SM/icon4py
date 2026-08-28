@@ -80,7 +80,6 @@ def _setup_granule(
     granule = tmx.Tmx(
         grid=icon_grid,
         config=config,
-        params=tmx.TmxParams(config),
         metric_state=construct_metric_state(
             metrics_savepoint=metrics_savepoint,
             init_savepoint=init_savepoint,

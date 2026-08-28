@@ -195,7 +195,7 @@ class Experiments:
     )
     EXCLAIM_APE_AES: Final = ExperimentDescription(
         name="exclaim_ape_aesPhys",
-        long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics (TMX turbulent mixing)",
+        long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
         grid=Grids.R02B04_GLOBAL,
         version=8,
     )

@@ -45,20 +45,17 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
     _compute_tangential_wind_wp,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
-    _interpolate_cell_field_to_half_levels_wp,
-)
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_with_boundaries_wp import (
     _interpolate_cell_field_to_half_levels_with_boundaries_wp,
+)
+from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_cell_half_levels_wp import (
+    _interpolate_edge_field_to_cell_half_levels_wp,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_with_boundaries_wp import (
     _interpolate_edge_field_to_half_levels_with_boundaries_wp,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_wp import (
     _interpolate_to_cell_center_wp,
-)
-from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
-    _mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.math.vertical_operations import (
     _compute_vertical_integral,
@@ -316,72 +313,6 @@ def compute_thermodynamic_diagnostics(
 
 
 # ---------------------------------------------------------------------------
-# Compute_diagnostics, between the vn edge exchange and the vertex exchange
-# ---------------------------------------------------------------------------
-@gtx.field_operator
-def _compute_vertex_wind_diagnostics(
-    w: fa.CellKField[wpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    cells_aw_verts: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
-    rbf_coeff_v1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
-    rbf_coeff_v2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
-) -> tuple[fa.VertexKField[wpfloat], fa.VertexKField[wpfloat], fa.VertexKField[wpfloat]]:
-    """
-    Wind components at vertices (``cells2verts_scalar`` and
-    ``rbf_vec_interpol_vertex`` in ``Compute_diagnostics``, mo_vdf_atmo.f90).
-
-    These are exactly the three fields the Fortran synchronizes afterwards.
-    """
-    w_vert = _compute_cell_2_vertex_interpolation(w, cells_aw_verts)
-    u_vert, v_vert = _mo_intp_rbf_rbf_vec_interpol_vertex(
-        p_e_in=vn, ptr_coeff_1=rbf_coeff_v1, ptr_coeff_2=rbf_coeff_v2
-    )
-    return w_vert, u_vert, v_vert
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_vertex_wind_diagnostics(
-    w: fa.CellKField[wpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    cells_aw_verts: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
-    rbf_coeff_v1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
-    rbf_coeff_v2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
-    w_vert: fa.VertexKField[wpfloat],
-    u_vert: fa.VertexKField[wpfloat],
-    v_vert: fa.VertexKField[wpfloat],
-    vertex_start_lateral_boundary_level_2: gtx.int32,
-    vertex_end_local: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-    vertical_end_half: gtx.int32,
-) -> None:
-    _compute_vertex_wind_diagnostics(
-        w=w,
-        vn=vn,
-        cells_aw_verts=cells_aw_verts,
-        rbf_coeff_v1=rbf_coeff_v1,
-        rbf_coeff_v2=rbf_coeff_v2,
-        out=(w_vert, u_vert, v_vert),
-        domain=(
-            # w_vert: vertices rl 2..min_rlvert_int, all half levels
-            {
-                dims.VertexDim: (vertex_start_lateral_boundary_level_2, vertex_end_local),
-                dims.KDim: (vertical_start, vertical_end_half),
-            },
-            # u_vert / v_vert: vertices rl 2..min_rlvert_int, all full levels
-            {
-                dims.VertexDim: (vertex_start_lateral_boundary_level_2, vertex_end_local),
-                dims.KDim: (vertical_start, vertical_end),
-            },
-            {
-                dims.VertexDim: (vertex_start_lateral_boundary_level_2, vertex_end_local),
-                dims.KDim: (vertical_start, vertical_end),
-            },
-        ),
-    )
-
-
-# ---------------------------------------------------------------------------
 # Compute_diagnostics, after the vertex exchange: edge diagnostics
 # ---------------------------------------------------------------------------
 @gtx.field_operator
@@ -632,34 +563,6 @@ def compute_edge_shear_diagnostics(
 # Compute_diagnostics, after the vertex exchange: cell diagnostics
 # ---------------------------------------------------------------------------
 @gtx.field_operator
-def _interpolate_shear_to_half_level_cells(
-    shear: fa.EdgeKField[wpfloat],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    wgtfac_c: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
-    """
-    Interpolate the rate of strain (mechanical production term, 2 * |S|^2) from
-    edge midpoints of full levels to cell centers at half levels.
-
-    Port of ``interpolate_rate_of_strain_full2half_edge2cell`` in ICON's
-    ``mo_vdf_atmo.f90``: the shear is first averaged from the three C2E
-    neighbor edges to the cell center with the bilinear weights ``e_bln_c_s``
-    (separately on full levels k and k - 1), then interpolated vertically to
-    the half level k with the weights ``wgtfac_c``:
-
-        mech_prod(c, k) = wgtfac_c(c, k) * sum_e e_bln_c_s(c, e) * shear(e, k)
-                          + (1 - wgtfac_c(c, k))
-                            * sum_e e_bln_c_s(c, e) * shear(e, k - 1)
-
-    The Fortran loop runs over jk = 2..nlev (1-based), i.e. half levels
-    k = 1..nlev-1 (0-based); the top (k = 0) and bottom (k = nlev) half-level
-    rows are not computed.
-    """
-    shear_c = _interpolate_to_cell_center_wp(interpolant=shear, e_bln_c_s=e_bln_c_s)
-    return _interpolate_cell_field_to_half_levels_wp(wgtfac_c=wgtfac_c, interpolant=shear_c)
-
-
-@gtx.field_operator
 def _compute_strain_rate_diagnostics(
     shear: fa.EdgeKField[wpfloat],
     div_stress: fa.EdgeKField[wpfloat],
@@ -670,13 +573,18 @@ def _compute_strain_rate_diagnostics(
     Cell-centered strain-rate diagnostics of ``Compute_diagnostics``
     (mo_vdf_atmo.f90): the two C2E gathers of the edge stress diagnostics.
 
+    The mechanical production term is the port of
+    ``interpolate_rate_of_strain_full2half_edge2cell``; its Fortran loop runs
+    over jk = 2..nlev (1-based), i.e. half levels k = 1..nlev-1 (0-based), so
+    the top (k = 0) and bottom (k = nlev) rows are not computed.
+
     Returns:
         divergence of the stress at full-level cells and the mechanical
         production term at half-level cells
     """
     div_c = _interpolate_to_cell_center_wp(interpolant=div_stress, e_bln_c_s=e_bln_c_s)
-    mech_prod = _interpolate_shear_to_half_level_cells(
-        shear=shear, e_bln_c_s=e_bln_c_s, wgtfac_c=wgtfac_c
+    mech_prod = _interpolate_edge_field_to_cell_half_levels_wp(
+        interpolant=shear, e_bln_c_s=e_bln_c_s, wgtfac_c=wgtfac_c
     )
     return div_c, mech_prod
 

@@ -62,12 +62,9 @@ def test_tmx_init_and_run_diagnostics_single_step(
     entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
     exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
 
-    params = tmx.TmxParams(tmx_config)
-
     granule = tmx.Tmx(
         grid=icon_grid,
         config=tmx_config,
-        params=params,
         metric_state=construct_metric_state(
             metrics_savepoint=metrics_savepoint,
             init_savepoint=init_savepoint,

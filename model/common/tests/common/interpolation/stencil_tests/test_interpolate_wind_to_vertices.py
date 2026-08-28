@@ -12,11 +12,11 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
-    compute_vertex_wind_diagnostics,
-)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
+from icon4py.model.common.interpolation.stencils.interpolate_wind_to_vertices import (
+    interpolate_wind_to_vertices,
+)
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
@@ -37,10 +37,10 @@ def mo_intp_rbf_rbf_vec_interpol_vertex_numpy(
 
 
 @pytest.mark.skip_value_error
-class TestComputeVertexWindDiagnostics(stencil_tests.StencilTest):
+class TestInterpolateWindToVertices(stencil_tests.StencilTest):
     """
-    The two vertex gathers of ``Compute_diagnostics`` (``cells2verts_scalar`` for
-    ``w`` and ``rbf_vec_interpol_vertex`` for ``vn``), fused into one program.
+    The cell-to-vertex average of ``w`` and the RBF reconstruction of the
+    horizontal wind from ``vn``, fused into one program.
 
     The three outputs share one horizontal range but not the vertical one:
     ``w_vert`` lives on the nlev + 1 half levels, ``u_vert`` / ``v_vert`` on the
@@ -48,7 +48,7 @@ class TestComputeVertexWindDiagnostics(stencil_tests.StencilTest):
     field, so an output written on the whole field is caught.
     """
 
-    PROGRAM = compute_vertex_wind_diagnostics
+    PROGRAM = interpolate_wind_to_vertices
     OUTPUTS = ("w_vert", "u_vert", "v_vert")
 
     @stencil_tests.static_reference
@@ -64,8 +64,8 @@ class TestComputeVertexWindDiagnostics(stencil_tests.StencilTest):
         u_vert: np.ndarray,
         v_vert: np.ndarray,
         vertical_end: int,
-        vertex_start_lateral_boundary_level_2: int,
-        vertex_end_local: int,
+        horizontal_start: int,
+        horizontal_end: int,
         **kwargs: Any,
     ) -> dict:
         nlev = vertical_end
@@ -81,7 +81,7 @@ class TestComputeVertexWindDiagnostics(stencil_tests.StencilTest):
         )
 
         # Each output keeps its initial value outside its own domain.
-        horizontal = slice(vertex_start_lateral_boundary_level_2, vertex_end_local)
+        horizontal = slice(horizontal_start, horizontal_end)
         w_vert_out = w_vert.copy()
         w_vert_out[horizontal, 0 : nlev + 1] = w_vert_full[horizontal, 0 : nlev + 1]
         u_vert_out = u_vert.copy()
@@ -97,9 +97,9 @@ class TestComputeVertexWindDiagnostics(stencil_tests.StencilTest):
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         # Non-trivial bounds: the vertex zones of the simple grid all collapse to
         # (0, num_vertices), which would hide a program ignoring its domain.
-        vertex_start_lateral_boundary_level_2 = 1
-        vertex_end_local = grid.num_vertices - 1
-        assert vertex_start_lateral_boundary_level_2 < vertex_end_local
+        horizontal_start = 1
+        horizontal_end = grid.num_vertices - 1
+        assert horizontal_start < horizontal_end
 
         return dict(
             w=data_alloc.random_field(
@@ -119,6 +119,6 @@ class TestComputeVertexWindDiagnostics(stencil_tests.StencilTest):
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(grid.num_levels),
             vertical_end_half=gtx.int32(grid.num_levels + 1),
-            vertex_start_lateral_boundary_level_2=gtx.int32(vertex_start_lateral_boundary_level_2),
-            vertex_end_local=gtx.int32(vertex_end_local),
+            horizontal_start=gtx.int32(horizontal_start),
+            horizontal_end=gtx.int32(horizontal_end),
         )
