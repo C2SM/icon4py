@@ -13,21 +13,28 @@ import pytest
 from .. import gate_registry
 
 
+#: A stencil name that will never be registered. The first version of this test used
+#: 'compute_turbulent_length_scale' as its stand-in for "unknown", which stopped being unknown the
+#: day section 0) landed and turned a passing test into a failing one for no reason of substance.
+#: A sentinel that cannot become real keeps the test about the lookup, not about the inventory.
+_NEVER_A_STENCIL = "compute_something_no_section_will_ever_write"
+
+
 def test_unknown_stencil_is_an_error_not_a_default() -> None:
     with pytest.raises(gate_registry.UnregisteredStencilError) as excinfo:
-        gate_registry.gate_for("compute_turbulent_length_scale")
+        gate_registry.gate_for(_NEVER_A_STENCIL)
 
     message = str(excinfo.value)
-    assert "compute_turbulent_length_scale" in message
+    assert _NEVER_A_STENCIL in message
     assert "GATES" in message
     assert "gates.md" in message
 
 
 def test_registered_stencil_returns_its_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     gate = gate_registry.Exact()
-    monkeypatch.setitem(gate_registry.GATES, "compute_turbulent_length_scale", gate)
+    monkeypatch.setitem(gate_registry.GATES, _NEVER_A_STENCIL, gate)
 
-    assert gate_registry.gate_for("compute_turbulent_length_scale") is gate
+    assert gate_registry.gate_for(_NEVER_A_STENCIL) is gate
 
 
 def test_every_entry_declares_a_gate_of_the_expected_type() -> None:

@@ -159,6 +159,80 @@ GATES: dict[str, Gate] = {
     # were the reason the reference was recaptured without FMA contraction (v02).
     "compute_thermal_forcing": Exact(),
     "compute_mechanical_forcing": Exact(),
+
+    # turbdiff section 0) conserved variables, cloud cover and turbulent length scales.
+    # Measured on 'exp.mch_icon-ch2_small' v02, all four dates, on 'embedded', 'gtfn_cpu' and
+    # 'dace_cpu' -- which produce bit-identical results here, so the disagreement is on ICON's
+    # side of the comparison and not in any backend's code generation. The three tolerant
+    # entries are the programs that evaluate 'EXP' (Magnus' formula for the saturation vapour
+    # pressure) or 'EXP(LOG())' (the Exner factor); every quantity of theirs that does NOT pass
+    # through an exponential is bit-exact and is asserted so, ungated, by
+    # 'test_the_conserved_variables_are_bit_exact_where_no_exponential_is_involved' and
+    # 'test_the_interpolation_is_bit_exact_where_its_inputs_are'.
+    #
+    # 'rtol' is ~9.4x the measured maximum. The error is a single rounding of 'exp' amplified by
+    # the near-cancellation 'dq = qt - qs' in the cloud diagnosis, so it is the amplification and
+    # not the ULP that varies with the data: across the four dates the worst value spans a factor
+    # of 18 (5.9e-12 to 1.07e-10), and a decade of headroom is that spread, not more.
+    "compute_conserved_variables_and_factors_at_main_levels": Tol(
+        rtol=1e-9,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=1.0654e-10,  # 'zvari(:,:,liq)', 2020-12-10T06:01:20
+    ),
+    "compute_conserved_variables_and_factors_at_the_surface": Tol(
+        rtol=5e-12,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=5.3564e-13,  # 'zvari(:,ke1,liq)', 2020-12-10T06:02:00
+    ),
+    "interpolate_variables_onto_half_levels": Tol(
+        rtol=5e-10,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=5.3270e-11,  # 'rcld', 2020-12-10T06:01:20
+    ),
+    "compute_half_level_interpolation_weight": Exact(),
+    "compute_horizontal_wind_including_the_zero_level": Exact(),
+    "compute_layer_depth": Exact(),
+    "compute_turbulent_length_scale": Exact(),
+
+    # turbdiff section 3) turbulent budgets ('solve_turb_budgets').
+    # PROVISIONAL: entered as the documented default so the section datatests can run at
+    # all -- 'gate_for' refuses to default, so without an entry the tests error instead
+    # of reporting. The agents that wrote these stencils were killed before validating
+    # them, so no measurement stands behind these yet. A failure here is a real finding.
+    "compute_circulation_acceleration": Exact(),
+    "compute_diffusion_coefficients_from_stability_lengths": Exact(),
+    "compute_stability_lengths": Exact(),
+    "compute_supersaturation_standard_deviation": Exact(),
+    "compute_turbulent_velocity_scale": Exact(),
+    "set_turbulent_velocity_scale_at_model_top": Exact(),
+
+    # turbdiff section 6) q-diffusion tendency.
+    # PROVISIONAL: entered as the documented default so the section datatests can run at
+    # all -- 'gate_for' refuses to default, so without an entry the tests error instead
+    # of reporting. The agents that wrote these stencils were killed before validating
+    # them, so no measurement stands behind these yet. A failure here is a real finding.
+    "compute_cke_flux_at_main_levels": Exact(),
+    "compute_cke_flux_density": Exact(),
+    "compute_explicit_tke_diffusion_momentum": Exact(),
+    "compute_saved_tke_profile": Exact(),
+
+    # turbdiff section 9) TKE profile update through the diffusion tendency.
+    # PROVISIONAL: entered as the documented default so the section datatests can run at
+    # all -- 'gate_for' refuses to default, so without an entry the tests error instead
+    # of reporting. The agents that wrote these stencils were killed before validating
+    # them, so no measurement stands behind these yet. A failure here is a real finding.
+    "add_virtual_diffusion_increment_to_tke_profile": Exact(),
+    "compute_diffusion_inversion_factor": Exact(),
+    "compute_explicit_tke_flux_density": Exact(),
+    "compute_implicit_part_of_tke_diffusion_momentum": Exact(),
+    "compute_inverted_diffusion_momentum": Exact(),
+    "compute_tke_diffusion_right_hand_side": Exact(),
+    "solve_tke_diffusion_equation": Exact(),
+    "subtract_implicit_part_of_tke_diffusion_momentum": Exact(),
+
+    # turbdiff section 11) interpolation of the SDSS back to main levels.
+    # Measured bit-exact on embedded, gtfn_cpu and dace_cpu, all four dates.
+    "interpolate_supersaturation_deviation_to_main_levels": Exact(),
 }
 
 

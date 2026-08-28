@@ -39,9 +39,12 @@ undefined here too; the savepoint reader's own docstring records which section w
 
 BIT-EXACTNESS: WHERE IT STOPS, AND WHY
 --------------------------------------
-Four of the seven programs are bit-exact on 'embedded', 'gtfn_cpu' and 'dace_cpu', all four
-dates: 'compute_layer_depth', 'compute_horizontal_wind_including_the_zero_level',
-'compute_half_level_interpolation_weight' and 'compute_turbulent_length_scale'.
+Four of the seven programs are bit-exact, all four dates: 'compute_layer_depth',
+'compute_horizontal_wind_including_the_zero_level', 'compute_half_level_interpolation_weight'
+and 'compute_turbulent_length_scale'. On 'gtfn_cpu' and 'dace_cpu' that holds for all four; two
+of them -- the wind and the length scale -- select a boundary row with 'concat_where' and so
+carry 'uses_concat_where', which xfails them on 'embedded' (gt4py 1.1.10 cannot execute
+'concat_where' there), so their exactness rests on the two compiled backends only.
 
 The other three are not, and section 0) is the first section of the port that cannot be. It is
 the first to evaluate a TRANSCENDENTAL function: Magnus' formula for the saturation vapour
@@ -799,14 +802,19 @@ def test_the_disagreement_is_two_ulp_of_the_saturation_vapour_pressure(
         vapour = float(ThermoConstants.RDV) * vapour_pressure
         saturation = vapour / (dry_air_pressure + vapour)
         denominator = liquid_water_temperature - float(ThermoConstants.C4LES)
-        slope = 1.0 / (
-            1.0
-            + lhocp
-            * float(ThermoConstants.C5LES)
+        # 'gam = z1/(z1 + lhocp*zdqsdt(tl, qs))' (turb_utilities.f90:2155), with 'zdqsdt' the
+        # statement function of :3434-3443. The two multiplications must not be flattened into
+        # one product: evaluating the statement function first and multiplying by 'lhocp'
+        # afterwards is one rounding different, and it is what '_dqsat_dt' does inside the
+        # stencil. Written flat, this re-evaluation disagrees with the stencil in ~11500 of the
+        # 662080 values by one ULP and the two-ULP argument below fails on its own oracle.
+        dqsat_dt = (
+            float(ThermoConstants.C5LES)
             * (1.0 - saturation)
             * saturation
             / (denominator * denominator)
         )
+        slope = 1.0 / (1.0 + lhocp * dqsat_dt)
         supersaturation = total_water - saturation
         deviation = np.minimum(float(ThermoConstants.RSIG_MAX) * saturation, deviation_in)
         saturated_content = np.minimum(total_water, deviation * q_max)
