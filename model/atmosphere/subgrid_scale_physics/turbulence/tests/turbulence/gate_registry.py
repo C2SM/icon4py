@@ -146,6 +146,35 @@ class UnregisteredStencilError(LookupError):
 #: xfail there in gt4py 1.1.10 (see the package README, "Boundary rows"), so their gate rests on
 #: the two compiled backends.
 GATES: dict[str, Gate] = {
+    # The whole of 'turbdiff', end to end: 'turbdiff-entry' -> 'turbdiff-exit', 42 programs.
+    # Measured on 'gtfn_cpu' and 'dace_cpu', all four dates; the two backends are bit-identical
+    # to each other on all 22 outputs, so the entire residual is on ICON's side.
+    #
+    # It is worth stating what these two numbers are NOT. Every section of 'turbdiff' is gated
+    # 'Exact()' except section 0 and section 2a, and those two are inexact for one reason each:
+    # section 0's 'EXP' (Magnus) and 'EXP(LOG())' (Exner), section 2a's 'EXP(2/3*LOG())'. So the
+    # end-to-end tolerance is those two roundings carried down the chain and nothing else --
+    # which is why four outputs survive all 42 programs BIT-EXACTLY and are asserted so, ungated,
+    # by 'test_the_quantities_that_survive_the_chain_bit_exactly': the two horizontal wind
+    # components, the total water (formed as 'qv + qc', never through the saturation vapour
+    # pressure), and the layer depth. 'rhon' is the instructive near-miss at 5.5e-16 on 14-19
+    # values, all in the surface row -- the one row that goes through the Exner factor.
+    "run_turbdiff": Tol(
+        rtol=1e-9,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=1.0787e-10,  # 'zvari(:,:,liq)', 2020-12-10T06:02:00
+    ),
+    # Split from the entry above rather than widening it. The TKE tendency's arithmetic is not
+    # worse -- section 10 alone is gated 'Exact()' -- it is '(q_new - q_old)*fr_tke', a difference
+    # of two profiles that agree to six digits, so the relative error of the difference is large
+    # while the absolute error stays at 1.8e-15, one ulp of a quantity of order one. Folding it
+    # into 'run_turbdiff' would mean widening 21 outputs by two decades to accommodate one.
+    "run_turbdiff_tke_tendency": Tol(
+        rtol=1e-8,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=4.0346e-09,  # 'tketens', 2020-12-10T06:01:00
+    ),
+
     # turbdiff section 1a) -- vertical gradients of the conserved variables. Section 1a contains
     # only '-', '*' and '/' with no multiply-add pattern, so bit-exactness here is not evidence
     # that FMA contraction is absent; the first fused expression is in section 1b.
