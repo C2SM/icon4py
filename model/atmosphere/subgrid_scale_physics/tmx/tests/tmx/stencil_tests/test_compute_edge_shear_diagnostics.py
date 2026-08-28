@@ -217,7 +217,7 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
         edge_start_lateral_boundary_level_3: int,
         edge_start_lateral_boundary_level_4: int,
         edge_end_halo_level_2: int,
-        edge_end_end: int,
+        edge_end_halo_level_3: int,
         **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
@@ -266,7 +266,7 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
             vn_ie=_on_subdomain(
                 vn_ie,
                 vn_ie_full,
-                (edge_start_lateral_boundary_level_2, edge_end_end),
+                (edge_start_lateral_boundary_level_2, edge_end_halo_level_3),
                 all_half_levels,
             ),
             vt_ie=_on_subdomain(
@@ -356,7 +356,7 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
         edge_end_halo_level_2 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-        edge_end_end = grid.end_index(edge_domain(h_grid.Zone.END))
+        edge_end_halo_level_3 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_3))
         assert edge_start_lateral_boundary_level_4 < edge_end_halo_level_2
 
         return dict(
@@ -392,5 +392,5 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
             edge_start_lateral_boundary_level_3=gtx.int32(edge_start_lateral_boundary_level_3),
             edge_start_lateral_boundary_level_4=gtx.int32(edge_start_lateral_boundary_level_4),
             edge_end_halo_level_2=gtx.int32(edge_end_halo_level_2),
-            edge_end_end=gtx.int32(edge_end_end),
+            edge_end_halo_level_3=gtx.int32(edge_end_halo_level_3),
         )

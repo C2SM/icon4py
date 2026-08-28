@@ -45,7 +45,10 @@ from icon4py.model.common.interpolation.stencils.compute_tangential_wind import 
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     _edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.math.operators import _compute_reciprocal_on_edge_k
+from icon4py.model.common.math.operators import (
+    _broadcast_value_on_cell_k,
+    _compute_reciprocal_on_edge_k,
+)
 from icon4py.model.common.math.stencils.update_two_cell_kdim_fields_with_tendency import (
     _update_two_cell_kdim_fields_with_tendency,
 )
@@ -553,7 +556,7 @@ def _modify_w_diffusion_matrix_boundary(
     ``concat_where`` instead of two single-row program domains; the interior
     rows add exactly zero.
     """
-    zero = inv_mair_ic * wpfloat("0.0")
+    zero = _broadcast_value_on_cell_k(wpfloat("0.0"), inv_mair_ic)
     top_term = wpfloat("2.0") * km_c(KDim - 1) * inv_dz(KDim - 1) * inv_mair_ic
     bottom_term = wpfloat("2.0") * km_c * inv_dz * inv_mair_ic
     return (

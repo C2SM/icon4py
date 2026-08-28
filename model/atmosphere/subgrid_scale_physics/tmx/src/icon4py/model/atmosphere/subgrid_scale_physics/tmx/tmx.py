@@ -15,6 +15,7 @@ import typing
 from typing import Any
 
 import gt4py.next as gtx
+from gt4py.next import common as gtx_common
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils import (
@@ -435,6 +436,32 @@ class Tmx:
         self._determine_horizontal_domains()
         self._allocate_local_fields()
 
+        self._setup_init_and_diagnostics_programs(backend, num_levels)
+        self._setup_scalar_diffusion_programs(backend, num_levels, use_internal_energy)
+        self._setup_momentum_diffusion_programs(backend, num_levels)
+        self._setup_energy_and_diagnostics_programs(backend, num_levels)
+
+        # ---------------------------------------------------------------------
+        # Run the init programs (Smagorinsky_init in mo_tmx_smagorinsky.f90 and
+        # compute_geopotential_height_above_ground in mo_vdf_atmo.f90)
+        # ---------------------------------------------------------------------
+        self.compute_smagorinsky_mixing_length(mixing_length_sq=self.mix_len_sq)
+        if self.config.use_louis:
+            # the Fortran init only computes the Louis scaling factor if the
+            # Louis stability correction is enabled; the field stays zero otherwise
+            self.compute_scaling_factor_louis(scaling_factor_louis=self.louis_factor)
+        self.compute_height_above_ground(difference=self.ghf)
+
+    def _setup_init_and_diagnostics_programs(
+        self,
+        backend: model_backends.BackendLike,
+        num_levels: int,
+    ) -> None:
+        """
+        Bind the init programs and the diagnostics step programs
+        (``Smagorinsky_init`` in mo_tmx_smagorinsky.f90 and
+        ``Compute_diagnostics`` l. 343-482 in mo_vdf_atmo.f90).
+        """
         # geometric height of the surface (bottom half level), 2D slice of z_ifc
         z_ifc_sfc = gtx.as_field(
             (dims.CellDim,),
@@ -606,7 +633,7 @@ class Tmx:
                 "edge_start_lateral_boundary_level_3": self._edge_start_lateral_boundary_level_3,
                 "edge_start_lateral_boundary_level_4": self._edge_start_lateral_boundary_level_4,
                 "edge_end_halo_level_2": self._edge_end_halo_level_2,
-                "edge_end_end": self._edge_end_end,
+                "edge_end_halo_level_3": self._edge_end_halo_level_3,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
@@ -742,21 +769,6 @@ class Tmx:
             },
             offset_provider=self._grid.connectivities,
         )
-
-        self._setup_scalar_diffusion_programs(backend, num_levels, use_internal_energy)
-        self._setup_momentum_diffusion_programs(backend, num_levels)
-        self._setup_energy_and_diagnostics_programs(backend, num_levels)
-
-        # ---------------------------------------------------------------------
-        # Run the init programs (Smagorinsky_init in mo_tmx_smagorinsky.f90 and
-        # compute_geopotential_height_above_ground in mo_vdf_atmo.f90)
-        # ---------------------------------------------------------------------
-        self.compute_smagorinsky_mixing_length(mixing_length_sq=self.mix_len_sq)
-        if self.config.use_louis:
-            # the Fortran init only computes the Louis scaling factor if the
-            # Louis stability correction is enabled; the field stays zero otherwise
-            self.compute_scaling_factor_louis(scaling_factor_louis=self.louis_factor)
-        self.compute_height_above_ground(difference=self.ghf)
 
     def _setup_scalar_diffusion_programs(
         self,
@@ -1170,6 +1182,10 @@ class Tmx:
         zero_field = functools.partial(data_alloc.zero_field, self._grid, allocator=self._allocator)
         half_levels = {dims.KDim: 1}
 
+        # Init-time constants: written once by the init programs at the end of
+        # __init__ and read-only for the rest of the run, so they stay bound as
+        # 'constant_args'.
+
         # squared Smagorinsky mixing length at half-level cell centers [m^2]
         self.mix_len_sq: fa.CellKField[ta.wpfloat] = zero_field(
             dims.CellDim, dims.KDim, extend=half_levels
@@ -1178,9 +1194,20 @@ class Tmx:
         self.louis_factor: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
         # geometric height of the full levels above the surface [m]
         self.ghf: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
-        # land / sea-ice fractions
+
+        # Constant zero placeholders. These are never written: they are read-only
+        # inputs the atmosphere-only port has no source for, kept so the program
+        # signatures match the Fortran.
+        # land / sea-ice fractions, needed by the Louis stability correction
+        # (see the 'use_louis_land' / 'use_louis_ice' warning in __init__)
         self.fract_land: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
         self.fract_ice: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
+        # surface flux of the tracers without surface exchange (qc, qi)
+        self._zero_surface_flux: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
+
+        # Cross-program temporaries: each is written by one program and read
+        # back by another within the same step (the producer/consumer pair is
+        # visible at the call sites, they are not bound as 'constant_args').
 
         # scalar diffusion temporaries, matching the local
         # arrays of the scalar diffusion subroutines in mo_vdf.f90
@@ -1206,8 +1233,6 @@ class Tmx:
         self.tend_energy: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KDim)
         # grid-mean surface energy flux (``flux_x`` of 'compute_flux_x')
         self._flux_x: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
-        # zero surface flux of the tracers without surface exchange (qc, qi)
-        self._zero_surface_flux: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
 
         # End-of-step diagnostics scratch: running (top-down) vertical integrals of the
         # ``*_vi`` diagnostics; the value at the last full level is the column
@@ -1283,7 +1308,7 @@ class Tmx:
         self._edge_end_local = self._grid.end_index(edge_domain(h_grid.Zone.LOCAL))
         self._edge_end_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
         self._edge_end_halo_level_2 = self._grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-        self._edge_end_end = self._grid.end_index(edge_domain(h_grid.Zone.END))
+        self._edge_end_halo_level_3 = self._grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_3))
 
         self._vertex_start_lateral_boundary_level_2 = self._grid.start_index(
             vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -1564,6 +1589,8 @@ class Tmx:
         """
         log.debug("tmx temperature diffusion (Compute_diffusion_temperature): start")
 
+        # the solve accumulates onto 'tend' ('tend + (new - var) / dtime'), and
+        # 'tend_energy' lives on the granule across steps, so it must start at zero
         self.init_cell_kdim_field_with_zero(field_with_zero_wp=self.tend_energy)
 
         self.compute_energy_from_temperature(
@@ -1581,10 +1608,11 @@ class Tmx:
         # 'compute_energy_fluxes' by the surface Compute (mo_vdf_sfc.f90; the
         # surface scheme input ``ta`` is bound to the bottom row of the tmx
         # temperature state in mo_interface_aes_tmx.f90)
-        temperature_sfc = gtx.as_field(
-            (dims.CellDim,),
+        # GT4Py internal API: 'gtx.as_field' would copy the row into a fresh
+        # buffer on every time step, '_field' aliases it (as in solve_nonhydro)
+        temperature_sfc = gtx_common._field(
             input_state.temperature.ndarray[:, self._grid.num_levels - 1],
-            allocator=self._allocator,
+            domain={dims.CellDim: (0, self._grid.num_cells)},
         )
         self.compute_surface_energy_flux(
             sensible_heat_flux=surface_flux_state.sensible_heat_flux,
@@ -1676,8 +1704,9 @@ class Tmx:
 
         log.debug("tmx horizontal wind diffusion (Compute_diffusion_hor_wind): start")
 
-        # CALL init(tend_u/tend_v): the RBF interpolation only writes cells
-        # 2..min_rlcell_int, everything outside must be zero
+        # CALL init(tend_u/tend_v). Not an accumulation: the RBF interpolation
+        # overwrites cells 2..min_rlcell_int, but the rows outside would hand the
+        # caller the previous step's tendency, so they are zeroed here.
         self.init_cell_kdim_field_with_zero(field_with_zero_wp=tendency_state.tend_u)
         self.init_cell_kdim_field_with_zero(field_with_zero_wp=tendency_state.tend_v)
 
@@ -1736,13 +1765,17 @@ class Tmx:
 
         # S10/S11: CALL sync_patch_array_mult(SYNC_C, patch, 2, tend_u, tend_v)
         # and (..., new_state_u, new_state_v) in mo_vdf.f90 (both marked
-        # "TODO: Are these necessary?" there; ported as-is)
-        log.debug("communication of tend_u, tend_v (cells): start")
-        self._exchange.exchange(dims.CellDim, tendency_state.tend_u, tendency_state.tend_v)
-        log.debug("communication of tend_u, tend_v (cells): end")
-        log.debug("communication of new u, v (cells): start")
-        self._exchange.exchange(dims.CellDim, new_state.u, new_state.v)
-        log.debug("communication of new u, v (cells): end")
+        # "TODO: Are these necessary?" there). Nothing runs between them and
+        # both are cell fields, so they go in one exchange.
+        log.debug("communication of tend_u, tend_v, new u, v (cells): start")
+        self._exchange.exchange(
+            dims.CellDim,
+            tendency_state.tend_u,
+            tendency_state.tend_v,
+            new_state.u,
+            new_state.v,
+        )
+        log.debug("communication of tend_u, tend_v, new u, v (cells): end")
 
         log.debug("tmx horizontal wind diffusion (Compute_diffusion_hor_wind): end")
 
@@ -1774,8 +1807,9 @@ class Tmx:
         """
         log.debug("tmx vertical wind diffusion (Compute_diffusion_vert_wind): start")
 
-        # CALL init(tend) / init(new_state): tend_w is accumulated and new_w is
-        # only written on the interior half levels
+        # CALL init(tend) / init(new_state), for two different reasons: the solve
+        # accumulates onto 'tend_w', while 'new_w' is only written on half levels
+        # 1..nlev, so rows 0 and nlev keep the w = 0 top and surface boundary values.
         self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=tendency_state.tend_w)
         self.init_cell_kdim_half_field_with_zero(field_with_zero_wp=new_state.w)
 

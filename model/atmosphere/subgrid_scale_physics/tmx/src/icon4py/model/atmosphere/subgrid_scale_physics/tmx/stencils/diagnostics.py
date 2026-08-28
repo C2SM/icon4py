@@ -57,6 +57,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_wp import (
     _interpolate_to_cell_center_wp,
 )
+from icon4py.model.common.math.operators import _broadcast_value_on_cell_k
 from icon4py.model.common.math.vertical_operations import (
     _compute_vertical_integral,
     average_level_plus1_on_cells,
@@ -501,7 +502,7 @@ def compute_edge_shear_diagnostics(
     edge_start_lateral_boundary_level_3: gtx.int32,
     edge_start_lateral_boundary_level_4: gtx.int32,
     edge_end_halo_level_2: gtx.int32,
-    edge_end_end: gtx.int32,
+    edge_end_halo_level_3: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
     vertical_end_half: gtx.int32,
@@ -534,13 +535,9 @@ def compute_edge_shear_diagnostics(
                 dims.EdgeDim: (edge_start_lateral_boundary_level_2, edge_end_halo_level_2),
                 dims.KDim: (vertical_start, vertical_end_half),
             },
-            # vn_ie: edges rl 2..min_rledge_int-3, all half levels. There is no
-            # icon4py zone for min_rledge_int-3 (third halo line); h_grid.Zone.END
-            # is the closest more-inclusive bound (identical on a single node,
-            # where there are no halo lines; the extra halo rows are unused
-            # boundary values anyway).
+            # vn_ie: edges rl 2..min_rledge_int-3, all half levels
             {
-                dims.EdgeDim: (edge_start_lateral_boundary_level_2, edge_end_end),
+                dims.EdgeDim: (edge_start_lateral_boundary_level_2, edge_end_halo_level_3),
                 dims.KDim: (vertical_start, vertical_end_half),
             },
             # vt_ie: edges rl 3..min_rledge_int-2, all half levels
@@ -1116,11 +1113,11 @@ def _update_exchange_coefficient_diagnostics(
     shifted_km = km_ic(KDim + 1)
     shifted_kh = kh_ic(KDim + 1)
     if use_km_const:
-        km_bottom = shifted_km * wpfloat("0.0") + km_const
-        kh_bottom = shifted_kh * wpfloat("0.0") + km_const * rturb_prandtl
+        km_bottom = _broadcast_value_on_cell_k(km_const, shifted_km)
+        kh_bottom = _broadcast_value_on_cell_k(km_const * rturb_prandtl, shifted_kh)
     else:
-        km_bottom = shifted_km * wpfloat("0.0")
-        kh_bottom = shifted_kh * wpfloat("0.0")
+        km_bottom = _broadcast_value_on_cell_k(wpfloat("0.0"), shifted_km)
+        kh_bottom = _broadcast_value_on_cell_k(wpfloat("0.0"), shifted_kh)
     km = concat_where(dims.KDim < nlev - 1, shifted_km, km_bottom)
     kh = concat_where(dims.KDim < nlev - 1, shifted_kh, kh_bottom)
     return km, kh

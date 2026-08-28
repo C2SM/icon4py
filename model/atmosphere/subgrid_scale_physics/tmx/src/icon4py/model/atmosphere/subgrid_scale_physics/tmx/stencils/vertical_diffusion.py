@@ -22,9 +22,10 @@ The boundary rows are selected with ``concat_where(dims.KDim > minlvl, ...)`` /
 (GridTools/gt4py#2205). Both branches must be fields with a bounded K range;
 a bare scalar or ``broadcast`` leaves the range open, which raises "Cannot
 compute length of open 'UnitRange'" on the embedded backend and silently
-computes the wrong values with gtfn. The zero branches are therefore anchored
-to an input field (``field * 0.0``); the anchor is always an inverse mass or
-density, which is strictly positive and finite on the tmx domains.
+computes the wrong values with gtfn. The constant branches are therefore built
+with ``_broadcast_value_on_cell_k`` / ``_broadcast_value_on_edge_k``, which
+anchor the value to an input field's K range; the anchor is always an inverse
+mass or density, which is strictly positive and finite on the tmx domains.
 """
 
 from typing import NamedTuple
@@ -34,6 +35,10 @@ from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim
+from icon4py.model.common.math.operators import (
+    _broadcast_value_on_cell_k,
+    _broadcast_value_on_edge_k,
+)
 from icon4py.model.common.math.tridiagonal import (
     _tridiagonal_back_substitution,
     _tridiagonal_forward_sweep,
@@ -77,7 +82,7 @@ def _prepare_tridiagonal_matrix_cells(
     with a = 0 on the upper boundary row ``minlvl`` and c = 0 on the lower
     boundary row ``maxlvl``.
     """
-    zero = inv_mair * wpfloat("0.0")
+    zero = _broadcast_value_on_cell_k(wpfloat("0.0"), inv_mair)
     a_interior = wpfloat("0.0") - zprefac * zk * inv_dz * inv_mair
     c_interior = wpfloat("0.0") - zprefac * zk(KDim + 1) * inv_dz(KDim + 1) * inv_mair
     a = concat_where(dims.KDim > minlvl, a_interior, zero)
@@ -109,7 +114,7 @@ def _prepare_tridiagonal_matrix_cells_half(
     full-level fields. The extra w = 0 boundary terms of the w solve are added
     by ``_modify_w_diffusion_matrix_boundary``.
     """
-    zero = inv_mair * wpfloat("0.0")
+    zero = _broadcast_value_on_cell_k(wpfloat("0.0"), inv_mair)
     a_interior = wpfloat("0.0") - zprefac * zk(KDim - 1) * inv_dz(KDim - 1) * inv_mair
     c_interior = wpfloat("0.0") - zprefac * zk * inv_dz * inv_mair
     a = concat_where(dims.KDim > minlvl, a_interior, zero)
@@ -133,7 +138,7 @@ def _prepare_tridiagonal_matrix_edges(
     Same as ``_prepare_tridiagonal_matrix_cells`` on the edge grid; used by the
     vn diffusion of 'Compute_diffusion_hor_wind' (mo_vdf.f90).
     """
-    zero = inv_mair * wpfloat("0.0")
+    zero = _broadcast_value_on_edge_k(wpfloat("0.0"), inv_mair)
     a_interior = wpfloat("0.0") - zprefac * zk * inv_dz * inv_mair
     c_interior = wpfloat("0.0") - zprefac * zk(KDim + 1) * inv_dz(KDim + 1) * inv_mair
     a = concat_where(dims.KDim > minlvl, a_interior, zero)

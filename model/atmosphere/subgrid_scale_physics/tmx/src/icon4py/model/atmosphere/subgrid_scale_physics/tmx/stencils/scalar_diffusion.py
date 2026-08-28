@@ -34,7 +34,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.vertical_diffus
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.dimension import C2E, E2C, C2EDim, KDim
-from icon4py.model.common.math.operators import _compute_reciprocal_on_cell_k
+from icon4py.model.common.math.operators import (
+    _broadcast_value_on_cell_k,
+    _compute_reciprocal_on_cell_k,
+)
 from icon4py.model.common.physics.thermodynamics import _compute_temperature_from_internal_energy
 from icon4py.model.common.type_alias import wpfloat
 
@@ -70,7 +73,8 @@ def _compute_surface_flux_rhs(
         right-hand side of the vertical diffusion solve at all full levels
     """
     bottom = wpfloat("0.0") - sfc_flx * prefac * inv_air_mass
-    return concat_where(dims.KDim < maxlvl, inv_air_mass * wpfloat("0.0"), bottom)
+    zero = _broadcast_value_on_cell_k(wpfloat("0.0"), inv_air_mass)
+    return concat_where(dims.KDim < maxlvl, zero, bottom)
 
 
 @gtx.field_operator

@@ -32,7 +32,11 @@ def domain_generator() -> Iterator[h_grid.Domain]:
 @pytest.mark.parametrize("domain", domain_generator())
 def test_start_index(domain: h_grid.Domain) -> None:
     simple_grid = simple.simple_grid()
-    if domain.zone in (h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2):
+    if domain.zone in (
+        h_grid.Zone.HALO,
+        h_grid.Zone.HALO_LEVEL_2,
+        h_grid.Zone.HALO_LEVEL_3,
+    ):
         assert simple_grid.start_index(domain) == simple_grid.size[domain.dim]
     else:
         assert simple_grid.start_index(domain) == 0

@@ -85,5 +85,36 @@ def _compute_field_a_plus_coeff_times_field_b_on_cell_k(
 
 
 @gtx.field_operator
+def _broadcast_value_on_cell_k(
+    value: ta.wpfloat,
+    like: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    A cell K field holding ``value`` on the K range of ``like``.
+
+    Workaround for GT4Py: both branches of a ``concat_where`` must be fields
+    with a bounded K range. A bare scalar or a ``broadcast`` leaves the range
+    open, which raises "Cannot compute length of open 'UnitRange'" on the
+    embedded backend and silently computes wrong values with gtfn. Multiplying
+    an input field by zero anchors the result to that field's range.
+
+    ``like`` is only used for its domain; its values must be finite.
+    """
+    return like * wpfloat("0.0") + value
+
+
+@gtx.field_operator
+def _broadcast_value_on_edge_k(
+    value: ta.wpfloat,
+    like: fa.EdgeKField[ta.wpfloat],
+) -> fa.EdgeKField[ta.wpfloat]:
+    """An edge K field holding ``value`` on the K range of ``like``.
+
+    See :func:`_broadcast_value_on_cell_k`.
+    """
+    return like * wpfloat("0.0") + value
+
+
+@gtx.field_operator
 def _copy_field_on_cell_k(field: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
     return field
