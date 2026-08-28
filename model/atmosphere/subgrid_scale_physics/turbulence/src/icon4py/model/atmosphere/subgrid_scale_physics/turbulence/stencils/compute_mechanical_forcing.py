@@ -36,8 +36,23 @@ def _compute_mechanical_forcing(
     vertical_gradient_v: fa.CellKField[wpfloat],
     min_forcing: fa.CellField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
-    """Shear production of turbulent kinetic energy, floored by the minimal forcing."""
-    return maximum(vertical_gradient_u**2 + vertical_gradient_v**2, min_forcing)
+    """Shear production of turbulent kinetic energy, floored by the minimal forcing.
+
+    THE SQUARES ARE WRITTEN AS PRODUCTS, NOT AS '**2', and that is not a matter of taste.
+    Fortran's 'x**2' with an integer literal exponent is a multiplication -- every compiler
+    expands it -- while GT4Py lowers Python's 'x**2' to 'math.pow(x, 2)' and leaves it to the
+    target's libm. Host libm gets that exactly right ('pow(x, 2.0)' is correctly rounded, and
+    GCC folds it to 'x*x' anyway), but CUDA's 'pow' is a general-purpose implementation with a
+    documented error of up to 2 ulp, so on the GPU backends 'x**2' is NOT 'x*x'. Measured on
+    dace_gpu 2026-08-28: 'frm' differed from ICON by 1-2 ulp on about a quarter of the values,
+    and 'test_compute_mechanical_forcing_is_the_fortran_expression_up_to_one_contraction' ruled
+    out a fused multiply-add as the cause -- the difference matched none of the three admissible
+    contractions. With the products below all four backends are bit-exact.
+    """
+    return maximum(
+        vertical_gradient_u * vertical_gradient_u + vertical_gradient_v * vertical_gradient_v,
+        min_forcing,
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
