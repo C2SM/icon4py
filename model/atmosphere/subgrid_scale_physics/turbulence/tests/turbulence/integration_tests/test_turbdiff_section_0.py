@@ -754,6 +754,7 @@ def test_the_interpolation_is_bit_exact_where_its_inputs_are(
         )
 
 
+@pytest.mark.cpu_only
 @pytest.mark.datatest
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
@@ -777,6 +778,21 @@ def test_the_disagreement_is_two_ulp_of_the_saturation_vapour_pressure(
     here for the opposite purpose: not to check the value, which the gated test above does, but
     to identify the mechanism of a KNOWN disagreement. The same argument is made in section 1b)
     for FMA contraction.
+
+    'cpu_only' because the argument is host-libm-bound, not because the port is. The test first
+    asserts that the unperturbed numpy re-evaluation reproduces what the BACKEND produced, bit
+    for bit -- and that holds only while numpy and the backend call the same 'exp'. On the GPU
+    backends they do not: numpy uses glibc on the host, the stencil uses CUDA's libm on the
+    device, and the two disagree on 2342 of 662080 values by up to 5.9e-12 (measured, job
+    833847, both 'dace_gpu' and 'gtfn_gpu', all four dates). That is the same order as the
+    ICON-vs-port difference this test exists to explain, so on the GPU the five perturbations
+    would be chasing two roundings at once and the argument would prove nothing.
+
+    Nothing is lost by skipping it there: the GATES for this section run on the GPU backends and
+    pass. What does not run is the explanation, and the explanation is a statement about nvhpc's
+    'exp' versus the host's, which the host backends establish. Section 1b's canary needs no
+    such restriction because it contains no transcendental -- numpy and CUDA agree bit for bit
+    on 'a*b + c*d'.
     """
     run = _run_the_thermodynamics(data_provider, date, backend)
     entry, columns, nlev = run.entry, run.columns, run.nlev
