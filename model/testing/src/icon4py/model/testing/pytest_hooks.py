@@ -93,7 +93,12 @@ def pytest_addoption(parser: pytest.Parser):
             "--backend",
             action="store",
             default=model_backends.DEFAULT_BACKEND,
-            help="GT4Py backend to use when executing stencils. Defaults to roundtrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
+            help=(
+                "GT4Py backend to use when executing stencils. Defaults to "
+                f"'{model_backends.DEFAULT_BACKEND}'; the registered names are "
+                f"{', '.join(model_backends.BACKENDS)}. A backend defined elsewhere can be "
+                "named as 'path.to.module:backend_symbol'."
+            ),
         )
 
     with contextlib.suppress(ValueError):

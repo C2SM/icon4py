@@ -43,7 +43,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import turbulence
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import simple
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.fixtures.datatest import backend_like
+from icon4py.model.testing.fixtures.datatest import backend
 
 
 if TYPE_CHECKING:
@@ -198,8 +198,8 @@ STATE_CLASSES = tuple(DECLARED_SHAPES)
 
 
 @pytest.fixture
-def grid(backend_like: gtx_typing.Backend | None) -> base_grid.Grid:
-    return simple.simple_grid(allocator=backend_like, num_levels=NUM_LEVELS)
+def grid(backend: gtx_typing.Backend | None) -> base_grid.Grid:
+    return simple.simple_grid(allocator=backend, num_levels=NUM_LEVELS)
 
 
 def _column(grid: base_grid.Grid, allocator: Any, dtype: Any, levels: int) -> gtx.Field:
@@ -305,10 +305,10 @@ def test_vertical_extent_agrees_with_the_documented_one(state_class: type, name:
 
 @pytest.mark.parametrize("state_class", STATE_CLASSES)
 def test_allocated_fields_have_the_declared_dimensions(
-    state_class: type, grid: base_grid.Grid, backend_like: gtx_typing.Backend | None
+    state_class: type, grid: base_grid.Grid, backend: gtx_typing.Backend | None
 ) -> None:
     """The container accepts fields shaped as declared, and keeps them unchanged."""
-    state = _allocate(state_class, grid, backend_like)
+    state = _allocate(state_class, grid, backend)
     for field in dataclasses.fields(state):
         shape = DECLARED_SHAPES[state_class][field.name]
         value = getattr(state, field.name)
@@ -327,9 +327,9 @@ def test_allocated_fields_have_the_declared_dimensions(
 
 @pytest.mark.parametrize("state_class", STATE_CLASSES)
 def test_state_is_frozen(
-    state_class: type, grid: base_grid.Grid, backend_like: gtx_typing.Backend | None
+    state_class: type, grid: base_grid.Grid, backend: gtx_typing.Backend | None
 ) -> None:
-    state = _allocate(state_class, grid, backend_like)
+    state = _allocate(state_class, grid, backend)
     first = dataclasses.fields(state)[0].name
     with pytest.raises(dataclasses.FrozenInstanceError):
         setattr(state, first, None)
@@ -406,18 +406,18 @@ def test_tile_indices_address_the_water_tiles_of_a_full_tile_axis() -> None:
 
 
 def test_tile_state_reports_the_number_of_tiles_it_carries(
-    grid: base_grid.Grid, backend_like: gtx_typing.Backend | None
+    grid: base_grid.Grid, backend: gtx_typing.Backend | None
 ) -> None:
-    state = _allocate(states.TurbulenceTileState, grid, backend_like)
+    state = _allocate(states.TurbulenceTileState, grid, backend)
     assert state.num_tiles == states.NUM_TILES
 
 
 def test_tile_state_accepts_the_degenerate_untiled_shape(
-    grid: base_grid.Grid, backend_like: gtx_typing.Backend | None
+    grid: base_grid.Grid, backend: gtx_typing.Backend | None
 ) -> None:
     """'ntiles_lnd == 1' forces 'lsnowtile = .FALSE.' and 'ntiles_water = 0' (spec 7.2)."""
     single = {
-        field.name: (_surface(grid, backend_like),)
+        field.name: (_surface(grid, backend),)
         for field in dataclasses.fields(states.TurbulenceTileState)
     }
     state = states.TurbulenceTileState(**single)
@@ -426,10 +426,10 @@ def test_tile_state_accepts_the_degenerate_untiled_shape(
 
 @pytest.mark.parametrize("count", [2, 5, 8, 10])
 def test_tile_state_rejects_a_tile_count_no_ICON_configuration_produces(
-    count: int, grid: base_grid.Grid, backend_like: gtx_typing.Backend | None
+    count: int, grid: base_grid.Grid, backend: gtx_typing.Backend | None
 ) -> None:
     values = {
-        field.name: tuple(_surface(grid, backend_like) for _ in range(count))
+        field.name: tuple(_surface(grid, backend) for _ in range(count))
         for field in dataclasses.fields(states.TurbulenceTileState)
     }
     with pytest.raises(ValueError, match="Invalid number of tiles"):
@@ -437,10 +437,10 @@ def test_tile_state_rejects_a_tile_count_no_ICON_configuration_produces(
 
 
 def test_tile_state_rejects_a_ragged_tile_axis(
-    grid: base_grid.Grid, backend_like: gtx_typing.Backend | None
+    grid: base_grid.Grid, backend: gtx_typing.Backend | None
 ) -> None:
     values = {
-        field.name: tuple(_surface(grid, backend_like) for _ in range(states.NUM_TILES))
+        field.name: tuple(_surface(grid, backend) for _ in range(states.NUM_TILES))
         for field in dataclasses.fields(states.TurbulenceTileState)
     }
     values["frac_t"] = values["frac_t"][:-1]
