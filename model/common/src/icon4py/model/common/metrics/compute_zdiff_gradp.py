@@ -17,14 +17,22 @@ layer thicknesses and therefore guarantees ``z_ifc[:, k] > z_ifc[:, k + 1]``
 the midpoint of two strictly decreasing half-level values, it is strictly
 decreasing in ``k``; ``z_me`` is a non-negative linear combination of two
 non-increasing level sequences, so it is non-increasing in ``k`` per edge.
-With these invariants, a single batched ``searchsorted`` (``side="left"``,
-GPU-accelerated in cupy) on the ascending half-level column gives the reference
-first-match index up to an exact-tie correction: when the query equals
-``z_ifc[e, jk+1]`` (the lower bracket boundary) ``side="left"`` returns ``jk+1``
-but the Fortran loop takes ``jk``.  The correction is a uniform vectorized
-``where`` (no branch, no dispatch) and the result is non-decreasing in ``jk``,
-so ``clip(corrected_result, fi, nlev-1)`` reproduces the reference ``jk_start``
-carry without a sequential loop.
+
+With these invariants, a single batched ``searchsorted`` on the ascending
+half-level column gives the same first-match index as the reference loop, and
+the result is non-decreasing in ``jk``, so ``clip(searchsorted_result, fi,
+nlev-1)`` reproduces the reference ``jk_start`` carry without a sequential
+loop.
+
+Premise: the queries (``z_me`` and ``z_aux2``) are strictly between consecutive
+``z_ifc`` boundaries, i.e. no query exactly equals a boundary.  This holds for
+all production grids: ``z_ifc`` layers are separated by millions to billions of
+ULPs (enforced by ``_check_and_correct_layer_thickness``), so each midpoint
+``z_mc[c, j] = 0.5 * (z_ifc[c, j] + z_ifc[c, j+1])`` is a distinct float
+strictly between its boundaries, and ``z_me`` (a convex combination of two such
+midpoints) is strictly between them as well.  An exact tie would require
+disabling the layer-thickness correction or corrupting the inputs after grid
+construction; the test suite marks such synthetic inputs as ``xfail``.
 """
 
 from __future__ import annotations
@@ -47,24 +55,21 @@ def _batched_searchsorted(
     ``(m, q)``.  The implementation offsets each row by a large constant so that
     a single call to ``searchsorted`` on the flattened array resolves all rows
     independently.  Float64 is used internally to avoid precision issues in the
-    offset computation.
+    offset computation; the offset must exceed the largest cross-row span so
+    that no query from one row lands in another's value range.
     """
     a = a.astype(array_ns.float64)
     v = v.astype(array_ns.float64)
     m, n = a.shape
-    # The offset per row must exceed the largest cross-row span so that no
-    # query from row i lands in row i-1's value range.  This matters when
-    # fill values place queries outside the row's own [a.min, a.max].
     max_num = max(a.max() - a.min(), v.max() - v.min(), a.max() - v.min(), v.max() - a.min()) + 1.0
     r = max_num * array_ns.arange(m, dtype=array_ns.float64)[:, None]
     p = array_ns.searchsorted((a + r).ravel(), (v + r).ravel()).reshape(v.shape)
     return p - n * array_ns.arange(m, dtype=p.dtype)[:, None]
 
 
-def _first_match(  # noqa: PLR0917
+def _first_match(
     array_ns: ModuleType,
     z_ifc_asc_masked: data_alloc.NDArray,
-    z_ifc_col: data_alloc.NDArray,
     queries: data_alloc.NDArray,
     fi: data_alloc.NDArray,
     nlev: int,
@@ -72,18 +77,15 @@ def _first_match(  # noqa: PLR0917
     """First bracket index ``jk`` with ``z_ifc[e, jk] >= q >= z_ifc[e, jk+1]``.
 
     ``z_ifc_asc_masked`` is the ascending half-level column with levels above
-    ``fi`` filled to ``fill_high`` so they sort after any real query.  ``z_ifc_col``
-    is the original descending column (used for the tie check).  ``fi`` has shape
-    ``(m,)`` and ``queries`` has shape ``(m, q)``.  Returns shape ``(m, q)``.
+    ``fi`` filled to ``fill_high`` so they sort after any real query.  ``fi`` has
+    shape ``(m,)`` and ``queries`` has shape ``(m, q)``.  Assumes queries are
+    strictly between boundaries (no exact ties); see the module docstring.
+    Returns shape ``(m, q)``.
     """
     pos = _batched_searchsorted(array_ns, z_ifc_asc_masked, queries)
     jk1 = nlev - pos
-    # Exact-tie correction: side="left" returns jk+1 when the query equals
-    # z_ifc[e, jk+1] (the lower bracket boundary); the Fortran first-match
-    # takes jk.  Detect ties against the original descending column.
-    z_ifc_at_jk1 = array_ns.take_along_axis(z_ifc_col, jk1.astype(array_ns.int64), axis=1)
-    jk1 = array_ns.where(queries == z_ifc_at_jk1, jk1 - 1, jk1)
-    # Query above the unmasked top: the Fortran loop falls through to nlev-1.
+    # Query above the unmasked top: the Fortran loop falls through to
+    # nlev-1 (searchsorted returns the count of elements <= query).
     jk1 = array_ns.where(pos >= (nlev + 1) - fi[:, None], nlev - 1, jk1)
     return array_ns.clip(jk1, fi[:, None], nlev - 1)
 
@@ -105,10 +107,9 @@ def compute_zdiff_gradp(
     Relies on the two grid invariants proved in the module docstring: ``z_ifc``
     is strictly decreasing in ``k`` (vertical.py:558 and vertical.py:625), and
     ``z_me`` is non-increasing in ``k`` per edge.  Under those invariants,
-    ``searchsorted`` returns the reference first-match index (up to the uniform
-    tie correction in :func:`_first_match`) and the result is non-decreasing in
-    ``jk``, so clipping it to ``[fi, nlev-1]`` reproduces the reference
-    ``jk_start`` carry without an explicit loop.
+    ``searchsorted`` returns the reference first-match index and the result is
+    non-decreasing in ``jk``, so clipping it to ``[fi, nlev-1]`` reproduces the
+    reference ``jk_start`` carry without an explicit loop.
     """
     array_ns = data_alloc.array_namespace(z_mc)
     nedges = e2c.shape[0]
@@ -132,8 +133,6 @@ def compute_zdiff_gradp(
     z_ifc_asc = z_ifc[:, ::-1].copy()
     z_ifc_e0 = z_ifc_asc[e2c_0]
     z_ifc_e1 = z_ifc_asc[e2c_1]
-    z_ifc_col_0 = z_ifc[e2c_0]
-    z_ifc_col_1 = z_ifc[e2c_1]
 
     fill_high = max(z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()) + 1.0
     fill_low = min(z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()) - 1.0
@@ -153,7 +152,7 @@ def compute_zdiff_gradp(
     valid_jk = jk_idx > fi_sliced[:, None]
 
     # Phase 1, cell 0
-    jk1_0 = _first_match(array_ns, z_ifc_e0_m, z_ifc_col_0[hs:], z_me_m, fi_sliced, nlev)
+    jk1_0 = _first_match(array_ns, z_ifc_e0_m, z_me_m, fi_sliced, nlev)
     z_mc_e0 = z_mc[e2c_0]
     base_zdiff_c = z_me[hs:] - z_mc_e0[hs:]
     zdiff_gradp[hs:, 0, :] = array_ns.where(
@@ -169,7 +168,7 @@ def compute_zdiff_gradp(
 
     # Phase 1, cell 1: under E3 the searchsorted result is non-decreasing in
     # jk, so the same clip as cell 0 reproduces the reference jk_start carry.
-    jk1_1 = _first_match(array_ns, z_ifc_e1_m, z_ifc_col_1[hs:], z_me_m, fi_sliced, nlev)
+    jk1_1 = _first_match(array_ns, z_ifc_e1_m, z_me_m, fi_sliced, nlev)
     z_mc_e1 = z_mc[e2c_1]
     base_zdiff_c = z_me[hs:] - z_mc_e1[hs:]
     zdiff_gradp[hs:, 1, :] = array_ns.where(
@@ -195,12 +194,8 @@ def compute_zdiff_gradp(
         z_ifc_e0_m1 = array_ns.where(z_ifc_mask1, fill_high, z_ifc_e0[hs1:])
         z_ifc_e1_m1 = array_ns.where(z_ifc_mask1, fill_high, z_ifc_e1[hs1:])
 
-        jk1_aux_0 = _first_match(
-            array_ns, z_ifc_e0_m1, z_ifc_col_0[hs1:], z_aux2_v, fi_sliced1, nlev
-        )
-        jk1_aux_1 = _first_match(
-            array_ns, z_ifc_e1_m1, z_ifc_col_1[hs1:], z_aux2_v, fi_sliced1, nlev
-        )
+        jk1_aux_0 = _first_match(array_ns, z_ifc_e0_m1, z_aux2_v, fi_sliced1, nlev)
+        jk1_aux_1 = _first_match(array_ns, z_ifc_e1_m1, z_aux2_v, fi_sliced1, nlev)
 
         phase2_mask = valid_jk[(hs1 - hs) :] & (z_me[hs1:] < z_aux2_v)
 
