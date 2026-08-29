@@ -50,6 +50,8 @@ data rather than trusting the file.
 
 from __future__ import annotations
 
+import dataclasses
+from collections.abc import Callable
 from typing import NamedTuple
 
 import gt4py.next as gtx
@@ -176,8 +178,38 @@ def _unused_cell_k_field(grid, backend, *, half: bool = True) -> gtx.Field:
     return data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend=extend, allocator=backend)
 
 
-def _run_turbdiff(data_provider, icon_grid, grid_savepoint, date: str, backend) -> Turbdiff:
-    """Build the granule's states from 'turbdiff-entry' and run the whole stage once."""
+def _selected_program(bound: Callable[..., None]) -> str:
+    """The stencil behind a program the granule bound when it was constructed.
+
+    'Turbulence._program' returns 'functools.partial(program, ...)', so the program is the
+    partial's 'func' and the GT4Py 'Program' carries the name of the function it was traced
+    from. This is how a test asks WHICH formulation the granule compiled, as opposed to what
+    the numbers came out as.
+    """
+    return bound.func.definition.__name__
+
+
+def _run_turbdiff(
+    data_provider,
+    icon_grid,
+    grid_savepoint,
+    date: str,
+    backend,
+    *,
+    config: turbulence.TurbulenceConfig = CONFIG,
+    trop_mask: np.ndarray | None = None,
+) -> Turbdiff:
+    """Build the granule's states from 'turbdiff-entry' and run the whole stage once.
+
+    Args:
+        config: The configuration, defaulting to the experiment's namelist. The two wiring
+            tests at the end of this module vary it, which is the only way to reach the two
+            program selections the capture itself does not exercise.
+        trop_mask: A tropics mask to use instead of the capture's, which is identically zero
+            over the whole domain. It reaches the vertical smoothing of section 2c) AND the
+            lower limits of section 4), so a run that supplies it must be compared against a
+            baseline that supplies the same one.
+    """
     entry = data_provider.from_savepoint_turbdiff_entry(date=date)
     section_0 = data_provider.from_savepoint_turbdiff_section(section="0", date=date)
     after = data_provider.from_savepoint_turbdiff_exit(date=date)
@@ -187,7 +219,9 @@ def _run_turbdiff(data_provider, icon_grid, grid_savepoint, date: str, backend) 
         hhl=utils.copy_of(entry.hhl(), backend),
         dp0=utils.copy_of(entry.dp0(), backend),
         l_hori=utils.copy_of(entry.l_hori(), backend),
-        trop_mask=utils.copy_of(entry.trop_mask(), backend),
+        trop_mask=utils.copy_of(entry.trop_mask(), backend)
+        if trop_mask is None
+        else gtx.as_field((dims.CellDim,), trop_mask, allocator=backend),
         innertrop_mask=utils.copy_of(entry.innertrop_mask(), backend),
     )
     input_state = states.TurbulenceInputState(
@@ -283,8 +317,8 @@ def _run_turbdiff(data_provider, icon_grid, grid_savepoint, date: str, backend) 
     )
     granule = turbulence.Turbulence(
         grid=icon_grid,
-        config=CONFIG,
-        params=PARAMS,
+        config=config,
+        params=PARAMS if config is CONFIG else turbulence.TurbulenceParams(config),
         vertical_grid=vertical_grid,
         metric_state=metric_state,
         backend=backend,
@@ -487,3 +521,205 @@ def test_the_quantities_that_survive_the_chain_bit_exactly(
             f"more: max abs {np.nanmax(np.abs(got - want))} over "
             f"{np.count_nonzero(got != want)} of {got.size} values. {exact[quantity]}"
         )
+
+
+# ------------------------------------------- the two program selections the capture cannot ---
+#
+# 'exp.mch_icon-ch2_small' runs 'frcsmot = 0' and 'imode_tkesso = 2', so there is no ICON
+# reference for either of the two paths below and neither test claims one. What they check is
+# the WIRING: that the granule compiles and calls the program the configuration asks for, and
+# that the result moves in the direction the alternative formulation implies. The stencils
+# themselves are validated elsewhere -- 'smooth_tke_forcing_vertically' against a numpy
+# transcription in 'test_turbdiff_section_2c.py', because no capture can reach it, and
+# 'compute_total_mechanical_forcing_without_richardson_reduction' against ICON in
+# 'test_turbdiff_section_2a.py' wherever the reduction factor happens to be exactly one.
+#
+# One date each. A wiring claim does not become truer for being made four times, and each of
+# these builds two or three granules.
+
+
+@pytest.mark.datatest
+@pytest.mark.uses_concat_where
+@utils.experiment_for_turbulence
+def test_the_vertical_smoothing_of_the_tke_forcing_is_wired_in(
+    *, data_provider: sb.IconSerialDataProvider, icon_grid, grid_savepoint, backend
+) -> None:
+    """At 'frcsmot > 0' the smoothed profiles, and only they, reach sections 3) and 4).
+
+    'vert_smooth' (turb_utilities.f90:3098) is called twice by section 2c), on 'frm' and on
+    'frh', and its output is what the turbulent budgets and the diffusion coefficients are
+    computed from. The granule cannot smooth in place -- the stencil reads both neighbours of
+    every row it writes -- so it keeps two extra fields and `_smooth_the_tke_forcing` decides
+    which pair the following sections read. Nothing in the section datatests can see that
+    decision, and at 'frcsmot = 0' the branch is not taken at all.
+
+    THE MASK HAS TO BE SUPPLIED. 'trop_mask' is identically zero at all 8276 computed columns of
+    this Swiss LAM domain, so the smoothing weight 'versmot = frcsmot*trop_mask' vanishes
+    everywhere and the routine is the identity at any 'frcsmot' -- which the third block below
+    measures, and which is why the stencil has no reference capture. The first two blocks use a
+    mask of one on every second computed column, so that one run contains both behaviours and
+    the comparison is between columns of the same run rather than between two runs.
+
+    Because 'trop_mask' also selects the tropical lower limits of section 4), the baseline runs
+    with the SAME mask and differs only in 'frcsmot'.
+    """
+    date = utils.TURBDIFF_DATES[0]
+    entry = data_provider.from_savepoint_turbdiff_entry(date=date)
+    columns = slice(entry.ivstart(), entry.ivend())
+    assert not np.any(entry.trop_mask().asnumpy()), (
+        "'trop_mask' is not identically zero in this capture after all, so the smoothing may "
+        "have a reference and this test is the wrong shape."
+    )
+
+    tropics = np.zeros_like(entry.trop_mask().asnumpy())
+    tropics[columns][::2] = 1.0
+    tropical = np.flatnonzero(tropics)
+    extratropical = np.array(
+        [column for column in range(columns.start, columns.stop) if tropics[column] == 0.0]
+    )
+    assert tropical.size and extratropical.size
+
+    unsmoothed = _run_turbdiff(
+        data_provider, icon_grid, grid_savepoint, date, backend, trop_mask=tropics
+    )
+    smoothing = dataclasses.replace(CONFIG, frcsmot=0.2)
+    smoothed = _run_turbdiff(
+        data_provider,
+        icon_grid,
+        grid_savepoint,
+        date,
+        backend,
+        config=smoothing,
+        trop_mask=tropics,
+    )
+
+    # 1) The program exists only where it will run. '_setup_turbdiff_programs' compiles eagerly,
+    #    so compiling 'vert_smooth' at 'frcsmot = 0' would cost a build for a call never made.
+    assert unsmoothed.granule._smooth_tke_forcing_vertically is None
+    assert (
+        _selected_program(smoothed.granule._smooth_tke_forcing_vertically)
+        == "smooth_tke_forcing_vertically"
+    )
+
+    # 2) Both profiles were really written, and are numbers. The smoothing divides by the
+    #    discretisation momentum section 1a) leaves in 'dicke', and a granule that failed to
+    #    hand it over would produce NaN here rather than a wrong number.
+    for quantity, field in (
+        ("frm", smoothed.granule._smoothed_mechanical_forcing),
+        ("frh", smoothed.granule._smoothed_thermal_forcing),
+    ):
+        values = data_alloc.as_numpy(field)[columns]
+        assert np.all(np.isfinite(values)), f"the smoothed '{quantity}' is not finite"
+        assert np.any(values != 0.0), f"the smoothed '{quantity}' was never written"
+
+    # 3) Where the mask vanishes the smoothing is the identity, BIT FOR BIT: 'versmot' is zero
+    #    there, '1.0*f + 0.0*x' is 'f' for every finite double, and every stencil of 'turbdiff'
+    #    is column-local, so no tropical column can reach an extratropical one. Where the mask
+    #    is one, the profiles that reach sections 3) and 4) are different ones -- which is the
+    #    whole claim, and what a granule that went on reading 'frm' and 'frh' would fail.
+    for quantity, without, with_smoothing in (
+        ("tke", unsmoothed.diagnostic_state.updated_tke, smoothed.diagnostic_state.updated_tke),
+        ("tkvm", unsmoothed.diagnostic_state.tkvm, smoothed.diagnostic_state.tkvm),
+        ("tkvh", unsmoothed.diagnostic_state.tkvh, smoothed.diagnostic_state.tkvh),
+        ("tketens", unsmoothed.tendency_state.ddt_tke, smoothed.tendency_state.ddt_tke),
+    ):
+        plain = data_alloc.as_numpy(without)
+        smooth = data_alloc.as_numpy(with_smoothing)
+        assert np.array_equal(plain[extratropical], smooth[extratropical]), (
+            f"'{quantity}' moved in {np.count_nonzero(plain[extratropical] != smooth[extratropical])} "
+            "columns where 'trop_mask' is zero, so the smoothing is not the identity there."
+        )
+        moved = np.count_nonzero(plain[tropical] != smooth[tropical])
+        assert moved > plain[tropical].size // 2, (
+            f"'{quantity}' moved in only {moved} of {plain[tropical].size} values where "
+            "'trop_mask' is one, so the smoothed profiles are not what sections 3) and 4) read."
+        )
+
+    # 4) And with the capture's own mask, 'frcsmot = 0.2' changes nothing at all. This is the
+    #    measurement behind "no capture from this experiment exercises 'vert_smooth'".
+    baseline = _run_turbdiff(data_provider, icon_grid, grid_savepoint, date, backend)
+    masked_out = _run_turbdiff(
+        data_provider, icon_grid, grid_savepoint, date, backend, config=smoothing
+    )
+    for (quantity, computed, _, levels), (_, expected, _, _) in zip(
+        _outputs(masked_out), _outputs(baseline), strict=True
+    ):
+        assert np.array_equal(
+            data_alloc.as_numpy(computed)[columns, levels],
+            data_alloc.as_numpy(expected)[columns, levels],
+        ), (
+            f"'{quantity}' differs between 'frcsmot = 0' and 'frcsmot = 0.2' under the "
+            "capture's own tropics mask, which is identically zero."
+        )
+
+
+@pytest.mark.datatest
+@pytest.mark.uses_concat_where
+@utils.experiment_for_turbulence
+def test_the_sso_tke_production_mode_selects_the_program_and_not_a_branch(
+    *, data_provider: sb.IconSerialDataProvider, icon_grid, grid_savepoint, backend
+) -> None:
+    """'imode_tkesso' picks one of two programs at construction, and mode 1 produces more TKE.
+
+    The Fortran writes the two formulations as one statement with a factor in it
+    (turb_diffusion.f90:1587 against :1592): at 'imode_tkesso = 2' the SSO wake production is
+    multiplied by 'MIN(1, MAX(0.01, xri))' before it enters the mechanical forcing, and at 1 it
+    is not. The port has two programs instead, because a GT4Py field operator cannot take a
+    factor it is not given -- mode 1's does not receive 'xri' at all -- and
+    '_setup_turbdiff_programs' is the only place the mode is read.
+
+    So there are two things to check and the section datatest can see neither. WHICH PROGRAM the
+    granule compiled, and that 'xri' is bound to one of them and absent from the other; and that
+    the choice reaches the answer.
+
+    THE DIRECTION IS DECIDABLE. The SSO term is a 'MAX(0, ...)' and the factor it loses lies in
+    [0.01, 1], so mode 1's mechanical forcing is greater than or equal to mode 2's everywhere,
+    and the turbulent velocity the budget balances against it follows. 'tkvm' and 'tkvh' do NOT
+    follow -- they are the velocity times a stability length that falls with the forcing, and
+    the product is measured to move both ways -- so the claim is made on 'tke' alone.
+
+    'tket_hshr' is asserted UNCHANGED. It is section 2a)'s other output and the mode must not
+    touch it; if it moved, the two programs would differ in more than the factor.
+    """
+    date = utils.TURBDIFF_DATES[0]
+    assert CONFIG.imode_tkesso == 2, "this test varies 'imode_tkesso' away from the namelist's"
+    reduced = _run_turbdiff(data_provider, icon_grid, grid_savepoint, date, backend)
+    unreduced = _run_turbdiff(
+        data_provider,
+        icon_grid,
+        grid_savepoint,
+        date,
+        backend,
+        config=dataclasses.replace(CONFIG, imode_tkesso=1),
+    )
+    columns, nlev = reduced.columns, reduced.nlev
+
+    for mode, run, expected in (
+        (2, reduced, "compute_total_mechanical_forcing"),
+        (1, unreduced, "compute_total_mechanical_forcing_without_richardson_reduction"),
+    ):
+        bound = run.granule._compute_total_mechanical_forcing
+        assert _selected_program(bound) == expected, (
+            f"'imode_tkesso = {mode}' compiled the wrong program"
+        )
+        assert ("inverse_richardson_number_factor" in bound.keywords) is (mode == 2), (
+            f"'xri' is bound to the program of 'imode_tkesso = {mode}' when it should not be, "
+            "or is missing from it when it should be there."
+        )
+
+    assert np.array_equal(
+        data_alloc.as_numpy(reduced.tendency_state.tket_hshr)[columns],
+        data_alloc.as_numpy(unreduced.tendency_state.tket_hshr)[columns],
+    ), "'imode_tkesso' moved the separated-shear source, which it does not appear in."
+
+    with_reduction = data_alloc.as_numpy(reduced.diagnostic_state.updated_tke)[columns, 1:nlev]
+    without_reduction = data_alloc.as_numpy(unreduced.diagnostic_state.updated_tke)[columns, 1:nlev]
+    assert np.all(without_reduction >= with_reduction), (
+        "'imode_tkesso = 1' omits a factor in [0.01, 1] on a non-negative source, so its "
+        "turbulent velocity cannot be smaller than 'imode_tkesso = 2's anywhere."
+    )
+    greater = np.count_nonzero(without_reduction > with_reduction)
+    assert greater > with_reduction.size // 100, (
+        f"the two modes differ in only {greater} of {with_reduction.size} values, so this test "
+        "does not distinguish them on this capture."
+    )

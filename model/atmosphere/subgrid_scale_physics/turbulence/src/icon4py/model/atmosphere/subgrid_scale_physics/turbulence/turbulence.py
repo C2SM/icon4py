@@ -39,7 +39,7 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Any, Final, NamedTuple
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -48,8 +48,17 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import (
     turbulence_options as options,
     turbulence_states as states,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_implicit_surface_flux_to_the_explicit_flux_density import (
+    add_implicit_surface_flux_to_the_explicit_flux_density,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_virtual_diffusion_increment_to_tke_profile import (
     add_virtual_diffusion_increment_to_tke_profile,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_and_apply_diffusion_tendency import (
+    compute_and_apply_diffusion_tendency,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_and_apply_potential_temperature_diffusion_tendency import (
+    compute_and_apply_potential_temperature_diffusion_tendency,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_circulation_acceleration import (
     compute_circulation_acceleration,
@@ -66,17 +75,38 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_conserved_variables_and_factors_at_the_surface import (
     compute_conserved_variables_and_factors_at_the_surface,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_current_potential_temperature_profile import (
+    compute_current_potential_temperature_profile,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_current_profile import (
+    compute_current_profile,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_coefficients_from_stability_lengths import (
     compute_diffusion_coefficients_from_stability_lengths,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_depth import (
+    compute_diffusion_depth,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
     compute_diffusion_inversion_factor,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_momentum import (
+    compute_diffusion_momentum,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_right_hand_side import (
+    compute_diffusion_right_hand_side,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_discretisation_momentum import (
+    compute_discretisation_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_diffusion_coefficients import (
     compute_effective_diffusion_coefficients,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_horizontal_shear_length_scale import (
     compute_effective_horizontal_shear_length_scale,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_flux_density import (
+    compute_explicit_flux_density,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_tke_diffusion_momentum import (
     compute_explicit_tke_diffusion_momentum,
@@ -89,6 +119,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_horizontal_wind_including_the_zero_level import (
     compute_horizontal_wind_including_the_zero_level,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_diffusion_momentum import (
+    compute_implicit_diffusion_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_part_of_tke_diffusion_momentum import (
     compute_implicit_part_of_tke_diffusion_momentum,
@@ -125,6 +158,18 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_supersaturation_standard_deviation import (
     compute_supersaturation_standard_deviation,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_air_density_and_exner_factor import (
+    compute_surface_air_density_and_exner_factor,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_diffusion_momentum_and_depth import (
+    compute_surface_diffusion_momentum_and_depth,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_gradients_from_flux_densities import (
+    compute_surface_gradients_from_flux_densities,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_profile_value_from_flux_gradient import (
+    compute_surface_profile_value_from_flux_gradient,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_transfer_ratios import (
     compute_surface_transfer_ratios,
@@ -166,6 +211,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.interpol
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.interpolate_variables_onto_half_levels import (
     interpolate_variables_onto_half_levels,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_diffusion_momentum_at_the_surface_flux_level import (
+    invert_diffusion_momentum_at_the_surface_flux_level,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.set_turbulent_velocity_scale_at_model_top import (
     set_turbulent_velocity_scale_at_model_top,
 )
@@ -174,6 +222,12 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.smooth_t
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_tke_diffusion_equation import (
     solve_tke_diffusion_equation,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_vertical_diffusion_equation import (
+    solve_vertical_diffusion_equation,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_diffusion_momentum import (
+    subtract_implicit_diffusion_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_part_of_tke_diffusion_momentum import (
     subtract_implicit_part_of_tke_diffusion_momentum,
@@ -194,6 +248,7 @@ __all__ = [
     "FROZEN_SWITCHES",
     "MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM",
     "MOLECULAR_DIFFUSIVITY_FOR_SCALARS",
+    "DiffusedVariable",
     "FrozenSwitch",
     "Turbulence",
     "TurbulenceConfig",
@@ -221,6 +276,39 @@ _IMPLICIT_WEIGHT_RAMP_HEIGHT: Final[float] = 1500.0
 
 #: Group of the echoed ICON namelists that `TurbulenceConfig.from_fortran_dict` reads.
 FORTRAN_NAMELIST_GROUP: Final[str] = "turbdiff_nml"
+
+
+class DiffusedVariable(NamedTuple):
+    """One of the five first-order variables 'vertdiff' diffuses, and the three fields it owns.
+
+    'vertdiff' builds an array of these itself -- 'dvar(nmvar+ndtr)' of TYPE 'modvar'
+    (turb_vertdiff.f90:451-460) -- with '%av' the profile, '%at' the tendency and '%sv' the
+    surface value. This is that array, minus the two components the ported call site does not
+    reach: '%kstart' is 1 for every variable ('kstart_cloud = 1' in this capture) and '%sv' is
+    replaced by the two booleans, since the granule's surface values come from
+    `TurbulenceSurfaceState` and the two flux-density variables are exactly those with
+    'lsfli = .TRUE.'.
+
+    Everything else a variable needs is workspace shared with the other four.
+
+    Attributes:
+        profile: 'dvar(n)%av', the variable on the main levels, in its own units. Read-only.
+        tendency: 'dvar(n)%at', accumulated onto.
+        right_hand_side: 'zvari(:,:,m)', which is one of the granule's five '_gradient_*'
+            fields: the storage 'turbdiff' left its vertical gradients in and 'vertdiff'
+            overwrites. See `Turbulence._diffuse_one_variable`.
+        has_a_prescribed_surface_flux: 'lsfli(n)'. True for the temperature and the water
+            vapour, whose lower boundary condition is the surface flux density 'turbtran'
+            produced rather than a concentration.
+        is_potential_temperature: 'n == tem'. The temperature is diffused as 'T/pi' and its
+            tendency converted back, which is the one variable-specific arithmetic of the stage.
+    """
+
+    profile: gtx.Field
+    tendency: gtx.Field
+    right_hand_side: gtx.Field
+    has_a_prescribed_surface_flux: bool = False
+    is_potential_temperature: bool = False
 
 
 @dataclasses.dataclass(frozen=True)
@@ -844,9 +932,11 @@ class TurbulenceParams:
 class Turbulence:
     """The NWP 1D turbulence granule: the ported stencils, wired up and run in Fortran order.
 
-    One instance owns one grid, one configuration and one working set. `run_turbdiff` executes
-    'SUBROUTINE turbdiff' (turb_diffusion.f90:281-2604); `run_turbtran` and `run_vertdiff` do
-    not exist yet -- see "What is not here" below.
+    One instance owns one grid, one configuration and one working set. `run` executes the two
+    stages 'mo_nwp_turbdiff_interface.f90' calls, in its order: `run_turbdiff`
+    ('SUBROUTINE turbdiff', turb_diffusion.f90:281-2604) and then `run_vertdiff`
+    ('SUBROUTINE vertdiff', turb_vertdiff.f90:117-935). `run_turbtran` does not exist yet --
+    see "What is not here" below.
 
     NO 'lini' ANYWHERE. The Fortran threads 'iini'/'lini' through one entry point and branches
     on it inside, which is how Fortran avoids duplicating a ninety-argument list. It is not the
@@ -878,14 +968,19 @@ class Turbulence:
     table -- the same discipline the savepoint reader uses
     ('model/testing/serialbox.py::IconTurbdiffSectionSavepoint').
 
+    THE TWO STAGES SHARE MORE THAN THEIR ARGUMENTS. 'vertdiff' reads the diffusion
+    coefficients, the transfer velocities and the half-level density 'turbdiff' produced, it
+    replaces the surface row of that density, and it overwrites 'zvari(:,:,1..5)' -- the five
+    '_gradient_*' fields -- with its own right-hand sides. `run` is where that composition is
+    stated; a stage test cannot see any of it.
+
     WHAT IS NOT HERE.
 
-    * `run_vertdiff` -- 'SUBROUTINE vertdiff' (turb_vertdiff.f90) has no ported stencils at all
-      (plan task 2.18). Nothing is stubbed for it on purpose: an empty method that returns
-      successfully is indistinguishable from a working one at the call site.
-    * `run` -- the composition 'turbtran -> turbdiff -> vertdiff' that the ICON interface makes.
-      It cannot be written before its two other stages exist.
-    * `run_turbtran` -- phase 3 of the plan.
+    * `run_turbtran` -- 'SUBROUTINE turbtran' (turb_transfer.f90), phase 3 of the plan. ICON
+      calls it from a different interface, once per surface tile and before the surface
+      scheme, so it is not a missing third line of `run`. Nothing is stubbed for it on
+      purpose: an empty method that returns successfully is indistinguishable from a working
+      one at the call site.
     """
 
     def __init__(
@@ -926,6 +1021,7 @@ class Turbulence:
         self._determine_horizontal_domains()
         self._allocate_local_fields(self._allocator)
         self._setup_turbdiff_programs()
+        self._setup_vertdiff_programs()
 
     # ------------------------------------------------------------------ configuration ---
 
@@ -1015,6 +1111,12 @@ class Turbulence:
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
         """Allocate the whole working set once, and derive what depends only on the grid.
 
+        ONCE, not per call: this is where the Fortran's per-call '!$ACC DATA' scaffolding
+        disappears, measured at 8.7% of the scheme's GPU cost (port spec 4.1). The three
+        methods below split it by stage and none of them is reachable from a 'run_*' method.
+        'vertdiff's half of the set has its own role table, in
+        `_allocate_the_vertdiff_working_set`; what follows is 'turbdiff's.
+
         THE ROLE TABLE. Six of these fields are one Fortran storage each and change meaning as
         the routine proceeds; the argument name at the call site says which role is meant.
 
@@ -1059,6 +1161,18 @@ class Turbulence:
         'subtract_implicit_part_of_tke_diffusion_momentum', which is pointwise and whose row
         'nlev' must survive from section 6): see `run_turbdiff`.
         """
+        self._allocate_the_turbdiff_working_set(allocator)
+        self._allocate_the_vertdiff_working_set(allocator)
+        self._derive_what_depends_only_on_the_grid(allocator)
+
+    def _field_shapes(
+        self, allocator: gtx_typing.Allocator | None
+    ) -> tuple[Callable[[], gtx.Field], Callable[[], gtx.Field], Callable[[], gtx.Field]]:
+        """The three shapes every field of the working set has.
+
+        A method rather than three closures inside one allocation routine because the working
+        set is allocated in three parts and each of them builds fields of more than one shape.
+        """
 
         def half() -> gtx.Field:
             """A field on the 'nlev + 1' half levels."""
@@ -1073,6 +1187,12 @@ class Turbulence:
         def surface() -> gtx.Field:
             """One value per column."""
             return data_alloc.zero_field(self._grid, dims.CellDim, allocator=allocator)
+
+        return half, main, surface
+
+    def _allocate_the_turbdiff_working_set(self, allocator: gtx_typing.Allocator | None) -> None:
+        """What 'run_turbdiff' computes into; the role table is in `_allocate_local_fields`."""
+        half, main, surface = self._field_shapes(allocator)
 
         # -- the quasi-conserved variables and their vertical gradients, 'zvari(:,:,1..5)'
         self._conserved_zonal_wind = half()
@@ -1152,6 +1272,73 @@ class Turbulence:
         self._diffusion_coefficient_for_scalars_at_the_surface = surface()
         self._liquid_water_potential_temperature_above_the_surface = surface()
         self._total_water_above_the_surface = surface()
+
+    def _allocate_the_vertdiff_working_set(self, allocator: gtx_typing.Allocator | None) -> None:
+        """What 'run_vertdiff' computes into, named after the Fortran storage each field is.
+
+        'vertdiff' declares its own '!$ACC CREATE' locals (turb_vertdiff.f90:363-380) and hands
+        them to 'vert_grad_diff' under the names below. THEY ARE NOT 'turbdiff's, even though
+        six of them are spelled the same: 'zaux', 'frh', 'frm', 'dicke', 'hlp' and 'len_scale'
+        are arrays of a different subroutine, and the two exit hooks serialize them separately.
+        So they are separate fields here too, and after `run` either stage can still be asked
+        what it left behind.
+
+            field                          Fortran                 what it holds
+            -----------------------------  ----------------------  --------------------------
+            _surface_exner_factor          eprs(:,ke1:ke1)         '(p_s/p0)**(R_d/c_pd)'
+            _discretisation_momentum       zaux(:,:,1) disc_mom    'rho*dz/dt'
+            _diffusion_momentum            zaux(:,:,2) expl_mom    'rho*K/dz', then its
+                                                                   explicit part alone
+            _implicit_diffusion_momentum   zaux(:,:,3) impl_mom    its implicit part
+            _inverted_diffusion_momentum   zaux(:,:,4) invs_mom    the LU diagonal
+            _diffusion_depth               zaux(:,:,5) diff_dep    the layer separation
+            _inversion_factor              frh         invs_fac    the LU sub-diagonal
+            _current_profile               hlp         cur_prof    the profile being diffused
+            _diffusion_increment           dicke       dif_tend    its diffusion tendency
+
+        THREE OF THESE ARE REUSED WITHIN THE STAGE, and the reuse is ICON's rather than a
+        saving of the port's:
+
+        * '_implicit_diffusion_momentum' is ONE storage for both variable types. The scalar
+          type's surface-FLUX condition writes one row less than the momentum type's
+          surface-CONCENTRATION condition, so its surface row still holds the momentum type's
+          value when 'vertdiff' returns -- which is what the exit savepoint has, and what a
+          port with one buffer per type would get wrong.
+        * '_diffusion_momentum' and '_diffusion_depth' are rewritten per variable type and only
+          the second type's survives, again as in ICON.
+
+        WHERE THE PORT NEEDS A FIELD ICON DOES NOT HAVE:
+
+        * 'eff_flux' -- 'zvari(:,:,m)' -- is the explicit flux density and then the right-hand
+          side built from it, and 'calc_impl_vert_diff:2988' reads flux level 'k+1' while
+          writing row 'k'. In place is therefore not the same computation, and the explicit
+          flux needs a field beside the 'zvari' one.
+        * 'upd_prof' IS the 'dicke' storage: 'vert_grad_diff:2663' turns the solved profile into
+          a tendency in place. That statement is pointwise, so aliasing would be legitimate;
+          they are kept apart because the solved profile is the only quantity of the solve that
+          a test can compare, and nothing else preserves it.
+
+        THE FIVE RIGHT-HAND SIDES ARE NOT ALLOCATED HERE. They live in 'zvari(:,:,1..5)', which
+        the ICON interface passes to BOTH stages, so they are the five '_gradient_*' fields
+        'turbdiff' wrote -- see `run_vertdiff`.
+        """
+        half, _main, _surface = self._field_shapes(allocator)
+
+        self._surface_exner_factor = half()
+        self._discretisation_momentum = half()
+        self._diffusion_momentum = half()
+        self._implicit_diffusion_momentum = half()
+        self._inverted_diffusion_momentum = half()
+        self._diffusion_depth = half()
+        self._inversion_factor = half()
+        self._current_profile = half()
+        self._diffusion_increment = half()
+        self._explicit_flux_density = half()
+        self._updated_profile = half()
+
+    def _derive_what_depends_only_on_the_grid(self, allocator: gtx_typing.Allocator | None) -> None:
+        """The part of the working set that is fixed once the grid and the configuration are."""
+        _half, _main, surface = self._field_shapes(allocator)
 
         # -- what depends only on the grid and the configuration
         self._surface_height = surface()
@@ -1606,6 +1793,144 @@ class Turbulence:
             shifted=True,
         )
 
+    def _setup_vertdiff_programs(self) -> None:
+        """Compile every stencil of 'vertdiff' with its domain and its constants bound.
+
+        As `_setup_turbdiff_programs`, and for the same reason: the translation of the
+        Fortran's one-based inclusive loop bounds into zero-based half-open GT4Py domains
+        happens once per program, here, and the comment on each line is the Fortran loop.
+
+        'vertdiff' runs two VARIABLE TYPES through one matrix each -- 'mom' for the two wind
+        components and 'sca' for temperature, water vapour and cloud water
+        (turb_vertdiff.f90:503-504) -- and they differ by exactly one row, because the momentum
+        type takes a surface-CONCENTRATION condition and the scalar type a surface-FLUX
+        condition ('tdc%lsflcnd', frozen '.TRUE.'). The Fortran writes that as 'k_sf+1-m' with
+        'm = 1' or 'm = 2'; a GT4Py domain is fixed at compile time, so the two programs whose
+        range depends on it are bound twice, once per type, and named for the type.
+        """
+        nlev = int(self._nlev)
+        metric = self._metric_state
+
+        # -- the parts of the matrix that depend on neither the variable type nor the variable
+        self._compute_surface_air_density_and_exner_factor = self._program(
+            compute_surface_air_density_and_exner_factor,
+            levels=(nlev, nlev + 1),  # 'rhon(i,ke1)' and 'eprs(i,ke1)'
+        )
+        self._compute_discretisation_momentum = self._program(
+            compute_discretisation_momentum,
+            constant_args={"half_level_height": metric.hhl},
+            levels=(0, nlev),  # 'disc_mom(i,k_hi)' then 'DO k=k_hi+1,k_lw'
+            shifted=True,
+        )
+        self._compute_diffusion_depth = self._program(
+            compute_diffusion_depth,
+            constant_args={"half_level_height": metric.hhl},
+            levels=(1, nlev),  # 'DO k=k_hi+1,k_lw'
+            shifted=True,
+        )
+        # 'zvari(:,ke1,m) = flux/(rhon*tkv*...)' at turb_vertdiff.f90:614-634, which the Fortran
+        # runs inside the variable loop for 'tem' and again for 'vap'. Both rows are written
+        # here, before the loop: the two 'zvari' components are distinct, and nothing between
+        # this point and each variable's own use of its row writes either of them.
+        self._compute_surface_gradients_from_flux_densities = self._program(
+            compute_surface_gradients_from_flux_densities,
+            levels=(nlev, nlev + 1),
+        )
+
+        # -- once per variable type ('vert_grad_diff' and 'prep_impl_vert_diff')
+        self._compute_diffusion_momentum = self._program(
+            compute_diffusion_momentum,
+            levels=(1, nlev),  # 'DO k=k_hi+1,k_lw'
+        )
+        self._compute_surface_diffusion_momentum_and_depth = self._program(
+            compute_surface_diffusion_momentum_and_depth,
+            levels=(nlev, nlev + 1),  # the 'k_sf' row, in its own Fortran loop
+        )
+        # 'DO k=k_tp+2,k_sf+1-m': to the surface row for the momentum type, one short of it for
+        # the scalar type, whose sub-diagonal to the surface vanishes under a flux condition.
+        self._compute_implicit_diffusion_momentum_of_the_momentum_type = self._program(
+            compute_implicit_diffusion_momentum,
+            constant_args={"implicit_weight": self._implicit_weight},
+            levels=(1, nlev + 1),
+        )
+        self._compute_implicit_diffusion_momentum_of_the_scalar_type = self._program(
+            compute_implicit_diffusion_momentum,
+            constant_args={"implicit_weight": self._implicit_weight},
+            levels=(1, nlev),
+        )
+        self._subtract_implicit_diffusion_momentum = self._program(
+            subtract_implicit_diffusion_momentum,
+            levels=(1, nlev),  # 'DO k=k_tp+2,k_sf-1'
+        )
+        # The elimination stops one row short of the implicit part's own range, hence one
+        # binding per type again. 'compute_inverted_diffusion_momentum' and
+        # 'compute_diffusion_inversion_factor' are section 9)'s programs unchanged --
+        # 'prep_impl_vert_diff' is one subroutine for the TKE and for the model variables --
+        # but their vertical domains are not section 9)'s, so they are bound separately.
+        self._compute_inverted_diffusion_momentum_of_the_momentum_type = self._program(
+            compute_inverted_diffusion_momentum,
+            levels=(0, nlev),  # 'invs_mom(:,k_tp+1)' then 'DO k=k_tp+2,k_sf-m'
+            shifted=True,
+        )
+        self._compute_inverted_diffusion_momentum_of_the_scalar_type = self._program(
+            compute_inverted_diffusion_momentum,
+            levels=(0, nlev - 1),
+            shifted=True,
+        )
+        self._invert_diffusion_momentum_at_the_surface_flux_level = self._program(
+            invert_diffusion_momentum_at_the_surface_flux_level,
+            levels=(nlev - 1, nlev),  # 'DO k=k_sf-m+1,k_sf-1', one row at 'm = 2' and none at 1
+            shifted=True,
+        )
+        self._compute_diffusion_inversion_factor_of_a_variable_type = self._program(
+            compute_diffusion_inversion_factor,
+            levels=(1, nlev),  # the union of the two elimination ranges
+            shifted=True,
+        )
+
+        # -- once per variable ('calc_impl_vert_diff' and the two loops around it)
+        self._compute_current_profile = self._program(
+            compute_current_profile,
+            levels=(0, nlev),  # 'DO k=k_st_up,ke' plus the 'ke1' boundary value
+        )
+        self._compute_current_potential_temperature_profile = self._program(
+            compute_current_potential_temperature_profile,
+            levels=(0, nlev),
+        )
+        self._compute_surface_profile_value_from_flux_gradient = self._program(
+            compute_surface_profile_value_from_flux_gradient,
+            levels=(nlev, nlev + 1),  # 'cur_prof(i,k_sf)' under 'lsfgrduse'
+            shifted=True,
+        )
+        self._compute_explicit_flux_density = self._program(
+            compute_explicit_flux_density,
+            levels=(1, nlev + 1),  # 'DO k=k_tp+2,k_sf', plus the zero at the model top
+            shifted=True,
+        )
+        self._add_implicit_surface_flux_to_the_explicit_flux_density = self._program(
+            add_implicit_surface_flux_to_the_explicit_flux_density,
+            levels=(nlev, nlev + 1),  # 'IF (.NOT.lsflucond)', the 'k_sf' row
+            shifted=True,
+        )
+        self._compute_diffusion_right_hand_side = self._program(
+            compute_diffusion_right_hand_side,
+            levels=(0, nlev),  # 'eff_flux(i,k_tp+1)' then 'DO k=k_tp+2,k_sf-1'
+            shifted=True,
+        )
+        self._solve_vertical_diffusion_equation = self._program(
+            solve_vertical_diffusion_equation,
+            levels=(0, nlev),  # both substitutions, 'k_tp+1' to 'k_sf-1'
+            shifted=True,
+        )
+        self._compute_and_apply_diffusion_tendency = self._program(
+            compute_and_apply_diffusion_tendency,
+            levels=(0, nlev),  # 'DO k=k_hi,k_lw' and 'DO k=k_st_pp,ke'
+        )
+        self._compute_and_apply_potential_temperature_diffusion_tendency = self._program(
+            compute_and_apply_potential_temperature_diffusion_tendency,
+            levels=(0, nlev),
+        )
+
     def _smooth_the_tke_forcing(self) -> tuple[gtx.Field, gtx.Field]:
         """The optional vertical smoothing of section 2c), turb_diffusion.f90:1720-1738.
 
@@ -1622,6 +1947,10 @@ class Turbulence:
         it at any 'frcsmot' -- so at 'frcsmot > 0' the profiles that reach sections 3) and 4)
         are unchecked. Its module docstring says why, and what stands in place of a reference.
 
+        'disc_mom' is 'dicke' as section 1a) leaves it -- 'rho_n*dz/dt' on rows 1..nlev-1 --
+        which is the array the Fortran passes (turb_diffusion.f90:1729, 1734). It weights each
+        neighbour in the three-point average, which is what makes the smoothing conservative.
+
         Returns:
             'frm' and 'frh' as the following sections must read them: the smoothed profiles
             when the smoothing runs, the working fields themselves when it does not.
@@ -1631,11 +1960,13 @@ class Turbulence:
 
         self._smooth_tke_forcing_vertically(
             tke_forcing=self._frm,
+            discretisation_momentum=self._dicke,
             nlev=self._nlev,
             smoothed_tke_forcing=self._smoothed_mechanical_forcing,
         )
         self._smooth_tke_forcing_vertically(
             tke_forcing=self._frh,
+            discretisation_momentum=self._dicke,
             nlev=self._nlev,
             smoothed_tke_forcing=self._smoothed_thermal_forcing,
         )
@@ -2122,6 +2453,408 @@ class Turbulence:
         self._interpolate_supersaturation_deviation_to_main_levels(
             supersaturation_deviation_on_half_levels=self._rcld,
             supersaturation_deviation_on_main_levels=diagnostic_state.rcld,
+        )
+
+    # ------------------------------------------------------------------ the second stage ---
+
+    def _prepare_the_diffusion_matrix(
+        self,
+        *,
+        input_state: states.TurbulenceInputState,
+        surface_state: states.TurbulenceSurfaceState,
+        diagnostic_state: states.TurbulenceDiagnosticState,
+        reciprocal_time_step: float,
+    ) -> None:
+        """The four programs of 'vertdiff' that neither variable type nor variable can change.
+
+        'rhon' is the one field of the granule that both stages write: 'turbdiff' fills rows
+        1..nlev of it and 'vertdiff' replaces the surface row with the ideal-gas density of the
+        ground, which is a different quantity from the Prandtl-layer boundary value 'turbdiff'
+        left there. The Fortran says so itself at turb_vertdiff.f90:544-547 and the two
+        savepoints differ measurably in exactly that row.
+
+        The two prescribed surface gradients go into 'zvari(:,ke1,tet_l)' and
+        'zvari(:,ke1,h2o_g)' -- the granule's gradient fields -- because that is the storage the
+        Fortran uses, and because their consumer reads them from there.
+        """
+        self._compute_surface_air_density_and_exner_factor(
+            surface_pressure=surface_state.ps,
+            surface_specific_humidity=surface_state.qv_s,
+            surface_temperature=surface_state.t_g,
+            air_density=diagnostic_state.rhon,
+            surface_exner_factor=self._surface_exner_factor,
+        )
+        self._compute_discretisation_momentum(
+            air_density=input_state.rhoh,
+            reciprocal_time_step=reciprocal_time_step,
+            discretisation_momentum=self._discretisation_momentum,
+        )
+        self._compute_diffusion_depth(diffusion_depth=self._diffusion_depth)
+        # The SCALAR type's diffusion coefficient, whichever type is running: the two variables
+        # with a prescribed surface flux are both scalars, so 'vtyp(ivtype)%tkv' is 'tkvh'.
+        self._compute_surface_gradients_from_flux_densities(
+            sensible_heat_flux=diagnostic_state.shfl_s,
+            water_vapour_flux=diagnostic_state.qvfl_s,
+            air_density=diagnostic_state.rhon,
+            diffusion_coefficient=diagnostic_state.tkvh,
+            surface_exner_factor=self._surface_exner_factor,
+            surface_temperature_gradient=self._gradient_liquid_water_potential_temperature,
+            surface_vapour_gradient=self._gradient_total_water,
+        )
+
+    def _factorise_one_variable_type(
+        self,
+        *,
+        diffusion_coefficient: gtx.Field,
+        transfer_velocity: gtx.Field,
+        air_density: gtx.Field,
+        surface_flux_condition: bool,
+    ) -> None:
+        """Build and LU-factorise the tridiagonal matrix of one variable type.
+
+        'vert_grad_diff:2461-2478' and 'prep_impl_vert_diff:2764-2858', once for 'mom' and once
+        for 'sca'. One matrix serves every variable of its type, which is the whole reason
+        'vertdiff' loops over types on the outside and variables on the inside.
+
+        THE TWO TYPES DIFFER BY ONE ROW AND NOTHING ELSE. Under a surface-FLUX condition
+        ('lsflucond', the scalar type) the implicit part stops above the surface row and the
+        elimination stops one row above that, so the row it stopped at is finished by a program
+        of its own -- the Fortran's third loop, 'DO k=k_sf-m+1,k_sf-1', which is empty at
+        'm = 1'. Getting that boundary wrong changes 'u_tens' and 'v_tens' with nothing
+        upstream of them disagreeing.
+
+        'diffusion_coefficient' is read at the surface row as well as inside, so the row must be
+        the one 'turbtran' produced and 'turbdiff' left alone -- section 4) writes rows
+        1..nlev-1 only.
+
+        Args:
+            diffusion_coefficient: 'vtyp(ivtype)%tkv', i.e. 'tkvm' or 'tkvh' [m2/s].
+            transfer_velocity: 'vtyp(ivtype)%tsv', i.e. 'tvm' or 'tvh' [m/s].
+            air_density: 'rhon' on half levels, surface row included [kg/m3].
+            surface_flux_condition: 'lsflucond'; false for momentum, 'tdc%lsflcnd' for scalars.
+        """
+        self._compute_diffusion_momentum(
+            diffusion_coefficient=diffusion_coefficient,
+            air_density=air_density,
+            diffusion_depth=self._diffusion_depth,
+            diffusion_momentum=self._diffusion_momentum,
+        )
+        self._compute_surface_diffusion_momentum_and_depth(
+            air_density=air_density,
+            diffusion_coefficient=diffusion_coefficient,
+            surface_transfer_velocity=transfer_velocity,
+            diffusion_momentum=self._diffusion_momentum,
+            diffusion_depth=self._diffusion_depth,
+        )
+        split_off_the_implicit_part = (
+            self._compute_implicit_diffusion_momentum_of_the_scalar_type
+            if surface_flux_condition
+            else self._compute_implicit_diffusion_momentum_of_the_momentum_type
+        )
+        split_off_the_implicit_part(
+            diffusion_momentum=self._diffusion_momentum,
+            implicit_diffusion_momentum=self._implicit_diffusion_momentum,
+        )
+        # IN PLACE, as the Fortran is: the subtraction is pointwise and covers one row less
+        # than the split above, so the surface row keeps the WHOLE diffusion momentum -- which
+        # is what makes the surface row of the explicit flux the explicit surface flux.
+        self._subtract_implicit_diffusion_momentum(
+            diffusion_momentum=self._diffusion_momentum,
+            implicit_diffusion_momentum=self._implicit_diffusion_momentum,
+            explicit_diffusion_momentum=self._diffusion_momentum,
+        )
+        eliminate = (
+            self._compute_inverted_diffusion_momentum_of_the_scalar_type
+            if surface_flux_condition
+            else self._compute_inverted_diffusion_momentum_of_the_momentum_type
+        )
+        eliminate(
+            discretisation_momentum=self._discretisation_momentum,
+            implicit_diffusion_momentum=self._implicit_diffusion_momentum,
+            inverted_diffusion_momentum=self._inverted_diffusion_momentum,
+        )
+        if surface_flux_condition:
+            self._invert_diffusion_momentum_at_the_surface_flux_level(
+                discretisation_momentum=self._discretisation_momentum,
+                implicit_diffusion_momentum=self._implicit_diffusion_momentum,
+                inverted_diffusion_momentum_above=self._inverted_diffusion_momentum,
+                inverted_diffusion_momentum=self._inverted_diffusion_momentum,
+            )
+        self._compute_diffusion_inversion_factor_of_a_variable_type(
+            inverted_diffusion_momentum=self._inverted_diffusion_momentum,
+            implicit_diffusion_momentum=self._implicit_diffusion_momentum,
+            inversion_factor=self._inversion_factor,
+        )
+
+    def _diffuse_one_variable(
+        self,
+        *,
+        variable: DiffusedVariable,
+        exner_factor: gtx.Field,
+        surface_flux_condition: bool,
+        reciprocal_time_step: float,
+    ) -> None:
+        """Diffuse one first-order variable through the matrix its type left standing.
+
+        turb_vertdiff.f90:646-799 around 'calc_impl_vert_diff'. Eight programs, of which three
+        are conditional; every field but 'variable.right_hand_side' is workspace shared with the
+        other four variables, so the order here is the Fortran's and not a preference.
+
+        THE RIGHT-HAND SIDE IS 'zvari(:,:,m)' AND THAT IS A CROSS-STAGE ALIAS. The ICON
+        interface passes one 'zvari' to both stages (mo_nwp_turbdiff_interface.f90:652, :735),
+        'turbdiff' leaves the vertical gradients of the quasi-conserved variables in it, and
+        'vertdiff' overwrites component 'm' with the right-hand side of variable 'm'. At
+        'ldogrdcor = .FALSE.' -- what 'ldoexpcor' and 'ldocirflx' being false forces here --
+        nothing reads the gradients back, so the overwrite is total and the port reproduces it
+        by handing each variable the '_gradient_*' field of its own component.
+
+        THE SURFACE ROW OF THAT FIELD HAS THREE OCCUPANTS IN SUCCESSION, for 't' and 'qv':
+        'turbdiff's gradient, then the prescribed surface gradient
+        '_prepare_the_diffusion_matrix' wrote, then the explicit surface flux copied here. The
+        second is read by 'compute_surface_profile_value_from_flux_gradient' before the third
+        replaces it, which is why the copy is where it is.
+
+        Args:
+            variable: Which variable, and the three fields that are its own.
+            exner_factor: 'epr' on main levels; read only for the temperature.
+            surface_flux_condition: 'lsflucond' of the variable's type.
+            reciprocal_time_step: 'fr_var = 1/dt_var' [1/s].
+        """
+        if variable.is_potential_temperature:
+            self._compute_current_potential_temperature_profile(
+                temperature=variable.profile,
+                exner_factor=exner_factor,
+                current_profile=self._current_profile,
+            )
+        else:
+            self._compute_current_profile(
+                variable=variable.profile, current_profile=self._current_profile
+            )
+        if variable.has_a_prescribed_surface_flux:
+            self._compute_surface_profile_value_from_flux_gradient(
+                current_profile_above=self._current_profile,
+                diffusion_depth=self._diffusion_depth,
+                surface_gradient=variable.right_hand_side,
+                current_profile=self._current_profile,
+            )
+        self._compute_explicit_flux_density(
+            explicit_diffusion_momentum=self._diffusion_momentum,
+            current_profile=self._current_profile,
+            model_top_level=gtx.int32(0),
+            explicit_flux_density=self._explicit_flux_density,
+        )
+        if not surface_flux_condition:
+            self._add_implicit_surface_flux_to_the_explicit_flux_density(
+                explicit_flux_density_at_the_surface=self._explicit_flux_density,
+                implicit_diffusion_momentum=self._implicit_diffusion_momentum,
+                current_profile=self._current_profile,
+                explicit_flux_density=self._explicit_flux_density,
+            )
+        # 'eff_flux' becomes the right-hand side in place in the Fortran, over rows 0..nlev-1
+        # only, so its surface row keeps the explicit flux. The port computes out of place --
+        # the right-hand side reads flux level 'k+1' while writing row 'k' -- so the row that
+        # survives in the Fortran has to be carried across here.
+        _copy_level(self._explicit_flux_density, int(self._nlev), variable.right_hand_side)
+        self._compute_diffusion_right_hand_side(
+            discretisation_momentum=self._discretisation_momentum,
+            current_profile=self._current_profile,
+            explicit_flux_density=self._explicit_flux_density,
+            right_hand_side=variable.right_hand_side,
+        )
+        self._solve_vertical_diffusion_equation(
+            right_hand_side=variable.right_hand_side,
+            implicit_diffusion_momentum=self._implicit_diffusion_momentum,
+            inverted_diffusion_momentum=self._inverted_diffusion_momentum,
+            inversion_factor=self._inversion_factor,
+            updated_profile=self._updated_profile,
+        )
+        # IN PLACE on the tendency, as 'vert_grad_diff:2668' is: the accumulation is pointwise
+        # and ICON has one array. 'tendency_state' is an output container, so ADR-0001 is not
+        # in question -- what may not be written is 'input_state', and nothing here does.
+        if variable.is_potential_temperature:
+            self._compute_and_apply_potential_temperature_diffusion_tendency(
+                updated_profile=self._updated_profile,
+                current_profile=self._current_profile,
+                exner_factor=exner_factor,
+                temperature_tendency_before=variable.tendency,
+                reciprocal_time_step=reciprocal_time_step,
+                diffusion_tendency=self._diffusion_increment,
+                temperature_tendency=variable.tendency,
+            )
+        else:
+            self._compute_and_apply_diffusion_tendency(
+                updated_profile=self._updated_profile,
+                current_profile=self._current_profile,
+                variable_tendency_before=variable.tendency,
+                reciprocal_time_step=reciprocal_time_step,
+                diffusion_tendency=self._diffusion_increment,
+                variable_tendency=variable.tendency,
+            )
+
+    def run_vertdiff(
+        self,
+        *,
+        input_state: states.TurbulenceInputState,
+        surface_state: states.TurbulenceSurfaceState,
+        diagnostic_state: states.TurbulenceDiagnosticState,
+        tendency_state: states.TurbulenceTendencyState,
+        dt_var: float,
+    ) -> None:
+        """Run 'SUBROUTINE vertdiff' once: the implicit vertical diffusion of u, v, T, qv, qc.
+
+        Reads `input_state` and `surface_state`, reads and writes `diagnostic_state.rhon`,
+        accumulates into `tendency_state`. `input_state` is never written (ADR-0001): the
+        Fortran updates 'u', 'v', 't', 'qv' and 'qc' in place only when the optional '*_tens'
+        arguments are absent, and 'mo_nwp_turbdiff_interface.f90:719-724' always passes them.
+
+        What is written, and what is left alone:
+
+            tendency_state.ddt_u, ddt_v      accumulated over rows 0..nlev-1
+            tendency_state.ddt_t             as above, through the Exner factor
+            tendency_state.ddt_qv, ddt_qc    as above
+            diagnostic_state.rhon            row 'nlev' only, replacing what 'turbdiff' left
+            the five '_gradient_*' fields    'zvari(:,:,1..5)', overwritten by the right-hand
+                                             sides; see `_diffuse_one_variable`
+
+        'shfl_s' and 'qvfl_s' are READ and not written. The Fortran would recompute them at
+        turb_vertdiff.f90:850-895 from the effective implicit fluxes, but only under
+        '.NOT.(lsfluse .AND. tdc%lsflcnd)', and the interface passes 'lsfluse = tdc%lsflcnd'
+        with 'lsflcnd' frozen '.TRUE.', so both come out byte-identical. 'umfl_s' and 'vmfl_s'
+        are not passed by the interface at all.
+
+        THE ORDER IS THE FORTRAN'S: both wind components through the momentum matrix, then
+        temperature, water vapour and cloud water through the scalar one. It is not a
+        preference. One matrix and one profile workspace serve all five variables, so the
+        variables of a type must run between that type's factorisation and the next one; and
+        the surface row of the implicit momentum still holds the momentum type's value when the
+        stage returns, because the scalar type never writes it.
+
+        WHAT IS NOT REACHED, in the configuration the ICON interface passes: 'itndcon = 0' (no
+        explicit-tendency handling), 'ldogrdcor = .FALSE.' (no gradient correction, so 'zvari'
+        is written and never read), 'l3dflxout = .FALSE.' (no effective-flux integration),
+        'ndtr = 0' (no passive tracers), 'kcm = ke1' (no canopy volume correction) and
+        'lprecnd = .FALSE.' (no preconditioning). Each is asserted against the entry savepoint
+        by 'test_vertdiff_runs_in_the_configuration_this_port_assumes'.
+
+        Args:
+            input_state: The atmospheric column. Read-only. 'tracers' is not diffused here:
+                'ndtr = 0' at the ported call site and the tuple is empty.
+            surface_state: The grid-mean surface state. Read-only.
+            diagnostic_state: The turbulence diagnostics; 'rhon' is read and written, the
+                diffusion coefficients, the transfer velocities and the two surface flux
+                densities are read.
+            tendency_state: Where the tendencies go, accumulated onto what is already there,
+                exactly as the Fortran's 'INTENT(INOUT)' '*_tens' arguments are.
+            dt_var: The time step of the diffusion equation [s], ICON's 'dt_var'. The interface
+                passes 'tcall_turb_jg' for this and for 'dt_tke' alike.
+        """
+        reciprocal_time_step = 1.0 / dt_var  # 'fakt = z1/dt_var' (turb_vertdiff.f90:513)
+        self._prepare_the_diffusion_matrix(
+            input_state=input_state,
+            surface_state=surface_state,
+            diagnostic_state=diagnostic_state,
+            reciprocal_time_step=reciprocal_time_step,
+        )
+        momentum = (
+            DiffusedVariable(
+                profile=input_state.u,
+                tendency=tendency_state.ddt_u,
+                right_hand_side=self._gradient_zonal_wind,
+            ),
+            DiffusedVariable(
+                profile=input_state.v,
+                tendency=tendency_state.ddt_v,
+                right_hand_side=self._gradient_meridional_wind,
+            ),
+        )
+        scalars = (
+            DiffusedVariable(
+                profile=input_state.t,
+                tendency=tendency_state.ddt_t,
+                right_hand_side=self._gradient_liquid_water_potential_temperature,
+                has_a_prescribed_surface_flux=True,
+                is_potential_temperature=True,
+            ),
+            DiffusedVariable(
+                profile=input_state.qv,
+                tendency=tendency_state.ddt_qv,
+                right_hand_side=self._gradient_total_water,
+                has_a_prescribed_surface_flux=True,
+            ),
+            DiffusedVariable(
+                profile=input_state.qc,
+                tendency=tendency_state.ddt_qc,
+                right_hand_side=self._gradient_liquid_water,
+            ),
+        )
+        for coefficient, velocity, variables, surface_flux_condition in (
+            (diagnostic_state.tkvm, diagnostic_state.tvm, momentum, False),
+            (diagnostic_state.tkvh, diagnostic_state.tvh, scalars, self._config.lsflcnd),
+        ):
+            self._factorise_one_variable_type(
+                diffusion_coefficient=coefficient,
+                transfer_velocity=velocity,
+                air_density=diagnostic_state.rhon,
+                surface_flux_condition=surface_flux_condition,
+            )
+            for variable in variables:
+                self._diffuse_one_variable(
+                    variable=variable,
+                    exner_factor=input_state.epr,
+                    surface_flux_condition=surface_flux_condition,
+                    reciprocal_time_step=reciprocal_time_step,
+                )
+
+    # ---------------------------------------------------------------------- the granule ---
+
+    def run(
+        self,
+        *,
+        input_state: states.TurbulenceInputState,
+        surface_state: states.TurbulenceSurfaceState,
+        diagnostic_state: states.TurbulenceDiagnosticState,
+        tendency_state: states.TurbulenceTendencyState,
+        dt_var: float,
+        dt_tke: float,
+    ) -> None:
+        """Run the atmospheric turbulence of one time step: 'turbdiff', then 'vertdiff'.
+
+        THIS IS THE UNIT THE ICON INTERFACE SUBSTITUTES. 'mo_nwp_turbdiff_interface.f90' calls
+        'turbdiff' at :576 and 'vertdiff' at :672 with nothing between them but a timer, and
+        the two calls share 'rhon', 'zvari', 'tkvm', 'tkvh', 'tvm' and 'tvh'. Verified against
+        the capture: every field the two stages have in common is bit-identical at
+        'turbdiff-exit' and at 'vertdiff-entry', on all four dates.
+
+        'run_turbtran' is not part of this. ICON calls it from a different interface
+        ('mo_nwp_turbtrans_interface.f90'), once per surface tile, before the surface scheme;
+        it is phase 3 of the port and it is not a third line of this method.
+
+        NO 'lini' HERE EITHER. See the class docstring: the initialisation is a different
+        computation reached from a different call site, and it will be a method of its own.
+
+        Args:
+            input_state: The atmospheric column and the external forcings. Read-only.
+            surface_state: The grid-mean surface state. Read-only.
+            diagnostic_state: The turbulence diagnostics; read and written by both stages.
+            tendency_state: Where the tendencies go. 'ddt_tke' is read on entry as the
+                advection tendency and overwritten; the other five are accumulated onto.
+            dt_var: The time step of the vertical diffusion [s].
+            dt_tke: The time step of the TKE equation [s]. ICON passes 'tcall_turb_jg' for
+                this and for 'dt_var' alike, but the Fortran keeps them apart and so does this.
+        """
+        self.run_turbdiff(
+            input_state=input_state,
+            surface_state=surface_state,
+            diagnostic_state=diagnostic_state,
+            tendency_state=tendency_state,
+            dt_tke=dt_tke,
+        )
+        self.run_vertdiff(
+            input_state=input_state,
+            surface_state=surface_state,
+            diagnostic_state=diagnostic_state,
+            tendency_state=tendency_state,
+            dt_var=dt_var,
         )
 
 
