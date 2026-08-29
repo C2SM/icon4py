@@ -51,11 +51,25 @@ call's input, and over a forecast it can compound. A registry of per-call tolera
 that, no matter how tight each entry is — the quantity it fails to constrain is not measured at that
 level.
 
-That is why a separate **trajectory-level drift check** exists, in
-`tests/turbulence/integration_tests/`: it runs the granule over all serialized timesteps and asserts
-that the error in `tke` does not grow monotonically. The two checks answer different questions and
-neither substitutes for the other. When you widen a gate on any stencil that feeds `tke`, `tkvm`,
-`tkvh` or `rcld`, the drift check is the one that tells you whether you got away with it.
+**And there is no icon4py-level drift test to fall back on.** One was specified — port plan task
+1.4, `tests/turbulence/integration_tests/test_trajectory_drift.py` — and never written. If you came
+here looking for that file, it does not exist and never has.
+
+The trajectory question is answered **one level up, in ICON**: a run with `ICON4PY_MODE_SUBSTITUTE`
+plus `probtest` substitutes the granule, lets the per-call error compound over a forecast and
+measures whether it grows. Measured 2026-08-29 against a tolerance built from a perturbed `build_cpu`
+ensemble of `exp.mch_icon-ch2_small`:
+
+| run                                             | result                                                                                                                                    |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| turbulence granule only, job **834654**         | 0 of 2751 cells over threshold, worst cell 0.2 of `factor·tolerance`, growth flat across six timesteps                                    |
+| turbulence + dycore + diffusion, job **834660** | 0 of 2709 cells over threshold once `ddt_vn_adv` and `ddt_vn_pgr` — identically 0.0 by design — are excluded; worst cell 0.2, growth flat |
+
+The runbook is `docs/superpowers/notes/2026-08-29-probtest-runbook.md` in the `icon-exclaim`
+workspace. The two checks answer different questions and neither substitutes for the other, but note
+that the one answering the trajectory question **needs a SLURM job and an ICON build** — no pytest
+run covers it. When you widen a gate on any stencil that feeds `tke`, `tkvm`, `tkvh` or `rcld`, that
+is the check that tells you whether you got away with it.
 
 ## The admissible reasons
 
@@ -138,8 +152,9 @@ Do all of it, in order. Steps 1 and 2 are where nearly all the value is.
    in the commit message that a gate was downgraded and why; a reviewer skimming a large stencil
    diff should not have to notice it on their own.
 
-6. **Check the trajectory drift test** if the stencil feeds `tke`, `tkvm`, `tkvh` or `rcld`. See
-   above for why the per-stencil result does not answer this.
+6. **Re-run the ICON-level L4 check** (`ICON4PY_MODE_SUBSTITUTE` + probtest) if the stencil feeds
+   `tke`, `tkvm`, `tkvh` or `rcld`. There is no icon4py-level drift test to run instead; see above
+   for why the per-stencil result does not answer this, and for the runbook.
 
 ## Widening an existing `Tol`
 

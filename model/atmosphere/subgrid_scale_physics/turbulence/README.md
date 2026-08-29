@@ -1,25 +1,57 @@
 # ICON NWP 1D turbulence
 
 GT4Py port of the COSMO/Raschendorfer 1D turbulence scheme selected by `inwp_turb = 1` in
-ICON-NWP: surface-layer transfer (`turbtran`), the atmospheric TKE closure (`turbdiff`) and the
-implicit vertical diffusion of first-order variables and tracers (`vertdiff`).
+ICON-NWP. The scheme has three stages — surface-layer transfer (`turbtran`), the atmospheric TKE
+closure (`turbdiff`) and the implicit vertical diffusion of first-order variables and tracers
+(`vertdiff`). **Two of them are here.** `turbtran` is out of scope; see the table.
 
 ## Fortran provenance
 
-| Fortran source                                        | ported to                                        |
-| ----------------------------------------------------- | ------------------------------------------------ |
-| `src/atm_phy_schemes/turb_transfer.f90` (`turbtran`)  | `stencils/`, driven by `Turbulence.run_turbtran` |
-| `src/atm_phy_schemes/turb_diffusion.f90` (`turbdiff`) | `stencils/`, driven by `Turbulence.run_turbdiff` |
-| `src/atm_phy_schemes/turb_vertdiff.f90` (`vertdiff`)  | `stencils/`, driven by `Turbulence.run_vertdiff` |
-| `src/atm_phy_schemes/turb_utilities.f90`              | shared kernels used by all three                 |
+| Fortran source                                        | ported to                                                                                               |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `src/atm_phy_schemes/turb_diffusion.f90` (`turbdiff`) | 43 modules under `stencils/`, driven by `Turbulence.run_turbdiff`                                       |
+| `src/atm_phy_schemes/turb_vertdiff.f90` (`vertdiff`)  | 18 modules under `stencils/`, driven by `Turbulence.run_vertdiff`                                       |
+| `src/atm_phy_schemes/turb_utilities.f90`              | `thermodynamic_functions.py`, plus the 35 stencils of the two stages above that inline pieces of it     |
+| `src/atm_phy_schemes/turb_transfer.f90` (`turbtran`)  | **nothing — out of scope.** No `run_turbtran`, no turbtran stencil, no turbtran savepoint reader exists |
+
+`Turbulence.run` is `run_turbdiff` then `run_vertdiff`, which is the unit
+`mo_nwp_turbdiff_interface.f90` substitutes. **`turbtran` is deliberately absent rather than
+missing**, and nothing is stubbed for it on purpose: a method that returns successfully without
+computing anything is indistinguishable from a working one at the call site. Where that is decided:
+
+- the `Turbulence` class docstring, section "WHAT IS NOT HERE" (`turbulence.py`) — ICON calls
+  `turbtran` from a *different* interface (`mo_nwp_turbtrans_interface.f90`), once per surface tile
+  and before the surface scheme, so it is not a missing third line of `run`;
+- Phase 3 of the port plan
+  (`docs/superpowers/plans/2026-08-27-nwp-turbulence-icon4py-port.md` in the `icon-exclaim`
+  workspace), which is **not started**.
+
+Two stencils name `turb_transfer.f90` in a comment — `compute_surface_transfer_ratios` and
+`compute_mechanical_forcing` — but both cite it to contrast against, not as provenance.
 
 The ICON-side interfaces (`mo_nwp_turbdiff_interface.f90`, `mo_nwp_turbtrans_interface.f90`) stay in
 Fortran; they are out of scope. Scientific commentary in the Fortran sources is by Matthias
 Raschendorfer (DWD); each stencil cites the module, subroutine and line range it was translated
 from.
 
-Only the operational configuration space is implemented. `TurbulenceConfig` rejects namelist
-switches whose non-default values are not ported — see `turbulence.py`.
+## Configuration: the granule is narrower than the config
+
+Only the operational configuration space is implemented, and it is refused in **two** places, not
+one:
+
+- `TurbulenceConfig._validate` rejects namelist switches whose non-default values are not ported
+  (`FROZEN_SWITCHES` and the `_check_supported` calls in `turbulence.py`);
+- `Turbulence._validate_the_configuration_the_stencils_can_express` rejects four more that the
+  *assembled* stencils cannot represent, because each fuses a guarded Fortran block into an
+  unguarded expression.
+
+**Read the granule's refusal, not the config's acceptance, as the contract.** The gap is widest for
+`itype_sher`: `TurbulenceConfig` accepts all four values the Fortran defines (0–3) and its doc
+comment explains why, but the granule runs **only `itype_sher = 2`**. The reference capture
+exercises no other value, so the other three have no serialized oracle — that is the reason, not
+an excuse. The compile-time static-parameter mechanism (`program.compile(...)` /
+`StencilTest.STATIC_PARAMS`) that would let one build serve several values is used nowhere in this
+package.
 
 ## Testing
 

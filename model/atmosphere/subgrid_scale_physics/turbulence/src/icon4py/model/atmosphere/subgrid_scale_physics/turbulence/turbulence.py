@@ -19,9 +19,17 @@ formulations were ported (port spec D5/D6). Twenty-nine switches select alternat
 not ported and are refused with a 'NotImplementedError' that names the one supported value, says
 what it means, and points at the Fortran scheme. Eight more do vary operationally across the DWD
 and MeteoSwiss setups -- 'itype_sher', 'icldm_turb', 'imode_tkesso', 'imode_charpar',
-'frcsmot', 'a_hshr', 'ltkesso' and 'ltkeshs' -- and are supported over the range those setups
+'frcsmot', 'a_hshr', 'ltkesso' and 'ltkeshs' -- and are accepted over the range those setups
 need. Which values occur was verified by grepping all 648 configurations under 'icon/run/',
 not assumed.
+
+WHAT 'TurbulenceConfig' ACCEPTS IS NOT WHAT THE GRANULE RUNS. `Turbulence` refuses four further
+configurations at construction because the assembled stencils cannot express them, each being a
+guarded Fortran block fused into an unguarded expression: see
+`Turbulence._validate_the_configuration_the_stencils_can_express`. The widest of the four gaps is
+'itype_sher', where the config accepts all four Fortran values and the granule runs only '2'; that
+field's doc comment says so. Read the granule's refusal, not the config's acceptance, as the
+contract.
 
 Every other formulation switch is accounted for too, because what D6 rules out is silence, not
 acceptance. Eight of them -- 'imode_pat_len', 'imode_snowsmot', 'lconst_z0', 'ldiff_qi',
@@ -688,8 +696,17 @@ class TurbulenceConfig:
     #: Type of water cloud diagnosis within the turbulence scheme.
     itype_wcld: int = 2
     #: Type of mean shear production for TKE. Operationally 1, 2 or 3; the default 0, which
-    #: 'mo_nml_crosscheck.f90:329' forces on runs without dynamics, is supported as well because
-    #: it is the same code path with the horizontal shear correction left out.
+    #: 'mo_nml_crosscheck.f90:329' forces on runs without dynamics, is accepted here as well
+    #: because it is the same code path with the horizontal shear correction left out.
+    #: THE GRANULE IS NARROWER THAN THIS FIELD. 'Turbulence' runs 'itype_sher = 2' and nothing
+    #: else, refusing 0, 1 and 3 at construction
+    #: ('_validate_the_configuration_the_stencils_can_express'), because
+    #: 'compute_three_dimensional_shear_forcing' carries the 'IF (itype_sher == 2)' block of
+    #: turb_diffusion.f90:1330 unguarded -- so the alternative is a wrong number, not a missing
+    #: term. The reference capture exercises no other value, which is why: the other three have
+    #: no serialized oracle. The compile-time static-parameter mechanism that would let one
+    #: build serve several values ('program.compile(...)' / 'StencilTest.STATIC_PARAMS', as the
+    #: dycore stencil tests use it) is used nowhere in this package.
     itype_sher: options.ShearProductionType = options.ShearProductionType.VERTICAL_ONLY
     #: Mode of calculating the stability function, related to `stbsecu`.
     imode_stbcalc: int = 1

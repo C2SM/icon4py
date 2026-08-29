@@ -21,8 +21,12 @@ to 'Tol' is a reviewed change with a measured error behind it -- the procedure i
 'model/atmosphere/subgrid_scale_physics/turbulence/docs/gates.md'.
 
 A per-stencil gate is necessary but not sufficient: 'tke' is prognostic and temporally smoothed,
-so a per-call tolerance compounds over a forecast. The trajectory drift check in
-'integration_tests/test_trajectory_drift.py' covers what this registry structurally cannot.
+so a per-call tolerance compounds over a forecast and no entry here bounds that. THERE IS NO
+icon4py-LEVEL DRIFT TEST -- the question is answered one level up, by ICON's
+'ICON4PY_MODE_SUBSTITUTE' plus probtest, which lets the error compound over a forecast and measures
+whether it grows. Measured 2026-08-29: turbulence alone (job 834654) and turbulence with the dycore
+(job 834660) both give 0 cells over threshold and flat growth across six timesteps. See
+'docs/gates.md' for the numbers and the runbook.
 """
 
 import dataclasses
