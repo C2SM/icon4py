@@ -12,6 +12,10 @@ module icon4py_bindings
 
    public :: solve_nh_run
 
+   public :: turbulence_init
+
+   public :: turbulence_run
+
    interface
 
       function diffusion_init_wrapper(theta_ref_mc, &
@@ -1511,6 +1515,658 @@ module icon4py_bindings
          logical(c_bool), value :: on_gpu
 
       end function solve_nh_run_wrapper
+
+      function turbulence_init_wrapper(hhl, &
+                                       hhl_size_0, &
+                                       hhl_size_1, &
+                                       dp0, &
+                                       dp0_size_0, &
+                                       dp0_size_1, &
+                                       l_hori, &
+                                       l_hori_size_0, &
+                                       trop_mask, &
+                                       trop_mask_size_0, &
+                                       innertrop_mask, &
+                                       innertrop_mask_size_0, &
+                                       impl_s, &
+                                       impl_t, &
+                                       imode_tkvmini, &
+                                       tkhmin, &
+                                       tkmmin, &
+                                       tkhmin_strat, &
+                                       tkmmin_strat, &
+                                       ditsmot, &
+                                       imode_frcsmot, &
+                                       frcsmot, &
+                                       tkesmot, &
+                                       frcsecu, &
+                                       tkesecu, &
+                                       stbsecu, &
+                                       prfsecu, &
+                                       epsi, &
+                                       it_end, &
+                                       rlam_heat, &
+                                       rlam_mom, &
+                                       rat_lam, &
+                                       rat_sea, &
+                                       rat_glac, &
+                                       rat_can, &
+                                       imode_nsf_wind, &
+                                       rsur_sher, &
+                                       imode_charpar, &
+                                       alpha0, &
+                                       alpha0_max, &
+                                       alpha0_pert, &
+                                       alpha1, &
+                                       c_lnd, &
+                                       c_sea, &
+                                       c_soil, &
+                                       c_stm, &
+                                       e_surf, &
+                                       lconst_z0, &
+                                       const_z0, &
+                                       z0m_dia, &
+                                       z0_ice, &
+                                       tur_len, &
+                                       pat_len, &
+                                       len_min, &
+                                       imode_vel_min, &
+                                       vel_min, &
+                                       vel_max, &
+                                       akt, &
+                                       a_heat, &
+                                       a_mom, &
+                                       d_heat, &
+                                       d_mom, &
+                                       c_diff, &
+                                       a_stab, &
+                                       a_hshr, &
+                                       clc_diag, &
+                                       q_crit, &
+                                       c_scld, &
+                                       ltkesso, &
+                                       ltkecon, &
+                                       ltkeshs, &
+                                       ltkenst, &
+                                       loutsso, &
+                                       loutshs, &
+                                       loutnst, &
+                                       loutbms, &
+                                       ltmpcor, &
+                                       lcpfluc, &
+                                       lexpcor, &
+                                       lsflcnd, &
+                                       lcirflx, &
+                                       ldiff_qi, &
+                                       ldiff_qs, &
+                                       lfreeslip, &
+                                       l3dturb, &
+                                       imode_tran, &
+                                       imode_turb, &
+                                       icldm_tran, &
+                                       icldm_turb, &
+                                       itype_wcld, &
+                                       itype_sher, &
+                                       imode_stbcalc, &
+                                       ilow_def_cond, &
+                                       imode_pat_len, &
+                                       imode_shshear, &
+                                       imode_tkesso, &
+                                       imode_snowsmot, &
+                                       itype_2m_diag, &
+                                       imode_stadlim, &
+                                       imode_trancnf, &
+                                       imode_lamdiff, &
+                                       imode_tkemini, &
+                                       imode_suradap, &
+                                       imode_tkediff, &
+                                       imode_adshear, &
+                                       backend, &
+                                       on_gpu) bind(c, name="turbulence_init_wrapper") result(rc)
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
+         integer(c_int) :: rc  ! Stores the return code
+
+         type(c_ptr), value, target :: hhl
+
+         integer(c_int), value :: hhl_size_0
+
+         integer(c_int), value :: hhl_size_1
+
+         type(c_ptr), value, target :: dp0
+
+         integer(c_int), value :: dp0_size_0
+
+         integer(c_int), value :: dp0_size_1
+
+         type(c_ptr), value, target :: l_hori
+
+         integer(c_int), value :: l_hori_size_0
+
+         type(c_ptr), value, target :: trop_mask
+
+         integer(c_int), value :: trop_mask_size_0
+
+         type(c_ptr), value, target :: innertrop_mask
+
+         integer(c_int), value :: innertrop_mask_size_0
+
+         real(c_double), value, target :: impl_s
+
+         real(c_double), value, target :: impl_t
+
+         integer(c_int), value, target :: imode_tkvmini
+
+         real(c_double), value, target :: tkhmin
+
+         real(c_double), value, target :: tkmmin
+
+         real(c_double), value, target :: tkhmin_strat
+
+         real(c_double), value, target :: tkmmin_strat
+
+         real(c_double), value, target :: ditsmot
+
+         integer(c_int), value, target :: imode_frcsmot
+
+         real(c_double), value, target :: frcsmot
+
+         real(c_double), value, target :: tkesmot
+
+         real(c_double), value, target :: frcsecu
+
+         real(c_double), value, target :: tkesecu
+
+         real(c_double), value, target :: stbsecu
+
+         real(c_double), value, target :: prfsecu
+
+         real(c_double), value, target :: epsi
+
+         integer(c_int), value, target :: it_end
+
+         real(c_double), value, target :: rlam_heat
+
+         real(c_double), value, target :: rlam_mom
+
+         real(c_double), value, target :: rat_lam
+
+         real(c_double), value, target :: rat_sea
+
+         real(c_double), value, target :: rat_glac
+
+         real(c_double), value, target :: rat_can
+
+         integer(c_int), value, target :: imode_nsf_wind
+
+         real(c_double), value, target :: rsur_sher
+
+         integer(c_int), value, target :: imode_charpar
+
+         real(c_double), value, target :: alpha0
+
+         real(c_double), value, target :: alpha0_max
+
+         real(c_double), value, target :: alpha0_pert
+
+         real(c_double), value, target :: alpha1
+
+         real(c_double), value, target :: c_lnd
+
+         real(c_double), value, target :: c_sea
+
+         real(c_double), value, target :: c_soil
+
+         real(c_double), value, target :: c_stm
+
+         real(c_double), value, target :: e_surf
+
+         logical(c_bool), value, target :: lconst_z0
+
+         real(c_double), value, target :: const_z0
+
+         real(c_double), value, target :: z0m_dia
+
+         real(c_double), value, target :: z0_ice
+
+         real(c_double), value, target :: tur_len
+
+         real(c_double), value, target :: pat_len
+
+         real(c_double), value, target :: len_min
+
+         integer(c_int), value, target :: imode_vel_min
+
+         real(c_double), value, target :: vel_min
+
+         real(c_double), value, target :: vel_max
+
+         real(c_double), value, target :: akt
+
+         real(c_double), value, target :: a_heat
+
+         real(c_double), value, target :: a_mom
+
+         real(c_double), value, target :: d_heat
+
+         real(c_double), value, target :: d_mom
+
+         real(c_double), value, target :: c_diff
+
+         real(c_double), value, target :: a_stab
+
+         real(c_double), value, target :: a_hshr
+
+         real(c_double), value, target :: clc_diag
+
+         real(c_double), value, target :: q_crit
+
+         real(c_double), value, target :: c_scld
+
+         logical(c_bool), value, target :: ltkesso
+
+         logical(c_bool), value, target :: ltkecon
+
+         logical(c_bool), value, target :: ltkeshs
+
+         logical(c_bool), value, target :: ltkenst
+
+         logical(c_bool), value, target :: loutsso
+
+         logical(c_bool), value, target :: loutshs
+
+         logical(c_bool), value, target :: loutnst
+
+         logical(c_bool), value, target :: loutbms
+
+         logical(c_bool), value, target :: ltmpcor
+
+         logical(c_bool), value, target :: lcpfluc
+
+         logical(c_bool), value, target :: lexpcor
+
+         logical(c_bool), value, target :: lsflcnd
+
+         logical(c_bool), value, target :: lcirflx
+
+         logical(c_bool), value, target :: ldiff_qi
+
+         logical(c_bool), value, target :: ldiff_qs
+
+         logical(c_bool), value, target :: lfreeslip
+
+         logical(c_bool), value, target :: l3dturb
+
+         integer(c_int), value, target :: imode_tran
+
+         integer(c_int), value, target :: imode_turb
+
+         integer(c_int), value, target :: icldm_tran
+
+         integer(c_int), value, target :: icldm_turb
+
+         integer(c_int), value, target :: itype_wcld
+
+         integer(c_int), value, target :: itype_sher
+
+         integer(c_int), value, target :: imode_stbcalc
+
+         integer(c_int), value, target :: ilow_def_cond
+
+         integer(c_int), value, target :: imode_pat_len
+
+         integer(c_int), value, target :: imode_shshear
+
+         integer(c_int), value, target :: imode_tkesso
+
+         integer(c_int), value, target :: imode_snowsmot
+
+         integer(c_int), value, target :: itype_2m_diag
+
+         integer(c_int), value, target :: imode_stadlim
+
+         integer(c_int), value, target :: imode_trancnf
+
+         integer(c_int), value, target :: imode_lamdiff
+
+         integer(c_int), value, target :: imode_tkemini
+
+         integer(c_int), value, target :: imode_suradap
+
+         integer(c_int), value, target :: imode_tkediff
+
+         integer(c_int), value, target :: imode_adshear
+
+         integer(c_int), value, target :: backend
+
+         logical(c_bool), value :: on_gpu
+
+      end function turbulence_init_wrapper
+
+      function turbulence_run_wrapper(u, &
+                                      u_size_0, &
+                                      u_size_1, &
+                                      v, &
+                                      v_size_0, &
+                                      v_size_1, &
+                                      t, &
+                                      t_size_0, &
+                                      t_size_1, &
+                                      qv, &
+                                      qv_size_0, &
+                                      qv_size_1, &
+                                      qc, &
+                                      qc_size_0, &
+                                      qc_size_1, &
+                                      prs, &
+                                      prs_size_0, &
+                                      prs_size_1, &
+                                      rhoh, &
+                                      rhoh_size_0, &
+                                      rhoh_size_1, &
+                                      epr, &
+                                      epr_size_0, &
+                                      epr_size_1, &
+                                      ut_sso, &
+                                      ut_sso_size_0, &
+                                      ut_sso_size_1, &
+                                      vt_sso, &
+                                      vt_sso_size_0, &
+                                      vt_sso_size_1, &
+                                      hdef2, &
+                                      hdef2_size_0, &
+                                      hdef2_size_1, &
+                                      hdiv, &
+                                      hdiv_size_0, &
+                                      hdiv_size_1, &
+                                      dwdx, &
+                                      dwdx_size_0, &
+                                      dwdx_size_1, &
+                                      dwdy, &
+                                      dwdy_size_0, &
+                                      dwdy_size_1, &
+                                      t_g, &
+                                      t_g_size_0, &
+                                      qv_s, &
+                                      qv_s_size_0, &
+                                      ps, &
+                                      ps_size_0, &
+                                      l_pat, &
+                                      l_pat_size_0, &
+                                      gz0, &
+                                      gz0_size_0, &
+                                      tvm, &
+                                      tvm_size_0, &
+                                      tvh, &
+                                      tvh_size_0, &
+                                      tfm, &
+                                      tfm_size_0, &
+                                      tfh, &
+                                      tfh_size_0, &
+                                      tkred_sfc, &
+                                      tkred_sfc_size_0, &
+                                      tkred_sfc_h, &
+                                      tkred_sfc_h_size_0, &
+                                      shfl_s, &
+                                      shfl_s_size_0, &
+                                      qvfl_s, &
+                                      qvfl_s_size_0, &
+                                      tke, &
+                                      tke_size_0, &
+                                      tke_size_1, &
+                                      tkvm, &
+                                      tkvm_size_0, &
+                                      tkvm_size_1, &
+                                      tkvh, &
+                                      tkvh_size_0, &
+                                      tkvh_size_1, &
+                                      rcld, &
+                                      rcld_size_0, &
+                                      rcld_size_1, &
+                                      rhon, &
+                                      rhon_size_0, &
+                                      rhon_size_1, &
+                                      tketens, &
+                                      tketens_size_0, &
+                                      tketens_size_1, &
+                                      tket_hshr, &
+                                      tket_hshr_size_0, &
+                                      tket_hshr_size_1, &
+                                      u_tens, &
+                                      u_tens_size_0, &
+                                      u_tens_size_1, &
+                                      v_tens, &
+                                      v_tens_size_0, &
+                                      v_tens_size_1, &
+                                      t_tens, &
+                                      t_tens_size_0, &
+                                      t_tens_size_1, &
+                                      qv_tens, &
+                                      qv_tens_size_0, &
+                                      qv_tens_size_1, &
+                                      qc_tens, &
+                                      qc_tens_size_0, &
+                                      qc_tens_size_1, &
+                                      dt_var, &
+                                      dt_tke, &
+                                      on_gpu) bind(c, name="turbulence_run_wrapper") result(rc)
+         import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
+         integer(c_int) :: rc  ! Stores the return code
+
+         type(c_ptr), value, target :: u
+
+         integer(c_int), value :: u_size_0
+
+         integer(c_int), value :: u_size_1
+
+         type(c_ptr), value, target :: v
+
+         integer(c_int), value :: v_size_0
+
+         integer(c_int), value :: v_size_1
+
+         type(c_ptr), value, target :: t
+
+         integer(c_int), value :: t_size_0
+
+         integer(c_int), value :: t_size_1
+
+         type(c_ptr), value, target :: qv
+
+         integer(c_int), value :: qv_size_0
+
+         integer(c_int), value :: qv_size_1
+
+         type(c_ptr), value, target :: qc
+
+         integer(c_int), value :: qc_size_0
+
+         integer(c_int), value :: qc_size_1
+
+         type(c_ptr), value, target :: prs
+
+         integer(c_int), value :: prs_size_0
+
+         integer(c_int), value :: prs_size_1
+
+         type(c_ptr), value, target :: rhoh
+
+         integer(c_int), value :: rhoh_size_0
+
+         integer(c_int), value :: rhoh_size_1
+
+         type(c_ptr), value, target :: epr
+
+         integer(c_int), value :: epr_size_0
+
+         integer(c_int), value :: epr_size_1
+
+         type(c_ptr), value, target :: ut_sso
+
+         integer(c_int), value :: ut_sso_size_0
+
+         integer(c_int), value :: ut_sso_size_1
+
+         type(c_ptr), value, target :: vt_sso
+
+         integer(c_int), value :: vt_sso_size_0
+
+         integer(c_int), value :: vt_sso_size_1
+
+         type(c_ptr), value, target :: hdef2
+
+         integer(c_int), value :: hdef2_size_0
+
+         integer(c_int), value :: hdef2_size_1
+
+         type(c_ptr), value, target :: hdiv
+
+         integer(c_int), value :: hdiv_size_0
+
+         integer(c_int), value :: hdiv_size_1
+
+         type(c_ptr), value, target :: dwdx
+
+         integer(c_int), value :: dwdx_size_0
+
+         integer(c_int), value :: dwdx_size_1
+
+         type(c_ptr), value, target :: dwdy
+
+         integer(c_int), value :: dwdy_size_0
+
+         integer(c_int), value :: dwdy_size_1
+
+         type(c_ptr), value, target :: t_g
+
+         integer(c_int), value :: t_g_size_0
+
+         type(c_ptr), value, target :: qv_s
+
+         integer(c_int), value :: qv_s_size_0
+
+         type(c_ptr), value, target :: ps
+
+         integer(c_int), value :: ps_size_0
+
+         type(c_ptr), value, target :: l_pat
+
+         integer(c_int), value :: l_pat_size_0
+
+         type(c_ptr), value, target :: gz0
+
+         integer(c_int), value :: gz0_size_0
+
+         type(c_ptr), value, target :: tvm
+
+         integer(c_int), value :: tvm_size_0
+
+         type(c_ptr), value, target :: tvh
+
+         integer(c_int), value :: tvh_size_0
+
+         type(c_ptr), value, target :: tfm
+
+         integer(c_int), value :: tfm_size_0
+
+         type(c_ptr), value, target :: tfh
+
+         integer(c_int), value :: tfh_size_0
+
+         type(c_ptr), value, target :: tkred_sfc
+
+         integer(c_int), value :: tkred_sfc_size_0
+
+         type(c_ptr), value, target :: tkred_sfc_h
+
+         integer(c_int), value :: tkred_sfc_h_size_0
+
+         type(c_ptr), value, target :: shfl_s
+
+         integer(c_int), value :: shfl_s_size_0
+
+         type(c_ptr), value, target :: qvfl_s
+
+         integer(c_int), value :: qvfl_s_size_0
+
+         type(c_ptr), value, target :: tke
+
+         integer(c_int), value :: tke_size_0
+
+         integer(c_int), value :: tke_size_1
+
+         type(c_ptr), value, target :: tkvm
+
+         integer(c_int), value :: tkvm_size_0
+
+         integer(c_int), value :: tkvm_size_1
+
+         type(c_ptr), value, target :: tkvh
+
+         integer(c_int), value :: tkvh_size_0
+
+         integer(c_int), value :: tkvh_size_1
+
+         type(c_ptr), value, target :: rcld
+
+         integer(c_int), value :: rcld_size_0
+
+         integer(c_int), value :: rcld_size_1
+
+         type(c_ptr), value, target :: rhon
+
+         integer(c_int), value :: rhon_size_0
+
+         integer(c_int), value :: rhon_size_1
+
+         type(c_ptr), value, target :: tketens
+
+         integer(c_int), value :: tketens_size_0
+
+         integer(c_int), value :: tketens_size_1
+
+         type(c_ptr), value, target :: tket_hshr
+
+         integer(c_int), value :: tket_hshr_size_0
+
+         integer(c_int), value :: tket_hshr_size_1
+
+         type(c_ptr), value, target :: u_tens
+
+         integer(c_int), value :: u_tens_size_0
+
+         integer(c_int), value :: u_tens_size_1
+
+         type(c_ptr), value, target :: v_tens
+
+         integer(c_int), value :: v_tens_size_0
+
+         integer(c_int), value :: v_tens_size_1
+
+         type(c_ptr), value, target :: t_tens
+
+         integer(c_int), value :: t_tens_size_0
+
+         integer(c_int), value :: t_tens_size_1
+
+         type(c_ptr), value, target :: qv_tens
+
+         integer(c_int), value :: qv_tens_size_0
+
+         integer(c_int), value :: qv_tens_size_1
+
+         type(c_ptr), value, target :: qc_tens
+
+         integer(c_int), value :: qc_tens_size_0
+
+         integer(c_int), value :: qc_tens_size_1
+
+         real(c_double), value, target :: dt_var
+
+         real(c_double), value, target :: dt_tke
+
+         logical(c_bool), value :: on_gpu
+
+      end function turbulence_run_wrapper
 
    end interface
 
@@ -4071,5 +4727,1021 @@ contains
       !$acc end host_data
       !$acc end host_data
    end subroutine solve_nh_run
+
+   subroutine turbulence_init(hhl, &
+                              dp0, &
+                              l_hori, &
+                              trop_mask, &
+                              innertrop_mask, &
+                              impl_s, &
+                              impl_t, &
+                              imode_tkvmini, &
+                              tkhmin, &
+                              tkmmin, &
+                              tkhmin_strat, &
+                              tkmmin_strat, &
+                              ditsmot, &
+                              imode_frcsmot, &
+                              frcsmot, &
+                              tkesmot, &
+                              frcsecu, &
+                              tkesecu, &
+                              stbsecu, &
+                              prfsecu, &
+                              epsi, &
+                              it_end, &
+                              rlam_heat, &
+                              rlam_mom, &
+                              rat_lam, &
+                              rat_sea, &
+                              rat_glac, &
+                              rat_can, &
+                              imode_nsf_wind, &
+                              rsur_sher, &
+                              imode_charpar, &
+                              alpha0, &
+                              alpha0_max, &
+                              alpha0_pert, &
+                              alpha1, &
+                              c_lnd, &
+                              c_sea, &
+                              c_soil, &
+                              c_stm, &
+                              e_surf, &
+                              lconst_z0, &
+                              const_z0, &
+                              z0m_dia, &
+                              z0_ice, &
+                              tur_len, &
+                              pat_len, &
+                              len_min, &
+                              imode_vel_min, &
+                              vel_min, &
+                              vel_max, &
+                              akt, &
+                              a_heat, &
+                              a_mom, &
+                              d_heat, &
+                              d_mom, &
+                              c_diff, &
+                              a_stab, &
+                              a_hshr, &
+                              clc_diag, &
+                              q_crit, &
+                              c_scld, &
+                              ltkesso, &
+                              ltkecon, &
+                              ltkeshs, &
+                              ltkenst, &
+                              loutsso, &
+                              loutshs, &
+                              loutnst, &
+                              loutbms, &
+                              ltmpcor, &
+                              lcpfluc, &
+                              lexpcor, &
+                              lsflcnd, &
+                              lcirflx, &
+                              ldiff_qi, &
+                              ldiff_qs, &
+                              lfreeslip, &
+                              l3dturb, &
+                              imode_tran, &
+                              imode_turb, &
+                              icldm_tran, &
+                              icldm_turb, &
+                              itype_wcld, &
+                              itype_sher, &
+                              imode_stbcalc, &
+                              ilow_def_cond, &
+                              imode_pat_len, &
+                              imode_shshear, &
+                              imode_tkesso, &
+                              imode_snowsmot, &
+                              itype_2m_diag, &
+                              imode_stadlim, &
+                              imode_trancnf, &
+                              imode_lamdiff, &
+                              imode_tkemini, &
+                              imode_suradap, &
+                              imode_tkediff, &
+                              imode_adshear, &
+                              backend, &
+                              rc)
+      use, intrinsic :: iso_c_binding
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: hhl
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: dp0
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: l_hori
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: trop_mask
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: innertrop_mask
+
+      real(c_double), value, target :: impl_s
+
+      real(c_double), value, target :: impl_t
+
+      integer(c_int), value, target :: imode_tkvmini
+
+      real(c_double), value, target :: tkhmin
+
+      real(c_double), value, target :: tkmmin
+
+      real(c_double), value, target :: tkhmin_strat
+
+      real(c_double), value, target :: tkmmin_strat
+
+      real(c_double), value, target :: ditsmot
+
+      integer(c_int), value, target :: imode_frcsmot
+
+      real(c_double), value, target :: frcsmot
+
+      real(c_double), value, target :: tkesmot
+
+      real(c_double), value, target :: frcsecu
+
+      real(c_double), value, target :: tkesecu
+
+      real(c_double), value, target :: stbsecu
+
+      real(c_double), value, target :: prfsecu
+
+      real(c_double), value, target :: epsi
+
+      integer(c_int), value, target :: it_end
+
+      real(c_double), value, target :: rlam_heat
+
+      real(c_double), value, target :: rlam_mom
+
+      real(c_double), value, target :: rat_lam
+
+      real(c_double), value, target :: rat_sea
+
+      real(c_double), value, target :: rat_glac
+
+      real(c_double), value, target :: rat_can
+
+      integer(c_int), value, target :: imode_nsf_wind
+
+      real(c_double), value, target :: rsur_sher
+
+      integer(c_int), value, target :: imode_charpar
+
+      real(c_double), value, target :: alpha0
+
+      real(c_double), value, target :: alpha0_max
+
+      real(c_double), value, target :: alpha0_pert
+
+      real(c_double), value, target :: alpha1
+
+      real(c_double), value, target :: c_lnd
+
+      real(c_double), value, target :: c_sea
+
+      real(c_double), value, target :: c_soil
+
+      real(c_double), value, target :: c_stm
+
+      real(c_double), value, target :: e_surf
+
+      logical(c_bool), value, target :: lconst_z0
+
+      real(c_double), value, target :: const_z0
+
+      real(c_double), value, target :: z0m_dia
+
+      real(c_double), value, target :: z0_ice
+
+      real(c_double), value, target :: tur_len
+
+      real(c_double), value, target :: pat_len
+
+      real(c_double), value, target :: len_min
+
+      integer(c_int), value, target :: imode_vel_min
+
+      real(c_double), value, target :: vel_min
+
+      real(c_double), value, target :: vel_max
+
+      real(c_double), value, target :: akt
+
+      real(c_double), value, target :: a_heat
+
+      real(c_double), value, target :: a_mom
+
+      real(c_double), value, target :: d_heat
+
+      real(c_double), value, target :: d_mom
+
+      real(c_double), value, target :: c_diff
+
+      real(c_double), value, target :: a_stab
+
+      real(c_double), value, target :: a_hshr
+
+      real(c_double), value, target :: clc_diag
+
+      real(c_double), value, target :: q_crit
+
+      real(c_double), value, target :: c_scld
+
+      logical(c_bool), value, target :: ltkesso
+
+      logical(c_bool), value, target :: ltkecon
+
+      logical(c_bool), value, target :: ltkeshs
+
+      logical(c_bool), value, target :: ltkenst
+
+      logical(c_bool), value, target :: loutsso
+
+      logical(c_bool), value, target :: loutshs
+
+      logical(c_bool), value, target :: loutnst
+
+      logical(c_bool), value, target :: loutbms
+
+      logical(c_bool), value, target :: ltmpcor
+
+      logical(c_bool), value, target :: lcpfluc
+
+      logical(c_bool), value, target :: lexpcor
+
+      logical(c_bool), value, target :: lsflcnd
+
+      logical(c_bool), value, target :: lcirflx
+
+      logical(c_bool), value, target :: ldiff_qi
+
+      logical(c_bool), value, target :: ldiff_qs
+
+      logical(c_bool), value, target :: lfreeslip
+
+      logical(c_bool), value, target :: l3dturb
+
+      integer(c_int), value, target :: imode_tran
+
+      integer(c_int), value, target :: imode_turb
+
+      integer(c_int), value, target :: icldm_tran
+
+      integer(c_int), value, target :: icldm_turb
+
+      integer(c_int), value, target :: itype_wcld
+
+      integer(c_int), value, target :: itype_sher
+
+      integer(c_int), value, target :: imode_stbcalc
+
+      integer(c_int), value, target :: ilow_def_cond
+
+      integer(c_int), value, target :: imode_pat_len
+
+      integer(c_int), value, target :: imode_shshear
+
+      integer(c_int), value, target :: imode_tkesso
+
+      integer(c_int), value, target :: imode_snowsmot
+
+      integer(c_int), value, target :: itype_2m_diag
+
+      integer(c_int), value, target :: imode_stadlim
+
+      integer(c_int), value, target :: imode_trancnf
+
+      integer(c_int), value, target :: imode_lamdiff
+
+      integer(c_int), value, target :: imode_tkemini
+
+      integer(c_int), value, target :: imode_suradap
+
+      integer(c_int), value, target :: imode_tkediff
+
+      integer(c_int), value, target :: imode_adshear
+
+      integer(c_int), value, target :: backend
+
+      logical(c_bool) :: on_gpu
+
+      integer(c_int) :: hhl_size_0
+
+      integer(c_int) :: hhl_size_1
+
+      integer(c_int) :: dp0_size_0
+
+      integer(c_int) :: dp0_size_1
+
+      integer(c_int) :: l_hori_size_0
+
+      integer(c_int) :: trop_mask_size_0
+
+      integer(c_int) :: innertrop_mask_size_0
+
+      integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
+
+      !$acc host_data use_device(hhl)
+      !$acc host_data use_device(dp0)
+      !$acc host_data use_device(l_hori)
+      !$acc host_data use_device(trop_mask)
+      !$acc host_data use_device(innertrop_mask)
+
+#ifdef _OPENACC
+      on_gpu = .True.
+#else
+      on_gpu = .False.
+#endif
+
+      hhl_size_0 = SIZE(hhl, 1)
+      hhl_size_1 = SIZE(hhl, 2)
+
+      dp0_size_0 = SIZE(dp0, 1)
+      dp0_size_1 = SIZE(dp0, 2)
+
+      l_hori_size_0 = SIZE(l_hori, 1)
+
+      trop_mask_size_0 = SIZE(trop_mask, 1)
+
+      innertrop_mask_size_0 = SIZE(innertrop_mask, 1)
+
+      rc = turbulence_init_wrapper(hhl=c_loc(hhl), &
+                                   hhl_size_0=hhl_size_0, &
+                                   hhl_size_1=hhl_size_1, &
+                                   dp0=c_loc(dp0), &
+                                   dp0_size_0=dp0_size_0, &
+                                   dp0_size_1=dp0_size_1, &
+                                   l_hori=c_loc(l_hori), &
+                                   l_hori_size_0=l_hori_size_0, &
+                                   trop_mask=c_loc(trop_mask), &
+                                   trop_mask_size_0=trop_mask_size_0, &
+                                   innertrop_mask=c_loc(innertrop_mask), &
+                                   innertrop_mask_size_0=innertrop_mask_size_0, &
+                                   impl_s=impl_s, &
+                                   impl_t=impl_t, &
+                                   imode_tkvmini=imode_tkvmini, &
+                                   tkhmin=tkhmin, &
+                                   tkmmin=tkmmin, &
+                                   tkhmin_strat=tkhmin_strat, &
+                                   tkmmin_strat=tkmmin_strat, &
+                                   ditsmot=ditsmot, &
+                                   imode_frcsmot=imode_frcsmot, &
+                                   frcsmot=frcsmot, &
+                                   tkesmot=tkesmot, &
+                                   frcsecu=frcsecu, &
+                                   tkesecu=tkesecu, &
+                                   stbsecu=stbsecu, &
+                                   prfsecu=prfsecu, &
+                                   epsi=epsi, &
+                                   it_end=it_end, &
+                                   rlam_heat=rlam_heat, &
+                                   rlam_mom=rlam_mom, &
+                                   rat_lam=rat_lam, &
+                                   rat_sea=rat_sea, &
+                                   rat_glac=rat_glac, &
+                                   rat_can=rat_can, &
+                                   imode_nsf_wind=imode_nsf_wind, &
+                                   rsur_sher=rsur_sher, &
+                                   imode_charpar=imode_charpar, &
+                                   alpha0=alpha0, &
+                                   alpha0_max=alpha0_max, &
+                                   alpha0_pert=alpha0_pert, &
+                                   alpha1=alpha1, &
+                                   c_lnd=c_lnd, &
+                                   c_sea=c_sea, &
+                                   c_soil=c_soil, &
+                                   c_stm=c_stm, &
+                                   e_surf=e_surf, &
+                                   lconst_z0=lconst_z0, &
+                                   const_z0=const_z0, &
+                                   z0m_dia=z0m_dia, &
+                                   z0_ice=z0_ice, &
+                                   tur_len=tur_len, &
+                                   pat_len=pat_len, &
+                                   len_min=len_min, &
+                                   imode_vel_min=imode_vel_min, &
+                                   vel_min=vel_min, &
+                                   vel_max=vel_max, &
+                                   akt=akt, &
+                                   a_heat=a_heat, &
+                                   a_mom=a_mom, &
+                                   d_heat=d_heat, &
+                                   d_mom=d_mom, &
+                                   c_diff=c_diff, &
+                                   a_stab=a_stab, &
+                                   a_hshr=a_hshr, &
+                                   clc_diag=clc_diag, &
+                                   q_crit=q_crit, &
+                                   c_scld=c_scld, &
+                                   ltkesso=ltkesso, &
+                                   ltkecon=ltkecon, &
+                                   ltkeshs=ltkeshs, &
+                                   ltkenst=ltkenst, &
+                                   loutsso=loutsso, &
+                                   loutshs=loutshs, &
+                                   loutnst=loutnst, &
+                                   loutbms=loutbms, &
+                                   ltmpcor=ltmpcor, &
+                                   lcpfluc=lcpfluc, &
+                                   lexpcor=lexpcor, &
+                                   lsflcnd=lsflcnd, &
+                                   lcirflx=lcirflx, &
+                                   ldiff_qi=ldiff_qi, &
+                                   ldiff_qs=ldiff_qs, &
+                                   lfreeslip=lfreeslip, &
+                                   l3dturb=l3dturb, &
+                                   imode_tran=imode_tran, &
+                                   imode_turb=imode_turb, &
+                                   icldm_tran=icldm_tran, &
+                                   icldm_turb=icldm_turb, &
+                                   itype_wcld=itype_wcld, &
+                                   itype_sher=itype_sher, &
+                                   imode_stbcalc=imode_stbcalc, &
+                                   ilow_def_cond=ilow_def_cond, &
+                                   imode_pat_len=imode_pat_len, &
+                                   imode_shshear=imode_shshear, &
+                                   imode_tkesso=imode_tkesso, &
+                                   imode_snowsmot=imode_snowsmot, &
+                                   itype_2m_diag=itype_2m_diag, &
+                                   imode_stadlim=imode_stadlim, &
+                                   imode_trancnf=imode_trancnf, &
+                                   imode_lamdiff=imode_lamdiff, &
+                                   imode_tkemini=imode_tkemini, &
+                                   imode_suradap=imode_suradap, &
+                                   imode_tkediff=imode_tkediff, &
+                                   imode_adshear=imode_adshear, &
+                                   backend=backend, &
+                                   on_gpu=on_gpu)
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+   end subroutine turbulence_init
+
+   subroutine turbulence_run(u, &
+                             v, &
+                             t, &
+                             qv, &
+                             qc, &
+                             prs, &
+                             rhoh, &
+                             epr, &
+                             ut_sso, &
+                             vt_sso, &
+                             hdef2, &
+                             hdiv, &
+                             dwdx, &
+                             dwdy, &
+                             t_g, &
+                             qv_s, &
+                             ps, &
+                             l_pat, &
+                             gz0, &
+                             tvm, &
+                             tvh, &
+                             tfm, &
+                             tfh, &
+                             tkred_sfc, &
+                             tkred_sfc_h, &
+                             shfl_s, &
+                             qvfl_s, &
+                             tke, &
+                             tkvm, &
+                             tkvh, &
+                             rcld, &
+                             rhon, &
+                             tketens, &
+                             tket_hshr, &
+                             u_tens, &
+                             v_tens, &
+                             t_tens, &
+                             qv_tens, &
+                             qc_tens, &
+                             dt_var, &
+                             dt_tke, &
+                             rc)
+      use, intrinsic :: iso_c_binding
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: u
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: v
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: t
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: qv
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: qc
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: prs
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rhoh
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: epr
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: ut_sso
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: vt_sso
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: hdef2
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: hdiv
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: dwdx
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: dwdy
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: t_g
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: qv_s
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: ps
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: l_pat
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: gz0
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: tvm
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: tvh
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: tfm
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: tfh
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: tkred_sfc
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: tkred_sfc_h
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: shfl_s
+
+      real(c_double), dimension(:), contiguous, intent(inout), target :: qvfl_s
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: tke
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: tkvm
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: tkvh
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rcld
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: rhon
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: tketens
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: tket_hshr
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: u_tens
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: v_tens
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: t_tens
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: qv_tens
+
+      real(c_double), dimension(:, :), contiguous, intent(inout), target :: qc_tens
+
+      real(c_double), value, target :: dt_var
+
+      real(c_double), value, target :: dt_tke
+
+      logical(c_bool) :: on_gpu
+
+      integer(c_int) :: u_size_0
+
+      integer(c_int) :: u_size_1
+
+      integer(c_int) :: v_size_0
+
+      integer(c_int) :: v_size_1
+
+      integer(c_int) :: t_size_0
+
+      integer(c_int) :: t_size_1
+
+      integer(c_int) :: qv_size_0
+
+      integer(c_int) :: qv_size_1
+
+      integer(c_int) :: qc_size_0
+
+      integer(c_int) :: qc_size_1
+
+      integer(c_int) :: prs_size_0
+
+      integer(c_int) :: prs_size_1
+
+      integer(c_int) :: rhoh_size_0
+
+      integer(c_int) :: rhoh_size_1
+
+      integer(c_int) :: epr_size_0
+
+      integer(c_int) :: epr_size_1
+
+      integer(c_int) :: ut_sso_size_0
+
+      integer(c_int) :: ut_sso_size_1
+
+      integer(c_int) :: vt_sso_size_0
+
+      integer(c_int) :: vt_sso_size_1
+
+      integer(c_int) :: hdef2_size_0
+
+      integer(c_int) :: hdef2_size_1
+
+      integer(c_int) :: hdiv_size_0
+
+      integer(c_int) :: hdiv_size_1
+
+      integer(c_int) :: dwdx_size_0
+
+      integer(c_int) :: dwdx_size_1
+
+      integer(c_int) :: dwdy_size_0
+
+      integer(c_int) :: dwdy_size_1
+
+      integer(c_int) :: t_g_size_0
+
+      integer(c_int) :: qv_s_size_0
+
+      integer(c_int) :: ps_size_0
+
+      integer(c_int) :: l_pat_size_0
+
+      integer(c_int) :: gz0_size_0
+
+      integer(c_int) :: tvm_size_0
+
+      integer(c_int) :: tvh_size_0
+
+      integer(c_int) :: tfm_size_0
+
+      integer(c_int) :: tfh_size_0
+
+      integer(c_int) :: tkred_sfc_size_0
+
+      integer(c_int) :: tkred_sfc_h_size_0
+
+      integer(c_int) :: shfl_s_size_0
+
+      integer(c_int) :: qvfl_s_size_0
+
+      integer(c_int) :: tke_size_0
+
+      integer(c_int) :: tke_size_1
+
+      integer(c_int) :: tkvm_size_0
+
+      integer(c_int) :: tkvm_size_1
+
+      integer(c_int) :: tkvh_size_0
+
+      integer(c_int) :: tkvh_size_1
+
+      integer(c_int) :: rcld_size_0
+
+      integer(c_int) :: rcld_size_1
+
+      integer(c_int) :: rhon_size_0
+
+      integer(c_int) :: rhon_size_1
+
+      integer(c_int) :: tketens_size_0
+
+      integer(c_int) :: tketens_size_1
+
+      integer(c_int) :: tket_hshr_size_0
+
+      integer(c_int) :: tket_hshr_size_1
+
+      integer(c_int) :: u_tens_size_0
+
+      integer(c_int) :: u_tens_size_1
+
+      integer(c_int) :: v_tens_size_0
+
+      integer(c_int) :: v_tens_size_1
+
+      integer(c_int) :: t_tens_size_0
+
+      integer(c_int) :: t_tens_size_1
+
+      integer(c_int) :: qv_tens_size_0
+
+      integer(c_int) :: qv_tens_size_1
+
+      integer(c_int) :: qc_tens_size_0
+
+      integer(c_int) :: qc_tens_size_1
+
+      integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
+
+      !$acc host_data use_device(u)
+      !$acc host_data use_device(v)
+      !$acc host_data use_device(t)
+      !$acc host_data use_device(qv)
+      !$acc host_data use_device(qc)
+      !$acc host_data use_device(prs)
+      !$acc host_data use_device(rhoh)
+      !$acc host_data use_device(epr)
+      !$acc host_data use_device(ut_sso)
+      !$acc host_data use_device(vt_sso)
+      !$acc host_data use_device(hdef2)
+      !$acc host_data use_device(hdiv)
+      !$acc host_data use_device(dwdx)
+      !$acc host_data use_device(dwdy)
+      !$acc host_data use_device(t_g)
+      !$acc host_data use_device(qv_s)
+      !$acc host_data use_device(ps)
+      !$acc host_data use_device(l_pat)
+      !$acc host_data use_device(gz0)
+      !$acc host_data use_device(tvm)
+      !$acc host_data use_device(tvh)
+      !$acc host_data use_device(tfm)
+      !$acc host_data use_device(tfh)
+      !$acc host_data use_device(tkred_sfc)
+      !$acc host_data use_device(tkred_sfc_h)
+      !$acc host_data use_device(shfl_s)
+      !$acc host_data use_device(qvfl_s)
+      !$acc host_data use_device(tke)
+      !$acc host_data use_device(tkvm)
+      !$acc host_data use_device(tkvh)
+      !$acc host_data use_device(rcld)
+      !$acc host_data use_device(rhon)
+      !$acc host_data use_device(tketens)
+      !$acc host_data use_device(tket_hshr)
+      !$acc host_data use_device(u_tens)
+      !$acc host_data use_device(v_tens)
+      !$acc host_data use_device(t_tens)
+      !$acc host_data use_device(qv_tens)
+      !$acc host_data use_device(qc_tens)
+
+#ifdef _OPENACC
+      on_gpu = .True.
+#else
+      on_gpu = .False.
+#endif
+
+      u_size_0 = SIZE(u, 1)
+      u_size_1 = SIZE(u, 2)
+
+      v_size_0 = SIZE(v, 1)
+      v_size_1 = SIZE(v, 2)
+
+      t_size_0 = SIZE(t, 1)
+      t_size_1 = SIZE(t, 2)
+
+      qv_size_0 = SIZE(qv, 1)
+      qv_size_1 = SIZE(qv, 2)
+
+      qc_size_0 = SIZE(qc, 1)
+      qc_size_1 = SIZE(qc, 2)
+
+      prs_size_0 = SIZE(prs, 1)
+      prs_size_1 = SIZE(prs, 2)
+
+      rhoh_size_0 = SIZE(rhoh, 1)
+      rhoh_size_1 = SIZE(rhoh, 2)
+
+      epr_size_0 = SIZE(epr, 1)
+      epr_size_1 = SIZE(epr, 2)
+
+      ut_sso_size_0 = SIZE(ut_sso, 1)
+      ut_sso_size_1 = SIZE(ut_sso, 2)
+
+      vt_sso_size_0 = SIZE(vt_sso, 1)
+      vt_sso_size_1 = SIZE(vt_sso, 2)
+
+      hdef2_size_0 = SIZE(hdef2, 1)
+      hdef2_size_1 = SIZE(hdef2, 2)
+
+      hdiv_size_0 = SIZE(hdiv, 1)
+      hdiv_size_1 = SIZE(hdiv, 2)
+
+      dwdx_size_0 = SIZE(dwdx, 1)
+      dwdx_size_1 = SIZE(dwdx, 2)
+
+      dwdy_size_0 = SIZE(dwdy, 1)
+      dwdy_size_1 = SIZE(dwdy, 2)
+
+      t_g_size_0 = SIZE(t_g, 1)
+
+      qv_s_size_0 = SIZE(qv_s, 1)
+
+      ps_size_0 = SIZE(ps, 1)
+
+      l_pat_size_0 = SIZE(l_pat, 1)
+
+      gz0_size_0 = SIZE(gz0, 1)
+
+      tvm_size_0 = SIZE(tvm, 1)
+
+      tvh_size_0 = SIZE(tvh, 1)
+
+      tfm_size_0 = SIZE(tfm, 1)
+
+      tfh_size_0 = SIZE(tfh, 1)
+
+      tkred_sfc_size_0 = SIZE(tkred_sfc, 1)
+
+      tkred_sfc_h_size_0 = SIZE(tkred_sfc_h, 1)
+
+      shfl_s_size_0 = SIZE(shfl_s, 1)
+
+      qvfl_s_size_0 = SIZE(qvfl_s, 1)
+
+      tke_size_0 = SIZE(tke, 1)
+      tke_size_1 = SIZE(tke, 2)
+
+      tkvm_size_0 = SIZE(tkvm, 1)
+      tkvm_size_1 = SIZE(tkvm, 2)
+
+      tkvh_size_0 = SIZE(tkvh, 1)
+      tkvh_size_1 = SIZE(tkvh, 2)
+
+      rcld_size_0 = SIZE(rcld, 1)
+      rcld_size_1 = SIZE(rcld, 2)
+
+      rhon_size_0 = SIZE(rhon, 1)
+      rhon_size_1 = SIZE(rhon, 2)
+
+      tketens_size_0 = SIZE(tketens, 1)
+      tketens_size_1 = SIZE(tketens, 2)
+
+      tket_hshr_size_0 = SIZE(tket_hshr, 1)
+      tket_hshr_size_1 = SIZE(tket_hshr, 2)
+
+      u_tens_size_0 = SIZE(u_tens, 1)
+      u_tens_size_1 = SIZE(u_tens, 2)
+
+      v_tens_size_0 = SIZE(v_tens, 1)
+      v_tens_size_1 = SIZE(v_tens, 2)
+
+      t_tens_size_0 = SIZE(t_tens, 1)
+      t_tens_size_1 = SIZE(t_tens, 2)
+
+      qv_tens_size_0 = SIZE(qv_tens, 1)
+      qv_tens_size_1 = SIZE(qv_tens, 2)
+
+      qc_tens_size_0 = SIZE(qc_tens, 1)
+      qc_tens_size_1 = SIZE(qc_tens, 2)
+
+      rc = turbulence_run_wrapper(u=c_loc(u), &
+                                  u_size_0=u_size_0, &
+                                  u_size_1=u_size_1, &
+                                  v=c_loc(v), &
+                                  v_size_0=v_size_0, &
+                                  v_size_1=v_size_1, &
+                                  t=c_loc(t), &
+                                  t_size_0=t_size_0, &
+                                  t_size_1=t_size_1, &
+                                  qv=c_loc(qv), &
+                                  qv_size_0=qv_size_0, &
+                                  qv_size_1=qv_size_1, &
+                                  qc=c_loc(qc), &
+                                  qc_size_0=qc_size_0, &
+                                  qc_size_1=qc_size_1, &
+                                  prs=c_loc(prs), &
+                                  prs_size_0=prs_size_0, &
+                                  prs_size_1=prs_size_1, &
+                                  rhoh=c_loc(rhoh), &
+                                  rhoh_size_0=rhoh_size_0, &
+                                  rhoh_size_1=rhoh_size_1, &
+                                  epr=c_loc(epr), &
+                                  epr_size_0=epr_size_0, &
+                                  epr_size_1=epr_size_1, &
+                                  ut_sso=c_loc(ut_sso), &
+                                  ut_sso_size_0=ut_sso_size_0, &
+                                  ut_sso_size_1=ut_sso_size_1, &
+                                  vt_sso=c_loc(vt_sso), &
+                                  vt_sso_size_0=vt_sso_size_0, &
+                                  vt_sso_size_1=vt_sso_size_1, &
+                                  hdef2=c_loc(hdef2), &
+                                  hdef2_size_0=hdef2_size_0, &
+                                  hdef2_size_1=hdef2_size_1, &
+                                  hdiv=c_loc(hdiv), &
+                                  hdiv_size_0=hdiv_size_0, &
+                                  hdiv_size_1=hdiv_size_1, &
+                                  dwdx=c_loc(dwdx), &
+                                  dwdx_size_0=dwdx_size_0, &
+                                  dwdx_size_1=dwdx_size_1, &
+                                  dwdy=c_loc(dwdy), &
+                                  dwdy_size_0=dwdy_size_0, &
+                                  dwdy_size_1=dwdy_size_1, &
+                                  t_g=c_loc(t_g), &
+                                  t_g_size_0=t_g_size_0, &
+                                  qv_s=c_loc(qv_s), &
+                                  qv_s_size_0=qv_s_size_0, &
+                                  ps=c_loc(ps), &
+                                  ps_size_0=ps_size_0, &
+                                  l_pat=c_loc(l_pat), &
+                                  l_pat_size_0=l_pat_size_0, &
+                                  gz0=c_loc(gz0), &
+                                  gz0_size_0=gz0_size_0, &
+                                  tvm=c_loc(tvm), &
+                                  tvm_size_0=tvm_size_0, &
+                                  tvh=c_loc(tvh), &
+                                  tvh_size_0=tvh_size_0, &
+                                  tfm=c_loc(tfm), &
+                                  tfm_size_0=tfm_size_0, &
+                                  tfh=c_loc(tfh), &
+                                  tfh_size_0=tfh_size_0, &
+                                  tkred_sfc=c_loc(tkred_sfc), &
+                                  tkred_sfc_size_0=tkred_sfc_size_0, &
+                                  tkred_sfc_h=c_loc(tkred_sfc_h), &
+                                  tkred_sfc_h_size_0=tkred_sfc_h_size_0, &
+                                  shfl_s=c_loc(shfl_s), &
+                                  shfl_s_size_0=shfl_s_size_0, &
+                                  qvfl_s=c_loc(qvfl_s), &
+                                  qvfl_s_size_0=qvfl_s_size_0, &
+                                  tke=c_loc(tke), &
+                                  tke_size_0=tke_size_0, &
+                                  tke_size_1=tke_size_1, &
+                                  tkvm=c_loc(tkvm), &
+                                  tkvm_size_0=tkvm_size_0, &
+                                  tkvm_size_1=tkvm_size_1, &
+                                  tkvh=c_loc(tkvh), &
+                                  tkvh_size_0=tkvh_size_0, &
+                                  tkvh_size_1=tkvh_size_1, &
+                                  rcld=c_loc(rcld), &
+                                  rcld_size_0=rcld_size_0, &
+                                  rcld_size_1=rcld_size_1, &
+                                  rhon=c_loc(rhon), &
+                                  rhon_size_0=rhon_size_0, &
+                                  rhon_size_1=rhon_size_1, &
+                                  tketens=c_loc(tketens), &
+                                  tketens_size_0=tketens_size_0, &
+                                  tketens_size_1=tketens_size_1, &
+                                  tket_hshr=c_loc(tket_hshr), &
+                                  tket_hshr_size_0=tket_hshr_size_0, &
+                                  tket_hshr_size_1=tket_hshr_size_1, &
+                                  u_tens=c_loc(u_tens), &
+                                  u_tens_size_0=u_tens_size_0, &
+                                  u_tens_size_1=u_tens_size_1, &
+                                  v_tens=c_loc(v_tens), &
+                                  v_tens_size_0=v_tens_size_0, &
+                                  v_tens_size_1=v_tens_size_1, &
+                                  t_tens=c_loc(t_tens), &
+                                  t_tens_size_0=t_tens_size_0, &
+                                  t_tens_size_1=t_tens_size_1, &
+                                  qv_tens=c_loc(qv_tens), &
+                                  qv_tens_size_0=qv_tens_size_0, &
+                                  qv_tens_size_1=qv_tens_size_1, &
+                                  qc_tens=c_loc(qc_tens), &
+                                  qc_tens_size_0=qc_tens_size_0, &
+                                  qc_tens_size_1=qc_tens_size_1, &
+                                  dt_var=dt_var, &
+                                  dt_tke=dt_tke, &
+                                  on_gpu=on_gpu)
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+   end subroutine turbulence_run
 
 end module

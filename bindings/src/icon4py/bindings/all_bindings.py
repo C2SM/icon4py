@@ -17,7 +17,7 @@ import pathlib
 
 import click
 
-from icon4py.bindings import diffusion_wrapper, dycore_wrapper, grid_wrapper
+from icon4py.bindings import diffusion_wrapper, dycore_wrapper, grid_wrapper, turbulence_wrapper
 from icon4py.tools import py2fgen
 
 
@@ -27,6 +27,8 @@ FUNCTIONS = [
     grid_wrapper.grid_init,
     dycore_wrapper.solve_nh_init,
     dycore_wrapper.solve_nh_run,
+    turbulence_wrapper.turbulence_init,
+    turbulence_wrapper.turbulence_run,
 ]
 LIBRARY_NAME = "icon4py_bindings"
 

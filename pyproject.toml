@@ -190,6 +190,7 @@ $MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/turbulence/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
 $MYPY_CONFIG_FILE_DIR/model/driver/src:
 $MYPY_CONFIG_FILE_DIR/model/standalone_driver/src:

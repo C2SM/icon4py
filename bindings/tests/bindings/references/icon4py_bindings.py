@@ -23,6 +23,8 @@ from icon4py.bindings.diffusion_wrapper import diffusion_run
 from icon4py.bindings.grid_wrapper import grid_init
 from icon4py.bindings.dycore_wrapper import solve_nh_init
 from icon4py.bindings.dycore_wrapper import solve_nh_run
+from icon4py.bindings.turbulence_wrapper import turbulence_init
+from icon4py.bindings.turbulence_wrapper import turbulence_run
 
 
 @ffi.def_extern(error=2)
@@ -4371,6 +4373,1250 @@ def solve_nh_run_wrapper(
 
             if __debug__:
                 logger.info("Python execution of solve_nh_run completed.")
+
+        except Exception as e:
+            logger.exception(f"A Python error occurred: {e}")
+            return 2
+
+    return 1
+
+
+@ffi.def_extern(error=2)
+def turbulence_init_wrapper(
+    hhl,
+    hhl_size_0,
+    hhl_size_1,
+    dp0,
+    dp0_size_0,
+    dp0_size_1,
+    l_hori,
+    l_hori_size_0,
+    trop_mask,
+    trop_mask_size_0,
+    innertrop_mask,
+    innertrop_mask_size_0,
+    impl_s,
+    impl_t,
+    imode_tkvmini,
+    tkhmin,
+    tkmmin,
+    tkhmin_strat,
+    tkmmin_strat,
+    ditsmot,
+    imode_frcsmot,
+    frcsmot,
+    tkesmot,
+    frcsecu,
+    tkesecu,
+    stbsecu,
+    prfsecu,
+    epsi,
+    it_end,
+    rlam_heat,
+    rlam_mom,
+    rat_lam,
+    rat_sea,
+    rat_glac,
+    rat_can,
+    imode_nsf_wind,
+    rsur_sher,
+    imode_charpar,
+    alpha0,
+    alpha0_max,
+    alpha0_pert,
+    alpha1,
+    c_lnd,
+    c_sea,
+    c_soil,
+    c_stm,
+    e_surf,
+    lconst_z0,
+    const_z0,
+    z0m_dia,
+    z0_ice,
+    tur_len,
+    pat_len,
+    len_min,
+    imode_vel_min,
+    vel_min,
+    vel_max,
+    akt,
+    a_heat,
+    a_mom,
+    d_heat,
+    d_mom,
+    c_diff,
+    a_stab,
+    a_hshr,
+    clc_diag,
+    q_crit,
+    c_scld,
+    ltkesso,
+    ltkecon,
+    ltkeshs,
+    ltkenst,
+    loutsso,
+    loutshs,
+    loutnst,
+    loutbms,
+    ltmpcor,
+    lcpfluc,
+    lexpcor,
+    lsflcnd,
+    lcirflx,
+    ldiff_qi,
+    ldiff_qs,
+    lfreeslip,
+    l3dturb,
+    imode_tran,
+    imode_turb,
+    icldm_tran,
+    icldm_turb,
+    itype_wcld,
+    itype_sher,
+    imode_stbcalc,
+    ilow_def_cond,
+    imode_pat_len,
+    imode_shshear,
+    imode_tkesso,
+    imode_snowsmot,
+    itype_2m_diag,
+    imode_stadlim,
+    imode_trancnf,
+    imode_lamdiff,
+    imode_tkemini,
+    imode_suradap,
+    imode_tkediff,
+    imode_adshear,
+    backend,
+    on_gpu,
+):
+    with runtime_config.HOOK_BINDINGS_FUNCTION["turbulence_init"]:
+        try:
+            if __debug__:
+                logger.info("Python execution of turbulence_init started.")
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    unpack_start_time = _runtime.perf_counter()
+
+            # ArrayInfos
+
+            hhl = (
+                hhl,
+                (
+                    hhl_size_0,
+                    hhl_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            dp0 = (
+                dp0,
+                (
+                    dp0_size_0,
+                    dp0_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            l_hori = (l_hori, (l_hori_size_0,), on_gpu, False)
+
+            trop_mask = (trop_mask, (trop_mask_size_0,), on_gpu, False)
+
+            innertrop_mask = (innertrop_mask, (innertrop_mask_size_0,), on_gpu, False)
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    allocate_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "turbulence_init constructing `ArrayInfos` time: %s"
+                        % str(allocate_end_time - unpack_start_time)
+                    )
+
+                    func_start_time = _runtime.perf_counter()
+
+            if __debug__ and runtime_config.PROFILING:
+                perf_counters = {}
+            else:
+                perf_counters = None
+            turbulence_init(
+                ffi=ffi,
+                perf_counters=perf_counters,
+                hhl=hhl,
+                dp0=dp0,
+                l_hori=l_hori,
+                trop_mask=trop_mask,
+                innertrop_mask=innertrop_mask,
+                impl_s=impl_s,
+                impl_t=impl_t,
+                imode_tkvmini=imode_tkvmini,
+                tkhmin=tkhmin,
+                tkmmin=tkmmin,
+                tkhmin_strat=tkhmin_strat,
+                tkmmin_strat=tkmmin_strat,
+                ditsmot=ditsmot,
+                imode_frcsmot=imode_frcsmot,
+                frcsmot=frcsmot,
+                tkesmot=tkesmot,
+                frcsecu=frcsecu,
+                tkesecu=tkesecu,
+                stbsecu=stbsecu,
+                prfsecu=prfsecu,
+                epsi=epsi,
+                it_end=it_end,
+                rlam_heat=rlam_heat,
+                rlam_mom=rlam_mom,
+                rat_lam=rat_lam,
+                rat_sea=rat_sea,
+                rat_glac=rat_glac,
+                rat_can=rat_can,
+                imode_nsf_wind=imode_nsf_wind,
+                rsur_sher=rsur_sher,
+                imode_charpar=imode_charpar,
+                alpha0=alpha0,
+                alpha0_max=alpha0_max,
+                alpha0_pert=alpha0_pert,
+                alpha1=alpha1,
+                c_lnd=c_lnd,
+                c_sea=c_sea,
+                c_soil=c_soil,
+                c_stm=c_stm,
+                e_surf=e_surf,
+                lconst_z0=lconst_z0,
+                const_z0=const_z0,
+                z0m_dia=z0m_dia,
+                z0_ice=z0_ice,
+                tur_len=tur_len,
+                pat_len=pat_len,
+                len_min=len_min,
+                imode_vel_min=imode_vel_min,
+                vel_min=vel_min,
+                vel_max=vel_max,
+                akt=akt,
+                a_heat=a_heat,
+                a_mom=a_mom,
+                d_heat=d_heat,
+                d_mom=d_mom,
+                c_diff=c_diff,
+                a_stab=a_stab,
+                a_hshr=a_hshr,
+                clc_diag=clc_diag,
+                q_crit=q_crit,
+                c_scld=c_scld,
+                ltkesso=ltkesso,
+                ltkecon=ltkecon,
+                ltkeshs=ltkeshs,
+                ltkenst=ltkenst,
+                loutsso=loutsso,
+                loutshs=loutshs,
+                loutnst=loutnst,
+                loutbms=loutbms,
+                ltmpcor=ltmpcor,
+                lcpfluc=lcpfluc,
+                lexpcor=lexpcor,
+                lsflcnd=lsflcnd,
+                lcirflx=lcirflx,
+                ldiff_qi=ldiff_qi,
+                ldiff_qs=ldiff_qs,
+                lfreeslip=lfreeslip,
+                l3dturb=l3dturb,
+                imode_tran=imode_tran,
+                imode_turb=imode_turb,
+                icldm_tran=icldm_tran,
+                icldm_turb=icldm_turb,
+                itype_wcld=itype_wcld,
+                itype_sher=itype_sher,
+                imode_stbcalc=imode_stbcalc,
+                ilow_def_cond=ilow_def_cond,
+                imode_pat_len=imode_pat_len,
+                imode_shshear=imode_shshear,
+                imode_tkesso=imode_tkesso,
+                imode_snowsmot=imode_snowsmot,
+                itype_2m_diag=itype_2m_diag,
+                imode_stadlim=imode_stadlim,
+                imode_trancnf=imode_trancnf,
+                imode_lamdiff=imode_lamdiff,
+                imode_tkemini=imode_tkemini,
+                imode_suradap=imode_suradap,
+                imode_tkediff=imode_tkediff,
+                imode_adshear=imode_adshear,
+                backend=backend,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    func_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "turbulence_init convert time: %s"
+                        % str(
+                            perf_counters["convert_end_time"] - perf_counters["convert_start_time"]
+                        )
+                    )
+                    logger.info(
+                        "turbulence_init execution time: %s" % str(func_end_time - func_start_time)
+                    )
+
+            if __debug__:
+                if logger.isEnabledFor(logging.DEBUG):
+
+                    hhl_arr = _conversion.as_array(ffi, hhl) if hhl is not None else None
+                    msg = "shape of hhl after computation = %s" % str(
+                        hhl_arr.shape if hhl is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "hhl after computation: %s" % str(hhl_arr) if hhl is not None else "None"
+                    logger.debug(msg)
+
+                    dp0_arr = _conversion.as_array(ffi, dp0) if dp0 is not None else None
+                    msg = "shape of dp0 after computation = %s" % str(
+                        dp0_arr.shape if dp0 is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "dp0 after computation: %s" % str(dp0_arr) if dp0 is not None else "None"
+                    logger.debug(msg)
+
+                    l_hori_arr = _conversion.as_array(ffi, l_hori) if l_hori is not None else None
+                    msg = "shape of l_hori after computation = %s" % str(
+                        l_hori_arr.shape if l_hori is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "l_hori after computation: %s" % str(l_hori_arr)
+                        if l_hori is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    trop_mask_arr = (
+                        _conversion.as_array(ffi, trop_mask) if trop_mask is not None else None
+                    )
+                    msg = "shape of trop_mask after computation = %s" % str(
+                        trop_mask_arr.shape if trop_mask is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "trop_mask after computation: %s" % str(trop_mask_arr)
+                        if trop_mask is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    innertrop_mask_arr = (
+                        _conversion.as_array(ffi, innertrop_mask)
+                        if innertrop_mask is not None
+                        else None
+                    )
+                    msg = "shape of innertrop_mask after computation = %s" % str(
+                        innertrop_mask_arr.shape if innertrop_mask is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "innertrop_mask after computation: %s" % str(innertrop_mask_arr)
+                        if innertrop_mask is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+            if __debug__:
+                logger.info("Python execution of turbulence_init completed.")
+
+        except Exception as e:
+            logger.exception(f"A Python error occurred: {e}")
+            return 2
+
+    return 1
+
+
+@ffi.def_extern(error=2)
+def turbulence_run_wrapper(
+    u,
+    u_size_0,
+    u_size_1,
+    v,
+    v_size_0,
+    v_size_1,
+    t,
+    t_size_0,
+    t_size_1,
+    qv,
+    qv_size_0,
+    qv_size_1,
+    qc,
+    qc_size_0,
+    qc_size_1,
+    prs,
+    prs_size_0,
+    prs_size_1,
+    rhoh,
+    rhoh_size_0,
+    rhoh_size_1,
+    epr,
+    epr_size_0,
+    epr_size_1,
+    ut_sso,
+    ut_sso_size_0,
+    ut_sso_size_1,
+    vt_sso,
+    vt_sso_size_0,
+    vt_sso_size_1,
+    hdef2,
+    hdef2_size_0,
+    hdef2_size_1,
+    hdiv,
+    hdiv_size_0,
+    hdiv_size_1,
+    dwdx,
+    dwdx_size_0,
+    dwdx_size_1,
+    dwdy,
+    dwdy_size_0,
+    dwdy_size_1,
+    t_g,
+    t_g_size_0,
+    qv_s,
+    qv_s_size_0,
+    ps,
+    ps_size_0,
+    l_pat,
+    l_pat_size_0,
+    gz0,
+    gz0_size_0,
+    tvm,
+    tvm_size_0,
+    tvh,
+    tvh_size_0,
+    tfm,
+    tfm_size_0,
+    tfh,
+    tfh_size_0,
+    tkred_sfc,
+    tkred_sfc_size_0,
+    tkred_sfc_h,
+    tkred_sfc_h_size_0,
+    shfl_s,
+    shfl_s_size_0,
+    qvfl_s,
+    qvfl_s_size_0,
+    tke,
+    tke_size_0,
+    tke_size_1,
+    tkvm,
+    tkvm_size_0,
+    tkvm_size_1,
+    tkvh,
+    tkvh_size_0,
+    tkvh_size_1,
+    rcld,
+    rcld_size_0,
+    rcld_size_1,
+    rhon,
+    rhon_size_0,
+    rhon_size_1,
+    tketens,
+    tketens_size_0,
+    tketens_size_1,
+    tket_hshr,
+    tket_hshr_size_0,
+    tket_hshr_size_1,
+    u_tens,
+    u_tens_size_0,
+    u_tens_size_1,
+    v_tens,
+    v_tens_size_0,
+    v_tens_size_1,
+    t_tens,
+    t_tens_size_0,
+    t_tens_size_1,
+    qv_tens,
+    qv_tens_size_0,
+    qv_tens_size_1,
+    qc_tens,
+    qc_tens_size_0,
+    qc_tens_size_1,
+    dt_var,
+    dt_tke,
+    on_gpu,
+):
+    with runtime_config.HOOK_BINDINGS_FUNCTION["turbulence_run"]:
+        try:
+            if __debug__:
+                logger.info("Python execution of turbulence_run started.")
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    unpack_start_time = _runtime.perf_counter()
+
+            # ArrayInfos
+
+            u = (
+                u,
+                (
+                    u_size_0,
+                    u_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            v = (
+                v,
+                (
+                    v_size_0,
+                    v_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            t = (
+                t,
+                (
+                    t_size_0,
+                    t_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            qv = (
+                qv,
+                (
+                    qv_size_0,
+                    qv_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            qc = (
+                qc,
+                (
+                    qc_size_0,
+                    qc_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            prs = (
+                prs,
+                (
+                    prs_size_0,
+                    prs_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            rhoh = (
+                rhoh,
+                (
+                    rhoh_size_0,
+                    rhoh_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            epr = (
+                epr,
+                (
+                    epr_size_0,
+                    epr_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            ut_sso = (
+                ut_sso,
+                (
+                    ut_sso_size_0,
+                    ut_sso_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            vt_sso = (
+                vt_sso,
+                (
+                    vt_sso_size_0,
+                    vt_sso_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            hdef2 = (
+                hdef2,
+                (
+                    hdef2_size_0,
+                    hdef2_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            hdiv = (
+                hdiv,
+                (
+                    hdiv_size_0,
+                    hdiv_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            dwdx = (
+                dwdx,
+                (
+                    dwdx_size_0,
+                    dwdx_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            dwdy = (
+                dwdy,
+                (
+                    dwdy_size_0,
+                    dwdy_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            t_g = (t_g, (t_g_size_0,), on_gpu, False)
+
+            qv_s = (qv_s, (qv_s_size_0,), on_gpu, False)
+
+            ps = (ps, (ps_size_0,), on_gpu, False)
+
+            l_pat = (l_pat, (l_pat_size_0,), on_gpu, False)
+
+            gz0 = (gz0, (gz0_size_0,), on_gpu, False)
+
+            tvm = (tvm, (tvm_size_0,), on_gpu, False)
+
+            tvh = (tvh, (tvh_size_0,), on_gpu, False)
+
+            tfm = (tfm, (tfm_size_0,), on_gpu, False)
+
+            tfh = (tfh, (tfh_size_0,), on_gpu, False)
+
+            tkred_sfc = (tkred_sfc, (tkred_sfc_size_0,), on_gpu, False)
+
+            tkred_sfc_h = (tkred_sfc_h, (tkred_sfc_h_size_0,), on_gpu, False)
+
+            shfl_s = (shfl_s, (shfl_s_size_0,), on_gpu, False)
+
+            qvfl_s = (qvfl_s, (qvfl_s_size_0,), on_gpu, False)
+
+            tke = (
+                tke,
+                (
+                    tke_size_0,
+                    tke_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            tkvm = (
+                tkvm,
+                (
+                    tkvm_size_0,
+                    tkvm_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            tkvh = (
+                tkvh,
+                (
+                    tkvh_size_0,
+                    tkvh_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            rcld = (
+                rcld,
+                (
+                    rcld_size_0,
+                    rcld_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            rhon = (
+                rhon,
+                (
+                    rhon_size_0,
+                    rhon_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            tketens = (
+                tketens,
+                (
+                    tketens_size_0,
+                    tketens_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            tket_hshr = (
+                tket_hshr,
+                (
+                    tket_hshr_size_0,
+                    tket_hshr_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            u_tens = (
+                u_tens,
+                (
+                    u_tens_size_0,
+                    u_tens_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            v_tens = (
+                v_tens,
+                (
+                    v_tens_size_0,
+                    v_tens_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            t_tens = (
+                t_tens,
+                (
+                    t_tens_size_0,
+                    t_tens_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            qv_tens = (
+                qv_tens,
+                (
+                    qv_tens_size_0,
+                    qv_tens_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            qc_tens = (
+                qc_tens,
+                (
+                    qc_tens_size_0,
+                    qc_tens_size_1,
+                ),
+                on_gpu,
+                False,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    allocate_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "turbulence_run constructing `ArrayInfos` time: %s"
+                        % str(allocate_end_time - unpack_start_time)
+                    )
+
+                    func_start_time = _runtime.perf_counter()
+
+            if __debug__ and runtime_config.PROFILING:
+                perf_counters = {}
+            else:
+                perf_counters = None
+            turbulence_run(
+                ffi=ffi,
+                perf_counters=perf_counters,
+                u=u,
+                v=v,
+                t=t,
+                qv=qv,
+                qc=qc,
+                prs=prs,
+                rhoh=rhoh,
+                epr=epr,
+                ut_sso=ut_sso,
+                vt_sso=vt_sso,
+                hdef2=hdef2,
+                hdiv=hdiv,
+                dwdx=dwdx,
+                dwdy=dwdy,
+                t_g=t_g,
+                qv_s=qv_s,
+                ps=ps,
+                l_pat=l_pat,
+                gz0=gz0,
+                tvm=tvm,
+                tvh=tvh,
+                tfm=tfm,
+                tfh=tfh,
+                tkred_sfc=tkred_sfc,
+                tkred_sfc_h=tkred_sfc_h,
+                shfl_s=shfl_s,
+                qvfl_s=qvfl_s,
+                tke=tke,
+                tkvm=tkvm,
+                tkvh=tkvh,
+                rcld=rcld,
+                rhon=rhon,
+                tketens=tketens,
+                tket_hshr=tket_hshr,
+                u_tens=u_tens,
+                v_tens=v_tens,
+                t_tens=t_tens,
+                qv_tens=qv_tens,
+                qc_tens=qc_tens,
+                dt_var=dt_var,
+                dt_tke=dt_tke,
+            )
+
+            if __debug__:
+                if runtime_config.PROFILING:
+                    func_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "turbulence_run convert time: %s"
+                        % str(
+                            perf_counters["convert_end_time"] - perf_counters["convert_start_time"]
+                        )
+                    )
+                    logger.info(
+                        "turbulence_run execution time: %s" % str(func_end_time - func_start_time)
+                    )
+
+            if __debug__:
+                if logger.isEnabledFor(logging.DEBUG):
+
+                    u_arr = _conversion.as_array(ffi, u) if u is not None else None
+                    msg = "shape of u after computation = %s" % str(
+                        u_arr.shape if u is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "u after computation: %s" % str(u_arr) if u is not None else "None"
+                    logger.debug(msg)
+
+                    v_arr = _conversion.as_array(ffi, v) if v is not None else None
+                    msg = "shape of v after computation = %s" % str(
+                        v_arr.shape if v is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "v after computation: %s" % str(v_arr) if v is not None else "None"
+                    logger.debug(msg)
+
+                    t_arr = _conversion.as_array(ffi, t) if t is not None else None
+                    msg = "shape of t after computation = %s" % str(
+                        t_arr.shape if t is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "t after computation: %s" % str(t_arr) if t is not None else "None"
+                    logger.debug(msg)
+
+                    qv_arr = _conversion.as_array(ffi, qv) if qv is not None else None
+                    msg = "shape of qv after computation = %s" % str(
+                        qv_arr.shape if qv is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "qv after computation: %s" % str(qv_arr) if qv is not None else "None"
+                    logger.debug(msg)
+
+                    qc_arr = _conversion.as_array(ffi, qc) if qc is not None else None
+                    msg = "shape of qc after computation = %s" % str(
+                        qc_arr.shape if qc is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "qc after computation: %s" % str(qc_arr) if qc is not None else "None"
+                    logger.debug(msg)
+
+                    prs_arr = _conversion.as_array(ffi, prs) if prs is not None else None
+                    msg = "shape of prs after computation = %s" % str(
+                        prs_arr.shape if prs is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "prs after computation: %s" % str(prs_arr) if prs is not None else "None"
+                    logger.debug(msg)
+
+                    rhoh_arr = _conversion.as_array(ffi, rhoh) if rhoh is not None else None
+                    msg = "shape of rhoh after computation = %s" % str(
+                        rhoh_arr.shape if rhoh is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "rhoh after computation: %s" % str(rhoh_arr) if rhoh is not None else "None"
+                    )
+                    logger.debug(msg)
+
+                    epr_arr = _conversion.as_array(ffi, epr) if epr is not None else None
+                    msg = "shape of epr after computation = %s" % str(
+                        epr_arr.shape if epr is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "epr after computation: %s" % str(epr_arr) if epr is not None else "None"
+                    logger.debug(msg)
+
+                    ut_sso_arr = _conversion.as_array(ffi, ut_sso) if ut_sso is not None else None
+                    msg = "shape of ut_sso after computation = %s" % str(
+                        ut_sso_arr.shape if ut_sso is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "ut_sso after computation: %s" % str(ut_sso_arr)
+                        if ut_sso is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vt_sso_arr = _conversion.as_array(ffi, vt_sso) if vt_sso is not None else None
+                    msg = "shape of vt_sso after computation = %s" % str(
+                        vt_sso_arr.shape if vt_sso is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vt_sso after computation: %s" % str(vt_sso_arr)
+                        if vt_sso is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    hdef2_arr = _conversion.as_array(ffi, hdef2) if hdef2 is not None else None
+                    msg = "shape of hdef2 after computation = %s" % str(
+                        hdef2_arr.shape if hdef2 is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "hdef2 after computation: %s" % str(hdef2_arr)
+                        if hdef2 is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    hdiv_arr = _conversion.as_array(ffi, hdiv) if hdiv is not None else None
+                    msg = "shape of hdiv after computation = %s" % str(
+                        hdiv_arr.shape if hdiv is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "hdiv after computation: %s" % str(hdiv_arr) if hdiv is not None else "None"
+                    )
+                    logger.debug(msg)
+
+                    dwdx_arr = _conversion.as_array(ffi, dwdx) if dwdx is not None else None
+                    msg = "shape of dwdx after computation = %s" % str(
+                        dwdx_arr.shape if dwdx is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "dwdx after computation: %s" % str(dwdx_arr) if dwdx is not None else "None"
+                    )
+                    logger.debug(msg)
+
+                    dwdy_arr = _conversion.as_array(ffi, dwdy) if dwdy is not None else None
+                    msg = "shape of dwdy after computation = %s" % str(
+                        dwdy_arr.shape if dwdy is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "dwdy after computation: %s" % str(dwdy_arr) if dwdy is not None else "None"
+                    )
+                    logger.debug(msg)
+
+                    t_g_arr = _conversion.as_array(ffi, t_g) if t_g is not None else None
+                    msg = "shape of t_g after computation = %s" % str(
+                        t_g_arr.shape if t_g is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "t_g after computation: %s" % str(t_g_arr) if t_g is not None else "None"
+                    logger.debug(msg)
+
+                    qv_s_arr = _conversion.as_array(ffi, qv_s) if qv_s is not None else None
+                    msg = "shape of qv_s after computation = %s" % str(
+                        qv_s_arr.shape if qv_s is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "qv_s after computation: %s" % str(qv_s_arr) if qv_s is not None else "None"
+                    )
+                    logger.debug(msg)
+
+                    ps_arr = _conversion.as_array(ffi, ps) if ps is not None else None
+                    msg = "shape of ps after computation = %s" % str(
+                        ps_arr.shape if ps is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "ps after computation: %s" % str(ps_arr) if ps is not None else "None"
+                    logger.debug(msg)
+
+                    l_pat_arr = _conversion.as_array(ffi, l_pat) if l_pat is not None else None
+                    msg = "shape of l_pat after computation = %s" % str(
+                        l_pat_arr.shape if l_pat is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "l_pat after computation: %s" % str(l_pat_arr)
+                        if l_pat is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    gz0_arr = _conversion.as_array(ffi, gz0) if gz0 is not None else None
+                    msg = "shape of gz0 after computation = %s" % str(
+                        gz0_arr.shape if gz0 is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "gz0 after computation: %s" % str(gz0_arr) if gz0 is not None else "None"
+                    logger.debug(msg)
+
+                    tvm_arr = _conversion.as_array(ffi, tvm) if tvm is not None else None
+                    msg = "shape of tvm after computation = %s" % str(
+                        tvm_arr.shape if tvm is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "tvm after computation: %s" % str(tvm_arr) if tvm is not None else "None"
+                    logger.debug(msg)
+
+                    tvh_arr = _conversion.as_array(ffi, tvh) if tvh is not None else None
+                    msg = "shape of tvh after computation = %s" % str(
+                        tvh_arr.shape if tvh is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "tvh after computation: %s" % str(tvh_arr) if tvh is not None else "None"
+                    logger.debug(msg)
+
+                    tfm_arr = _conversion.as_array(ffi, tfm) if tfm is not None else None
+                    msg = "shape of tfm after computation = %s" % str(
+                        tfm_arr.shape if tfm is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "tfm after computation: %s" % str(tfm_arr) if tfm is not None else "None"
+                    logger.debug(msg)
+
+                    tfh_arr = _conversion.as_array(ffi, tfh) if tfh is not None else None
+                    msg = "shape of tfh after computation = %s" % str(
+                        tfh_arr.shape if tfh is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "tfh after computation: %s" % str(tfh_arr) if tfh is not None else "None"
+                    logger.debug(msg)
+
+                    tkred_sfc_arr = (
+                        _conversion.as_array(ffi, tkred_sfc) if tkred_sfc is not None else None
+                    )
+                    msg = "shape of tkred_sfc after computation = %s" % str(
+                        tkred_sfc_arr.shape if tkred_sfc is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "tkred_sfc after computation: %s" % str(tkred_sfc_arr)
+                        if tkred_sfc is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    tkred_sfc_h_arr = (
+                        _conversion.as_array(ffi, tkred_sfc_h) if tkred_sfc_h is not None else None
+                    )
+                    msg = "shape of tkred_sfc_h after computation = %s" % str(
+                        tkred_sfc_h_arr.shape if tkred_sfc_h is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "tkred_sfc_h after computation: %s" % str(tkred_sfc_h_arr)
+                        if tkred_sfc_h is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    shfl_s_arr = _conversion.as_array(ffi, shfl_s) if shfl_s is not None else None
+                    msg = "shape of shfl_s after computation = %s" % str(
+                        shfl_s_arr.shape if shfl_s is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "shfl_s after computation: %s" % str(shfl_s_arr)
+                        if shfl_s is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    qvfl_s_arr = _conversion.as_array(ffi, qvfl_s) if qvfl_s is not None else None
+                    msg = "shape of qvfl_s after computation = %s" % str(
+                        qvfl_s_arr.shape if qvfl_s is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "qvfl_s after computation: %s" % str(qvfl_s_arr)
+                        if qvfl_s is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    tke_arr = _conversion.as_array(ffi, tke) if tke is not None else None
+                    msg = "shape of tke after computation = %s" % str(
+                        tke_arr.shape if tke is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "tke after computation: %s" % str(tke_arr) if tke is not None else "None"
+                    logger.debug(msg)
+
+                    tkvm_arr = _conversion.as_array(ffi, tkvm) if tkvm is not None else None
+                    msg = "shape of tkvm after computation = %s" % str(
+                        tkvm_arr.shape if tkvm is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "tkvm after computation: %s" % str(tkvm_arr) if tkvm is not None else "None"
+                    )
+                    logger.debug(msg)
+
+                    tkvh_arr = _conversion.as_array(ffi, tkvh) if tkvh is not None else None
+                    msg = "shape of tkvh after computation = %s" % str(
+                        tkvh_arr.shape if tkvh is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "tkvh after computation: %s" % str(tkvh_arr) if tkvh is not None else "None"
+                    )
+                    logger.debug(msg)
+
+                    rcld_arr = _conversion.as_array(ffi, rcld) if rcld is not None else None
+                    msg = "shape of rcld after computation = %s" % str(
+                        rcld_arr.shape if rcld is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "rcld after computation: %s" % str(rcld_arr) if rcld is not None else "None"
+                    )
+                    logger.debug(msg)
+
+                    rhon_arr = _conversion.as_array(ffi, rhon) if rhon is not None else None
+                    msg = "shape of rhon after computation = %s" % str(
+                        rhon_arr.shape if rhon is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "rhon after computation: %s" % str(rhon_arr) if rhon is not None else "None"
+                    )
+                    logger.debug(msg)
+
+                    tketens_arr = (
+                        _conversion.as_array(ffi, tketens) if tketens is not None else None
+                    )
+                    msg = "shape of tketens after computation = %s" % str(
+                        tketens_arr.shape if tketens is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "tketens after computation: %s" % str(tketens_arr)
+                        if tketens is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    tket_hshr_arr = (
+                        _conversion.as_array(ffi, tket_hshr) if tket_hshr is not None else None
+                    )
+                    msg = "shape of tket_hshr after computation = %s" % str(
+                        tket_hshr_arr.shape if tket_hshr is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "tket_hshr after computation: %s" % str(tket_hshr_arr)
+                        if tket_hshr is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    u_tens_arr = _conversion.as_array(ffi, u_tens) if u_tens is not None else None
+                    msg = "shape of u_tens after computation = %s" % str(
+                        u_tens_arr.shape if u_tens is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "u_tens after computation: %s" % str(u_tens_arr)
+                        if u_tens is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    v_tens_arr = _conversion.as_array(ffi, v_tens) if v_tens is not None else None
+                    msg = "shape of v_tens after computation = %s" % str(
+                        v_tens_arr.shape if v_tens is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "v_tens after computation: %s" % str(v_tens_arr)
+                        if v_tens is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    t_tens_arr = _conversion.as_array(ffi, t_tens) if t_tens is not None else None
+                    msg = "shape of t_tens after computation = %s" % str(
+                        t_tens_arr.shape if t_tens is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "t_tens after computation: %s" % str(t_tens_arr)
+                        if t_tens is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    qv_tens_arr = (
+                        _conversion.as_array(ffi, qv_tens) if qv_tens is not None else None
+                    )
+                    msg = "shape of qv_tens after computation = %s" % str(
+                        qv_tens_arr.shape if qv_tens is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "qv_tens after computation: %s" % str(qv_tens_arr)
+                        if qv_tens is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    qc_tens_arr = (
+                        _conversion.as_array(ffi, qc_tens) if qc_tens is not None else None
+                    )
+                    msg = "shape of qc_tens after computation = %s" % str(
+                        qc_tens_arr.shape if qc_tens is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "qc_tens after computation: %s" % str(qc_tens_arr)
+                        if qc_tens is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+            if __debug__:
+                logger.info("Python execution of turbulence_run completed.")
 
         except Exception as e:
             logger.exception(f"A Python error occurred: {e}")
