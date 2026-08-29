@@ -2032,7 +2032,9 @@ class Turbulence:
                                            the input, as 'turbdiff' leaves 'turbtran's value
             diagnostic_state.tkvm, tkvh    rows 1..nlev-1 by section 4)
             diagnostic_state.rhon          rows 1..nlev-1 and 'nlev' by section 0)
-            diagnostic_state.rcld          rows 0..nlev-2 by section 11)
+            diagnostic_state.rcld          rows 0..nlev-2 by section 11); rows nlev-1 and nlev
+                                           copied from the half-level storage, over the column
+                                           window and not the full width
             tendency_state.ddt_tke         rows 1..nlev by section 10); row 0 keeps the
                                            advection tendency it arrived with, which section 3)
                                            read as 'tvt'
@@ -2501,7 +2503,20 @@ class Turbulence:
         # The Fortran averages 'rcld' onto main levels in its own storage, so the two rows the
         # averaging does not reach keep their half-level values. Out of place here, because the
         # average reads the half level below the row it writes.
-        _copy_levels(self._rcld, slice(nlev - 1, nlev + 1), diagnostic_state.rcld, num_cells)
+        #
+        # CLAMPED TO THE COLUMN WINDOW, not to 'num_cells' like the other raw copies. This is the
+        # only one whose SOURCE is a granule-internal field and whose TARGET is the caller's, so
+        # it is the only one that can carry a column the scheme never computed into ICON's state.
+        # 'self._rcld' is zero outside 'ivstart:ivend'; ICON's 'rcld' there holds the lateral
+        # boundary and halo values that 'turbdiff' deliberately leaves alone, and overwriting
+        # them with zeros showed up as 'max_rel_err = 1.0' on the surface half level in an
+        # ICON4PY_MODE_VERIFY run while every stencil-written output agreed to 1e-6.
+        _copy_levels(
+            self._rcld,
+            slice(nlev - 1, nlev + 1),
+            diagnostic_state.rcld,
+            slice(int(self._start_cell), int(self._end_cell)),
+        )
         self._interpolate_supersaturation_deviation_to_main_levels(
             supersaturation_deviation_on_half_levels=self._rcld,
             supersaturation_deviation_on_main_levels=diagnostic_state.rcld,
@@ -2944,7 +2959,7 @@ def _check_supported(name: str, value: int, supported: tuple[int, ...], meaning:
 
 # --------------------------------------------------------------- absolute vertical levels ---
 #
-# The three helpers below address the whole vertical axis rather than a relative offset, which
+# The four helpers below address the whole vertical axis rather than a relative offset, which
 # is something GT4Py deliberately cannot express: an offset is always relative to the row being
 # computed, so a value the Fortran reads at a fixed 'k' -- 'tkvm(:,ke1)', 'zvari(:,ke,tet_l)' --
 # has to reach a stencil as a cell field the caller prepared. 'tests/turbulence/utils.py'
@@ -2955,16 +2970,25 @@ def _check_supported(name: str, value: int, supported: tuple[int, ...], meaning:
 # port has to compute out of place. `Turbulence._allocate_local_fields` lists which those are;
 # each call site below says which Fortran statement it stands in for.
 #
-# ALL FOUR ARE CLAMPED TO 'grid.num_cells', AND NOT TO EITHER ARRAY'S OWN LENGTH. A field the
-# granule allocated is exactly 'num_cells' wide; a field the caller supplied is 'nproma' wide
-# when the caller is ICON, because it is a '(:,:,jb)' slice of '(nproma, nlev, nblks)' -- and no
-# ICON configuration makes the two equal, since 'icon4py_init' requires
-# 'nproma >= n_patch_edges' and edges always outnumber cells. Either kind appears on either side
-# of these copies, so 'num_cells' is the only length the two ends agree on, and an unclamped
-# assignment raised a broadcast error the first time this granule ran inside ICON. The rows past
-# 'num_cells' are ICON's block padding: no grid point is there, ICON leaves them undefined, and
-# the column window the scheme computes never reaches them -- so they must be neither read nor
-# written. Copies, not views, because these carry values between two fields that both already
+# NONE OF THEM IS CLAMPED TO EITHER ARRAY'S OWN LENGTH. A field the granule allocated is
+# exactly 'num_cells' wide; a field the caller supplied is 'nproma' wide when the caller is
+# ICON, because it is a '(:,:,jb)' slice of '(nproma, nlev, nblks)' -- and no ICON configuration
+# makes the two equal, since 'icon4py_init' requires 'nproma >= n_patch_edges' and edges always
+# outnumber cells. Either kind appears on either side of these copies, so a shared length has to
+# be passed in, and an unclamped assignment raised a broadcast error the first time this granule
+# ran inside ICON. The rows past 'num_cells' are ICON's block padding: no grid point is there,
+# ICON leaves them undefined, and the column window the scheme computes never reaches them -- so
+# they must be neither read nor written.
+#
+# THREE OF THEM TAKE 'num_cells' AND '_copy_levels' TAKES THE COLUMN WINDOW, which is narrower.
+# 'num_cells' is wide enough wherever the write lands in a field the granule owns, because
+# nothing outside the window is ever read back out of one. It is NOT wide enough for the one
+# copy whose source is a granule field and whose target is the caller's: the columns between the
+# window and 'num_cells' are real grid points -- the lateral boundary and the halo -- which ICON
+# owns and which 'turbdiff' deliberately leaves alone, and the granule has nothing to put there
+# but the untouched rows of its own working field.
+#
+# Copies, not views, because these carry values between two fields that both already
 # exist; the one place a view is right is 'hhl(:,ke1)', in
 # `Turbulence._derive_what_depends_only_on_the_grid`.
 
@@ -2984,6 +3008,11 @@ def _copy_level(source: gtx.Field, level: int, target: gtx.Field, num_cells: int
     target.ndarray[:num_cells, level] = source.ndarray[:num_cells, level]
 
 
-def _copy_levels(source: gtx.Field, levels: slice, target: gtx.Field, num_cells: int) -> None:
-    """Copy a range of vertical levels from one (Cell, K) field to another."""
-    target.ndarray[:num_cells, levels] = source.ndarray[:num_cells, levels]
+def _copy_levels(source: gtx.Field, levels: slice, target: gtx.Field, columns: slice) -> None:
+    """Copy a range of vertical levels from one (Cell, K) field to another, over 'columns'.
+
+    Takes the column window rather than 'num_cells', unlike the three helpers above: its target
+    is a field the caller owns and its source is one the granule computes only inside that
+    window, so writing the full width would hand ICON the working field's untouched rows.
+    """
+    target.ndarray[columns, levels] = source.ndarray[columns, levels]

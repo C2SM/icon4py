@@ -1143,3 +1143,84 @@ def test_run_takes_caller_fields_wider_than_the_grid(
                 f"{on_nproma[num_cells:].size} padding values are no longer undefined."
             )
     assert compared > 20, f"only {compared} outputs were compared; the containers changed shape."
+
+
+# ------------------------------------------------------ the columns outside the window ---
+
+
+#: The one output the pair writes outside 'ivstart:ivend', and why that is not a defect.
+#:
+#: 'run_turbdiff' carries the surface row of the TKE across with an unclamped '_copy_level',
+#: because 'turbdiff' leaves 'turbtran's value in 'tke(:,ke1,ntur)' and the port has two fields
+#: where the Fortran has one storage. Inside ICON that write is a no-op: the wrapper seeds
+#: 'granule.updated_tke' from ICON's own 'tke' over all 'num_cells' rows before the call, so the
+#: value the copy puts outside the window is the one that was already there. Here the field
+#: starts as NaN, so the copy shows.
+WRITTEN_OUTSIDE_THE_WINDOW = frozenset({"diagnostic_state.updated_tke"})
+
+
+@pytest.mark.datatest
+@pytest.mark.uses_concat_where
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES[:1])
+def test_run_writes_nothing_outside_the_column_window(
+    date: str, *, data_provider: sb.IconSerialDataProvider, icon_grid, grid_savepoint, backend
+) -> None:
+    """The pair leaves every column below 'ivstart' and at or above 'ivend' exactly as it found it.
+
+    Those columns are not padding -- 'test_run_takes_caller_fields_wider_than_the_grid' covers
+    padding, which lies past 'num_cells' and holds no grid point. These are real cells that ICON
+    owns and that 'turbdiff' deliberately does not compute: the lateral boundary strip below
+    'grf_bdywidth_c + 1' and the halo past the last prognostic cell. Every stencil is bound to
+    'ivstart:ivend' by '_program' and therefore cannot reach them; the raw-array copies are not,
+    and a copy that runs the full width hands ICON the untouched rows of a granule working field.
+
+    That is not visible to any other test in this package, because every comparison here is
+    masked to 'ivstart:ivend' -- see the header of 'utils.py'. It cost a full
+    'ICON4PY_MODE_VERIFY' run to find: 'rcld' came back with 'max_rel_err = 1.0' on the surface
+    half level, at the same columns and with the same error at every one of six timesteps, while
+    every stencil-written output agreed with the Fortran to 1e-6.
+    """
+    granule, input_state, surface_state, diagnostic, tendency, entry = _states_for_both_stages(
+        data_provider, icon_grid, grid_savepoint, date, backend
+    )
+    before_vertdiff = data_provider.from_savepoint_vertdiff_entry(date=date)
+    outside = np.ones(icon_grid.num_cells, dtype=bool)
+    outside[int(entry.ivstart()) : int(entry.ivend())] = False
+    assert outside.any(), "the capture computes every column, so this test would be vacuous."
+
+    containers = (("diagnostic_state", diagnostic), ("tendency_state", tendency))
+    before: dict[str, np.ndarray] = {}
+    for container, state in containers:
+        for member in dataclasses.fields(state):
+            got = getattr(state, member.name)
+            if not isinstance(got, gtx.Field):
+                continue
+            on_the_host = data_alloc.as_numpy(got)
+            if on_the_host.shape[0] != icon_grid.num_cells:
+                continue
+            before[f"{container}.{member.name}"] = on_the_host[outside].copy()
+
+    granule.run(
+        input_state=input_state,
+        surface_state=surface_state,
+        diagnostic_state=diagnostic,
+        tendency_state=tendency,
+        dt_var=before_vertdiff.dt_var(),
+        dt_tke=entry.dt_tke(),
+    )
+
+    checked = 0
+    for container, state in containers:
+        for member in dataclasses.fields(state):
+            name = f"{container}.{member.name}"
+            if name not in before or name in WRITTEN_OUTSIDE_THE_WINDOW:
+                continue
+            checked += 1
+            after = data_alloc.as_numpy(getattr(state, member.name))[outside]
+            assert _agrees(after, before[name]), (
+                f"'{name}' changed at {np.count_nonzero(~np.isclose(after, before[name], equal_nan=True))}"
+                f" of {after.size} values outside 'ivstart:ivend', so a raw-array copy is writing "
+                "columns the scheme does not compute."
+            )
+    assert checked > 20, f"only {checked} fields were checked; the containers changed shape."
