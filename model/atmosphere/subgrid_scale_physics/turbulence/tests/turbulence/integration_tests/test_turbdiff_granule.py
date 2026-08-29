@@ -600,6 +600,21 @@ def test_the_vertical_smoothing_of_the_tke_forcing_is_wired_in(
         _selected_program(smoothed.granule._smooth_tke_forcing_vertically)
         == "smooth_tke_forcing_vertically"
     )
+    #    AND IT IS 'frcsmot' AND 'trop_mask' THAT WERE BOUND TO IT. Nothing else in this test
+    #    can see which scalar the weight came from: 'versmot = smoothing_weight*smoothing_mask'
+    #    vanishes wherever the mask does and does not wherever it does not, for ANY non-zero
+    #    weight, so blocks 3) and 4) would pass unchanged if 'smoothing_weight' had been bound
+    #    to 'tkesmot', 'ditsmot' or any other smoothing fraction of the same namelist. The
+    #    binding is the wiring, so it is asserted rather than inferred.
+    bound = smoothed.granule._smooth_tke_forcing_vertically.keywords
+    assert bound["smoothing_weight"] == smoothing.frcsmot, (
+        "'smoothing_weight' is not 'frcsmot'; some other configuration scalar reached the "
+        "smoothing and every numerical assertion below would still pass."
+    )
+    assert bound["smoothing_mask"] is smoothed.granule._metric_state.trop_mask, (
+        "'smoothing_mask' is not the metric state's 'trop_mask'; 'imode_frcsmot' is frozen at "
+        "2, which is the masked branch, so the mask has to be that field and no other."
+    )
 
     # 2) Both profiles were really written, and are numbers. The smoothing divides by the
     #    discretisation momentum section 1a) leaves in 'dicke', and a granule that failed to
