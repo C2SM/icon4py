@@ -203,8 +203,8 @@ extern int turbulence_init_wrapper(
     int itype_sher, int imode_stbcalc, int ilow_def_cond, int imode_pat_len,
     int imode_shshear, int imode_tkesso, int imode_snowsmot, int itype_2m_diag,
     int imode_stadlim, int imode_trancnf, int imode_lamdiff, int imode_tkemini,
-    int imode_suradap, int imode_tkediff, int imode_adshear, int backend,
-    unsigned char on_gpu);
+    int imode_suradap, int imode_tkediff, int imode_adshear,
+    int nturb_tracer_tot, int backend, unsigned char on_gpu);
 extern int turbulence_run_wrapper(
     double *u, int u_size_0, int u_size_1, double *v, int v_size_0,
     int v_size_1, double *t, int t_size_0, int t_size_1, double *qv,

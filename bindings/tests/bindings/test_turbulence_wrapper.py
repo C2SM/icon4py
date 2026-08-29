@@ -244,8 +244,12 @@ def _config_kwargs(config: turbulence.TurbulenceConfig) -> dict:
     }
 
 
-def _init(grid, config, ffi, metric=None):
-    """Run 'turbulence_init' with 'Turbulence.__init__' mocked out; return its call kwargs."""
+def _init(grid, config, ffi, metric=None, nturb_tracer_tot=0):
+    """Run 'turbulence_init' with 'Turbulence.__init__' mocked out; return its call kwargs.
+
+    'nturb_tracer_tot' is spelled out rather than taken from '_config_kwargs' because it is not
+    a member of 'TurbulenceConfig': ICON computes it at the interface, not in 'turbdiff_nml'.
+    """
     arrays = _metric_arrays(grid) if metric is None else metric
     with mock.patch.object(turbulence.Turbulence, "__init__", return_value=None) as mocked:
         turbulence_wrapper.turbulence_init(
@@ -253,6 +257,7 @@ def _init(grid, config, ffi, metric=None):
             perf_counters=None,
             **{name: test_utils.array_to_array_info(a) for name, a in arrays.items()},
             **_config_kwargs(config),
+            nturb_tracer_tot=nturb_tracer_tot,
             backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
     return mocked.call_args.kwargs, arrays
@@ -288,6 +293,25 @@ def test_turbulence_init_defaults_are_a_configuration_the_granule_accepts(grid, 
     captured, _ = _init(grid, turbulence.TurbulenceConfig(), cffi.FFI())
 
     assert captured["config"] == turbulence.TurbulenceConfig()
+
+
+@pytest.mark.parametrize("count", [1, 2, 7])
+def test_turbulence_init_refuses_the_tracers_it_cannot_be_given(grid, grid_state, count):
+    """The guard that replaces ICON's 'finish', and the reason the tuples below may stay empty.
+
+    'turbulence_run' passes 'tracers=()' and 'ddt_tracers=()' unconditionally, so a run with
+    'ndtr > 0' would drop a physical process and report nothing. Refusing the count at init is
+    what makes the empty tuples honest; before this existed the only guard was
+    'check_supported_configuration' in ICON's 'mo_icon4py_turbulence.f90', in another repository
+    and invisible from the wrapper.
+    """
+    with pytest.raises(NotImplementedError, match="nturb_tracer_tot"):
+        _init(
+            grid,
+            turbulence.TurbulenceConfig(**MCH_NAMELIST),
+            cffi.FFI(),
+            nturb_tracer_tot=count,
+        )
 
 
 def test_turbulence_run_before_init_says_so(grid):
@@ -411,7 +435,7 @@ def test_the_state_members_the_granule_ignores_are_poisoned(grid, grid_state):
 
 
 def test_the_tracer_tuples_are_empty(grid, grid_state):
-    """'ndtr = 0' at the ported call site, so there is nothing to diffuse and nothing to pass."""
+    """Nothing to diffuse and nothing to pass -- 'turbulence_init' has refused any other count."""
     captured, _ = _run(grid, cffi.FFI())
 
     assert captured["input_state"].tracers == ()

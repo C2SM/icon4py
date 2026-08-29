@@ -4488,6 +4488,7 @@ def turbulence_init_wrapper(
     imode_suradap,
     imode_tkediff,
     imode_adshear,
+    nturb_tracer_tot,
     backend,
     on_gpu,
 ):
@@ -4643,6 +4644,7 @@ def turbulence_init_wrapper(
                 imode_suradap=imode_suradap,
                 imode_tkediff=imode_tkediff,
                 imode_adshear=imode_adshear,
+                nturb_tracer_tot=nturb_tracer_tot,
                 backend=backend,
             )
 

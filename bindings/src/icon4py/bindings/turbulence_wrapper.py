@@ -73,7 +73,7 @@ The precondition belongs to the caller and is not checked here: ICON must keep '
 in the same allocation for the life of the granule, and on GPU its device pointer must stay
 stable. See the note in 'turbulence_init'.
 
-NO TRACER REACHES THE GRANULE, AND NOTHING ON THIS SIDE WOULD SAY SO.
+NO TRACER REACHES THE GRANULE, AND 'turbulence_init' IS WHERE THAT IS REFUSED.
 'turbulence_run' has no tracer argument. 'TurbulenceInputState.tracers' and
 'TurbulenceTendencyState.ddt_tracers' are TUPLES of fields, and a tuple has no flat
 representation at the C boundary: 'ndtr' is a runtime number while py2fgen renders a fixed
@@ -85,14 +85,31 @@ microphysics, ART or ComIn tracers, and ICON would hand the interface tracers th
 SILENTLY NOT DIFFUSE: no exception, no warning, output that looks entirely plausible and is
 missing a physical process.
 
-WHAT PREVENTS THAT TODAY LIVES IN A DIFFERENT REPOSITORY. 'check_supported_configuration' in
-ICON's 'mo_icon4py_turbulence.f90' calls 'finish' when 'nturb_tracer_tot > 0'. It is the only
-guard there is, it is not in this tree, and nobody reading this file can see it. If it is ever
-removed -- or the granule is driven from anywhere else: the green line, a standalone driver, a
-second wrapper -- this turns into a silent wrong answer with no failing test anywhere. The fix is
-to give 'turbulence_run' the tracers, as a fixed maximum count with an active-count argument or
-as a single '(ndtr, ncells, nlev)' array; refusing 'ndtr > 0' on this side would be second best
-and still better than depending on a guard in another repository.
+SO ICON HANDS THE NUMBER OVER AND THIS SIDE REFUSES IT. 'turbulence_init' takes
+'nturb_tracer_tot' and raises 'NotImplementedError' unless it is zero, which is the pattern the
+dycore already sets: 'NonHydrostaticConfig._validate' refuses seven configurations that ICON
+passes through without checking any of them. A switch the granule cannot honour is refused
+where the granule is, not in the caller.
+
+WHY THE REFUSAL IS IN THIS MODULE AND NOT IN 'TurbulenceConfig'. Two reasons, the second
+binding. 'nturb_tracer_tot' is not a configuration parameter in ICON -- neither 'turbdiff_nml'
+nor 't_turbdiff_config' carries it, the interface computes it -- while 'TurbulenceConfig' is
+documented and tested as a one-to-one mirror of those two, to the point where
+'from_fortran_dict' raises on an entry it does not recognise. And what is being refused is a
+property of THIS boundary rather than of the scheme: py2fgen renders a fixed argument list.
+'TurbulenceConfig' lives in the model package, which does not depend on the bindings and must
+not, so a refusal written there could not name 'turbulence_run' or the C boundary without
+describing a layer it cannot see.
+
+ICON's 'check_supported_configuration' ('mo_icon4py_turbulence.f90') still calls 'finish' on
+the same condition. It is deliberately left in place and is now belt-and-braces rather than the
+only line of defence: it gives a Fortran user the diagnosis in Fortran terms, while the refusal
+here is the one that also covers the green line, a standalone driver and a second wrapper.
+
+The gap this closes is the wrapper's, and it is not the whole gap: 'Turbulence.run_vertdiff'
+ignores 'input_state.tracers' whatever it is handed, so a caller that builds the state
+containers itself and never goes through 'turbulence_init' is still unprotected. That refusal
+belongs in the granule and is not made here.
 
 CONSIDERED AND DEFERRED
 -----------------------
@@ -116,7 +133,8 @@ question instead of rediscovering it, and so that "nobody thought of it" is not 
   name one of them. A public property would fix that. Adding public API is exactly what this
   pass is not doing.
 
-* 'turbulence_init' TAKES 99 ARGUMENTS, 93 OF THEM CONFIGURATION. That is the point rather than
+* 'turbulence_init' TAKES 100 ARGUMENTS, 93 OF THEM 'TurbulenceConfig' MEMBERS. That is the
+  point rather than
   an accident (port spec D5/D6): a switch missing from the list is a switch ICON can set without
   the granule ever noticing. No shorter flat form keeps that property, and
   'test_turbulence_init_builds_the_configuration_the_flat_arguments_describe' builds the call
@@ -372,6 +390,11 @@ def turbulence_init(  # noqa: PLR0917 [too-many-positional-arguments]
     imode_suradap: gtx.int32,
     imode_tkediff: gtx.int32,
     imode_adshear: gtx.int32,
+    # -- The tracer count of the ICON call site. NOT a member of 'TurbulenceConfig' and not a
+    #    'tdc%' field: ICON computes it at 'mo_nwp_turbdiff_interface.f90:470-471'. It sits
+    #    here, at the end of the configuration scalars, because it is configuration in
+    #    everything but where ICON keeps it.
+    nturb_tracer_tot: gtx.int32,
     backend: gtx.int32,
 ) -> None:
     """Configure the turbulence granule and build its working set, once.
@@ -394,8 +417,49 @@ def turbulence_init(  # noqa: PLR0917 [too-many-positional-arguments]
         l_hori: 'l_hori' -- horizontal grid spacing [m], filled with 'phy_params%mean_charlen'.
         trop_mask: 'prm_diag%tropics_mask'.
         innertrop_mask: 'prm_diag%innertropics_mask'.
+        nturb_tracer_tot: 'ndtr' -- how many passive tracers 'vertdiff' is asked to diffuse on
+            top of the five first-order variables. ICON's 'ncloud_offset +
+            art_config(jg)%nturb_tracer + comin_config%comin_icon_domain_config(jg)%nturb_tracer'
+            (mo_nwp_turbdiff_interface.f90:470-471); every term of it is switch-derived, so the
+            number is CONSTANT FOR A RUN. Must be zero, and is refused below if it is not.
+
+            IT IS AN ARGUMENT OF 'init' RATHER THAN OF 'run', AND THAT IS WHAT MAKES THE
+            IMPLEMENTATION A BODY CHANGE. Constant for a run means known at the moment GT4Py
+            compiles: 'setup_program' runs from 'Turbulence.__init__', which this function
+            calls. An implementation that diffuses tracers can therefore allocate a tuple of
+            exactly 'nturb_tracer_tot' fields and compile the stencils for that width -- the
+            tuple width is a compile-time property, and here the compile happens after the
+            number is known, so the two are not in conflict. NO SECOND CHANGE TO THIS SIGNATURE
+            is needed for it: only a body change, and the deletion of the refusal below. Taking
+            the number at 'turbulence_run' instead would have made it a per-step argument that
+            arrives long after compilation, and the arity would then genuinely have been
+            unknowable.
+
+            WHAT IS STILL OPEN is the other half of it. 'turbulence_run' would need 'ndtr'
+            FIELD POINTERS in and 'ndtr' tendency fields out, and py2fgen renders a fixed
+            argument list, so a variable-length list of fields is precisely what it cannot
+            express. The clean answer is one rank-3 array '(cells, levels, ndtr)' per direction
+            -- a single argument of fixed rank whose last extent is a runtime number -- sliced
+            into a tuple on this side, once for 'ptr(:)%av' and once for 'ptr(:)%at'. That is a
+            change to 'turbulence_run', not to this function, and nothing about it is decided
+            here.
         backend: 'BackendIntEnum' selecting the GT4Py backend.
+
+    Raises:
+        NotImplementedError: If 'nturb_tracer_tot' is not zero.
     """
+    # The dycore's pattern, applied: ICON hands the value across and Python refuses it. The
+    # check is first because it depends on nothing -- not on the grid, not on the config -- and
+    # because the alternative to failing here is a forecast that is quietly missing a process.
+    if nturb_tracer_tot != 0:
+        raise NotImplementedError(
+            f"'turbulence_run' has no tracer argument: a runtime-length tuple has no flat "
+            f"representation at the C boundary. Tracers would silently not be diffused. "
+            f"Got 'nturb_tracer_tot' = {nturb_tracer_tot}. Turn off the sources of additional "
+            f"turbulent tracers ('ldiff_qi', 'ldiff_qs', two-moment or SBM microphysics, ART, "
+            f"ComIn), or use the Fortran scheme."
+        )
+
     if grid_wrapper.grid_state is None:
         raise Exception(
             "Need to initialise grid using 'grid_init' before running 'turbulence_init'."
@@ -605,14 +669,14 @@ def turbulence_run(  # noqa: PLR0917 [too-many-positional-arguments]
     variables from the first stage to the second, and ICON reads it back only under
     'l_3d_turb_fluxes', which this port does not support.
 
-    'ptr(:)' and 'ndtr' are not among them either, AND THAT ONE IS A SILENT GAP. The ported call
-    site runs with 'ndtr = 0' ('test_vertdiff_runs_in_the_configuration_this_port_assumes'
-    asserts it against the capture), so the passive-tracer tuples below are empty -- but they
-    are empty unconditionally, not because anything here checked. Under 'ldiff_qi', 'ldiff_qs',
-    two-moment or SBM microphysics, ART or ComIn tracers, the tracers ICON expects to be
-    diffused would simply not be, with no error and no warning. The only thing stopping that is
-    the 'nturb_tracer_tot > 0' guard in ICON's 'mo_icon4py_turbulence.f90', which is in another
-    repository and invisible from here. See the module docstring.
+    'ptr(:)' and 'ndtr' are not among them either, and the passive-tracer tuples below are
+    empty unconditionally. What makes that safe is not this function: 'turbulence_init' takes
+    'nturb_tracer_tot' and refuses anything but zero, so by the time any 'run' happens the
+    caller has said there are no tracers to diffuse. The ported call site does run with
+    'ndtr = 0' -- 'test_vertdiff_runs_in_the_configuration_this_port_assumes' asserts it
+    against the capture -- but it is the init-time refusal, not that measurement, that keeps
+    'ldiff_qi', 'ldiff_qs', two-moment or SBM microphysics, ART and ComIn tracers from being
+    dropped without a word. See the module docstring.
     """
     if granule is None:
         raise RuntimeError("Turbulence granule not initialized. Call 'turbulence_init' first.")
@@ -635,8 +699,8 @@ def turbulence_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dwdy=dwdy,
         w=granule.unused["w"],
         tket_conv=granule.unused["tket_conv"],
-        # No tracer crosses this boundary. Safe only at 'ndtr = 0', and nothing here can tell:
-        # the ICON-side 'nturb_tracer_tot > 0' guard is what makes it safe. Module docstring.
+        # No tracer crosses this boundary. Safe only at 'ndtr = 0', which 'turbulence_init'
+        # has already refused to be anything else. Module docstring.
         tracers=(),
     )
     surface_state = states.TurbulenceSurfaceState(
@@ -706,7 +770,7 @@ def turbulence_run(  # noqa: PLR0917 [too-many-positional-arguments]
         ddt_t=t_tens,
         ddt_qv=qv_tens,
         ddt_qc=qc_tens,
-        # As 'input_state.tracers': empty unconditionally, guarded only from the ICON side.
+        # As 'input_state.tracers': empty unconditionally, guarded by 'turbulence_init'.
         ddt_tracers=(),
     )
 

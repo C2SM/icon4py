@@ -1621,6 +1621,7 @@ module icon4py_bindings
                                        imode_suradap, &
                                        imode_tkediff, &
                                        imode_adshear, &
+                                       nturb_tracer_tot, &
                                        backend, &
                                        on_gpu) bind(c, name="turbulence_init_wrapper") result(rc)
          import :: c_int, c_long, c_float, c_double, c_bool, c_ptr
@@ -1835,6 +1836,8 @@ module icon4py_bindings
          integer(c_int), value, target :: imode_tkediff
 
          integer(c_int), value, target :: imode_adshear
+
+         integer(c_int), value, target :: nturb_tracer_tot
 
          integer(c_int), value, target :: backend
 
@@ -4826,6 +4829,7 @@ contains
                               imode_suradap, &
                               imode_tkediff, &
                               imode_adshear, &
+                              nturb_tracer_tot, &
                               backend, &
                               rc)
       use, intrinsic :: iso_c_binding
@@ -5026,6 +5030,8 @@ contains
 
       integer(c_int), value, target :: imode_adshear
 
+      integer(c_int), value, target :: nturb_tracer_tot
+
       integer(c_int), value, target :: backend
 
       logical(c_bool) :: on_gpu
@@ -5176,6 +5182,7 @@ contains
                                    imode_suradap=imode_suradap, &
                                    imode_tkediff=imode_tkediff, &
                                    imode_adshear=imode_adshear, &
+                                   nturb_tracer_tot=nturb_tracer_tot, &
                                    backend=backend, &
                                    on_gpu=on_gpu)
       !$acc end host_data
