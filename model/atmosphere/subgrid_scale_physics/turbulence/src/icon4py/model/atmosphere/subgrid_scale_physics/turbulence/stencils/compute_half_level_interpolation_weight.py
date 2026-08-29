@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """The mass-weighted weight that interpolates a main-level profile onto the half levels.
 
 Translated from 'icon/src/atm_phy_schemes/turb_utilities.f90', SUBROUTINE 'bound_level_interp'

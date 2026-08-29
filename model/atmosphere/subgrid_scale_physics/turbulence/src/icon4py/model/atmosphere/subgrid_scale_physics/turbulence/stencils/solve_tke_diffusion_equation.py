@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Thomas solve of the semi-implicit vertical TKE diffusion.
 
 Translated from 'icon/src/atm_phy_schemes/turb_utilities.f90', SUBROUTINE
@@ -76,9 +84,7 @@ def _substitute_upward(
     of the eliminated system and needs no substitution. That is what the flag selects here.
     """
     solution_below, at_the_bottom = state
-    solution = (
-        eliminated if at_the_bottom else eliminated + inversion_factor_below * solution_below
-    )
+    solution = eliminated if at_the_bottom else eliminated + inversion_factor_below * solution_below
     return solution, False
 
 

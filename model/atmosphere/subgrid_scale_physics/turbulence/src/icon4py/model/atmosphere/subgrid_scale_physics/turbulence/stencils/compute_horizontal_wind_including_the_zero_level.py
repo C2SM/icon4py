@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """The horizontal wind on the levels of the conserved-variable array, zero level included.
 
 Translated from 'icon/src/atm_phy_schemes/turb_diffusion.f90', SUBROUTINE 'turbdiff', section 0),
@@ -81,7 +89,7 @@ def _compute_horizontal_wind_including_the_zero_level(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_horizontal_wind_including_the_zero_level(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_horizontal_wind_including_the_zero_level(
     zonal_wind: fa.CellKField[wpfloat],
     meridional_wind: fa.CellKField[wpfloat],
     laminar_reduction_factor_for_momentum: fa.CellField[wpfloat],

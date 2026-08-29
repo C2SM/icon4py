@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Datatests for section 0) of 'turbdiff': conserved variables, cloud cover, length scales.
 
 The oracle is serialized ICON, not a hand-written reference: each stencil runs on the fields of
@@ -613,8 +621,18 @@ def test_compute_conserved_variables_and_factors_at_main_levels_agrees_with_icon
         ("rcld(:,1)", run.cloud_cover_on_main_levels, run.after.cloud_cover(), model_top),
         ("zaux(:,:,2) [r_cpd]", run.specific_heat_ratio, run.after.r_cpd(), main_levels),
         ("zaux(:,1,3) [dQs/dT]", run.dqsat_dt_on_main_levels, run.after.dqsat_dt(), model_top),
-        ("zaux(:,1,4) [g_tet]", run.buoyancy_factor_tet_l_on_main_levels, run.after.g_tet_l(), model_top),
-        ("zaux(:,1,5) [g_h2o]", run.buoyancy_factor_h2o_g_on_main_levels, run.after.g_h2o(), model_top),
+        (
+            "zaux(:,1,4) [g_tet]",
+            run.buoyancy_factor_tet_l_on_main_levels,
+            run.after.g_tet_l(),
+            model_top,
+        ),
+        (
+            "zaux(:,1,5) [g_h2o]",
+            run.buoyancy_factor_h2o_g_on_main_levels,
+            run.after.g_h2o(),
+            model_top,
+        ),
     ):
         utils.assert_agrees_with_icon(
             name, quantity, computed, reference, columns=run.columns, levels=levels
@@ -683,7 +701,12 @@ def test_interpolate_variables_onto_half_levels_agrees_with_icon(
         ("zaux(:,:,3) [dQs/dT]", run.dqsat_dt, run.after.dqsat_dt(), whole),
         ("zaux(:,:,4) [g_tet]", run.buoyancy_factor_tet_l, run.after.g_tet_l(), whole),
         ("zaux(:,:,5) [g_h2o]", run.buoyancy_factor_h2o_g, run.after.g_h2o(), whole),
-        ("zvari(:,:,0) [prss]", run.half_level_pressure, run.after.conserved_variable(PRESSURE), whole),
+        (
+            "zvari(:,:,0) [prss]",
+            run.half_level_pressure,
+            run.after.conserved_variable(PRESSURE),
+            whole,
+        ),
         ("zaux(:,:,1) [exner]", run.exner_factor, run.after.exner_factor(), below_the_top),
         ("rhon", run.air_density, run.after.rhon(), below_the_top),
     ):
@@ -713,7 +736,11 @@ def test_the_conserved_variables_are_bit_exact_where_no_exponential_is_involved(
     main_levels = slice(0, run.nlev)
 
     for quantity, computed, reference in (
-        ("zvari(:,:,tet_l)", run.liquid_water_potential_temperature, run.after.conserved_variable(TET_L)),
+        (
+            "zvari(:,:,tet_l)",
+            run.liquid_water_potential_temperature,
+            run.after.conserved_variable(TET_L),
+        ),
         ("zvari(:,:,h2o_g)", run.total_water, run.after.conserved_variable(H2O_G)),
         ("zaux(:,:,2) [r_cpd]", run.specific_heat_ratio, run.after.r_cpd()),
     ):
@@ -841,8 +868,10 @@ def test_the_disagreement_is_two_ulp_of_the_saturation_vapour_pressure(
                 supersaturation / deviation,
             )
         cover = np.minimum(1.0, np.maximum(0.0, (normalized + Q_CRIT) * q_inv))
-        return slope * np.where(normalized >= q_max, supersaturation, saturated_content) * (
-            cover * cover
+        return (
+            slope
+            * np.where(normalized >= q_max, supersaturation, saturated_content)
+            * (cover * cover)
         )
 
     magnus = float(ThermoConstants.C1ES) * np.exp(

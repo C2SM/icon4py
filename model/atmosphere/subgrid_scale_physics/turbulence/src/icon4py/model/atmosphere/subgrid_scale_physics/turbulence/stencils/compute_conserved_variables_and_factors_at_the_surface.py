@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """The same quantities at the lower boundary of the Prandtl layer, plus Exner factor and density.
 
 Translated from 'icon/src/atm_phy_schemes/turb_diffusion.f90', SUBROUTINE 'turbdiff', section 0),
@@ -46,8 +54,8 @@ from gt4py.next import broadcast
 
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.thermodynamic_functions import (
     ThermoConstants,
-    _exner_factor,
     _diagnose_cloud_cover_and_liquid_water,
+    _exner_factor,
     _thermodynamic_factors,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -55,7 +63,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _compute_conserved_variables_and_factors_at_the_surface(  # noqa: PLR0917 [too-many-positional-arguments]
+def _compute_conserved_variables_and_factors_at_the_surface(
     surface_pressure: fa.CellField[wpfloat],
     surface_temperature: fa.CellField[wpfloat],
     surface_specific_humidity: fa.CellField[wpfloat],
@@ -179,7 +187,7 @@ def _compute_conserved_variables_and_factors_at_the_surface(  # noqa: PLR0917 [t
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_conserved_variables_and_factors_at_the_surface(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_conserved_variables_and_factors_at_the_surface(
     surface_pressure: fa.CellField[wpfloat],
     surface_temperature: fa.CellField[wpfloat],
     surface_specific_humidity: fa.CellField[wpfloat],

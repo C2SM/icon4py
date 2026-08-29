@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Moist thermodynamic helpers shared by the turbulence stencils.
 
 Translated from 'icon/src/atm_phy_schemes/turb_utilities.f90' at icon commit 26d6b98cce, the
@@ -140,7 +148,7 @@ def _dqsat_dt(
 
 
 @gtx.field_operator
-def _diagnose_cloud_cover_and_liquid_water(
+def _diagnose_cloud_cover_and_liquid_water(  # noqa: PLR0917  [too-many-positional] -- GT4Py field operators are called positionally
     pressure: fa.CellKField[wpfloat],
     liquid_water_temperature: fa.CellKField[wpfloat],
     total_water: fa.CellKField[wpfloat],
@@ -254,7 +262,7 @@ def _diagnose_cloud_cover_and_liquid_water(
 
 
 @gtx.field_operator
-def _thermodynamic_factors(
+def _thermodynamic_factors(  # noqa: PLR0917  [too-many-positional] -- GT4Py field operators are called positionally
     liquid_water_temperature: fa.CellKField[wpfloat],
     total_water: fa.CellKField[wpfloat],
     liquid_water: fa.CellKField[wpfloat],
@@ -356,8 +364,7 @@ def _thermodynamic_factors(
         ThermoConstants.RVD_M_O * reciprocal_virtual_factor + moist_correction
     )
     buoyancy_factor_tet_l = ThermoConstants.GRAV * (
-        exner_factor / corrected_temperature
-        - moist_correction * exner_factor * dqsat_dt
+        exner_factor / corrected_temperature - moist_correction * exner_factor * dqsat_dt
     )
     return (
         liquid_water_potential_temperature,

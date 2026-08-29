@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """The turbulent master length scale.
 
 Translated from 'icon/src/atm_phy_schemes/turb_diffusion.f90', SUBROUTINE 'turbdiff', the closing
@@ -86,7 +94,7 @@ def _effective_length_scale(
 
 
 @gtx.field_operator
-def _compute_turbulent_length_scale(  # noqa: PLR0917 [too-many-positional-arguments]
+def _compute_turbulent_length_scale(
     layer_depth: fa.CellKField[wpfloat],
     roughness_length_times_gravity: fa.CellField[wpfloat],
     horizontal_length_scale_limit: fa.CellField[wpfloat],
@@ -124,7 +132,7 @@ def _compute_turbulent_length_scale(  # noqa: PLR0917 [too-many-positional-argum
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_turbulent_length_scale(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_turbulent_length_scale(
     layer_depth: fa.CellKField[wpfloat],
     roughness_length_times_gravity: fa.CellField[wpfloat],
     horizontal_length_scale_limit: fa.CellField[wpfloat],

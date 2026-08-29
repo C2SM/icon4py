@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Datatests for section 9) of 'turbdiff': the semi-implicit vertical diffusion of the TKE.
 
 The oracle is a real ICON run: 'turbdiff-8-exit' supplies the inputs, 'turbdiff-9-exit' the
@@ -166,9 +174,7 @@ def _implicit_weight(vct_a: np.ndarray, nlev: int, backend) -> gtx.Field:
     return gtx.as_field((dims.KDim,), weight, allocator=backend)
 
 
-def _run_the_matrix_and_the_solve(
-    data_provider, grid_savepoint, date: str, backend
-) -> Section9:
+def _run_the_matrix_and_the_solve(data_provider, grid_savepoint, date: str, backend) -> Section9:
     """Run the five programs of section 9) that do not select a boundary row.
 
     Every program is given ICON's own inputs, from the savepoint that holds them, rather than
@@ -397,21 +403,11 @@ def test_section_9_writes_exactly_these_rows(
 
     entry_zaux, exit_zaux = before.raw_zaux, after.raw_zaux
     measured = {
-        "zaux(:,:,1) upd_prof": rows_that_differ(
-            entry_zaux(0).asnumpy(), exit_zaux(0).asnumpy()
-        ),
-        "zaux(:,:,2) sav_prof": rows_that_differ(
-            entry_zaux(1).asnumpy(), exit_zaux(1).asnumpy()
-        ),
-        "zaux(:,:,3) expl_mom": rows_that_differ(
-            entry_zaux(2).asnumpy(), exit_zaux(2).asnumpy()
-        ),
-        "zaux(:,:,4) impl_mom": rows_that_differ(
-            entry_zaux(3).asnumpy(), exit_zaux(3).asnumpy()
-        ),
-        "zaux(:,:,5) invs_mom": rows_that_differ(
-            entry_zaux(4).asnumpy(), exit_zaux(4).asnumpy()
-        ),
+        "zaux(:,:,1) upd_prof": rows_that_differ(entry_zaux(0).asnumpy(), exit_zaux(0).asnumpy()),
+        "zaux(:,:,2) sav_prof": rows_that_differ(entry_zaux(1).asnumpy(), exit_zaux(1).asnumpy()),
+        "zaux(:,:,3) expl_mom": rows_that_differ(entry_zaux(2).asnumpy(), exit_zaux(2).asnumpy()),
+        "zaux(:,:,4) impl_mom": rows_that_differ(entry_zaux(3).asnumpy(), exit_zaux(3).asnumpy()),
+        "zaux(:,:,5) invs_mom": rows_that_differ(entry_zaux(4).asnumpy(), exit_zaux(4).asnumpy()),
         "frh invs_fac": rows_that_differ(
             before.cke_flux_density().asnumpy(), after.invs_fac().asnumpy()
         ),

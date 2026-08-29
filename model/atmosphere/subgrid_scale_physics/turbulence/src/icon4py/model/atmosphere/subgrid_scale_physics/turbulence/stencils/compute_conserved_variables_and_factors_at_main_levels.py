@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Quasi-conserved variables, cloud cover and thermodynamic factors on the main levels.
 
 Translated from 'icon/src/atm_phy_schemes/turb_diffusion.f90', SUBROUTINE 'turbdiff', the first
@@ -51,7 +59,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _compute_conserved_variables_and_factors_at_main_levels(  # noqa: PLR0917 [too-many-positional-arguments]
+def _compute_conserved_variables_and_factors_at_main_levels(
     temperature: fa.CellKField[wpfloat],
     specific_humidity: fa.CellKField[wpfloat],
     cloud_water: fa.CellKField[wpfloat],
@@ -162,7 +170,7 @@ def _compute_conserved_variables_and_factors_at_main_levels(  # noqa: PLR0917 [t
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_conserved_variables_and_factors_at_main_levels(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_conserved_variables_and_factors_at_main_levels(
     temperature: fa.CellKField[wpfloat],
     specific_humidity: fa.CellKField[wpfloat],
     cloud_water: fa.CellKField[wpfloat],

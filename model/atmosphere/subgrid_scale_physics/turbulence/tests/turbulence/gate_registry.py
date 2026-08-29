@@ -179,7 +179,6 @@ GATES: dict[str, Gate] = {
         reason=Reason.TRANSCENDENTAL,
         measured_max_rel_err=2.7807e-07,  # 't_tens', 2020-12-10T06:01:00
     ),
-
     # The whole of 'turbdiff', end to end: 'turbdiff-entry' -> 'turbdiff-exit', 42 programs.
     # Measured on 'gtfn_cpu' and 'dace_cpu', all four dates; the two backends are bit-identical
     # to each other on all 22 outputs, so the entire residual is on ICON's side.
@@ -208,7 +207,6 @@ GATES: dict[str, Gate] = {
         reason=Reason.TRANSCENDENTAL,
         measured_max_rel_err=4.0346e-09,  # 'tketens', 2020-12-10T06:01:00
     ),
-
     # 'vertdiff' -- the implicit vertical diffusion stage, 'vertdiff-entry' -> 'vertdiff-exit'.
     # Measured on 'gtfn_cpu' and 'dace_cpu', all four dates. Seventeen of the eighteen programs
     # are bit-exact; the stage has exactly one transcendental and it is the entry below.
@@ -243,7 +241,6 @@ GATES: dict[str, Gate] = {
         reason=Reason.TRANSCENDENTAL,
         measured_max_rel_err=2.218e-16,  # 'eprs', 2020-12-10T06:01:00
     ),
-
     # turbdiff section 1a) -- vertical gradients of the conserved variables. Section 1a contains
     # only '-', '*' and '/' with no multiply-add pattern, so bit-exactness here is not evidence
     # that FMA contraction is absent; the first fused expression is in section 1b.
@@ -257,7 +254,6 @@ GATES: dict[str, Gate] = {
     # were the reason the reference was recaptured without FMA contraction (v02).
     "compute_thermal_forcing": Exact(),
     "compute_mechanical_forcing": Exact(),
-
     # turbdiff section 0) conserved variables, cloud cover and turbulent length scales.
     # Measured on 'exp.mch_icon-ch2_small' v02, all four dates, on 'embedded', 'gtfn_cpu' and
     # 'dace_cpu' -- which produce bit-identical results here, so the disagreement is on ICON's
@@ -291,7 +287,6 @@ GATES: dict[str, Gate] = {
     "compute_horizontal_wind_including_the_zero_level": Exact(),
     "compute_layer_depth": Exact(),
     "compute_turbulent_length_scale": Exact(),
-
     # turbdiff section 2c) final preparations. The single live statement turns the diffusion
     # coefficients back into stability lengths, and it is the exact inverse of section 3's
     # 'compute_diffusion_coefficients_from_stability_lengths'. Bit-exactness here depends on
@@ -299,7 +294,6 @@ GATES: dict[str, Gate] = {
     # instead misses 156546 of 653804 values in 'ls_m' by up to 1 ulp. That all three backends
     # agree is also evidence GT4Py did not substitute the reciprocal away.
     "compute_stability_lengths_from_diffusion_coefficients": Exact(),
-
     # turbdiff section 3) turbulent budgets ('solve_turb_budgets').
     # PROVISIONAL: entered as the documented default so the section datatests can run at
     # all -- 'gate_for' refuses to default, so without an entry the tests error instead
@@ -311,7 +305,6 @@ GATES: dict[str, Gate] = {
     "compute_supersaturation_standard_deviation": Exact(),
     "compute_turbulent_velocity_scale": Exact(),
     "set_turbulent_velocity_scale_at_model_top": Exact(),
-
     # turbdiff section 6) q-diffusion tendency.
     # PROVISIONAL: entered as the documented default so the section datatests can run at
     # all -- 'gate_for' refuses to default, so without an entry the tests error instead
@@ -321,7 +314,6 @@ GATES: dict[str, Gate] = {
     "compute_cke_flux_density": Exact(),
     "compute_explicit_tke_diffusion_momentum": Exact(),
     "compute_saved_tke_profile": Exact(),
-
     # turbdiff section 9) TKE profile update through the diffusion tendency.
     # PROVISIONAL: entered as the documented default so the section datatests can run at
     # all -- 'gate_for' refuses to default, so without an entry the tests error instead
@@ -335,7 +327,6 @@ GATES: dict[str, Gate] = {
     "compute_tke_diffusion_right_hand_side": Exact(),
     "solve_tke_diffusion_equation": Exact(),
     "subtract_implicit_part_of_tke_diffusion_momentum": Exact(),
-
     # turbdiff section 2a) the 3D complements of the mechanical shear forcing. Measured on
     # 'embedded', 'gtfn_cpu' and 'dace_cpu', which produce bit-identical results to each other --
     # so, as in section 0, the disagreement is on ICON's side of the comparison and not in any
@@ -379,26 +370,22 @@ GATES: dict[str, Gate] = {
     ),
     # 'compute_three_dimensional_shear_forcing' writes the mean-flow shear intermediate, which is
     # not compared against a savepoint of its own -- it has no ICON counterpart to gate.
-
     # turbdiff section 4) lower limits of the vertical diffusion coefficients. Measured
     # bit-exact on 'embedded', 'gtfn_cpu' and 'dace_cpu', all four dates, over all 653804
     # computed values of both 'tkvm' and 'tkvh'.
     "compute_effective_diffusion_coefficients": Exact(),
-
     # turbdiff section 8) the virtual TKE profile that carries the circulation term into
     # section 9's implicit solve. A genuine forward recurrence -- the only 'scan_operator' in
     # wave 2b -- and bit-exact on 'embedded', 'gtfn_cpu' and 'dace_cpu', all four dates.
     # A scan's carry is where a GPU re-association would show up first, so this is the entry to
     # watch in the central GPU pass.
     "compute_virtual_tke_profile": Exact(),
-
     # turbdiff section 10) the q tendency of the TKE diffusion. No transcendental and no
     # multiply-add exposure -- 'sqrt' is correctly rounded and '2*x' is exact -- so this was
     # established in plain numpy against the archive before any GT4Py was written, and the
     # backends only had to confirm it. Measured on 'gtfn_cpu' and 'dace_cpu', all four dates;
     # 'embedded' xfails the programs that use 'concat_where'.
     "compute_turbulent_velocity_scale_tendency": Exact(),
-
     # turbdiff section 11) interpolation of the SDSS back to main levels.
     # Measured bit-exact on embedded, gtfn_cpu and dace_cpu, all four dates.
     "interpolate_supersaturation_deviation_to_main_levels": Exact(),

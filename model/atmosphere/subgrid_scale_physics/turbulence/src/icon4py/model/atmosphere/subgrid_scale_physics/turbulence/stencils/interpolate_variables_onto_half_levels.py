@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """The seven main-level profiles 'turbdiff' section 0) needs on half levels.
 
 Translated from 'icon/src/atm_phy_schemes/turb_diffusion.f90', SUBROUTINE 'turbdiff', section 0),
@@ -61,7 +69,7 @@ def _interpolate_onto_half_levels(
 
 
 @gtx.field_operator
-def _interpolate_variables_onto_half_levels(  # noqa: PLR0917 [too-many-positional-arguments]
+def _interpolate_variables_onto_half_levels(
     cloud_cover: fa.CellKField[wpfloat],
     exner_factor: fa.CellKField[wpfloat],
     dqsat_dt: fa.CellKField[wpfloat],
@@ -111,7 +119,7 @@ def _interpolate_variables_onto_half_levels(  # noqa: PLR0917 [too-many-position
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_variables_onto_half_levels(  # noqa: PLR0917 [too-many-positional-arguments]
+def interpolate_variables_onto_half_levels(
     cloud_cover: fa.CellKField[wpfloat],
     exner_factor: fa.CellKField[wpfloat],
     dqsat_dt: fa.CellKField[wpfloat],

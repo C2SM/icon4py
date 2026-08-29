@@ -388,10 +388,16 @@ def test_the_k_loop_of_solve_turb_budgets_has_no_vertical_neighbour_access() -> 
     start = next(
         i for i, line in enumerate(lines) if line.startswith("SUBROUTINE solve_turb_budgets")
     )
-    end = next(i for i, line in enumerate(lines) if line.startswith("END SUBROUTINE solve_turb_budgets"))
+    end = next(
+        i for i, line in enumerate(lines) if line.startswith("END SUBROUTINE solve_turb_budgets")
+    )
     body = lines[start:end]
 
-    offsets = [f"{start + i + 1}: {line.strip()}" for i, line in enumerate(body) if re.search(r"\bk\s*[-+]\s*\d", line)]
+    offsets = [
+        f"{start + i + 1}: {line.strip()}"
+        for i, line in enumerate(body)
+        if re.search(r"\bk\s*[-+]\s*\d", line)
+    ]
     assert not offsets, "'solve_turb_budgets' now has a vertical offset:\n" + "\n".join(offsets)
 
     subscript = re.compile(r"\b[A-Za-z_]\w*\s*\(([^()]*)\)")
@@ -399,8 +405,8 @@ def test_the_k_loop_of_solve_turb_budgets_has_no_vertical_neighbour_access() -> 
     for i, line in enumerate(body):
         code = line.split("!")[0]
         for match in subscript.finditer(code):
-            for argument in match.group(1).split(","):
-                argument = argument.strip()
+            for raw_argument in match.group(1).split(","):
+                argument = raw_argument.strip()
                 if argument not in ("k", "k_tvs") and re.search(r"\bk\b", argument):
                     suspicious.append(f"{start + i + 1}: {line.strip()}")
     assert not suspicious, "a subscript now derives an index from 'k':\n" + "\n".join(suspicious)

@@ -207,8 +207,8 @@ def _compute_turbulent_velocity_scale(
         maximum(wpfloat("0.0"), previous_velocity_scale + transport_tendency * tke_time_step)
         + forcing * tke_time_step
     )
-    updated = q1 * (sqrt(wpfloat("1.0") + wpfloat("4.0") * q2 / q1) - wpfloat("1.0")) * wpfloat(
-        "0.5"
+    updated = (
+        q1 * (sqrt(wpfloat("1.0") + wpfloat("4.0") * q2 / q1) - wpfloat("1.0")) * wpfloat("0.5")
     )
 
     equilibrium_floor = sqrt(forcing_length * maximum(forcing, wpfloat("0.0")))

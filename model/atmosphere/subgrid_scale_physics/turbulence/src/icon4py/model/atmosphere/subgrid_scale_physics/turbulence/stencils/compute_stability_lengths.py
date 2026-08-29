@@ -184,9 +184,7 @@ def _compute_stability_lengths(
     a6 = d_6 * gama * a_m
 
     val1 = (mechanical_forcing * bb2 + (a5 - a3 + bb1) * thermal_forcing) / (wpfloat("2.0") * bb1)
-    val2 = val1 + sqrt(
-        val1 * val1 - (a6 + bb2) * thermal_forcing * mechanical_forcing / bb1
-    )
+    val2 = val1 + sqrt(val1 * val1 - (a6 + bb2) * thermal_forcing * mechanical_forcing / bb1)
     fakt = thermal_forcing / (val2 - thermal_forcing)
     corrected_h = bb1 - a5 * fakt
     corrected_m = corrected_h * (bb2 - a6 * fakt) / (bb1 - (a5 - a3) * fakt)
