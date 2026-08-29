@@ -128,10 +128,29 @@ def _smooth_tke_forcing_vertically(
         / discretisation_momentum
     )
 
-    smoothed = concat_where(dims.KDim == nlev - 1, at_the_bottom, inside)
-    smoothed = concat_where(dims.KDim == 1, at_the_top, smoothed)
-    smoothed = concat_where(dims.KDim == 0, tke_forcing, smoothed)
-    return concat_where(dims.KDim == nlev, tke_forcing, smoothed)
+    # NESTED HALF-SPACES, NOT ONE EQUALITY PER SPECIAL ROW. Each 'concat_where' below splits
+    # the interval its parent left it, so every branch is inferred over an INTERVAL and none of
+    # them is evaluated on a row whose 'Koff[+-1]' neighbour lies outside the field. The rows
+    # and the arithmetic are exactly those of the table in the module docstring: 0 and 'nlev'
+    # are copied through, 1 takes the one-sided top form, 'nlev'-1 the one-sided bottom form,
+    # and 2..'nlev'-2 the interior form.
+    #
+    # WRITTEN AS FOUR EQUALITIES THIS PROGRAM READ ONE ROW OFF EITHER END OF ITS INPUTS. The
+    # complement of a point is not an interval -- the rows other than 1 are '[0,1)' together
+    # with '(1,nlev]' -- so the domain inferred for the fallback branch could only be the whole
+    # column, and the fused kernel of 'inside' then evaluated at row 0 and at row 'nlev',
+    # loading 'tke_forcing' and 'discretisation_momentum' at rows -1 and 'nlev'+1. The
+    # selection discarded those values, so the answer was right and every backend agreed with
+    # the transcription -- but the loads happened. 'compute-sanitizer --tool memcheck' on
+    # 'dace_gpu' reports them as "Invalid __global__ read of size 8 bytes ... is out of bounds",
+    # thousands per launch. Whether an out-of-bounds load faults depends on what CuPy's memory
+    # pool has mapped next to the array, which is why it surfaced as an INTERMITTENT
+    # 'cudaErrorIllegalAddress' that killed the CUDA context and failed every later test in the
+    # process. 'gtfn' happened not to fault on the same reads; that is luck, not safety.
+    smoothed = concat_where(dims.KDim < nlev, at_the_bottom, tke_forcing)
+    smoothed = concat_where(dims.KDim < nlev - 1, inside, smoothed)
+    smoothed = concat_where(dims.KDim < 2, at_the_top, smoothed)
+    return concat_where(dims.KDim < 1, tke_forcing, smoothed)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

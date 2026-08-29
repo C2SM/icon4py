@@ -145,8 +145,8 @@ defaulting silently, so a missing entry is a loud failure and not something to w
 ### Bit-exactness on the GPU backends
 
 The gates in `tests/turbulence/gate_registry.py` are `Exact()`, and they hold on `embedded`,
-`gtfn_cpu`, `dace_cpu` and `gtfn_gpu`. Three things had to be true for that, and only the first is
-obvious:
+`gtfn_cpu`, `dace_cpu`, `gtfn_gpu` and `dace_gpu`. Four things had to be true for that, and only
+the first is obvious:
 
 - **No multiply-add contraction on either side.** The reference is built with `-Kieee -Mnofma -gpu=nofma`; the port sets `CXXFLAGS=-ffp-contract=off` and `CUDAFLAGS=--fmad=false` in
   `tests/turbulence/conftest.py`. Both reach the compiler: GT4Py's CMake toolchain picks them up
@@ -158,14 +158,20 @@ obvious:
 - **Write a square as a product, never as `x**2`.** Fortran's integer-exponent `**` is a
   multiplication; GT4Py's `**` becomes `math.pow`, and CUDA's `pow` carries up to 2 ulp of error.
   See the docstring of `_compute_mechanical_forcing`, which is where it was measured.
-  **`dace_gpu` is currently the exception, and it is a crash rather than a gate failure.** The suite
-  does not complete on it: `cudaErrorIllegalAddress`, raised asynchronously, after which the CUDA
-  context is dead and every later test fails with it. Measured 2026-08-29 on four SLURM jobs; it was
-  green on this backend earlier the same day, and no stencil source changed in between. Neither a
-  stale build cache nor a single test explains it — `test_turbdiff_granule.py` and
-  `test_turbdiff_section_2c.py` each pass alone and fault when run together. The workspace
-  `CLAUDE.md` of `icon-exclaim` carries the reproducer and the job numbers. **Do not read a green
-  `gtfn_gpu` as covering `dace_gpu`**; it is the primary backend for this port.
+
+- **Split a vertical column with half-spaces, not with equalities.** A `concat_where` whose
+  condition is `KDim == k` leaves its *other* branch the complement of a point, which is not an
+  interval. GT4Py can only widen that to the whole column, and the DaCe backend then emits a map
+  over the whole column for that branch and dereferences its `Koff[-1]`/`Koff[+1]` neighbours one
+  row past each end of the field. The selection discards those values, so every backend agrees
+  numerically — but on `dace_gpu` the loads happen, and whether they fault depends on what CuPy's
+  memory pool has mapped next to the array. That is what made this suite die intermittently with
+  `cudaErrorIllegalAddress` on 2026-08-29, taking the CUDA context and every later test with it.
+  `gtfn` is not exposed: it keeps each branch behind a lambda in a ternary and never evaluates the
+  one it does not select. Write the split as a chain of `KDim < k`, so that each branch's domain is
+  an interval — `smooth_tke_forcing_vertically` is the worked example, and its comment carries the
+  detail. `compute-sanitizer --tool memcheck` is what proves it: 16638 invalid reads over the
+  granule's stencils before, 0 after.
 
 - **One persistent GT4Py build cache directory per backend.** GT4Py's cache key is the program,
   the offset provider and the column axis -- not the backend and not the compiler flags -- so a
