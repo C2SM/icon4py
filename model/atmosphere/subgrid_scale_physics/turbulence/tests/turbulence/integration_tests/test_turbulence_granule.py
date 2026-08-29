@@ -361,7 +361,7 @@ def _run_the_second_stage_alone(
         (granule._gradient_total_water, before.zvari(H2O_G)),
         (granule._gradient_liquid_water, before.zvari(LIQ)),
     ):
-        target.ndarray[...] = data_alloc.as_numpy(source)
+        utils.overwrite_with(target, source, backend)
     if poison_the_model_top:
         diagnostic.tkvm.ndarray[:, 0] = np.nan
         diagnostic.tkvh.ndarray[:, 0] = np.nan

@@ -45,6 +45,12 @@ section does not write must then come out unchanged, which turns a wrong vertica
 failed assertion instead of an invisible one. Zero-filling would make those rows differ for a
 reason that says nothing about the stencil. 'copy_of' and 'copy_of_raw_field' are the two ways
 to get that starting state; 'nan_like' is for the one case where there is none.
+
+EVERY BUFFER A TEST TOUCHES GOES THROUGH ONE OF THESE. They all take the backend under test and
+allocate through it, which is what makes a test run on a GPU backend at all: a field allocated
+there holds device memory, and a plain 'numpy' array cannot be assigned into it. 'overwrite_with'
+is the same rule for a field the code under test allocated for itself -- one a test can only
+prime in place -- and it is what a test must use instead of writing '.ndarray[...] ='.
 """
 
 from __future__ import annotations
@@ -69,6 +75,7 @@ __all__ = [
     "experiment_for_turbulence",
     "fields_that_changed",
     "nan_like",
+    "overwrite_with",
     "surface_row",
 ]
 
@@ -160,6 +167,41 @@ def surface_row(field: gtx.Field, level: int, backend: gtx_typing.Backend | None
     zero-based row, so the surface half level 'ke1' is 'entry.ke()'.
     """
     return gtx.as_field((dims.CellDim,), field.asnumpy()[:, level].copy(), allocator=backend)
+
+
+def overwrite_with(
+    target: gtx.Field, source: gtx.Field | np.ndarray, backend: gtx_typing.Backend | None
+) -> None:
+    """Write 'source' into an already-allocated 'target', in place, on the backend's device.
+
+    'copy_of' and its neighbours make a NEW field, which is what a test wants for a stencil
+    output. This is for the other case: a field the code under test allocated for itself, which
+    a test has to prime with ICON's state -- the granule's own 'zvari' components and the
+    diffusion coefficients it hands to its second stage. There is no way to hand those in from
+    outside, so they are written into.
+
+    IT MUST NOT GO THROUGH THE HOST. On a GPU backend 'target.ndarray' is a 'cupy.ndarray', and
+    cupy's '__setitem__' takes a cupy array or a scalar and nothing else: assigning a
+    'numpy.ndarray' into a slice of one raises 'ValueError: non-scalar numpy.ndarray cannot be
+    used for fill'. That is the whole bug this helper exists to stop a test from writing again,
+    and it is invisible on 'embedded', 'gtfn_cpu' and 'dace_cpu', where both sides are numpy.
+
+    So the values are moved into the backend's own array namespace before the assignment. The
+    round trip through the host that 'as_numpy' makes is deliberate and costs nothing that
+    matters here: it also accepts a plain 'numpy.ndarray' and a field allocated on the other
+    device, so the caller does not have to know where 'source' came from.
+
+    Args:
+        target: The field to overwrite. Its buffer is written in place; it is not replaced.
+        source: The values, as a field or a plain array, of exactly 'target's shape.
+        backend: The backend under test, which is what decides the device.
+    """
+    values = data_alloc.as_numpy(source)
+    assert target.ndarray.shape == values.shape, (
+        f"'overwrite_with' does not broadcast: target has shape {target.ndarray.shape} and the "
+        f"source {values.shape}."
+    )
+    target.ndarray[...] = data_alloc.import_array_ns(backend).asarray(values)
 
 
 # ------------------------------------------------------------------------------ comparison ---
