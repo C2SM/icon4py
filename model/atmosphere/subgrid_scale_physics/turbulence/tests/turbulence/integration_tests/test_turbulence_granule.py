@@ -35,8 +35,10 @@ WHAT ONLY THIS MODULE CAN CATCH
 * THE SECOND STAGE CONSUMES THE FIRST'S DIFFUSION COEFFICIENTS, including the surface row
   section 4) does not write, and it must not read the model top. See
   'test_the_model_top_of_the_diffusion_coefficients_is_never_read'.
-* ADR-0001 over the pair: 'vertdiff' updates 'u', 'v', 't', 'qv' and 'qc' in place whenever the
-  optional '*_tens' arguments are absent, and this granule must never do that.
+* ADR-0001 over the pair: the granule must never write 'u', 'v', 't', 'qv' or 'qc'. Neither does
+  the Fortran -- '597f090cf2' removed the optional in-place incrementation, so 'turbdiff' and
+  'vertdiff' write tendencies only -- and 'test_run_never_writes_the_state_it_was_given'
+  measures it.
 
 WHERE THE ENTRY STATE COMES FROM, AND WHY THAT IS SOUND
 -------------------------------------------------------
@@ -814,10 +816,13 @@ def test_run_never_writes_the_state_it_was_given(
 ) -> None:
     """ADR-0001 over the pair: the input and surface states come out as they went in.
 
-    This is not a formality for 'vertdiff'. The Fortran updates 'u', 'v', 't', 'qv' and 'qc' IN
-    PLACE whenever the optional '*_tens' arguments are absent (turb_vertdiff.f90:781-806), and
-    the exit savepoint carries all five prognostic variables for exactly that reason. The ICON
-    interface always passes the tendencies, and so must the granule.
+    The Fortran matches, which is worth checking rather than assuming because it once did not.
+    'vertdiff' declares 'u_tens'..'qc_tens' mandatory 'INTENT(INOUT)' (turb_vertdiff.f90:293-302)
+    and accumulates into them unconditionally at ':783-806'; the optional in-place incrementation
+    of the prognostic variables went upstream in '597f090cf2'. 'u'..'qc' keep 'INTENT(INOUT)'
+    only as pointer targets (':451-460'), and ICON adds the tendencies to the state itself at
+    'mo_nwp_turbdiff_interface.f90:910-960'. The exit savepoint carries all five prognostic
+    variables, so the granule's side of it is measured here and not taken on trust.
 
     'shfl_s' and 'qvfl_s' are here too. 'vertdiff' would recompute them from the effective
     implicit fluxes at :850-895, but only under '.NOT.(lsfluse .AND. tdc%lsflcnd)', and the

@@ -275,12 +275,16 @@ def test_vertdiff_writes_tendencies_and_not_the_prognostic_variables(
     data_provider: sb.IconSerialDataProvider,
 ) -> None:
     """
-    'u'..'qc' are 'INTENT(INOUT)' and stay untouched because every tendency field is present.
+    'u'..'qc' are 'INTENT(INOUT)' as pointer targets only, and come out unchanged.
 
-    'vertdiff' adds the diffusion increment directly to the prognostic variable only when the
-    corresponding tendency is absent, which is why both values are serialized. It does rescale
-    'rhon' in place, and it does rewrite 'zvari' with the gradients the semi-implicit procedure
-    produced.
+    'vertdiff' writes tendencies and nothing else: 'u_tens'..'qc_tens' are mandatory
+    'INTENT(INOUT)' (turb_vertdiff.f90:293-302) and the accumulation at ':783-806' is
+    unconditional. The optional in-place incrementation of the prognostic variables was removed
+    upstream in '597f090cf2'; 'u'..'qc' are still 'INTENT(INOUT)' only because ':451-460'
+    pointer-associates them and a non-const pointer needs a definable target. Both the entry and
+    the exit values are serialized, so this is measured here rather than argued. 'vertdiff' does
+    rescale 'rhon' in place, and it does rewrite 'zvari' with the gradients the semi-implicit
+    procedure produced.
     """
     entry = data_provider.from_savepoint_vertdiff_entry(date=date)
     exit_savepoint = data_provider.from_savepoint_vertdiff_exit(date=date)

@@ -2703,9 +2703,14 @@ class Turbulence:
         """Run 'SUBROUTINE vertdiff' once: the implicit vertical diffusion of u, v, T, qv, qc.
 
         Reads `input_state` and `surface_state`, reads and writes `diagnostic_state.rhon`,
-        accumulates into `tendency_state`. `input_state` is never written (ADR-0001): the
-        Fortran updates 'u', 'v', 't', 'qv' and 'qc' in place only when the optional '*_tens'
-        arguments are absent, and 'mo_nwp_turbdiff_interface.f90:719-724' always passes them.
+        accumulates into `tendency_state`. `input_state` is never written (ADR-0001), and
+        neither is ICON's: 'u_tens'..'qc_tens' are mandatory 'TARGET, INTENT(INOUT)'
+        (turb_vertdiff.f90:293-302), the accumulation at ':783-806' is unconditional, and the
+        optional in-place incrementation of the prognostic variables went upstream in
+        '597f090cf2'. 'u'..'qc' keep 'INTENT(INOUT)' only because ':451-460' pointer-associates
+        them; they are on no left-hand side in the file. ICON adds the tendencies to the state
+        itself, once, at 'mo_nwp_turbdiff_interface.f90:910-960'; the interface passes all five
+        tendency arrays at ':724-728'.
 
         What is written, and what is left alone:
 

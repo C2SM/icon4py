@@ -47,10 +47,18 @@ diffusion (mo_nh_diffusion.f90:847,:850,:1182,:1187). Exactly those four are typ
 here; everything else is 'wpfloat'. The default build is double, where 'vpfloat is wpfloat',
 so this costs nothing today and stays correct if mixed precision is ever enabled.
 
-ADR-0001: a physics component returns tendencies and never mutates its input state. The
-Fortran 'turbdiff' and 'vertdiff' update 'u', 'v', 't', 'qv' and 'qc' in place whenever the
-optional '*_tens' arguments are absent; the ICON interfaces always pass them, and the granule
-only ever writes 'TurbulenceTendencyState'. All containers are frozen.
+ADR-0001: a physics component returns tendencies and never mutates its input state. Neither
+Fortran routine mutates one either, and has not since '597f090cf2' (Raschendorfer, 2024-09-20)
+"removes the optional incrementation of 1-st order prognostic variables in 'turbdiff' and
+'vertdiff', instead of using tendency arrays". 'vertdiff' now declares 'u_tens'..'qc_tens'
+mandatory (turb_vertdiff.f90:293-302) and accumulates into them unconditionally at ':783-806';
+'turbdiff' still declares 'u_tens', 'v_tens' and 't_tens' 'OPTIONAL' (turb_diffusion.f90:626-630)
+but no longer tests 'PRESENT' on them. 'u', 'v', 't', 'qv' and 'qc' appear on no left-hand side
+in either file: they stay 'INTENT(INOUT)' because 'vertdiff' pointer-associates them
+(turb_vertdiff.f90:451-460) and a non-const pointer needs a definable target. ICON adds the
+tendencies to the state itself at 'mo_nwp_turbdiff_interface.f90:910-960'. Beware
+'turb_diffusion.f90:319', a header comment that still describes the deleted behaviour. The
+granule only ever writes 'TurbulenceTendencyState'. All containers are frozen.
 """
 
 from __future__ import annotations
@@ -332,9 +340,9 @@ class TurbulenceDiagnosticState:
 class TurbulenceTendencyState:
     """Tendencies the granule produces.
 
-    Kept apart from `TurbulenceInputState` on purpose: the Fortran updates 'u', 'v', 't', 'qv'
-    and 'qc' in place when the optional '*_tens' arguments are absent, which ADR-0001 forbids
-    for an icon4py physics component.
+    Kept apart from `TurbulenceInputState` on purpose: ADR-0001 forbids an icon4py physics
+    component writing into its input state. The Fortran does not write into ICON's either --
+    see the module docstring on '597f090cf2' -- so the separation costs nothing but says so.
     """
 
     #: 'u_tens' -- zonal wind tendency, on full levels [m/s2]. ICON passes
