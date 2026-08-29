@@ -247,8 +247,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 __all__ = [
     "FORTRAN_NAMELIST_GROUP",
     "FROZEN_SWITCHES",
-    "MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM",
-    "MOLECULAR_DIFFUSIVITY_FOR_SCALARS",
     "DiffusedVariable",
     "FrozenSwitch",
     "Turbulence",
@@ -256,15 +254,6 @@ __all__ = [
     "TurbulenceParams",
 ]
 
-
-#: Kinematic viscosity of dry air, ICON's 'con_m' (mo_physical_constants.f90:115) [m2/s]. It and
-#: 'con_h' below are here rather than in 'icon4py.model.common.constants', which does not carry
-#: them; the section 3) and section 4) datatests each hold a copy for the same reason and should
-#: import these once a shared home is agreed.
-MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM: Final[float] = 1.50e-5
-
-#: Scalar conductivity of dry air, ICON's 'con_h' (mo_physical_constants.f90:116) [m2/s].
-MOLECULAR_DIFFUSIVITY_FOR_SCALARS: Final[float] = 2.20e-5
 
 #: Reciprocal of the gravitational acceleration [s2/m], ICON's 'edgrav'
 #: (mo_physical_constants.f90). The turbulent length scale is seeded with 'gz0 * edgrav'.
@@ -1720,7 +1709,9 @@ class Turbulence:
         )
         self._compute_diffusion_coefficients_from_stability_lengths = self._program(
             compute_diffusion_coefficients_from_stability_lengths,
-            constant_args={"molecular_diffusivity_for_scalars": MOLECULAR_DIFFUSIVITY_FOR_SCALARS},
+            constant_args={
+                "molecular_diffusivity_for_scalars": constants.MOLECULAR_DIFFUSIVITY_FOR_SCALARS
+            },
             levels=(1, nlev),  # 'DO k=2,kem'
         )
 
@@ -1733,10 +1724,10 @@ class Turbulence:
                 "tropics_mask": metric.trop_mask,
                 "inner_tropics_mask": metric.innertrop_mask,
                 "minimum_coefficient_for_momentum": max(
-                    MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM, config.tkmmin
+                    constants.MOLECULAR_DIFFUSIVITY_FOR_MOMENTUM, config.tkmmin
                 ),
                 "minimum_coefficient_for_scalars": max(
-                    MOLECULAR_DIFFUSIVITY_FOR_SCALARS, config.tkhmin
+                    constants.MOLECULAR_DIFFUSIVITY_FOR_SCALARS, config.tkhmin
                 ),
                 "stratospheric_minimum_for_momentum": config.tkmmin_strat,
                 "stratospheric_minimum_for_scalars": config.tkhmin_strat,
