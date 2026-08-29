@@ -61,7 +61,14 @@ def _batched_searchsorted(
     a = a.astype(array_ns.float64)
     v = v.astype(array_ns.float64)
     m, n = a.shape
-    max_num = max(a.max() - a.min(), v.max() - v.min(), a.max() - v.min(), v.max() - a.min()) + 1.0
+    max_num = (
+        array_ns.max(
+            array_ns.stack(
+                [a.max() - a.min(), v.max() - v.min(), a.max() - v.min(), v.max() - a.min()]
+            )
+        ).astype(array_ns.float64)
+        + 1.0
+    )
     r = max_num * array_ns.arange(m, dtype=array_ns.float64)[:, None]
     p = array_ns.searchsorted((a + r).ravel(), (v + r).ravel()).reshape(v.shape)
     return p - n * array_ns.arange(m, dtype=p.dtype)[:, None]
@@ -134,8 +141,14 @@ def compute_zdiff_gradp(
     z_ifc_e0 = z_ifc_asc[e2c_0]
     z_ifc_e1 = z_ifc_asc[e2c_1]
 
-    fill_high = max(z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()) + 1.0
-    fill_low = min(z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()) - 1.0
+    fill_high = (
+        array_ns.max(array_ns.stack([z_ifc_e0.max(), z_ifc_e1.max(), z_me.max(), z_aux2.max()]))
+        + 1.0
+    )
+    fill_low = (
+        array_ns.min(array_ns.stack([z_ifc_e0.min(), z_ifc_e1.min(), z_me.min(), z_aux2.min()]))
+        - 1.0
+    )
 
     jk_idx = array_ns.arange(nlev, dtype=array_ns.int64)[None, :]
     fi_sliced = fi[hs:]
