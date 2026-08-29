@@ -146,6 +146,40 @@ class UnregisteredStencilError(LookupError):
 #: xfail there in gt4py 1.1.10 (see the package README, "Boundary rows"), so their gate rests on
 #: the two compiled backends.
 GATES: dict[str, Gate] = {
+    # The WHOLE granule: 'run()' = 'run_turbdiff' then 'run_vertdiff', which is exactly what
+    # 'mo_nwp_turbdiff_interface.f90' does (turbdiff at :576, vertdiff at :672, a timer between).
+    # Measured on 'gtfn_cpu' and 'dace_cpu', all four dates.
+    #
+    # Three entries rather than one because the spread is six decades and it is accumulation, not
+    # arithmetic. The non-tendency group tops out at 2.67e-13. 't_tens' reaches 2.78e-7 in RELATIVE
+    # terms on an ABSOLUTE error of 8.4e-15 against a reference value of 1.0e-8 -- the accumulation
+    # 't_tens_before + increment' nearly cancels there. One gate would widen twenty outputs by six
+    # decades to cover that one.
+    #
+    # CAVEAT, and it is the agent's own and worth keeping: 3e-6 is coarse, and a rounding *in* the
+    # increment would hide under it. The tighter test is to compare the increment instead of the
+    # sum, at the cost of no longer testing the accumulation. Not done.
+    #
+    # Bit-exact end to end and asserted ungated: 'rhon', 'disc_mom', 'diff_dep', 'cur_prof[qc]'.
+    # 'rhon' is the one that only a COMPOSED test could establish -- it is the near-miss of
+    # 'run_turbdiff' alone (5.5e-16, all in the surface row) and becomes bit-exact after the pair,
+    # because vertdiff replaces exactly that row with an exponential-free expression.
+    "run": Tol(
+        rtol=5e-12,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=2.6696e-13,  # 'rcld', 2020-12-10T06:02:00
+    ),
+    "run_tendencies": Tol(
+        rtol=1e-8,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=7.0125e-10,  # 'qv_tens', 2020-12-10T06:01:40
+    ),
+    "run_temperature_tendency": Tol(
+        rtol=3e-6,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=2.7807e-07,  # 't_tens', 2020-12-10T06:01:00
+    ),
+
     # The whole of 'turbdiff', end to end: 'turbdiff-entry' -> 'turbdiff-exit', 42 programs.
     # Measured on 'gtfn_cpu' and 'dace_cpu', all four dates; the two backends are bit-identical
     # to each other on all 22 outputs, so the entire residual is on ICON's side.
