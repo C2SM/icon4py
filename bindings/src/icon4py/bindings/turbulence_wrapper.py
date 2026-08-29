@@ -53,12 +53,75 @@ ICON has, seeds the granule's output buffer from it and copies the result back. 
 keeps the columns outside the granule's horizontal window -- 'turbdiff' computes 'ivstart..ivend'
 only -- at the value ICON gave them.
 
-'dp0' IS PASSED TO 'turbulence_init' AND ALIASES ICON'S ARRAY.
+'dp0' IS PASSED TO 'turbulence_init' AND ALIASES ICON'S ARRAY -- WHICH IS WHY IT WORKS.
 It is a member of 'TurbulenceMetricState', which the granule takes once, and two of its stencils
 bind it as a 'constant_args' field at setup time. ICON's 'p_diag%dpres_mc' is not constant: it is
-recomputed every step. This works only because py2fgen wraps the caller's memory rather than
-copying it, so the bound field follows ICON's updates in place. See the note in
-'turbulence_init'.
+recomputed every step. The binding is BY IDENTITY and not by value -- 'setup_program' inlines only
+scalars -- and py2fgen wraps the caller's memory instead of copying it, so the bound field reads
+ICON's current values at every call.
+
+That was written down as a suspected latent bug. IT IS NOT ONE, and the evidence is L3, not an
+argument: 'ICON4PY_MODE_VERIFY' (job 834636, byte-identical in 834659) ran six timesteps with the
+granule and the Fortran turbulence side by side, each step restarting from the Fortran state. A
+'dp0' that had gone stale would agree at step 1, where the bound array still holds what ICON had
+just written, and diverge from step 2 onwards; that asymmetry IS the test. Nothing diverged --
+step-to-step ratios are non-monotone jitter in both directions, and the worst relative
+disagreement across all 26 turbulence fields is 1.476e-06 on 't_tens', an absolute error of
+1.1e-14 on a field of order 1.3e-02.
+
+The precondition belongs to the caller and is not checked here: ICON must keep 'p_diag%dpres_mc'
+in the same allocation for the life of the granule, and on GPU its device pointer must stay
+stable. See the note in 'turbulence_init'.
+
+NO TRACER REACHES THE GRANULE, AND NOTHING ON THIS SIDE WOULD SAY SO.
+'turbulence_run' has no tracer argument. 'TurbulenceInputState.tracers' and
+'TurbulenceTendencyState.ddt_tracers' are TUPLES of fields, and a tuple has no flat
+representation at the C boundary: 'ndtr' is a runtime number while py2fgen renders a fixed
+argument list. So this wrapper passes 'tracers=()' and 'ddt_tracers=()' unconditionally, and
+'vertdiff' diffuses the five first-order variables and nothing else.
+
+That is right only where 'ndtr = 0'. Switch on 'ldiff_qi' or 'ldiff_qs', two-moment or SBM
+microphysics, ART or ComIn tracers, and ICON would hand the interface tracers this granule would
+SILENTLY NOT DIFFUSE: no exception, no warning, output that looks entirely plausible and is
+missing a physical process.
+
+WHAT PREVENTS THAT TODAY LIVES IN A DIFFERENT REPOSITORY. 'check_supported_configuration' in
+ICON's 'mo_icon4py_turbulence.f90' calls 'finish' when 'nturb_tracer_tot > 0'. It is the only
+guard there is, it is not in this tree, and nobody reading this file can see it. If it is ever
+removed -- or the granule is driven from anywhere else: the green line, a standalone driver, a
+second wrapper -- this turns into a silent wrong answer with no failing test anywhere. The fix is
+to give 'turbulence_run' the tracers, as a fixed maximum count with an active-count argument or
+as a single '(ndtr, ncells, nlev)' array; refusing 'ndtr > 0' on this side would be second best
+and still better than depending on a guard in another repository.
+
+CONSIDERED AND DEFERRED
+-----------------------
+Three shapes of this interface were questioned while it was written and are deliberately left
+alone. An independent scientific review is the next milestone, and churning the API immediately
+before it would invalidate the reading it is about to get. Recorded here so a reviewer meets the
+question instead of rediscovering it, and so that "nobody thought of it" is not the conclusion.
+
+* PER-STAGE STATE CONTAINERS. The five containers of 'turbulence_states.py' are shaped by the
+  ICON call site rather than by the stage, so they also carry turbtran's members -- which is why
+  '_UNUSED_STATE_FIELDS' has 22 entries to NaN-fill here. Splitting them per stage would shorten
+  this file. It would also renumber argument lists the reviewer is about to read, and those
+  turbtran members are the specification of the next phase of the port, not dead weight.
+
+* THE COMPUTED COLUMN WINDOW IS PRIVATE. The granule knows which columns it writes --
+  '_start_cell' and '_end_cell', 'h_grid.Zone.NUDGING' to 'h_grid.Zone.LOCAL' -- and does not
+  expose them. 'num_cells' is the right clamp for the two raw-array copies below, because they
+  seed the whole 'num_cells' range first; it is the WRONG clamp for anything written back
+  without such a seed, and using the one where the other was needed was a real defect that only
+  L3 could see (integration design note D-I17). Two legitimate ranges, and this file can only
+  name one of them. A public property would fix that. Adding public API is exactly what this
+  pass is not doing.
+
+* 'turbulence_init' TAKES 99 ARGUMENTS, 93 OF THEM CONFIGURATION. That is the point rather than
+  an accident (port spec D5/D6): a switch missing from the list is a switch ICON can set without
+  the granule ever noticing. No shorter flat form keeps that property, and
+  'test_turbulence_init_builds_the_configuration_the_flat_arguments_describe' builds the call
+  from 'dataclasses.fields', so a member this signature does not accept fails loudly with the
+  name that moved.
 """
 
 import dataclasses
@@ -321,11 +384,13 @@ def turbulence_init(  # noqa: PLR0917 [too-many-positional-arguments]
         hhl: 'p_metrics%z_ifc' -- half-level heights [m].
         dp0: 'p_diag%dpres_mc' -- layer pressure thickness [Pa]. THIS ONE IS NOT STATIC. It is
             a member of the granule's metric state, which is taken once, and two stencils bind
-            it as a constant field at setup time; ICON recomputes it every step. The binding is
-            correct only because py2fgen wraps the caller's memory instead of copying it, so the
-            bound field sees ICON's updates. If ICON is ever changed to hand a different
-            allocation per step, 'turbulence_init' has to be called again -- or 'dp0' has to
-            move out of 'TurbulenceMetricState'.
+            it as a constant field at setup time; ICON recomputes it every step. The binding
+            follows those updates because it is by identity and py2fgen wraps the caller's
+            memory instead of copying it -- and that is not reasoning, it is what L3 measured
+            over six timesteps (job 834636; see the module docstring). What ICON has to hold up
+            its end of: the same allocation for the life of the granule, and a stable device
+            pointer on GPU. If either ever stops being true, 'turbulence_init' has to be called
+            again -- or 'dp0' has to move out of 'TurbulenceMetricState'.
         l_hori: 'l_hori' -- horizontal grid spacing [m], filled with 'phy_params%mean_charlen'.
         trop_mask: 'prm_diag%tropics_mask'.
         innertrop_mask: 'prm_diag%innertropics_mask'.
@@ -540,10 +605,14 @@ def turbulence_run(  # noqa: PLR0917 [too-many-positional-arguments]
     variables from the first stage to the second, and ICON reads it back only under
     'l_3d_turb_fluxes', which this port does not support.
 
-    'ptr(:)' and 'ndtr' are not among them either. The ported call site runs with 'ndtr = 0'
-    ('test_vertdiff_runs_in_the_configuration_this_port_assumes' asserts it against the
-    capture), so the passive-tracer tuples of the state containers are empty. A configuration
-    with turbulent tracer diffusion needs this signature extended.
+    'ptr(:)' and 'ndtr' are not among them either, AND THAT ONE IS A SILENT GAP. The ported call
+    site runs with 'ndtr = 0' ('test_vertdiff_runs_in_the_configuration_this_port_assumes'
+    asserts it against the capture), so the passive-tracer tuples below are empty -- but they
+    are empty unconditionally, not because anything here checked. Under 'ldiff_qi', 'ldiff_qs',
+    two-moment or SBM microphysics, ART or ComIn tracers, the tracers ICON expects to be
+    diffused would simply not be, with no error and no warning. The only thing stopping that is
+    the 'nturb_tracer_tot > 0' guard in ICON's 'mo_icon4py_turbulence.f90', which is in another
+    repository and invisible from here. See the module docstring.
     """
     if granule is None:
         raise RuntimeError("Turbulence granule not initialized. Call 'turbulence_init' first.")
@@ -566,6 +635,8 @@ def turbulence_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dwdy=dwdy,
         w=granule.unused["w"],
         tket_conv=granule.unused["tket_conv"],
+        # No tracer crosses this boundary. Safe only at 'ndtr = 0', and nothing here can tell:
+        # the ICON-side 'nturb_tracer_tot > 0' guard is what makes it safe. Module docstring.
         tracers=(),
     )
     surface_state = states.TurbulenceSurfaceState(
@@ -635,6 +706,7 @@ def turbulence_run(  # noqa: PLR0917 [too-many-positional-arguments]
         ddt_t=t_tens,
         ddt_qv=qv_tens,
         ddt_qc=qc_tens,
+        # As 'input_state.tracers': empty unconditionally, guarded only from the ICON side.
         ddt_tracers=(),
     )
 

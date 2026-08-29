@@ -32,7 +32,9 @@ caller has already filled, or gates an output argument the ICON interfaces never
 comment of each field names the line that consumes it.
 
 `Turbulence` is the granule itself: it owns the working set and runs the ported stencils in the
-Fortran's order. Only the 'turbdiff' stage exists so far; see the class docstring.
+Fortran's order. Both stages are here -- `run_turbdiff`, then `run_vertdiff`, composed by `run`,
+which is the unit 'mo_nwp_turbdiff_interface.f90' substitutes. 'turbtran' is not; see the class
+docstring for why that is a separate phase rather than a missing third line.
 """
 
 from __future__ import annotations
@@ -994,7 +996,9 @@ class Turbulence:
             params: The closure constants derived from `config`.
             vertical_grid: The vertical grid; 'vct_a' is what the implicit weight of the TKE
                 diffusion is built from, exactly as 'mo_nwp_phy_init.f90:1541-1547' builds it.
-            metric_state: The static geometry and horizontal masks.
+            metric_state: The vertical geometry and the horizontal masks. Held by reference
+                and read at every call, which 'TurbulenceMetricState.dp0' relies on: it is the
+                one member ICON recomputes each step.
             backend: The GT4Py backend, or a descriptor of one.
         """
         self._grid = grid

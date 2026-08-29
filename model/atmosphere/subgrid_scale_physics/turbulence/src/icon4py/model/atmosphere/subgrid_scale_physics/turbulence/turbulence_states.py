@@ -130,6 +130,27 @@ class TurbulenceMetricState:
     #: 'dp0' -- pressure thickness of a layer, on full levels [Pa]. ICON passes
     #: 'p_diag%dpres_mc'. Only turbdiff gets it; vertdiff declares it optional and is not
     #: given it.
+    #:
+    #: THE ONLY MEMBER OF THIS CONTAINER THAT IS NOT STATIC, and it does not need to be.
+    #: ICON recomputes 'p_diag%dpres_mc' every step, while the container is taken once and two
+    #: stencils bind this field through 'constant_args' when the granule is constructed. That
+    #: binding is BY IDENTITY, not by value -- 'Turbulence._program' stores the field object,
+    #: and only scalars are inlined -- so the programs read whatever the array holds at the
+    #: moment they run. Under the py2fgen wrapper the array IS ICON's, because py2fgen wraps
+    #: the caller's memory instead of copying it, so the granule sees each step's values.
+    #:
+    #: MEASURED, not argued. L3 ('ICON4PY_MODE_VERIFY', job 834636, byte-identical in 834659)
+    #: ran six timesteps with the granule and the Fortran scheme side by side, each step
+    #: restarting from the Fortran state. A stale 'dp0' has a distinctive signature there: it
+    #: would agree at step 1, where the bound array still holds what ICON had just written, and
+    #: diverge from step 2 onwards. Nothing diverged -- step-to-step ratios are non-monotone
+    #: jitter in both directions and the worst relative disagreement across all 26 turbulence
+    #: fields is 1.476e-06 on 't_tens', an absolute error of 1.1e-14.
+    #:
+    #: THE PRECONDITION IS THE CALLER'S. ICON must keep 'p_diag%dpres_mc' in the same
+    #: allocation for the life of the granule, and on GPU the device pointer must stay stable.
+    #: If that ever stops holding, 'turbulence_init' has to be called again -- or 'dp0' has to
+    #: leave this container and become an argument of 'run_turbdiff'.
     dp0: fa.CellKField[ta.wpfloat]
     #: 'l_hori' -- horizontal grid spacing [m]. Declared as a field, but ICON fills every entry
     #: with the single scalar 'phy_params%mean_charlen' (mo_nwp_turbdiff_interface.f90:535).
