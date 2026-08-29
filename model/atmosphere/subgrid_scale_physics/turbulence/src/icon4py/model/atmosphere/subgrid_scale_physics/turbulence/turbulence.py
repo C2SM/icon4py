@@ -43,6 +43,7 @@ from typing import Any, Final, NamedTuple
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next import common as gtx_common
 
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import (
     turbulence_options as options,
@@ -1341,8 +1342,34 @@ class Turbulence:
         _half, _main, surface = self._field_shapes(allocator)
 
         # -- what depends only on the grid and the configuration
-        self._surface_height = surface()
-        self._surface_height.ndarray[...] = self._metric_state.hhl.ndarray[:, self._nlev]
+        #
+        # 'hhl(:,ke1)' -- the surface height -- AS A ONE-DIMENSIONAL VIEW OF THE CALLER'S ARRAY.
+        # GT4Py cannot slice a vertical level out of a field: an offset is always relative to the
+        # row being computed, so a value read at a fixed 'k' has to reach a stencil as a cell
+        # field somebody prepared. 'gtx_common._field' is how the dycore wraps such a row back up
+        # as a field (solve_nonhydro.py:885-899), and it is GT4Py INTERNAL API -- leading
+        # underscore and all. If it is ever renamed, this granule and the dycore break together.
+        #
+        # A VIEW AND NOT A COPY, which is what makes this correct when the caller's field is
+        # wider than the grid. Through the ICON bindings 'hhl' is a '(:,:,jb)' slice of
+        # '(nproma, nlev+1, nblks_c)', so its first extent is 'nproma', while a field the granule
+        # allocates is 'grid.num_cells' wide -- and no ICON configuration makes the two equal,
+        # because 'icon4py_init' requires 'nproma >= n_patch_edges' and edges always outnumber
+        # cells. Copying the row into a grid-sized field is what raised
+        # "operands could not be broadcast together with shapes (nproma,) (num_cells,)" the first
+        # time this granule ran inside ICON.
+        #
+        # The slice stays a view: py2fgen builds its arrays 'order="F"'
+        # ('py2fgen/_conversion.py:51'), so fixing the TRAILING index gives a stride-1 vector and
+        # 'ndarray[:num_cells, nlev]' is a contiguous prefix of it. Nothing is materialised, so
+        # the row cannot go stale and costs no kernel -- which a 'concat_where' over a one-level
+        # domain would.
+        #
+        # The domain has to be given because a bare array carries none.
+        self._surface_height = gtx_common._field(
+            self._metric_state.hhl.ndarray[: self._grid.num_cells, self._nlev],
+            domain={dims.CellDim: (0, self._grid.num_cells)},
+        )
         self._surface_liquid_water = surface()  # 'liqs', zero at 'ilow_def_cond == 2'
         self._horizontal_length_scale_limit = surface()
         self._minimal_tke_forcing = surface()
@@ -1371,7 +1398,16 @@ class Turbulence:
         package README on why 'x**2' is not 'x*x' on the GPU.
         """
         xp = data_alloc.import_array_ns(self._allocator)
-        l_hori = self._metric_state.l_hori.ndarray
+        # Clamped to 'grid.num_cells', NOT to 'l_hori's own length: 'l_hori' is caller-supplied
+        # and is 'nproma' wide when the caller is ICON, whereas the two fields written from it
+        # here are the granule's own and are 'grid.num_cells' wide. 'num_cells' is the only
+        # length the three agree on. What lies beyond it is ICON's block padding -- no grid point
+        # is there, ICON leaves it undefined, and the column window the scheme computes
+        # ('_determine_horizontal_domains') never reaches it. Unlike the surface height above,
+        # these two are genuinely new data and not a row of somebody else's array, so they are
+        # computed and stored rather than viewed.
+        num_cells = self._grid.num_cells
+        l_hori = self._metric_state.l_hori.ndarray[:num_cells]
         self._horizontal_length_scale_limit.ndarray[...] = xp.minimum(
             0.5 * l_hori, self._config.tur_len
         )
@@ -2016,16 +2052,26 @@ class Turbulence:
                 advection tendency, exactly as the Fortran's 'INTENT(INOUT) tketens' is.
             dt_tke: The time step of the TKE equation [s], ICON's 'dt_tke'.
         """
-        nlev = int(self._nlev)
+        # 'num_cells' is the horizontal length the raw-array copies below are clamped to; see
+        # the section comment above '_extract_level' for why it is the grid's and not an array's
+        # own. Bound in the same statement as 'nlev' because this method sits exactly on ruff's
+        # statement limit.
+        nlev, num_cells = int(self._nlev), self._grid.num_cells
         inverse_dt_tke = 1.0 / dt_tke  # 'fr_tke = z1/dt_tke' (turb_utilities.f90:317)
 
         # 'lays' divides by the surface diffusion coefficients section 4) has not yet raised,
         # so the two rows are taken before anything writes them.
         _extract_level(
-            diagnostic_state.tkvm, nlev, self._diffusion_coefficient_for_momentum_at_the_surface
+            diagnostic_state.tkvm,
+            nlev,
+            self._diffusion_coefficient_for_momentum_at_the_surface,
+            num_cells,
         )
         _extract_level(
-            diagnostic_state.tkvh, nlev, self._diffusion_coefficient_for_scalars_at_the_surface
+            diagnostic_state.tkvh,
+            nlev,
+            self._diffusion_coefficient_for_scalars_at_the_surface,
+            num_cells,
         )
 
         # -- 0) conserved variables, cloud cover, thermodynamic factors, length scales -------
@@ -2055,8 +2101,14 @@ class Turbulence:
             self._conserved_liquid_water_potential_temperature,
             nlev - 1,
             self._liquid_water_potential_temperature_above_the_surface,
+            num_cells,
         )
-        _extract_level(self._conserved_total_water, nlev - 1, self._total_water_above_the_surface)
+        _extract_level(
+            self._conserved_total_water,
+            nlev - 1,
+            self._total_water_above_the_surface,
+            num_cells,
+        )
         self._compute_conserved_variables_and_factors_at_the_surface(
             surface_pressure=surface_state.ps,
             surface_temperature=surface_state.t_g,
@@ -2109,13 +2161,13 @@ class Turbulence:
         # Four of the seven interpolations are IN PLACE in the Fortran, over rows 1..nlev-1 of
         # the storage that already held the main-level values. Row 0 is therefore the main-level
         # value there, and the port has to put it back because it interpolates out of place.
-        _copy_level(self._cloud_cover_on_main_levels, 0, self._rcld)
-        _copy_level(self._dqsat_dt_on_main_levels, 0, self._zaux_3)
-        _copy_level(self._buoyancy_factor_tet_l_on_main_levels, 0, self._zaux_4)
-        _copy_level(self._buoyancy_factor_h2o_g_on_main_levels, 0, self._zaux_5)
+        _copy_level(self._cloud_cover_on_main_levels, 0, self._rcld, num_cells)
+        _copy_level(self._dqsat_dt_on_main_levels, 0, self._zaux_3, num_cells)
+        _copy_level(self._buoyancy_factor_tet_l_on_main_levels, 0, self._zaux_4, num_cells)
+        _copy_level(self._buoyancy_factor_h2o_g_on_main_levels, 0, self._zaux_5, num_cells)
         # 'prss' is a pointer into 'zvari(:,:,0)' whose surface row 'turb_setup' filled with the
         # surface pressure (turb_utilities.f90:341); section 3) reads it there.
-        _set_level(surface_state.ps, nlev, self._half_level_pressure)
+        _set_level(surface_state.ps, nlev, self._half_level_pressure, num_cells)
 
         self._compute_turbulent_length_scale(
             layer_depth=self._dicke,
@@ -2157,7 +2209,7 @@ class Turbulence:
             (self._conserved_total_water, self._gradient_total_water),
             (self._conserved_liquid_water, self._gradient_liquid_water),
         ):
-            _copy_level(variable, 0, gradient)
+            _copy_level(variable, 0, gradient, num_cells)
         self._compute_vertical_gradients_of_conserved_variables(
             zonal_wind=self._conserved_zonal_wind,
             meridional_wind=self._conserved_meridional_wind,
@@ -2265,7 +2317,7 @@ class Turbulence:
 
         # The surface half level is 'turbtran's and 'turbdiff' does not touch it; with the two
         # TKE time levels as two fields it has to be carried across explicitly.
-        _copy_level(input_state.tke, nlev, diagnostic_state.updated_tke)
+        _copy_level(input_state.tke, nlev, diagnostic_state.updated_tke, num_cells)
         self._compute_turbulent_velocity_scale(
             master_length_scale=self._len_scale,
             stability_length_for_momentum=self._stability_length_for_momentum,
@@ -2449,7 +2501,7 @@ class Turbulence:
         # The Fortran averages 'rcld' onto main levels in its own storage, so the two rows the
         # averaging does not reach keep their half-level values. Out of place here, because the
         # average reads the half level below the row it writes.
-        _copy_levels(self._rcld, slice(nlev - 1, nlev + 1), diagnostic_state.rcld)
+        _copy_levels(self._rcld, slice(nlev - 1, nlev + 1), diagnostic_state.rcld, num_cells)
         self._interpolate_supersaturation_deviation_to_main_levels(
             supersaturation_deviation_on_half_levels=self._rcld,
             supersaturation_deviation_on_main_levels=diagnostic_state.rcld,
@@ -2654,7 +2706,12 @@ class Turbulence:
         # only, so its surface row keeps the explicit flux. The port computes out of place --
         # the right-hand side reads flux level 'k+1' while writing row 'k' -- so the row that
         # survives in the Fortran has to be carried across here.
-        _copy_level(self._explicit_flux_density, int(self._nlev), variable.right_hand_side)
+        _copy_level(
+            self._explicit_flux_density,
+            int(self._nlev),
+            variable.right_hand_side,
+            self._grid.num_cells,
+        )
         self._compute_diffusion_right_hand_side(
             discretisation_momentum=self._discretisation_momentum,
             current_profile=self._current_profile,
@@ -2897,23 +2954,36 @@ def _check_supported(name: str, value: int, supported: tuple[int, ...], meaning:
 # They are also what carries the Fortran's in-place storage reuse across the places where the
 # port has to compute out of place. `Turbulence._allocate_local_fields` lists which those are;
 # each call site below says which Fortran statement it stands in for.
+#
+# ALL FOUR ARE CLAMPED TO 'grid.num_cells', AND NOT TO EITHER ARRAY'S OWN LENGTH. A field the
+# granule allocated is exactly 'num_cells' wide; a field the caller supplied is 'nproma' wide
+# when the caller is ICON, because it is a '(:,:,jb)' slice of '(nproma, nlev, nblks)' -- and no
+# ICON configuration makes the two equal, since 'icon4py_init' requires
+# 'nproma >= n_patch_edges' and edges always outnumber cells. Either kind appears on either side
+# of these copies, so 'num_cells' is the only length the two ends agree on, and an unclamped
+# assignment raised a broadcast error the first time this granule ran inside ICON. The rows past
+# 'num_cells' are ICON's block padding: no grid point is there, ICON leaves them undefined, and
+# the column window the scheme computes never reaches them -- so they must be neither read nor
+# written. Copies, not views, because these carry values between two fields that both already
+# exist; the one place a view is right is 'hhl(:,ke1)', in
+# `Turbulence._derive_what_depends_only_on_the_grid`.
 
 
-def _extract_level(source: gtx.Field, level: int, target: gtx.Field) -> None:
+def _extract_level(source: gtx.Field, level: int, target: gtx.Field, num_cells: int) -> None:
     """Copy one vertical level of a (Cell, K) field into a cell field."""
-    target.ndarray[...] = source.ndarray[:, level]
+    target.ndarray[:num_cells] = source.ndarray[:num_cells, level]
 
 
-def _set_level(source: gtx.Field, level: int, target: gtx.Field) -> None:
+def _set_level(source: gtx.Field, level: int, target: gtx.Field, num_cells: int) -> None:
     """Write a cell field into one vertical level of a (Cell, K) field."""
-    target.ndarray[:, level] = source.ndarray[...]
+    target.ndarray[:num_cells, level] = source.ndarray[:num_cells]
 
 
-def _copy_level(source: gtx.Field, level: int, target: gtx.Field) -> None:
+def _copy_level(source: gtx.Field, level: int, target: gtx.Field, num_cells: int) -> None:
     """Copy one vertical level from one (Cell, K) field to another."""
-    target.ndarray[:, level] = source.ndarray[:, level]
+    target.ndarray[:num_cells, level] = source.ndarray[:num_cells, level]
 
 
-def _copy_levels(source: gtx.Field, levels: slice, target: gtx.Field) -> None:
+def _copy_levels(source: gtx.Field, levels: slice, target: gtx.Field, num_cells: int) -> None:
     """Copy a range of vertical levels from one (Cell, K) field to another."""
-    target.ndarray[:, levels] = source.ndarray[:, levels]
+    target.ndarray[:num_cells, levels] = source.ndarray[:num_cells, levels]

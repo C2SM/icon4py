@@ -97,6 +97,12 @@ class TurbulenceGranule:
     #: 'tke(:,:,ntur)', the granule's TKE output. Not an argument of 'turbulence_run': see the
     #: module docstring on why ICON's one array becomes two fields here.
     updated_tke: gtx.Field
+    #: 'p_patch%n_patch_cells', the width of every field allocated here. NOT the width of the
+    #: fields ICON passes in: those are '(:,:,jb)' slices of '(nproma, nlev, nblks)' and are
+    #: 'nproma' wide, which is strictly larger -- 'icon4py_init' requires
+    #: 'nproma >= n_patch_edges' and edges always outnumber cells. Held on the granule so the
+    #: two raw-array copies in 'turbulence_run' can say which of the two lengths they mean.
+    num_cells: int
     #: The state-container members 'Turbulence.run' never touches, NaN-filled.
     unused: dict[str, gtx.Field]
 
@@ -464,6 +470,7 @@ def turbulence_init(  # noqa: PLR0917 [too-many-positional-arguments]
         updated_tke=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         ),
+        num_cells=grid.num_cells,
         unused=_allocate_the_unused_state_fields(grid, allocator),
     )
     if wrapper_config.WAIT_FOR_COMPILATION:
@@ -574,7 +581,22 @@ def turbulence_run(  # noqa: PLR0917 [too-many-positional-arguments]
         z0_waves=granule.unused["z0_waves"],
     )
     # ICON's single 'z_tvs' becomes the granule's two TKE fields; see the module docstring.
-    granule.updated_tke.ndarray[...] = tke.ndarray  # type: ignore[index]
+    #
+    # THIS ONE STAYS A COPY, unlike the surface height in
+    # 'Turbulence._derive_what_depends_only_on_the_grid'. Wrapping ICON's 'tke' as
+    # 'granule.updated_tke' would cost nothing and would alias exactly the array
+    # 'TurbulenceInputState.tke' already points at -- and the two must be distinct fields.
+    # 'compute_turbulent_velocity_scale' reads 'previous_velocity_scale=input_state.tke' while
+    # writing 'turbulent_velocity_scale=diagnostic_state.updated_tke' in one program, over the
+    # whole column, so an alias would feed it values it has just written; and ADR-0001 forbids a
+    # physics component writing into its input state, which is why there are two fields at all.
+    #
+    # Both copies are clamped to 'granule.num_cells' and not to 'tke's own length, which is
+    # 'nproma'. 'granule.updated_tke' is 'num_cells' wide, so unclamped this raised a broadcast
+    # error the first time the granule ran inside ICON. Clamping the write back also leaves the
+    # rows past 'num_cells' -- ICON's block padding, undefined and outside the scheme's column
+    # window -- holding exactly what ICON put there.
+    granule.updated_tke.ndarray[...] = tke.ndarray[: granule.num_cells, :]  # type: ignore[index]
     diagnostic_state = states.TurbulenceDiagnosticState(
         gz0=gz0,
         tvm=tvm,
@@ -625,4 +647,4 @@ def turbulence_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dt_tke=dt_tke,
     )
 
-    tke.ndarray[...] = granule.updated_tke.ndarray  # type: ignore[index]
+    tke.ndarray[: granule.num_cells, :] = granule.updated_tke.ndarray  # type: ignore[index]

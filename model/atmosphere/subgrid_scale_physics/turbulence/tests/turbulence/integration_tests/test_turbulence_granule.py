@@ -39,6 +39,9 @@ WHAT ONLY THIS MODULE CAN CATCH
   the Fortran -- '597f090cf2' removed the optional in-place incrementation, so 'turbdiff' and
   'vertdiff' write tendencies only -- and 'test_run_never_writes_the_state_it_was_given'
   measures it.
+* THE CALLER'S FIELDS ARE WIDER THAN THE GRID, which is the one thing every other test in this
+  package gets wrong by building both kinds at 'grid.num_cells'. See the last section of this
+  module.
 
 WHERE THE ENTRY STATE COMES FROM, AND WHY THAT IS SOUND
 -------------------------------------------------------
@@ -74,11 +77,13 @@ mean widening them by six decades for a reason that does not apply to them.
 
 from __future__ import annotations
 
+import dataclasses
 from typing import NamedTuple
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
+from gt4py.next import common as gtx_common
 
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import (
     turbulence,
@@ -888,3 +893,253 @@ def test_run_never_writes_the_state_it_was_given(
             f"'{name}' was written by 'Turbulence.run', which ADR-0001 forbids: "
             f"{np.count_nonzero(before != now)} of {before.size} values changed."
         )
+
+
+# --------------------------------------- caller fields wider than the grid ---
+#
+# ICON DOES NOT SIZE ITS FIELDS AT 'grid.num_cells', AND CANNOT BE MADE TO. Every array it hands
+# across the py2fgen boundary is a '(:,:,jb)' slice of '(nproma, nlev, nblks)', so its first
+# extent is 'nproma'; the granule's own fields are 'grid.num_cells' wide. The two are never
+# equal: 'icon4py_init' refuses a configuration with 'nproma < n_patch_edges', and edges always
+# outnumber cells on a triangular grid.
+#
+# Every other test in this package builds both kinds at 'grid.num_cells' -- consistently, which
+# is exactly what ICON does not do. That is why 793 passing tests did not stop the first
+# verification run inside ICON from dying in "ValueError: operands could not be broadcast
+# together with shapes (8320,) (5464,)" at 'turbulence.py:1345', 8320 being 'nproma' and 5464
+# 'n_patch_cells' (job 834616, 2026-08-29). So the two tests below build the caller's fields
+# DELIBERATELY WIDER, which is the only shape in which the raw-array copies are exercised at all.
+#
+# The padding is NaN, and that is the second half of the claim: the column window the scheme
+# computes is 'ivstart..ivend', well inside 'num_cells', so nothing the granule reads may look at
+# those rows and nothing it writes may reach them. A copy that lost its bound either raises or
+# poisons an output, and both are failures here.
+
+
+#: How many undefined columns to put past the grid's last cell. It was 'nproma - n_patch_cells'
+#: = 2856 in the run that found this; any positive number exercises the same arithmetic, and a
+#: small one keeps the fields small.
+PADDING_COLUMNS = 3
+
+
+def _as_icon_hands_it_over(field: gtx.Field, nproma: int, backend) -> gtx.Field:
+    """'field' laid out the way py2fgen hands ICON's memory to the granule.
+
+    Three properties matter and all three are reproduced here.
+
+    * The first extent is 'nproma' and not 'grid.num_cells'. That is the defect's whole shape.
+    * The array is Fortran-ordered ('py2fgen/_conversion.py:51'), which is what makes a fixed
+      TRAILING index a stride-1 vector and 'ndarray[:num_cells, k]' a contiguous prefix of it --
+      the reason the surface-height view can alias the caller's memory instead of copying.
+    * The field is built with 'gtx_common._field' over a domain taken from the array's shape,
+      which is literally what 'icon4py_export._as_field' does at the boundary.
+
+    The rows past the grid's cells are NaN, or 'False' where the field is a mask: ICON leaves
+    that padding undefined and a granule that reads it must not get a plausible number back.
+    """
+    values = data_alloc.as_numpy(field)
+    poison = False if values.dtype == np.bool_ else np.nan
+    padded = np.full((nproma, *values.shape[1:]), poison, dtype=values.dtype, order="F")
+    padded[: values.shape[0]] = values
+    xp = data_alloc.import_array_ns(backend)
+    domain = gtx_common.domain(dict(zip(field.domain.dims, padded.shape, strict=True)))
+    return gtx_common._field(xp.asarray(padded, order="F"), domain=domain)
+
+
+def _widened(container, nproma: int, backend):
+    """A state container with every field member replaced by its 'nproma'-wide counterpart.
+
+    The containers are frozen dataclasses, so this is 'dataclasses.replace'. Members that are not
+    fields -- the empty tracer tuples -- are left alone.
+    """
+    return dataclasses.replace(
+        container,
+        **{
+            member.name: _as_icon_hands_it_over(getattr(container, member.name), nproma, backend)
+            for member in dataclasses.fields(container)
+            if isinstance(getattr(container, member.name), gtx.Field)
+        },
+    )
+
+
+def _agrees(computed: np.ndarray, reference: np.ndarray) -> bool:
+    """Bit-for-bit, with NaN counting as equal to NaN.
+
+    The narrow run starts 'rhon' and the updated TKE at NaN on purpose, and the rows neither
+    stage writes stay NaN in both runs. Those rows are the interesting ones here, so they are
+    compared rather than excluded.
+    """
+    return bool(np.array_equal(computed, reference, equal_nan=computed.dtype.kind == "f"))
+
+
+@pytest.mark.datatest
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES[:1])
+def test_the_granule_takes_metric_fields_wider_than_the_grid(
+    date: str, *, data_provider: sb.IconSerialDataProvider, icon_grid, grid_savepoint, backend
+) -> None:
+    """Construction survives 'nproma > num_cells', and the surface height ALIASES ICON's array.
+
+    This is the traceback of job 834616 turned into a test: building the working set is where the
+    granule first reads a caller-supplied array by hand, and it did it with no bound at all.
+
+    The fix is the dycore's ('solve_nonhydro.py:885-899'): GT4Py cannot slice a vertical level out
+    of a field, so 'hhl(:,ke1)' is wrapped as a one-dimensional view with 'gtx_common._field'
+    rather than copied into a grid-sized buffer. The aliasing is asserted twice -- once through
+    'shares_memory' and once by writing into ICON's array and reading the value back out of the
+    view -- because it is not decoration. 'dp0' is bound by the same metric state and aliases
+    'p_diag%dpres_mc', which ICON recomputes every timestep; a copy anywhere on this path would
+    freeze a field at step 0 and drift like a physics bug rather than fail like a defect.
+
+    No stencil runs, so this test is not marked 'uses_concat_where' and is the one of the pair
+    that reports on 'embedded'.
+    """
+    entry = data_provider.from_savepoint_turbdiff_entry(date=date)
+    nlev = int(entry.ke())
+    num_cells = icon_grid.num_cells
+    nproma = num_cells + PADDING_COLUMNS
+    metric_state = _widened(
+        states.TurbulenceMetricState(
+            hhl=utils.copy_of(entry.hhl(), backend),
+            dp0=utils.copy_of(entry.dp0(), backend),
+            l_hori=utils.copy_of(entry.l_hori(), backend),
+            trop_mask=utils.copy_of(entry.trop_mask(), backend),
+            innertrop_mask=utils.copy_of(entry.innertrop_mask(), backend),
+        ),
+        nproma,
+        backend,
+    )
+    assert metric_state.hhl.ndarray.shape[0] == nproma, "the caller's field was not widened"
+
+    granule = turbulence.Turbulence(
+        grid=icon_grid,
+        config=CONFIG,
+        params=PARAMS,
+        vertical_grid=v_grid.VerticalGrid(
+            config=v_grid.VerticalGridConfig(num_levels=nlev),
+            vct_a=grid_savepoint.vct_a(),
+            vct_b=grid_savepoint.vct_b(),
+        ),
+        metric_state=metric_state,
+        backend=backend,
+    )
+
+    surface_height = granule._surface_height
+    assert surface_height.ndarray.shape == (num_cells,), (
+        "'_surface_height' is the granule's own field and must be the grid's width, not "
+        f"'nproma': got {surface_height.ndarray.shape}."
+    )
+    assert _agrees(
+        data_alloc.as_numpy(surface_height), data_alloc.as_numpy(metric_state.hhl)[:num_cells, nlev]
+    ), "'_surface_height' is not 'hhl(:,ke1)' over the grid's cells."
+
+    xp = data_alloc.import_array_ns(backend)
+    assert xp.shares_memory(surface_height.ndarray, metric_state.hhl.ndarray), (
+        "'_surface_height' no longer aliases the caller's 'hhl'. It has to be a view: the same "
+        "metric state binds 'dp0', which aliases ICON's 'p_diag%dpres_mc' and is recomputed "
+        "every timestep, so a copy on this path would silently use step 0's values forever."
+    )
+    # The same claim behaviourally, which is what actually matters and holds on every backend.
+    poked = -12345.0
+    metric_state.hhl.ndarray[num_cells - 1, nlev] = poked
+    assert float(data_alloc.as_numpy(surface_height)[num_cells - 1]) == poked, (
+        "a write into the caller's 'hhl' did not show through '_surface_height', so the two are "
+        "separate buffers."
+    )
+
+    # 'l_hori' is read by hand too, and the two scales derived from it are genuinely new data --
+    # so they are written, not viewed, and the read is what has to be clamped. If it were not,
+    # the NaN padding would land in both of them.
+    for name in ("_horizontal_length_scale_limit", "_minimal_tke_forcing"):
+        derived = data_alloc.as_numpy(getattr(granule, name))
+        assert derived.shape == (num_cells,), f"'{name}' has the wrong width: {derived.shape}."
+        assert np.isfinite(derived).all(), (
+            f"'{name}' picked up ICON's undefined padding: {np.count_nonzero(~np.isfinite(derived))}"
+            f" of {derived.size} values are not finite."
+        )
+
+
+@pytest.mark.datatest
+@pytest.mark.uses_concat_where
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES[:1])
+def test_run_takes_caller_fields_wider_than_the_grid(
+    date: str, *, data_provider: sb.IconSerialDataProvider, icon_grid, grid_savepoint, backend
+) -> None:
+    """The pair runs on ICON-shaped fields and computes exactly what it computes on grid-shaped
+    ones.
+
+    The same states twice, once at 'grid.num_cells' and once at 'nproma', compared bit for bit
+    over the grid's cells. No gate and no tolerance: padding is not arithmetic, so anything but
+    identity is a defect. That covers the four raw-array copies inside 'run_turbdiff' --
+    '_extract_level' on 'tkvm' and 'tkvh', '_set_level' on 'ps', '_copy_level' on 'tke' and
+    '_copy_levels' on 'rcld' -- each of which has a caller-supplied field on one side and one of
+    the granule's own on the other.
+
+    The padding rows are checked separately, and they are the half of this that a same-answer
+    comparison cannot see: an unclamped write would put the granule's numbers into memory ICON
+    considers undefined, and every output would still be right.
+    """
+    narrow = _run(data_provider, icon_grid, grid_savepoint, date, backend)
+
+    granule, input_state, surface_state, diagnostic, tendency, entry = _states_for_both_stages(
+        data_provider, icon_grid, grid_savepoint, date, backend
+    )
+    num_cells = icon_grid.num_cells
+    nproma = num_cells + PADDING_COLUMNS
+    metric_state = _widened(granule._metric_state, nproma, backend)
+    input_state = _widened(input_state, nproma, backend)
+    surface_state = _widened(surface_state, nproma, backend)
+    diagnostic = _widened(diagnostic, nproma, backend)
+    tendency = _widened(tendency, nproma, backend)
+    before_vertdiff = data_provider.from_savepoint_vertdiff_entry(date=date)
+
+    turbulence.Turbulence(
+        grid=icon_grid,
+        config=CONFIG,
+        params=PARAMS,
+        vertical_grid=v_grid.VerticalGrid(
+            config=v_grid.VerticalGridConfig(num_levels=int(entry.ke())),
+            vct_a=grid_savepoint.vct_a(),
+            vct_b=grid_savepoint.vct_b(),
+        ),
+        metric_state=metric_state,
+        backend=backend,
+    ).run(
+        input_state=input_state,
+        surface_state=surface_state,
+        diagnostic_state=diagnostic,
+        tendency_state=tendency,
+        dt_var=before_vertdiff.dt_var(),
+        dt_tke=entry.dt_tke(),
+    )
+
+    compared = 0
+    for container, wide in (
+        ("diagnostic_state", diagnostic),
+        ("tendency_state", tendency),
+    ):
+        grid_shaped = {
+            "diagnostic_state": narrow.diagnostic_state,
+            "tendency_state": narrow.tendency_state,
+        }[container]
+        for member in dataclasses.fields(wide):
+            got = getattr(wide, member.name)
+            if not isinstance(got, gtx.Field):
+                continue
+            compared += 1
+            on_nproma = data_alloc.as_numpy(got)
+            on_the_grid = data_alloc.as_numpy(getattr(grid_shaped, member.name))
+            assert _agrees(on_nproma[:num_cells], on_the_grid), (
+                f"'{container}.{member.name}' differs between the 'nproma'-wide run and the "
+                "'num_cells'-wide one, so a raw-array copy is reading or writing the wrong "
+                "columns."
+            )
+            if on_nproma.dtype.kind != "f":
+                continue
+            assert np.isnan(on_nproma[num_cells:]).all(), (
+                f"'{container}.{member.name}' was written past the grid's last cell: "
+                f"{np.count_nonzero(~np.isnan(on_nproma[num_cells:]))} of "
+                f"{on_nproma[num_cells:].size} padding values are no longer undefined."
+            )
+    assert compared > 20, f"only {compared} outputs were compared; the containers changed shape."
