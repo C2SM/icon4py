@@ -175,6 +175,41 @@ GATES: dict[str, Gate] = {
         measured_max_rel_err=4.0346e-09,  # 'tketens', 2020-12-10T06:01:00
     ),
 
+    # 'vertdiff' -- the implicit vertical diffusion stage, 'vertdiff-entry' -> 'vertdiff-exit'.
+    # Measured on 'gtfn_cpu' and 'dace_cpu', all four dates. Seventeen of the eighteen programs
+    # are bit-exact; the stage has exactly one transcendental and it is the entry below.
+    #
+    # Two roundings had to be reproduced rather than simplified, each worth 1 ulp and each
+    # reaching every tendency: 'fr_var = 1/dt_var' is formed once and MULTIPLIED by, and
+    # 'disc_mom + impl_mom(k+1)' is associated before the elimination term.
+    "compute_discretisation_momentum": Exact(),
+    "compute_diffusion_depth": Exact(),
+    "compute_diffusion_momentum": Exact(),
+    "compute_surface_diffusion_momentum_and_depth": Exact(),
+    "compute_implicit_diffusion_momentum": Exact(),
+    "subtract_implicit_diffusion_momentum": Exact(),
+    "invert_diffusion_momentum_at_the_surface_flux_level": Exact(),
+    "compute_current_profile": Exact(),
+    "compute_current_potential_temperature_profile": Exact(),
+    "compute_surface_gradients_from_flux_densities": Exact(),
+    "compute_surface_profile_value_from_flux_gradient": Exact(),
+    "compute_explicit_flux_density": Exact(),
+    "add_implicit_surface_flux_to_the_explicit_flux_density": Exact(),
+    "compute_diffusion_right_hand_side": Exact(),
+    "solve_vertical_diffusion_equation": Exact(),
+    "compute_and_apply_diffusion_tendency": Exact(),
+    "compute_and_apply_potential_temperature_diffusion_tendency": Exact(),
+    # 'eprs = EXP(rdocp*LOG(ps/p0ref))', the stage's only transcendental. GT4Py and numpy agree
+    # with each other and differ from nvhpc by exactly one ulp on 67/51/59/57 of 8276 columns
+    # across the four dates. The same program's other output, 'rhon', is bit-exact and is asserted
+    # so ungated. The rounding reaches exactly one further value -- 'zvari(:,ke1,tem)', 1 of
+    # 670356 -- and stops there; 't_tens' is bit-exact against ICON.
+    "compute_surface_air_density_and_exner_factor": Tol(
+        rtol=1e-15,
+        reason=Reason.TRANSCENDENTAL,
+        measured_max_rel_err=2.218e-16,  # 'eprs', 2020-12-10T06:01:00
+    ),
+
     # turbdiff section 1a) -- vertical gradients of the conserved variables. Section 1a contains
     # only '-', '*' and '/' with no multiply-add pattern, so bit-exactness here is not evidence
     # that FMA contraction is absent; the first fused expression is in section 1b.
