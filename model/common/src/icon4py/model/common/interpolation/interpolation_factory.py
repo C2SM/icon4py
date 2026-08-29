@@ -6,9 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import functools
 import logging
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -83,24 +86,25 @@ class InterpolationConfig:
     lsq_dim_unk: int = 2
     """
     Number of unknowns in the least-squares reconstruction.
-    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
+    Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
     """
 
     lsq_dim_c: int = 3
     """
     Dimension of the least-squares coefficient space.
-    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
+    Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
     """
 
     lsq_wgt_exp: int = 2
     """
     Exponent used in distance-based least-squares weighting.
-    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
+    Derived in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter.
     """
 
-    lsq_dim_stencil: int = 3
+    lsq_high_ord: int = 1
     """
-    Stencil size used for least-squares reconstruction.
+    Complexity of least-squares reconstruction in terms of the polynomial order and stencil size.
+    This is not used in the current implementation, but is kept for higher-order reconstruction in the future.
     """
 
     def __post_init__(self):
@@ -115,6 +119,22 @@ class InterpolationConfig:
         else:  # default value in ICON
             self.max_nudging_coefficient = 0.375
 
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> InterpolationConfig:
+        interpol_nml = atmo_dict["interpol_nml"]
+        dynamics_nml = atmo_dict["dynamics_nml"]
+        return cls(
+            divergence_averaging_central_cell_weight=dynamics_nml["divavg_cntrwgt"],
+            _nudge_max_coeff=interpol_nml["nudge_max_coeff"],
+            nudge_efold_width=interpol_nml["nudge_efold_width"],
+            nudge_zone_width=interpol_nml["nudge_zone_width"],
+            rbf_kernel_cell=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_c"]),
+            rbf_kernel_edge=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_e"]),
+            rbf_kernel_vertex=rbf.InterpolationKernel(interpol_nml["rbf_vec_kern_v"]),
+            lsq_high_ord=interpol_nml["lsq_high_ord"],
+            **overrides,
+        )
+
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
@@ -126,7 +146,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
         config: InterpolationConfig,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+        process_props: decomposition.ProcessProperties,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -136,7 +156,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
-        self._exchange = exchange
+        self._exchange = decomposition.create_exchange(process_props, decomposition_info)
         self._config = config
         domain_length = self.grid.grid_params.domain_length
         domain_height = self.grid.grid_params.domain_height
@@ -318,7 +338,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "lsq_dim_unk": self._config.lsq_dim_unk,
                 "lsq_dim_c": self._config.lsq_dim_c,
                 "lsq_wgt_exp": self._config.lsq_wgt_exp,
-                "lsq_dim_stencil": self._config.lsq_dim_stencil,
                 "start_idx": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -391,7 +410,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     params={
                         "grid_sphere_radius": constants.EARTH_RADIUS,
                         "horizontal_start": self.grid.start_index(
-                            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                            edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
                         ),
                     },
                     do_exchange=True,

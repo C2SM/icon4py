@@ -11,7 +11,7 @@ import functools
 import types
 import typing
 from collections.abc import Callable, Mapping
-from typing import Any, TypeAlias
+from typing import Any
 
 import cffi
 
@@ -21,6 +21,8 @@ from icon4py.tools.py2fgen import _conversion, _definitions, _runtime
 # TODO(egparedes): possibly use `TypeForm` for the annotation parameter,
 # once https://peps.python.org/pep-0747/ is approved.
 def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
+    if isinstance(annotation, typing.TypeAliasType):
+        annotation = annotation.__value__
     if hasattr(annotation, "__metadata__"):
         for perf_counters in annotation.__metadata__:
             if isinstance(perf_counters, _definitions.ParamDescriptor):
@@ -28,7 +30,7 @@ def _from_annotated(annotation: Any) -> _definitions.ParamDescriptor | None:
     return None
 
 
-AnnotationDescriptorHook: TypeAlias = Callable[[Any], _definitions.ParamDescriptor | None]
+type AnnotationDescriptorHook = Callable[[Any], _definitions.ParamDescriptor | None]
 
 
 def param_descriptor_from_annotation(
@@ -63,7 +65,7 @@ def get_param_descriptors(
     }
 
 
-AnnotationMappingHook: TypeAlias = Callable[
+type AnnotationMappingHook = Callable[
     [Any, _definitions.ParamDescriptor], _definitions.MapperType | None
 ]
 
@@ -92,7 +94,7 @@ class _DecoratedFunction:
 
     A function is exportable if it provides the attribute 'param_descriptors'.
 
-    See :func:`export` for details.
+    See ``export()`` for details.
     """
 
     _fun: Callable
@@ -146,7 +148,7 @@ def export(
 
     The standard mechanism for exporting a function is to decorate the function with
     '@py2fgen.export(param_descriptors=...)'. Where 'ParamDescriptors' is a dictionary
-    that provides a :class:`ParamDescriptor` for each parameter of the function.
+    that provides a ``ParamDescriptor`` for each parameter of the function.
 
     Additionally, the user can provide a hook to fill 'param_descriptors' from the parameters
     type annotations.
@@ -157,7 +159,7 @@ def export(
     Note: The mapping function (not the hook) is called at every invocation of the function,
     therefore it is recommended to use a cache for the mapping function.
 
-    A default mapping is provided, see :func:`_conversion.default_mapping`.
+    A default mapping is provided, see ``_conversion.default_mapping()``.
     """
 
     # precise typing is impossible since we are manipulating the args (e.g. ArrayInfo to the Python runtime objects)

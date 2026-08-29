@@ -8,7 +8,7 @@
 import functools
 import logging
 from collections.abc import Sequence
-from typing import Final, Literal, TypeAlias
+from typing import Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -20,25 +20,18 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, model_backends, type_alias
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
+from icon4py.model.common.states.data import QC, QG, QI, QR, QS, QV
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 
 
 log = logging.getLogger(__name__)
 
-TimeIndex: TypeAlias = Literal[0, 1]
-FourIndex: TypeAlias = Literal[0, 1, 2, 3]
-TwoIndex: TypeAlias = Literal[0, 1]
-
-#: ICON default indices for the tracers, see mo_advection_utils.f90
-QV: Final[int] = 0
-QC: Final[int] = 1
-QI: Final[int] = 2
-QR: Final[int] = 3
-QS: Final[int] = 4
-QG: Final[int] = 5
+type TimeIndex = Literal[0, 1]
+type FourIndex = Literal[0, 1, 2, 3]
+type TwoIndex = Literal[0, 1]
 
 
-TracerIndex: TypeAlias = Literal[QV, QC, QI, QR, QS, QG]
+type TracerIndex = Literal[QV, QC, QI, QR, QS, QG]
 
 
 class IconSavepoint:
@@ -784,7 +777,7 @@ class MetricSavepoint(IconSavepoint):
                 allocator=model_backends.get_allocator(self.backend),
             )
         else:
-            return data_alloc.list2field(
+            return data_alloc.scattered_field(
                 domain=domain,
                 values=pg_exdist,
                 indices=(
@@ -916,7 +909,7 @@ class MetricSavepoint(IconSavepoint):
                 dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
             }
         )
-        return data_alloc.list2field(
+        return data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(
@@ -940,7 +933,7 @@ class MetricSavepoint(IconSavepoint):
                 dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
             }
         )
-        return data_alloc.list2field(
+        return data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
             values=zd_intcoef.T,
             indices=(
@@ -957,7 +950,7 @@ class MetricSavepoint(IconSavepoint):
         zd_cellidx = self.zd_cellidx()
         zd_vertidx = self.zd_vertidx()
         zd_diffcoef = self.xp.squeeze(self.serializer.read("zd_diffcoef", self.savepoint))
-        return data_alloc.list2field(
+        return data_alloc.scattered_field(
             domain=self.geopot().domain,
             values=zd_diffcoef,
             indices=(
@@ -1837,8 +1830,14 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
     def vn_now(self):
         return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
+    def w_now(self):
+        return self._get_field("w_now", dims.CellDim, dims.KDim)
+
     def theta_v_now(self):
         return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+    def tracer_now(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers_now", ntracer, (dims.CellDim, dims.KDim))
 
 
 class IconGraupelSavepoint(IconSavepoint):
@@ -1961,6 +1960,118 @@ class TopographySavepoint(IconSavepoint):
 
     def topo_smt_c(self):
         return self._get_field("smooth_topography", dims.CellDim)
+
+
+class IconTimeStepExitSavepoint(IconSavepoint):
+    """End-of-timestep prognostic state, written in perform_nh_timeloop right after
+    integrate_nh returns: all physics tendencies applied, time levels swapped."""
+
+    def vn(self):
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
+
+    def w(self):
+        return self._get_field("w", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("rho", dims.CellDim, dims.KDim)
+
+    def exner(self):
+        return self._get_field("exner", dims.CellDim, dims.KDim)
+
+    def theta_v(self):
+        return self._get_field("theta_v", dims.CellDim, dims.KDim)
+
+    def tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def qv(self):
+        return self.tracer(QV)
+
+    def qc(self):
+        return self.tracer(QC)
+
+    def qi(self):
+        return self.tracer(QI)
+
+    def qr(self):
+        return self.tracer(QR)
+
+    def qs(self):
+        return self.tracer(QS)
+
+    def qg(self):
+        return self.tracer(QG)
+
+
+class IconMuphysSavepoint(IconSavepoint):
+    """Common fields of the aes-graupel-init/exit savepoints written around the mig
+    block (cloud_mig = satad + graupel + satad) in aes_phy_main. tend_ta/tend_tracers
+    are the prm_tend accumulators: exit minus init isolates the mig contribution."""
+
+    def temperature(self):
+        return self._get_field("temperature", dims.CellDim, dims.KDim)
+
+    def tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def tend_ta(self):
+        return self._get_field("tend_ta", dims.CellDim, dims.KDim)
+
+    def tend_tracer(self, ntracer: TracerIndex):
+        return self._get_field_component("tend_tracers", ntracer, (dims.CellDim, dims.KDim))
+
+    def qv(self):
+        return self.tracer(QV)
+
+    def qc(self):
+        return self.tracer(QC)
+
+    def qi(self):
+        return self.tracer(QI)
+
+    def qr(self):
+        return self.tracer(QR)
+
+    def qs(self):
+        return self.tracer(QS)
+
+    def qg(self):
+        return self.tracer(QG)
+
+
+class IconMuphysInitSavepoint(IconMuphysSavepoint):
+    def dz(self):
+        return self._get_field("dz", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("rho", dims.CellDim, dims.KDim)
+
+    def pressure(self):
+        return self._get_field("pressure", dims.CellDim, dims.KDim)
+
+    def dtime(self):
+        return self.serializer.read("dtime", self.savepoint)[0]
+
+    def jks_cloudy(self):
+        return int(self.serializer.read("jks_cloudy", self.savepoint)[0])
+
+
+class IconMuphysExitSavepoint(IconMuphysSavepoint):
+    def rsfl(self):
+        # surface rain rate
+        return self._get_field("rsfl", dims.CellDim)
+
+    def ssfl(self):
+        # surface frozen precip rate: ice + snow + graupel
+        return self._get_field("ssfl", dims.CellDim)
+
+    def pr(self):
+        # total surface precip rate
+        return self._get_field("pr", dims.CellDim)
+
+    def ufcs(self):
+        # surface precip energy flux
+        return self._get_field("ufcs", dims.CellDim)
 
 
 class IconSerialDataProvider:
@@ -2252,5 +2363,23 @@ class IconSerialDataProvider:
             self.serializer.savepoint["satad-exit"].date[date].location[location].as_savepoint()
         )
         return IconSatadExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_time_step_exit(self, date: str) -> IconTimeStepExitSavepoint:
+        savepoint = self.serializer.savepoint["time-step-exit"].id[1].date[date].as_savepoint()
+        return IconTimeStepExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_muphys_init(self, date: str) -> IconMuphysInitSavepoint:
+        savepoint = self.serializer.savepoint["aes-graupel-init"].id[1].date[date].as_savepoint()
+        return IconMuphysInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_muphys_exit(self, date: str) -> IconMuphysExitSavepoint:
+        savepoint = self.serializer.savepoint["aes-graupel-exit"].id[1].date[date].as_savepoint()
+        return IconMuphysExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )

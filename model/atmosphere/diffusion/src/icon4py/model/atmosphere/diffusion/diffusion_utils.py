@@ -11,7 +11,6 @@ from gt4py.next import broadcast, minimum
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 
 
@@ -21,7 +20,7 @@ def _identity_c_k(field: fa.CellKField[float]) -> fa.CellKField[float]:
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def copy_field(old_f: fa.CellKField[float], new_f: fa.CellKField[float]):
+def copy_field(old_f: fa.CellKField[float], new_f: fa.CellKField[float]) -> None:
     _identity_c_k(old_f, out=new_f)
 
 
@@ -36,7 +35,7 @@ def _scale_k(field: fa.KField[float], factor: float) -> fa.KField[float]:
 
 
 @gtx.program
-def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
+def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]) -> None:
     _scale_k(field, factor, out=scaled_field)
 
 
@@ -49,12 +48,12 @@ def _setup_smag_limit(diff_multfac_vn: fa.KField[float]) -> fa.KField[float]:
 def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float) -> fa.KField[float]:
     con = 1.0 / 128.0
     dyn = k4 * dyn_substeps / 3.0
-    return broadcast(minimum(con, dyn), (KDim,))
+    return broadcast(minimum(con, dyn), (dims.KDim,))
 
 
 @gtx.field_operator
 def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> fa.KField[float]:
-    return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
+    return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (dims.KDim,))
 
 
 @gtx.field_operator
@@ -72,7 +71,7 @@ def setup_fields_for_initial_step(
     hdiff_efdt_ratio: float,
     diff_multfac_vn: fa.KField[float],
     smag_limit: fa.KField[float],
-):
+) -> None:
     _setup_fields_for_initial_step(k4, hdiff_efdt_ratio, out=(diff_multfac_vn, smag_limit))
 
 
@@ -126,7 +125,7 @@ def init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917 [too-many
     diff_multfac_vn: fa.KField[float],
     smag_limit: fa.KField[float],
     enh_smag_fac: fa.KField[float],
-):
+) -> None:
     _init_diffusion_local_fields_for_regular_timestep(
         k4=k4,
         dyn_substeps=dyn_substeps,

@@ -1,0 +1,378 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
+import dataclasses
+import enum
+import functools
+import logging
+import statistics
+from typing import TYPE_CHECKING, NamedTuple
+
+import devtools
+
+import icon4py.model.common.utils as common_utils
+from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
+from icon4py.model.common import dimension as dims, time, type_alias as ta
+from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.grid import base as base_grid, horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.interpolation import interpolation_attributes
+from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    nonhydro_states,
+    prognostic_state as prognostics,
+    static_fields,
+    tracer_states,
+)
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.driver import config as driver_config
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+
+log = logging.getLogger(__name__)
+
+
+class DriverStates(NamedTuple):
+    """
+    Initialized states for the driver run.
+
+    Attributes:
+        prep_advection_prognostic: Fields collecting data for advection during the solve nonhydro timestep.
+        solve_nonhydro_diagnostic: Initial state for solve_nonhydro diagnostic variables.
+        diffusion_diagnostic: Initial state for diffusion diagnostic variables.
+        tracer_advection_diagnostic: Initial state for tracer advection diagnostic variables.
+        prep_tracer_advection_prognostic: Precalculated fields for tracer advection.
+        prognostics: Initial state for prognostic variables (double buffered, swapped
+            once per dynamics substep).
+        tracers: Initial tracer state (double buffered, swapped once per time step).
+        diagnostic: Initial state for global diagnostic variables.
+    """
+
+    prep_advection_prognostic: dycore_states.PrepAdvection | None
+    solve_nonhydro_diagnostic: nonhydro_states.DiagnosticStateNonHydro | None
+    diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState | None
+    tracer_advection_diagnostic: tracer_advection_states.AdvectionDiagnosticState | None
+    prep_tracer_advection_prognostic: tracer_advection_states.AdvectionPrepAdvState | None
+    prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
+    tracers: common_utils.TimeStepPair[tracer_states.TracerState]
+    diagnostic: diagnostics.DiagnosticState
+
+
+class ModelTimeVariables:
+    """
+    Runtime time/date variables derived from config at initialisation.
+    """
+
+    simulation_current_datetime: time.AbsoluteTime
+    simulation_start_datetime: time.AbsoluteTime
+    simulation_end_datetime: time.AbsoluteTime
+    n_time_steps: time.NumTimeSteps
+    dtime: time.RelativeTime
+    ndyn_substeps_var: int
+    max_ndyn_substeps: int
+    elapsed_time_in_seconds: ta.wpfloat
+    is_first_step_in_simulation: bool
+    cfl_watch_mode: bool
+
+    def __init__(self, config: driver_config.DriverConfig) -> None:
+        self._init_from_config(config)
+
+    def _init_from_config(self, config: driver_config.DriverConfig) -> None:
+        self.simulation_start_datetime = config.start_of_simulation
+        # The time loop starts at the beginning of the simulation, unless restarting.
+        self.simulation_current_datetime = config.start_of_timestepping
+        match config.end_of_simulation:
+            case time.NumTimeSteps() as n:
+                self.n_time_steps = n
+                requested_simulation_end_datetime = config.start_of_timestepping + n * config.dtime
+            case time.RelativeTime() as relative:
+                self.n_time_steps = int(relative / config.dtime)
+                requested_simulation_end_datetime = config.start_of_timestepping + relative
+            case time.AbsoluteTime() as absolute:
+                self.n_time_steps = int((absolute - config.start_of_timestepping) / config.dtime)
+                requested_simulation_end_datetime = absolute
+
+        self.simulation_end_datetime = (
+            config.start_of_timestepping + self.n_time_steps * config.dtime
+        )
+
+        if requested_simulation_end_datetime != self.simulation_end_datetime:
+            raise ValueError(
+                f"The requested end_of_simulation is not an integer number of time steps. Requested: {requested_simulation_end_datetime}, computed: {self.simulation_end_datetime}"
+            )
+
+        self.dtime = config.dtime
+        # measured from the beginning of the simulation, also when restarting (just for consistency with fortran)
+        self.elapsed_time_in_seconds = ta.wpfloat(
+            (config.start_of_timestepping - config.start_of_simulation).total_seconds()
+        )
+        self.ndyn_substeps_var = config.ndyn_substeps
+        self.max_ndyn_substeps = config.ndyn_substeps + 7
+        self.is_first_step_in_simulation = (
+            config.start_of_timestepping == config.start_of_simulation
+        )
+        self.cfl_watch_mode = False
+
+        if self.n_time_steps <= 0:
+            raise ValueError("n_time_steps must be positive.")
+
+    @functools.cached_property
+    def dtime_in_seconds(self) -> ta.wpfloat:
+        return ta.wpfloat(self.dtime.total_seconds())
+
+    @property
+    def substep_timestep(self) -> ta.wpfloat:
+        return ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
+
+    @property
+    def elapsed_time_at_step_midpoint_in_seconds(self) -> ta.wpfloat:
+        """
+        Elapsed time at the middle of the current time step.
+
+        elapsed_time_global = (jstep - 0.5) * dtime in mo_nh_stepping.f90, with a
+        one-based jstep. 'advance_simulation_datetime' is called before the step is
+        integrated, so 'elapsed_time_in_seconds' is already at the end of it.
+        """
+        return ta.wpfloat(self.elapsed_time_in_seconds - 0.5 * self.dtime_in_seconds)
+
+    def advance_simulation_datetime(self) -> None:
+        self.simulation_current_datetime += self.dtime
+        self.elapsed_time_in_seconds += self.dtime_in_seconds
+
+    def update_ndyn_substeps(self, new_ndyn_substeps: int) -> None:
+        self.ndyn_substeps_var = new_ndyn_substeps
+
+    def update_cfl_watch_mode(self, mode: bool) -> None:
+        self.cfl_watch_mode = mode
+
+    def reset(self, config: driver_config.DriverConfig) -> None:
+        """
+        Re-initialize all time-integration-related runtime values from the given config.
+        """
+        self._init_from_config(config)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"simulation_current_datetime={self.simulation_current_datetime!r}, "
+            f"n_time_steps={self.n_time_steps}, "
+            f"dtime={self.dtime}, "
+            f"is_first_step={self.is_first_step_in_simulation})"
+        )
+
+
+class DriverTimers(enum.Enum):
+    SOLVE_NH_FIRST_STEP = "solve_nh_first_step"
+    SOLVE_NH = "solve_nh"
+    DIFFUSION_FIRST_STEP = "diffusion_first_step"
+    DIFFUSION = "diffusion"
+    #: assembly of the output state: diagnostics computation + host transfer (every step)
+    OUTPUT_ASSEMBLE = "output_assemble"
+    #: handover to the IO monitor: gather/halo stripping + file writing (writes only at
+    #: capture steps; a near-zero sample otherwise)
+    OUTPUT_STORE = "output_store"
+
+
+@dataclasses.dataclass
+class TimerCollection:
+    timer_names: dataclasses.InitVar[list[str]]
+    timers: dict[str, devtools.Timer] = dataclasses.field(init=False)
+
+    def __post_init__(self, timer_names: str | list[str]) -> None:
+        self.timers = {}
+        self.add_timers(timer_names)
+
+    def add_timers(self, timer_names: str | list[str]) -> None:
+        for timer in timer_names:
+            assert timer not in self.timers, f"Timer '{timer}' is already defined."
+            self.timers[timer] = devtools.Timer(timer, dp=6, verbose=False)
+
+    def show_timer_report(
+        self,
+        total_wall_time: float,
+    ) -> None:
+        """Log the per-timer statistics.
+
+        ``total_wall_time`` is the wall-clock duration of the whole simulation, in
+        seconds; an extra column reports each timer's cumulative time as a percentage
+        of it. The percentages need not sum to 100: the difference is time spent
+        outside any timer.
+        """
+        log.info("===== ICON4Py timer report =====")
+        wall_time = total_wall_time if total_wall_time > 0 else None
+        table_titles = (
+            f"|{'timer name':^30}|"
+            f"{'no. of times called':^23}|"
+            f"{'mean time (s)':^23}|"
+            f"{'std. deviation (s)':^23}|"
+            f"{'min time (s)':^23}|"
+            f"{'max time (s)':^23}|"
+            f"{'% of wall time':^23}|"
+        )
+        log.info(table_titles)
+        log.info("-" * len(table_titles))
+        timed_total = 0.0
+        for timer_name, timer in self.timers.items():
+            times = []
+            for r in timer.results:
+                if not r.finish:
+                    r.capture()
+                times.append(r.elapsed())
+            if len(times) > 0:
+                timed_total += sum(times)
+                share = f"{100 * sum(times) / wall_time:.2f}" if wall_time is not None else "n/a"
+                log.info(
+                    f"|{timer_name:^30}|"
+                    f"{len(times):^23}|"
+                    f"{statistics.mean(times):^23.8f}|"
+                    f"{statistics.stdev(times) if len(times) > 1 else 0:^23.8f}|"
+                    f"{min(times):^23.8f}|"
+                    f"{max(times):^23.8f}|"
+                    f"{share:^23}|"
+                )
+            else:
+                log.info(
+                    f"|{timer_name:^30}|{'not started':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|"
+                )
+        if wall_time is not None:
+            log.info("-" * len(table_titles))
+            log.info(f"total wall-clock time of the simulation: {wall_time:.8f} s")
+            timed_share = 100 * timed_total / wall_time
+            log.info(
+                f"timed regions total: {timed_total:.8f} s  "
+                f"({timed_share:.2f}% of wall time; {100 - timed_share:.2f}% untimed)"
+            )
+
+
+def initialize_prep_tracer_advection(
+    grid: base_grid.Grid,
+    allocator: gtx_typing.Allocator | None,
+    *,
+    tracer_advection_enabled: bool,
+    prep_adv: dycore_states.PrepAdvection | None,
+) -> tracer_advection_states.AdvectionPrepAdvState | None:
+    """Build the tracer-advection prep state, sharing the dycore's accumulated buffers.
+
+    Tracer advection reads the velocities/mass fluxes that the dycore accumulates over
+    the dynamics substeps (``lprep_adv``), so it must reference the dycore's
+    ``PrepAdvection`` buffers (ICON's ``mass_flx_ic`` is the vertical mass flux at cell
+    half levels). Without a dycore there is nothing accumulating them, so fall back to
+    zero fields.
+    """
+    if not tracer_advection_enabled:
+        return None
+    if prep_adv is not None:
+        return tracer_advection_states.AdvectionPrepAdvState(
+            vn_traj=prep_adv.vn_traj,
+            mass_flx_me=prep_adv.mass_flx_me,
+            mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+        )
+    return tracer_advection_states.AdvectionPrepAdvState(
+        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
+        # vertical mass flux at cell half levels: one more level than KDim, like the
+        # dycore's dynamical_vertical_mass_flux_at_cells_on_half_levels it stands in for
+        mass_flx_ic=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+        ),
+    )
+
+
+def assemble_driver_states(
+    *,
+    grid: icon_grid.IconGrid,
+    allocator: gtx_typing.Allocator,
+    backend: gtx_typing.Backend | None,
+    exchange: decomposition_defs.ExchangeRuntime,
+    static_fields: static_fields.StaticFieldFactories,
+    prognostic_state_now: prognostics.PrognosticState,
+    tracer_state_now: tracer_states.TracerState,
+    diagnostic_state: diagnostics.DiagnosticState,
+    experiment_config: driver_config.ExperimentConfig,
+    solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
+) -> DriverStates:
+    prognostic_state_next = prognostics.PrognosticState(
+        vn=data_alloc.reallocate(prognostic_state_now.vn, allocator=allocator),
+        w=data_alloc.reallocate(prognostic_state_now.w, allocator=allocator),
+        exner=data_alloc.reallocate(prognostic_state_now.exner, allocator=allocator),
+        rho=data_alloc.reallocate(prognostic_state_now.rho, allocator=allocator),
+        theta_v=data_alloc.reallocate(prognostic_state_now.theta_v, allocator=allocator),
+    )
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+    tracer_states = common_utils.TimeStepPair(
+        tracer_state_now, tracer_state_now.copy(allocator=allocator)
+    )
+
+    cell_domain = h_grid.domain(dims.CellDim)
+    end_cell_lateral_boundary_level_2 = grid.end_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
+
+    rbf_vec_coeff_c1 = static_fields.interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C1)
+    rbf_vec_coeff_c2 = static_fields.interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2)
+
+    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+        p_e_in=prognostic_states.current.vn,
+        ptr_coeff_1=rbf_vec_coeff_c1,
+        ptr_coeff_2=rbf_vec_coeff_c2,
+        p_u_out=diagnostic_state.u,
+        p_v_out=diagnostic_state.v,
+        horizontal_start=end_cell_lateral_boundary_level_2,
+        horizontal_end=end_cell_end,
+        vertical_start=0,
+        vertical_end=grid.num_levels,
+        offset_provider=grid.connectivities,
+    )
+    exchange.exchange(dims.CellDim, diagnostic_state.u, diagnostic_state.v)
+
+    diffusion_enabled = experiment_config.diffusion is not None
+    solve_nonhydro_enabled = experiment_config.nonhydrostatic is not None
+    tracer_advection_enabled = experiment_config.tracer_advection is not None
+
+    diffusion_diagnostic_state = (
+        diffusion_states.initialize_diffusion_diagnostic_state(grid=grid, allocator=allocator)
+        if diffusion_enabled
+        else None
+    )
+    prep_adv = (
+        dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
+        if solve_nonhydro_enabled
+        else None
+    )
+    tracer_advection_diagnostic_state = (
+        tracer_advection_states.initialize_advection_diagnostic_state(
+            grid=grid, allocator=allocator
+        )
+        if tracer_advection_enabled
+        else None
+    )
+    prep_tracer_adv = initialize_prep_tracer_advection(
+        grid,
+        allocator,
+        tracer_advection_enabled=tracer_advection_enabled,
+        prep_adv=prep_adv,
+    )
+
+    return DriverStates(
+        prep_advection_prognostic=prep_adv,
+        solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
+        prep_tracer_advection_prognostic=prep_tracer_adv,
+        tracer_advection_diagnostic=tracer_advection_diagnostic_state,
+        diffusion_diagnostic=diffusion_diagnostic_state,
+        prognostics=prognostic_states,
+        tracers=tracer_states,
+        diagnostic=diagnostic_state,
+    )

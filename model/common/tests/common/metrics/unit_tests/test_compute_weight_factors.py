@@ -65,7 +65,7 @@ def test_compute_wgtfac_c(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=vertical_end + 1,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert test_utils.dallclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
@@ -89,7 +89,7 @@ def test_compute_wgtfacq_e_dsl(
         c_lin_e=interpolation_savepoint.c_lin_e().ndarray,
         n_edges=icon_grid.num_edges,
         nlev=icon_grid.num_levels,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_e_dsl), wgtfacq_e_ref.asnumpy())

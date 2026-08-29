@@ -21,7 +21,11 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.decomposition.definitions import Reductions, SingleNodeExchange
+from icon4py.model.common.decomposition.definitions import (
+    Reductions,
+    SingleNodeExchange,
+    SingleNodeReductions,
+)
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -54,6 +58,18 @@ CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
 
 
+# Exchange and reduction objects are expensive to build (GHEX context, halo
+# patterns), so they are cached per (process_props, decomposition_info) pair.
+_exchange_cache: dict[tuple[int, int], decomp_defs.ExchangeRuntime] = {}
+_reduction_cache: dict[tuple[int, int], Reductions] = {}
+
+
+def clear_caches() -> None:
+    """Clear the cached exchange and reduction objects (used by the test suite)."""
+    _exchange_cache.clear()
+    _reduction_cache.clear()
+
+
 def init_mpi() -> None:
     from mpi4py import MPI  # noqa: PLC0415 [import-outside-top-level]
 
@@ -68,6 +84,87 @@ def finalize_mpi() -> None:
     if not MPI.Is_finalized():
         log.info("finalizing MPI")
         MPI.Finalize()
+
+
+def allgather_entry_counts(
+    process_props: decomp_defs.ProcessProperties, count: int, *, array_ns: ModuleType
+) -> data_alloc.NDArray:
+    """Entry counts of all ranks (one entry per rank, in rank order).
+
+    ``array_ns`` determines the namespace of the returned array (there is no input
+    array to derive it from). Collective on the communicator; works on a single-rank
+    communicator without an MPI installation.
+    """
+    if process_props.is_single_rank():
+        return array_ns.asarray([count], dtype=array_ns.int64)
+    return array_ns.asarray(process_props.comm.allgather(count), dtype=array_ns.int64)
+
+
+def gather_entries(
+    process_props: decomp_defs.ProcessProperties,
+    local_entries: data_alloc.NDArray,
+    *,
+    entry_counts: data_alloc.NDArray,
+) -> data_alloc.NDArray | None:
+    """Concatenate the ranks' entries (leading-axis) on the root rank, in rank order.
+
+    ``entry_counts`` holds the per-rank leading-axis sizes (see
+    ``allgather_entry_counts``); trailing axes must agree between the ranks. The
+    result is allocated in the namespace of ``local_entries``. Returns the
+    concatenation on the root rank and None on all other ranks. Collective on the
+    communicator; works on a single-rank communicator without an MPI installation.
+    """
+    if process_props.is_single_rank():
+        return local_entries
+    xp = data_alloc.array_namespace(local_entries)
+    send = xp.ascontiguousarray(local_entries)
+    entry_elements = int(np.prod(send.shape[1:], dtype=np.int64))
+    # the per-rank receive counts are message metadata, not payload: they live on host
+    host_counts = data_alloc.as_numpy(entry_counts)
+    if process_props.rank == 0:
+        gathered = xp.empty((int(host_counts.sum()), *send.shape[1:]), dtype=send.dtype)
+        process_props.comm.Gatherv(send, [gathered, host_counts * entry_elements], root=0)
+        return gathered
+    process_props.comm.Gatherv(send, None, root=0)
+    return None
+
+
+def check_global_index_partition(
+    process_props: decomp_defs.ProcessProperties,
+    dim_name: str,
+    gathered_index: data_alloc.NDArray | None,
+    global_size: int,
+) -> None:
+    """Check that the ranks' gathered owned global indices partition the global grid.
+
+    ``gathered_index`` is the rank-order concatenation of the owned global indices of
+    all ranks (``gather_entries``; None on non-root ranks) and must be a permutation
+    of ``0..global_size - 1`` -- overlapping or gappy owner masks would otherwise
+    reassemble a plausible-looking but wrong global field. Collective: the root
+    rank's verdict is broadcast so all ranks raise together instead of hanging in
+    the next collective.
+
+    Raises:
+        ValueError: if the gathered global indices are not a permutation of
+            ``0..global_size - 1``.
+    """
+    if gathered_index is None:
+        is_partition = True
+    else:
+        xp = data_alloc.array_namespace(gathered_index)
+        is_partition = bool(
+            xp.array_equal(
+                xp.sort(gathered_index), xp.arange(global_size, dtype=gathered_index.dtype)
+            )
+        )
+    if not process_props.is_single_rank():
+        is_partition = process_props.comm.bcast(is_partition, root=0)
+    if not is_partition:
+        raise ValueError(
+            f"Owner masks of dimension '{dim_name}' do not partition the global grid: "
+            f"the owned global indices of all ranks are not a permutation of "
+            f"0..{global_size - 1}."
+        )
 
 
 def _get_process_properties(with_mpi: bool = False, comm_id: CommId = None) -> Any:
@@ -155,7 +252,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         # if those ids are not different for all domain descriptors the system might deadlock
         # if two parallel exchanges with the same domain id are done
         domain_desc = DomainDescriptor(
-            self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
+            self._domain_id_gen(), data_alloc.as_numpy(all_global), data_alloc.as_numpy(local_halo)
         )
         log.debug(
             f"domain descriptor for dim='{dim.value}' with properties {self._domain_descriptor_info(domain_desc)} created"
@@ -168,7 +265,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         global_halo_idx = self._decomposition_info.global_index(
             horizontal_dim, decomp_defs.DecompositionInfo.EntryType.HALO
         )
-        halo_generator = HaloGenerator.from_gids(global_halo_idx)
+        halo_generator = HaloGenerator.from_gids(data_alloc.as_numpy(global_halo_idx))
         log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
         pattern = make_pattern(
             self._context,
@@ -296,10 +393,14 @@ class MultiNodeResult(decomp_defs.ExchangeResult):
 def create_multinode_node_exchange(
     process_props: MPICommProcessProperties, decomp_info: decomp_defs.DecompositionInfo
 ) -> decomp_defs.ExchangeRuntime:
-    if process_props.comm_size > 1:
-        return GHexMultiNodeExchange(process_props, decomp_info)
-    else:
+    if process_props.comm_size == 1:
         return SingleNodeExchange()
+    key = (id(process_props), id(decomp_info))
+    if (exchange := _exchange_cache.get(key)) is not None:
+        return exchange
+    exchange = GHexMultiNodeExchange(process_props, decomp_info)
+    _exchange_cache[key] = exchange
+    return exchange
 
 
 @dataclasses.dataclass
@@ -461,4 +562,11 @@ class GlobalReductions(Reductions):
 def create_global_reduction(
     process_props: MPICommProcessProperties, decomposition_info: decomp_defs.DecompositionInfo
 ) -> Reductions:
-    return GlobalReductions(process_props, decomposition_info)
+    if process_props.comm_size == 1:
+        return SingleNodeReductions()
+    key = (id(process_props), id(decomposition_info))
+    if (reduction := _reduction_cache.get(key)) is not None:
+        return reduction
+    reduction = GlobalReductions(process_props, decomposition_info)
+    _reduction_cache[key] = reduction
+    return reduction

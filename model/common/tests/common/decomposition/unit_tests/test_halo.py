@@ -213,9 +213,7 @@ def test_owned_halo_mask_contiguous(rank):
 def test_global_to_local_index(offset, rank):
     grid = simple.simple_grid()
     neighbor_tables = {
-        k: v.ndarray
-        for k, v in grid.connectivities.items()
-        if gtx_common.is_neighbor_connectivity(v)
+        k: v.ndarray for k, v in grid.connectivities.items() if gtx_common.is_neighbor_table(v)
     }
     process_props = dummy_four_ranks(rank)
     halo_constructor = halo.IconLikeHaloConstructor(process_props, neighbor_tables)

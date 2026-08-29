@@ -24,7 +24,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_weighted_cell_neighbor_sum,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 def test_compute_diffusion_mask_and_coeff(  # noqa: PLR0917 [too-many-positional-arguments]
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
@@ -133,7 +133,7 @@ def test_compute_diffusion_mask_and_coeff(  # noqa: PLR0917 [too-many-positional
 @pytest.mark.datatest
 def test_compute_diffusion_intcoef_and_vertoffset(  # noqa: PLR0917 [too-many-positional-arguments]
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,

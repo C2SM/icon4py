@@ -6,28 +6,29 @@ ICON4Py is a Python implementation of the Fortran [ICON climate and weather mode
 
 Always read the CODING_GUIDELINES.md document first and follow it.
 
+In particular, before adding a stencil, a helper, an enum or an options dictionary to a component, check the "Shared code and generic naming" section: if it can be described using only grid entities and mathematical operations, it belongs in `model/common` and must be named after the operation, not after the calling code's variables.
+
 ## Monorepo structure
 
-uv workspace with 11 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
+uv workspace with 10 namespace packages. All share the `icon4py` namespace. Source lives under `<package>/src/icon4py/...`. Packages are installed editable by `uv sync`.
 
 ```
 model/
   atmosphere/
-    advection/          # icon4py.model.atmosphere.advection
+    tracer_advection/          # icon4py.model.atmosphere.tracer_advection
     diffusion/          # icon4py.model.atmosphere.diffusion
     dycore/             # icon4py.model.atmosphere.dycore
     subgrid_scale_physics/
       microphysics/     # icon4py.model.atmosphere.subgrid_scale_physics.microphysics
       muphys/           # icon4py.model.atmosphere.subgrid_scale_physics.muphys
   common/               # icon4py.model.common  ← shared code, all model packages depend on this
-  driver/               # icon4py.model.driver  ← depends on diffusion, dycore, common, testing
-  standalone_driver/    # icon4py.model.standalone_driver
+  driver/               # icon4py.model.driver
   testing/              # icon4py.model.testing ← pytest plugin, fixtures, serialbox helpers
 tools/                  # icon4py.tools ← Fortran integration (py2fgen CLI), independent of model
 bindings/               # icon4py.bindings ← Fortran wrappers for diffusion/dycore/muphys, depends on tools.py2fgen
 ```
 
-Tach enforces the dependency graph in `tach.toml`. All model atmosphere packages and standalone_driver depend only on `common`. Driver depends on diffusion + dycore + common + testing. Tools is independent. Bindings depends on diffusion + dycore + muphys + common + tools.py2fgen.
+Tach enforces the dependency graph in `tach.toml`. All model atmosphere packages and driver depend only on `common`. Driver depends on diffusion + dycore + common + testing. Tools is independent. Bindings depends on diffusion + dycore + muphys + common + tools.py2fgen.
 
 **Always run `uv sync` from the repo root.** Running it from a subpackage only installs that package's deps.
 
@@ -119,7 +120,7 @@ uv run --group test --frozen pytest --datatest-skip model/<component>/
 uv run --group test --frozen pytest --datatest-only model/<component>/
 
 # MPI tests (requires mpi4py, distributed extra; always use -n0 for sequential):
-mpirun -np 4 ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pytest -v -s --with-mpi -n0 -k mpi_tests model/<component>/
+mpirun -np 4 .cscs-ci/scripts/ci-mpi-wrapper.sh uv run --group test --frozen pytest -v -s --with-mpi -n0 -k mpi_tests model/<component>/
 #   --with-mpi: enables MPI test mode (from pytest-mpi plugin)
 #   -k mpi_tests: selects tests by directory/class name convention
 #   ci-mpi-wrapper.sh: suppresses stdout from non-zero ranks
@@ -132,15 +133,15 @@ uv run --group test --frozen pytest -n0 <paths>
 
 Registered by `icon4py.model.testing.pytest_hooks` (auto-loaded via `addopts`):
 
-| Option                            | Description                                                              |
-| --------------------------------- | ------------------------------------------------------------------------ |
-| `--datatest-only`                 | Run only `@pytest.mark.datatest` tests                                   |
-| `--datatest-skip`                 | Skip all datatests                                                       |
-| `--backend <name>`                | GT4Py backend (default: roundtrip; others: gtfn_cpu, gtfn_gpu, embedded) |
-| `--grid <name>`                   | Grid to use                                                              |
-| `--enable-mixed-precision`        | Switch from double to mixed-precision                                    |
-| `--level {any,unit,integration}`  | Filter by `@pytest.mark.level` marker                                    |
-| `--skip-stenciltest-verification` | Skip verification of StencilTest against reference outputs               |
+| Option                                      | Description                                                                       |
+| ------------------------------------------- | --------------------------------------------------------------------------------- |
+| `--datatest-only`                           | Run only `@pytest.mark.datatest` tests                                            |
+| `--datatest-skip`                           | Skip all datatests                                                                |
+| `--backend <name>`                          | GT4Py backend (default: embedded; others: gtfn_cpu, gtfn_gpu, dace_cpu, dace_gpu) |
+| `--grid <name>`                             | Grid to use                                                                       |
+| `--enable-mixed-precision`                  | Switch from double to mixed-precision                                             |
+| `--level {any,unit,integration,validation}` | Filter by `@pytest.mark.level` marker. `any` (default) excludes validation tests. |
+| `--skip-stenciltest-verification`           | Skip verification of StencilTest against reference outputs                        |
 
 ### Test directory convention
 
@@ -186,3 +187,17 @@ uv run --group test --frozen nox -s 'test_common(datatest=False)'
 ```
 
 Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks).
+
+## Triggering CSCS CI
+
+When a PR needs validation with CSCS CI, prefer the smallest useful subset.
+
+See `.github/workflows/mandatory_and_optional_test_reminder.yml` for the authoritative guidance. Key points:
+
+- Default development pipeline: `cscs-ci run default`.
+- Narrow it with variables when testing a fix, e.g.:
+  - `cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit`
+  - `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSIONS=model`
+- The `cscs/merge` pipeline runs automatically on the merge queue; do not trigger it manually. It runs as a dummy pipeline on PR pushes and runs no tests.
+- Some pipelines, especially those running on the normal slrum partition, can in the worst case take hours to schedule (when cluster is busy) and run (see SLURM_TIMELIMIT in the CSCS CI configs). Keep this in mind when waiting for jobs to finish. Test jobs may also need to populate GT4Py caches which can take long.
+- CSCS CI configs are in the ci/ subdirectory. The CI runs using GitLab runners and the configuration is the same as for regular GitLab pipelines.

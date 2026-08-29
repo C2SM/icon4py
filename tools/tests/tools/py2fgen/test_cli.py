@@ -181,6 +181,21 @@ def test_py2fgen_python_error_propagation_to_fortran(
     )
 
 
+def test_py2fgen_compilation_and_execution_bool_cpu(
+    cli_runner, samples_path, square_wrapper_module, test_temp_dir, fortran_subprocess_env
+):
+    """Tests boolean scalar passing and boolean-array writeback end-to-end."""
+    run_test_case(
+        cli=cli_runner,
+        module=square_wrapper_module,
+        function="fill_mask",
+        library_name="bool_plugin",
+        samples_path=samples_path,
+        fortran_driver="test_bool",
+        test_temp_dir=test_temp_dir,
+    )
+
+
 @pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 @pytest.mark.parametrize(
     "function_name, library_name, test_name, extra_flags",
@@ -309,10 +324,10 @@ def test_py2fgen_regenerate_forces_recompilation(
         assert "Skipping compilation" not in regen_log
 
 
-def test_py2fgen_skip_compilation_generates_c_and_header(
+def test_py2fgen_skip_compilation_generates_c(
     cli_runner, square_wrapper_module, test_temp_dir, caplog
 ):
-    """Test that --skip-compilation generates .c, .h, .py, .f90 files but no shared library."""
+    """Test that --skip-compilation writes .c, .py, .f90 but no shared library."""
     with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
         with caplog.at_level(logging.INFO, logger="py2fgen"):
             caplog.clear()
@@ -325,12 +340,11 @@ def test_py2fgen_skip_compilation_generates_c_and_header(
             )
             log = caplog.text
 
-        assert "Generating C source and header files" in log
+        assert "Generating C source file" in log
         assert "Compiling CFFI dynamic library" not in log
 
         assert pathlib.Path("square_plugin.py").exists()
         assert pathlib.Path("square_plugin.f90").exists()
-        assert pathlib.Path("square_plugin.h").exists()
         assert pathlib.Path("square_plugin.c").exists()
         assert not pathlib.Path("libsquare_plugin.so").exists()
 
@@ -361,7 +375,7 @@ def test_py2fgen_skip_compilation_skips_when_up_to_date(
             )
             second_log = caplog.text
         assert "Skipping C code generation" in second_log
-        assert "Generating C source and header files" not in second_log
+        assert "Generating C source file" not in second_log
 
 
 def test_py2fgen_skip_compilation_regenerates_if_c_file_deleted(
@@ -393,5 +407,5 @@ def test_py2fgen_skip_compilation_regenerates_if_c_file_deleted(
                 extra_args=["--skip-compilation"],
             )
             regen_log = caplog.text
-        assert "Generating C source and header files" in regen_log
+        assert "Generating C source file" in regen_log
         assert pathlib.Path("square_plugin.c").exists()

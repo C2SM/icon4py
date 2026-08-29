@@ -50,7 +50,7 @@ logger = _utils.setup_logger("py2fgen", log_level=logging.INFO)
     "--skip-compilation",
     is_flag=True,
     default=False,
-    help="Generate source files (.py, .f90, .c, .h) without compiling the shared library.",
+    help="Generate source files (.py, .f90, .c) without compiling the shared library.",
 )
 def main(  # noqa: PLR0917 [too-many-positional-arguments]
     module_import_path: str,
@@ -86,26 +86,20 @@ def main(  # noqa: PLR0917 [too-many-positional-arguments]
         logger.info("%s %s.", label, "changed" if changed else "is up to date")
         any_changed |= changed
 
-    c_source_exists = (output_path / f"{plugin.library_name}.c").exists()
-    header_exists = (output_path / f"{plugin.library_name}.h").exists()
-    shared_lib_exists = (
-        output_path / f"lib{plugin.library_name}{sysconfig.get_config_var('SHLIB_SUFFIX')}"
-    ).exists()
-
     if skip_compilation:
-        if any_changed or not c_source_exists or not header_exists:
-            logger.info("Generating C source and header files...")
+        c_source_exists = (output_path / f"{plugin.library_name}.c").exists()
+        if any_changed or not c_source_exists:
+            logger.info("Generating C source file...")
             _generator.generate_cffi_source(
-                plugin.library_name, c_header, python_wrapper, output_path, rpath
+                plugin.library_name, c_header, python_wrapper, output_path
             )
         else:
             logger.info("All generated files are up to date. Skipping C code generation.")
     else:
-        compilation_outputs_exist = header_exists and shared_lib_exists
-        if not compilation_outputs_exist:
-            logger.info("Compilation outputs missing.")
-
-        if any_changed or not compilation_outputs_exist:
+        shared_lib_exists = (
+            output_path / f"lib{plugin.library_name}{sysconfig.get_config_var('SHLIB_SUFFIX')}"
+        ).exists()
+        if any_changed or not shared_lib_exists:
             logger.info("Compiling CFFI dynamic library...")
             _generator.generate_and_compile_cffi_plugin(
                 plugin.library_name, c_header, python_wrapper, output_path, rpath

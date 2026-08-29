@@ -87,10 +87,6 @@ class Grid:
     start_index: Callable[[h_grid.Domain], gtx.int32]
     end_index: Callable[[h_grid.Domain], gtx.int32]
 
-    def __post_init__(self):
-        # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
-        self.connectivities[dims.Koff.value] = dims.KDim
-
     @functools.cached_property
     def size(self) -> dict[gtx.Dimension, int]:
         sizes = {
@@ -111,8 +107,6 @@ class Grid:
                             )
                     else:
                         sizes[dim] = size
-            elif isinstance(connectivity, gtx.Dimension):
-                ...
             else:
                 raise TypeError(
                     f"Unsupported connectivity type {type(connectivity)} for offset {offset}."
