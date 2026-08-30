@@ -194,6 +194,12 @@ class TurbulenceInputState:
     #: tracer. Which tracers these are is a runtime choice of the interface (qi, qs and the
     #: two-moment number densities, plus any ART tracers), hence 'ndtr' entries rather than
     #: named fields.
+    #:
+    #: MUST BE EMPTY TODAY. The port does not diffuse them, and 'Turbulence.run_vertdiff'
+    #: raises rather than ignore a non-empty tuple -- the field is declared here because the
+    #: Fortran interface has it, not because the granule reads it. See that method's docstring
+    #: for the two other refusals of the same condition and for what it takes to remove all
+    #: three.
     tracers: tuple[fa.CellKField[ta.wpfloat], ...]
     #: 'ut_sso' -- zonal wind tendency of the SSO scheme, on full levels [m/s2]. An external
     #: forcing of the TKE budget, not something the granule computes.
@@ -384,7 +390,8 @@ class TurbulenceTendencyState:
     #: tendency argument of turbdiff that is not optional.
     ddt_tke: fa.CellKField[ta.wpfloat]
     #: 'ptr(:)%at' -- tendencies of the diffused passive tracers, on full levels, aligned
-    #: entry by entry with `TurbulenceInputState.tracers`.
+    #: entry by entry with `TurbulenceInputState.tracers`. Must be empty for the same reason,
+    #: and refused in the same place.
     ddt_tracers: tuple[fa.CellKField[ta.wpfloat], ...]
     #: 'tket_hshr' -- TKE tendency from separated horizontal shear, on half levels [m2/s3].
     #: A diagnostic output ('prm_nwp_tend%ddt_tke_hsh'), not fed back into the budget here.

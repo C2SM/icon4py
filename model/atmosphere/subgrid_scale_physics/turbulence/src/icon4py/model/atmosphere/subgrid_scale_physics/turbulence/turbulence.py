@@ -2825,18 +2825,70 @@ class Turbulence:
         'lprecnd = .FALSE.' (no preconditioning). Each is asserted against the entry savepoint
         by 'test_vertdiff_runs_in_the_configuration_this_port_assumes'.
 
+        THE PASSIVE TRACERS ARE REFUSED HERE, and this is the innermost of three refusals of
+        the same thing. 'vertdiff' is the only one of the two stages that has them at all --
+        'ptr(:)' and 'ndtr' are dummy arguments of 'vertdiff' (turb_vertdiff.f90:135) and
+        appear nowhere in 'turbdiff' -- so this method, and not `run` and not `run_turbdiff`,
+        is where a tracer tuple would be dropped. It reads neither
+        `TurbulenceInputState.tracers` nor `TurbulenceTendencyState.ddt_tracers`; the
+        containers declare them because the Fortran interface has them, and a caller that
+        filled them and got a successful return would be missing a physical process with
+        nothing to say so. The other two refusals of the same condition:
+
+            ICON      'check_supported_configuration' (mo_icon4py_turbulence.f90), which fires
+                      first on the blue line and is the only one that can name the ICON
+                      namelist switches that produced the tracers.
+            wrapper   'turbulence_init' ('icon4py.bindings.turbulence_wrapper'), which refuses
+                      'nturb_tracer_tot /= 0' at the C boundary, where the tuples have no flat
+                      representation.
+
+        Both of those guard a path INTO the granule. This one guards the granule itself, so it
+        is the one a green-line driver, a standalone experiment or a second wrapper -- anything
+        that builds the state containers directly -- still runs into.
+
+        ALL THREE COME OUT TOGETHER when the tracers are implemented; none of them is a
+        placeholder for a partial fix. The arity is not the obstacle: 'ndtr' is constant for a
+        run, and `Turbulence.__init__` runs '_setup_vertdiff_programs' after it, so a tuple of
+        exactly 'ndtr' fields can be allocated and the scans compiled for that width -- the
+        tuple width being fixed at compile time is not in conflict with 'ndtr' being a runtime
+        number, because the compile happens later. Diffusing them is therefore a change to the
+        BODY of this method -- 'ndtr' further `DiffusedVariable` entries through the scalar
+        matrix, which is what the Fortran does too: 'ndiff = nmvar + ndtr'
+        (turb_vertdiff.f90:423), the tracers are entries 'liq+1..liq+ndtr' of the same 'dvar'
+        list (:489-504), and one loop diffuses all of them (:566-838). What is still open is
+        on the wrapper's side only: py2fgen renders a fixed argument list, so
+        'turbulence_run' cannot take 'ndtr' field pointers, and the clean answer there is one
+        rank-3 '(cells, levels, ndtr)' array per direction sliced into a tuple on the Python
+        side.
+
         Args:
-            input_state: The atmospheric column. Read-only. 'tracers' is not diffused here:
-                'ndtr = 0' at the ported call site and the tuple is empty.
+            input_state: The atmospheric column. Read-only. 'tracers' must be empty: it is not
+                diffused here and is refused rather than ignored, see above.
             surface_state: The grid-mean surface state. Read-only.
             diagnostic_state: The turbulence diagnostics; 'rhon' is read and written, the
                 diffusion coefficients, the transfer velocities and the two surface flux
                 densities are read.
             tendency_state: Where the tendencies go, accumulated onto what is already there,
                 exactly as the Fortran's 'INTENT(INOUT)' '*_tens' arguments are.
+                'ddt_tracers' must be empty, as 'input_state.tracers'.
             dt_var: The time step of the diffusion equation [s], ICON's 'dt_var'. The interface
                 passes 'tcall_turb_jg' for this and for 'dt_tke' alike.
+
+        Raises:
+            NotImplementedError: If either tracer tuple is non-empty.
         """
+        # Before anything is computed, and before anything else is read: the condition depends
+        # on neither the grid nor the configuration, and the alternative to refusing it is a
+        # forecast that is quietly missing the diffusion of every tracer it was handed.
+        if input_state.tracers or tendency_state.ddt_tracers:
+            raise NotImplementedError(
+                f"'run_vertdiff' does not diffuse tracers: 'input_state.tracers' and "
+                f"'tendency_state.ddt_tracers' are read nowhere in the granule, so they would "
+                f"be silently ignored. Got {len(input_state.tracers)} tracers and "
+                f"{len(tendency_state.ddt_tracers)} tracer tendencies. Pass empty tuples, or "
+                f"use the Fortran scheme."
+            )
+
         reciprocal_time_step = 1.0 / dt_var  # 'fakt = z1/dt_var' (turb_vertdiff.f90:513)
         self._prepare_the_diffusion_matrix(
             input_state=input_state,
@@ -2921,15 +2973,27 @@ class Turbulence:
         NO 'lini' HERE EITHER. See the class docstring: the initialisation is a different
         computation reached from a different call site, and it will be a method of its own.
 
+        THE TRACER REFUSAL IS NOT REPEATED HERE. It belongs to `run_vertdiff`, the stage that
+        has 'ptr(:)' and the stage that would drop it, and this method reaches it by
+        delegation. The cost is that a call with a non-empty tracer tuple runs 'turbdiff'
+        before being refused, which is a diagnostic on an already-fatal path; what it buys is
+        one refusal rather than two, and one that `run_vertdiff` called directly -- as the
+        second-stage tests call it -- runs into as well.
+
         Args:
-            input_state: The atmospheric column and the external forcings. Read-only.
+            input_state: The atmospheric column and the external forcings. Read-only. Its
+                'tracers' must be empty; see `run_vertdiff`.
             surface_state: The grid-mean surface state. Read-only.
             diagnostic_state: The turbulence diagnostics; read and written by both stages.
             tendency_state: Where the tendencies go. 'ddt_tke' is read on entry as the
-                advection tendency and overwritten; the other five are accumulated onto.
+                advection tendency and overwritten; the other five are accumulated onto. Its
+                'ddt_tracers' must be empty; see `run_vertdiff`.
             dt_var: The time step of the vertical diffusion [s].
             dt_tke: The time step of the TKE equation [s]. ICON passes 'tcall_turb_jg' for
                 this and for 'dt_var' alike, but the Fortran keeps them apart and so does this.
+
+        Raises:
+            NotImplementedError: If either tracer tuple is non-empty; raised by `run_vertdiff`.
         """
         self.run_turbdiff(
             input_state=input_state,

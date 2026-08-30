@@ -106,10 +106,15 @@ the same condition. It is deliberately left in place and is now belt-and-braces 
 only line of defence: it gives a Fortran user the diagnosis in Fortran terms, while the refusal
 here is the one that also covers the green line, a standalone driver and a second wrapper.
 
-The gap this closes is the wrapper's, and it is not the whole gap: 'Turbulence.run_vertdiff'
-ignores 'input_state.tracers' whatever it is handed, so a caller that builds the state
-containers itself and never goes through 'turbulence_init' is still unprotected. That refusal
-belongs in the granule and is not made here.
+The gap this closes is the wrapper's, and it was not the whole gap: 'Turbulence.run_vertdiff'
+used to ignore 'input_state.tracers' whatever it was handed, so a caller that builds the state
+containers itself and never goes through 'turbulence_init' was unprotected by both this check
+and ICON's. That refusal belongs in the granule, and is now made there -- 'run_vertdiff'
+raises on a non-empty 'input_state.tracers' or 'tendency_state.ddt_tracers'. THE THREE ARE ONE
+POLICY, not three accidents: ICON's names the namelist switches and fires first, this one
+covers the C boundary, the granule's covers every caller including the green line, and all
+three come out together when the tracers are implemented. 'Turbulence.run_vertdiff' carries
+the full argument; do not restate it here.
 
 CONSIDERED AND DEFERRED
 -----------------------
