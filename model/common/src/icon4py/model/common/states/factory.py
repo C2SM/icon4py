@@ -443,7 +443,8 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
                 vertical_offsets = {
                     k: v
                     for k, v in grid.connectivities.items()
-                    if isinstance(v, gtx.Dimension) and v.kind == gtx.DimensionKind.VERTICAL
+                    if isinstance(v, gtx_common.DimensionMeta)
+                    and v.kind == gtx.DimensionKind.VERTICAL
                 }
                 offset_providers.update(vertical_offsets)
                 # used for different compute backend in function call
@@ -568,7 +569,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
                 vertical_offsets = {
                     k: v
                     for k, v in grid.connectivities.items()
-                    if isinstance(v, gtx.Dimension) and v.kind == gtx.DimensionKind.VERTICAL
+                    if isinstance(v, gtx_common.DimensionMeta)
+                    and v.kind == gtx.DimensionKind.VERTICAL
                 }
                 offset_providers.update(vertical_offsets)
         return offset_providers

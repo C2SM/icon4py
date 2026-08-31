@@ -8,6 +8,7 @@
 from collections.abc import Iterator
 
 import gt4py.next as gtx
+from gt4py.next import common as gtx_common
 
 
 class KDim(gtx.Dimension, kind=gtx.DimensionKind.VERTICAL):
@@ -113,7 +114,7 @@ def horizontal_dims() -> Iterator[gtx.Dimension]:
         tuple(
             d
             for d in globals().values()
-            if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.HORIZONTAL
+            if isinstance(d, gtx_common.DimensionMeta) and d.kind == gtx.DimensionKind.HORIZONTAL
         )
     )
 
@@ -125,7 +126,7 @@ def non_horizontal_dims() -> Iterator[gtx.Dimension]:
 
 def local_dims() -> Iterator[gtx.Dimension]:
     for d in globals().values():
-        if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.LOCAL:
+        if isinstance(d, gtx_common.DimensionMeta) and d.kind == gtx.DimensionKind.LOCAL:
             yield d
 
 
@@ -134,6 +135,6 @@ def vertical_dims() -> Iterator[gtx.Dimension]:
         tuple(
             d
             for d in globals().values()
-            if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.VERTICAL
+            if isinstance(d, gtx_common.DimensionMeta) and d.kind == gtx.DimensionKind.VERTICAL
         )
     )
