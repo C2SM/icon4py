@@ -10,12 +10,12 @@
 
 WHAT IS UNDER TEST. 'solve_vertical_diffusion_equation' takes a matrix it did not build, so a
 conservation statement about it is only meaningful together with the programs that build one.
-This file therefore runs the whole 'vertdiff' matrix chain -- 'compute_implicit_diffusion_
-momentum', 'subtract_implicit_diffusion_momentum', 'compute_explicit_flux_density',
-'add_implicit_surface_flux_to_the_explicit_flux_density', 'compute_inverted_diffusion_momentum',
-'invert_diffusion_momentum_at_the_surface_flux_level', 'compute_diffusion_inversion_factor',
-'compute_diffusion_right_hand_side' and the solve -- on an idealized column, and asks what came
-out of the column.
+This file therefore runs the whole 'vertdiff' matrix chain -- 'utils.DiffusionRun', which is
+'compute_implicit_diffusion_momentum', 'subtract_implicit_diffusion_momentum',
+'compute_explicit_flux_density', 'add_implicit_surface_flux_to_the_explicit_flux_density',
+'compute_inverted_diffusion_momentum', 'invert_diffusion_momentum_at_the_surface_flux_level',
+'compute_diffusion_inversion_factor', 'compute_diffusion_right_hand_side' and the solve -- on an
+idealized column, and asks what came out of the column.
 
 THE DISCRETE SYSTEM. With main levels 'k = 0..nlev-1', flux level 'k' just above concentration
 level 'k', and 'F(k)' positive UPWARD, the scheme solves
@@ -51,37 +51,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_implicit_surface_flux_to_the_explicit_flux_density import (
-    add_implicit_surface_flux_to_the_explicit_flux_density,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
-    compute_diffusion_inversion_factor,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_right_hand_side import (
-    compute_diffusion_right_hand_side,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_flux_density import (
-    compute_explicit_flux_density,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_diffusion_momentum import (
-    compute_implicit_diffusion_momentum,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
-    compute_inverted_diffusion_momentum,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_diffusion_momentum_at_the_surface_flux_level import (
-    invert_diffusion_momentum_at_the_surface_flux_level,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_vertical_diffusion_equation import (
-    solve_vertical_diffusion_equation,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_diffusion_momentum import (
-    subtract_implicit_diffusion_momentum,
-)
 from icon4py.model.testing.fixtures.datatest import backend
 
 from . import broken_stencils, utils
@@ -98,175 +70,7 @@ if TYPE_CHECKING:
 CONSERVATION_TOLERANCE = 1.0e-12
 
 
-class DiffusionRun:
-    """One idealized column carried through the whole 'vertdiff' matrix chain.
-
-    Holds the host arrays the budget is formed from. Constructing it runs nine programs on the
-    backend under test, which is what makes the assertions statements about the port rather
-    than about numpy.
-    """
-
-    def __init__(
-        self,
-        column: utils.DiffusionColumn,
-        backend: gtx_typing.Backend | None,
-        solve=solve_vertical_diffusion_equation,
-    ) -> None:
-        nlev = column.nlev
-        rows = nlev + 1
-        cells = column.num_cells
-        bounds = {"horizontal_start": gtx.int32(0), "horizontal_end": gtx.int32(cells)}
-        flux_condition = column.surface is utils.SurfaceCondition.FLUX
-
-        discretisation_momentum = utils.as_cell_k_field(column.discretisation_momentum, backend)
-        current_profile = utils.as_cell_k_field(column.current_profile, backend)
-        # 'expl_mom' on entry: ICON reduces it in place, so the port is handed one field and
-        # the surface row is the one it does not reduce. Two fields here, because the test also
-        # needs the unreduced value to form the surface flux.
-        full_momentum = utils.as_cell_k_field(column.diffusion_momentum, backend)
-        explicit_momentum = utils.as_cell_k_field(column.diffusion_momentum, backend)
-        implicit_momentum = utils.as_cell_k_field(np.zeros((cells, rows)), backend)
-        explicit_flux = utils.as_cell_k_field(np.zeros((cells, rows)), backend)
-        inverted_momentum = utils.as_cell_k_field(np.zeros((cells, rows)), backend)
-        inversion_factor = utils.as_cell_k_field(np.zeros((cells, rows)), backend)
-        right_hand_side = utils.as_cell_k_field(np.zeros((cells, rows)), backend)
-        updated_profile = utils.as_cell_k_field(np.full((cells, rows), np.nan), backend)
-
-        # 'DO k = k_tp+2, k_sf+1-m': to the surface flux level under a concentration condition,
-        # one row short of it under a flux condition, where the surface value is not an unknown
-        # and there is no sub-diagonal to it.
-        compute_implicit_diffusion_momentum.with_backend(backend)(
-            diffusion_momentum=full_momentum,
-            implicit_weight=utils.as_k_field(column.implicit_weight, backend),
-            implicit_diffusion_momentum=implicit_momentum,
-            vertical_start=gtx.int32(1),
-            vertical_end=gtx.int32(nlev if flux_condition else nlev + 1),
-            offset_provider={},
-            **bounds,
-        )
-        # One row short of the split above: the surface flux level keeps the WHOLE diffusion
-        # momentum, which is what makes its explicit flux the explicit SURFACE flux.
-        subtract_implicit_diffusion_momentum.with_backend(backend)(
-            diffusion_momentum=full_momentum,
-            implicit_diffusion_momentum=implicit_momentum,
-            explicit_diffusion_momentum=explicit_momentum,
-            vertical_start=gtx.int32(1),
-            vertical_end=gtx.int32(nlev),
-            offset_provider={},
-            **bounds,
-        )
-        compute_explicit_flux_density.with_backend(backend)(
-            explicit_diffusion_momentum=explicit_momentum,
-            current_profile=current_profile,
-            model_top_level=gtx.int32(0),
-            explicit_flux_density=explicit_flux,
-            vertical_start=gtx.int32(1),
-            vertical_end=gtx.int32(nlev + 1),
-            offset_provider=utils.KOFF,
-            **bounds,
-        )
-        if not flux_condition:
-            add_implicit_surface_flux_to_the_explicit_flux_density.with_backend(backend)(
-                explicit_flux_density_at_the_surface=explicit_flux,
-                implicit_diffusion_momentum=implicit_momentum,
-                current_profile=current_profile,
-                explicit_flux_density=explicit_flux,
-                vertical_start=gtx.int32(nlev),
-                vertical_end=gtx.int32(nlev + 1),
-                offset_provider=utils.KOFF,
-                **bounds,
-            )
-        compute_inverted_diffusion_momentum.with_backend(backend)(
-            discretisation_momentum=discretisation_momentum,
-            implicit_diffusion_momentum=implicit_momentum,
-            inverted_diffusion_momentum=inverted_momentum,
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(nlev - 1 if flux_condition else nlev),
-            offset_provider=utils.KOFF,
-            **bounds,
-        )
-        if flux_condition:
-            invert_diffusion_momentum_at_the_surface_flux_level.with_backend(backend)(
-                discretisation_momentum=discretisation_momentum,
-                implicit_diffusion_momentum=implicit_momentum,
-                inverted_diffusion_momentum_above=inverted_momentum,
-                inverted_diffusion_momentum=inverted_momentum,
-                vertical_start=gtx.int32(nlev - 1),
-                vertical_end=gtx.int32(nlev),
-                offset_provider=utils.KOFF,
-                **bounds,
-            )
-        compute_diffusion_inversion_factor.with_backend(backend)(
-            inverted_diffusion_momentum=inverted_momentum,
-            implicit_diffusion_momentum=implicit_momentum,
-            inversion_factor=inversion_factor,
-            vertical_start=gtx.int32(1),
-            vertical_end=gtx.int32(nlev),
-            offset_provider=utils.KOFF,
-            **bounds,
-        )
-        compute_diffusion_right_hand_side.with_backend(backend)(
-            discretisation_momentum=discretisation_momentum,
-            current_profile=current_profile,
-            explicit_flux_density=explicit_flux,
-            right_hand_side=right_hand_side,
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(nlev),
-            offset_provider=utils.KOFF,
-            **bounds,
-        )
-        solve.with_backend(backend)(
-            right_hand_side=right_hand_side,
-            implicit_diffusion_momentum=implicit_momentum,
-            inverted_diffusion_momentum=inverted_momentum,
-            inversion_factor=inversion_factor,
-            updated_profile=updated_profile,
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(nlev),
-            offset_provider=utils.KOFF,
-            **bounds,
-        )
-
-        self.column = column
-        self.implicit_momentum = implicit_momentum.asnumpy()
-        self.explicit_flux = explicit_flux.asnumpy()
-        self.updated_profile = updated_profile.asnumpy()
-
-    def mass_change(self) -> np.ndarray:
-        """'SUM_k disc_mom(k)*(c_new(k) - c_old(k))' [kg/m2/s per unit of c], per column."""
-        nlev = self.column.nlev
-        disc = self.column.discretisation_momentum[:, :nlev]
-        return (
-            disc * (self.updated_profile[:, :nlev] - self.column.current_profile[:, :nlev])
-        ).sum(axis=1)
-
-    def surface_flux(self) -> np.ndarray:
-        """The semi-implicit surface flux, positive upward, per column.
-
-        Formed from the SCHEME's own quantities and the solution, not from the stencils: this
-        is the right-hand side of the budget identity and computing it with the programs under
-        test would make the identity circular.
-        """
-        nlev = self.column.nlev
-        surface_value = self.column.current_profile[:, nlev]
-        lowest_old = self.column.current_profile[:, nlev - 1]
-        lowest_new = self.updated_profile[:, nlev - 1]
-        implicit = self.implicit_momentum[:, nlev]
-        explicit = self.column.diffusion_momentum[:, nlev] - implicit
-        return explicit * (surface_value - lowest_old) + implicit * (surface_value - lowest_new)
-
-    def scale(self) -> np.ndarray:
-        """The L1 scale of the column content, which the residual is judged against."""
-        nlev = self.column.nlev
-        return np.abs(
-            self.column.discretisation_momentum[:, :nlev] * self.column.current_profile[:, :nlev]
-        ).sum(axis=1)
-
-    def residual(self) -> np.ndarray:
-        return np.abs(self.mass_change() - self.surface_flux()) / self.scale()
-
-
-def _assert_the_budget_closes(run: DiffusionRun) -> None:
+def _assert_the_budget_closes(run: utils.DiffusionRun) -> None:
     """The invariant itself, factored out so the mutation test can be seen to violate IT.
 
     Both the passing tests and the broken-variant test go through this function, so the
@@ -298,7 +102,7 @@ def test_a_zero_surface_flux_conserves_the_column_content(
     column = utils.construct_idealized_diffusion_column(
         surface=utils.SurfaceCondition.FLUX, surface_diffusion_momentum=0.0
     )
-    run = DiffusionRun(column, backend)
+    run = utils.DiffusionRun(column, backend)
 
     assert np.all(run.surface_flux() == 0.0), (
         "the surface flux is not exactly zero, so this test is not measuring a closed column."
@@ -341,7 +145,7 @@ def test_the_column_content_changes_by_exactly_the_surface_flux(
     column = utils.construct_idealized_diffusion_column(
         surface=surface, surface_diffusion_momentum=5.0
     )
-    run = DiffusionRun(column, backend)
+    run = utils.DiffusionRun(column, backend)
 
     flux = run.surface_flux()
     assert np.all(np.abs(flux) > 0.0), (
@@ -376,8 +180,8 @@ def test_a_misindexed_back_substitution_breaks_the_budget(
     column = utils.construct_idealized_diffusion_column(
         surface=surface, surface_diffusion_momentum=5.0
     )
-    correct = DiffusionRun(column, backend)
-    broken = DiffusionRun(
+    correct = utils.DiffusionRun(column, backend)
+    broken = utils.DiffusionRun(
         column,
         backend,
         solve=broken_stencils.solve_vertical_diffusion_equation_with_a_misindexed_back_substitution,

@@ -22,10 +22,20 @@ package ('_vert_smooth_as_the_fortran_writes_it', 'integration_tests/test_turbdi
 stays where it is.
 
 EVERY INVARIANT SHIPS WITH A MUTATION THAT BREAKS IT. 'broken_stencils.py' holds deliberately
-defective copies of the three stencils tested here, and each test module asserts that its
-invariant fails on the broken copy. A passing test says nothing until it has been seen to fail
-for the right reason; the pattern is David Strassmann's 'BrokenPiecewiseParabolicMethod' in the
-advection convergence study.
+defective copies of the stencils tested here, and each test module asserts that its invariant
+fails on the broken copy -- by calling the SAME assertion function the passing test calls,
+inside 'pytest.raises', so that what the mutation breaks is literally what the port is held to.
+A passing test says nothing until it has been seen to fail for the right reason; the pattern is
+David Strassmann's 'BrokenPiecewiseParabolicMethod' in the advection convergence study.
+
+AND EVERY MUTATION IS TESTED WHERE IT IS *NOT* SEEN, TOO. Several of the mutations here are
+exactly the identity in some regime -- the complementary implicit weight at Crank-Nicolson, the
+negated buoyancy cofactor at 'Ri = 0', the exchanged time-smoothing weights at any steady state
+-- and each of those blind spots is asserted rather than written down, because a limitation
+that is only in a comment gets rediscovered. Between them they say which test earns its place:
+the amplification factor catches what conservation cannot, the second moment catches what
+neither can, the stratified equilibrium catches what no neutral state can, and the decay
+catches what no equilibrium can.
 
 Not a 'datatest': nothing here reads 'ICON4PY_TEST_DATA_PATH', so all of it runs with no
 serialized archive present.

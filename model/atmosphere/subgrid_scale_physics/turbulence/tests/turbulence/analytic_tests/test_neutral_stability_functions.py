@@ -97,28 +97,12 @@ SHEAR_RANGE = (0.01, 0.05, 0.154, 0.5, 2.0, 10.0)
 
 def _closure_constants() -> tuple[TurbulenceConfig, TurbulenceParams]:
     """The shipped configuration and the closure constants 'turb_setup' derives from it."""
-    config = TurbulenceConfig()
-    return config, TurbulenceParams(config=config)
+    return utils.closure_constants()
 
 
 def _stability_arguments(params: TurbulenceParams, config: TurbulenceConfig) -> dict[str, float]:
     """The closure constants 'compute_stability_lengths' takes, as the granule binds them."""
-    return {
-        "a_h": config.a_heat,
-        "a_m": config.a_mom,
-        "b_h": params.b_h,
-        "b_m": params.b_m,
-        "d_m": config.d_mom,
-        "d_1": params.d_1,
-        "d_2": params.d_2,
-        "d_3": params.d_3,
-        "d_4": params.d_4,
-        "d_5": params.d_5,
-        "d_6": params.d_6,
-        "rim": params.rim,
-        "frcsecu": config.frcsecu,
-        "stbsecu": config.stbsecu,
-    }
+    return utils.stability_length_arguments(params, config)
 
 
 def _neutral_case(shear: np.ndarray, params: TurbulenceParams) -> dict[str, np.ndarray]:
