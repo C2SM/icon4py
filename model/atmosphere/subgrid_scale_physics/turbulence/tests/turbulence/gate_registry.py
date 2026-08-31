@@ -301,17 +301,20 @@ GATES: dict[str, Gate] = {
     # instead misses 156546 of 653804 values in 'ls_m' by up to 1 ulp. That all three backends
     # agree is also evidence GT4Py did not substitute the reciprocal away.
     "compute_stability_lengths_from_diffusion_coefficients": Exact(),
-    # turbdiff section 3) turbulent budgets ('solve_turb_budgets').
+    # turbdiff section 3) turbulent budgets -- two programs since the stencil merge, under
+    # ICON's own name for the subroutine. 'solve_turb_budgets' has five statements: the TKE
+    # step, the stability lengths, the circulation acceleration, the SDSS and the diffusion
+    # coefficients. The model-top row stays a program of its own because DaCe silently drops a
+    # statement whose 'out=' names the same parameter as a shifted input; its module docstring
+    # carries the measurement. The section test asserts each of the seven outputs separately, so
+    # a failure still names the Fortran quantity even though it names one stencil. All the
+    # entries these two replace were Exact, so no tolerance was widened by the collapse.
     # PROVISIONAL: entered as the documented default so the section datatests can run at
     # all -- 'gate_for' refuses to default, so without an entry the tests error instead
     # of reporting. The agents that wrote these stencils were killed before validating
-    # them, so no measurement stands behind these yet. A failure here is a real finding.
-    "compute_circulation_acceleration": Exact(),
-    "compute_diffusion_coefficients_from_stability_lengths": Exact(),
-    "compute_stability_lengths": Exact(),
-    "compute_supersaturation_standard_deviation": Exact(),
-    "compute_turbulent_velocity_scale": Exact(),
+    # them, so no measurement stands behind this yet. A failure here is a real finding.
     "set_turbulent_velocity_scale_at_model_top": Exact(),
+    "solve_turb_budgets": Exact(),
     # turbdiff section 6) q-diffusion tendency -- one program with four statements since the
     # stencil merge: 'sav_prof', 'expl_mom', 'frh' and 'frm'. The section test asserts each of
     # the four separately, so a failure names the Fortran quantity even though it names one

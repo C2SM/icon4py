@@ -94,16 +94,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths import (
-    compute_stability_lengths,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.turbulence import (
     TurbulenceConfig,
     TurbulenceParams,
 )
 from icon4py.model.testing.fixtures.datatest import backend
 
-from . import broken_stencils, utils
+from . import broken_stencils, single_statement_stencils, utils
 
 
 if TYPE_CHECKING:
@@ -247,7 +244,7 @@ def _band(case: dict[str, np.ndarray]) -> slice:
 def _run_stability_lengths(
     case: dict[str, np.ndarray],
     backend: gtx_typing.Backend | None,
-    program=compute_stability_lengths,
+    program=single_statement_stencils.compute_stability_lengths,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Run one stability-function program over the padded band and return 'lsm', 'lsh' [m]."""
     config = TurbulenceConfig()

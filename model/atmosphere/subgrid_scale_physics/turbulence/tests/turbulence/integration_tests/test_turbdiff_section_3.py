@@ -40,35 +40,51 @@ port is six wide field operators. 'test_the_k_loop_of_solve_turb_budgets_has_no_
 neighbour_access' re-measures this against the Fortran source on every run, so a future ICON
 that introduces a 'k-1' fails here instead of silently producing wrong numbers.
 
-WHAT THE PROGRAMS ARE, AND WHY THEY ARE SPLIT THAT WAY
-------------------------------------------------------
-    compute_turbulent_velocity_scale         'tke' at half levels 2..kem
-    set_turbulent_velocity_scale_at_model_top 'tke' at half level 1, copied from level 2
-    compute_stability_lengths                'lsm', 'lsh' at 2..kem -- NOT serialized
-    compute_circulation_acceleration         'zvari(:,:,0)' at 2..ke1
-    compute_supersaturation_standard_deviation 'rcld' at 2..kem
-    compute_diffusion_coefficients_from_stability_lengths 'tkvm', 'tkvh' at 2..kem
+WHAT THE STATEMENTS ARE
+-----------------------
+Since the stencil merge the section is TWO programs. 'solve_turb_budgets' -- ICON's own name for
+the subroutine that holds four of its five statements -- is
 
-The velocity scale and the stability functions come out of the same Fortran k-loop and share the
-TKE forcing 'frc', but Raschendorfer gives them separate sub-headings and separate ACC loops,
-and each deserves its own gate; they are two programs sharing a private field operator. The
-model-top row is its own program because the value it copies is the one just computed, so a
-merged program would read the field it writes.
+    1 the TKE step                     'tke' at half levels 2..kem
+    2 the stability lengths            'lsm', 'lsh' at 2..kem -- NOT serialized
+    3 the circulation acceleration     'zvari(:,:,0)' at 2..ke1
+    4 the SDSS                         'rcld' at 2..kem
+    5 the diffusion coefficients       'tkvm', 'tkvh' at 2..kem
 
-TWO ALIASES THIS PORT DOES NOT REPRODUCE, and both of them turn a Fortran ordering constraint
-into nothing at all:
+and 'set_turbulent_velocity_scale_at_model_top' writes 'tke' at half level 1, copied from level
+2, afterwards.
 
+Statements 1 and 2 come out of the same Fortran k-loop and share the TKE forcing 'frc' through a
+private field operator; before the merge they were two programs so that each had its own gate,
+and the gate is now one because a gate is a property of a program. Every assertion below still
+names one Fortran quantity, so a failure still says which.
+
+THE MODEL-TOP ROW WAS MERGED IN AND TAKEN BACK OUT, and the measurement is the reason. As a
+statement of 'solve_turb_budgets' it would read, through 'Koff[1]', the parameter it writes.
+'gtfn_cpu' and 'embedded' execute that correctly; DaCe DROPS THE STATEMENT, on 'dace_cpu' and on
+'dace_gpu', leaving the destination row with whatever it held. It surfaced as four failures of
+'test_set_turbulent_velocity_scale_at_model_top_agrees_with_icon_within_its_gate' on 'dace_gpu'
+after a fully green 'gtfn_cpu' run. Binding one field to TWO parameters -- which is what the
+separate program does -- is a different shape and compiles correctly everywhere. The standalone
+reproducer is '.scratch/merge2/toy_alias.py' in the workspace, variants A1 and A2.
+
+ONE ALIAS THIS PORT REPRODUCES, ONE IT DOES NOT
+-----------------------------------------------
   * 'rcld' arrives as the cloud cover and leaves as the standard deviation of the local
-    super-saturation. The raw circulation term is the last reader of the cloud cover, so in the
-    Fortran it must run before the SDSS block. Here they are separate fields and the order is
-    free.
+    super-saturation, and the granule keeps that in ONE field -- it passes the same storage as
+    'cloud_cover' and as 'supersaturation_standard_deviation'. GT4Py cannot see the aliasing,
+    so nothing but the order of statements 4 and 5 keeps the last reader of the cloud cover
+    ahead of the first writer of the SDSS. '_run_section_3' passes the same field for both, so
+    the datatests below run the aliasing rather than a version of the section without it, and
+    'test_the_sdss_is_written_after_the_circulation_term_reads_the_cloud_cover' asserts the
+    order off the program's own body.
   * 'tkvm'/'tkvh' arrive as stability lengths (section 2c) divided them by 'tke') and leave as
-    diffusion coefficients. The SDSS block reads the updated stability length, so in the Fortran
-    it must run before the multiplication back. Here, again, separate fields.
+    diffusion coefficients. The SDSS reads the updated stability length, so in the Fortran the
+    SDSS must run before the multiplication back. The port keeps those two roles in four fields,
+    so that ordering constraint is dissolved and statement 6 could sit anywhere after 3.
 
-The one ordering that does survive is real: 'compute_stability_lengths' needs the 'tke' that
-'compute_turbulent_velocity_scale' produces, and both consumers of the stability lengths need
-those.
+The one ordering that was always real: statement 3 needs the 'tke' statement 1 produces, and
+statements 5 and 6 need the stability lengths statement 3 produces.
 
 WHERE THE CONSTANTS COME FROM
 -----------------------------
@@ -89,23 +105,11 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import turbulence
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_circulation_acceleration import (
-    compute_circulation_acceleration,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_coefficients_from_stability_lengths import (
-    compute_diffusion_coefficients_from_stability_lengths,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths import (
-    compute_stability_lengths,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_supersaturation_standard_deviation import (
-    compute_supersaturation_standard_deviation,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_velocity_scale import (
-    compute_turbulent_velocity_scale,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.set_turbulent_velocity_scale_at_model_top import (
     set_turbulent_velocity_scale_at_model_top,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_turb_budgets import (
+    solve_turb_budgets,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.testing import serialbox as sb
@@ -179,8 +183,12 @@ def _run_section_3(data_provider, date: str, backend) -> Section3:
     tkvm = utils.copy_of(before.stab_len_m(), backend)
     tkvh = utils.copy_of(before.stab_len_h(), backend)
 
-    # Fortran 'DO k=k_st,k_en' with 'k_st=2, k_en=kem=ke' (turb_diffusion.f90:1814).
-    compute_turbulent_velocity_scale.with_backend(backend)(
+    # ONE PROGRAM, SIX STATEMENTS. The bound pair is the section's own
+    # 'DO k=k_st,k_en' with 'k_st=2, k_en=kem=ke' (turb_diffusion.f90:1814); inside the program
+    # the model-top row is 'vertical_start - 1' and the circulation acceleration runs to
+    # 'vertical_end + 1', which is 'k_sf = ke1' only because 'ke1 = ke + 1'.
+    assert ke1 == ke + 1, "the circulation acceleration's domain is 'vertical_end + 1'"
+    solve_turb_budgets.with_backend(backend)(
         master_length_scale=before.mixing_length(),
         stability_length_for_momentum=before.stab_len_m(),
         stability_length_for_scalars=before.stab_len_h(),
@@ -188,44 +196,23 @@ def _run_section_3(data_provider, date: str, backend) -> Section3:
         thermal_forcing=before.thermal_forcing(),
         previous_velocity_scale=before.tke(),
         transport_tendency=before.tketens(),
-        d_m=config.d_mom,
-        d_4=params.d_4,
-        b_m=params.b_m,
-        rim=params.rim,
-        frcsecu=config.frcsecu,
-        tkesecu=config.tkesecu,
-        tkesmot=config.tkesmot,
-        vel_min=config.vel_min,
-        tke_time_step=entry.dt_tke(),
-        inverse_tke_time_step=entry.fr_tke(),
-        turbulent_velocity_scale=velocity_scale,
-        horizontal_start=gtx.int32(columns.start),
-        horizontal_end=gtx.int32(columns.stop),
-        vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(ke),
-        offset_provider={},
-    )
-    # In place on purpose: the read set is row 1 and the write set is row 0.
-    set_turbulent_velocity_scale_at_model_top.with_backend(backend)(
-        turbulent_velocity_scale=velocity_scale,
-        turbulent_velocity_scale_with_top=velocity_scale,
-        horizontal_start=gtx.int32(columns.start),
-        horizontal_end=gtx.int32(columns.stop),
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(1),
-        offset_provider={dims.Koff.value: dims.KDim},
-    )
-    compute_stability_lengths.with_backend(backend)(
-        master_length_scale=before.mixing_length(),
-        stability_length_for_momentum=before.stab_len_m(),
-        stability_length_for_scalars=before.stab_len_h(),
-        mechanical_forcing=before.mech_forcing(),
-        thermal_forcing=before.thermal_forcing(),
-        turbulent_velocity_scale=velocity_scale,
+        # The SAME field as 'supersaturation_standard_deviation', which is what the granule
+        # passes: 'rcld' enters as the cloud cover and leaves as the SDSS. 'sdss' was copied
+        # from 'before.cloud_cover()' above, so it carries exactly the cloud cover here.
+        cloud_cover=sdss,
+        half_level_pressure=before.raw_zvari(0),
+        air_density=before.rhon(),
+        exner_factor=before.exner_factor(),
+        saturation_humidity_derivative=before.dqsat_dt(),
+        gradient_of_liquid_water_potential_temperature=before.vertical_gradient(TET_L),
+        gradient_of_total_water=before.vertical_gradient(H2O_G),
+        pattern_length_scale=entry.l_pat(),
+        horizontal_grid_scale=entry.l_hori(),
         a_h=config.a_heat,
         a_m=config.a_mom,
         b_h=params.b_h,
         b_m=params.b_m,
+        d_h=config.d_heat,
         d_m=config.d_mom,
         d_1=params.d_1,
         d_2=params.d_2,
@@ -236,51 +223,18 @@ def _run_section_3(data_provider, date: str, backend) -> Section3:
         rim=params.rim,
         frcsecu=config.frcsecu,
         stbsecu=config.stbsecu,
+        tkesecu=config.tkesecu,
+        tkesmot=config.tkesmot,
+        vel_min=config.vel_min,
+        tke_time_step=entry.dt_tke(),
+        inverse_tke_time_step=entry.fr_tke(),
+        gravitational_acceleration=constants.GRAV,
+        molecular_diffusivity_for_scalars=constants.MOLECULAR_DIFFUSIVITY_FOR_SCALARS,
+        turbulent_velocity_scale=velocity_scale,
         updated_stability_length_for_momentum=stability_m,
         updated_stability_length_for_scalars=stability_h,
-        horizontal_start=gtx.int32(columns.start),
-        horizontal_end=gtx.int32(columns.stop),
-        vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(ke),
-        offset_provider={},
-    )
-    # Fortran 'DO k=k_st,k_sf', one half level deeper than the rest of the section.
-    compute_circulation_acceleration.with_backend(backend)(
-        cloud_cover=before.cloud_cover(),
-        master_length_scale=before.mixing_length(),
-        thermal_forcing=before.thermal_forcing(),
-        half_level_pressure=before.raw_zvari(0),
-        air_density=before.rhon(),
-        pattern_length_scale=entry.l_pat(),
-        horizontal_grid_scale=entry.l_hori(),
-        gravitational_acceleration=constants.GRAV,
         circulation_acceleration=circulation,
-        horizontal_start=gtx.int32(columns.start),
-        horizontal_end=gtx.int32(columns.stop),
-        vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(ke1),
-        offset_provider={},
-    )
-    compute_supersaturation_standard_deviation.with_backend(backend)(
-        master_length_scale=before.mixing_length(),
-        stability_length_for_scalars=stability_h,
-        exner_factor=before.exner_factor(),
-        saturation_humidity_derivative=before.dqsat_dt(),
-        gradient_of_liquid_water_potential_temperature=before.vertical_gradient(TET_L),
-        gradient_of_total_water=before.vertical_gradient(H2O_G),
-        d_h=config.d_heat,
         supersaturation_standard_deviation=sdss,
-        horizontal_start=gtx.int32(columns.start),
-        horizontal_end=gtx.int32(columns.stop),
-        vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(ke),
-        offset_provider={},
-    )
-    compute_diffusion_coefficients_from_stability_lengths.with_backend(backend)(
-        stability_length_for_momentum=stability_m,
-        stability_length_for_scalars=stability_h,
-        turbulent_velocity_scale=velocity_scale,
-        molecular_diffusivity_for_scalars=constants.MOLECULAR_DIFFUSIVITY_FOR_SCALARS,
         diffusion_coefficient_for_momentum=tkvm,
         diffusion_coefficient_for_scalars=tkvh,
         horizontal_start=gtx.int32(columns.start),
@@ -288,6 +242,18 @@ def _run_section_3(data_provider, date: str, backend) -> Section3:
         vertical_start=gtx.int32(1),
         vertical_end=gtx.int32(ke),
         offset_provider={},
+    )
+    # NOT a statement of the program above: it would read through 'Koff' the parameter it
+    # writes, and DaCe drops such a statement. In place is fine here because the field is bound
+    # to two parameters rather than to one -- see the stencil's module docstring.
+    set_turbulent_velocity_scale_at_model_top.with_backend(backend)(
+        turbulent_velocity_scale=velocity_scale,
+        turbulent_velocity_scale_with_top=velocity_scale,
+        horizontal_start=gtx.int32(columns.start),
+        horizontal_end=gtx.int32(columns.stop),
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(1),
+        offset_provider={dims.Koff.value: dims.KDim},
     )
     return Section3(
         entry=entry,
@@ -431,6 +397,51 @@ def test_the_capture_runs_the_compiled_in_closure_constants() -> None:
     assert config.vel_min == 0.01
 
 
+def test_the_sdss_is_written_after_the_circulation_term_reads_the_cloud_cover() -> None:
+    """The one ordering constraint of section 3) that the port INHERITS rather than dissolves.
+
+    'rcld' is one Fortran storage with two meanings -- the cloud cover on entry, the standard
+    deviation of the local super-saturation on exit -- and the granule reproduces that with one
+    field passed to two parameters of 'solve_turb_budgets'. The circulation acceleration is the
+    last reader of the cloud cover; the SDSS is the first writer of the SDSS. So the circulation
+    statement must precede the SDSS statement, and nothing in GT4Py enforces it: the two
+    parameters are distinct as far as the program is concerned, and the aliasing exists only in
+    the caller.
+
+    While they were two programs, the constraint lived in a comment in 'run_turbdiff'. It is now
+    a property of the source, so this asserts the source. The datatest below asserts the result,
+    with '_run_section_3' passing the same field for both parameters exactly as the granule does
+    -- neither half means much without the other.
+    """
+    statements = [call.func.id for call in solve_turb_budgets.past_stage.past_node.body]
+    circulation = statements.index("_compute_circulation_acceleration")
+    sdss = statements.index("_compute_supersaturation_standard_deviation")
+
+    assert circulation < sdss, (
+        "'solve_turb_budgets' now writes the SDSS before the circulation term reads the cloud "
+        "cover, and the granule passes one field for both -- so the circulation term is reading "
+        "the SDSS."
+    )
+
+
+def test_the_stability_lengths_are_written_before_their_two_consumers() -> None:
+    """The other in-program dependency, and this one GT4Py can see.
+
+    Statements 5 and 6 read 'updated_stability_length_for_scalars' and
+    'updated_stability_length_for_momentum', which statement 3 writes -- the UPDATED lengths,
+    not the ones section 2c) supplied. Those are genuine program parameters flowing from one
+    statement to another, so GT4Py orders them and this assertion is belt and braces; it is here
+    because the source order is the only place the dependency is now written down, and a
+    reshuffle that looked harmless would be caught here before it was caught by a datatest.
+    """
+    statements = [call.func.id for call in solve_turb_budgets.past_stage.past_node.body]
+    lengths = statements.index("_compute_stability_lengths")
+
+    assert lengths < statements.index("_compute_supersaturation_standard_deviation")
+    assert lengths < statements.index("_compute_diffusion_coefficients_from_stability_lengths")
+    assert statements.index("_compute_turbulent_velocity_scale") < lengths
+
+
 # ---------------------------------------------------------------------- agreement with ICON --
 
 
@@ -443,7 +454,7 @@ def test_compute_turbulent_velocity_scale_agrees_with_icon_within_its_gate(
     run = _run_section_3(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_turbulent_velocity_scale",
+        "solve_turb_budgets",
         "tke(:,:,ntur)",
         run.turbulent_velocity_scale,
         run.after.tke(),
@@ -495,13 +506,13 @@ def test_compute_stability_lengths_agrees_with_icon_through_the_next_fortran_sta
     velocity_scale = run.turbulent_velocity_scale.asnumpy()[window]
 
     utils.assert_agrees_with_icon(
-        "compute_stability_lengths",
+        "solve_turb_budgets",
         "lsm, through 'tkvm = lsm*tke'",
         run.stability_length_for_momentum.asnumpy()[window] * velocity_scale,
         run.after.tkvm().asnumpy()[window],
     )
     utils.assert_agrees_with_icon(
-        "compute_stability_lengths",
+        "solve_turb_budgets",
         "lsh, through 'tkvh = MAX(lsh*tke, con_h)'",
         np.maximum(
             run.stability_length_for_scalars.asnumpy()[window] * velocity_scale,
@@ -520,7 +531,7 @@ def test_compute_circulation_acceleration_agrees_with_icon_within_its_gate(
     run = _run_section_3(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_circulation_acceleration",
+        "solve_turb_budgets",
         "zvari(:,:,0) [CKE gradient]",
         run.circulation_acceleration,
         run.after.effective_gradient(0),
@@ -538,7 +549,7 @@ def test_compute_supersaturation_standard_deviation_agrees_with_icon_within_its_
     run = _run_section_3(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_supersaturation_standard_deviation",
+        "solve_turb_budgets",
         "rcld [SDSS]",
         run.supersaturation_standard_deviation,
         run.after.sdss(),
@@ -556,7 +567,7 @@ def test_compute_diffusion_coefficients_agrees_with_icon_within_its_gate(
     run = _run_section_3(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_diffusion_coefficients_from_stability_lengths",
+        "solve_turb_budgets",
         "tkvm",
         run.diffusion_coefficient_for_momentum,
         run.after.tkvm(),
@@ -564,7 +575,7 @@ def test_compute_diffusion_coefficients_agrees_with_icon_within_its_gate(
         levels=run.model_levels,
     )
     utils.assert_agrees_with_icon(
-        "compute_diffusion_coefficients_from_stability_lengths",
+        "solve_turb_budgets",
         "tkvh",
         run.diffusion_coefficient_for_scalars,
         run.after.tkvh(),

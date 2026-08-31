@@ -22,6 +22,11 @@ rows 0..'nlev', row 'nlev' being the surface. Main levels are rows 0..'nlev'-1, 
 which carries the surface boundary value of a diffused variable. A FLUX level with index 'k'
 lies just ABOVE the concentration level 'k' (turb_diffusion.f90:2413-2417), so flux level 0 is
 the model top and flux level 'nlev' is the surface flux level.
+
+ONE STATEMENT AT A TIME. Where a section has been merged into a single '@gtx.program', the
+analytic tests still need its statements one at a time -- to iterate a pair to a fixed point,
+and to substitute a deliberately defective copy for one of them. 'single_statement_stencils'
+holds those one-statement programs; see its docstring.
 """
 
 from __future__ import annotations
@@ -51,12 +56,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
     compute_inverted_diffusion_momentum,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths import (
-    compute_stability_lengths,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_velocity_scale import (
-    compute_turbulent_velocity_scale,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_diffusion_momentum_at_the_surface_flux_level import (
     invert_diffusion_momentum_at_the_surface_flux_level,
 )
@@ -72,6 +71,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.turbulence import
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
+
+from . import single_statement_stencils
 
 
 if TYPE_CHECKING:
@@ -870,8 +871,8 @@ def advance_the_turbulence_state(
     backend: gtx_typing.Backend | None,
     time_step: float,
     tkesmot: float,
-    stability_program=compute_stability_lengths,
-    velocity_program=compute_turbulent_velocity_scale,
+    stability_program=single_statement_stencils.compute_stability_lengths,
+    velocity_program=single_statement_stencils.compute_turbulent_velocity_scale,
 ) -> TurbulenceState:
     """One pass of 'turbdiff' sections 2c) and 3): stability functions, then the TKE equation.
 

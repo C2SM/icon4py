@@ -61,12 +61,6 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_coefficients_from_stability_lengths import (
-    compute_diffusion_coefficients_from_stability_lengths,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths import (
-    compute_stability_lengths,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths_from_diffusion_coefficients import (
     compute_stability_lengths_from_diffusion_coefficients,
 )
@@ -77,7 +71,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.turbulence import
 from icon4py.model.common import constants
 from icon4py.model.testing.fixtures.datatest import backend
 
-from . import broken_stencils, utils
+from . import broken_stencils, single_statement_stencils, utils
 
 
 if TYPE_CHECKING:
@@ -143,7 +137,7 @@ def _run_stability_lengths(
     params: TurbulenceParams,
     config: TurbulenceConfig,
     backend: gtx_typing.Backend | None,
-    program=compute_stability_lengths,
+    program=single_statement_stencils.compute_stability_lengths,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Run one stability-function program over half levels 1..nlev-1 and return 'lsm', 'lsh'."""
     cells, rows = case["mechanical_forcing"].shape
@@ -359,7 +353,9 @@ def test_the_diffusion_coefficients_round_trip_through_the_stability_lengths(
         "vertical_end": gtx.int32(nlev),
         "offset_provider": {},
     }
-    compute_diffusion_coefficients_from_stability_lengths.with_backend(backend)(
+    single_statement_stencils.compute_diffusion_coefficients_from_stability_lengths.with_backend(
+        backend
+    )(
         stability_length_for_momentum=utils.as_cell_k_field(stability_m, backend),
         stability_length_for_scalars=utils.as_cell_k_field(stability_h, backend),
         turbulent_velocity_scale=utils.as_cell_k_field(velocity_scale, backend),
@@ -526,7 +522,9 @@ def test_only_the_scalar_diffusivity_carries_a_molecular_floor(
 
     coefficient_m = utils.as_cell_k_field(np.zeros((cells, rows)), backend)
     coefficient_h = utils.as_cell_k_field(np.zeros((cells, rows)), backend)
-    compute_diffusion_coefficients_from_stability_lengths.with_backend(backend)(
+    single_statement_stencils.compute_diffusion_coefficients_from_stability_lengths.with_backend(
+        backend
+    )(
         stability_length_for_momentum=utils.as_cell_k_field(length * params.sm_0, backend),
         stability_length_for_scalars=utils.as_cell_k_field(length * params.sh_0, backend),
         turbulent_velocity_scale=utils.as_cell_k_field(velocity, backend),

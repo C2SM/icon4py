@@ -71,9 +71,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_and_apply_potential_temperature_diffusion_tendency import (
     compute_and_apply_potential_temperature_diffusion_tendency,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_circulation_acceleration import (
-    compute_circulation_acceleration,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_conserved_variables_and_factors_at_main_levels import (
     compute_conserved_variables_and_factors_at_main_levels,
 )
@@ -85,9 +82,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_current_profile import (
     compute_current_profile,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_coefficients_from_stability_lengths import (
-    compute_diffusion_coefficients_from_stability_lengths,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_depth import (
     compute_diffusion_depth,
@@ -143,14 +137,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_sso_wake_energy_production import (
     compute_sso_wake_energy_production,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths import (
-    compute_stability_lengths,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths_from_diffusion_coefficients import (
     compute_stability_lengths_from_diffusion_coefficients,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_supersaturation_standard_deviation import (
-    compute_supersaturation_standard_deviation,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_air_density_and_exner_factor import (
     compute_surface_air_density_and_exner_factor,
@@ -179,9 +167,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_length_scale import (
     compute_turbulent_length_scale,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_velocity_scale import (
-    compute_turbulent_velocity_scale,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_velocity_scale_tendency import (
     compute_turbulent_velocity_scale_tendency,
@@ -215,6 +200,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.smooth_t
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_tke_diffusion_equation import (
     solve_tke_diffusion_equation,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_turb_budgets import (
+    solve_turb_budgets,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_vertical_diffusion_equation import (
     solve_vertical_diffusion_equation,
@@ -1652,33 +1640,18 @@ class Turbulence:
             levels=(1, nlev),  # 'DO k=2,ke'
         )
 
-        # -- section 3) the turbulent budgets ('solve_turb_budgets')
-        self._compute_turbulent_velocity_scale = self._program(
-            compute_turbulent_velocity_scale,
+        # -- section 3) the turbulent budgets ('solve_turb_budgets'), one program of six
+        # statements. The bound pair is the section's own 'DO k=k_st,k_en'; the model-top row
+        # is 'vertical_start - 1' and the circulation acceleration runs to 'vertical_end + 1'.
+        self._solve_turb_budgets = self._program(
+            solve_turb_budgets,
             constant_args={
-                "d_m": config.d_mom,
-                "d_4": params.d_4,
-                "b_m": params.b_m,
-                "rim": params.rim,
-                "frcsecu": config.frcsecu,
-                "tkesecu": config.tkesecu,
-                "tkesmot": config.tkesmot,
-                "vel_min": config.vel_min,
-            },
-            levels=(1, nlev),  # 'DO k=k_st,k_en' with 'k_st=2, k_en=kem'
-        )
-        self._set_turbulent_velocity_scale_at_model_top = self._program(
-            set_turbulent_velocity_scale_at_model_top,
-            levels=(0, 1),  # 'tke(:,1) = tke(:,2)'
-            shifted=True,
-        )
-        self._compute_stability_lengths = self._program(
-            compute_stability_lengths,
-            constant_args={
+                "horizontal_grid_scale": metric.l_hori,
                 "a_h": config.a_heat,
                 "a_m": config.a_mom,
                 "b_h": params.b_h,
                 "b_m": params.b_m,
+                "d_h": config.d_heat,
                 "d_m": config.d_mom,
                 "d_1": params.d_1,
                 "d_2": params.d_2,
@@ -1689,28 +1662,21 @@ class Turbulence:
                 "rim": params.rim,
                 "frcsecu": config.frcsecu,
                 "stbsecu": config.stbsecu,
-            },
-            levels=(1, nlev),  # 'DO k=k_st,k_en'
-        )
-        self._compute_circulation_acceleration = self._program(
-            compute_circulation_acceleration,
-            constant_args={
-                "horizontal_grid_scale": metric.l_hori,
+                "tkesecu": config.tkesecu,
+                "tkesmot": config.tkesmot,
+                "vel_min": config.vel_min,
                 "gravitational_acceleration": constants.GRAV,
+                "molecular_diffusivity_for_scalars": constants.MOLECULAR_DIFFUSIVITY_FOR_SCALARS,
             },
-            levels=(1, nlev + 1),  # 'DO k=k_st,k_sf' with 'k_sf=ke1'
+            levels=(1, nlev),  # 'DO k=k_st,k_en' with 'k_st=2, k_en=kem'
         )
-        self._compute_supersaturation_standard_deviation = self._program(
-            compute_supersaturation_standard_deviation,
-            constant_args={"d_h": config.d_heat},
-            levels=(1, nlev),  # 'DO k=k_st,k_en'
-        )
-        self._compute_diffusion_coefficients_from_stability_lengths = self._program(
-            compute_diffusion_coefficients_from_stability_lengths,
-            constant_args={
-                "molecular_diffusivity_for_scalars": constants.MOLECULAR_DIFFUSIVITY_FOR_SCALARS
-            },
-            levels=(1, nlev),  # 'DO k=2,kem'
+        # NOT a statement of 'solve_turb_budgets', although it is one of the same section's
+        # Fortran statements: it would read through 'Koff' the very parameter it writes, and
+        # DaCe drops such a statement silently. Its module docstring carries the measurement.
+        self._set_turbulent_velocity_scale_at_model_top = self._program(
+            set_turbulent_velocity_scale_at_model_top,
+            levels=(0, 1),  # 'tke(:,1) = tke(:,2)'
+            shifted=True,
         )
 
         # -- section 4) lower limits of the diffusion coefficients
@@ -2291,7 +2257,15 @@ class Turbulence:
         # The surface half level is 'turbtran's and 'turbdiff' does not touch it; with the two
         # TKE time levels as two fields it has to be carried across explicitly.
         _copy_level(input_state.tke, nlev, diagnostic_state.updated_tke, num_cells)
-        self._compute_turbulent_velocity_scale(
+        # 'self._rcld' IS PASSED TWICE, as the cloud cover the circulation term reads and as the
+        # SDSS the next statement writes -- one Fortran storage with two meanings, which the
+        # granule reproduces. The two are separate program parameters, so GT4Py cannot see the
+        # aliasing; what keeps them apart is the order of the statements inside
+        # 'solve_turb_budgets', asserted by
+        # 'test_the_sdss_is_written_after_the_circulation_term_reads_the_cloud_cover'.
+        # 'diagnostic_state.updated_tke' is likewise both written by the first statement and read
+        # by the second, one row up, which is what used to make the model-top row its own program.
+        self._solve_turb_budgets(
             master_length_scale=self._len_scale,
             stability_length_for_momentum=self._stability_length_for_momentum,
             stability_length_for_scalars=self._stability_length_for_scalars,
@@ -2299,52 +2273,30 @@ class Turbulence:
             thermal_forcing=thermal_forcing,
             previous_velocity_scale=input_state.tke,
             transport_tendency=tendency_state.ddt_tke,
-            tke_time_step=dt_tke,
-            inverse_tke_time_step=inverse_dt_tke,
-            turbulent_velocity_scale=diagnostic_state.updated_tke,
-        )
-        # In place on purpose: the read set is row 1 and the write set is row 0.
-        self._set_turbulent_velocity_scale_at_model_top(
-            turbulent_velocity_scale=diagnostic_state.updated_tke,
-            turbulent_velocity_scale_with_top=diagnostic_state.updated_tke,
-        )
-        self._compute_stability_lengths(
-            master_length_scale=self._len_scale,
-            stability_length_for_momentum=self._stability_length_for_momentum,
-            stability_length_for_scalars=self._stability_length_for_scalars,
-            mechanical_forcing=mechanical_forcing,
-            thermal_forcing=thermal_forcing,
-            turbulent_velocity_scale=diagnostic_state.updated_tke,
-            updated_stability_length_for_momentum=self._updated_stability_length_for_momentum,
-            updated_stability_length_for_scalars=self._updated_stability_length_for_scalars,
-        )
-        # BEFORE the SDSS: the circulation term is the last reader of the cloud cover and the
-        # SDSS is the next writer of the same storage. This is the one ordering constraint of
-        # section 3) that the port inherits rather than dissolves.
-        self._compute_circulation_acceleration(
             cloud_cover=self._rcld,
-            master_length_scale=self._len_scale,
-            thermal_forcing=thermal_forcing,
             half_level_pressure=self._half_level_pressure,
             air_density=diagnostic_state.rhon,
-            pattern_length_scale=surface_state.l_pat,
-            circulation_acceleration=self._circulation_acceleration,
-        )
-        self._compute_supersaturation_standard_deviation(
-            master_length_scale=self._len_scale,
-            stability_length_for_scalars=self._updated_stability_length_for_scalars,
             exner_factor=self._zaux_1,
             saturation_humidity_derivative=self._zaux_3,
             gradient_of_liquid_water_potential_temperature=self._gradient_liquid_water_potential_temperature,
             gradient_of_total_water=self._gradient_total_water,
-            supersaturation_standard_deviation=self._rcld,
-        )
-        self._compute_diffusion_coefficients_from_stability_lengths(
-            stability_length_for_momentum=self._updated_stability_length_for_momentum,
-            stability_length_for_scalars=self._updated_stability_length_for_scalars,
+            pattern_length_scale=surface_state.l_pat,
+            tke_time_step=dt_tke,
+            inverse_tke_time_step=inverse_dt_tke,
             turbulent_velocity_scale=diagnostic_state.updated_tke,
+            updated_stability_length_for_momentum=self._updated_stability_length_for_momentum,
+            updated_stability_length_for_scalars=self._updated_stability_length_for_scalars,
+            circulation_acceleration=self._circulation_acceleration,
+            supersaturation_standard_deviation=self._rcld,
             diffusion_coefficient_for_momentum=self._diffusion_coefficient_for_momentum,
             diffusion_coefficient_for_scalars=self._diffusion_coefficient_for_scalars,
+        )
+        # In place on purpose, and out of the program above on purpose: the read set is row 1
+        # and the write set is row 0, and one field bound to TWO parameters is the form DaCe
+        # compiles correctly. One parameter read and written by one statement is not.
+        self._set_turbulent_velocity_scale_at_model_top(
+            turbulent_velocity_scale=diagnostic_state.updated_tke,
+            turbulent_velocity_scale_with_top=diagnostic_state.updated_tke,
         )
 
         # -- 4) lower limits of the diffusion coefficients --------------------------------------

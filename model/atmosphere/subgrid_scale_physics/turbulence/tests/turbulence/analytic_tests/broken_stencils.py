@@ -36,7 +36,7 @@ import gt4py.next as gtx
 from gt4py.next import broadcast, maximum, minimum, sqrt, where
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_velocity_scale import (
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_turb_budgets import (
     _effective_tke_forcing,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
