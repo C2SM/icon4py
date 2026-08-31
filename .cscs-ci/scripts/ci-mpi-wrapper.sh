@@ -17,11 +17,12 @@ else
     exit 1
 fi
 
-# start-cuda-mps.sh always exports ICON4PY_CI_GPU_LIST as the ordinal list
-# (0..N-1) of GPUs the daemon is serving. Pin each rank round-robin to one
-# of those ordinals. With a single GPU the inner check is a no-op and the
-# legacy MPS 'unset CUDA_VISIBLE_DEVICES' semantics are preserved.
-IFS=',' read -ra _gpus <<< "${ICON4PY_CI_GPU_LIST}"
+# Under MPS the daemon is started on all GPUs allocated to the job, and MPS
+# clients address those GPUs by their ordinal 0..N-1. Pin each rank round-robin
+# to one of those ordinals. With a single GPU this is a no-op and the legacy
+# MPS 'unset CUDA_VISIBLE_DEVICES' semantics are preserved.
+_gpus=()
+for (( i=0; i<${SLURM_GPUS_PER_NODE:-1}; i++ )); do _gpus+=("$i"); done
 if (( ${#_gpus[@]} > 1 )); then
     export CUDA_VISIBLE_DEVICES="${_gpus[$(( rank % ${#_gpus[@]} ))]}"
     echo "Rank ${rank}/${SLURM_NTASKS:-?}: pinned to GPU ${CUDA_VISIBLE_DEVICES}"
