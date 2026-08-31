@@ -2,20 +2,11 @@ include:
   - local: '.cscs-ci/base.yml'
   - local: '.cscs-ci/benchmark_bencher_common.yml'
 
-.benchmark_driver_nox_job:
+.bencher_driver_baseline_tests:
+  extends: [.benchmark_driver_nox_job]
   stage: benchmark
-  script:
-    - .cscs-ci/scripts/ci-mpi-wrapper.sh nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID --driver-benchmark-experiment=$DRIVER_BENCHMARK_EXPERIMENT --driver-benchmark-steps=$DRIVER_BENCHMARK_STEPS --driver-benchmark-rounds=$DRIVER_BENCHMARK_ROUNDS --driver-benchmark-warmup-rounds=$DRIVER_BENCHMARK_WARMUP_ROUNDS -k "${TEST_SELECTION}"
   variables:
     NOX_SESSION: "__bencher_driver_baseline_CI-${PYVERSION_SHORT}"
-    TEST_SELECTION: "test_benchmark_driver"
-    DRIVER_BENCHMARK_EXPERIMENT: "jw"
-    DRIVER_BENCHMARK_STEPS: 10
-    DRIVER_BENCHMARK_ROUNDS: 5
-    DRIVER_BENCHMARK_WARMUP_ROUNDS: 2
-    BACKEND: "dace_gpu"
-    GRID: "R02B04_GLOBAL"
-    SLURM_TIMELIMIT: '02:00:00'
 
 benchmark_bencher_stencils_baseline_aarch64:
   extends: [.test_runner_serial, .test_template_aarch64, .benchmark_nox_job]
@@ -30,19 +21,9 @@ benchmark_bencher_granules_baseline_aarch64:
     NOX_SESSION: "__bencher_baseline_CI-${PYVERSION_SHORT}"
     TEST_SELECTION: "${GRANULE_TEST_SELECTION}"
 
-benchmark_bencher_driver_baseline_intra_aarch64:
-  extends: [.test_runner_mpi, .test_template_aarch64, .benchmark_driver_nox_job, .retry_on_transient_failure]
-  variables:
-    SLURM_NTASKS: 4
-    SLURM_JOB_NUM_NODES: 1
-    ICON4PY_TEST_MPI_SUBCOMM_SIZE: $SLURM_NTASKS
-  rules:
-    - if: $ICON4PY_DISABLE_DRIVER_BENCHMARK == "1" || $ICON4PY_DISABLE_DRIVER_BENCHMARK == "true"
-      when: never
-    - when: on_success
 
 benchmark_bencher_driver_baseline_inter_aarch64:
-  extends: [.test_runner_mpi, .test_template_aarch64, .benchmark_driver_nox_job, .retry_on_transient_failure]
+  extends: [.test_runner_mpi, .test_template_aarch64, .bencher_driver_baseline_tests, .retry_on_transient_failure]
   variables:
     SLURM_NTASKS: 8
     SLURM_JOB_NUM_NODES: 2
