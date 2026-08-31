@@ -137,9 +137,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_part_of_tke_diffusion_momentum import (
     compute_implicit_part_of_tke_diffusion_momentum,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverse_layer_depth_and_tke_discretisation_momentum import (
-    compute_inverse_layer_depth_and_tke_discretisation_momentum,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverse_richardson_number_factor import (
     compute_inverse_richardson_number_factor,
 )
@@ -178,9 +175,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_profile_value_from_flux_gradient import (
     compute_surface_profile_value_from_flux_gradient,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_transfer_ratios import (
-    compute_surface_transfer_ratios,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_three_dimensional_shear_forcing import (
     compute_three_dimensional_shear_forcing,
@@ -1568,15 +1562,12 @@ class Turbulence:
         )
 
         # -- section 1a) vertical gradients
-        self._compute_surface_transfer_ratios = self._program(compute_surface_transfer_ratios)
-        self._compute_inverse_layer_depth_and_tke_discretisation_momentum = self._program(
-            compute_inverse_layer_depth_and_tke_discretisation_momentum,
-            constant_args={"hhl": metric.hhl},
-            levels=(1, nlev),  # 'DO k=ke,2,-1'
-            shifted=True,
-        )
+        # One program, three statements: 'lays' with no vertical axis, 'hlp'/'dicke' over
+        # 'DO k=ke,2,-1', and the five gradients over that range plus the separate 'ke1' row.
+        # The bound below is the gradients'; the 'hlp'/'dicke' statement stops one row earlier.
         self._compute_vertical_gradients_of_conserved_variables = self._program(
             compute_vertical_gradients_of_conserved_variables,
+            constant_args={"hhl": metric.hhl},
             levels=(1, nlev + 1),  # 'DO k=ke,2,-1' plus the separate 'ke1' row
             shifted=True,
         )
@@ -2187,27 +2178,10 @@ class Turbulence:
 
         # -- 1a) the vertical gradients -------------------------------------------------------
 
-        self._compute_surface_transfer_ratios(
-            tvm=diagnostic_state.tvm,
-            tvh=diagnostic_state.tvh,
-            tkvm_at_surface=self._diffusion_coefficient_for_momentum_at_the_surface,
-            tkvh_at_surface=self._diffusion_coefficient_for_scalars_at_the_surface,
-            tfm=diagnostic_state.tfm,
-            tfh=diagnostic_state.tfh,
-            surface_transfer_ratio_for_momentum=self._surface_transfer_ratio_for_momentum,
-            surface_transfer_ratio_for_scalars=self._surface_transfer_ratio_for_scalars,
-        )
-        # 'hlp' stops being the interpolation weight here and 'dicke' stops being the layer
-        # depth; the length scale above was the last reader of both.
-        self._compute_inverse_layer_depth_and_tke_discretisation_momentum(
-            rhon=diagnostic_state.rhon,
-            inverse_layer_depth=self._hlp,
-            tke_discretisation_momentum=self._dicke,
-            inverse_tke_time_step=inverse_dt_tke,
-        )
         # The gradients replace the variables in the Fortran's own storage, so the model top --
         # which the difference quotient never writes -- carries the variable's value into the
-        # 'zvari' the routine returns.
+        # 'zvari' the routine returns. Row 0 is disjoint from every row the program below writes,
+        # so this runs before it rather than between two of its statements, as it used to.
         for variable, gradient in (
             (self._conserved_zonal_wind, self._gradient_zonal_wind),
             (self._conserved_meridional_wind, self._gradient_meridional_wind),
@@ -2219,16 +2193,27 @@ class Turbulence:
             (self._conserved_liquid_water, self._gradient_liquid_water),
         ):
             _copy_level(variable, 0, gradient, num_cells)
+        # 'hlp' stops being the interpolation weight here and 'dicke' stops being the layer
+        # depth; the length scale in section 0) was the last reader of both.
         self._compute_vertical_gradients_of_conserved_variables(
+            tvm=diagnostic_state.tvm,
+            tvh=diagnostic_state.tvh,
+            tkvm_at_surface=self._diffusion_coefficient_for_momentum_at_the_surface,
+            tkvh_at_surface=self._diffusion_coefficient_for_scalars_at_the_surface,
+            tfm=diagnostic_state.tfm,
+            tfh=diagnostic_state.tfh,
+            rhon=diagnostic_state.rhon,
+            inverse_tke_time_step=inverse_dt_tke,
             zonal_wind=self._conserved_zonal_wind,
             meridional_wind=self._conserved_meridional_wind,
             liquid_water_potential_temperature=self._conserved_liquid_water_potential_temperature,
             total_water=self._conserved_total_water,
             liquid_water=self._conserved_liquid_water,
-            inverse_layer_depth=self._hlp,
+            nlev=self._nlev,
             surface_transfer_ratio_for_momentum=self._surface_transfer_ratio_for_momentum,
             surface_transfer_ratio_for_scalars=self._surface_transfer_ratio_for_scalars,
-            nlev=self._nlev,
+            inverse_layer_depth=self._hlp,
+            tke_discretisation_momentum=self._dicke,
             zonal_wind_gradient=self._gradient_zonal_wind,
             meridional_wind_gradient=self._gradient_meridional_wind,
             liquid_water_potential_temperature_gradient=self._gradient_liquid_water_potential_temperature,

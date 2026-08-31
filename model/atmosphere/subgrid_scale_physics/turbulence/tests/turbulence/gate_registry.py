@@ -245,14 +245,15 @@ GATES: dict[str, Gate] = {
         reason=Reason.TRANSCENDENTAL,
         measured_max_rel_err=2.218e-16,  # 'eprs', 2020-12-10T06:01:00
     ),
-    # turbdiff section 1a) -- vertical gradients of the conserved variables. Section 1a contains
-    # only '-', '*' and '/' with no multiply-add pattern, so bit-exactness here is not evidence
-    # that FMA contraction is absent; the first fused expression is in section 1b.
-    "compute_surface_transfer_ratios": Exact(),
-    "compute_inverse_layer_depth_and_tke_discretisation_momentum": Exact(),
-    # Covers the whole gradient profile including the surface row, which the Fortran writes in a
-    # separate loop and this port selects with 'concat_where' -- see the boundary-row convention
-    # in the package README.
+    # turbdiff section 1a) -- one program with three statements since the stencil merge: the
+    # surface transfer ratios 'lays', the reciprocal layer depth 'hlp' with the TKE
+    # discretisation momentum 'dicke', and the five gradients 'zvari' including the surface row,
+    # which the Fortran writes in a separate loop and this port selects with 'concat_where' --
+    # see the boundary-row convention in the package README. Section 1a contains only '-', '*'
+    # and '/' with no multiply-add pattern, so bit-exactness here is not evidence that FMA
+    # contraction is absent; the first fused expression is in section 1b. One entry, because the
+    # gate is a property of the program; the section test still asserts each of the nine outputs
+    # separately, so a failure names the Fortran quantity.
     "compute_vertical_gradients_of_conserved_variables": Exact(),
     # turbdiff section 1b) -- the two TKE forcing terms, one program with two statements since
     # the stencil merge. Both are 'a*b + c*d' expressions and were the reason the reference was

@@ -26,8 +26,8 @@ computing anything is indistinguishable from a working one at the call site. Whe
   (`docs/superpowers/plans/2026-08-27-nwp-turbulence-icon4py-port.md` in the `icon-exclaim`
   workspace), which is **not started**.
 
-Two stencils name `turb_transfer.f90` in a comment — `compute_surface_transfer_ratios` and
-`compute_tke_forcing_functions` — but both cite it to contrast against, not as provenance.
+Two stencils name `turb_transfer.f90` in a comment — `compute_vertical_gradients_of_conserved_variables`
+and `compute_tke_forcing_functions` — but both cite it to contrast against, not as provenance.
 
 The ICON-side interfaces (`mo_nwp_turbdiff_interface.f90`, `mo_nwp_turbtrans_interface.f90`) stay in
 Fortran; they are out of scope. Scientific commentary in the Fortran sources is by Matthias
