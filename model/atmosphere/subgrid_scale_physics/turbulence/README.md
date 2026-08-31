@@ -291,7 +291,8 @@ same loop wrote*. Applied mechanically:
    sequential.
 
 Section 6) fails the test at every one of its eight loops — five live, three dead — and is
-therefore plain field operators throughout. Three of the loops read a neighbouring half level:
+therefore plain field operators throughout, in one program, `prepare_the_tke_diffusion`. Three of
+the loops read a neighbouring half level:
 `expl_mom` reads the diffusion coefficient at `k-1`, `frm` reads `frh` at `k-1`, and the dead
 circulation source reads `frm` at `k+1`. In each case the array read is not the array written.
 That the four resulting stencils are bit-exact `Exact()` on `embedded`, `gtfn_cpu` and `dace_cpu`
@@ -302,9 +303,12 @@ imposes an ordering on the Fortran that has no counterpart here. Section 6) writ
 diffusion coefficient into `zaux(:,:,2)`, averages it onto the flux levels as `expl_mom`, and
 then overwrites the same slot with the saved TKE profile: the second loop *must* run before the
 third. In the port the coefficient is an intermediate inside
-`compute_explicit_tke_diffusion_momentum`, so the two programs are independent and
-`test_the_two_zaux_programs_do_not_constrain_each_others_order` asserts that they stay so. Expect
-this pattern; it is the same one section 1a) documents for `zvari`.
+`_compute_explicit_tke_diffusion_momentum`, so the two are independent — and
+`prepare_the_tke_diffusion` writes the saved profile *first*, in the order the Fortran forbids,
+which is what makes the point measurable. The statement order is pinned by
+`test_the_two_zaux_statements_are_in_the_order_the_fortran_forbids` and the result against ICON by
+`test_the_two_zaux_programs_do_not_constrain_each_others_order`.
+Expect this pattern; it is the same one section 1a) documents for `zvari`.
 
 **A consequence worth planning for.** An intermediate that the Fortran writes into a storage it
 later reuses does not reach a savepoint and has no oracle. The coefficient `c_diff*l*q` above is

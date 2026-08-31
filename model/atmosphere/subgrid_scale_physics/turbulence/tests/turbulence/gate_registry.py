@@ -312,15 +312,15 @@ GATES: dict[str, Gate] = {
     "compute_supersaturation_standard_deviation": Exact(),
     "compute_turbulent_velocity_scale": Exact(),
     "set_turbulent_velocity_scale_at_model_top": Exact(),
-    # turbdiff section 6) q-diffusion tendency.
+    # turbdiff section 6) q-diffusion tendency -- one program with four statements since the
+    # stencil merge: 'sav_prof', 'expl_mom', 'frh' and 'frm'. The section test asserts each of
+    # the four separately, so a failure names the Fortran quantity even though it names one
+    # stencil.
     # PROVISIONAL: entered as the documented default so the section datatests can run at
     # all -- 'gate_for' refuses to default, so without an entry the tests error instead
     # of reporting. The agents that wrote these stencils were killed before validating
-    # them, so no measurement stands behind these yet. A failure here is a real finding.
-    "compute_cke_flux_at_main_levels": Exact(),
-    "compute_cke_flux_density": Exact(),
-    "compute_explicit_tke_diffusion_momentum": Exact(),
-    "compute_saved_tke_profile": Exact(),
+    # them, so no measurement stands behind this yet. A failure here is a real finding.
+    "prepare_the_tke_diffusion": Exact(),
     # turbdiff section 9) TKE profile update through the diffusion tendency.
     # PROVISIONAL: entered as the documented default so the section datatests can run at
     # all -- 'gate_for' refuses to default, so without an entry the tests error instead

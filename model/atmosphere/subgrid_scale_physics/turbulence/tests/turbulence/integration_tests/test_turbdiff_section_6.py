@@ -52,10 +52,10 @@ THE ONE PLACE THE FORTRAN'S ORDER LOOKED LIKE A DEPENDENCE
 which the next loop averages onto the flux levels as 'expl_mom', and then, three loops later,
 with the TKE profile itself (:2180-2185). The coefficient therefore never reaches a savepoint
 and cannot be compared against anything; it is an intermediate of
-'compute_explicit_tke_diffusion_momentum', computed inside its field operator. Because it is,
-the Fortran's ordering constraint disappears with the aliasing that caused it, which
-'test_the_two_zaux_programs_do_not_constrain_each_others_order' asserts by running the two
-programs both ways round.
+'_compute_explicit_tke_diffusion_momentum', computed inside its field operator. Because it
+is, the Fortran's ordering constraint disappears with the aliasing that caused it, which
+'test_the_two_zaux_statements_are_in_the_order_the_fortran_forbids' and
+'test_the_two_zaux_programs_do_not_constrain_each_others_order' assert between them.
 
 WHAT THIS CAPTURE DOES NOT COVER
 --------------------------------
@@ -70,8 +70,17 @@ hoped away (port spec 5.4):
     and 'test_the_explicit_circulation_source_does_not_run_in_this_capture' shows the three
     storages are untouched. Not ported.
 
-Neither output selects a boundary row by a coefficient, so no stencil here uses 'concat_where'
-and all four are validated on 'embedded' as well as on the compiled backends.
+Neither output selects a boundary row by a coefficient, so nothing here uses 'concat_where'
+and all four outputs are validated on 'embedded' as well as on the compiled backends.
+
+ONE PROGRAM SINCE THE STENCIL MERGE. The four were four '@gtx.program's; they are now four
+statements of 'prepare_the_tke_diffusion', which is Raschendorfer's own heading for the block
+("Vorbereitung zur Bestimmung der zugehoerigen Incremente von TKE"). Every assertion below is
+still one per output, so a failure still names the Fortran quantity, and both vertical ranges
+are still checked from outside the stencil -- the half levels by the whole-column comparisons,
+the flux levels by 'test_section_6_leaves_the_rows_above_its_domains_alone'. What changed shape
+is 'test_the_two_zaux_programs_do_not_constrain_each_others_order'; see its docstring and the
+one above it.
 
 THE MODEL TOP OF 'frh' IS NOT OBSERVABLE, AND IS POISONED INSTEAD
 -----------------------------------------------------------------
@@ -79,7 +88,7 @@ Three of the four programs start below row 0, and for two of them the reference 
 running 'expl_mom' or 'frm' from one row higher changes that row in all 8276 computed columns.
 For 'frh' it does not. 'tkvh(:,0)' is exactly zero, so 'rhon*tkvh*a_circ*len_scale' is exactly
 zero at the model top, and the 'frh' this section inherits is exactly zero there too -- a
-'vertical_start=0' in 'compute_cke_flux_density' would produce exactly the reference and
+'vertical_start=0' in the 'frh' statement would produce exactly the reference and
 'test_section_6_leaves_the_rows_above_its_domains_alone' could not tell.
 'test_the_model_top_of_the_cke_flux_density_is_not_observable' measures that, and
 'test_the_model_top_row_of_the_diffusion_coefficient_is_not_read' closes it by filling
@@ -100,17 +109,8 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import turbulence
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_cke_flux_at_main_levels import (
-    compute_cke_flux_at_main_levels,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_cke_flux_density import (
-    compute_cke_flux_density,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_tke_diffusion_momentum import (
-    compute_explicit_tke_diffusion_momentum,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_saved_tke_profile import (
-    compute_saved_tke_profile,
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prepare_the_tke_diffusion import (
+    prepare_the_tke_diffusion,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.testing import serialbox as sb
@@ -185,14 +185,21 @@ class Section6(NamedTuple):
 
 
 def _run_section_6(data_provider, date: str, backend, *, poison: str | None = None) -> Section6:
-    """Run all four programs of section 6) on the 'turbdiff-5-exit' state of one timestep.
+    """Run section 6) on the 'turbdiff-5-exit' state of one timestep.
 
-    The two flux-density programs are chained -- 'compute_cke_flux_at_main_levels' consumes the
-    'frh' the previous program just wrote, not the reference 'frh' -- so that a bit-exact result
-    says the pair composes as the granule will run it, and not merely that each half agrees when
-    handed ICON's own intermediate.
+    ONE PROGRAM SINCE THE STENCIL MERGE, and one vertical bound stated here where there used to
+    be two: 'vertical_end = ke1' with 'vertical_start = 1', the half levels' range. The two
+    flux-level statements stop at the same row and start one lower, inside the stencil.
+    'test_section_6_leaves_the_rows_above_its_domains_alone' is what still constrains that from
+    outside -- it asserts rows 0..1 of 'expl_mom' and 'frm' against the reference, and running
+    either from row 1 changes that row in all 8276 computed columns.
 
-    The two 'zaux' programs are run in the opposite order to the Fortran, deliberately; see
+    The two flux-density statements are chained -- the interpolation consumes the 'frh' the
+    statement above it just wrote, not the reference 'frh' -- so that a bit-exact result says
+    the pair composes as the granule will run it, and not merely that each half agrees when
+    handed ICON's own intermediate. That dependence is now expressed by statement order.
+
+    The two 'zaux' statements are in the opposite order to the Fortran, deliberately; see
     'test_the_two_zaux_programs_do_not_constrain_each_others_order'.
 
     Args:
@@ -200,10 +207,9 @@ def _run_section_6(data_provider, date: str, backend, *, poison: str | None = No
         date: One of 'utils.TURBDIFF_DATES'.
         backend: The backend under test.
         poison: 'model-top-diffusion-coefficient' fills row 0 of 'tkvh' with NaN, for the one
-            test that measures what this section does NOT read. It is a row
-            'compute_cke_flux_density' must leave out of its vertical domain, and the reference
-            data cannot say so on its own -- see
-            'test_the_model_top_of_the_cke_flux_density_is_not_observable'.
+            test that measures what this section does NOT read. It is a row the 'frh' statement
+            must leave out of its vertical domain, and the reference data cannot say so on its
+            own -- see 'test_the_model_top_of_the_cke_flux_density_is_not_observable'.
     """
     entry = data_provider.from_savepoint_turbdiff_entry(date=date)
     before = data_provider.from_savepoint_turbdiff_section(section="5", date=date)
@@ -232,43 +238,22 @@ def _run_section_6(data_provider, date: str, backend, *, poison: str | None = No
     cke_flux_at_main_levels = utils.copy_of(before.mech_forcing(), backend)
 
     # Fortran 'DO k=2,ke1' over one-based half levels is 'vertical_start=1, vertical_end=ke1'.
-    compute_saved_tke_profile.with_backend(backend)(
+    # The two flux-level statements inside the program start at 'vertical_start + 1', which is
+    # the Fortran's 'DO k=3,ke1'.
+    prepare_the_tke_diffusion.with_backend(backend)(
         turbulent_velocity_scale=before.tke(),
-        saved_tke_profile=saved_tke_profile,
-        vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(ke1),
-        offset_provider={},
-        **horizontal,
-    )
-    # Fortran 'DO k=3,ke1'.
-    compute_explicit_tke_diffusion_momentum.with_backend(backend)(
         mixing_length=before.mixing_length(),
-        turbulent_velocity_scale=before.tke(),
         air_density_at_main_levels=entry.rhoh(),
         half_level_height=entry.hhl(),
         tke_diffusion_factor=TKE_DIFFUSION_FACTOR,
-        explicit_diffusion_momentum=explicit_diffusion_momentum,
-        vertical_start=gtx.int32(2),
-        vertical_end=gtx.int32(ke1),
-        offset_provider={dims.Koff.value: dims.KDim},
-        **horizontal,
-    )
-    compute_cke_flux_density.with_backend(backend)(
         air_density=before.rhon(),
         scalar_diffusion_coefficient=scalar_diffusion_coefficient,
         circulation_acceleration=before.effective_gradient(CIRCULATION_ACCELERATION),
-        mixing_length=before.mixing_length(),
+        saved_tke_profile=saved_tke_profile,
+        explicit_diffusion_momentum=explicit_diffusion_momentum,
         cke_flux_density=cke_flux_density,
-        vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(ke1),
-        offset_provider={},
-        **horizontal,
-    )
-    compute_cke_flux_at_main_levels.with_backend(backend)(
-        cke_flux_density=cke_flux_density,
-        mixing_length=before.mixing_length(),
         cke_flux_at_main_levels=cke_flux_at_main_levels,
-        vertical_start=gtx.int32(2),
+        vertical_start=gtx.int32(1),
         vertical_end=gtx.int32(ke1),
         offset_provider={dims.Koff.value: dims.KDim},
         **horizontal,
@@ -456,7 +441,7 @@ def test_compute_saved_tke_profile_agrees_with_icon_within_its_gate(
     run = _run_section_6(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_saved_tke_profile",
+        "prepare_the_tke_diffusion",
         "sav_prof [zaux(:,:,2)]",
         run.saved_tke_profile,
         run.after.sav_prof(),
@@ -474,7 +459,7 @@ def test_compute_explicit_tke_diffusion_momentum_agrees_with_icon_within_its_gat
     run = _run_section_6(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_explicit_tke_diffusion_momentum",
+        "prepare_the_tke_diffusion",
         "expl_mom [zaux(:,:,3)]",
         run.explicit_diffusion_momentum,
         run.after.expl_mom(),
@@ -492,7 +477,7 @@ def test_compute_cke_flux_density_agrees_with_icon_within_its_gate(
     run = _run_section_6(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_cke_flux_density",
+        "prepare_the_tke_diffusion",
         "frh",
         run.cke_flux_density,
         run.after.cke_flux_density(),
@@ -511,7 +496,7 @@ def test_compute_cke_flux_at_main_levels_agrees_with_icon_within_its_gate(
     run = _run_section_6(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_cke_flux_at_main_levels",
+        "prepare_the_tke_diffusion",
         "frm",
         run.cke_flux_at_main_levels,
         run.after.cke_flux_at_main_levels(),
@@ -565,7 +550,7 @@ def test_the_model_top_of_the_cke_flux_density_is_not_observable(
     'tkvh(:,0)' is exactly zero -- the model top has no diffusion coefficient, which is section
     2c)'s finding -- so the product 'rhon*tkvh*a_circ*len_scale' is exactly zero there, and the
     'frh' this section inherits is exactly zero as well. A 'vertical_start=0' in
-    'compute_cke_flux_density' would therefore be invisible on all four dates.
+    the 'frh' statement would therefore be invisible on all four dates.
 
     That is measured here rather than argued, and closed by
     'test_the_model_top_row_of_the_diffusion_coefficient_is_not_read' below. The two other
@@ -595,7 +580,7 @@ def test_the_model_top_of_the_cke_flux_density_is_not_observable(
 def test_the_model_top_row_of_the_diffusion_coefficient_is_not_read(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
-    """'compute_cke_flux_density' starts below the model top, shown by poisoning what is there.
+    """The 'frh' statement starts below the model top, shown by poisoning what is there.
 
     The row cannot be checked by comparing values, for the reason
     'test_the_model_top_of_the_cke_flux_density_is_not_observable' measures: both the correct
@@ -612,19 +597,48 @@ def test_the_model_top_row_of_the_diffusion_coefficient_is_not_read(
     run = _run_section_6(data_provider, date, backend, poison="model-top-diffusion-coefficient")
 
     utils.assert_agrees_with_icon(
-        "compute_cke_flux_density",
+        "prepare_the_tke_diffusion",
         "frh with the model-top row of 'tkvh' poisoned",
         run.cke_flux_density,
         run.after.cke_flux_density(),
         columns=run.columns,
     )
     utils.assert_agrees_with_icon(
-        "compute_cke_flux_at_main_levels",
+        "prepare_the_tke_diffusion",
         "frm with the model-top row of 'tkvh' poisoned",
         run.cke_flux_at_main_levels,
         run.after.cke_flux_at_main_levels(),
         columns=run.columns,
         levels=slice(2, run.ke1),
+    )
+
+
+def test_the_two_zaux_statements_are_in_the_order_the_fortran_forbids() -> None:
+    """Half of what 'test_the_two_zaux_programs_do_not_constrain_each_others_order' used to do.
+
+    In the Fortran the TKE diffusion coefficient and the saved TKE profile share the storage
+    'zaux(:,:,2)', so the loop that averages the coefficient onto the flux levels HAS to run
+    before the one that overwrites it -- an aliasing constraint, not a data dependence. Here the
+    coefficient is an intermediate inside '_compute_explicit_tke_diffusion_momentum', which reads
+    'len_scale' and 'tke' and never the saved profile, so the two are independent.
+
+    While they were two programs, that could be shown by running them both ways round and
+    comparing. They are two statements of one program now, and a statement order is a property of
+    the source rather than of the caller -- so this asserts the source, and the datatest below
+    asserts that the result is still ICON's. Together they say the same thing: the merged
+    program writes 'sav_prof' FIRST, which is the order the Fortran forbids, and 'expl_mom'
+    still comes out bit-exact against a reference produced in the other order.
+
+    If a later fusion ever routes the coefficient through the 'sav_prof' buffer to save a
+    recomputation, this pair is what fails.
+    """
+    statements = [call.func.id for call in prepare_the_tke_diffusion.past_stage.past_node.body]
+    saved = statements.index("_compute_saved_tke_profile")
+    momentum = statements.index("_compute_explicit_tke_diffusion_momentum")
+
+    assert saved < momentum, (
+        "the merged program now writes 'expl_mom' before 'sav_prof', which is the Fortran's own "
+        "order -- so the datatest below no longer shows that the order is free."
     )
 
 
@@ -634,38 +648,17 @@ def test_the_model_top_row_of_the_diffusion_coefficient_is_not_read(
 def test_the_two_zaux_programs_do_not_constrain_each_others_order(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
-    """The Fortran's ordering constraint on 'sav_prof' does not survive the translation.
+    """'expl_mom' is ICON's, although the merged program computes it AFTER 'sav_prof'.
 
-    In the Fortran the TKE diffusion coefficient and the saved TKE profile share the storage
-    'zaux(:,:,2)', so the loop that averages the coefficient onto the flux levels HAS to run
-    before the one that overwrites it -- an aliasing constraint, not a data dependence. Here the
-    coefficient is an intermediate inside 'compute_explicit_tke_diffusion_momentum', which reads
-    'len_scale' and 'tke' and never the saved profile, so the two programs are independent.
-
-    '_run_section_6' already runs them in the order the Fortran forbids; this runs them in the
-    Fortran's order as well and asserts the two results are bit-identical. If a later fusion
-    ever routes the coefficient through the 'sav_prof' buffer to save a recomputation, this is
-    what fails.
+    ICON produced the reference in the opposite order, because it had to: the two share a
+    storage there. Bit-exact agreement under the reversed order is therefore the measurement
+    that the aliasing constraint went away with the aliasing. The order itself is asserted by
+    'test_the_two_zaux_statements_are_in_the_order_the_fortran_forbids' above; without that
+    assertion this test would silently stop meaning anything if the statements were ever swapped.
     """
-    entry = data_provider.from_savepoint_turbdiff_entry(date=date)
-    before = data_provider.from_savepoint_turbdiff_section(section="5", date=date)
-    momentum = utils.copy_of(before.raw_zaux(EXPLICIT_DIFFUSION_MOMENTUM), backend)
-
-    compute_explicit_tke_diffusion_momentum.with_backend(backend)(
-        mixing_length=before.mixing_length(),
-        turbulent_velocity_scale=before.tke(),
-        air_density_at_main_levels=entry.rhoh(),
-        half_level_height=entry.hhl(),
-        tke_diffusion_factor=TKE_DIFFUSION_FACTOR,
-        explicit_diffusion_momentum=momentum,
-        horizontal_start=gtx.int32(before.ivstart()),
-        horizontal_end=gtx.int32(before.ivend()),
-        vertical_start=gtx.int32(2),
-        vertical_end=gtx.int32(entry.ke1()),
-        offset_provider={dims.Koff.value: dims.KDim},
-    )
-
     run = _run_section_6(data_provider, date, backend)
+
     np.testing.assert_array_equal(
-        momentum.asnumpy()[run.columns], run.explicit_diffusion_momentum.asnumpy()[run.columns]
+        run.explicit_diffusion_momentum.asnumpy()[run.columns, 2 : run.ke1],
+        run.after.expl_mom().asnumpy()[run.columns, 2 : run.ke1],
     )

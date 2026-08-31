@@ -74,12 +74,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_circulation_acceleration import (
     compute_circulation_acceleration,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_cke_flux_at_main_levels import (
-    compute_cke_flux_at_main_levels,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_cke_flux_density import (
-    compute_cke_flux_density,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_conserved_variables_and_factors_at_main_levels import (
     compute_conserved_variables_and_factors_at_main_levels,
 )
@@ -119,9 +113,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_flux_density import (
     compute_explicit_flux_density,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_tke_diffusion_momentum import (
-    compute_explicit_tke_diffusion_momentum,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_tke_flux_density import (
     compute_explicit_tke_flux_density,
 )
@@ -145,9 +136,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_layer_depth import (
     compute_layer_depth,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_saved_tke_profile import (
-    compute_saved_tke_profile,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_separated_horizontal_shear_tke_source import (
     compute_separated_horizontal_shear_tke_source,
@@ -215,6 +203,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.interpol
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_diffusion_momentum_at_the_surface_flux_level import (
     invert_diffusion_momentum_at_the_surface_flux_level,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prepare_the_tke_diffusion import (
+    prepare_the_tke_diffusion,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.set_turbulent_velocity_scale_at_model_top import (
     set_turbulent_velocity_scale_at_model_top,
@@ -1743,26 +1734,16 @@ class Turbulence:
         )
 
         # -- section 6) preparations for the TKE diffusion
-        self._compute_saved_tke_profile = self._program(
-            compute_saved_tke_profile,
-            levels=(1, nlev + 1),  # 'DO k=2,ke1'
-        )
-        self._compute_explicit_tke_diffusion_momentum = self._program(
-            compute_explicit_tke_diffusion_momentum,
+        # One program, four statements: 'sav_prof' and 'frh' over 'DO k=2,ke1', 'expl_mom' and
+        # 'frm' over 'DO k=3,ke1'. The bound below is the half levels'; the two flux-level
+        # statements start at 'vertical_start + 1'.
+        self._prepare_the_tke_diffusion = self._program(
+            prepare_the_tke_diffusion,
             constant_args={
                 "half_level_height": metric.hhl,
                 "tke_diffusion_factor": self._tke_diffusion_factor,
             },
-            levels=(2, nlev + 1),  # 'DO k=3,ke1'
-            shifted=True,
-        )
-        self._compute_cke_flux_density = self._program(
-            compute_cke_flux_density,
-            levels=(1, nlev + 1),  # 'DO k=2,ke1'
-        )
-        self._compute_cke_flux_at_main_levels = self._program(
-            compute_cke_flux_at_main_levels,
-            levels=(2, nlev + 1),  # 'DO k=3,ke1'
+            levels=(1, nlev + 1),  # 'DO k=2,ke1'; the flux levels start one row lower
             shifted=True,
         )
 
@@ -2384,26 +2365,16 @@ class Turbulence:
 
         # -- 6) preparations for the TKE diffusion ------------------------------------------------
 
-        self._compute_saved_tke_profile(
+        self._prepare_the_tke_diffusion(
             turbulent_velocity_scale=diagnostic_state.updated_tke,
-            saved_tke_profile=self._zaux_2,
-        )
-        self._compute_explicit_tke_diffusion_momentum(
             mixing_length=self._len_scale,
-            turbulent_velocity_scale=diagnostic_state.updated_tke,
             air_density_at_main_levels=input_state.rhoh,
-            explicit_diffusion_momentum=self._zaux_3,
-        )
-        self._compute_cke_flux_density(
             air_density=diagnostic_state.rhon,
             scalar_diffusion_coefficient=diagnostic_state.tkvh,
             circulation_acceleration=self._circulation_acceleration,
-            mixing_length=self._len_scale,
+            saved_tke_profile=self._zaux_2,
+            explicit_diffusion_momentum=self._zaux_3,
             cke_flux_density=self._frh,
-        )
-        self._compute_cke_flux_at_main_levels(
-            cke_flux_density=self._frh,
-            mixing_length=self._len_scale,
             cke_flux_at_main_levels=self._frm,
         )
 
