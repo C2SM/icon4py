@@ -45,5 +45,18 @@ def to_data_array(
     return xa.DataArray(data=data, dims=dims, attrs=attrs)
 
 
+def host_copy(field: xa.DataArray) -> xa.DataArray:
+    """Host-resident copy of a data array, decoupled from the source buffer.
+
+    Exactly one copy on either architecture: a device buffer is copied to host by
+    the transfer itself, a host buffer is copied explicitly. Use this before keeping
+    a data array past the next mutation of its source field (see ``to_data_array``).
+    """
+    data = data_alloc.as_numpy(field.data)
+    if data is field.data:
+        data = data.copy()
+    return xa.DataArray(data=data, dims=field.dims, attrs=dict(field.attrs))
+
+
 def _is_horizontal(dim: gtx.Dimension) -> bool:
     return dim.kind == gtx.DimensionKind.HORIZONTAL
