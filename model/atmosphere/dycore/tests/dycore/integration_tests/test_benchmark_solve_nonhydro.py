@@ -9,12 +9,14 @@
 from __future__ import annotations
 
 import functools
+import os
 from typing import TYPE_CHECKING, Any
 import os
 
 import gt4py.next as gtx
 from gt4py.next.instrumentation import metrics as gtx_metrics
 import pytest
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 
 if TYPE_CHECKING:

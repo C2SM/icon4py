@@ -22,7 +22,7 @@ import numpy as np
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, profiling
 
 
 log = logging.getLogger(__name__)
@@ -384,12 +384,13 @@ class ExchangeRuntime(Protocol):
         Note:
             The protocol supplies a default implementation.
         """
-        ex_req = self.start(
-            dim,
-            *fields,
-            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
-        )
-        ex_req.finish(stream)
+        with profiling.annotate(f"halo_exchange[{dim.value},{len(fields)}]"):
+            ex_req = self.start(
+                dim,
+                *fields,
+                stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
+            )
+            ex_req.finish(stream)
 
     @overload
     def __call__(
