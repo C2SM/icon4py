@@ -250,10 +250,6 @@ variables:
         # for bitwise-identical single- vs multi-rank results on GPU backends
         # in the driver validation tests.
         NVCC_APPEND_FLAGS: "--fmad=false"
-        # Allocation for these compile-heavy cells (from cold-cache
-        # measurements): 2 GH200 chips (1 chip times out), 12 tasks per chip
-        # (4-rank MPI test groups). 1.5h cap: worst cold runs about 2.2ks;
-        # with 1h a shared-partition hiccup risked timing out mid-test.
         SLURM_TIMELIMIT: '01:30:00'
         SLURM_GPUS_PER_NODE: 2
         SLURM_NTASKS: 24
