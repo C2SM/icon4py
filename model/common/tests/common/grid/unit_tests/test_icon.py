@@ -62,23 +62,23 @@ def nudging() -> Iterator[h_grid.Zone]:
             yield marker
 
 
-LATERAL_BOUNDARY_IDX = {
+LATERAL_BOUNDARY_IDX: dict[type[gtx.Dimension], list[int]] = {
     dims.CellDim: [0, 850, 1688, 2511, 3316, 4104],
     dims.EdgeDim: [0, 428, 1278, 1700, 2538, 2954, 3777, 4184, 4989, 5387, 6176],
     dims.VertexDim: [0, 428, 850, 1266, 1673, 2071],
 }
 
-NUDGING_IDX = {
+NUDGING_IDX: dict[type[gtx.Dimension], list[int]] = {
     dims.CellDim: [3316, 4104],
     dims.EdgeDim: [4989, 5387, 6176],
     dims.VertexDim: [1673, 2071],
 }
-HALO_IDX = {
+HALO_IDX: dict[type[gtx.Dimension], list[int]] = {
     dims.CellDim: [20896, 20896],
     dims.EdgeDim: [31558, 31558],
     dims.VertexDim: [10663, 10663],
 }
-INTERIOR_IDX = {
+INTERIOR_IDX: dict[type[gtx.Dimension], list[int]] = {
     dims.CellDim: [4104, HALO_IDX[dims.CellDim][0]],
     dims.EdgeDim: [6176, HALO_IDX[dims.EdgeDim][0]],
     dims.VertexDim: [2071, HALO_IDX[dims.VertexDim][0]],
