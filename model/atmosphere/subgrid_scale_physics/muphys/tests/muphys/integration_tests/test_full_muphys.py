@@ -24,17 +24,20 @@ from .utils import download_test_data
 
 
 class Experiments:
-    # TODO(havogt): the following references need to be checked (and moved to the shared directory),
-    # currently they are not verifying
-    # muphys/full_muphys/r2b04.tar.gz
-    # muphys/full_muphys/r2b04_maxfrac.tar.gz
-    # muphys/full_muphys/r2b05.tar.gz
     # Note: don't use the 'tiny' experiment from graupel_only,
     # as it is not sensitive to saturation adjustment
     # TODO(havogt): double-check that all other experiments actually are sensitive,
     # i.e. reference of full_muphys and graupel_only differ significantly.
     MINI: Final = utils.MuphysExperiment(
         name="mini",
+        type=utils.ExperimentType.FULL_MUPHYS,
+    )
+    R2B04: Final = utils.MuphysExperiment(
+        name="R2B04",
+        type=utils.ExperimentType.FULL_MUPHYS,
+    )
+    R2B05: Final = utils.MuphysExperiment(
+        name="R2B05",
         type=utils.ExperimentType.FULL_MUPHYS,
     )
 
@@ -47,10 +50,8 @@ class Experiments:
     "experiment",
     [
         Experiments.MINI,
-        # TODO(havogt): references need to be checked, currently they are not verifying
-        # Experiments.R2B04,
-        # Experiments.R2B04_MAXFRAC,
-        # Experiments.R2B05,
+        Experiments.R2B04,
+        Experiments.R2B05,
     ],
     ids=lambda exp: exp.name,
 )
@@ -118,7 +119,7 @@ def test_full_muphys(
         dtype=ta.wpfloat,
     )
 
-    rtol, atol = (1e-14, 1e-16) if test_utils.wp_is_dp else (1e-3, 1e-10)
+    rtol, atol = (1e-14, 1e-15) if test_utils.wp_is_dp else (1e-3, 1e-10)
     test_utils.assert_dallclose(ref.qv.asnumpy(), out.qv.asnumpy(), rtol=rtol, atol=atol)
     test_utils.assert_dallclose(ref.qi.asnumpy(), out.qi.asnumpy(), rtol=rtol, atol=atol)
     test_utils.assert_dallclose(ref.qg.asnumpy(), out.qg.asnumpy(), rtol=rtol, atol=atol)

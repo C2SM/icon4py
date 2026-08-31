@@ -789,7 +789,7 @@ class MetricSavepoint(IconSavepoint):
                 allocator=model_backends.get_allocator(self.backend),
             )
         else:
-            return data_alloc.list2field(
+            return data_alloc.scattered_field(
                 domain=domain,
                 values=pg_exdist,
                 indices=(
@@ -921,7 +921,7 @@ class MetricSavepoint(IconSavepoint):
                 dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
             }
         )
-        return data_alloc.list2field(
+        return data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(
@@ -945,7 +945,7 @@ class MetricSavepoint(IconSavepoint):
                 dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
             }
         )
-        return data_alloc.list2field(
+        return data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
             values=zd_intcoef.T,
             indices=(
@@ -962,7 +962,7 @@ class MetricSavepoint(IconSavepoint):
         zd_cellidx = self.zd_cellidx()
         zd_vertidx = self.zd_vertidx()
         zd_diffcoef = self.xp.squeeze(self.serializer.read("zd_diffcoef", self.savepoint))
-        return data_alloc.list2field(
+        return data_alloc.scattered_field(
             domain=self.geopot().domain,
             values=zd_diffcoef,
             indices=(

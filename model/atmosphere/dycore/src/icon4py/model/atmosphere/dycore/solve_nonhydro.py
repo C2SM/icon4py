@@ -20,6 +20,7 @@ from gt4py.next import common as gtx_common
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
@@ -290,16 +291,6 @@ class NonHydrostaticConfig:
         ),
     ] = 0.25
 
-    max_nudging_coefficient: typing.Annotated[
-        wpfloat,
-        common_conf_opt.ConfigOption(
-            description="Maximum relaxation coefficient for lateral boundary nudging",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="nudge_max_coeff", path=("interpol_nml",), read_from_icon=False
-            ),
-        ),
-    ] = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
-
     # TODO(muellch): The four divdamp factors and heights should be in one or two dataclasses.
     fourth_order_divdamp_factor: typing.Annotated[
         wpfloat,
@@ -502,7 +493,8 @@ class SolveNonhydro:
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
         | None,
-        exchange: decomposition.ExchangeRuntime | None = None,
+        exchange: decomposition.ExchangeRuntime,
+        max_nudging_coefficient: state_utils.FloatType,
     ):
         self._exchange = exchange or decomposition.SingleNodeExchange()
 
@@ -628,7 +620,7 @@ class SolveNonhydro:
                 "limited_area": self._grid.limited_area,
                 "divdamp_order": gtx.int32(self._config.divdamp_order),
                 "mean_cell_area": wpfloat(self._cell_params.mean_cell_area),
-                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "max_nudging_coefficient": wpfloat(max_nudging_coefficient),
                 "wp_eps": constants.WP_EPS,
             },
             variants={

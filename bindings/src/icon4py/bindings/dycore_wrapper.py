@@ -145,7 +145,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
         assert all(field is None for field in [pg_edgeidx, pg_vertidx, pg_exdist])
         pg_exdist_dsl = gtx.zeros(pg_exdist_domain, dtype=gtx.float64, allocator=allocator)
     else:
-        pg_exdist_dsl = data_alloc.list2field(
+        pg_exdist_dsl = data_alloc.scattered_field(
             domain=pg_exdist_domain,
             values=pg_exdist,
             indices=(
@@ -169,7 +169,6 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
         extra_diffu=extra_diffu,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        max_nudging_coefficient=nudge_max_coeff,
         fourth_order_divdamp_factor=divdamp_fac,
         fourth_order_divdamp_factor2=divdamp_fac2,
         fourth_order_divdamp_factor3=divdamp_fac3,
@@ -284,6 +283,7 @@ def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
             owner_mask=c_owner_mask,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
+            max_nudging_coefficient=nudge_max_coeff,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )

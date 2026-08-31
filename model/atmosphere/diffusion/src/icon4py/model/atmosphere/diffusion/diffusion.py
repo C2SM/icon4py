@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import functools
 import logging
 import math
 import typing
@@ -325,14 +324,6 @@ class DiffusionConfig:
         ),
     ] = True
 
-    ndyn_substeps: typing.Annotated[
-        int,
-        common_conf_opt.ConfigOption(
-            description="Number of dynamics substeps per fast-physics step.",
-            icon_equivalent=common_conf_opt.IconOption("ndyn_substeps", ("nonhydrostatic_nml",)),
-        ),
-    ] = 5
-
     temperature_boundary_diffusion_denominator: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
@@ -348,16 +339,6 @@ class DiffusionConfig:
             icon_equivalent=common_conf_opt.IconOption("denom_diffu_v", ("gridref_nml",)),
         ),
     ] = 200.0
-
-    max_nudging_coefficient: typing.Annotated[
-        float,
-        common_conf_opt.ConfigOption(
-            description="Maximum relaxation coefficient for lateral boundary nudging",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="nudge_max_coeff", path=("interpol_nml",), read_from_icon=False
-            ),
-        ),
-    ] = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
 
     shear_type: typing.Annotated[
         TurbulenceShearForcingType,
@@ -447,10 +428,6 @@ class DiffusionConfig:
                 f"implemented"
             )
 
-    @functools.cached_property
-    def substep_as_float(self) -> wpfloat:
-        return wpfloat(self.ndyn_substeps)
-
 
 @dataclasses.dataclass(frozen=True)
 class DiffusionParams:
@@ -531,6 +508,8 @@ class Diffusion:
         | model_backends.BackendDescriptor
         | None,
         exchange: decomposition.ExchangeRuntime,
+        ndyn_substeps: int,
+        max_nudging_coefficient: float,
     ) -> None:
         self._allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
@@ -542,6 +521,7 @@ class Diffusion:
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
+        ndyn_substeps_as_float = wpfloat(ndyn_substeps)
 
         assert self._cell_params.area is not None
 
@@ -563,14 +543,14 @@ class Diffusion:
             config.max_nudging_coefficient + constants.WP_EPS
         )
         self.fac_bdydiff_v: wpfloat = wpfloat(
-            math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
+            math.sqrt(ndyn_substeps_as_float) / config.velocity_boundary_diffusion_denominator
         )
 
         self.smag_offset: vpfloat = gtx.astype(
-            wpfloat(0.25) * params.K4 * config.substep_as_float, vpfloat
+            wpfloat(0.25) * params.K4 * ndyn_substeps_as_float, vpfloat
         )
         self.diff_multfac_w: wpfloat = gtx.astype(
-            min(wpfloat(1.0) / wpfloat(48.0), params.K4W * config.substep_as_float), wpfloat
+            min(wpfloat(1.0) / wpfloat(48.0), params.K4W * ndyn_substeps_as_float), wpfloat
         )
         self._determine_horizontal_domains()
 
@@ -734,7 +714,7 @@ class Diffusion:
 
         self.init_diffusion_local_fields_for_regular_timestep(
             params.K4,
-            config.substep_as_float,
+            ndyn_substeps_as_float,
             *params.smagorinski_factor,
             *params.smagorinski_height,
             self._vertical_grid.interface_physical_height,
