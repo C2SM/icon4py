@@ -118,7 +118,7 @@ class GridParams:
 @dataclasses.dataclass(frozen=True)
 class IconGrid(base.Grid):
     grid_params: GridParams = dataclasses.field(kw_only=True)
-    refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
+    refinement_control: dict[type[gtx.Dimension], gtx.Field] = dataclasses.field(
         default=None, kw_only=True
     )
 
@@ -180,7 +180,7 @@ def icon_grid(
     start_index: Callable[[h_grid.Domain], gtx.int32],
     end_index: Callable[[h_grid.Domain], gtx.int32],
     grid_params: GridParams,
-    refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
+    refinement_control: dict[type[gtx.Dimension], gtx.Field] | None = None,
 ) -> IconGrid:
     limited_area_or_distributed = config.limited_area or config.distributed
     connectivities = {
@@ -208,7 +208,7 @@ def icon_grid(
 
 def get_start_and_end_index(
     constructor: Callable[
-        [gtx.Dimension], tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]
+        [type[gtx.Dimension]], tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]
     ],
 ) -> tuple[Callable[[h_grid.Domain], gtx.int32], Callable[[h_grid.Domain], gtx.int32]]:
     """

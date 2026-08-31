@@ -45,5 +45,5 @@ def to_data_array(
     return xa.DataArray(data=data, dims=dims, attrs=attrs)
 
 
-def _is_horizontal(dim: gtx.Dimension) -> bool:
+def _is_horizontal(dim: type[gtx.Dimension]) -> bool:
     return dim.kind == gtx.DimensionKind.HORIZONTAL

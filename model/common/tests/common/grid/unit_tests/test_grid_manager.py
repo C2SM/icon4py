@@ -101,7 +101,7 @@ def test_grid_manager_eval_v2e(
 def test_grid_manager_refin_ctrl(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    dim: gtx.Dimension,
+    dim: type[gtx.Dimension],
     backend: gtx_typing.Backend,
 ) -> None:
     refin_ctrl = utils.run_grid_manager(
@@ -419,7 +419,7 @@ def test_grid_manager_eval_c2e2c2e(
 def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    dim: gtx.Dimension,
+    dim: type[gtx.Dimension],
     backend: gtx_typing.Backend,
 ) -> None:
     serialized_grid = grid_savepoint.construct_icon_grid(backend=backend)
@@ -463,7 +463,7 @@ def test_read_geometry_fields(
 def test_coordinates(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    dim: gtx.Dimension,
+    dim: type[gtx.Dimension],
     backend: gtx_typing.Backend,
 ) -> None:
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
@@ -575,7 +575,7 @@ def test_limited_area_on_grid(grid_description: test_defs.GridDescription, expec
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_decomposition_info_single_rank(
-    dim: gtx.Dimension,
+    dim: type[gtx.Dimension],
     experiment: test_defs.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend,

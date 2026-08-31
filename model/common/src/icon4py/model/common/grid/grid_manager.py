@@ -41,7 +41,9 @@ class IconGridError(RuntimeError):
     pass
 
 
-type CoordinateDict = dict[gtx.Dimension, dict[Literal["lat", "lon", "x", "y", "z"], gtx.Field]]
+type CoordinateDict = dict[
+    type[gtx.Dimension], dict[Literal["lat", "lon", "x", "y", "z"], gtx.Field]
+]
 # TODO (halungge): use a TypeDict for that
 type GeometryDict = dict[gridfile.GeometryName, gtx.Field]
 
@@ -334,7 +336,7 @@ class GridManager:
     def _read_grid_refinement_fields(
         self,
         allocator: gtx_typing.Allocator,
-    ) -> dict[gtx.Dimension, gtx.Field]:
+    ) -> dict[type[gtx.Dimension], gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
 
@@ -344,7 +346,7 @@ class GridManager:
         Args:
             allocator: Allocator to use for reading the fields.
         Returns:
-            dict[gtx.Dimension, gtx.Field]: A dictionary containing the refinement control fields for each dimension.
+            dict[type[gtx.Dimension], gtx.Field]: A dictionary containing the refinement control fields for each dimension.
         """
         refinement_control_names = {
             dims.CellDim: gridfile.GridRefinementName.CONTROL_CELLS,

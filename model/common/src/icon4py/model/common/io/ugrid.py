@@ -24,19 +24,19 @@ log = logging.getLogger(__name__)
 FILL_VALUE = gridfile.GridFile.INVALID_INDEX
 MESH = "mesh"
 
-HORIZONTAL_DIMENSION_MAPPING: Final[dict[gtx.Dimension, str]] = {
+HORIZONTAL_DIMENSION_MAPPING: Final[dict[type[gtx.Dimension], str]] = {
     dim.CellDim: "cell",
     dim.EdgeDim: "edge",
     dim.VertexDim: "vertex",
 }
 
-COORDINATES_MAPPING: Final[dict[gtx.Dimension, str]] = {
+COORDINATES_MAPPING: Final[dict[type[gtx.Dimension], str]] = {
     dim.CellDim: "clon clat",
     dim.VertexDim: "vlon vlat",
     dim.EdgeDim: "elon elat",
 }
 
-LOCATION_MAPPING: Final[dict[gtx.Dimension, str]] = {
+LOCATION_MAPPING: Final[dict[type[gtx.Dimension], str]] = {
     dim.CellDim: "face",
     dim.VertexDim: "node",
     dim.EdgeDim: "edge",
@@ -58,7 +58,7 @@ def extract_horizontal_coordinates(
     )
 
 
-def dimension_mapping(dim: gtx.Dimension, is_on_half_levels: bool) -> str:
+def dimension_mapping(dim: type[gtx.Dimension], is_on_half_levels: bool) -> str:
     assert dim.kind in (
         gtx.DimensionKind.HORIZONTAL,
         gtx.DimensionKind.VERTICAL,
@@ -69,7 +69,7 @@ def dimension_mapping(dim: gtx.Dimension, is_on_half_levels: bool) -> str:
         return HORIZONTAL_DIMENSION_MAPPING[dim]
 
 
-def ugrid_attributes(dim: gtx.Dimension) -> dict:
+def ugrid_attributes(dim: type[gtx.Dimension]) -> dict:
     if dim.kind == gtx.DimensionKind.HORIZONTAL:
         return dict(
             location=LOCATION_MAPPING[dim],

@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 
 def _get_slice_tuple_from_horizontal_range(
     grid: base_grid.Grid,
-    horizontal_dim: gtx.Dimension,
+    horizontal_dim: type[gtx.Dimension],
     horizontal_range: tuple[h_grid.Zone | None, h_grid.Zone | None],
 ) -> tuple[slice | None | EllipsisType, ...]:
     # TODO(havogt): Ideally we refactor the factories to only construct fields on the domain where they matter,

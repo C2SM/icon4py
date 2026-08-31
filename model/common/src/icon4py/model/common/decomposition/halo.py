@@ -212,7 +212,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         self,
         *,
         decomp_info: defs.DecompositionInfo,
-        dim: gtx.Dimension,
+        dim: type[gtx.Dimension],
         all_indices: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
         first_halo_level_mask: data_alloc.NDArray,

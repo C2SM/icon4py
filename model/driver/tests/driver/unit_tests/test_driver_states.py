@@ -27,7 +27,7 @@ def grid() -> base.Grid:
 
 
 def _prep_advection(grid: base.Grid) -> dycore_states.PrepAdvection:
-    def _field(*field_dims: gtx.Dimension) -> gtx.Field:
+    def _field(*field_dims: type[gtx.Dimension]) -> gtx.Field:
         return data_alloc.zero_field(grid, *field_dims, dtype=ta.wpfloat)
 
     return dycore_states.PrepAdvection(

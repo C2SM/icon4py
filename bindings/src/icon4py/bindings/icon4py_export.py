@@ -23,7 +23,7 @@ from gt4py.next.type_system import (
 from icon4py.tools import py2fgen
 
 
-def _parse_type_spec(type_spec: ts.TypeSpec) -> tuple[list[gtx.Dimension], ts.ScalarKind]:
+def _parse_type_spec(type_spec: ts.TypeSpec) -> tuple[list[type[gtx.Dimension]], ts.ScalarKind]:
     if isinstance(type_spec, ts.ScalarType):
         return [], type_spec.kind
     elif isinstance(type_spec, ts.FieldType):
@@ -82,7 +82,7 @@ def field_annotation_descriptor_hook(annotation: Any) -> py2fgen.ParamDescriptor
         return py2fgen.ScalarParamDescriptor(dtype=dtype)
 
 
-def _as_field(dims: Sequence[gtx.Dimension]) -> Callable:
+def _as_field(dims: Sequence[type[gtx.Dimension]]) -> Callable:
     # in case the cache lookup is still performance relevant, we can replace it by a custom swap cache
     # (only for substitution mode where we know we have exactly 2 entries)
     # or by even marking fields as constant over the whole program run and immediately return on second call

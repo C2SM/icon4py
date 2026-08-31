@@ -52,14 +52,14 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 
 @pytest.fixture
-def domain(dim: gtx.Dimension, zone: h_grid.Zone) -> h_grid.Domain:
+def domain(dim: type[gtx.Dimension], zone: h_grid.Zone) -> h_grid.Domain:
     return h_grid.domain(dim)(zone)
 
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("process_props", [True], indirect=True)
 def test_compute_domain_bounds(  # noqa: PLR0917 [too-many-positional-arguments]
-    dim: gtx.Dimension,
+    dim: type[gtx.Dimension],
     zone: h_grid.Zone,
     domain: h_grid.Domain,
     experiment: test_defs.Experiment,
@@ -114,7 +114,7 @@ def test_bounds_decomposition(
     process_props: decomp_defs.ProcessProperties,
     backend: gtx.typing.Backend | None,
     experiment: test_defs.Experiment,
-    dim: gtx.Dimension,
+    dim: type[gtx.Dimension],
 ) -> None:
     if experiment.grid.limited_area:
         pytest.xfail("Limited-area grids not yet supported")

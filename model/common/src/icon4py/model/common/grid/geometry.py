@@ -841,7 +841,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         self,
         *,
         field_provider: factory.FieldProvider,
-        target_dims: Sequence[gtx.Dimension],
+        target_dims: Sequence[type[gtx.Dimension]],
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
         do_exchange: bool,
@@ -902,8 +902,8 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
 
 
 def as_sparse_field(
-    target_dims: tuple[gtx.Dimension, gtx.Dimension],
-    data: Sequence[tuple[gtx.Field[gtx.Dims[gtx.Dimension], state_utils.ScalarType], ...]],
+    target_dims: tuple[type[gtx.Dimension], type[gtx.Dimension]],
+    data: Sequence[tuple[gtx.Field[gtx.Dims[type[gtx.Dimension]], state_utils.ScalarType], ...]],
     backend: gtx_typing.Backend | None = None,
 ) -> Sequence[state_utils.GTXFieldType]:
     assert len(target_dims) == 2

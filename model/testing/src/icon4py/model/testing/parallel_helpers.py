@@ -78,7 +78,7 @@ def check_local_global_field(
     *,
     decomposition_info: decomp_defs.DecompositionInfo,
     process_props: decomp_defs.ProcessProperties,  # F811 # fixture
-    dim: gtx.Dimension,
+    dim: type[gtx.Dimension],
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
     check_halos: bool,

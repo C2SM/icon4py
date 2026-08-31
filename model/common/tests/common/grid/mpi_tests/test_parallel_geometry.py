@@ -169,7 +169,7 @@ def test_cartesian_geometry_attr_no_halos(  # noqa: PLR0917 [too-many-positional
     x: str,
     y: str,
     z: str,
-    dimension: gtx.Dimension,
+    dimension: type[gtx.Dimension],
 ) -> None:
     parallel_helpers.check_comm_size(process_props)
     parallel_helpers.log_process_properties(process_props)

@@ -115,11 +115,11 @@ def reallocate(
 
 def random_field(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
+    *dims: type[gtx.Dimension],
     low: float = -1.0,
     high: float = 1.0,
     dtype: npt.DTypeLike | None = None,
-    extend: dict[gtx.Dimension, int] | None = None,
+    extend: dict[type[gtx.Dimension], int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     """A field of values drawn uniformly from `[low, high)`."""
@@ -131,9 +131,9 @@ def random_field(
 
 def random_sign(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
+    *dims: type[gtx.Dimension],
     dtype: npt.DTypeLike | None = None,
-    extend: dict[gtx.Dimension, int] | None = None,
+    extend: dict[type[gtx.Dimension], int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     """A field of values drawn from `{-1, 1}`."""
@@ -143,9 +143,9 @@ def random_sign(
 
 def random_mask(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
+    *dims: type[gtx.Dimension],
     dtype: npt.DTypeLike | None = None,
-    extend: dict[gtx.Dimension, int] | None = None,
+    extend: dict[type[gtx.Dimension], int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     """A field with half of its entries set, in random positions."""
@@ -158,9 +158,9 @@ def random_mask(
 
 def zero_field(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
+    *dims: type[gtx.Dimension],
     dtype: npt.DTypeLike = ta.wpfloat,
-    extend: dict[gtx.Dimension, int] | None = None,
+    extend: dict[type[gtx.Dimension], int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     """A field with every entry set to zero."""
@@ -172,9 +172,9 @@ def zero_field(
 def constant_field(
     grid: grid_base.Grid,
     value: float,
-    *dims: gtx.Dimension,
+    *dims: type[gtx.Dimension],
     dtype: npt.DTypeLike = ta.wpfloat,
-    extend: dict[gtx.Dimension, int] | None = None,
+    extend: dict[type[gtx.Dimension], int] | None = None,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     """A field with every entry set to `value`."""
@@ -185,9 +185,9 @@ def constant_field(
 
 def index_field(
     grid: grid_base.Grid,
-    dim: gtx.Dimension,
+    dim: type[gtx.Dimension],
     *,
-    extend: dict[gtx.Dimension, int] | None = None,
+    extend: dict[type[gtx.Dimension], int] | None = None,
     dtype: npt.DTypeLike = gtx.int32,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
@@ -198,8 +198,8 @@ def index_field(
 
 def _shape(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
-    extend: dict[gtx.Dimension, int] | None = None,
+    *dims: type[gtx.Dimension],
+    extend: dict[type[gtx.Dimension], int] | None = None,
 ) -> tuple[int, ...]:
     """The size of each of `dims` on `grid`, plus any requested extension."""
     extend = extend or {}
@@ -208,9 +208,9 @@ def _shape(
 
 def _domain(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
-    extend: dict[gtx.Dimension, int] | None = None,
-) -> dict[gtx.Dimension, tuple[int, int]]:
+    *dims: type[gtx.Dimension],
+    extend: dict[type[gtx.Dimension], int] | None = None,
+) -> dict[type[gtx.Dimension], tuple[int, int]]:
     """`_shape` as a domain, for the gt4py constructors that take one."""
     return dict(zip(dims, ((0, stop) for stop in _shape(grid, *dims, extend=extend)), strict=True))
 

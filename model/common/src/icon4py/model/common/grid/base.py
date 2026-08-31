@@ -88,7 +88,7 @@ class Grid:
     end_index: Callable[[h_grid.Domain], gtx.int32]
 
     @functools.cached_property
-    def size(self) -> dict[gtx.Dimension, int]:
+    def size(self) -> dict[type[gtx.Dimension], int]:
         sizes = {
             dims.KDim: self.config.num_levels,
             dims.CellDim: self.config.num_cells,
@@ -172,7 +172,7 @@ def construct_connectivity(
 
 
 def _replace_skip_values(
-    domain: Sequence[gtx.Dimension], neighbor_table: data_alloc.NDArray
+    domain: Sequence[type[gtx.Dimension]], neighbor_table: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     """
     Manipulate a Connectivity's neighbor table to remove invalid indices.

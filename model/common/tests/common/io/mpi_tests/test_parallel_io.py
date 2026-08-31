@@ -46,7 +46,7 @@ GLOBAL_SIZES = {dims.CellDim: 109, dims.EdgeDim: 75, dims.VertexDim: 41}
 GRID_ID = uuid.UUID("00000000-0000-0000-0000-00000000c1c0")
 NUM_STEPS = 3
 #: variable name -> (CF dimension name, dimension) of the synthetic output fields
-VARIABLES: dict[str, tuple[str, gtx.Dimension]] = {
+VARIABLES: dict[str, tuple[str, type[gtx.Dimension]]] = {
     "air_density": ("cell", dims.CellDim),
     "normal_velocity": ("edge", dims.EdgeDim),
 }

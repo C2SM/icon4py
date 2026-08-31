@@ -219,7 +219,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         self._domain_descriptors = {
             dim: self._create_domain_descriptor(dim) for dim in dims.horizontal_dims()
         }
-        self._field_size: dict[gtx.Dimension, int] = {
+        self._field_size: dict[type[gtx.Dimension], int] = {
             dim: self._decomposition_info.global_index(dim).shape[0]
             for dim in dims.horizontal_dims()
         }
@@ -241,7 +241,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
     def my_rank(self) -> int:
         return self._context.rank()
 
-    def _create_domain_descriptor(self, dim: gtx.Dimension) -> DomainDescriptor:
+    def _create_domain_descriptor(self, dim: type[gtx.Dimension]) -> DomainDescriptor:
         all_global = self._decomposition_info.global_index(
             dim, decomp_defs.DecompositionInfo.EntryType.ALL
         )
@@ -259,7 +259,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         )
         return domain_desc
 
-    def _create_pattern(self, horizontal_dim: gtx.Dimension) -> DomainDescriptor:
+    def _create_pattern(self, horizontal_dim: type[gtx.Dimension]) -> DomainDescriptor:
         assert horizontal_dim.kind == gtx.DimensionKind.HORIZONTAL
 
         global_halo_idx = self._decomposition_info.global_index(
@@ -277,7 +277,9 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         )
         return pattern
 
-    def _slice_field_based_on_dim(self, field: gtx.Field, dim: gtx.Dimension) -> data_alloc.NDArray:
+    def _slice_field_based_on_dim(
+        self, field: gtx.Field, dim: type[gtx.Dimension]
+    ) -> data_alloc.NDArray:
         """
         Slices the field based on the dimension passed in.
 
@@ -289,14 +291,16 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
         else:
             raise ValueError(f"Unknown dimension {dim}")
 
-    def _make_field_descriptor(self, dim: gtx.Dimension, array: data_alloc.NDArray) -> Any:
+    def _make_field_descriptor(self, dim: type[gtx.Dimension], array: data_alloc.NDArray) -> Any:
         return make_field_descriptor(
             self._domain_descriptors[dim],
             array,
             arch=Architecture.CPU if isinstance(array, np.ndarray) else Architecture.GPU,
         )
 
-    def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field | data_alloc.NDArray) -> str:
+    def _get_applied_pattern(
+        self, dim: type[gtx.Dimension], f: gtx.Field | data_alloc.NDArray
+    ) -> str:
         if isinstance(f, gtx.Field):
             assert hasattr(f, "__gt_buffer_info__")
             # dimension and buffer_info uniquely identifies the exchange pattern
@@ -317,7 +321,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
 
     def start(
         self,
-        dim: gtx.Dimension,
+        dim: type[gtx.Dimension],
         *fields: gtx.Field | data_alloc.NDArray,
         stream: decomp_defs.StreamLike = decomp_defs.DEFAULT_STREAM,
     ) -> MultiNodeResult:
@@ -341,7 +345,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
 
     def exchange(
         self,
-        dim: gtx.Dimension,
+        dim: type[gtx.Dimension],
         *fields: gtx.Field | data_alloc.NDArray,
         stream: decomp_defs.StreamLike | decomp_defs.BlockType = decomp_defs.DEFAULT_STREAM,
     ) -> None:

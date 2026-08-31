@@ -96,7 +96,7 @@ class IconSavepoint:
         self.log.debug(f"{name} {buffer.shape}")
         return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
-    def _get_field_component(self, name: str, level: int, dims: tuple[gtx.Dimension, gtx]):
+    def _get_field_component(self, name: str, level: int, dims: tuple[type[gtx.Dimension], gtx]):
         buffer = self.serializer.read(name, self.savepoint).astype(float)
         buffer = self.xp.squeeze(buffer)[:, :, level]
         buffer = self._reduce_to_dim_size(buffer, dims)
@@ -289,7 +289,7 @@ class IconGridSavepoint(IconSavepoint):
     def cell_areas(self):
         return self._get_field("cell_areas", dims.CellDim)
 
-    def lat(self, dim: gtx.Dimension):
+    def lat(self, dim: type[gtx.Dimension]):
         match dim:
             case dims.CellDim:
                 return self.cell_center_lat()
@@ -300,7 +300,7 @@ class IconGridSavepoint(IconSavepoint):
             case _:
                 raise ValueError
 
-    def lon(self, dim: gtx.Dimension):
+    def lon(self, dim: type[gtx.Dimension]):
         match dim:
             case dims.CellDim:
                 return self.cell_center_lon()
@@ -394,14 +394,14 @@ class IconGridSavepoint(IconSavepoint):
         # one off accounts for being exclusive [from:to)
         return self._read_int32("e_end_index")
 
-    def start_index(self) -> dict[gtx.Dimension, data_alloc.NDArray]:
+    def start_index(self) -> dict[type[gtx.Dimension], data_alloc.NDArray]:
         return {
             dims.CellDim: self.cells_start_index(),
             dims.EdgeDim: self.edge_start_index(),
             dims.VertexDim: self.vertex_start_index(),
         }
 
-    def end_index(self) -> dict[gtx.Dimension, data_alloc.NDArray]:
+    def end_index(self) -> dict[type[gtx.Dimension], data_alloc.NDArray]:
         return {
             dims.CellDim: self.cells_end_index(),
             dims.EdgeDim: self.edge_end_index(),
@@ -432,7 +432,9 @@ class IconGridSavepoint(IconSavepoint):
     def c2e(self):
         return self._get_connectivity_array("c2e", dims.CellDim)
 
-    def _get_connectivity_array(self, name: str, target_dim: gtx.Dimension, reverse: bool = False):
+    def _get_connectivity_array(
+        self, name: str, target_dim: type[gtx.Dimension], reverse: bool = False
+    ):
         if reverse:
             connectivity = self.xp.transpose(self._read_int32(name, offset=1))[
                 : self.sizes[target_dim], :
@@ -483,7 +485,7 @@ class IconGridSavepoint(IconSavepoint):
     def nrdmax(self):
         return gtx.int32(self._read_int32_shift1("nrdmax").item())
 
-    def refin_ctrl(self, dim: gtx.Dimension):
+    def refin_ctrl(self, dim: type[gtx.Dimension]):
         field_name = "refin_ctl"
         return gtx.as_field(
             (dim,),
@@ -491,11 +493,11 @@ class IconGridSavepoint(IconSavepoint):
             allocator=self.backend,
         )
 
-    def num(self, dim: gtx.Dimension):
+    def num(self, dim: type[gtx.Dimension]):
         return self.sizes[dim]
 
     @staticmethod
-    def _read_field_for_dim(field_name, read_func, dim: gtx.Dimension):
+    def _read_field_for_dim(field_name, read_func, dim: type[gtx.Dimension]):
         match dim:
             case dims.CellDim:
                 return read_func(f"c_{field_name}")
@@ -508,10 +510,10 @@ class IconGridSavepoint(IconSavepoint):
                     f"only {dims.CellDim, dims.EdgeDim, dims.VertexDim} are handled"
                 )
 
-    def owner_mask(self, dim: gtx.Dimension):
+    def owner_mask(self, dim: type[gtx.Dimension]):
         return self.xp.squeeze(self._read_field_for_dim("owner_mask", self._read_bool, dim))
 
-    def global_index(self, dim: gtx.Dimension):
+    def global_index(self, dim: type[gtx.Dimension]):
         return self._read_field_for_dim("glb_index", self._read_int32_shift1, dim)
 
     def decomp_domain(self, dim):
@@ -525,7 +527,7 @@ class IconGridSavepoint(IconSavepoint):
             .set_dimension(*self._get_decomposition_fields(dims.VertexDim))
         )
 
-    def _get_decomposition_fields(self, dim: gtx.Dimension):
+    def _get_decomposition_fields(self, dim: type[gtx.Dimension]):
         global_index = self.global_index(dim)
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         halo_levels = self.decomp_domain(dim)[0 : self.num(dim)]

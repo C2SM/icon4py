@@ -275,7 +275,7 @@ class DataAllocationWrapper:
     def as_field(
         self,
         data: npt.NDArray,
-        *dims: gtx.Dimension,
+        *dims: type[gtx.Dimension],
         dtype: npt.DTypeLike | None = None,
     ) -> gtx.Field:
         """
@@ -289,9 +289,9 @@ class DataAllocationWrapper:
     def constant_field(
         self,
         value: float,
-        *dims: gtx.Dimension,
+        *dims: type[gtx.Dimension],
         dtype: npt.DTypeLike = ta.wpfloat,
-        extend: dict[gtx.Dimension, int] | None = None,
+        extend: dict[type[gtx.Dimension], int] | None = None,
     ) -> gtx.Field:
         """A field filled with `value`."""
         return data_allocation.constant_field(
@@ -300,9 +300,9 @@ class DataAllocationWrapper:
 
     def index_field(
         self,
-        dim: gtx.Dimension,
+        dim: type[gtx.Dimension],
         *,
-        extend: dict[gtx.Dimension, int] | None = None,
+        extend: dict[type[gtx.Dimension], int] | None = None,
         dtype: npt.DTypeLike = gtx.int32,
     ) -> gtx.Field:
         """A field over `dim` holding each element's own index."""
@@ -312,11 +312,11 @@ class DataAllocationWrapper:
 
     def random_field(
         self,
-        *dims: gtx.Dimension,
+        *dims: type[gtx.Dimension],
         low: float = -1.0,
         high: float = 1.0,
         dtype: npt.DTypeLike | None = None,
-        extend: dict[gtx.Dimension, int] | None = None,
+        extend: dict[type[gtx.Dimension], int] | None = None,
     ) -> gtx.Field:
         """A field of uniform random values in `[low, high)`."""
         return data_allocation.random_field(
@@ -331,9 +331,9 @@ class DataAllocationWrapper:
 
     def random_mask(
         self,
-        *dims: gtx.Dimension,
+        *dims: type[gtx.Dimension],
         dtype: npt.DTypeLike | None = None,
-        extend: dict[gtx.Dimension, int] | None = None,
+        extend: dict[type[gtx.Dimension], int] | None = None,
     ) -> gtx.Field:
         """A field of random booleans, or of `dtype` if given."""
         return data_allocation.random_mask(
@@ -342,9 +342,9 @@ class DataAllocationWrapper:
 
     def random_sign(
         self,
-        *dims: gtx.Dimension,
+        *dims: type[gtx.Dimension],
         dtype: npt.DTypeLike | None = None,
-        extend: dict[gtx.Dimension, int] | None = None,
+        extend: dict[type[gtx.Dimension], int] | None = None,
     ) -> gtx.Field:
         """A field of random values in `{-1, 1}`."""
         return data_allocation.random_sign(
@@ -353,9 +353,9 @@ class DataAllocationWrapper:
 
     def zero_field(
         self,
-        *dims: gtx.Dimension,
+        *dims: type[gtx.Dimension],
         dtype: npt.DTypeLike = ta.wpfloat,
-        extend: dict[gtx.Dimension, int] | None = None,
+        extend: dict[type[gtx.Dimension], int] | None = None,
     ) -> gtx.Field:
         """A field filled with zeros."""
         return data_allocation.zero_field(
