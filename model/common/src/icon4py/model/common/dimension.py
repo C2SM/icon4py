@@ -10,26 +10,86 @@ from collections.abc import Iterator
 import gt4py.next as gtx
 
 
-KDim = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
-KHalfDim = gtx.Dimension("KHalf", kind=gtx.DimensionKind.VERTICAL)
-EdgeDim = gtx.Dimension("Edge")
-CellDim = gtx.Dimension("Cell")
-VertexDim = gtx.Dimension("Vertex")
-LsqUnkDim = gtx.Dimension("LsqUnk", gtx.DimensionKind.LOCAL)
-E2CDim = gtx.Dimension("E2C", gtx.DimensionKind.LOCAL)
-E2VDim = gtx.Dimension("E2V", gtx.DimensionKind.LOCAL)
-C2EDim = gtx.Dimension("C2E", gtx.DimensionKind.LOCAL)
-V2CDim = gtx.Dimension("V2C", gtx.DimensionKind.LOCAL)
-C2VDim = gtx.Dimension("C2V", gtx.DimensionKind.LOCAL)
-V2EDim = gtx.Dimension("V2E", gtx.DimensionKind.LOCAL)
-V2E2VDim = gtx.Dimension("V2E2V", gtx.DimensionKind.LOCAL)
-E2C2VDim = gtx.Dimension("E2C2V", gtx.DimensionKind.LOCAL)
-C2E2CODim = gtx.Dimension("C2E2CO", gtx.DimensionKind.LOCAL)
-E2C2EODim = gtx.Dimension("E2C2EO", gtx.DimensionKind.LOCAL)
-E2C2EDim = gtx.Dimension("E2C2E", gtx.DimensionKind.LOCAL)
-C2E2CDim = gtx.Dimension("C2E2C", gtx.DimensionKind.LOCAL)
-C2E2C2EDim = gtx.Dimension("C2E2C2E", gtx.DimensionKind.LOCAL)
-C2E2C2E2CDim = gtx.Dimension("C2E2C2E2C", gtx.DimensionKind.LOCAL)
+class KDim(gtx.Dimension, kind=gtx.DimensionKind.VERTICAL):
+    value = "K"
+
+
+class KHalfDim(gtx.Dimension, kind=gtx.DimensionKind.VERTICAL):
+    value = "KHalf"
+
+
+class EdgeDim(gtx.Dimension):
+    value = "Edge"
+
+
+class CellDim(gtx.Dimension):
+    value = "Cell"
+
+
+class VertexDim(gtx.Dimension):
+    value = "Vertex"
+
+
+class LsqUnkDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "LsqUnk"
+
+
+class E2CDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "E2C"
+
+
+class E2VDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "E2V"
+
+
+class C2EDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "C2E"
+
+
+class V2CDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "V2C"
+
+
+class C2VDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "C2V"
+
+
+class V2EDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "V2E"
+
+
+class V2E2VDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "V2E2V"
+
+
+class E2C2VDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "E2C2V"
+
+
+class C2E2CODim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "C2E2CO"
+
+
+class E2C2EODim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "E2C2EO"
+
+
+class E2C2EDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "E2C2E"
+
+
+class C2E2CDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "C2E2C"
+
+
+class C2E2C2EDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "C2E2C2E"
+
+
+class C2E2C2E2CDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
+    value = "C2E2C2E2C"
+
+
 E2C = gtx.FieldOffset("E2C", source=CellDim, target=(EdgeDim, E2CDim))
 C2E = gtx.FieldOffset("C2E", source=EdgeDim, target=(CellDim, C2EDim))
 V2C = gtx.FieldOffset("V2C", source=CellDim, target=(VertexDim, V2CDim))
