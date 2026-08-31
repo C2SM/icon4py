@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Deliberately defective copies of the three stencils the analytic tests judge.
+"""Deliberately defective copies of the stencils the analytic tests judge.
 
 A test that passes tells you nothing until you have seen it fail for the right reason, and a
 mutation performed once by hand and then deleted is not evidence -- it is a memory. So each
@@ -54,6 +54,7 @@ __all__ = [
     "compute_explicit_flux_density_with_the_gradient_reversed",
     "compute_implicit_diffusion_momentum_with_the_complementary_weight",
     "compute_stability_lengths_with_the_buoyancy_cofactor_negated",
+    "compute_stability_lengths_with_the_scalar_buoyancy_cofactor_undiminished",
     "compute_stability_lengths_with_the_shear_taken_from_the_buoyancy",
     "compute_turbulent_velocity_scale_with_the_dissipation_time_scale_inverted",
     "compute_turbulent_velocity_scale_with_the_time_smoothing_reversed",
@@ -868,6 +869,167 @@ def compute_stability_lengths_with_the_buoyancy_cofactor_negated(
 ) -> None:
     """BROKEN ON PURPOSE. Arguments are those of 'compute_stability_lengths'."""
     _compute_stability_lengths_with_the_buoyancy_cofactor_negated(
+        master_length_scale=master_length_scale,
+        stability_length_for_momentum=stability_length_for_momentum,
+        stability_length_for_scalars=stability_length_for_scalars,
+        mechanical_forcing=mechanical_forcing,
+        thermal_forcing=thermal_forcing,
+        turbulent_velocity_scale=turbulent_velocity_scale,
+        a_h=a_h,
+        a_m=a_m,
+        b_h=b_h,
+        b_m=b_m,
+        d_m=d_m,
+        d_1=d_1,
+        d_2=d_2,
+        d_3=d_3,
+        d_4=d_4,
+        d_5=d_5,
+        d_6=d_6,
+        rim=rim,
+        frcsecu=frcsecu,
+        stbsecu=stbsecu,
+        out=(updated_stability_length_for_momentum, updated_stability_length_for_scalars),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+# ------------------- 9. the stability functions, with the scalar buoyancy cofactor undiminished ---
+
+
+@gtx.field_operator
+def _compute_stability_lengths_with_the_scalar_buoyancy_cofactor_undiminished(
+    master_length_scale: fa.CellKField[wpfloat],
+    stability_length_for_momentum: fa.CellKField[wpfloat],
+    stability_length_for_scalars: fa.CellKField[wpfloat],
+    mechanical_forcing: fa.CellKField[wpfloat],
+    thermal_forcing: fa.CellKField[wpfloat],
+    turbulent_velocity_scale: fa.CellKField[wpfloat],
+    a_h: wpfloat,
+    a_m: wpfloat,
+    b_h: wpfloat,
+    b_m: wpfloat,
+    d_m: wpfloat,
+    d_1: wpfloat,
+    d_2: wpfloat,
+    d_3: wpfloat,
+    d_4: wpfloat,
+    d_5: wpfloat,
+    d_6: wpfloat,
+    rim: wpfloat,
+    frcsecu: wpfloat,
+    stbsecu: wpfloat,
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+    """'compute_stability_lengths' with 'a11 = d_1 + d_5*gh' where the closure has '(d_5 - d_4)'.
+
+    THE MISTAKE. One dropped term in one coefficient. 'a11' and 'a21' are written in the Fortran
+    as '(d_5 - d_4)*gh' and '(d_6 - d_4)*gh', the same shape twice, and a transcription that
+    carries the subtraction into the second and forgets it in the first lands here. Nothing about
+    the result looks wrong -- the coefficient stays positive, the determinant and both numerators
+    stay positive over the whole stable quadrant, so the standard branch is still selected
+    everywhere the faithful stencil selects it, and no output is out of range.
+
+    WHY IT IS THE MUTATION FOR THE PUBLISHED-CLOSURE TEST. In Mellor & Yamada (1982) Eq. (34) the
+    coefficient of 'G_H' in the scalar equation is '3*A2*B2 + 12*A1*A2': a Kolmogorov scalar
+    dissipation length 'B2' plus a Rotta pressure-redistribution length 'A1'. ICON's
+    '(d_5 - d_4) = 3*B2 + 12*A1' is exactly that, and the mutation makes it '3*B2 + 18*A1' -- the
+    right physics with the wrong weight on one of the two length scales. That is the shape of
+    error the published-source oracle exists to catch, and it is invisible to the rest of this
+    directory:
+
+    - it multiplies 'gh' and nothing else, so at 'Ri = 0' it is EXACTLY the identity, as
+      'test_neutral_stability_functions.py' proves of any such coefficient;
+    - 'd_5' reaches the rest of ICON only through 'rim', which this stencil takes as a separate
+      argument, so every constant a test could compare against -- 'sm_0', 'sh_0', 'c_tke', 'rim'
+      -- is untouched. An oracle built out of 'TurbulenceParams' therefore cannot see it at all.
+
+    It is caught by comparing against the paper, over a stratified state, and by nothing else in
+    this package.
+    """
+    forcing = _effective_tke_forcing(
+        stability_length_for_momentum=stability_length_for_momentum,
+        stability_length_for_scalars=stability_length_for_scalars,
+        mechanical_forcing=mechanical_forcing,
+        thermal_forcing=thermal_forcing,
+        frcsecu=frcsecu,
+        rim=rim,
+    )
+
+    turbulent_time_scale = master_length_scale / turbulent_velocity_scale
+    tim2 = turbulent_time_scale * turbulent_time_scale
+    gh = thermal_forcing * tim2
+    gm = mechanical_forcing * tim2
+
+    a11 = d_1 + d_5 * gh  # <-- the defect: the '- d_4' of the scalar buoyancy cofactor is gone
+    a12 = d_4 * gm
+    a21 = (d_6 - d_4) * gh
+    a22 = d_2 + d_3 * gh + d_4 * gm
+
+    determinant = a11 * a22 - a12 * a21
+    numerator_h = b_h * a22 - b_m * a12
+    numerator_m = b_m * a11 - b_h * a21
+    inverse_determinant = wpfloat("1.0") / determinant
+
+    gam0 = stbsecu / d_m + (wpfloat("1.0") - stbsecu) * b_m / d_4
+    gama = minimum(gam0, forcing * tim2 / master_length_scale)
+    wert = d_4 * gama
+    bb1 = (b_h - wert) * a_h
+    bb2 = (b_m - wert) * a_m
+    a3 = d_3 * gama * a_m
+    a5 = d_5 * gama * a_h
+    a6 = d_6 * gama * a_m
+
+    val1 = (mechanical_forcing * bb2 + (a5 - a3 + bb1) * thermal_forcing) / (wpfloat("2.0") * bb1)
+    val2 = val1 + sqrt(val1 * val1 - (a6 + bb2) * thermal_forcing * mechanical_forcing / bb1)
+    fakt = thermal_forcing / (val2 - thermal_forcing)
+    corrected_h = bb1 - a5 * fakt
+    corrected_m = corrected_h * (bb2 - a6 * fakt) / (bb1 - (a5 - a3) * fakt)
+
+    solvable = (
+        (thermal_forcing >= wpfloat("0.0"))
+        & (determinant > wpfloat("0.0"))
+        & (numerator_h > wpfloat("0.0"))
+        & (numerator_m > wpfloat("0.0"))
+    )
+    sh = where(solvable, numerator_h * inverse_determinant, corrected_h)
+    sm = where(solvable, numerator_m * inverse_determinant, corrected_m)
+    return master_length_scale * sm, master_length_scale * sh
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_stability_lengths_with_the_scalar_buoyancy_cofactor_undiminished(
+    master_length_scale: fa.CellKField[wpfloat],
+    stability_length_for_momentum: fa.CellKField[wpfloat],
+    stability_length_for_scalars: fa.CellKField[wpfloat],
+    mechanical_forcing: fa.CellKField[wpfloat],
+    thermal_forcing: fa.CellKField[wpfloat],
+    turbulent_velocity_scale: fa.CellKField[wpfloat],
+    a_h: wpfloat,
+    a_m: wpfloat,
+    b_h: wpfloat,
+    b_m: wpfloat,
+    d_m: wpfloat,
+    d_1: wpfloat,
+    d_2: wpfloat,
+    d_3: wpfloat,
+    d_4: wpfloat,
+    d_5: wpfloat,
+    d_6: wpfloat,
+    rim: wpfloat,
+    frcsecu: wpfloat,
+    stbsecu: wpfloat,
+    updated_stability_length_for_momentum: fa.CellKField[wpfloat],
+    updated_stability_length_for_scalars: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """BROKEN ON PURPOSE. Arguments are those of 'compute_stability_lengths'."""
+    _compute_stability_lengths_with_the_scalar_buoyancy_cofactor_undiminished(
         master_length_scale=master_length_scale,
         stability_length_for_momentum=stability_length_for_momentum,
         stability_length_for_scalars=stability_length_for_scalars,
