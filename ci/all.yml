@@ -13,6 +13,7 @@ variables:
   LEVELS: "all"
   GRIDS: "all"
   TOOLS_SUBSETS: "all"
+  PRECISION_VARIANTS: "all"
 
 
 build_baseimage_aarch64:

@@ -51,7 +51,7 @@ import types
 import typing
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
 from types import ModuleType
-from typing import Any, Literal, Protocol, TypeVar, overload
+from typing import Any, Literal, Protocol, TypeVar, cast, overload
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -200,7 +200,7 @@ class FieldSource(GridProvider, Protocol):
 
     @overload
     def get(
-        self, field_name: str, type_: Literal[RetrievalType.SCALAR] = RetrievalType.SCALAR
+        self, field_name: str, type_: Literal[RetrievalType.SCALAR]
     ) -> state_utils.ScalarType: ...
 
     @overload
@@ -255,7 +255,7 @@ class FieldSource(GridProvider, Protocol):
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
 
-    def dtype_for_factory(self, field_name: str):
+    def dtype_for_factory(self, field_name: str) -> state_utils.ScalarType:
         try:
             this_metadata = self.get(field_name, RetrievalType.METADATA)
             dtype = this_metadata.get("dtype", gtx.float64)
@@ -263,18 +263,19 @@ class FieldSource(GridProvider, Protocol):
             dtype = gtx.float64
         return keep_floats_double(dtype)
 
-    def dtypes_for_factory(self, field_names: Iterator[str]):
+    def dtypes_for_factory(self, field_names: Iterator[str]) -> dict[str, state_utils.ScalarType]:
         dtypes = {field_name: self.dtype_for_factory(field_name) for field_name in field_names}
         return dtypes
 
-    def _provided_by_source(self, name) -> str:
+    def _provided_by_source(self, name) -> bool:
         return name in self._sources._providers or name in self._sources.metadata
 
-    def export_field(self, field_name: str):
+    def export_field(self, field_name: str) -> state_utils.GTXFieldType:
         """Export a field from the factory in the dtype provided by the metadata."""
         field = self.get(field_name, RetrievalType.FIELD)
         dtype_metadata = self.metadata[field_name].get("dtype", ta.wpfloat)
-        return gtx.astype(field, dtype_metadata)
+        # `astype` is a `BuiltInFunction`, whose overloads are erased by the decorator.
+        return cast("state_utils.GTXFieldType", gtx.astype(field, dtype_metadata))
 
     def register_provider(self, provider: FieldProvider) -> None:
         # dependencies must be provider by this field source or registered in sources
@@ -827,7 +828,7 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.__name__
 
 
-def keep_floats_double(dtype_metadata):
+def keep_floats_double(dtype_metadata: state_utils.ScalarType) -> state_utils.ScalarType:
     if dtype_metadata in [gtx.int32, bool]:
         return dtype_metadata
     else:
