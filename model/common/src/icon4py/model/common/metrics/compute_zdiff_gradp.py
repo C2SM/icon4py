@@ -19,9 +19,9 @@ decreasing in ``k``; ``z_me`` is a non-negative linear combination of two
 non-increasing level sequences, so it is non-increasing in ``k`` per edge.
 
 With these invariants, a single batched ``searchsorted`` on the ascending
-half-level column gives the same first-match index as the reference loop, and
-the result is non-decreasing in ``jk``, so ``clip(searchsorted_result, fi,
-nlev-1)`` reproduces the reference ``jk_start`` carry without a sequential
+half-level column gives the same first-match index as the reference loop.
+The result is non-decreasing in ``jk``, so ``clip(searchsorted_result, fi,
+nlev-1)`` reproduces the reference ``jk_start`` lower-bound update without a sequential
 loop.
 
 Premise: the queries (``z_me`` and ``z_aux2``) are strictly between consecutive
@@ -114,9 +114,9 @@ def compute_zdiff_gradp(
     Relies on the two grid invariants proved in the module docstring: ``z_ifc``
     is strictly decreasing in ``k`` (vertical.py:558 and vertical.py:625), and
     ``z_me`` is non-increasing in ``k`` per edge.  Under those invariants,
-    ``searchsorted`` returns the reference first-match index and the result is
-    non-decreasing in ``jk``, so clipping it to ``[fi, nlev-1]`` reproduces the
-    reference ``jk_start`` carry without an explicit loop.
+    ``searchsorted`` returns the reference first-match index.
+    The result is non-decreasing in ``jk``, so clipping it to ``[fi, nlev-1]`` reproduces the
+    reference ``jk_start`` lower-bound update without an explicit loop.
     """
     array_ns = data_alloc.array_namespace(z_mc)
     nedges = e2c.shape[0]
@@ -180,7 +180,7 @@ def compute_zdiff_gradp(
     )
 
     # Phase 1, cell 1: under E3 the searchsorted result is non-decreasing in
-    # jk, so the same clip as cell 0 reproduces the reference jk_start carry.
+    # jk, so the same clip as cell 0 reproduces the reference jk_start lower-bound update.
     jk1_1 = _first_match(array_ns, z_ifc_e1_m, z_me_m, fi_sliced, nlev)
     z_mc_e1 = z_mc[e2c_1]
     base_zdiff_c = z_me[hs:] - z_mc_e1[hs:]
