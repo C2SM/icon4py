@@ -1647,12 +1647,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-sdist = {url = "https://files.pythonhosted.org/packages/a7/1b/32d686217f33923be252c4dda950aedbd20aa94447d62e2332c1ae776fe1/gt4py-1.2.1.tar.gz", hash = "sha256:8f3cce85380994cf532b0433300496cddfb5e1855ee623642ef188851ce1ccea", size = 882545, upload-time = "2026-08-17T10:47:25.351Z"}
-source = {registry = "https://pypi.org/simple"}
-version = "1.2.1"
-wheels = [
-  {url = "https://files.pythonhosted.org/packages/c0/8d/30417e009216393825d4584f93a7cbf858a9d3987cc8ee28538af26f029a/gt4py-1.2.1-py3-none-any.whl", hash = "sha256:7cad0421f13c558166991a5e1f6042351473e52957461f406c068bec5d8b459c", size = 1100850, upload-time = "2026-08-17T10:47:23.49Z"}
-]
+source = {git = "https://github.com/GridTools/gt4py?branch=main#8b507e0a2f983d8201c441ac5af6f69367f12c30"}
+version = "1.2.1.post27+8b507e0a"
 
 [package.optional-dependencies]
 cuda12 = [
@@ -2035,7 +2031,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2052,7 +2048,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2069,7 +2065,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2087,7 +2083,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
@@ -2120,7 +2116,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2149,9 +2145,9 @@ requires-dist = [
   {name = "click", specifier = ">=8.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
-  {name = "gt4py", specifier = "==1.2.1"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=main"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
@@ -2201,10 +2197,10 @@ requires-dist = [
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
-  {name = "gt4py", specifier = "==1.2.1"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
-  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/GridTools/gt4py?branch=main"},
+  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/GridTools/gt4py?branch=main"},
   {name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0"},
   {name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common"},
   {name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5"},
@@ -2286,7 +2282,7 @@ version = "0.4.1"
 [package.metadata]
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
@@ -2314,7 +2310,7 @@ version = "0.4.1"
 [package.metadata]
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"},
@@ -2346,7 +2342,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.1.7"},
   {name = "configargparse", specifier = ">=1.7.1"},
   {name = "fprettify", specifier = ">=0.3.7"},
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
