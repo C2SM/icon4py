@@ -26,9 +26,11 @@ and 'trop_mask' is identically zero at all 8276 computed columns of the Swiss LA
 'versmot = frcsmot*trop_mask' would be zero and the routine the identity. What stands behind
 this file is a numpy transcription of the Fortran and a set of structural properties
 ('integration_tests/test_turbdiff_section_2c.py', the 'vert_smooth' section), not ICON output.
-It is ported anyway because 'frcsmot = 0.2' is the Fortran default and the DWD global and
-regional setups run it, so refusing it locks out configurations ICON operates; but a first
-tropical or global capture should be used to validate it before it is trusted.
+It is ported anyway because 28 top-level 'exp.*' configurations set 'frcsmot = 0.2' -- 13 MCH
+operational setups and 7 DWD NWP ones among them -- so refusing it locks out configurations ICON
+operates. (0.2 is NOT the Fortran default: 'mo_turbdiff_config.f90:143' defaults 'frcsmot' to
+0.0, which is what the capture ran.) A first tropical or global capture should be used to
+validate it before it is trusted.
 
 IT IS NOT A RECURRENCE, despite the '!$ACC LOOP SEQ' over 'k'. The Fortran rotates two saved
 columns, 'sav_tend(:,j1)' and 'sav_tend(:,j2)', and writes 'cur_tend' in place:
@@ -59,8 +61,17 @@ THE THREE ROWS. With the call's 'k_tp = 1' and 'k_sf = ke1', on zero-based half 
     row nlev         untouched -- the surface half level
 
 The two ends carry '(1-s)' rather than '(1-2s)' and one neighbour rather than two, which is
-what makes the smoothing conservative: the weights of each row still sum to one, since the
-missing neighbour's weight is the one that is added back to the row itself.
+what makes the smoothing conservative: 'sum_k out(k)*dm(k)' equals 'sum_k in(k)*dm(k)', because
+the weight the missing neighbour would have taken is the one added back to the row itself.
+
+THAT IS A STATEMENT ABOUT THE COLUMNS OF THE WEIGHT MATRIX, NOT ITS ROWS, and the difference is
+not pedantic. Each neighbour weight carries the mass ratio 'dm(k')/dm(k)', so what is
+redistributed is 'f*dm' and not 'f'. The weights of one ROW sum to
+'1 - 2s + s*(dm(k-1) + dm(k+1))/dm(k)', which is one only where 'dm' is uniform -- so this
+operator does NOT preserve a constant profile on a stretched grid, and on an idealized column it
+moves one by up to 7 per cent in a single pass at 'frcsmot = 0.2'. It is a mass-conservative
+redistribution, not an average. Measured and asserted level by level in
+'analytic_tests/test_vertical_smoothing_weights.py'.
 
 WHY THE UNTOUCHED ROWS ARE COPIED HERE. The Fortran smooths in place, so a row it does not
 write keeps its value by construction. A GT4Py program computes its whole domain into a
