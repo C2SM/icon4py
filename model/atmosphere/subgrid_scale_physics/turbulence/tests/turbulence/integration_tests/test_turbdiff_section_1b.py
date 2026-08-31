@@ -62,11 +62,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_mechanical_forcing import (
-    compute_mechanical_forcing,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_thermal_forcing import (
-    compute_thermal_forcing,
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_tke_forcing_functions import (
+    compute_tke_forcing_functions,
 )
 from icon4py.model.testing import serialbox as sb
 
@@ -120,7 +117,20 @@ def _fma() -> Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray]:
 
 
 def _run_section_1b(data_provider, date: str, backend) -> Section1b:
-    """Run both stencils of section 1b) on the 'turbdiff-1a-exit' state of one timestep."""
+    """Run section 1b) on the 'turbdiff-1a-exit' state of one timestep.
+
+    ONE PROGRAM, TWO STATEMENTS, AND ONLY ONE VERTICAL BOUND STATED HERE. Before the merge this
+    helper passed 'vertical_end=ke1' to the thermal forcing and 'vertical_end=ke' to the
+    mechanical one, so the test stated both bounds independently of the stencils. It now states
+    'ke1' only, and the 'kem = ke' bound lives inside 'compute_tke_forcing_functions'.
+
+    What still constrains that bound: the reference comparison covers every written row, and
+    'test_compute_mechanical_forcing_leaves_the_model_top_and_the_surface_alone' -- carried
+    through the merge unchanged -- asserts row 'ke' of 'frm' against the reference, which is the
+    row a one-off in the merged statement's domain would overwrite. The section docstring records
+    that extending the domain by that row changes it in all 8276 computed columns, so the
+    assertion bites.
+    """
     entry = data_provider.from_savepoint_turbdiff_entry(date=date)
     before = data_provider.from_savepoint_turbdiff_section(section="1a", date=date)
     after = data_provider.from_savepoint_turbdiff_section(section="1b", date=date)
@@ -132,28 +142,21 @@ def _run_section_1b(data_provider, date: str, backend) -> Section1b:
     mechanical_forcing = utils.copy_of_raw_field(before, "td_frm", backend)
 
     # Fortran 'DO k=2,ke1' over one-based half levels is 'vertical_start=1, vertical_end=ke1'.
-    compute_thermal_forcing.with_backend(backend)(
+    # The shear statement inside the program stops at 'vertical_end - 1', i.e. 'kem = ke'.
+    compute_tke_forcing_functions.with_backend(backend)(
         buoyancy_factor_tet_l=before.g_tet_l(),
         buoyancy_factor_h2o_g=before.g_h2o(),
         vertical_gradient_tet_l=before.vertical_gradient(TET_L),
         vertical_gradient_h2o_g=before.vertical_gradient(H2O_G),
-        thermal_forcing=thermal_forcing,
-        horizontal_start=gtx.int32(before.ivstart()),
-        horizontal_end=gtx.int32(before.ivend()),
-        vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(ke1),
-        offset_provider={},
-    )
-    # Fortran 'DO k=2,kem' with 'kem = ke' stops one half level higher.
-    compute_mechanical_forcing.with_backend(backend)(
         vertical_gradient_u=before.vertical_gradient(U_M),
         vertical_gradient_v=before.vertical_gradient(V_M),
         min_forcing=entry.fc_min(),
+        thermal_forcing=thermal_forcing,
         mechanical_forcing=mechanical_forcing,
         horizontal_start=gtx.int32(before.ivstart()),
         horizontal_end=gtx.int32(before.ivend()),
         vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(ke),
+        vertical_end=gtx.int32(ke1),
         offset_provider={},
     )
     return Section1b(
@@ -303,7 +306,7 @@ def test_compute_thermal_forcing_agrees_with_icon_within_its_gate(
     levels = slice(1, run.ke1)
 
     utils.assert_agrees_with_icon(
-        "compute_thermal_forcing",
+        "compute_tke_forcing_functions",
         "frh",
         run.thermal_forcing,
         run.after.thermal_forcing(),
@@ -322,7 +325,7 @@ def test_compute_mechanical_forcing_agrees_with_icon_within_its_gate(
     levels = slice(1, run.ke)
 
     utils.assert_agrees_with_icon(
-        "compute_mechanical_forcing",
+        "compute_tke_forcing_functions",
         "frm",
         run.mechanical_forcing,
         run.after.mech_forcing(),

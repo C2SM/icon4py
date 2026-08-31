@@ -149,9 +149,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_layer_depth import (
     compute_layer_depth,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_mechanical_forcing import (
-    compute_mechanical_forcing,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_saved_tke_profile import (
     compute_saved_tke_profile,
 )
@@ -185,14 +182,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_transfer_ratios import (
     compute_surface_transfer_ratios,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_thermal_forcing import (
-    compute_thermal_forcing,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_three_dimensional_shear_forcing import (
     compute_three_dimensional_shear_forcing,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_tke_diffusion_right_hand_side import (
     compute_tke_diffusion_right_hand_side,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_tke_forcing_functions import (
+    compute_tke_forcing_functions,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_total_mechanical_forcing import (
     compute_total_mechanical_forcing,
@@ -1585,14 +1582,12 @@ class Turbulence:
         )
 
         # -- section 1b) the two basic TKE forcing functions
-        self._compute_thermal_forcing = self._program(
-            compute_thermal_forcing,
-            levels=(1, nlev + 1),  # 'DO k=2,ke1'
-        )
-        self._compute_mechanical_forcing = self._program(
-            compute_mechanical_forcing,
+        # One program, two statements: 'frh' over the whole range bound here, 'frm' over one row
+        # less. The 'kem = ke' bound is inside the stencil now, next to the Fortran that sets it.
+        self._compute_tke_forcing_functions = self._program(
+            compute_tke_forcing_functions,
             constant_args={"min_forcing": self._minimal_tke_forcing},
-            levels=(1, nlev),  # 'DO k=2,kem' with 'kem = ke'
+            levels=(1, nlev + 1),  # 'DO k=2,ke1'; the shear statement stops at 'kem = ke'
         )
 
         # -- section 2a) the three-dimensional shear complements
@@ -2243,20 +2238,18 @@ class Turbulence:
 
         # -- 1b) the two basic TKE forcing functions ------------------------------------------
 
-        self._compute_thermal_forcing(
+        # Every row section 1b) writes into 'frm' is overwritten again by section 2a) at
+        # 'itype_sher = 2', which is the only value this granule accepts. The shear statement is
+        # kept because the Fortran keeps it: 'frm' is INTENT(OUT)-like scratch and a future
+        # 'itype_sher < 2' would need exactly this value.
+        self._compute_tke_forcing_functions(
             buoyancy_factor_tet_l=self._zaux_4,
             buoyancy_factor_h2o_g=self._zaux_5,
             vertical_gradient_tet_l=self._gradient_liquid_water_potential_temperature,
             vertical_gradient_h2o_g=self._gradient_total_water,
-            thermal_forcing=self._frh,
-        )
-        # Every row section 1b) writes into 'frm' is overwritten again by section 2a) at
-        # 'itype_sher = 2', which is the only value this granule accepts. The call is kept
-        # because the Fortran keeps it: 'frm' is INTENT(OUT)-like scratch and a future
-        # 'itype_sher < 2' would need exactly this value.
-        self._compute_mechanical_forcing(
             vertical_gradient_u=self._gradient_zonal_wind,
             vertical_gradient_v=self._gradient_meridional_wind,
+            thermal_forcing=self._frh,
             mechanical_forcing=self._frm,
         )
 

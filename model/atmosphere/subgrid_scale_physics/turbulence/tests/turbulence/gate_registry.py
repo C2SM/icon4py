@@ -254,10 +254,12 @@ GATES: dict[str, Gate] = {
     # separate loop and this port selects with 'concat_where' -- see the boundary-row convention
     # in the package README.
     "compute_vertical_gradients_of_conserved_variables": Exact(),
-    # turbdiff section 1b) -- the two TKE forcing terms. Both are 'a*b + c*d' expressions and
-    # were the reason the reference was recaptured without FMA contraction (v02).
-    "compute_thermal_forcing": Exact(),
-    "compute_mechanical_forcing": Exact(),
+    # turbdiff section 1b) -- the two TKE forcing terms, one program with two statements since
+    # the stencil merge. Both are 'a*b + c*d' expressions and were the reason the reference was
+    # recaptured without FMA contraction (v02). One entry, because the gate is a property of the
+    # program; the section test still asserts 'frh' and 'frm' separately, so a failure names the
+    # Fortran quantity even though it names one stencil.
+    "compute_tke_forcing_functions": Exact(),
     # turbdiff section 0) conserved variables, cloud cover and turbulent length scales.
     # Measured on 'exp.mch_icon-ch2_small' v02, all four dates, on 'embedded', 'gtfn_cpu' and
     # 'dace_cpu' -- which produce bit-identical results here, so the disagreement is on ICON's

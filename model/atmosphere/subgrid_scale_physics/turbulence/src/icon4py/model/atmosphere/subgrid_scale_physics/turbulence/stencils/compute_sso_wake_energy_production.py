@@ -35,7 +35,7 @@ the ordering constraint disappears with the aliasing that caused it.
 
 THIS EXPRESSION IS AN FMA CANARY. It is 'a*b + c*d', the pattern that distinguishes a
 contracted build from an uncontracted one, so a bit-exact result here is evidence that neither
-side is fusing -- the same role section 1b)'s 'compute_thermal_forcing' plays.
+side is fusing -- the same role section 1b)'s '_compute_thermal_forcing' plays.
 """
 
 import gt4py.next as gtx

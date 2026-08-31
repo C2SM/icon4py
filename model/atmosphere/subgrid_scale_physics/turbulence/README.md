@@ -27,7 +27,7 @@ computing anything is indistinguishable from a working one at the call site. Whe
   workspace), which is **not started**.
 
 Two stencils name `turb_transfer.f90` in a comment — `compute_surface_transfer_ratios` and
-`compute_mechanical_forcing` — but both cite it to contrast against, not as provenance.
+`compute_tke_forcing_functions` — but both cite it to contrast against, not as provenance.
 
 The ICON-side interfaces (`mo_nwp_turbdiff_interface.f90`, `mo_nwp_turbtrans_interface.f90`) stay in
 Fortran; they are out of scope. Scientific commentary in the Fortran sources is by Matthias
@@ -152,8 +152,9 @@ the first is obvious:
   `tests/turbulence/conftest.py`. Both reach the compiler: GT4Py's CMake toolchain picks them up
   for `gtfn_*`, and for `dace_*` GT4Py reads them itself and writes `compiler.cpu.args` /
   `compiler.cuda.args` (`gt4py/next/program_processors/runners/dace/workflow/common.py`), which
-  also displaces DaCe's default `--use_fast_math`. Verified on `dace_gpu`: `compute_thermal_forcing`
-  (`a*b + c*d`, the expression that is sensitive to it) is bit-exact.
+  also displaces DaCe's default `--use_fast_math`. Verified on `dace_gpu`: the thermal forcing
+  of `compute_tke_forcing_functions` (`a*b + c*d`, the expression that is sensitive to it) is
+  bit-exact.
 
 - **Write a square as a product, never as `x**2`.** Fortran's integer-exponent `**` is a
   multiplication; GT4Py's `**` becomes `math.pow`, and CUDA's `pow` carries up to 2 ulp of error.
@@ -188,18 +189,33 @@ so the boundary block has to run first — and it does not have to survive trans
 the port:
 
 **Merge into one `@gtx.program` with `concat_where` when the boundary row is a different
-*coefficient or expression* for the *same output field*. Keep separate programs when the
-boundary row writes a *different field*, or writes nothing.**
+*coefficient or expression* for the *same output field*. Use a second `out=`/`domain=` statement
+of the same program when the boundary row writes a *different field*, or writes nothing.**
+
+### Two statements, or one `concat_where`
+
+The rule above once ended "keep separate programs", and that conflated two things: whether the
+rows are selected inside one expression, and whether they live in one named unit. They are
+independent. A `@gtx.program` body is a *sequence* of field-operator calls, each with its own
+`out=` and its own `domain=`, so N groups of outputs that share no vertical domain can be one
+program with N statements, each keeping the exact `vertical_start`/`vertical_end` it had. Nothing
+is unioned, no row is rewritten, and the kernel count is unchanged.
+
+So `concat_where` is for the case the table above is about — *one output field* whose boundary row
+takes a different coefficient — and a second statement is for everything else. The dycore's
+`compute_perturbed_quantities_and_interpolation` (six statements, four vertical domains) is the
+idiom; in this package `compute_tke_forcing_functions`, `compute_current_profile` and
+`compute_surface_air_density_and_exner_factor` are examples.
 
 Worked out on section 1a) and 1b), which is where each half of the rule was decided; section 11)
 is the first application at the other end of the column:
 
-| Fortran                                                            | ported as                                                                 | why                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `zvari(:,ke1,n)` and `zvari(:,k,n)`                                | ONE program, `concat_where(dims.KDim == nlev, …)` on the reciprocal depth | Identical difference quotient `(zvari(k-1) - zvari(k)) * scale`; only `scale` differs (`lays` vs `hlp`). One field, one program.                                                                                                                                                                                           |
-| `hlp`/`dicke`, `DO k=ke,2,-1`                                      | one program, no `concat_where`                                            | Rows 0 and `ke1` are not written at all in this section, so there is no second case to select. Its own vertical domain says that.                                                                                                                                                                                          |
-| `frh` (`k=2,ke1`) and `frm` (`k=2,kem`)                            | TWO programs                                                              | Different fields, different formulas, disjoint inputs. Fusing them would need `concat_where(KDim < nlev, shear, frm)`, i.e. a read-modify-write turning "`frm(:,ke1)` is never written" into "`frm(:,ke1)` is rewritten with its old value". That is a semantic change, not a refactor.                                    |
-| `rcld(:,1)=rcld(:,2)` and `rcld(:,k)=(rcld(:,k)+rcld(:,k+1))*z1d2` | ONE program, `concat_where(dims.KDim == 0, …)` on the result              | Same two half levels read on every row, weighted `(0, 1)` at the model top and `(1/2, 1/2)` below. Only the coefficients differ, so one field, one program — the rule reads the same at `KDim == 0` as at `KDim == nlev`. The two rows the section does not write are left to the vertical domain, as `hlp`/`dicke` above. |
+| Fortran                                                            | ported as                                                                 | why                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `zvari(:,ke1,n)` and `zvari(:,k,n)`                                | ONE program, `concat_where(dims.KDim == nlev, …)` on the reciprocal depth | Identical difference quotient `(zvari(k-1) - zvari(k)) * scale`; only `scale` differs (`lays` vs `hlp`). One field, one program.                                                                                                                                                                                                                                                                                                                                                                             |
+| `hlp`/`dicke`, `DO k=ke,2,-1`                                      | one program, no `concat_where`                                            | Rows 0 and `ke1` are not written at all in this section, so there is no second case to select. Its own vertical domain says that.                                                                                                                                                                                                                                                                                                                                                                            |
+| `frh` (`k=2,ke1`) and `frm` (`k=2,kem`)                            | ONE program, TWO statements, no `concat_where`                            | Different fields, different formulas, disjoint inputs, so there is nothing to select over. Fusing them into one output *would* need `concat_where(KDim < nlev, shear, frm)`, i.e. a read-modify-write turning "`frm(:,ke1)` is never written" into "`frm(:,ke1)` is rewritten with its old value" — a semantic change, not a refactor, and that is why `compute_tke_forcing_functions` writes each field from its own `out=`/`domain=` statement instead. See "Two statements, or one `concat_where`" below. |
+| `rcld(:,1)=rcld(:,2)` and `rcld(:,k)=(rcld(:,k)+rcld(:,k+1))*z1d2` | ONE program, `concat_where(dims.KDim == 0, …)` on the result              | Same two half levels read on every row, weighted `(0, 1)` at the model top and `(1/2, 1/2)` below. Only the coefficients differ, so one field, one program — the rule reads the same at `KDim == 0` as at `KDim == nlev`. The two rows the section does not write are left to the vertical domain, as `hlp`/`dicke` above.                                                                                                                                                                                   |
 
 ### What merging buys, and what it costs
 

@@ -46,7 +46,7 @@ import pytest
 os.environ.setdefault("CXXFLAGS", "-ffp-contract=off")
 
 #: nvcc for the 'gtfn_gpu' and 'dace_gpu' backends. VERIFIED on 2026-08-28: section 1b's
-#: 'compute_thermal_forcing' -- the 'a*b + c*d' whose rounding this decides -- is bit-exact on
+#: '_compute_thermal_forcing' -- the 'a*b + c*d' whose rounding this decides -- is bit-exact on
 #: both GPU backends, so the variable does reach nvcc. It reaches it by two different routes,
 #: and neither is CMake's usual environment pickup alone:
 #:
