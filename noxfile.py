@@ -224,13 +224,15 @@ def _driver_bencher_testbed() -> str:
     nodes = os.environ.get("SLURM_JOB_NUM_NODES", "1")
     experiment = os.environ.get("DRIVER_BENCHMARK_EXPERIMENT", "jw")
     grid = os.environ.get("GRID", "default")
+    transport = os.environ.get("GHEX_TRANSPORT_BACKEND", "unknown").lower()
     return (
         f"{os.environ['RUNNER']}:"
         f"{os.environ['SYSTEM_TAG']}:"
         f"{os.environ['BACKEND']}:"
         f"{experiment}:"
         f"{grid}:"
-        f"{comm_size}n{nodes}N"
+        f"{comm_size}n{nodes}N:"
+        f"{transport}"
     )
 
 
