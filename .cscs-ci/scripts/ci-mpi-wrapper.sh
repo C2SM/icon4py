@@ -17,9 +17,8 @@ else
     exit 1
 fi
 
-# Under MPS the daemon owns all GPUs allocated to the job (ordinals 0..N-1).
-# Pin ranks round-robin to one of those ordinals. With a single GPU this is a
-# no-op and the legacy MPS 'unset CUDA_VISIBLE_DEVICES' semantics are preserved.
+# Under MPS GPUs are visible with indices 0..SLURM_GPUS_PER_NODE-1. Assign
+# ranks to GPUs round-robin.
 if (( ${SLURM_GPUS_PER_NODE:-1} > 1 )); then
     export CUDA_VISIBLE_DEVICES="$(( rank % SLURM_GPUS_PER_NODE ))"
     echo "Rank ${rank}/${SLURM_NTASKS:-?}: pinned to GPU ${CUDA_VISIBLE_DEVICES}"
