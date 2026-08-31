@@ -149,8 +149,6 @@ variables:
     # also scales with number of workers; 32 is a balance between these for jobs
     # that don't run many tests.
     NUM_PROCESSES: 32
-    # Cap OpenMP threads: unpinned, CPU-backend kernels oversubscribe the
-    # node badly (measured >2x slowdown of the driver CPU validation test).
     OMP_NUM_THREADS: 8
     GT4PY_BUILD_JOBS: 12
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
