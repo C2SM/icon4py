@@ -13,7 +13,7 @@ from icon4py.model.common.constants import PhysicsConstants
 
 
 @gtx.field_operator
-def _diagnose_surface_pressure(
+def _compute_surface_pressure(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
@@ -31,7 +31,7 @@ def _diagnose_surface_pressure(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def diagnose_surface_pressure(
+def compute_surface_pressure(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
@@ -41,7 +41,7 @@ def diagnose_surface_pressure(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _diagnose_surface_pressure(
+    _compute_surface_pressure(
         exner=exner,
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,

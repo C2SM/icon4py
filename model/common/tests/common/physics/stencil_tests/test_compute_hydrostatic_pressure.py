@@ -12,15 +12,15 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
-from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
-    diagnose_pressure,
-)
 from icon4py.model.common.grid import base
+from icon4py.model.common.physics.stencils.compute_hydrostatic_pressure import (
+    compute_hydrostatic_pressure,
+)
 from icon4py.model.testing import stencil_tests
 
 
 class TestDiagnosePressure(stencil_tests.StencilTest):
-    PROGRAM = diagnose_pressure
+    PROGRAM = compute_hydrostatic_pressure
     OUTPUTS = ("pressure", "pressure_ifc")
 
     @stencil_tests.static_reference

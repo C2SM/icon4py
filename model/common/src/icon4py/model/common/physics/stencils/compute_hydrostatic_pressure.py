@@ -33,7 +33,7 @@ def _scan_pressure(
 
 
 @gtx.field_operator
-def _diagnose_pressure(
+def _compute_hydrostatic_pressure(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
@@ -54,7 +54,7 @@ def _diagnose_pressure(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def diagnose_pressure(
+def compute_hydrostatic_pressure(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     surface_pressure: fa.CellField[ta.wpfloat],
@@ -65,7 +65,7 @@ def diagnose_pressure(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _diagnose_pressure(
+    _compute_hydrostatic_pressure(
         ddqz_z_full,
         virtual_temperature,
         surface_pressure,
