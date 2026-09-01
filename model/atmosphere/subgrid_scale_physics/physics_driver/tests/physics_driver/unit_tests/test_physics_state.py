@@ -15,7 +15,11 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import geometry_attributes, simple
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
+from icon4py.model.common.states import (
+    diagnostic_state,
+    prognostic_state as prognostics,
+    tracer_states,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -107,10 +111,12 @@ def test_diagnose_from_fills_working_fields_and_leaves_inputs_untouched():
     ws.diagnose_from(prognostic, tracers)
 
     # wiring smoke test: physically plausible diagnostics
-    assert 200.0 < ws.ta.asnumpy().mean() < 320.0
-    assert (ws.pressure.asnumpy() > 0).all()
+    assert 200.0 < ws.diagnostics.temperature.asnumpy().mean() < 320.0
+    assert (ws.diagnostics.pressure.asnumpy() > 0).all()
     # pressure grows downward: surface interface > top full level
-    assert (ws.pressure_ifc.asnumpy()[:, -1] > ws.pressure.asnumpy()[:, 0]).all()
+    assert (
+        ws.diagnostics.pressure_ifc.asnumpy()[:, -1] > ws.diagnostics.pressure.asnumpy()[:, 0]
+    ).all()
 
     # the invariant: inputs untouched
     np.testing.assert_array_equal(prognostic.exner.asnumpy(), exner_before)
@@ -252,3 +258,12 @@ def test_apply_projects_accumulated_wind_tendency_to_vn():
     apply_once(ws, acc, dt_seconds=dt)
 
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
+
+
+def test_entry_state_groups_diagnostics_in_common_container():
+    grid = simple.simple_grid()
+    ws = _entry_state(grid)
+    assert isinstance(ws.diagnostics, diagnostic_state.DiagnosticState)
+    # the flat shorthand is gone -- pointers and diagnostics are structurally distinct
+    assert not hasattr(ws, "ta")
+    assert not hasattr(ws, "pressure")

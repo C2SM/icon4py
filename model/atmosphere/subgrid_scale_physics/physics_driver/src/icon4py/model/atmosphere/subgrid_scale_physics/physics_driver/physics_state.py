@@ -39,6 +39,7 @@ from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpol
 )
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.states import diagnostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -122,16 +123,7 @@ class EntryState:
             offset_provider=grid.connectivities,
         )
 
-        # Diagnosed fields — allocated once, overwritten by each diagnose_from call
-        self.ta = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self.tv = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self.pressure = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        # Half-level pressure: one extra interface level
-        self.pressure_ifc = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        )
-        self.u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-        self.v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
+        self.diagnostics = diagnostic_state.initialize_diagnostic_state(grid, backend)
 
         # Pointers into the model state — bound by every diagnose_from call
         self.exner: gtx.Field | None = None
@@ -181,35 +173,35 @@ class EntryState:
             qg=tracers.qg,
             theta_v=prognostic.theta_v,
             exner=prognostic.exner,
-            virtual_temperature=self.tv,
-            temperature=self.ta,
+            virtual_temperature=self.diagnostics.virtual_temperature,
+            temperature=self.diagnostics.temperature,
         )
 
         # 2. Surface pressure at the bottom interface, then the full pressure column
         self._diagnose_surface_pressure(
             exner=prognostic.exner,
-            virtual_temperature=self.tv,
+            virtual_temperature=self.diagnostics.virtual_temperature,
             ddqz_z_full=self._ddqz_z_full,
-            surface_pressure=self.pressure_ifc,
+            surface_pressure=self.diagnostics.pressure_ifc,
         )
         surface_pressure = gtx.as_field(
             (dims.CellDim,),
-            self.pressure_ifc.ndarray[:, -1],
+            self.diagnostics.pressure_ifc.ndarray[:, -1],
             allocator=self._backend,
         )
         self._diagnose_pressure(
             ddqz_z_full=self._ddqz_z_full,
-            virtual_temperature=self.tv,
+            virtual_temperature=self.diagnostics.virtual_temperature,
             surface_pressure=surface_pressure,
-            pressure=self.pressure,
-            pressure_ifc=self.pressure_ifc,
+            pressure=self.diagnostics.pressure,
+            pressure_ifc=self.diagnostics.pressure_ifc,
         )
 
         # 3. Cell-centre (u, v) from edge-normal vn via RBF
         self._rbf_interpolation(
             p_e_in=prognostic.vn,
-            p_u_out=self.u,
-            p_v_out=self.v,
+            p_u_out=self.diagnostics.u,
+            p_v_out=self.diagnostics.v,
         )
 
 
@@ -369,7 +361,7 @@ class ApplyToPrognostic:
         #    plus the summed tendency, with the final (post step 1) moisture.
         if "tend_temperature" in acc:
             self._apply_tendency(
-                field_a=entry_state.ta,
+                field_a=entry_state.diagnostics.temperature,
                 coeff=dt_seconds,
                 field_b=acc["tend_temperature"],
                 output_field=self._new_te,
@@ -383,12 +375,12 @@ class ApplyToPrognostic:
                 qs=tracers.qs,
                 qg=tracers.qg,
                 temperature=self._new_te,
-                virtual_temperature=entry_state.tv,
+                virtual_temperature=entry_state.diagnostics.virtual_temperature,
                 virtual_temperature_tendency=self._tv_tendency,
             )
             self._update_exner_and_theta_v(
                 rho=entry_state.rho,
-                virtual_temperature=entry_state.tv,
+                virtual_temperature=entry_state.diagnostics.virtual_temperature,
                 virtual_temperature_tendency=self._tv_tendency,
                 dtime=dt_seconds,
                 exner=entry_state.exner,

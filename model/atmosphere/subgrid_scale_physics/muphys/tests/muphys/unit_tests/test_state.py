@@ -28,7 +28,11 @@ def test_as_component_input_maps_the_facade_without_copies():
     dz = object()
     state = muphys_state.State(metrics=_StubFieldSource({metrics_attributes.DDQZ_Z_FULL: dz}))
     tracers = types.SimpleNamespace(qv="QV", qc="QC", qi="QI", qr="QR", qs="QS", qg="QG")
-    entry = types.SimpleNamespace(ta="TA", pressure="P", rho="RHO", tracers=tracers)
+    entry = types.SimpleNamespace(
+        diagnostics=types.SimpleNamespace(temperature="TA", pressure="P"),
+        rho="RHO",
+        tracers=tracers,
+    )
 
     state.collect_inputs(entry)
     inputs = state.as_component_input()

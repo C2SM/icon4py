@@ -44,8 +44,8 @@ class State(ComponentState):
             raise RuntimeError("as_component_input called before collect_inputs")
         return {
             "dz": self.dz,
-            "te": entry.ta,
-            "p": entry.pressure,
+            "te": entry.diagnostics.temperature,
+            "p": entry.diagnostics.pressure,
             "rho": entry.rho,
             **{f"q{s}": getattr(entry.tracers, f"q{s}") for s in SPECIES},
         }

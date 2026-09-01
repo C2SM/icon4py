@@ -19,7 +19,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import icon as icon_grid
+    from icon4py.model.common.grid import base as base_grid
 
 
 @dataclasses.dataclass
@@ -58,8 +58,8 @@ class DiagnosticMetricState:
 
 
 def initialize_diagnostic_state(
-    grid: icon_grid.IconGrid,
-    allocator: gtx_typing.Allocator,
+    grid: base_grid.Grid,
+    allocator: gtx_typing.Allocator | None,
 ) -> DiagnosticState:
     """Initialize the diagnostic state with zero fields."""
     pressure = data_alloc.zero_field(
