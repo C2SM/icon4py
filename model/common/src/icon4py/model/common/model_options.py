@@ -49,7 +49,6 @@ def get_dace_options(
         backend_descriptor["external_workspace"] = backend_cfg.ICON_WORKSPACE_ALLOCATOR.allocate(
             device,
             size=backend_config.workspace_size,
-            alignment=backend_config.workspace_alignment,
         )
         optimization_args["transient_memory_mode"] = (
             gtx_transformations.TransientMemoryMode.EXTERNAL
@@ -171,7 +170,7 @@ def setup_program(
         - vertical_sizes: vertical domain bounds,
         - offset_provider: GT4Py offset_provider,
         - backend_config: external DaCe workspace sizing, or `None` to fall back
-          to the 'ICON4PY_BACKEND_WORKSPACE_<SIZE|ALIGNMENT>' environment variables.
+          to the 'ICON4PY_BACKEND_WORKSPACE_SIZE' environment variable.
     """
     constant_args = {} if constant_args is None else constant_args
     variants = {} if variants is None else variants
