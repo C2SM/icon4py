@@ -42,10 +42,14 @@ decides whether the second addition carries the Richardson reduction. Those are 
 one of them may write 'frm', so folding the selected one in here would need a way to switch a
 statement off, and the only such device is an EMPTY VERTICAL DOMAIN -- which is NOT a no-op on
 the 'embedded' backend when the statement reads through a shift, and the total forcing reads
-'hlp' and 'dp0' at 'Koff[-1]'. Measured 2026-09-01, '.scratch/merge3/toy_empty_embedded.py':
+'hlp' and 'dp0' at 'Koff[-1]'. Measured 2026-09-01, in
+'docs/superpowers/notes/2026-09-01-gt4py-empty-vertical-domain.py' -- the reproducer step 7 left,
+extended with 'embedded' and with a shifted statement:
 
-    embedded   pointwise, EMPTY (nlev, nlev)   ok, 0 rows written
-    embedded   shifted,   EMPTY (nlev, nlev)   RAISED IndexOutOfBounds
+    backend                     pointwise, EMPTY    shifted, EMPTY
+    gtfn_cpu, dace_cpu          no-op               no-op
+    gtfn_gpu, dace_gpu          no-op               no-op
+    embedded                    no-op               RAISED IndexOutOfBounds
 
 gt4py normalises an empty 'UnitRange' to '(0, 0)' and then bounds-checks it against the SHIFTED
 operand's domain, which starts at row 1 -- so the check fails for a statement that would have
