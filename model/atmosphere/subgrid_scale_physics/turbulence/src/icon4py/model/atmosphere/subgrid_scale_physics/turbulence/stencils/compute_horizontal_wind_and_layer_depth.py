@@ -31,7 +31,7 @@ runs one row deeper, '(vertical_start, vertical_end + 1)', because the zero leve
 Prandtl layer is one of its rows.
 
 'nlev' STAYS A RUNTIME ARGUMENT even though it equals 'vertical_end'. That is 'gt4py-01': a
-'concat_where' whose split point is static at the same time as the domain bounds miscompiles on
+'concat_where' whose split point is static at the same time as the domain bounds FAILS TO COMPILE on
 'dace_cpu'. See the docstring of 'Turbulence._program'.
 
 THE 'concat_where' IS WHY THIS UNIT COSTS 'embedded' SOMETHING. gt4py 1.1.10 cannot execute

@@ -69,9 +69,12 @@ THE THREE ALIASING RULES, which this program obeys and the next merge will meet 
   * reading a parameter an EARLIER statement wrote is ordinary dataflow and is correct at any
     offset. Three statements here do it, and 'compute_total_mechanical_forcing' -- which runs
     next, on this program's outputs -- reads 'sso_wake_energy_production' at 'Koff[-1]';
-  * writing a parameter the SAME statement reads is correct only pointwise -- DaCe silently
-    drops the statement otherwise. No statement here does it: the Fortran accumulates into 'frm'
-    three times and the port keeps the mean-shear part in a field of its own so that it does not;
+  * writing a parameter the SAME statement reads is unsafe when the read is SHIFTED and the
+    statement is a PURE COPY -- DaCe then silently drops it ('gt4py-04').  Measured 2026-09-01:
+    any arithmetic on the shifted read saves it, so "only pointwise" is stricter than the real
+    rule; the pure copy is the trigger.  No statement here does it either way: the Fortran
+    accumulates into 'frm' three times and the port keeps the mean-shear part in a field of its
+    own so that it does not;
   * an aliasing GT4Py cannot see -- one field bound to two parameters -- is correct only if the
     reader comes first. The caller binds seven distinct fields here, so there is none.
 

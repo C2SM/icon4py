@@ -49,8 +49,10 @@ docstring carries the five-variant table:
 
   * statement 1 READS 'explicit_diffusion_momentum' and statement 2 WRITES it, in place. One
     parameter, not two, so GT4Py sees the dependency and every backend orders it; and the write
-    is POINTWISE, which is the only in-place shape DaCe compiles correctly. 'prep_impl_vert_diff'
-    does the same thing with the same parameter for the model variables.
+    is POINTWISE, which is safe on every backend. (The shape DaCe drops is narrower than
+    "not pointwise": it is a SHIFTED read in a statement that is a PURE COPY -- see 'gt4py-04'.
+    Pointwise is sufficient, not necessary.) 'prep_impl_vert_diff' does the same thing with the
+    same parameter for the model variables.
   * statements 3 and 4 read 'implicit_diffusion_momentum', which statement 1 wrote, at
     'Koff[+1]' and pointwise; statement 4 reads 'inverted_diffusion_momentum', which statement 3
     wrote, at 'Koff[-1]'. Reading a parameter an EARLIER statement wrote is ordinary dataflow and

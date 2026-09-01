@@ -1379,7 +1379,7 @@ class Turbulence:
         'setup_program' turns every scalar in 'constant_args' into a compile-time constant of
         the generated code. THE ROW INDICES OF THE BOUNDARY-ROW PROGRAMS ARE DELIBERATELY NOT
         AMONG THEM -- 'nlev' and 'uppermost_diffused_level' are passed at call time -- because
-        making one of those static while the domain bounds are static too miscompiles on
+        making one of those static while the domain bounds are static too FAILS TO COMPILE on
         'dace_cpu': the concat_where replacement pass asks a one-dimensional producer for its
         vertical offset and dies with
 
@@ -2130,8 +2130,18 @@ class Turbulence:
             diffusion_coefficient_for_scalars=self._diffusion_coefficient_for_scalars,
         )
         # In place on purpose, and out of the program above on purpose: the read set is row 1
-        # and the write set is row 0, and one field bound to TWO parameters is the form DaCe
-        # compiles correctly. One parameter read and written by one statement is not.
+        # and the write set is row 0.  One parameter read and written by one statement is the
+        # shape DaCe silently drops ('gt4py-04'); binding one field to TWO parameters is not,
+        # and it is what this call does.
+        #
+        # BUT THE REASON IS NOT THAT THE TWO-PARAMETER FORM IS SANCTIONED.  Measured
+        # 2026-09-01: GT4Py emits two distinct SDFG containers and the generated C++ declares
+        # both pointers '__restrict__', so binding one buffer to both is a restrict violation,
+        # and ADR-18 rule 3 does not admit the statement either (output row 0 from input row 1
+        # is not elementwise).  It works because DaCe CANNOT SEE the alias -- unspecified
+        # behaviour that happens to be correct on all five backends today, not a guarantee.
+        # The audit in 'upstream-fixes/gt4py-04-...' found this is one of three such call sites
+        # in the whole of icon4py, all with disjoint read and write rows.
         self._set_turbulent_velocity_scale_at_model_top(
             turbulent_velocity_scale=diagnostic_state.updated_tke,
             turbulent_velocity_scale_with_top=diagnostic_state.updated_tke,

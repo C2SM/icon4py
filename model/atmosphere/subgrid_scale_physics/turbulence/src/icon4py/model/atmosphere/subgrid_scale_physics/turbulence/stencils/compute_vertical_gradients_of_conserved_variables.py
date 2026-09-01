@@ -304,7 +304,7 @@ def compute_vertical_gradients_of_conserved_variables(
 
     'nlev' IS A SEPARATE ARGUMENT AND MUST STAY ONE, even though it equals 'vertical_end - 1'.
     'setup_program' inlines a scalar into the generated code, and the granule binds the domain
-    bounds statically; making the 'concat_where' row index static at the same time miscompiles on
+    bounds statically; making the 'concat_where' row index static at the same time FAILS TO COMPILE on
     'dace_cpu' -- the concat_where replacement pass asks a one-dimensional producer for a vertical
     offset it does not have. Measured 2026-08-28, and the surface branch here reads exactly such a
     one-dimensional producer. See 'Turbulence._program' for the traceback.

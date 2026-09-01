@@ -32,7 +32,8 @@ flux density owns; the solve runs the bound pair.
 
 'uppermost_diffused_level' AND 'nlev' STAY RUNTIME ARGUMENTS even though both equal a domain
 bound the granule already binds. That is deliberate and is 'gt4py-01': a 'concat_where' whose
-split point is static AT THE SAME TIME as the domain bounds miscompiles on 'dace_cpu', and both
+split point is static AT THE SAME TIME as the domain bounds FAILS TO COMPILE on 'dace_cpu' -- it
+raises, it does not compute a wrong number -- and both
 statements that select a boundary row here use one. 'Turbulence._program' binds the bounds, so
 the split points must be passed at call time. See the docstring of 'Turbulence._program'.
 
