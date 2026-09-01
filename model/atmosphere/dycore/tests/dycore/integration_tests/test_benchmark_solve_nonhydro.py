@@ -55,7 +55,6 @@ def solve_nonhydro(
     config = solve_nh.NonHydrostaticConfig(
         divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         fourth_order_divdamp_factor=0.004,
-        max_nudging_coefficient=0.375,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -200,8 +199,9 @@ def solve_nonhydro(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=geometry_field_source.get("cell_owner_mask"),
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
         backend=backend_like,
+        max_nudging_coefficient=0.375,
     )
 
     return solve_nonhydro

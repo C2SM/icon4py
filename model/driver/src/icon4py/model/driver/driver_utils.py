@@ -173,8 +173,6 @@ def create_static_field_factories(
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
     process_props: decomposition_defs.ProcessProperties,
-    exchange: decomposition_defs.ExchangeRuntime,
-    global_reductions: decomposition_defs.Reductions,
     geometry_config: geometry_configuration.GeometryConfig,
     interpolation_config: interpolation_factory.InterpolationConfig,
     metrics_config: metrics_factory.MetricsConfig,
@@ -188,8 +186,6 @@ def create_static_field_factories(
         metadata=geometry_meta.attrs,
         config=geometry_config,
         process_props=process_props,
-        exchange=exchange,
-        global_reductions=global_reductions,
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
@@ -199,7 +195,7 @@ def create_static_field_factories(
         geometry_source=geometry_field_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=exchange,
+        process_props=process_props,
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
@@ -212,8 +208,7 @@ def create_static_field_factories(
         backend=backend,
         metadata=metrics_attributes.attrs,
         config=metrics_config,
-        exchange=exchange,
-        global_reductions=global_reductions,
+        process_props=process_props,
     )
 
     return static_fields.StaticFieldFactories(
@@ -394,6 +389,7 @@ def initialize_granules(
             cell_geometry=cell_geometry,
             owner_mask=owner_mask,
             exchange=exchange,
+            max_nudging_coefficient=config.interpolation.max_nudging_coefficient,
         )
 
     diffusion_granule: diffusion.Diffusion | None = None
@@ -410,6 +406,8 @@ def initialize_granules(
             cell_params=cell_geometry,
             backend=backend,
             exchange=exchange,
+            ndyn_substeps=config.driver.ndyn_substeps,
+            max_nudging_coefficient=config.interpolation.max_nudging_coefficient,
         )
 
     tracer_advection_granule: tracer_advection.Advection | None = None

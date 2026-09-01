@@ -91,7 +91,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         backend
     )(
         fourth_order_divdamp_scaling_coeff,
-        config.max_nudging_coefficient,
+        constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02,
         constants.DBL_EPS,
         out=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
         offset_provider={},
@@ -200,8 +200,9 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
     at_first_substep = substep_init == 1
 
@@ -522,11 +523,12 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
     at_first_substep = substep_init == 1
-    at_last_substep = substep_init == experiment.config.diffusion.ndyn_substeps
+    at_last_substep = substep_init == experiment.config.driver.ndyn_substeps
 
     prognostic_states = utils.create_prognostic_states(init_savepoint)
 
@@ -542,7 +544,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         prep_adv=prep_adv,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
-        ndyn_substeps_var=experiment.config.diffusion.ndyn_substeps,
+        ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
         lprep_adv=lprep_adv,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
@@ -703,8 +705,9 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
     prognostic_states = utils.create_prognostic_states(sp)
@@ -716,11 +719,11 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         prep_adv=prep_adv,
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
-        ndyn_substeps_var=experiment.config.diffusion.ndyn_substeps,
+        ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=substep_init == 1,
-        at_last_substep=substep_init == experiment.config.diffusion.ndyn_substeps,
+        at_last_substep=substep_init == experiment.config.driver.ndyn_substeps,
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
     )
@@ -828,13 +831,14 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
         backend=backend,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
     )
 
-    for i_substep in range(experiment.config.diffusion.ndyn_substeps):
+    for i_substep in range(experiment.config.driver.ndyn_substeps):
         at_first_substep = i_substep == 0
-        at_last_substep = i_substep == (experiment.config.diffusion.ndyn_substeps - 1)
+        at_last_substep = i_substep == (experiment.config.driver.ndyn_substeps - 1)
 
         if not (at_initial_timestep and at_first_substep):
             diagnostic_state_nh.vertical_wind_advective_tendency.swap()
@@ -847,7 +851,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
             prep_adv=prep_adv,
             second_order_divdamp_factor=sp.divdamp_fac_o2(),
             dtime=dtime,
-            ndyn_substeps_var=experiment.config.diffusion.ndyn_substeps,
+            ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
             at_initial_timestep=at_initial_timestep,
             lprep_adv=lprep_adv,
             at_first_substep=at_first_substep,
@@ -1562,7 +1566,7 @@ def test_apply_divergence_damping_and_update_vn(  # noqa: PLR0917 [too-many-posi
         divdamp_order=divdamp_order,
         mean_cell_area=mean_cell_area,
         second_order_divdamp_factor=second_order_divdamp_factor,
-        max_nudging_coefficient=config.max_nudging_coefficient,
+        max_nudging_coefficient=experiment.config.interpolation.max_nudging_coefficient,
         dbl_eps=constants.DBL_EPS,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,
@@ -1789,7 +1793,7 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
     vn = savepoint_dycore_30_to_38_init.vn()
     z_rho_e = savepoint_dycore_30_to_38_init.z_rho_e()
     z_theta_v_e = savepoint_dycore_30_to_38_init.z_theta_v_e()
-    r_nsubsteps = 1.0 / experiment.config.diffusion.ndyn_substeps
+    r_nsubsteps = 1.0 / experiment.config.driver.ndyn_substeps
 
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
     horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
@@ -2115,7 +2119,7 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
     exner_dynamical_increment = sp_stencil_init.exner_dyn_incr()
     advection_explicit_weight_parameter = nonhydro_params.advection_explicit_weight_parameter
     advection_implicit_weight_parameter = nonhydro_params.advection_implicit_weight_parameter
-    r_nsubsteps = 1.0 / experiment.config.diffusion.ndyn_substeps
+    r_nsubsteps = 1.0 / experiment.config.driver.ndyn_substeps
     kstart_moist = vertical_params.kstart_moist
 
     w_ref = sp_nh_exit.w_new()
@@ -2173,7 +2177,7 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         lprep_adv=savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv"),
         r_nsubsteps=r_nsubsteps,
-        ndyn_substeps_var=float(experiment.config.diffusion.ndyn_substeps),
+        ndyn_substeps_var=float(experiment.config.driver.ndyn_substeps),
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         is_iau_active=is_iau_active,
