@@ -33,9 +33,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _interpolate_contravariant_vertical_velocity_to_full_levels(
-    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     nlev: gtx.int32,
-) -> fa.CellKField[vpfloat]:
+) -> fa.CellKField[ta.vpfloat]:
     # TODO(havogt): Note that `concat_where(dims.KDim == nlev-1, ...)` is currently broken
     # because of insufficiency in the domain inference of GT4Py,
     # see https://github.com/GridTools/gt4py/issues/2205.
@@ -79,11 +79,11 @@ def _compute_horizontal_advection_of_w(
 
 @gtx.field_operator
 def _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
-    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
-    w: fa.CellKField[wpfloat],
-    coeff1_dwdz: fa.CellKField[vpfloat],
-    coeff2_dwdz: fa.CellKField[vpfloat],
-) -> fa.CellKField[vpfloat]:
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    w: fa.CellKField[ta.wpfloat],
+    coeff1_dwdz: fa.CellKField[ta.vpfloat],
+    coeff2_dwdz: fa.CellKField[ta.vpfloat],
+) -> fa.CellKField[ta.vpfloat]:
     contravariant_corrected_w_at_cells_on_half_levels_wp = astype(
         contravariant_corrected_w_at_cells_on_half_levels, wpfloat
     )
@@ -193,8 +193,8 @@ def _compute_contravariant_corrected_w_and_cfl(
 def _compute_advective_vertical_wind_tendency(
     vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
-    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     cfl_clipping: fa.CellKField[bool],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],

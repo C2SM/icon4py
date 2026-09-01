@@ -14,7 +14,6 @@ from numpy import finfo as float_info
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.config import config_io
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
@@ -138,17 +137,17 @@ DEL_T_BG: Final[ta.wpfloat] = DELTA_TEMPERATURE
 
 #: height scale for reference atmosphere [m], defined  in mo_vertical_grid
 #: scale height [m]
-HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE = wpfloat(10000.0)
+HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE = ta.wpfloat(10000.0)
 _H_SCAL_BG: Final[ta.wpfloat] = HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
 
 # Math constants
-WP_EPS = float_info(wpfloat).eps  # EPSILON(1._wp)
-VP_EPS = float_info(vpfloat).eps
+WP_EPS = float_info(ta.wpfloat).eps  # EPSILON(1._wp)
+VP_EPS = float_info(ta.vpfloat).eps
 DP_EPS = float_info(float64).eps
 
 # Implementation constants
 #: default dynamics to physics time step ratio
-DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[wpfloat] = wpfloat(5.0)
+DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[ta.wpfloat] = ta.wpfloat(5.0)
 
 
 class PhysicsConstants(ta.wpfloat, enum.Enum):
