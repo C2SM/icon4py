@@ -83,9 +83,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_current_profile import (
     compute_current_profile,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_depth import (
-    compute_diffusion_depth,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
     compute_diffusion_inversion_factor,
 )
@@ -94,9 +91,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_right_hand_side import (
     compute_diffusion_right_hand_side,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_discretisation_momentum import (
-    compute_discretisation_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_diffusion_coefficients import (
     compute_effective_diffusion_coefficients,
@@ -140,14 +134,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths_from_diffusion_coefficients import (
     compute_stability_lengths_from_diffusion_coefficients,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_air_density_and_exner_factor import (
-    compute_surface_air_density_and_exner_factor,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_diffusion_momentum_and_depth import (
     compute_surface_diffusion_momentum_and_depth,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_gradients_from_flux_densities import (
-    compute_surface_gradients_from_flux_densities,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_profile_value_from_flux_gradient import (
     compute_surface_profile_value_from_flux_gradient,
@@ -191,6 +179,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_d
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prepare_the_tke_diffusion import (
     prepare_the_tke_diffusion,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prepare_the_vertical_diffusion_matrix import (
+    prepare_the_vertical_diffusion_matrix,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.set_turbulent_velocity_scale_at_model_top import (
     set_turbulent_velocity_scale_at_model_top,
@@ -1792,30 +1783,20 @@ class Turbulence:
         nlev = int(self._nlev)
         metric = self._metric_state
 
-        # -- the parts of the matrix that depend on neither the variable type nor the variable
-        self._compute_surface_air_density_and_exner_factor = self._program(
-            compute_surface_air_density_and_exner_factor,
-            levels=(nlev, nlev + 1),  # 'rhon(i,ke1)' and 'eprs(i,ke1)'
-        )
-        self._compute_discretisation_momentum = self._program(
-            compute_discretisation_momentum,
+        # -- the parts of the matrix that depend on neither the variable type nor the variable:
+        # one program of six statements. The bound pair is the discretisation momentum's own
+        # 'disc_mom(i,k_hi)' then 'DO k=k_hi+1,k_lw'; the diffusion depth starts one row lower
+        # and the four surface-row statements sit on 'vertical_end'.
+        #
+        # 'zvari(:,ke1,m) = flux/(rhon*tkv*...)' is at turb_vertdiff.f90:614-634, which the
+        # Fortran runs inside the variable loop for 'tem' and again for 'vap'. Both rows are
+        # written here, before the loop: the two 'zvari' components are distinct, and nothing
+        # between this point and each variable's own use of its row writes either of them.
+        self._prepare_the_vertical_diffusion_matrix = self._program(
+            prepare_the_vertical_diffusion_matrix,
             constant_args={"half_level_height": metric.hhl},
             levels=(0, nlev),  # 'disc_mom(i,k_hi)' then 'DO k=k_hi+1,k_lw'
             shifted=True,
-        )
-        self._compute_diffusion_depth = self._program(
-            compute_diffusion_depth,
-            constant_args={"half_level_height": metric.hhl},
-            levels=(1, nlev),  # 'DO k=k_hi+1,k_lw'
-            shifted=True,
-        )
-        # 'zvari(:,ke1,m) = flux/(rhon*tkv*...)' at turb_vertdiff.f90:614-634, which the Fortran
-        # runs inside the variable loop for 'tem' and again for 'vap'. Both rows are written
-        # here, before the loop: the two 'zvari' components are distinct, and nothing between
-        # this point and each variable's own use of its row writes either of them.
-        self._compute_surface_gradients_from_flux_densities = self._program(
-            compute_surface_gradients_from_flux_densities,
-            levels=(nlev, nlev + 1),
         )
 
         # -- once per variable type ('vert_grad_diff' and 'prep_impl_vert_diff')
@@ -2445,7 +2426,7 @@ class Turbulence:
         diagnostic_state: states.TurbulenceDiagnosticState,
         reciprocal_time_step: float,
     ) -> None:
-        """The four programs of 'vertdiff' that neither variable type nor variable can change.
+        """The one program of 'vertdiff' that neither variable type nor variable can change.
 
         'rhon' is the one field of the granule that both stages write: 'turbdiff' fills rows
         1..nlev of it and 'vertdiff' replaces the surface row with the ideal-gas density of the
@@ -2457,27 +2438,23 @@ class Turbulence:
         'zvari(:,ke1,h2o_g)' -- the granule's gradient fields -- because that is the storage the
         Fortran uses, and because their consumer reads them from there.
         """
-        self._compute_surface_air_density_and_exner_factor(
+        # 'diffusion_coefficient' is the SCALAR type's, whichever type is running: the two
+        # variables with a prescribed surface flux are both scalars, so 'vtyp(ivtype)%tkv' is
+        # 'tkvh'. The two gradient statements read the 'rhon' surface row and the 'eprs' the
+        # first two statements of the same program wrote.
+        self._prepare_the_vertical_diffusion_matrix(
             surface_pressure=surface_state.ps,
             surface_specific_humidity=surface_state.qv_s,
             surface_temperature=surface_state.t_g,
-            air_density=diagnostic_state.rhon,
-            surface_exner_factor=self._surface_exner_factor,
-        )
-        self._compute_discretisation_momentum(
-            air_density=input_state.rhoh,
+            air_density_at_main_levels=input_state.rhoh,
             reciprocal_time_step=reciprocal_time_step,
-            discretisation_momentum=self._discretisation_momentum,
-        )
-        self._compute_diffusion_depth(diffusion_depth=self._diffusion_depth)
-        # The SCALAR type's diffusion coefficient, whichever type is running: the two variables
-        # with a prescribed surface flux are both scalars, so 'vtyp(ivtype)%tkv' is 'tkvh'.
-        self._compute_surface_gradients_from_flux_densities(
+            diffusion_coefficient=diagnostic_state.tkvh,
             sensible_heat_flux=diagnostic_state.shfl_s,
             water_vapour_flux=diagnostic_state.qvfl_s,
             air_density=diagnostic_state.rhon,
-            diffusion_coefficient=diagnostic_state.tkvh,
             surface_exner_factor=self._surface_exner_factor,
+            discretisation_momentum=self._discretisation_momentum,
+            diffusion_depth=self._diffusion_depth,
             surface_temperature_gradient=self._gradient_liquid_water_potential_temperature,
             surface_vapour_gradient=self._gradient_total_water,
         )

@@ -588,7 +588,7 @@ def test_run_vertdiff_is_bit_exact_when_it_starts_from_icons_own_state(
     # surface row of the granule's half-level field is what it has to be compared against.
     exner = data_alloc.as_numpy(run.granule._surface_exner_factor)[:, nlev]
     utils.assert_agrees_with_icon(
-        "compute_surface_air_density_and_exner_factor",
+        "prepare_the_vertical_diffusion_matrix",
         "eprs",
         exner,
         run.after_vertdiff.eprs(),

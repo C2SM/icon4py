@@ -14,36 +14,40 @@ expected outputs, for the four timesteps that 'exp.mch_icon-ch2_small' serialize
 'vertdiff' (turb_vertdiff.f90:116-937) is one stage with one savepoint pair -- there are no
 intermediate section boundaries the way 'turbdiff' has them -- and it is a loop over five
 variables in two variable types, each of which calls 'vert_grad_diff' (turb_utilities.f90:2223),
-which calls 'prep_impl_vert_diff' (:2690) and 'calc_impl_vert_diff' (:2865). Eighteen programs,
-grouped by what they depend on:
+which calls 'prep_impl_vert_diff' (:2690) and 'calc_impl_vert_diff' (:2865). Fifteen programs
+since the stencil merge, grouped by what they depend on:
 
     ONCE                                                        Fortran
-     1 compute_surface_air_density_and_exner_factor             turb_vertdiff.f90:536-542
-     2 compute_discretisation_momentum                          vert_grad_diff:2438-2455
-     3 compute_diffusion_depth                                  vert_grad_diff:2449-2453
+     1 prepare_the_vertical_diffusion_matrix, six statements:
+         rhon(:,ke1), eprs(:,ke1)                               turb_vertdiff.f90:536-542
+         disc_mom                                               vert_grad_diff:2438-2455
+         diff_dep [interior]                                    vert_grad_diff:2449-2453
+         zvari(:,ke1,tem), zvari(:,ke1,vap)                     turb_vertdiff.f90:614-634
     ONCE PER VARIABLE TYPE (momentum: u,v with tkvm/tvm; scalars: t,qv,qc with tkvh/tvh)
-     4 compute_diffusion_momentum                               vert_grad_diff:2461-2469
-     5 compute_surface_diffusion_momentum_and_depth             vert_grad_diff:2471-2478
-     6 compute_implicit_diffusion_momentum                      prep_impl_vert_diff:2764-2776
-     7 subtract_implicit_diffusion_momentum                     prep_impl_vert_diff:2778-2786
-     8 compute_inverted_diffusion_momentum         (REUSED)     prep_impl_vert_diff:2830-2849
-     9 invert_diffusion_momentum_at_the_surface_flux_level      prep_impl_vert_diff:2850-2858
-    10 compute_diffusion_inversion_factor          (REUSED)     prep_impl_vert_diff:2842,2854
+     2 compute_diffusion_momentum                               vert_grad_diff:2461-2469
+     3 compute_surface_diffusion_momentum_and_depth             vert_grad_diff:2471-2478
+     4 compute_implicit_diffusion_momentum                      prep_impl_vert_diff:2764-2776
+     5 subtract_implicit_diffusion_momentum                     prep_impl_vert_diff:2778-2786
+     6 compute_inverted_diffusion_momentum         (REUSED)     prep_impl_vert_diff:2830-2849
+     7 invert_diffusion_momentum_at_the_surface_flux_level      prep_impl_vert_diff:2850-2858
+     8 compute_diffusion_inversion_factor          (REUSED)     prep_impl_vert_diff:2842,2854
     ONCE PER VARIABLE
-    11 compute_current_profile / ...potential_temperature...    turb_vertdiff.f90:646-694
-    12 compute_surface_gradients_from_flux_densities            turb_vertdiff.f90:614-634
-    13 compute_surface_profile_value_from_flux_gradient         vert_grad_diff:2493-2503
-    14 compute_explicit_flux_density                            calc_impl_vert_diff:2951-2959
-    15 add_implicit_surface_flux_to_the_explicit_flux_density   calc_impl_vert_diff:2961-2973
-    16 compute_diffusion_right_hand_side                        calc_impl_vert_diff:2975-2991
-    17 solve_vertical_diffusion_equation                        calc_impl_vert_diff:3024-3052
-    18 compute_and_apply_[potential_temperature_]diffusion_tendency
+     9 compute_current_profile / ...potential_temperature...    turb_vertdiff.f90:646-694
+    10 compute_surface_profile_value_from_flux_gradient         vert_grad_diff:2493-2503
+    11 compute_explicit_flux_density                            calc_impl_vert_diff:2951-2959
+    12 add_implicit_surface_flux_to_the_explicit_flux_density   calc_impl_vert_diff:2961-2973
+    13 compute_diffusion_right_hand_side                        calc_impl_vert_diff:2975-2991
+    14 solve_vertical_diffusion_equation                        calc_impl_vert_diff:3024-3052
+    15 compute_and_apply_[potential_temperature_]diffusion_tendency
                                                     vert_grad_diff:2661-2670 + :773-799
 
-Programs 8 and 10 are section 9)'s, unchanged: 'prep_impl_vert_diff' is the same subroutine for
-the TKE and for the model variables, and those two are the parts of it whose names and arguments
-say nothing about which. Program 9 is the loop section 9)'s docstring says it does not
-translate because 'm = 1' makes it empty -- 'vertdiff' is where 'm = 2' occurs.
+The two surface gradients used to be a program of their own, run in the middle of the variable
+loop where the Fortran runs them; they are statements of program 1 now, because the two 'zvari'
+components they write are distinct and nothing between that point and each variable's use of its
+row touches either. Programs 6 and 8 are section 9)'s, unchanged: 'prep_impl_vert_diff' is the
+same subroutine for the TKE and for the model variables, and those two are the parts of it whose
+names and arguments say nothing about which. Program 7 is the loop section 9)'s docstring says it
+does not translate because 'm = 1' makes it empty -- 'vertdiff' is where 'm = 2' occurs.
 
 WHAT THE CONFIGURATION SWITCHES OFF
 -----------------------------------
@@ -108,7 +112,7 @@ NO 'concat_where' IS USED. The one row this stage treats differently -- the top 
 right-hand side, where the Fortran omits the outgoing-flux term because there is no flux level
 above it -- is handled by writing that flux level as an explicit zero in
 'compute_explicit_flux_density' instead. 'x - 0.0' is 'x' for every double, so the interior
-expression then covers the whole range bit-exactly, and all eighteen programs keep the embedded
+expression then covers the whole range bit-exactly, and all fifteen programs keep the embedded
 backend. That is a deliberate departure from the package README's boundary-row rule and the
 reasoning is in the two stencils' docstrings.
 
@@ -145,9 +149,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_current_profile import (
     compute_current_profile,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_depth import (
-    compute_diffusion_depth,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
     compute_diffusion_inversion_factor,
 )
@@ -156,9 +157,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_right_hand_side import (
     compute_diffusion_right_hand_side,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_discretisation_momentum import (
-    compute_discretisation_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_flux_density import (
     compute_explicit_flux_density,
@@ -169,20 +167,17 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
     compute_inverted_diffusion_momentum,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_air_density_and_exner_factor import (
-    compute_surface_air_density_and_exner_factor,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_diffusion_momentum_and_depth import (
     compute_surface_diffusion_momentum_and_depth,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_gradients_from_flux_densities import (
-    compute_surface_gradients_from_flux_densities,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_profile_value_from_flux_gradient import (
     compute_surface_profile_value_from_flux_gradient,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_diffusion_momentum_at_the_surface_flux_level import (
     invert_diffusion_momentum_at_the_surface_flux_level,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prepare_the_vertical_diffusion_matrix import (
+    prepare_the_vertical_diffusion_matrix,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_vertical_diffusion_equation import (
     solve_vertical_diffusion_equation,
@@ -540,7 +535,7 @@ def _run_vertdiff(
     scan -- the LU factorisation, its surface-flux row, the inversion factor and the solve --
     and the two tendency programs downstream of them are skipped when it is false. Nothing else
     depends on them: the right-hand side is built from the explicit flux and the discretisation
-    momentum alone, so thirteen of the eighteen programs still run on every backend.
+    momentum alone, so ten of the fifteen programs still run on every backend.
     """
     entry = data_provider.from_savepoint_vertdiff_entry(date=date)
     after = data_provider.from_savepoint_vertdiff_exit(date=date)
@@ -558,66 +553,46 @@ def _run_vertdiff(
     # unchanged, so this one starts as a copy rather than as NaN.
     air_density = utils.copy_of(entry.rhon(), backend)
     surface_exner_factor = utils.nan_like(half, backend)
-    compute_surface_air_density_and_exner_factor.with_backend(backend)(
+    discretisation_momentum = utils.nan_like(half, backend)
+    diffusion_depth = utils.nan_like(half, backend)
+    surface_gradient = {
+        "t": utils.nan_like(half, backend),
+        "qv": utils.nan_like(half, backend),
+    }
+    # ONE PROGRAM, SIX STATEMENTS. The bound pair is the discretisation momentum's main-level
+    # range; the diffusion depth starts one row lower and the four surface-row statements sit on
+    # 'vertical_end'. The two gradient statements read the 'rhon' and 'eprs' rows the first two
+    # wrote, which is why the four programs this replaces had to run in this order.
+    prepare_the_vertical_diffusion_matrix.with_backend(backend)(
         surface_pressure=entry.ps(),
         surface_specific_humidity=entry.qv_s(),
         surface_temperature=entry.t_g(),
-        air_density=air_density,
-        surface_exner_factor=surface_exner_factor,
-        vertical_start=gtx.int32(nlev),
-        vertical_end=gtx.int32(nlev + 1),
-        offset_provider={},
-        **bounds,
-    )
-    computed["rhon"] = air_density
-    computed["eprs"] = surface_exner_factor
-
-    discretisation_momentum = utils.nan_like(half, backend)
-    compute_discretisation_momentum.with_backend(backend)(
-        air_density=entry.rhoh(),
+        air_density_at_main_levels=entry.rhoh(),
         half_level_height=entry.hhl(),
         reciprocal_time_step=reciprocal_time_step,
+        diffusion_coefficient=entry.tkvh(),
+        sensible_heat_flux=entry.shfl_s(),
+        water_vapour_flux=entry.qvfl_s(),
+        air_density=air_density,
+        surface_exner_factor=surface_exner_factor,
         discretisation_momentum=discretisation_momentum,
+        diffusion_depth=diffusion_depth,
+        surface_temperature_gradient=surface_gradient["t"],
+        surface_vapour_gradient=surface_gradient["qv"],
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(nlev),
         offset_provider=_KOFF,
         **bounds,
     )
+    computed["rhon"] = air_density
+    computed["eprs"] = surface_exner_factor
     computed["disc_mom"] = discretisation_momentum
-
-    diffusion_depth = utils.nan_like(half, backend)
-    compute_diffusion_depth.with_backend(backend)(
-        half_level_height=entry.hhl(),
-        diffusion_depth=diffusion_depth,
-        vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(nlev),
-        offset_provider=_KOFF,
-        **bounds,
-    )
+    for name, gradient in surface_gradient.items():
+        computed[f"surface_gradient:{name}"] = gradient
 
     implicit_weight_field = gtx.as_field((dims.KDim,), implicit_weight, allocator=backend)
     # One storage for both types, as 'zaux(:,:,3)' is in the Fortran.
     implicit_momentum = utils.nan_like(half, backend)
-
-    surface_gradient = {
-        "t": utils.nan_like(half, backend),
-        "qv": utils.nan_like(half, backend),
-    }
-    compute_surface_gradients_from_flux_densities.with_backend(backend)(
-        sensible_heat_flux=entry.shfl_s(),
-        water_vapour_flux=entry.qvfl_s(),
-        air_density=air_density,
-        diffusion_coefficient=entry.tkvh(),
-        surface_exner_factor=surface_exner_factor,
-        surface_temperature_gradient=surface_gradient["t"],
-        surface_vapour_gradient=surface_gradient["qv"],
-        vertical_start=gtx.int32(nlev),
-        vertical_end=gtx.int32(nlev + 1),
-        offset_provider={},
-        **bounds,
-    )
-    for name, gradient in surface_gradient.items():
-        computed[f"surface_gradient:{name}"] = gradient
 
     for kind, coefficient, velocity, variables, surface_flux_condition in (
         ("mom", entry.tkvm(), entry.tvm(), MOMENTUM_VARIABLES, False),
@@ -1112,7 +1087,7 @@ def test_the_unwritten_workspace_rows_are_leftovers_not_results(
 
 # ------------------------------------------------- the port, on every backend (no scan needed) --
 #
-# The four tests below use the scan-free part of the chain, which is thirteen of the eighteen
+# The four tests below use the scan-free part of the chain, which is ten of the fifteen
 # programs: everything except the LU factorisation, the solve and the two tendency programs. They
 # run on 'embedded' as well as on the compiled backends, which the three after them cannot -- see
 # '_run_vertdiff' for the measurement.
@@ -1136,40 +1111,41 @@ def test_the_setup_and_the_diffusion_momentum_agree_with_icon(
     translation. Three of them are one row deep and are the boundary cases the Fortran writes in
     separate loops.
 
-    'rhon' is asserted bit-exact directly rather than through its gate. Its program is gated
-    'Tol' for the Exner factor it also produces, and the air density has no exponential in it;
-    the pattern is section 0)'s, where the quantities that do not pass through an 'EXP' are
-    asserted ungated so that the tolerance covers only what earned it.
+    THE SETUP IS ONE PROGRAM SINCE THE STENCIL MERGE AND ITS GATE IS 'Tol', so the three
+    quantities that earned no tolerance are asserted BIT-EXACT here, directly, and not through
+    'assert_agrees_with_icon'. Only 'eprs' has an exponential in it; 'rhon', 'disc_mom' and
+    'diff_dep' have none, and letting the merged program's gate cover them would widen a check
+    that three separate 'Exact' entries used to make. The pattern is section 0)'s, and 'rhon'
+    already used it inside this very program before the merge.
     """
     run = _run_vertdiff(data_provider, grid_savepoint, date, backend, with_the_solve=False)
     nlev, columns = run.nlev, run.columns
     after, computed = run.after, run.computed
 
-    assert np.array_equal(computed["rhon"].asnumpy()[columns], after.rhon().asnumpy()[columns]), (
-        "'rhon' has no transcendental in it and must be bit-exact"
-    )
+    for quantity, got, want in (
+        ("rhon", computed["rhon"].asnumpy()[columns], after.rhon().asnumpy()[columns]),
+        (
+            "disc_mom",
+            computed["disc_mom"].asnumpy()[columns, 0:nlev],
+            after.disc_mom().asnumpy()[columns, 0:nlev],
+        ),
+        (
+            "diff_dep [interior]",
+            computed["diff_dep:sca"].asnumpy()[columns, 1:nlev],
+            after.diff_dep().asnumpy()[columns, 1:nlev],
+        ),
+    ):
+        assert np.array_equal(got, want), (
+            f"'{quantity}' has no transcendental in it and must be bit-exact, but "
+            f"{np.count_nonzero(got != want)} of {got.size} values differ by up to "
+            f"{np.nanmax(np.abs(got - want))}"
+        )
     utils.assert_agrees_with_icon(
-        "compute_surface_air_density_and_exner_factor",
+        "prepare_the_vertical_diffusion_matrix",
         "eprs",
         _surface(computed["eprs"], nlev),
         after.eprs(),
         columns=columns,
-    )
-    utils.assert_agrees_with_icon(
-        "compute_discretisation_momentum",
-        "disc_mom",
-        computed["disc_mom"],
-        after.disc_mom(),
-        columns=columns,
-        levels=slice(0, nlev),
-    )
-    utils.assert_agrees_with_icon(
-        "compute_diffusion_depth",
-        "diff_dep [interior]",
-        computed["diff_dep:sca"],
-        after.diff_dep(),
-        columns=columns,
-        levels=slice(1, nlev),
     )
     utils.assert_agrees_with_icon(
         "compute_surface_diffusion_momentum_and_depth",
@@ -1290,13 +1266,18 @@ def test_the_profiles_and_the_explicit_fluxes_agree(
     nlev, columns = run.nlev, run.columns
     after, reference, computed = run.after, run.reference, run.computed
 
+    # Bit-exact and ungated, for the reason 'test_the_setup_and_the_diffusion_momentum_agree_
+    # with_icon' gives: these come out of the merged setup program, whose gate is 'Tol' for the
+    # Exner factor alone. The temperature gradient does divide by 'eprs' -- but the reference is
+    # handed the SAME 'eprs' the port computed, so this comparison is not the one that would
+    # notice a difference in it.
     for name in ("t", "qv"):
-        utils.assert_agrees_with_icon(
-            "compute_surface_gradients_from_flux_densities",
-            f"zvari(:,ke1,{name}) before the solve overwrites it",
-            _surface(computed[f"surface_gradient:{name}"], nlev),
-            reference[f"surface_gradient:{name}"],
-            columns=columns,
+        got = _surface(computed[f"surface_gradient:{name}"], nlev)[columns]
+        want = np.asarray(reference[f"surface_gradient:{name}"])[columns]
+        assert np.array_equal(got, want), (
+            f"'zvari(:,ke1,{name})' before the solve overwrites it is not bit-exact: "
+            f"{np.count_nonzero(got != want)} of {got.size} values differ by up to "
+            f"{np.nanmax(np.abs(got - want))}"
         )
 
     utils.assert_agrees_with_icon(
