@@ -36,6 +36,10 @@ live in the test tree, so they need the exemption spelled out here.
 
 import gt4py.next as gtx
 
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_impl_vert_diff import (
+    _compute_implicit_diffusion_momentum,
+    _subtract_implicit_diffusion_momentum,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_turb_budgets import (
     _compute_diffusion_coefficients_from_stability_lengths,
     _compute_stability_lengths,
@@ -47,8 +51,10 @@ from icon4py.model.common.type_alias import wpfloat
 
 __all__ = [
     "compute_diffusion_coefficients_from_stability_lengths",
+    "compute_implicit_diffusion_momentum",
     "compute_stability_lengths",
     "compute_turbulent_velocity_scale",
+    "subtract_implicit_diffusion_momentum",
 ]
 
 
@@ -195,6 +201,60 @@ def compute_turbulent_velocity_scale(
         tke_time_step=tke_time_step,
         inverse_tke_time_step=inverse_tke_time_step,
         out=turbulent_velocity_scale,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_implicit_diffusion_momentum(
+    diffusion_momentum: fa.CellKField[wpfloat],
+    implicit_weight: fa.KField[wpfloat],
+    implicit_diffusion_momentum: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """One statement of 'prep_impl_vert_diff', run alone so a mutation can be substituted for it.
+
+    See 'ONE STATEMENT AT A TIME' above. 'DiffusionRun' prescribes 'expl_mom' rather than
+    building it out of 'tkv', 'rhon' and 'diff_dep', so it cannot call the merged program at all;
+    and this statement is the declared mutation point 'implicit_split'.
+    """
+    _compute_implicit_diffusion_momentum(
+        diffusion_momentum=diffusion_momentum,
+        implicit_weight=implicit_weight,
+        out=implicit_diffusion_momentum,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def subtract_implicit_diffusion_momentum(
+    diffusion_momentum: fa.CellKField[wpfloat],
+    implicit_diffusion_momentum: fa.CellKField[wpfloat],
+    explicit_diffusion_momentum: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """One statement of 'prep_impl_vert_diff', run alone.
+
+    See 'ONE STATEMENT AT A TIME' above. Not a mutation point; separate because 'DiffusionRun'
+    needs the UNREDUCED diffusion momentum as well as the reduced one -- it forms the surface
+    flux from it -- and the merged program reduces in place, as ICON does.
+    """
+    _subtract_implicit_diffusion_momentum(
+        diffusion_momentum=diffusion_momentum,
+        implicit_diffusion_momentum=implicit_diffusion_momentum,
+        out=explicit_diffusion_momentum,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

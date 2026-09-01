@@ -50,9 +50,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_flux_density import (
     compute_explicit_flux_density,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_diffusion_momentum import (
-    compute_implicit_diffusion_momentum,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
     compute_inverted_diffusion_momentum,
 )
@@ -61,9 +58,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_d
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_vertical_diffusion_equation import (
     solve_vertical_diffusion_equation,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_diffusion_momentum import (
-    subtract_implicit_diffusion_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.turbulence import (
     TurbulenceConfig,
@@ -556,7 +550,7 @@ class DiffusionRun:
         column: DiffusionColumn,
         backend: gtx_typing.Backend | None,
         solve=solve_vertical_diffusion_equation,
-        implicit_split=compute_implicit_diffusion_momentum,
+        implicit_split=single_statement_stencils.compute_implicit_diffusion_momentum,
         explicit_flux_density=compute_explicit_flux_density,
     ) -> None:
         nlev = column.nlev
@@ -593,7 +587,7 @@ class DiffusionRun:
         )
         # One row short of the split above: the surface flux level keeps the WHOLE diffusion
         # momentum, which is what makes its explicit flux the explicit SURFACE flux.
-        subtract_implicit_diffusion_momentum.with_backend(backend)(
+        single_statement_stencils.subtract_implicit_diffusion_momentum.with_backend(backend)(
             diffusion_momentum=full_momentum,
             implicit_diffusion_momentum=implicit_momentum,
             explicit_diffusion_momentum=explicit_momentum,

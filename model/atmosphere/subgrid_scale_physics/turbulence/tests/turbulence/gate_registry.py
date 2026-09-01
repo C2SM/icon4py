@@ -218,10 +218,13 @@ GATES: dict[str, Gate] = {
     # Two roundings had to be reproduced rather than simplified, each worth 1 ulp and each
     # reaching every tendency: 'fr_var = 1/dt_var' is formed once and MULTIPLIED by, and
     # 'disc_mom + impl_mom(k+1)' is associated before the elimination term.
-    "compute_diffusion_momentum": Exact(),
-    "compute_surface_diffusion_momentum_and_depth": Exact(),
-    "compute_implicit_diffusion_momentum": Exact(),
-    "subtract_implicit_diffusion_momentum": Exact(),
+    # 'vertdiff's factorisation -- one program with six statements since the stencil merge, under
+    # ICON's own name for the subroutine: the interior and surface diffusion momentum, the
+    # surface diffusion depth, the implicit split, the in-place reduction to the explicit part,
+    # and the forward elimination. All four entries it replaces were Exact, so no tolerance was
+    # widened. The vertdiff test asserts each of the five outputs separately, so a failure still
+    # names the Fortran quantity.
+    "prep_impl_vert_diff": Exact(),
     "invert_diffusion_momentum_at_the_surface_flux_level": Exact(),
     "compute_current_profile": Exact(),
     "compute_current_potential_temperature_profile": Exact(),

@@ -14,7 +14,7 @@ expected outputs, for the four timesteps that 'exp.mch_icon-ch2_small' serialize
 'vertdiff' (turb_vertdiff.f90:116-937) is one stage with one savepoint pair -- there are no
 intermediate section boundaries the way 'turbdiff' has them -- and it is a loop over five
 variables in two variable types, each of which calls 'vert_grad_diff' (turb_utilities.f90:2223),
-which calls 'prep_impl_vert_diff' (:2690) and 'calc_impl_vert_diff' (:2865). Fifteen programs
+which calls 'prep_impl_vert_diff' (:2690) and 'calc_impl_vert_diff' (:2865). Eleven programs
 since the stencil merge, grouped by what they depend on:
 
     ONCE                                                        Fortran
@@ -24,29 +24,30 @@ since the stencil merge, grouped by what they depend on:
          diff_dep [interior]                                    vert_grad_diff:2449-2453
          zvari(:,ke1,tem), zvari(:,ke1,vap)                     turb_vertdiff.f90:614-634
     ONCE PER VARIABLE TYPE (momentum: u,v with tkvm/tvm; scalars: t,qv,qc with tkvh/tvh)
-     2 compute_diffusion_momentum                               vert_grad_diff:2461-2469
-     3 compute_surface_diffusion_momentum_and_depth             vert_grad_diff:2471-2478
-     4 compute_implicit_diffusion_momentum                      prep_impl_vert_diff:2764-2776
-     5 subtract_implicit_diffusion_momentum                     prep_impl_vert_diff:2778-2786
-     6 compute_inverted_diffusion_momentum         (REUSED)     prep_impl_vert_diff:2830-2849
-     7 invert_diffusion_momentum_at_the_surface_flux_level      prep_impl_vert_diff:2850-2858
-     8 compute_diffusion_inversion_factor          (REUSED)     prep_impl_vert_diff:2842,2854
+     2 prep_impl_vert_diff, six statements:
+         expl_mom [interior]                                    vert_grad_diff:2461-2469
+         expl_mom(:,k_sf), diff_dep(:,k_sf)                     vert_grad_diff:2471-2478
+         impl_mom                                               prep_impl_vert_diff:2764-2776
+         expl_mom -= impl_mom, in place                         prep_impl_vert_diff:2778-2786
+         invs_mom, a scan            (REUSED operator)          prep_impl_vert_diff:2830-2849
+     3 invert_diffusion_momentum_at_the_surface_flux_level      prep_impl_vert_diff:2850-2858
+     4 compute_diffusion_inversion_factor          (REUSED)     prep_impl_vert_diff:2842,2854
     ONCE PER VARIABLE
-     9 compute_current_profile / ...potential_temperature...    turb_vertdiff.f90:646-694
-    10 compute_surface_profile_value_from_flux_gradient         vert_grad_diff:2493-2503
-    11 compute_explicit_flux_density                            calc_impl_vert_diff:2951-2959
-    12 add_implicit_surface_flux_to_the_explicit_flux_density   calc_impl_vert_diff:2961-2973
-    13 compute_diffusion_right_hand_side                        calc_impl_vert_diff:2975-2991
-    14 solve_vertical_diffusion_equation                        calc_impl_vert_diff:3024-3052
-    15 compute_and_apply_[potential_temperature_]diffusion_tendency
+     5 compute_current_profile / ...potential_temperature...    turb_vertdiff.f90:646-694
+     6 compute_surface_profile_value_from_flux_gradient         vert_grad_diff:2493-2503
+     7 compute_explicit_flux_density                            calc_impl_vert_diff:2951-2959
+     8 add_implicit_surface_flux_to_the_explicit_flux_density   calc_impl_vert_diff:2961-2973
+     9 compute_diffusion_right_hand_side                        calc_impl_vert_diff:2975-2991
+    10 solve_vertical_diffusion_equation                        calc_impl_vert_diff:3024-3052
+    11 compute_and_apply_[potential_temperature_]diffusion_tendency
                                                     vert_grad_diff:2661-2670 + :773-799
 
 The two surface gradients used to be a program of their own, run in the middle of the variable
 loop where the Fortran runs them; they are statements of program 1 now, because the two 'zvari'
 components they write are distinct and nothing between that point and each variable's use of its
-row touches either. Programs 6 and 8 are section 9)'s, unchanged: 'prep_impl_vert_diff' is the
+row touches either. The elimination scan inside program 2 and program 4 are section 9)'s, unchanged: 'prep_impl_vert_diff' is the
 same subroutine for the TKE and for the model variables, and those two are the parts of it whose
-names and arguments say nothing about which. Program 7 is the loop section 9)'s docstring says it
+names and arguments say nothing about which. Program 3 is the loop section 9)'s docstring says it
 does not translate because 'm = 1' makes it empty -- 'vertdiff' is where 'm = 2' occurs.
 
 WHAT THE CONFIGURATION SWITCHES OFF
@@ -112,7 +113,7 @@ NO 'concat_where' IS USED. The one row this stage treats differently -- the top 
 right-hand side, where the Fortran omits the outgoing-flux term because there is no flux level
 above it -- is handled by writing that flux level as an explicit zero in
 'compute_explicit_flux_density' instead. 'x - 0.0' is 'x' for every double, so the interior
-expression then covers the whole range bit-exactly, and all fifteen programs keep the embedded
+expression then covers the whole range bit-exactly, and no program of this stage loses the embedded
 backend. That is a deliberate departure from the package README's boundary-row rule and the
 reasoning is in the two stencils' docstrings.
 
@@ -152,23 +153,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
     compute_diffusion_inversion_factor,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_momentum import (
-    compute_diffusion_momentum,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_right_hand_side import (
     compute_diffusion_right_hand_side,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_flux_density import (
     compute_explicit_flux_density,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_diffusion_momentum import (
-    compute_implicit_diffusion_momentum,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
-    compute_inverted_diffusion_momentum,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_diffusion_momentum_and_depth import (
-    compute_surface_diffusion_momentum_and_depth,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_profile_value_from_flux_gradient import (
     compute_surface_profile_value_from_flux_gradient,
@@ -176,14 +165,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_diffusion_momentum_at_the_surface_flux_level import (
     invert_diffusion_momentum_at_the_surface_flux_level,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_impl_vert_diff import (
+    prep_impl_vert_diff,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prepare_the_vertical_diffusion_matrix import (
     prepare_the_vertical_diffusion_matrix,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_vertical_diffusion_equation import (
     solve_vertical_diffusion_equation,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_diffusion_momentum import (
-    subtract_implicit_diffusion_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.turbulence import TurbulenceConfig
 from icon4py.model.common import constants, dimension as dims
@@ -512,7 +501,7 @@ class Vertdiff(NamedTuple):
 
 
 def _run_vertdiff(
-    data_provider, grid_savepoint, date: str, backend, *, with_the_solve: bool = True
+    data_provider, grid_savepoint, date: str, backend, *, with_the_scans: bool = True
 ) -> Vertdiff:
     """Run every program of 'vertdiff', in the order 'vertdiff' runs them.
 
@@ -528,14 +517,20 @@ def _run_vertdiff(
     side is a different field from the explicit flux, because the Fortran's in-place overwrite
     reads rows it has not written yet and GT4Py has no row order to rely on.
 
-    'with_the_solve' exists for one backend. The embedded backend runs a 'scan_operator' as a
+    'with_the_scans' exists for one backend. The embedded backend runs a 'scan_operator' as a
     Python loop over every horizontal position AND every level
     (gt4py/next/embedded/operators.py:67), which for this grid is 662080 calls per scan and
-    twelve scans per chain; one test did not finish in 35 minutes. The four programs that need a
-    scan -- the LU factorisation, its surface-flux row, the inversion factor and the solve --
-    and the two tendency programs downstream of them are skipped when it is false. Nothing else
-    depends on them: the right-hand side is built from the explicit flux and the discretisation
-    momentum alone, so ten of the fifteen programs still run on every backend.
+    twelve scans per chain; one test did not finish in 35 minutes. When it is false, this
+    returns after 'prepare_the_vertical_diffusion_matrix' and nothing else runs.
+
+    IT USED TO STOP MUCH LATER, and the stencil merge is why it cannot. The LU factorisation is
+    now a statement of 'prep_impl_vert_diff', so the four scan-free statements of that program --
+    the diffusion momentum, its surface row, the surface diffusion depth and the implicit split
+    -- cannot be run without it, and everything downstream reads what it produces. Before the
+    merge, ten of the fifteen programs ran on 'embedded'; now it is the setup program alone.
+    That is the price of merging producers INTO a scan, which is the direction that genuinely
+    fuses, and it is paid in 'embedded' coverage rather than in coverage: every one of these
+    comparisons still runs on 'gtfn_cpu', 'gtfn_gpu', 'dace_cpu' and 'dace_gpu'.
     """
     entry = data_provider.from_savepoint_vertdiff_entry(date=date)
     after = data_provider.from_savepoint_vertdiff_exit(date=date)
@@ -589,6 +584,22 @@ def _run_vertdiff(
     computed["disc_mom"] = discretisation_momentum
     for name, gradient in surface_gradient.items():
         computed[f"surface_gradient:{name}"] = gradient
+    # A copy, because the per-type factorisation writes this field's surface row.
+    computed["diff_dep"] = utils.copy_of(diffusion_depth, backend)
+
+    if not with_the_scans:
+        return Vertdiff(
+            entry=entry,
+            after=after,
+            nlev=nlev,
+            columns=slice(entry.ivstart(), entry.ivend()),
+            reference=_reference(
+                entry,
+                implicit_weight,
+                surface_exner_factor=surface_exner_factor.asnumpy()[:, nlev],
+            ),
+            computed=computed,
+        )
 
     implicit_weight_field = gtx.as_field((dims.KDim,), implicit_weight, allocator=backend)
     # One storage for both types, as 'zaux(:,:,3)' is in the Fortran.
@@ -599,84 +610,50 @@ def _run_vertdiff(
         ("sca", entry.tkvh(), entry.tvh(), SCALAR_VARIABLES, True),
     ):
         diffusion_momentum = utils.nan_like(half, backend)
-        compute_diffusion_momentum.with_backend(backend)(
-            diffusion_coefficient=coefficient,
-            air_density=air_density,
-            diffusion_depth=diffusion_depth,
-            diffusion_momentum=diffusion_momentum,
-            vertical_start=gtx.int32(1),
-            vertical_end=gtx.int32(nlev),
-            offset_provider={},
-            **bounds,
-        )
-        compute_surface_diffusion_momentum_and_depth.with_backend(backend)(
-            air_density=air_density,
-            diffusion_coefficient=coefficient,
-            surface_transfer_velocity=velocity,
-            diffusion_momentum=diffusion_momentum,
-            diffusion_depth=diffusion_depth,
-            vertical_start=gtx.int32(nlev),
-            vertical_end=gtx.int32(nlev + 1),
-            offset_provider={},
-            **bounds,
-        )
-
-        implicit_end = nlev if surface_flux_condition else nlev + 1
-        compute_implicit_diffusion_momentum.with_backend(backend)(
-            diffusion_momentum=diffusion_momentum,
-            implicit_weight=implicit_weight_field,
-            implicit_diffusion_momentum=implicit_momentum,
-            vertical_start=gtx.int32(1),
-            vertical_end=gtx.int32(implicit_end),
-            offset_provider={},
-            **bounds,
-        )
-        computed[f"full_expl_mom:{kind}"] = utils.copy_of(diffusion_momentum, backend)
-        subtract_implicit_diffusion_momentum.with_backend(backend)(
-            diffusion_momentum=diffusion_momentum,
-            implicit_diffusion_momentum=implicit_momentum,
-            explicit_diffusion_momentum=diffusion_momentum,
-            vertical_start=gtx.int32(1),
-            vertical_end=gtx.int32(nlev),
-            offset_provider={},
-            **bounds,
-        )
-
         inverted_momentum = utils.nan_like(half, backend)
         inversion_factor = utils.nan_like(half, backend)
-        if with_the_solve:
-            # 'DO k = k_tp+2, k_sf-m' -- the elimination stops one row short of the implicit
-            # part's range, and under a surface-flux condition the third Fortran loop finishes
-            # the row it stopped at.
-            compute_inverted_diffusion_momentum.with_backend(backend)(
+        # ONE PROGRAM, SIX STATEMENTS, and one binding for both types: every range that depends
+        # on the lower boundary condition is expressed on 'elimination_end', the Fortran's
+        # 'k_sf-m'. The implicit part runs one row further than it; the subtraction runs to
+        # 'nlev', one row short of the split, so the surface flux level keeps the WHOLE
+        # diffusion momentum.
+        elimination_end = nlev - 1 if surface_flux_condition else nlev
+        prep_impl_vert_diff.with_backend(backend)(
+            diffusion_coefficient=coefficient,
+            air_density=air_density,
+            surface_transfer_velocity=velocity,
+            implicit_weight=implicit_weight_field,
+            discretisation_momentum=discretisation_momentum,
+            elimination_end=gtx.int32(elimination_end),
+            diffusion_momentum=diffusion_momentum,
+            diffusion_depth=diffusion_depth,
+            implicit_diffusion_momentum=implicit_momentum,
+            inverted_diffusion_momentum=inverted_momentum,
+            vertical_start=gtx.int32(1),
+            vertical_end=gtx.int32(nlev),
+            offset_provider=_KOFF,
+            **bounds,
+        )
+        if surface_flux_condition:
+            invert_diffusion_momentum_at_the_surface_flux_level.with_backend(backend)(
                 discretisation_momentum=discretisation_momentum,
                 implicit_diffusion_momentum=implicit_momentum,
+                inverted_diffusion_momentum_above=inverted_momentum,
                 inverted_diffusion_momentum=inverted_momentum,
-                vertical_start=gtx.int32(0),
-                vertical_end=gtx.int32(implicit_end - 1),
-                offset_provider=_KOFF,
-                **bounds,
-            )
-            if surface_flux_condition:
-                invert_diffusion_momentum_at_the_surface_flux_level.with_backend(backend)(
-                    discretisation_momentum=discretisation_momentum,
-                    implicit_diffusion_momentum=implicit_momentum,
-                    inverted_diffusion_momentum_above=inverted_momentum,
-                    inverted_diffusion_momentum=inverted_momentum,
-                    vertical_start=gtx.int32(nlev - 1),
-                    vertical_end=gtx.int32(nlev),
-                    offset_provider=_KOFF,
-                    **bounds,
-                )
-            compute_diffusion_inversion_factor.with_backend(backend)(
-                inverted_diffusion_momentum=inverted_momentum,
-                implicit_diffusion_momentum=implicit_momentum,
-                inversion_factor=inversion_factor,
-                vertical_start=gtx.int32(1),
+                vertical_start=gtx.int32(nlev - 1),
                 vertical_end=gtx.int32(nlev),
                 offset_provider=_KOFF,
                 **bounds,
             )
+        compute_diffusion_inversion_factor.with_backend(backend)(
+            inverted_diffusion_momentum=inverted_momentum,
+            implicit_diffusion_momentum=implicit_momentum,
+            inversion_factor=inversion_factor,
+            vertical_start=gtx.int32(1),
+            vertical_end=gtx.int32(nlev),
+            offset_provider=_KOFF,
+            **bounds,
+        )
         computed[f"expl_mom:{kind}"] = diffusion_momentum
         computed[f"impl_mom:{kind}"] = utils.copy_of(implicit_momentum, backend)
         computed[f"invs_mom:{kind}"] = inverted_momentum
@@ -756,23 +733,22 @@ def _run_vertdiff(
             updated_profile = utils.nan_like(half, backend)
             diffusion_tendency = utils.nan_like(main, backend)
             variable_tendency = utils.nan_like(main, backend)
-            if with_the_solve:
-                _solve_and_apply(
-                    backend,
-                    bounds=bounds,
-                    nlev=nlev,
-                    name=name,
-                    entry=entry,
-                    reciprocal_time_step=reciprocal_time_step,
-                    right_hand_side=right_hand_side,
-                    implicit_momentum=implicit_momentum,
-                    inverted_momentum=inverted_momentum,
-                    inversion_factor=inversion_factor,
-                    current_profile=current_profile,
-                    updated_profile=updated_profile,
-                    diffusion_tendency=diffusion_tendency,
-                    variable_tendency=variable_tendency,
-                )
+            _solve_and_apply(
+                backend,
+                bounds=bounds,
+                nlev=nlev,
+                name=name,
+                entry=entry,
+                reciprocal_time_step=reciprocal_time_step,
+                right_hand_side=right_hand_side,
+                implicit_momentum=implicit_momentum,
+                inverted_momentum=inverted_momentum,
+                inversion_factor=inversion_factor,
+                current_profile=current_profile,
+                updated_profile=updated_profile,
+                diffusion_tendency=diffusion_tendency,
+                variable_tendency=variable_tendency,
+            )
 
             computed[f"cur_prof:{name}"] = current_profile
             computed[f"expl_flux:{name}"] = explicit_flux
@@ -1087,38 +1063,32 @@ def test_the_unwritten_workspace_rows_are_leftovers_not_results(
 
 # ------------------------------------------------- the port, on every backend (no scan needed) --
 #
-# The four tests below use the scan-free part of the chain, which is ten of the fifteen
-# programs: everything except the LU factorisation, the solve and the two tendency programs. They
-# run on 'embedded' as well as on the compiled backends, which the three after them cannot -- see
-# '_run_vertdiff' for the measurement.
+# ONLY THE FIRST TEST BELOW IS SCAN-FREE, and that is a change the stencil merge made. The LU
+# factorisation is now a statement of 'prep_impl_vert_diff', so nothing past the setup program
+# can be run without a scan and everything past it is marked 'embedded_too_slow'. What survives
+# on 'embedded' is 'prepare_the_vertical_diffusion_matrix'; what is unaffected is every compiled
+# backend. See '_run_vertdiff' for the measurement behind the marker.
 
 
 @pytest.mark.datatest
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
-def test_the_setup_and_the_diffusion_momentum_agree_with_icon(
+def test_the_setup_agrees_with_icon(
     date: str, *, data_provider: sb.IconSerialDataProvider, grid_savepoint, backend
 ) -> None:
-    """Eight comparisons against the exit savepoint, over the six programs before the solve.
+    """The four comparisons that need nothing but 'prepare_the_vertical_diffusion_matrix'.
 
-    The savepoint holds the SCALAR type's workspace, because that is the last type 'vertdiff'
-    runs; the momentum type's is compared against the reference in the next test. One row of it
-    is the momentum type's all the same -- 'impl_mom(:,ke1)', which the scalar pass does not
-    write because a surface-flux condition has no sub-diagonal to the surface -- and it is
-    included here, since a port that wrote it would differ.
+    THE ONLY TEST OF THIS FILE THAT RUNS ON 'embedded' since the stencil merge, which is why it
+    was split off from the diffusion-momentum comparisons that used to sit with it.
 
-    Each range is attributed to the program that produced it, so a failure names one
-    translation. Three of them are one row deep and are the boundary cases the Fortran writes in
-    separate loops.
-
-    THE SETUP IS ONE PROGRAM SINCE THE STENCIL MERGE AND ITS GATE IS 'Tol', so the three
-    quantities that earned no tolerance are asserted BIT-EXACT here, directly, and not through
-    'assert_agrees_with_icon'. Only 'eprs' has an exponential in it; 'rhon', 'disc_mom' and
-    'diff_dep' have none, and letting the merged program's gate cover them would widen a check
-    that three separate 'Exact' entries used to make. The pattern is section 0)'s, and 'rhon'
-    already used it inside this very program before the merge.
+    THE SETUP IS ONE PROGRAM AND ITS GATE IS 'Tol', so the three quantities that earned no
+    tolerance are asserted BIT-EXACT here, directly, and not through 'assert_agrees_with_icon'.
+    Only 'eprs' has an exponential in it; 'rhon', 'disc_mom' and 'diff_dep' have none, and
+    letting the merged program's gate cover them would widen a check that three separate 'Exact'
+    entries used to make. The pattern is section 0)'s, and 'rhon' already used it inside this
+    very program before the merge.
     """
-    run = _run_vertdiff(data_provider, grid_savepoint, date, backend, with_the_solve=False)
+    run = _run_vertdiff(data_provider, grid_savepoint, date, backend, with_the_scans=False)
     nlev, columns = run.nlev, run.columns
     after, computed = run.after, run.computed
 
@@ -1131,7 +1101,7 @@ def test_the_setup_and_the_diffusion_momentum_agree_with_icon(
         ),
         (
             "diff_dep [interior]",
-            computed["diff_dep:sca"].asnumpy()[columns, 1:nlev],
+            computed["diff_dep"].asnumpy()[columns, 1:nlev],
             after.diff_dep().asnumpy()[columns, 1:nlev],
         ),
     ):
@@ -1147,8 +1117,33 @@ def test_the_setup_and_the_diffusion_momentum_agree_with_icon(
         after.eprs(),
         columns=columns,
     )
+
+
+@pytest.mark.datatest
+@pytest.mark.embedded_too_slow
+@utils.experiment_for_turbulence
+@pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
+def test_the_diffusion_momentum_agrees_with_icon(
+    date: str, *, data_provider: sb.IconSerialDataProvider, grid_savepoint, backend
+) -> None:
+    """The scalar type's factorisation workspace, against the exit savepoint.
+
+    The savepoint holds the SCALAR type's workspace, because that is the last type 'vertdiff'
+    runs; the momentum type's is compared against the reference in the next test. One row of it
+    is the momentum type's all the same -- 'impl_mom(:,ke1)', which the scalar pass does not
+    write because a surface-flux condition has no sub-diagonal to the surface -- and it is
+    included here, since a port that wrote it would differ.
+
+    Four ranges, and all four now come out of one program, so all four name it. What used to
+    attribute them -- one stencil name per range -- is preserved in the quantity string instead;
+    the Fortran statement each one belongs to is in 'prep_impl_vert_diff's docstring.
+    """
+    run = _run_vertdiff(data_provider, grid_savepoint, date, backend)
+    nlev, columns = run.nlev, run.columns
+    after, computed = run.after, run.computed
+
     utils.assert_agrees_with_icon(
-        "compute_surface_diffusion_momentum_and_depth",
+        "prep_impl_vert_diff",
         "diff_dep(:,ke1)",
         computed["diff_dep:sca"],
         after.diff_dep(),
@@ -1156,7 +1151,7 @@ def test_the_setup_and_the_diffusion_momentum_agree_with_icon(
         levels=slice(nlev, nlev + 1),
     )
     utils.assert_agrees_with_icon(
-        "subtract_implicit_diffusion_momentum",
+        "prep_impl_vert_diff",
         "expl_mom [interior]",
         computed["expl_mom:sca"],
         after.expl_mom(),
@@ -1164,7 +1159,7 @@ def test_the_setup_and_the_diffusion_momentum_agree_with_icon(
         levels=slice(1, nlev),
     )
     utils.assert_agrees_with_icon(
-        "compute_surface_diffusion_momentum_and_depth",
+        "prep_impl_vert_diff",
         "expl_mom(:,ke1)",
         computed["expl_mom:sca"],
         after.expl_mom(),
@@ -1172,7 +1167,7 @@ def test_the_setup_and_the_diffusion_momentum_agree_with_icon(
         levels=slice(nlev, nlev + 1),
     )
     utils.assert_agrees_with_icon(
-        "compute_implicit_diffusion_momentum",
+        "prep_impl_vert_diff",
         "impl_mom",
         computed["impl_mom:sca"],
         after.impl_mom(),
@@ -1182,6 +1177,7 @@ def test_the_setup_and_the_diffusion_momentum_agree_with_icon(
 
 
 @pytest.mark.datatest
+@pytest.mark.embedded_too_slow
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_the_momentum_type_diffusion_momentum_agrees_with_the_reference(
@@ -1200,25 +1196,26 @@ def test_the_momentum_type_diffusion_momentum_agrees_with_the_reference(
     that 'invert_diffusion_momentum_at_the_surface_flux_level' exists to carry, and the one that
     would make 'u_tens' and 'v_tens' wrong with nothing before them saying so.
 
-    'full_expl_mom' is the diffusion momentum before the implicit part is subtracted, which no
-    savepoint holds for either type because the Fortran subtracts in place. It is the only
-    output of 'compute_diffusion_momentum' and this is the only comparison it has.
+    'full_expl_mom' -- the diffusion momentum before the implicit part is subtracted -- USED TO
+    BE COMPARED HERE and no longer can be: 'prep_impl_vert_diff' subtracts in place, exactly as
+    the Fortran does, so the unreduced value never leaves the program. WHAT COVERS IT INSTEAD is
+    'impl_mom = full_expl_mom * impl_weight', which is compared below over the same rows: the
+    weight is strictly positive on every one of them (asserted here, since the argument depends
+    on it), so an error in the unreduced momentum scales 'impl_mom' by the same factor and
+    cannot hide. That is a weaker attribution and the same coverage.
     """
-    run = _run_vertdiff(data_provider, grid_savepoint, date, backend, with_the_solve=False)
+    run = _run_vertdiff(data_provider, grid_savepoint, date, backend)
     nlev, columns = run.nlev, run.columns
     reference, computed = run.reference, run.computed
 
-    for kind in ("mom", "sca"):
-        utils.assert_agrees_with_icon(
-            "compute_diffusion_momentum",
-            f"expl_mom before the split [{kind}]",
-            computed[f"full_expl_mom:{kind}"],
-            reference[f"full_expl_mom:{kind}"],
-            columns=columns,
-            levels=slice(1, nlev),
-        )
+    weight = _implicit_weight_profile(grid_savepoint.vct_a().asnumpy(), nlev)
+    assert np.all(weight[1 : nlev + 1] > 0.0), (
+        "'impl_mom' only carries an error in the unreduced diffusion momentum where the "
+        "implicit weight is non-zero, and it is zero somewhere -- so the comparison below no "
+        "longer covers 'compute_diffusion_momentum'."
+    )
     utils.assert_agrees_with_icon(
-        "compute_surface_diffusion_momentum_and_depth",
+        "prep_impl_vert_diff",
         "diff_dep(:,ke1) [mom]",
         computed["diff_dep:mom"],
         reference["diff_dep:mom"],
@@ -1226,7 +1223,7 @@ def test_the_momentum_type_diffusion_momentum_agrees_with_the_reference(
         levels=slice(nlev, nlev + 1),
     )
     utils.assert_agrees_with_icon(
-        "subtract_implicit_diffusion_momentum",
+        "prep_impl_vert_diff",
         "expl_mom [mom]",
         computed["expl_mom:mom"],
         reference["expl_mom:mom"],
@@ -1234,7 +1231,7 @@ def test_the_momentum_type_diffusion_momentum_agrees_with_the_reference(
         levels=slice(1, nlev + 1),
     )
     utils.assert_agrees_with_icon(
-        "compute_implicit_diffusion_momentum",
+        "prep_impl_vert_diff",
         "impl_mom [mom]",
         computed["impl_mom:mom"],
         reference["impl_mom:mom"],
@@ -1244,6 +1241,7 @@ def test_the_momentum_type_diffusion_momentum_agrees_with_the_reference(
 
 
 @pytest.mark.datatest
+@pytest.mark.embedded_too_slow
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_the_profiles_and_the_explicit_fluxes_agree(
@@ -1262,7 +1260,7 @@ def test_the_profiles_and_the_explicit_fluxes_agree(
     lower boundary condition of the two systems and the reason 'u' and 'qv' are not solved by
     the same code path.
     """
-    run = _run_vertdiff(data_provider, grid_savepoint, date, backend, with_the_solve=False)
+    run = _run_vertdiff(data_provider, grid_savepoint, date, backend)
     nlev, columns = run.nlev, run.columns
     after, reference, computed = run.after, run.reference, run.computed
 
@@ -1346,6 +1344,7 @@ def test_the_profiles_and_the_explicit_fluxes_agree(
 
 
 @pytest.mark.datatest
+@pytest.mark.embedded_too_slow
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_the_right_hand_sides_agree_with_icon(
@@ -1370,7 +1369,7 @@ def test_the_right_hand_sides_agree_with_icon(
     the four dates. 'test_the_surface_exner_factor_is_the_only_transcendental' is where that is
     stated against ICON with a tolerance; here the arithmetic is checked without it.
     """
-    run = _run_vertdiff(data_provider, grid_savepoint, date, backend, with_the_solve=False)
+    run = _run_vertdiff(data_provider, grid_savepoint, date, backend)
     nlev, columns = run.nlev, run.columns
     after, reference, computed = run.after, run.reference, run.computed
 

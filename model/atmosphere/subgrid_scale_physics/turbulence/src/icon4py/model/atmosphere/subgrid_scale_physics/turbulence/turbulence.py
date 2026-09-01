@@ -86,9 +86,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
     compute_diffusion_inversion_factor,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_momentum import (
-    compute_diffusion_momentum,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_right_hand_side import (
     compute_diffusion_right_hand_side,
 )
@@ -110,9 +107,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_horizontal_wind_including_the_zero_level import (
     compute_horizontal_wind_including_the_zero_level,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_diffusion_momentum import (
-    compute_implicit_diffusion_momentum,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_part_of_tke_diffusion_momentum import (
     compute_implicit_part_of_tke_diffusion_momentum,
 )
@@ -133,9 +127,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths_from_diffusion_coefficients import (
     compute_stability_lengths_from_diffusion_coefficients,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_diffusion_momentum_and_depth import (
-    compute_surface_diffusion_momentum_and_depth,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_profile_value_from_flux_gradient import (
     compute_surface_profile_value_from_flux_gradient,
@@ -177,6 +168,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.interpol
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_diffusion_momentum_at_the_surface_flux_level import (
     invert_diffusion_momentum_at_the_surface_flux_level,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_impl_vert_diff import (
+    prep_impl_vert_diff,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prepare_the_tke_diffusion import (
     prepare_the_tke_diffusion,
 )
@@ -197,9 +191,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_tu
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_vertical_diffusion_equation import (
     solve_vertical_diffusion_equation,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_diffusion_momentum import (
-    subtract_implicit_diffusion_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_part_of_tke_diffusion_momentum import (
     subtract_implicit_part_of_tke_diffusion_momentum,
@@ -1799,44 +1790,16 @@ class Turbulence:
             shifted=True,
         )
 
-        # -- once per variable type ('vert_grad_diff' and 'prep_impl_vert_diff')
-        self._compute_diffusion_momentum = self._program(
-            compute_diffusion_momentum,
+        # -- once per variable type ('vert_grad_diff' and 'prep_impl_vert_diff'): one program of
+        # six statements, ONE binding for both types. Every range that depends on the lower
+        # boundary condition is expressed on 'elimination_end', which the caller passes -- 'nlev'
+        # for the momentum type ('m = 1') and 'nlev - 1' for the scalar type ('m = 2'). The two
+        # programs that follow it cannot be statements of it: both read 'invs_mom' through
+        # 'Koff[-1]' and the first WRITES it, which DaCe drops. See the stencil's docstring.
+        self._prep_impl_vert_diff = self._program(
+            prep_impl_vert_diff,
+            constant_args={"implicit_weight": self._implicit_weight},
             levels=(1, nlev),  # 'DO k=k_hi+1,k_lw'
-        )
-        self._compute_surface_diffusion_momentum_and_depth = self._program(
-            compute_surface_diffusion_momentum_and_depth,
-            levels=(nlev, nlev + 1),  # the 'k_sf' row, in its own Fortran loop
-        )
-        # 'DO k=k_tp+2,k_sf+1-m': to the surface row for the momentum type, one short of it for
-        # the scalar type, whose sub-diagonal to the surface vanishes under a flux condition.
-        self._compute_implicit_diffusion_momentum_of_the_momentum_type = self._program(
-            compute_implicit_diffusion_momentum,
-            constant_args={"implicit_weight": self._implicit_weight},
-            levels=(1, nlev + 1),
-        )
-        self._compute_implicit_diffusion_momentum_of_the_scalar_type = self._program(
-            compute_implicit_diffusion_momentum,
-            constant_args={"implicit_weight": self._implicit_weight},
-            levels=(1, nlev),
-        )
-        self._subtract_implicit_diffusion_momentum = self._program(
-            subtract_implicit_diffusion_momentum,
-            levels=(1, nlev),  # 'DO k=k_tp+2,k_sf-1'
-        )
-        # The elimination stops one row short of the implicit part's own range, hence one
-        # binding per type again. 'compute_inverted_diffusion_momentum' and
-        # 'compute_diffusion_inversion_factor' are section 9)'s programs unchanged --
-        # 'prep_impl_vert_diff' is one subroutine for the TKE and for the model variables --
-        # but their vertical domains are not section 9)'s, so they are bound separately.
-        self._compute_inverted_diffusion_momentum_of_the_momentum_type = self._program(
-            compute_inverted_diffusion_momentum,
-            levels=(0, nlev),  # 'invs_mom(:,k_tp+1)' then 'DO k=k_tp+2,k_sf-m'
-            shifted=True,
-        )
-        self._compute_inverted_diffusion_momentum_of_the_scalar_type = self._program(
-            compute_inverted_diffusion_momentum,
-            levels=(0, nlev - 1),
             shifted=True,
         )
         self._invert_diffusion_momentum_at_the_surface_flux_level = self._program(
@@ -2471,14 +2434,18 @@ class Turbulence:
 
         'vert_grad_diff:2461-2478' and 'prep_impl_vert_diff:2764-2858', once for 'mom' and once
         for 'sca'. One matrix serves every variable of its type, which is the whole reason
-        'vertdiff' loops over types on the outside and variables on the inside.
+        'vertdiff' loops over types on the outside and variables on the inside. Three programs
+        since the stencil merge: 'prep_impl_vert_diff' holds six of the eight Fortran statements.
 
         THE TWO TYPES DIFFER BY ONE ROW AND NOTHING ELSE. Under a surface-FLUX condition
         ('lsflucond', the scalar type) the implicit part stops above the surface row and the
         elimination stops one row above that, so the row it stopped at is finished by a program
         of its own -- the Fortran's third loop, 'DO k=k_sf-m+1,k_sf-1', which is empty at
         'm = 1'. Getting that boundary wrong changes 'u_tens' and 'v_tens' with nothing
-        upstream of them disagreeing.
+        upstream of them disagreeing. That program and the inversion factor after it are the two
+        Fortran statements the merge could NOT absorb: both read 'invs_mom' through 'Koff[-1]'
+        and the first writes it, and DaCe silently drops a statement whose 'out=' names the same
+        parameter as a shifted input.
 
         'diffusion_coefficient' is read at the surface row as well as inside, so the row must be
         the one 'turbtran' produced and 'turbdiff' left alone -- section 4) writes rows
@@ -2490,43 +2457,22 @@ class Turbulence:
             air_density: 'rhon' on half levels, surface row included [kg/m3].
             surface_flux_condition: 'lsflucond'; false for momentum, 'tdc%lsflcnd' for scalars.
         """
-        self._compute_diffusion_momentum(
+        # 'elimination_end' is the one row the two types differ by: 'k_sf - m' zero-based, so
+        # 'nlev' under a surface-concentration condition and 'nlev - 1' under a flux condition.
+        # The implicit part runs one row further than it. The subtraction inside is in place and
+        # covers one row less than the split, so the surface row keeps the WHOLE diffusion
+        # momentum -- which is what makes the surface row of the explicit flux the explicit
+        # surface flux.
+        self._prep_impl_vert_diff(
             diffusion_coefficient=diffusion_coefficient,
             air_density=air_density,
-            diffusion_depth=self._diffusion_depth,
-            diffusion_momentum=self._diffusion_momentum,
-        )
-        self._compute_surface_diffusion_momentum_and_depth(
-            air_density=air_density,
-            diffusion_coefficient=diffusion_coefficient,
             surface_transfer_velocity=transfer_velocity,
+            discretisation_momentum=self._discretisation_momentum,
+            elimination_end=gtx.int32(
+                int(self._nlev) - 1 if surface_flux_condition else int(self._nlev)
+            ),
             diffusion_momentum=self._diffusion_momentum,
             diffusion_depth=self._diffusion_depth,
-        )
-        split_off_the_implicit_part = (
-            self._compute_implicit_diffusion_momentum_of_the_scalar_type
-            if surface_flux_condition
-            else self._compute_implicit_diffusion_momentum_of_the_momentum_type
-        )
-        split_off_the_implicit_part(
-            diffusion_momentum=self._diffusion_momentum,
-            implicit_diffusion_momentum=self._implicit_diffusion_momentum,
-        )
-        # IN PLACE, as the Fortran is: the subtraction is pointwise and covers one row less
-        # than the split above, so the surface row keeps the WHOLE diffusion momentum -- which
-        # is what makes the surface row of the explicit flux the explicit surface flux.
-        self._subtract_implicit_diffusion_momentum(
-            diffusion_momentum=self._diffusion_momentum,
-            implicit_diffusion_momentum=self._implicit_diffusion_momentum,
-            explicit_diffusion_momentum=self._diffusion_momentum,
-        )
-        eliminate = (
-            self._compute_inverted_diffusion_momentum_of_the_scalar_type
-            if surface_flux_condition
-            else self._compute_inverted_diffusion_momentum_of_the_momentum_type
-        )
-        eliminate(
-            discretisation_momentum=self._discretisation_momentum,
             implicit_diffusion_momentum=self._implicit_diffusion_momentum,
             inverted_diffusion_momentum=self._inverted_diffusion_momentum,
         )
