@@ -366,20 +366,51 @@ GATES: dict[str, Gate] = {
     # These are CPU measurements. CUDA's libm rounds 'exp' and 'log' differently and the GPU run
     # may need them widened -- see the note in the package README about 'x**2' for the general
     # shape of that problem.
-    "compute_uncorrected_horizontal_shear_length_scale": Exact(),
-    # 'hlp = ut_sso*u + vt_sso*v' is this section's 'a*b + c*d', so it carries the FMA canary.
-    "compute_sso_wake_energy_production": Exact(),
-    "compute_inverse_richardson_number_factor": Tol(
-        rtol=1e-14,
-        reason=Reason.TRANSCENDENTAL,
-        measured_max_rel_err=1.0063e-15,  # 'xri', 2020-12-10T06:01:40
-    ),
-    "compute_effective_horizontal_shear_length_scale": Tol(
-        rtol=1e-14,
-        reason=Reason.TRANSCENDENTAL,
-        measured_max_rel_err=1.0447e-15,  # 'hor_scale', 2020-12-10T06:01:40
-    ),
-    "compute_separated_horizontal_shear_tke_source": Tol(
+    # Since the stencil merge the section is THREE programs, not seven.
+    # 'add_three_dimensional_shear_complements' has six statements -- the mean-flow shear,
+    # 'xri', 'layr', 'hor_scale', 'tket_hshr' and the SSO wake production -- and then one of the
+    # two 'compute_total_mechanical_forcing' variants finishes 'frm'. The two stay separate
+    # programs because only one of them may write 'frm' and there is no safe way to switch a
+    # statement off inside the merged program: an empty vertical domain is a no-op only for a
+    # POINTWISE statement, and the total forcing reads 'hlp' and 'dp0' at 'Koff[-1]'. The
+    # section test still asserts each of the six outputs separately, so a failure names the
+    # Fortran quantity.
+    #
+    # THE MERGE COLLAPSED THREE 'Tol' ENTRIES AND TWO 'Exact' ONES, and the tolerance is
+    # deliberately not allowed to spread. 'layr' and 'hlp' have no transcendental anywhere in
+    # them -- 'layr' is three multiplications and 'hlp' is 'a*b + c*d', this section's FMA canary
+    # -- and they are asserted BIT-EXACT with 'np.array_equal', directly and not through
+    # 'assert_agrees_with_icon', by 'test_the_uncorrected_shear_length_scale_is_bit_exact' and
+    # 'test_the_sso_wake_energy_production_is_bit_exact'. So the merged entry buys 'xri',
+    # 'hor_scale' and 'tket_hshr' a tolerance and buys the other two nothing, exactly as the five
+    # entries it replaces did. The pattern is section 0)'s and step 5's.
+    #
+    # 'rtol' is the widest of the three it replaces (2e-14, from 'tket_hshr'), not a new number.
+    # 'measured_max_rel_err' was RE-MEASURED after the merge on 'gtfn_cpu' across all four dates
+    # and all six outputs, which is what the merge plan asks for because a re-association could
+    # have moved it. IT MOVED NOTHING: every tolerant quantity reproduces its pre-merge maximum
+    # to the digits that were recorded -- 'xri' 1.006332e-15, 'hor_scale' 1.044715e-15,
+    # 'tket_hshr' 2.205025e-15, 'frm' 1.773661e-15 -- and 'layr' and 'hlp' are bit-exact on all
+    # four dates. Six statements of one program are the six programs' arithmetic, unchanged.
+    #
+    # One transcendental drives all of it: 'xri = EXP(2/3*LOG(frm/frh))'. Its 'LOG' argument
+    # spans roughly +-7, so 2/3 of it amplifies a 1-ulp 'LOG' error by about 4.7x, and 'xri'
+    # lands at most 8 ulp from nvhpc on 6.2% of values -- exactly what that predicts. Everything
+    # downstream inherits it by being chained to 'xri' and to nothing else. What makes that
+    # honest rather than a shrug: substituting ICON's own 'xri' and leaving the rest of the chain
+    # alone makes 'hor_scale', 'tket_hshr' and 'frm' BIT-EXACT, asserted ungated by
+    # 'test_the_section_is_bit_exact_when_the_transcendental_comes_from_icon'.
+    #
+    # Measured on 'embedded', 'gtfn_cpu' and 'dace_cpu', which produce bit-identical results to
+    # each other -- so, as in section 0), the disagreement is on ICON's side of the comparison
+    # and not in any backend's code generation. CUDA's libm rounds 'exp' and 'log' differently
+    # and a GPU run may need these widened.
+    #
+    # The mean-flow shear the first statement writes has no savepoint slot and nothing to gate;
+    # 'compute_total_mechanical_forcing_without_richardson_reduction', the 'imode_tkesso = 1'
+    # variant, has no ICON oracle at all, so a gate for it would be a fiction. Its tests compare
+    # it against the reduced program and against a numpy transcription, both ungated.
+    "add_three_dimensional_shear_complements": Tol(
         rtol=2e-14,
         reason=Reason.TRANSCENDENTAL,
         measured_max_rel_err=2.2050e-15,  # 'tket_hshr', 2020-12-10T06:01:00
@@ -389,8 +420,6 @@ GATES: dict[str, Gate] = {
         reason=Reason.TRANSCENDENTAL,
         measured_max_rel_err=1.7737e-15,  # 'frm', 2020-12-10T06:01:40
     ),
-    # 'compute_three_dimensional_shear_forcing' writes the mean-flow shear intermediate, which is
-    # not compared against a savepoint of its own -- it has no ICON counterpart to gate.
     # turbdiff section 4) lower limits of the vertical diffusion coefficients. Measured
     # bit-exact on 'embedded', 'gtfn_cpu' and 'dace_cpu', all four dates, over all 653804
     # computed values of both 'tkvm' and 'tkvh'.

@@ -77,7 +77,17 @@ BIT-EXACTNESS AND THE ONE EXCEPTION. Everything in the section is exact arithmet
 which is 'EXP(2/3*LOG(...))'. Reconstructed with numpy against ICON's own 'xri' as the input,
 every other output of the section is bit-identical to the reference on all four dates; with a
 self-computed 'xri' the disagreement is at the 1e-15 level and propagates to 'hor_scale',
-'tket_hshr' and 'frm'. The gates below record what each backend actually produced.
+'tket_hshr' and 'frm'. The gate records what each backend actually produced.
+
+THREE PROGRAMS SINCE THE STENCIL MERGE, WHERE THERE WERE SEVEN. Five of them are statements of
+'add_three_dimensional_shear_complements'; the two 'imode_tkesso' variants of the total forcing
+stay programs, because only one of them may write 'frm' and there is no safe way to switch a
+statement off inside a merged program -- an empty vertical domain is a no-op only for a POINTWISE
+statement, and the total forcing reads 'hlp' and 'dp0' at 'Koff[-1]'. A gate is a property of a
+program, so the five entries the merged statements had -- three 'Tol' and two 'Exact' -- collapse
+into one 'Tol'; 'layr' and 'hlp' are therefore asserted BIT-EXACT here with 'array_equal',
+directly, so the tolerance 'xri' needs does not spread to the two quantities that never earned
+one. Every output is still compared separately, so a failure still names the Fortran quantity.
 """
 
 from __future__ import annotations
@@ -91,29 +101,17 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import turbulence
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_horizontal_shear_length_scale import (
-    compute_effective_horizontal_shear_length_scale,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverse_richardson_number_factor import (
-    compute_inverse_richardson_number_factor,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_separated_horizontal_shear_tke_source import (
-    compute_separated_horizontal_shear_tke_source,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_sso_wake_energy_production import (
-    compute_sso_wake_energy_production,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_three_dimensional_shear_forcing import (
-    compute_three_dimensional_shear_forcing,
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_three_dimensional_shear_complements import (
+    _compute_effective_horizontal_shear_length_scale,
+    _compute_separated_horizontal_shear_tke_source,
+    add_three_dimensional_shear_complements,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_total_mechanical_forcing import (
     compute_total_mechanical_forcing,
     compute_total_mechanical_forcing_without_richardson_reduction,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_uncorrected_horizontal_shear_length_scale import (
-    compute_uncorrected_horizontal_shear_length_scale,
-)
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import serialbox as sb
 
 from .. import utils
@@ -128,6 +126,70 @@ SECTION_2A_OUTPUT_SLOTS = frozenset(
 
 #: 'zvari' component indices (mo_turbdiff_config.f90:62-77), zero-based as the reader takes them.
 U_M, V_M = 1, 2
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def section_2a_downstream_of_the_richardson_factor(  # noqa: PLR0917 [too-many-positional-arguments]
+    uncorrected_horizontal_shear_length_scale: fa.CellField[wpfloat],
+    half_level_height: fa.CellKField[wpfloat],
+    surface_height: fa.CellField[wpfloat],
+    inverse_richardson_number_factor: fa.CellKField[wpfloat],
+    turbulent_velocity_scale: fa.CellKField[wpfloat],
+    horizontal_divergence: fa.CellKField[wpfloat],
+    horizontal_deformation_square: fa.CellKField[wpfloat],
+    neutral_momentum_stability_function: wpfloat,
+    effective_horizontal_shear_length_scale: fa.CellKField[wpfloat],
+    separated_horizontal_shear_tke_source: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """The two statements of the merged program that read 'xri', for one test.
+
+    THIS EXISTS BECAUSE 'xri' IS AN INTERNAL OF THE MERGED PROGRAM. Before the stencil merge,
+    'test_the_section_is_bit_exact_when_the_transcendental_comes_from_icon' substituted the
+    reference's own 'xri' between two of section 2a)'s programs and ran the rest of the chain on
+    it. The six upstream statements are one program now, and its SECOND statement WRITES 'xri'
+    from the mean shear -- so calling it again would overwrite the substitution before the
+    statements that read 'xri' ever saw it. A wrapper is the honest alternative: the same two
+    field operators, the same domains, in the same order. 'frm' needs no wrapper, because
+    'compute_total_mechanical_forcing' is still a program of its own and the test calls it.
+
+    WHAT IT COSTS, stated rather than hidden: that one test exercises two of the section's field
+    operators and not the program the granule runs. Everything else in this file runs the merged
+    program, so what is lost is only that this particular diagnostic would no longer notice a
+    wrong domain -- which 'test_section_2a_leaves_the_rows_outside_its_domains_alone' and every
+    gated comparison here would. The device is the one
+    'analytic_tests/single_statement_stencils.py' documents.
+
+    'layr' and 'hlp' are not recomputed: neither reads 'xri', so the values the merged program
+    already wrote are the ones this would produce.
+    """
+    _compute_effective_horizontal_shear_length_scale(
+        uncorrected_horizontal_shear_length_scale=uncorrected_horizontal_shear_length_scale,
+        half_level_height=half_level_height,
+        surface_height=surface_height,
+        inverse_richardson_number_factor=inverse_richardson_number_factor,
+        turbulent_velocity_scale=turbulent_velocity_scale,
+        out=effective_horizontal_shear_length_scale,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+    _compute_separated_horizontal_shear_tke_source(
+        effective_horizontal_shear_length_scale=effective_horizontal_shear_length_scale,
+        horizontal_divergence=horizontal_divergence,
+        horizontal_deformation_square=horizontal_deformation_square,
+        neutral_momentum_stability_function=neutral_momentum_stability_function,
+        out=separated_horizontal_shear_tke_source,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
 
 #: The configuration the reference run used, in the one parameter of it that differs from the
 #: compiled-in default. 'test_the_capture_used_a_horizontal_shear_factor_of_two' recovers
@@ -199,21 +261,29 @@ class Section2a(NamedTuple):
 def _run_section_2a(
     data_provider, date: str, backend, *, richardson_from_icon: bool = False
 ) -> Section2a:
-    """Run all seven programs of section 2a) on the 'turbdiff-1c-exit' state of one timestep.
+    """Run section 2a) on the 'turbdiff-1c-exit' state of one timestep.
 
-    THE PROGRAMS ARE CHAINED, not each fed with ICON's own intermediate: 'xri' is formed from the
-    mean shear this run computed, 'hor_scale' from that 'xri', and so on down to 'frm'. A
-    bit-exact result therefore says the seven compose as the granule will run them, and not
-    merely that each one agrees when handed the reference's inputs. It also means a rounding
-    difference in 'xri' -- the section's only transcendental -- reaches every gate below it,
-    which is the honest way round.
+    THREE PROGRAMS SINCE THE STENCIL MERGE, where there were seven: the six statements of
+    'add_three_dimensional_shear_complements', and then both 'imode_tkesso' variants of the
+    total forcing on the same intermediates. The statements are chained inside the merged
+    program exactly as the programs were chained here before -- the Richardson factor is formed
+    from the mean shear this run computed, 'hor_scale' from that 'xri', and so on down to 'frm'.
+    A bit-exact result therefore says the section composes as the granule will run it, and a
+    rounding difference in 'xri' -- the section's only transcendental -- reaches every gate below
+    it, which is the honest way round.
+
+    THE MODE-1 PROGRAM IS RUN IN EVERY CASE rather than under a flag: the two 'frm' fields are
+    compared against each other, and a comparison of two runs made from different chains would
+    say nothing.
 
     Args:
-        richardson_from_icon: Substitute the reference's own 'xri' for the computed one, leaving
-            everything else chained as before. That isolates the transcendental from the rest of
-            the section, which is what
+        richardson_from_icon: Substitute the reference's own 'xri' for the computed one and redo
+            the statements that read it, leaving everything else as the merged program left it.
+            That isolates the transcendental from the rest of the section, which is what
             'test_the_section_is_bit_exact_when_the_transcendental_comes_from_icon' measures. It
-            is a diagnostic and not how the granule runs.
+            runs 'section_2a_downstream_of_the_richardson_factor' in place of the merged
+            program's last two 'xri' readers, for the reason that program's docstring gives. A
+            diagnostic, not how the granule runs.
     """
     entry = data_provider.from_savepoint_turbdiff_entry(date=date)
     before = data_provider.from_savepoint_turbdiff_section(section="1c", date=date)
@@ -240,7 +310,7 @@ def _run_section_2a(
     mechanical_forcing = utils.copy_of(before.mech_forcing(), backend)
     mechanical_forcing_without_richardson_reduction = utils.copy_of(before.mech_forcing(), backend)
 
-    compute_three_dimensional_shear_forcing.with_backend(backend)(
+    add_three_dimensional_shear_complements.with_backend(backend)(
         vertical_gradient_u=before.vertical_gradient(U_M),
         vertical_gradient_v=before.vertical_gradient(V_M),
         dwdx=entry.dwdx(),
@@ -248,62 +318,45 @@ def _run_section_2a(
         horizontal_divergence=entry.hdiv(),
         horizontal_deformation_square=entry.hdef2(),
         min_forcing=entry.fc_min(),
-        mean_shear_forcing=mean_shear_forcing,
-        offset_provider={},
-        **horizontal,
-        **half_levels,
-    )
-    compute_inverse_richardson_number_factor.with_backend(backend)(
-        mean_shear_forcing=mean_shear_forcing,
         thermal_forcing=before.thermal_forcing(),
+        horizontal_mesh_size=entry.l_hori(),
+        horizontal_shear_length_factor=CONFIG.a_hshr,
+        karman_constant=CONFIG.akt,
+        half_level_height=entry.hhl(),
+        surface_height=utils.surface_row(entry.hhl(), ke, backend),
+        turbulent_velocity_scale=before.tke(),
+        neutral_momentum_stability_function=PARAMS.sm_0,
+        sso_tendency_u=entry.ut_sso(),
+        sso_tendency_v=entry.vt_sso(),
+        wind_u=entry.u(),
+        wind_v=entry.v(),
+        mean_shear_forcing=mean_shear_forcing,
         inverse_richardson_number_factor=inverse_richardson_number_factor,
+        uncorrected_horizontal_shear_length_scale=uncorrected_horizontal_shear_length_scale,
+        effective_horizontal_shear_length_scale=effective_horizontal_shear_length_scale,
+        separated_horizontal_shear_tke_source=separated_horizontal_shear_tke_source,
+        sso_wake_energy_production=sso_wake_energy_production,
         offset_provider={},
         **horizontal,
         **half_levels,
     )
     if richardson_from_icon:
-        inverse_richardson_number_factor = utils.copy_of(after.xri(), backend)
-    compute_uncorrected_horizontal_shear_length_scale.with_backend(backend)(
-        horizontal_mesh_size=entry.l_hori(),
-        horizontal_shear_length_factor=CONFIG.a_hshr,
-        karman_constant=CONFIG.akt,
-        uncorrected_horizontal_shear_length_scale=uncorrected_horizontal_shear_length_scale,
-        offset_provider={},
-        **horizontal,
-    )
-    compute_effective_horizontal_shear_length_scale.with_backend(backend)(
-        uncorrected_horizontal_shear_length_scale=uncorrected_horizontal_shear_length_scale,
-        half_level_height=entry.hhl(),
-        surface_height=utils.surface_row(entry.hhl(), ke, backend),
-        inverse_richardson_number_factor=inverse_richardson_number_factor,
-        turbulent_velocity_scale=before.tke(),
-        effective_horizontal_shear_length_scale=effective_horizontal_shear_length_scale,
-        offset_provider={},
-        **horizontal,
-        **half_levels,
-    )
-    compute_separated_horizontal_shear_tke_source.with_backend(backend)(
-        effective_horizontal_shear_length_scale=effective_horizontal_shear_length_scale,
-        horizontal_divergence=entry.hdiv(),
-        horizontal_deformation_square=entry.hdef2(),
-        neutral_momentum_stability_function=PARAMS.sm_0,
-        separated_horizontal_shear_tke_source=separated_horizontal_shear_tke_source,
-        offset_provider={},
-        **horizontal,
-        **half_levels,
-    )
-    # Fortran 'DO k=1,kem': one MAIN level higher than everything else in the section.
-    compute_sso_wake_energy_production.with_backend(backend)(
-        sso_tendency_u=entry.ut_sso(),
-        sso_tendency_v=entry.vt_sso(),
-        wind_u=entry.u(),
-        wind_v=entry.v(),
-        sso_wake_energy_production=sso_wake_energy_production,
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(ke),
-        offset_provider={},
-        **horizontal,
-    )
+        utils.overwrite_with(inverse_richardson_number_factor, after.xri(), backend)
+        section_2a_downstream_of_the_richardson_factor.with_backend(backend)(
+            uncorrected_horizontal_shear_length_scale=uncorrected_horizontal_shear_length_scale,
+            half_level_height=entry.hhl(),
+            surface_height=utils.surface_row(entry.hhl(), ke, backend),
+            inverse_richardson_number_factor=inverse_richardson_number_factor,
+            turbulent_velocity_scale=before.tke(),
+            horizontal_divergence=entry.hdiv(),
+            horizontal_deformation_square=entry.hdef2(),
+            neutral_momentum_stability_function=PARAMS.sm_0,
+            effective_horizontal_shear_length_scale=effective_horizontal_shear_length_scale,
+            separated_horizontal_shear_tke_source=separated_horizontal_shear_tke_source,
+            offset_provider={},
+            **horizontal,
+            **half_levels,
+        )
     compute_total_mechanical_forcing.with_backend(backend)(
         mean_shear_forcing=mean_shear_forcing,
         separated_horizontal_shear_tke_source=separated_horizontal_shear_tke_source,
@@ -316,9 +369,6 @@ def _run_section_2a(
         **horizontal,
         **half_levels,
     )
-    # The mode-1 alternative, on exactly the same inputs. It is run in every case rather than
-    # under a flag: the two outputs are compared against each other, and a comparison of two
-    # runs made from different chains would say nothing.
     compute_total_mechanical_forcing_without_richardson_reduction.with_backend(backend)(
         mean_shear_forcing=mean_shear_forcing,
         separated_horizontal_shear_tke_source=separated_horizontal_shear_tke_source,
@@ -685,17 +735,25 @@ def _sso_reconstruction(data_provider: sb.IconSerialDataProvider, date: str) -> 
 @pytest.mark.datatest
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
-def test_compute_uncorrected_horizontal_shear_length_scale_agrees_with_icon_within_its_gate(
+def test_the_uncorrected_shear_length_scale_is_bit_exact(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
+    """'layr' is three multiplications and has no transcendental anywhere near it.
+
+    ASSERTED DIRECTLY AND NOT THROUGH THE MERGED GATE. Since the stencil merge the section is one
+    program, and a gate is a property of a program, so the one 'Tol' entry that 'xri' needs would
+    otherwise cover this too. It was 'Exact()' before the merge and it stays exact here; letting
+    the tolerance reach it would weaken a check nobody decided to weaken. The pattern is the one
+    section 0) and step 5 of the merge use.
+    """
     run = _run_section_2a(data_provider, date, backend)
 
-    utils.assert_agrees_with_icon(
-        "compute_uncorrected_horizontal_shear_length_scale",
-        "layr",
-        run.uncorrected_horizontal_shear_length_scale,
-        run.after.layr(),
-        columns=run.columns,
+    got = run.uncorrected_horizontal_shear_length_scale.asnumpy()[run.columns]
+    want = run.after.layr().asnumpy()[run.columns]
+    assert np.array_equal(got, want), (
+        f"'layr' has no transcendental in it and must be bit-exact, but "
+        f"{np.count_nonzero(got != want)} of {got.size} values differ by up to "
+        f"{np.nanmax(np.abs(got - want))}"
     )
 
 
@@ -708,7 +766,7 @@ def test_compute_inverse_richardson_number_factor_agrees_with_icon_within_its_ga
     run = _run_section_2a(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_inverse_richardson_number_factor",
+        "add_three_dimensional_shear_complements",
         "xri",
         run.inverse_richardson_number_factor,
         run.after.xri(),
@@ -726,7 +784,7 @@ def test_compute_effective_horizontal_shear_length_scale_agrees_with_icon_within
     run = _run_section_2a(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_effective_horizontal_shear_length_scale",
+        "add_three_dimensional_shear_complements",
         "hor_scale",
         run.effective_horizontal_shear_length_scale,
         run.after.hor_scale(),
@@ -744,7 +802,7 @@ def test_compute_separated_horizontal_shear_tke_source_agrees_with_icon_within_i
     run = _run_section_2a(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_separated_horizontal_shear_tke_source",
+        "add_three_dimensional_shear_complements",
         "tket_hshr",
         run.separated_horizontal_shear_tke_source,
         run.after.tket_hshr(),
@@ -756,18 +814,24 @@ def test_compute_separated_horizontal_shear_tke_source_agrees_with_icon_within_i
 @pytest.mark.datatest
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
-def test_compute_sso_wake_energy_production_agrees_with_icon_within_its_gate(
+def test_the_sso_wake_energy_production_is_bit_exact(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
+    """'hlp = ut_sso*u + vt_sso*v' is this section's FMA canary and reads no transcendental.
+
+    ASSERTED DIRECTLY AND NOT THROUGH THE MERGED GATE, for the same reason as 'layr' above: the
+    merged program's single 'Tol' entry exists for 'xri', and this quantity does not depend on
+    'xri' at all. It was 'Exact()' before the merge and it stays exact here.
+    """
     run = _run_section_2a(data_provider, date, backend)
 
-    utils.assert_agrees_with_icon(
-        "compute_sso_wake_energy_production",
-        "hlp [ut_sso*u + vt_sso*v]",
-        run.sso_wake_energy_production,
-        run.after.hlp(),
-        columns=run.columns,
-        levels=slice(0, run.ke),
+    levels = slice(0, run.ke)
+    got = run.sso_wake_energy_production.asnumpy()[run.columns, levels]
+    want = run.after.hlp().asnumpy()[run.columns, levels]
+    assert np.array_equal(got, want), (
+        f"'hlp [ut_sso*u + vt_sso*v]' has no transcendental in it and must be bit-exact, but "
+        f"{np.count_nonzero(got != want)} of {got.size} values differ by up to "
+        f"{np.nanmax(np.abs(got - want))}"
     )
 
 
@@ -798,14 +862,14 @@ def test_the_section_is_bit_exact_when_the_transcendental_comes_from_icon(
 ) -> None:
     """Every other output of section 2a) is bit-identical to ICON once 'xri' is ICON's own.
 
-    This is what makes the three tolerant gates below honest rather than a shrug. 'xri' is the
+    This is what makes the tolerant gate below honest rather than a shrug. 'xri' is the
     section's only 'EXP(LOG())'; substituting the reference's value for it and leaving the rest
     of the chain untouched, 'hor_scale', 'tket_hshr' and 'frm' agree with ICON to the last bit,
     on 'embedded', 'gtfn_cpu' and 'dace_cpu' alike -- so the disagreement is one rounding of one
     libm and not an arithmetic difference anywhere in the translation.
 
     Ungated on purpose: 'array_equal' with no tolerance. If a future change introduces a genuine
-    numerical difference in this section, this test fails while the tolerant gates would still
+    numerical difference in this section, this test fails while the tolerant gate would still
     pass.
     """
     run = _run_section_2a(data_provider, date, backend, richardson_from_icon=True)

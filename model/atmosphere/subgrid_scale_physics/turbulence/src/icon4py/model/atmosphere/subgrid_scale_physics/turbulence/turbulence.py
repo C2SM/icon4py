@@ -59,6 +59,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import (
     turbulence_options as options,
     turbulence_states as states,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_three_dimensional_shear_complements import (
+    add_three_dimensional_shear_complements,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_virtual_diffusion_increment_to_tke_profile import (
     add_virtual_diffusion_increment_to_tke_profile,
 )
@@ -89,9 +92,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_diffusion_coefficients import (
     compute_effective_diffusion_coefficients,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_horizontal_shear_length_scale import (
-    compute_effective_horizontal_shear_length_scale,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_tke_flux_density import (
     compute_explicit_tke_flux_density,
 )
@@ -104,29 +104,17 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_part_of_tke_diffusion_momentum import (
     compute_implicit_part_of_tke_diffusion_momentum,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverse_richardson_number_factor import (
-    compute_inverse_richardson_number_factor,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
     compute_inverted_diffusion_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_layer_depth import (
     compute_layer_depth,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_separated_horizontal_shear_tke_source import (
-    compute_separated_horizontal_shear_tke_source,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_sso_wake_energy_production import (
-    compute_sso_wake_energy_production,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths_from_diffusion_coefficients import (
     compute_stability_lengths_from_diffusion_coefficients,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_profile_value_from_flux_gradient import (
     compute_surface_profile_value_from_flux_gradient,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_three_dimensional_shear_forcing import (
-    compute_three_dimensional_shear_forcing,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_tke_diffusion_right_hand_side import (
     compute_tke_diffusion_right_hand_side,
@@ -143,9 +131,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_velocity_scale_tendency import (
     compute_turbulent_velocity_scale_tendency,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_uncorrected_horizontal_shear_length_scale import (
-    compute_uncorrected_horizontal_shear_length_scale,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_vertical_gradients_of_conserved_variables import (
     compute_vertical_gradients_of_conserved_variables,
@@ -644,7 +629,7 @@ class TurbulenceConfig:
     #: THE GRANULE IS NARROWER THAN THIS FIELD. 'Turbulence' runs 'itype_sher = 2' and nothing
     #: else, refusing 0, 1 and 3 at construction
     #: ('_validate_the_configuration_the_stencils_can_express'), because
-    #: 'compute_three_dimensional_shear_forcing' carries the 'IF (itype_sher == 2)' block of
+    #: 'add_three_dimensional_shear_complements' carries the 'IF (itype_sher == 2)' block of
     #: turb_diffusion.f90:1330 unguarded -- so the alternative is a wrong number, not a missing
     #: term. The reference capture exercises no other value, which is why: the other three have
     #: no serialized oracle. The compile-time static-parameter mechanism that would let one
@@ -1001,20 +986,20 @@ class Turbulence:
             raise NotImplementedError(
                 f"Only itype_sher = 2 (mean shear including the vertical wind) is implemented in "
                 f"'run_turbdiff'; got {int(self._config.itype_sher)}. "
-                f"'compute_three_dimensional_shear_forcing' contains the "
+                f"'add_three_dimensional_shear_complements' contains the "
                 f"'IF (itype_sher == 2)' block of turb_diffusion.f90:1330 unguarded."
             )
         if not self._config.ltkeshs:
             raise NotImplementedError(
                 "Only ltkeshs = True (separated horizontal shear production) is implemented in "
-                "'run_turbdiff'; 'compute_total_mechanical_forcing' adds that term without a "
-                "guard (turb_diffusion.f90:1531-1536)."
+                "'run_turbdiff'; 'add_three_dimensional_shear_complements' adds that term "
+                "without a guard (turb_diffusion.f90:1531-1536)."
             )
         if not self._config.ltkesso:
             raise NotImplementedError(
                 "Only ltkesso = True (mechanical SSO-wake production) is implemented in "
-                "'run_turbdiff'; 'compute_total_mechanical_forcing' adds that term without a "
-                "guard (turb_diffusion.f90:1572-1596)."
+                "'run_turbdiff'; 'add_three_dimensional_shear_complements' adds that term "
+                "without a guard (turb_diffusion.f90:1572-1596)."
             )
         if self._config.c_diff <= 0.0:
             raise NotImplementedError(
@@ -1533,48 +1518,38 @@ class Turbulence:
             levels=(1, nlev + 1),  # 'DO k=2,ke1'; the shear statement stops at 'kem = ke'
         )
 
-        # -- section 2a) the three-dimensional shear complements
-        self._compute_three_dimensional_shear_forcing = self._program(
-            compute_three_dimensional_shear_forcing,
-            constant_args={"min_forcing": self._minimal_tke_forcing},
-            levels=(1, nlev),  # 'DO k=2,kem'
-        )
-        self._compute_inverse_richardson_number_factor = self._program(
-            compute_inverse_richardson_number_factor,
-            levels=(1, nlev),  # 'DO k=2,kem'
-        )
-        self._compute_uncorrected_horizontal_shear_length_scale = self._program(
-            compute_uncorrected_horizontal_shear_length_scale,
+        # -- section 2a) the three-dimensional shear complements, one program of six statements
+        # and then one of two. Five statements run over 'DO k=2,kem'; the SSO wake production is
+        # on MAIN levels and starts one row higher, which the stencil writes as
+        # 'vertical_start - 1'. Nothing here reads a neighbouring level, so no offset provider.
+        self._add_three_dimensional_shear_complements = self._program(
+            add_three_dimensional_shear_complements,
             constant_args={
+                "min_forcing": self._minimal_tke_forcing,
                 "horizontal_mesh_size": metric.l_hori,
                 "horizontal_shear_length_factor": config.a_hshr,
                 "karman_constant": config.akt,
-            },
-        )
-        self._compute_effective_horizontal_shear_length_scale = self._program(
-            compute_effective_horizontal_shear_length_scale,
-            constant_args={
                 "half_level_height": metric.hhl,
                 "surface_height": self._surface_height,
+                "neutral_momentum_stability_function": params.sm_0,
             },
-            levels=(1, nlev),  # 'DO k=2,kem'
+            levels=(1, nlev),  # 'DO k=2,kem' with 'kem = ke'
         )
-        self._compute_separated_horizontal_shear_tke_source = self._program(
-            compute_separated_horizontal_shear_tke_source,
-            constant_args={"neutral_momentum_stability_function": params.sm_0},
-            levels=(1, nlev),  # 'DO k=2,kem'
-        )
-        self._compute_sso_wake_energy_production = self._program(
-            compute_sso_wake_energy_production,
-            levels=(0, nlev),  # 'DO k=1,kem' -- one MAIN level higher than the rest
-        )
-        # 'imode_tkesso' picks the program, and this is the only place the mode is read. Mode 1
-        # (turb_diffusion.f90:1587) adds the SSO source without the Richardson reduction and
-        # never touches 'xri', so its program does not take the field; binding 'xri' here rather
-        # than at the call site keeps 'run_turbdiff' free of the branch. 'setup_program' inlines
-        # only SCALARS as compile-time constants -- a field in 'constant_args' is bound by
-        # identity, and this one is allocated once and rewritten in place at every call, so
-        # binding it is the same as passing it.
+        # 'imode_tkesso' picks the program that finishes 'frm', and this is the only place the
+        # mode is read. Mode 1 (turb_diffusion.f90:1587) adds the SSO source without the
+        # Richardson reduction and never touches 'xri', so its program does not take the field;
+        # binding 'xri' here rather than at the call site keeps 'run_turbdiff' free of the
+        # branch. 'setup_program' inlines only SCALARS as compile-time constants -- a field in
+        # 'constant_args' is bound by identity, and this one is allocated once and rewritten in
+        # place at every call, so binding it is the same as passing it.
+        #
+        # THE MERGE PLAN WANTED THIS STATEMENT INSIDE THE PROGRAM ABOVE, switched off by an
+        # empty vertical domain when mode 1 supplies 'frm' instead. It cannot be: the statement
+        # reads 'hlp' and 'dp0' at 'Koff[-1]', and an empty vertical domain is a no-op only for
+        # a POINTWISE statement -- on 'embedded' a shifted one raises 'IndexOutOfBounds',
+        # because gt4py normalises the empty range to '(0, 0)' and bounds-checks it against the
+        # shifted operand's domain, which starts at row 1. Measured 2026-09-01; the merged
+        # stencil's docstring carries the table. So section 2a) is three programs.
         richardson_reduction = (
             {}
             if config.imode_tkesso is options.SsoTkeProductionType.ORIGINAL
@@ -2113,43 +2088,31 @@ class Turbulence:
 
         # -- 2a) the three-dimensional shear complements --------------------------------------
 
-        self._compute_three_dimensional_shear_forcing(
+        # Six statements, three of which read a field an earlier one wrote. That is the aliasing
+        # shape every backend orders correctly; the stencil's docstring carries the other two.
+        #
+        # 'tket_hshr' is written here and read back by the total forcing below. The Fortran keeps
+        # the separated-shear source in 'hlp' and copies it out under 'loutshs', which
+        # 'FROZEN_SWITCHES' fixes '.TRUE.'; the port writes the output slot directly, because
+        # 'hlp' is about to become the SSO term.
+        self._add_three_dimensional_shear_complements(
             vertical_gradient_u=self._gradient_zonal_wind,
             vertical_gradient_v=self._gradient_meridional_wind,
             dwdx=input_state.dwdx,
             dwdy=input_state.dwdy,
             horizontal_divergence=input_state.hdiv,
             horizontal_deformation_square=input_state.hdef2,
-            mean_shear_forcing=self._mean_shear_forcing,
-        )
-        self._compute_inverse_richardson_number_factor(
-            mean_shear_forcing=self._mean_shear_forcing,
             thermal_forcing=self._frh,
-            inverse_richardson_number_factor=self._inverse_richardson_number_factor,
-        )
-        self._compute_uncorrected_horizontal_shear_length_scale(
-            uncorrected_horizontal_shear_length_scale=self._uncorrected_horizontal_shear_length_scale,
-        )
-        self._compute_effective_horizontal_shear_length_scale(
-            uncorrected_horizontal_shear_length_scale=self._uncorrected_horizontal_shear_length_scale,
-            inverse_richardson_number_factor=self._inverse_richardson_number_factor,
             turbulent_velocity_scale=input_state.tke,
-            effective_horizontal_shear_length_scale=self._effective_horizontal_shear_length_scale,
-        )
-        # The Fortran keeps the separated-shear source in 'hlp' and copies it to 'tket_hshr'
-        # under 'loutshs', which `FROZEN_SWITCHES` fixes '.TRUE.'. The port writes the output
-        # slot directly and reads it back below, because 'hlp' is about to become the SSO term.
-        self._compute_separated_horizontal_shear_tke_source(
-            effective_horizontal_shear_length_scale=self._effective_horizontal_shear_length_scale,
-            horizontal_divergence=input_state.hdiv,
-            horizontal_deformation_square=input_state.hdef2,
-            separated_horizontal_shear_tke_source=tendency_state.tket_hshr,
-        )
-        self._compute_sso_wake_energy_production(
             sso_tendency_u=input_state.ut_sso,
             sso_tendency_v=input_state.vt_sso,
             wind_u=input_state.u,
             wind_v=input_state.v,
+            mean_shear_forcing=self._mean_shear_forcing,
+            inverse_richardson_number_factor=self._inverse_richardson_number_factor,
+            uncorrected_horizontal_shear_length_scale=self._uncorrected_horizontal_shear_length_scale,
+            effective_horizontal_shear_length_scale=self._effective_horizontal_shear_length_scale,
+            separated_horizontal_shear_tke_source=tendency_state.tket_hshr,
             sso_wake_energy_production=self._hlp,
         )
         # 'inverse_richardson_number_factor' is bound in '_setup_turbdiff_programs', because
