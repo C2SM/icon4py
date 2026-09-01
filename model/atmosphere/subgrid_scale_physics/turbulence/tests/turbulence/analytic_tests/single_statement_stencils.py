@@ -36,6 +36,13 @@ live in the test tree, so they need the exemption spelled out here.
 
 import gt4py.next as gtx
 
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.calc_impl_vert_diff import (
+    _add_implicit_surface_flux_to_the_explicit_flux_density,
+    _compute_diffusion_right_hand_side,
+    _compute_explicit_flux_density,
+    _no_flux_through_the_model_top,
+    _solve_vertical_diffusion_equation,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_impl_vert_diff import (
     _compute_implicit_diffusion_momentum,
     _subtract_implicit_diffusion_momentum,
@@ -50,10 +57,14 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 __all__ = [
+    "add_implicit_surface_flux_to_the_explicit_flux_density",
     "compute_diffusion_coefficients_from_stability_lengths",
+    "compute_diffusion_right_hand_side",
+    "compute_explicit_flux_density",
     "compute_implicit_diffusion_momentum",
     "compute_stability_lengths",
     "compute_turbulent_velocity_scale",
+    "solve_vertical_diffusion_equation",
     "subtract_implicit_diffusion_momentum",
 ]
 
@@ -255,6 +266,122 @@ def subtract_implicit_diffusion_momentum(
         diffusion_momentum=diffusion_momentum,
         implicit_diffusion_momentum=implicit_diffusion_momentum,
         out=explicit_diffusion_momentum,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_explicit_flux_density(
+    explicit_diffusion_momentum: fa.CellKField[wpfloat],
+    current_profile: fa.CellKField[wpfloat],
+    model_top_level: gtx.int32,
+    explicit_flux_density: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """Two statements of 'calc_impl_vert_diff', run alone: the upper boundary and the flux.
+
+    See 'ONE STATEMENT AT A TIME' above. The declared mutation point 'explicit_flux_density' of
+    'DiffusionRun'. 'model_top_level' is kept an argument rather than 'vertical_start - 1' so the
+    signature is the one the production program had and the mutant stays drop-in.
+    """
+    _no_flux_through_the_model_top(
+        out=explicit_flux_density,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (model_top_level, vertical_start),
+        },
+    )
+    _compute_explicit_flux_density(
+        explicit_diffusion_momentum=explicit_diffusion_momentum,
+        current_profile=current_profile,
+        out=explicit_flux_density,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def add_implicit_surface_flux_to_the_explicit_flux_density(
+    explicit_flux_density_at_the_surface: fa.CellKField[wpfloat],
+    implicit_diffusion_momentum: fa.CellKField[wpfloat],
+    current_profile: fa.CellKField[wpfloat],
+    explicit_flux_density: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """One statement of 'calc_impl_vert_diff', run alone.
+
+    See 'ONE STATEMENT AT A TIME' above. Two parameters for one field, as the production program
+    had, because the caller passes the same field for both.
+    """
+    _add_implicit_surface_flux_to_the_explicit_flux_density(
+        explicit_flux_density=explicit_flux_density_at_the_surface,
+        implicit_diffusion_momentum=implicit_diffusion_momentum,
+        current_profile=current_profile,
+        out=explicit_flux_density,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_diffusion_right_hand_side(
+    discretisation_momentum: fa.CellKField[wpfloat],
+    current_profile: fa.CellKField[wpfloat],
+    explicit_flux_density: fa.CellKField[wpfloat],
+    right_hand_side: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """One statement of 'calc_impl_vert_diff', run alone. See 'ONE STATEMENT AT A TIME' above."""
+    _compute_diffusion_right_hand_side(
+        discretisation_momentum=discretisation_momentum,
+        current_profile=current_profile,
+        explicit_flux_density=explicit_flux_density,
+        out=right_hand_side,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def solve_vertical_diffusion_equation(
+    right_hand_side: fa.CellKField[wpfloat],
+    implicit_diffusion_momentum: fa.CellKField[wpfloat],
+    inverted_diffusion_momentum: fa.CellKField[wpfloat],
+    inversion_factor: fa.CellKField[wpfloat],
+    updated_profile: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """One statement of 'calc_impl_vert_diff', run alone.
+
+    See 'ONE STATEMENT AT A TIME' above. The declared mutation point 'solve' of 'DiffusionRun'.
+    """
+    _solve_vertical_diffusion_equation(
+        right_hand_side=right_hand_side,
+        implicit_diffusion_momentum=implicit_diffusion_momentum,
+        inverted_diffusion_momentum=inverted_diffusion_momentum,
+        inversion_factor=inversion_factor,
+        out=updated_profile,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

@@ -14,7 +14,7 @@ expected outputs, for the four timesteps that 'exp.mch_icon-ch2_small' serialize
 'vertdiff' (turb_vertdiff.f90:116-937) is one stage with one savepoint pair -- there are no
 intermediate section boundaries the way 'turbdiff' has them -- and it is a loop over five
 variables in two variable types, each of which calls 'vert_grad_diff' (turb_utilities.f90:2223),
-which calls 'prep_impl_vert_diff' (:2690) and 'calc_impl_vert_diff' (:2865). Eleven programs
+which calls 'prep_impl_vert_diff' (:2690) and 'calc_impl_vert_diff' (:2865). Eight programs
 since the stencil merge, grouped by what they depend on:
 
     ONCE                                                        Fortran
@@ -35,11 +35,13 @@ since the stencil merge, grouped by what they depend on:
     ONCE PER VARIABLE
      5 compute_current_profile / ...potential_temperature...    turb_vertdiff.f90:646-694
      6 compute_surface_profile_value_from_flux_gradient         vert_grad_diff:2493-2503
-     7 compute_explicit_flux_density                            calc_impl_vert_diff:2951-2959
-     8 add_implicit_surface_flux_to_the_explicit_flux_density   calc_impl_vert_diff:2961-2973
-     9 compute_diffusion_right_hand_side                        calc_impl_vert_diff:2975-2991
-    10 solve_vertical_diffusion_equation                        calc_impl_vert_diff:3024-3052
-    11 compute_and_apply_[potential_temperature_]diffusion_tendency
+     7 calc_impl_vert_diff, five statements:
+         eff_flux(:,k_tp+1) = 0                                 calc_impl_vert_diff:2951-2959
+         eff_flux [flux levels]                                 calc_impl_vert_diff:2951-2959
+         + impl_mom*cur_prof, momentum type only                calc_impl_vert_diff:2961-2973
+         the right-hand side                                    calc_impl_vert_diff:2975-2991
+         the Thomas solve, two scans                            calc_impl_vert_diff:3024-3052
+     8 compute_and_apply_[potential_temperature_]diffusion_tendency
                                                     vert_grad_diff:2661-2670 + :773-799
 
 The two surface gradients used to be a program of their own, run in the middle of the variable
@@ -112,7 +114,7 @@ row is measurably different at the two savepoints, so the copy is not blind ther
 NO 'concat_where' IS USED. The one row this stage treats differently -- the top of the
 right-hand side, where the Fortran omits the outgoing-flux term because there is no flux level
 above it -- is handled by writing that flux level as an explicit zero in
-'compute_explicit_flux_density' instead. 'x - 0.0' is 'x' for every double, so the interior
+'calc_impl_vert_diff's first statement instead. 'x - 0.0' is 'x' for every double, so the interior
 expression then covers the whole range bit-exactly, and no program of this stage loses the embedded
 backend. That is a deliberate departure from the package README's boundary-row rule and the
 reasoning is in the two stencils' docstrings.
@@ -135,8 +137,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_implicit_surface_flux_to_the_explicit_flux_density import (
-    add_implicit_surface_flux_to_the_explicit_flux_density,
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.calc_impl_vert_diff import (
+    calc_impl_vert_diff,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_and_apply_diffusion_tendency import (
     compute_and_apply_diffusion_tendency,
@@ -153,12 +155,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
     compute_diffusion_inversion_factor,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_right_hand_side import (
-    compute_diffusion_right_hand_side,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_flux_density import (
-    compute_explicit_flux_density,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_profile_value_from_flux_gradient import (
     compute_surface_profile_value_from_flux_gradient,
 )
@@ -170,9 +166,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_imp
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prepare_the_vertical_diffusion_matrix import (
     prepare_the_vertical_diffusion_matrix,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_vertical_diffusion_equation import (
-    solve_vertical_diffusion_equation,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.turbulence import TurbulenceConfig
 from icon4py.model.common import constants, dimension as dims
@@ -437,23 +430,12 @@ def _solve_and_apply(
     diffusion_tendency: gtx.Field,
     variable_tendency: gtx.Field,
 ) -> None:
-    """The three scan-dependent programs of one variable, split out so they can be skipped.
+    """The two tendency programs of one variable.
 
-    'solve_vertical_diffusion_equation' is two 'scan_operator's and the two tendency programs
-    consume its output, so on a backend that cannot afford a scan these three are what has to go.
-    Nothing upstream of them depends on them.
+    The solve they consume is a statement of 'calc_impl_vert_diff' since the stencil merge, so
+    this is what is left of what used to be the scan-dependent tail; it is a function of its own
+    because the temperature takes a different pair of programs from every other variable.
     """
-    solve_vertical_diffusion_equation.with_backend(backend)(
-        right_hand_side=right_hand_side,
-        implicit_diffusion_momentum=implicit_momentum,
-        inverted_diffusion_momentum=inverted_momentum,
-        inversion_factor=inversion_factor,
-        updated_profile=updated_profile,
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(nlev),
-        offset_provider=_KOFF,
-        **bounds,
-    )
     tendency_before = getattr(entry, f"{name}_tens")()
     if name == "t":
         compute_and_apply_potential_temperature_diffusion_tendency.with_backend(backend)(
@@ -694,43 +676,33 @@ def _run_vertdiff(
                 )
 
             explicit_flux = utils.nan_like(half, backend)
-            compute_explicit_flux_density.with_backend(backend)(
-                explicit_diffusion_momentum=diffusion_momentum,
-                current_profile=current_profile,
-                model_top_level=gtx.int32(0),
-                explicit_flux_density=explicit_flux,
-                vertical_start=gtx.int32(1),
-                vertical_end=gtx.int32(nlev + 1),
-                offset_provider=_KOFF,
-                **bounds,
-            )
-            if not surface_flux_condition:
-                add_implicit_surface_flux_to_the_explicit_flux_density.with_backend(backend)(
-                    explicit_flux_density_at_the_surface=explicit_flux,
-                    implicit_diffusion_momentum=implicit_momentum,
-                    current_profile=current_profile,
-                    explicit_flux_density=explicit_flux,
-                    vertical_start=gtx.int32(nlev),
-                    vertical_end=gtx.int32(nlev + 1),
-                    offset_provider=_KOFF,
-                    **bounds,
-                )
-
             # The surface row of 'zvari' is the explicit flux and no program writes it again,
             # which is why the right-hand side starts as a copy of the flux rather than as NaN.
-            right_hand_side = utils.copy_of(explicit_flux, backend)
-            compute_diffusion_right_hand_side.with_backend(backend)(
-                discretisation_momentum=discretisation_momentum,
+            # The merged program does not touch that row: its right-hand-side statement stops
+            # one short of the surface and the solve reads 'k_tp+1..k_sf-1' only.
+            right_hand_side = utils.nan_like(half, backend)
+            updated_profile = utils.nan_like(half, backend)
+            # ONE PROGRAM, FIVE STATEMENTS. 'surface_addition_start' is the Fortran's
+            # 'IF (.NOT.lsflucond)' expressed as a domain: 'nlev' when the implicit surface
+            # coupling applies and 'nlev + 1' -- an empty range -- when it does not.
+            calc_impl_vert_diff.with_backend(backend)(
+                explicit_diffusion_momentum=diffusion_momentum,
                 current_profile=current_profile,
+                implicit_diffusion_momentum=implicit_momentum,
+                discretisation_momentum=discretisation_momentum,
+                inverted_diffusion_momentum=inverted_momentum,
+                inversion_factor=inversion_factor,
+                surface_addition_start=gtx.int32(nlev + 1 if surface_flux_condition else nlev),
                 explicit_flux_density=explicit_flux,
                 right_hand_side=right_hand_side,
+                updated_profile=updated_profile,
                 vertical_start=gtx.int32(0),
                 vertical_end=gtx.int32(nlev),
                 offset_provider=_KOFF,
                 **bounds,
             )
+            _copy_surface_row(explicit_flux, right_hand_side, nlev)
 
-            updated_profile = utils.nan_like(half, backend)
             diffusion_tendency = utils.nan_like(main, backend)
             variable_tendency = utils.nan_like(main, backend)
             _solve_and_apply(
@@ -768,6 +740,17 @@ def _run_vertdiff(
         ),
         computed=computed,
     )
+
+
+def _copy_surface_row(source: gtx.Field, target: gtx.Field, nlev: int) -> None:
+    """Copy row 'nlev' of one (Cell, K) field onto another, on whatever device they live on.
+
+    'calc_impl_vert_diff' writes the right-hand side over 'k_tp+1..k_sf-1' and leaves the surface
+    row alone, because in the Fortran that row already holds the explicit surface flux from the
+    in-place overwrite. The granule carries it across with 'turbulence._copy_level' after the
+    program runs; this is the same statement, and it is why 'right_hand_side' can start as NaN.
+    """
+    target.ndarray[:, nlev] = source.ndarray[:, nlev]
 
 
 def _surface(field: Any, nlev: int) -> np.ndarray:
@@ -1314,20 +1297,15 @@ def test_the_profiles_and_the_explicit_fluxes_agree(
         )
 
         utils.assert_agrees_with_icon(
-            "compute_explicit_flux_density",
+            "calc_impl_vert_diff",
             f"explicit flux [{name}] on the interior flux levels",
             computed[f"expl_flux:{name}"],
             reference[f"expl_flux:{name}"],
             columns=columns,
             levels=slice(1, nlev),
         )
-        surface_stencil = (
-            "add_implicit_surface_flux_to_the_explicit_flux_density"
-            if name in ("u", "v")
-            else "compute_explicit_flux_density"
-        )
         utils.assert_agrees_with_icon(
-            surface_stencil,
+            "calc_impl_vert_diff",
             f"explicit flux(:,ke1) [{name}]",
             computed[f"expl_flux:{name}"],
             reference[f"expl_flux:{name}"],
@@ -1375,20 +1353,15 @@ def test_the_right_hand_sides_agree_with_icon(
 
     for name, component in VARIABLES:
         utils.assert_agrees_with_icon(
-            "compute_diffusion_right_hand_side",
+            "calc_impl_vert_diff",
             f"zvari(:,:,{component}) [{name}], the right-hand side",
             computed[f"zvari:{component}"],
             after.zvari(component),
             columns=columns,
             levels=slice(0, nlev),
         )
-        surface_stencil = (
-            "add_implicit_surface_flux_to_the_explicit_flux_density"
-            if name in ("u", "v")
-            else "compute_explicit_flux_density"
-        )
         utils.assert_agrees_with_icon(
-            surface_stencil,
+            "calc_impl_vert_diff",
             f"zvari(:,ke1,{component}) [{name}], the explicit surface flux",
             computed[f"zvari:{component}"],
             reference[f"zvari:{component}"] if name == "t" else after.zvari(component),
@@ -1498,7 +1471,7 @@ def test_the_solved_profiles_agree_with_the_reference(
 
     for name, _ in VARIABLES:
         utils.assert_agrees_with_icon(
-            "solve_vertical_diffusion_equation",
+            "calc_impl_vert_diff",
             f"upd_prof [{name}]",
             computed[f"upd_prof:{name}"],
             reference[f"upd_prof:{name}"],

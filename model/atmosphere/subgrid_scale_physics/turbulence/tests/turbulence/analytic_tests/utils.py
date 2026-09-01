@@ -38,26 +38,14 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_implicit_surface_flux_to_the_explicit_flux_density import (
-    add_implicit_surface_flux_to_the_explicit_flux_density,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
     compute_diffusion_inversion_factor,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_right_hand_side import (
-    compute_diffusion_right_hand_side,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_flux_density import (
-    compute_explicit_flux_density,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
     compute_inverted_diffusion_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_diffusion_momentum_at_the_surface_flux_level import (
     invert_diffusion_momentum_at_the_surface_flux_level,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_vertical_diffusion_equation import (
-    solve_vertical_diffusion_equation,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.turbulence import (
     TurbulenceConfig,
@@ -549,9 +537,9 @@ class DiffusionRun:
         self,
         column: DiffusionColumn,
         backend: gtx_typing.Backend | None,
-        solve=solve_vertical_diffusion_equation,
+        solve=single_statement_stencils.solve_vertical_diffusion_equation,
         implicit_split=single_statement_stencils.compute_implicit_diffusion_momentum,
-        explicit_flux_density=compute_explicit_flux_density,
+        explicit_flux_density=single_statement_stencils.compute_explicit_flux_density,
     ) -> None:
         nlev = column.nlev
         rows = nlev + 1
@@ -607,7 +595,9 @@ class DiffusionRun:
             **bounds,
         )
         if not flux_condition:
-            add_implicit_surface_flux_to_the_explicit_flux_density.with_backend(backend)(
+            single_statement_stencils.add_implicit_surface_flux_to_the_explicit_flux_density.with_backend(
+                backend
+            )(
                 explicit_flux_density_at_the_surface=explicit_flux,
                 implicit_diffusion_momentum=implicit_momentum,
                 current_profile=current_profile,
@@ -646,7 +636,7 @@ class DiffusionRun:
             offset_provider=KOFF,
             **bounds,
         )
-        compute_diffusion_right_hand_side.with_backend(backend)(
+        single_statement_stencils.compute_diffusion_right_hand_side.with_backend(backend)(
             discretisation_momentum=discretisation_momentum,
             current_profile=current_profile,
             explicit_flux_density=explicit_flux,

@@ -59,11 +59,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import (
     turbulence_options as options,
     turbulence_states as states,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_implicit_surface_flux_to_the_explicit_flux_density import (
-    add_implicit_surface_flux_to_the_explicit_flux_density,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_virtual_diffusion_increment_to_tke_profile import (
     add_virtual_diffusion_increment_to_tke_profile,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.calc_impl_vert_diff import (
+    calc_impl_vert_diff,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_and_apply_diffusion_tendency import (
     compute_and_apply_diffusion_tendency,
@@ -86,17 +86,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
     compute_diffusion_inversion_factor,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_right_hand_side import (
-    compute_diffusion_right_hand_side,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_diffusion_coefficients import (
     compute_effective_diffusion_coefficients,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_horizontal_shear_length_scale import (
     compute_effective_horizontal_shear_length_scale,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_flux_density import (
-    compute_explicit_flux_density,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_tke_flux_density import (
     compute_explicit_tke_flux_density,
@@ -188,9 +182,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_tk
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_turb_budgets import (
     solve_turb_budgets,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_vertical_diffusion_equation import (
-    solve_vertical_diffusion_equation,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_part_of_tke_diffusion_momentum import (
     subtract_implicit_part_of_tke_diffusion_momentum,
@@ -1827,24 +1818,13 @@ class Turbulence:
             levels=(nlev, nlev + 1),  # 'cur_prof(i,k_sf)' under 'lsfgrduse'
             shifted=True,
         )
-        self._compute_explicit_flux_density = self._program(
-            compute_explicit_flux_density,
-            levels=(1, nlev + 1),  # 'DO k=k_tp+2,k_sf', plus the zero at the model top
-            shifted=True,
-        )
-        self._add_implicit_surface_flux_to_the_explicit_flux_density = self._program(
-            add_implicit_surface_flux_to_the_explicit_flux_density,
-            levels=(nlev, nlev + 1),  # 'IF (.NOT.lsflucond)', the 'k_sf' row
-            shifted=True,
-        )
-        self._compute_diffusion_right_hand_side = self._program(
-            compute_diffusion_right_hand_side,
+        # 'calc_impl_vert_diff' -- one program of five statements, one binding for both types.
+        # The bound pair is the diffused main levels 'k_tp+1'..'k_sf-1'; the flux statements run
+        # one row lower and one row deeper, and the implicit surface coupling is switched off for
+        # a variable type with a surface-flux condition by an EMPTY domain.
+        self._calc_impl_vert_diff = self._program(
+            calc_impl_vert_diff,
             levels=(0, nlev),  # 'eff_flux(i,k_tp+1)' then 'DO k=k_tp+2,k_sf-1'
-            shifted=True,
-        )
-        self._solve_vertical_diffusion_equation = self._program(
-            solve_vertical_diffusion_equation,
-            levels=(0, nlev),  # both substitutions, 'k_tp+1' to 'k_sf-1'
             shifted=True,
         )
         self._compute_and_apply_diffusion_tendency = self._program(
@@ -2499,9 +2479,10 @@ class Turbulence:
     ) -> None:
         """Diffuse one first-order variable through the matrix its type left standing.
 
-        turb_vertdiff.f90:646-799 around 'calc_impl_vert_diff'. Eight programs, of which three
-        are conditional; every field but 'variable.right_hand_side' is workspace shared with the
-        other four variables, so the order here is the Fortran's and not a preference.
+        turb_vertdiff.f90:646-799 around 'calc_impl_vert_diff'. Four programs since the stencil
+        merge, of which two are conditional; every field but 'variable.right_hand_side' is
+        workspace shared with the other four variables, so the order here is the Fortran's and
+        not a preference.
 
         THE RIGHT-HAND SIDE IS 'zvari(:,:,m)' AND THAT IS A CROSS-STAGE ALIAS. The ICON
         interface passes one 'zvari' to both stages (mo_nwp_turbdiff_interface.f90:652, :735),
@@ -2540,41 +2521,33 @@ class Turbulence:
                 surface_gradient=variable.right_hand_side,
                 current_profile=self._current_profile,
             )
-        self._compute_explicit_flux_density(
+        # The implicit surface coupling is the Fortran's 'IF (.NOT.lsflucond)', expressed as a
+        # domain: 'nlev' when it applies, 'nlev + 1' -- an empty range -- when it does not.
+        self._calc_impl_vert_diff(
             explicit_diffusion_momentum=self._diffusion_momentum,
             current_profile=self._current_profile,
-            model_top_level=gtx.int32(0),
+            implicit_diffusion_momentum=self._implicit_diffusion_momentum,
+            discretisation_momentum=self._discretisation_momentum,
+            inverted_diffusion_momentum=self._inverted_diffusion_momentum,
+            inversion_factor=self._inversion_factor,
+            surface_addition_start=gtx.int32(
+                int(self._nlev) + 1 if surface_flux_condition else int(self._nlev)
+            ),
             explicit_flux_density=self._explicit_flux_density,
+            right_hand_side=variable.right_hand_side,
+            updated_profile=self._updated_profile,
         )
-        if not surface_flux_condition:
-            self._add_implicit_surface_flux_to_the_explicit_flux_density(
-                explicit_flux_density_at_the_surface=self._explicit_flux_density,
-                implicit_diffusion_momentum=self._implicit_diffusion_momentum,
-                current_profile=self._current_profile,
-                explicit_flux_density=self._explicit_flux_density,
-            )
         # 'eff_flux' becomes the right-hand side in place in the Fortran, over rows 0..nlev-1
         # only, so its surface row keeps the explicit flux. The port computes out of place --
         # the right-hand side reads flux level 'k+1' while writing row 'k' -- so the row that
-        # survives in the Fortran has to be carried across here.
+        # survives in the Fortran has to be carried across here. It runs AFTER the program
+        # rather than in the middle of it, which is exactly equivalent: nothing in there reads
+        # the right-hand side's surface row, the solve covering 'k_tp+1..k_sf-1' only.
         _copy_level(
             self._explicit_flux_density,
             int(self._nlev),
             variable.right_hand_side,
             self._grid.num_cells,
-        )
-        self._compute_diffusion_right_hand_side(
-            discretisation_momentum=self._discretisation_momentum,
-            current_profile=self._current_profile,
-            explicit_flux_density=self._explicit_flux_density,
-            right_hand_side=variable.right_hand_side,
-        )
-        self._solve_vertical_diffusion_equation(
-            right_hand_side=variable.right_hand_side,
-            implicit_diffusion_momentum=self._implicit_diffusion_momentum,
-            inverted_diffusion_momentum=self._inverted_diffusion_momentum,
-            inversion_factor=self._inversion_factor,
-            updated_profile=self._updated_profile,
         )
         # IN PLACE on the tendency, as 'vert_grad_diff:2668' is: the accumulation is pointwise
         # and ICON has one array. 'tendency_state' is an output container, so ADR-0001 is not

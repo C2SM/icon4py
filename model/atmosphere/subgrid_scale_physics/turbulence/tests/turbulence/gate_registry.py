@@ -229,10 +229,11 @@ GATES: dict[str, Gate] = {
     "compute_current_profile": Exact(),
     "compute_current_potential_temperature_profile": Exact(),
     "compute_surface_profile_value_from_flux_gradient": Exact(),
-    "compute_explicit_flux_density": Exact(),
-    "add_implicit_surface_flux_to_the_explicit_flux_density": Exact(),
-    "compute_diffusion_right_hand_side": Exact(),
-    "solve_vertical_diffusion_equation": Exact(),
+    # 'vertdiff's per-variable solve -- one program with five statements since the stencil merge,
+    # under ICON's own name for the subroutine: the upper boundary condition, the explicit flux
+    # density, the implicit surface coupling (momentum type only, switched off by an empty
+    # domain), the right-hand side and the Thomas solve. All four entries it replaces were Exact.
+    "calc_impl_vert_diff": Exact(),
     "compute_and_apply_diffusion_tendency": Exact(),
     "compute_and_apply_potential_temperature_diffusion_tendency": Exact(),
     # 'vertdiff's setup -- one program with six statements since the stencil merge: 'rhon(:,ke1)',
