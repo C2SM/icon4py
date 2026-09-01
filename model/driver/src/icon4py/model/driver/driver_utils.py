@@ -491,6 +491,7 @@ def initialize_granules(
                 interpolation=interpolation_field_source,
                 backend=backend,
             ),
+            diagnostics=physics_state.DiagnosticsStore(grid=grid, backend=backend),
         )
 
     return Granules(

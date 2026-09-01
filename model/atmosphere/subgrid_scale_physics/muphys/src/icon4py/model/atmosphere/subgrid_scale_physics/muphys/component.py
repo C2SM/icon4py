@@ -114,12 +114,25 @@ class MuphysComponent:
         self._step = step
 
         cell_k_domain = gtx.domain({dims.CellDim: self._ncells, dims.KDim: self._nlev})
-        self._pflx = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._pr = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._ps = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._pi = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._pg = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
-        self._pre = gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator)
+        # standalone defaults — replaced by the layer's buffers via bind_output_buffers
+        self._pflx: fa.CellKField[ta.wpfloat] = gtx.zeros(
+            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
+        )
+        self._pr: fa.CellKField[ta.wpfloat] = gtx.zeros(
+            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
+        )
+        self._ps: fa.CellKField[ta.wpfloat] = gtx.zeros(
+            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
+        )
+        self._pi: fa.CellKField[ta.wpfloat] = gtx.zeros(
+            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
+        )
+        self._pg: fa.CellKField[ta.wpfloat] = gtx.zeros(
+            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
+        )
+        self._pre: fa.CellKField[ta.wpfloat] = gtx.zeros(
+            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
+        )
 
         self._tendencies: dict[str, fa.CellKField[ta.wpfloat]] = {
             "tend_temperature": gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
@@ -203,3 +216,17 @@ class MuphysComponent:
                 "pre": self._pre,
             },
         )
+
+    def bind_output_buffers(self, buffers: dict[str, fa.CellKField[ta.wpfloat]]) -> None:
+        """Adopt the layer-owned diagnostic buffers (direct write).
+
+        The constructor's own allocations remain the standalone default, e.g. in
+        the granule datatests; when driven by the ``PhysicsDriver`` the layer's
+        ``DiagnosticsStore`` owns the buffers and the granule writes them in place.
+        """
+        self._pflx = buffers["pflx"]
+        self._pr = buffers["pr"]
+        self._ps = buffers["ps"]
+        self._pi = buffers["pi"]
+        self._pg = buffers["pg"]
+        self._pre = buffers["pre"]

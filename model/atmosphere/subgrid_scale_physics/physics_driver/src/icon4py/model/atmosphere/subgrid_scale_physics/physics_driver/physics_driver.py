@@ -32,8 +32,12 @@ class PhysicsProcess:
 
     The component is the per-process adapter (e.g. ``MuphysComponent``); it
     implements the generic ``Component`` protocol, which is how the driver types it.
-    The state adapter is process-specific (it maps the frozen entry state to *this*
-    component's contract), so it is bundled per process rather than shared.
+    Physics components must additionally provide ``bind_output_buffers(buffers)``:
+    the driver hands them the layer-owned diagnostic buffers at construction, and
+    the granule writes its results directly into those (standalone use keeps the
+    component's self-allocated buffers). The state adapter is process-specific (it
+    maps the frozen entry state to *this* component's contract), so it is bundled
+    per process rather than shared.
     """
 
     name: str
@@ -45,13 +49,14 @@ class PhysicsProcess:
 class PhysicsDriver:
     """Runs the physics processes under parallel coupling.
 
-    One timestep (``run``): the ``EntryState`` facade binds the model state and
+    One timestep (``run``): the ``EntryState`` binds the model state and
     diagnoses the physics fields once (dyn2phy); every enabled process reads that
-    same frozen state and computes; each output is routed by its ``kind`` metadata
-    (tendencies -> the accumulators, the rest -> the per-process ``diagnostics``
-    store); the accumulated tendencies are applied to the model state exactly once
-    at the end (phy2dyn). Processes never see the raw PrognosticState/TracerState
-    and never write — the PhysicsState layer owns both conversion boundaries.
+    same frozen state and computes; outputs tagged ``kind == "tendency"`` are
+    accumulated, while the diagnostic outputs are written by the granules directly
+    into the layer-owned ``diagnostics`` store buffers bound at construction; the
+    accumulated tendencies are applied to the model state exactly once at the end.
+    Processes never see the raw PrognosticState/TracerState and never
+    write it — the PhysicsState layer owns both conversion boundaries.
     """
 
     def __init__(
@@ -60,14 +65,18 @@ class PhysicsDriver:
         entry_state: physics_state.EntryState,
         accumulators: physics_state.TendencyAccumulators,
         apply_to_prognostic: physics_state.ApplyToPrognostic,
+        diagnostics: physics_state.DiagnosticsStore,
     ) -> None:
         self._processes = processes
         self._entry = entry_state
         self._accumulators = accumulators
         self._apply = apply_to_prognostic
         self._recycle_cache: dict[str, dict[str, Any]] = {}
-        #: non-applied outputs of the last run, keyed by process name (ICON field% spirit)
-        self.diagnostics: dict[str, dict[str, Any]] = {}
+        self.diagnostics = diagnostics
+        for process in processes:
+            process.component.bind_output_buffers(
+                diagnostics.allocate(process.name, process.component.outputs_properties)
+            )
 
     def run(
         self,
@@ -97,7 +106,4 @@ class PhysicsDriver:
             else:
                 outputs = self._recycle_cache[process.name]
             self._accumulators.accumulate(outputs, process.component.outputs_properties)
-            self.diagnostics[process.name] = physics_state.diagnostics_of(
-                outputs, process.component.outputs_properties
-            )
         self._apply(self._entry, self._accumulators, dt_seconds)

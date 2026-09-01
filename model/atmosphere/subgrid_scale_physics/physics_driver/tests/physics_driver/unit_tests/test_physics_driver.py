@@ -145,6 +145,8 @@ class RecordingComponent:
     call_count: int = 0
     last_state: dict | None = None
     last_time: datetime.datetime | None = None
+    #: what the driver bound at construction (the layer-owned diagnostic buffers)
+    bound: dict | None = None
 
     @property
     def inputs_properties(self) -> dict:
@@ -162,6 +164,9 @@ class RecordingComponent:
         self.last_state = state
         self.last_time = time_step
         return dict(self.outputs)
+
+    def bind_output_buffers(self, buffers: dict) -> None:
+        self.bound = dict(buffers)
 
 
 @dataclasses.dataclass
@@ -202,6 +207,22 @@ class RecordingCoupling:
     def __call__(self, entry_state, accumulators, dt_seconds) -> None:
         self.events.append(("apply", dt_seconds))
 
+    # DiagnosticsStore surface
+    store: dict = dataclasses.field(default_factory=dict)
+
+    def allocate(self, process_name, outputs_properties):
+        self.events.append(("allocate", process_name))
+        buffers = {
+            name: f"BUF_{name}"
+            for name, props in outputs_properties.items()
+            if props.get("kind") != "tendency"
+        }
+        self.store[process_name] = buffers
+        return buffers
+
+    def __getitem__(self, process_name):
+        return self.store[process_name]
+
 
 def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
     coupling = RecordingCoupling()
@@ -210,6 +231,7 @@ def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
         entry_state=coupling,
         accumulators=coupling,
         apply_to_prognostic=coupling,
+        diagnostics=coupling,
     )
     return driver, coupling
 
@@ -240,9 +262,11 @@ def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
 
     assert comp_a.call_count == 1
     assert comp_b.call_count == 1
-    # parallel coupling: diagnose + zero once at entry, one accumulate per process,
-    # exactly one apply at the very end
+    # parallel coupling: buffers allocated at construction, diagnose + zero once at
+    # entry, one accumulate per process, exactly one apply at the very end
     assert coupling.events == [
+        ("allocate", "A"),
+        ("allocate", "B"),
         ("diagnose", "prog"),
         ("zero",),
         ("accumulate", {"tend_temperature": "A"}),
@@ -251,8 +275,8 @@ def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
     ]
     # both processes were gathered on the same (frozen) entry state
     assert state.collect_calls == [coupling, coupling]
-    # non-tendency outputs land in the driver's diagnostics store, by process
-    assert driver.diagnostics["B"] == {"kh": "KH"}
+    # the store holds the layer-allocated buffers the granule writes into, by process
+    assert driver.diagnostics["B"] == {"kh": "BUF_kh"}
     assert driver.diagnostics["A"] == {}
 
 
@@ -307,7 +331,12 @@ def test_disabled_process_is_never_collected() -> None:
     assert comp.call_count == 0
     assert state.collect_calls == []
     # entry diagnosis and the (empty) apply still frame the step
-    assert coupling.events == [("diagnose", "prog"), ("zero",), ("apply", 300.0)]
+    assert coupling.events == [
+        ("allocate", "disabled"),
+        ("diagnose", "prog"),
+        ("zero",),
+        ("apply", 300.0),
+    ]
 
 
 def test_out_of_window_process_does_nothing() -> None:
@@ -332,7 +361,12 @@ def test_out_of_window_process_does_nothing() -> None:
 
     assert comp.call_count == 0
     assert state.collect_calls == []
-    assert coupling.events == [("diagnose", "prog"), ("zero",), ("apply", 300.0)]
+    assert coupling.events == [
+        ("allocate", "future"),
+        ("diagnose", "prog"),
+        ("zero",),
+        ("apply", 300.0),
+    ]
 
 
 def test_inactive_in_window_recycles_cached_outputs() -> None:
@@ -387,3 +421,17 @@ def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
 
     assert comp.call_count == 1
     assert ("accumulate", {"tend_temperature": "FRESH"}) in coupling.events
+
+
+def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:
+    state = RecordingComponentState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "T", "kh": "KH"},
+        output_kinds={"tend_temperature": "tendency", "kh": "diagnostic"},
+    )
+    driver, _ = _driver(
+        [PhysicsProcess(name="tmx", component=comp, state=state, time_control=_tc())]
+    )
+    # before any run: the layer allocated, the component adopted the buffer
+    assert comp.bound == {"kh": "BUF_kh"}
+    assert driver.diagnostics["tmx"] == {"kh": "BUF_kh"}

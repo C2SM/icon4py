@@ -267,3 +267,24 @@ def test_entry_state_groups_diagnostics_in_common_container():
     # the flat shorthand is gone -- pointers and diagnostics are structurally distinct
     assert not hasattr(ws, "ta")
     assert not hasattr(ws, "pressure")
+
+
+# ---------------------------------------------------------------------------
+# DiagnosticsStore
+# ---------------------------------------------------------------------------
+
+
+def test_diagnostics_store_allocates_from_metadata():
+    grid = simple.simple_grid()
+    store = physics_state.DiagnosticsStore(grid=grid)
+    props = {
+        "tend_temperature": {"kind": "tendency", "dims": (dims.CellDim, dims.KDim)},
+        "kh": {"kind": "diagnostic", "dims": (dims.CellDim, dims.KDim)},
+        "cptgz_vi": {"kind": "diagnostic", "dims": (dims.CellDim,)},
+    }
+    buffers = store.allocate("tmx", props)
+    # tendencies are never layer-allocated; diagnostics get their declared shape
+    assert set(buffers) == {"kh", "cptgz_vi"}
+    assert buffers["kh"].domain.dims == (dims.CellDim, dims.KDim)
+    assert buffers["cptgz_vi"].domain.dims == (dims.CellDim,)
+    assert store["tmx"] is buffers

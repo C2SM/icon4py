@@ -211,8 +211,8 @@ class TendencyAccumulators:
     Buffers are keyed by output name (``tend_*``) and allocated lazily from the
     first contributing field's domain, so cell-(K) and cell-(K+1) shapes work
     alike. Only outputs whose metadata carries ``kind == "tendency"`` accumulate;
-    the rest are diagnostics and go to the driver's diagnostics store
-    (see ``diagnostics_of``).
+    the rest are diagnostics, written by the granules directly into the
+    layer-owned buffers of the ``DiagnosticsStore``.
     """
 
     def __init__(self, *, backend: gtx_typing.Backend | None = None) -> None:
@@ -411,15 +411,39 @@ class ApplyToPrognostic:
             )
 
 
-def diagnostics_of(outputs: dict, outputs_properties: dict) -> dict:
-    """The non-applied subset of a process's outputs, for the driver's diagnostics store.
+class DiagnosticsStore:
+    """Layer-owned storage of the process output diagnostics (ICON ``field%`` spirit).
 
-    Complement rule: everything whose metadata ``kind`` is NOT ``"tendency"`` is a
-    diagnostic — the routing is total, every output lands in exactly one sink
-    (accumulators or store), and outputs without a ``kind`` tag count as diagnostics.
+    Allocates every non-tendency output from its declared metadata (``dims``,
+    optionally ``is_on_half_levels``) at driver construction and hands the
+    buffers to the component (direct write): one buffer per field, owned here,
+    written by the granule. Keyed per process for order-independence and
+    collision-safety. Values are the last computed step's; zeros before a
+    process first fires.
     """
-    return {
-        name: outputs[name]
-        for name, props in outputs_properties.items()
-        if props.get("kind") != "tendency"
-    }
+
+    def __init__(self, *, grid: base_grid.Grid, backend: gtx_typing.Backend | None = None) -> None:
+        self._grid = grid
+        self._backend = backend
+        self._store: dict[str, dict[str, gtx.Field]] = {}
+
+    def allocate(self, process_name: str, outputs_properties: dict) -> dict[str, gtx.Field]:
+        """Allocate the process's diagnostic buffers from their metadata and keep them.
+
+        Complement rule: everything whose metadata ``kind`` is NOT ``"tendency"``
+        is a diagnostic — tendencies stay component-owned (the accumulators sum
+        across processes and recycling needs each process's last tendency).
+        """
+        buffers: dict[str, gtx.Field] = {}
+        for name, props in outputs_properties.items():
+            if props.get("kind") == "tendency":
+                continue
+            extend = {dims.KDim: 1} if props.get("is_on_half_levels") else None
+            buffers[name] = data_alloc.zero_field(
+                self._grid, *props["dims"], extend=extend, allocator=self._backend
+            )
+        self._store[process_name] = buffers
+        return buffers
+
+    def __getitem__(self, process_name: str) -> dict[str, gtx.Field]:
+        return self._store[process_name]
