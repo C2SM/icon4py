@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections.abc import Mapping
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -60,3 +61,15 @@ def compute_tangential_wind_numpy(
     rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
     e2c2e = connectivities[dims.E2C2E]
     return np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
+
+
+def interpolate_to_cell_center_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    interpolant: np.ndarray,
+    e_bln_c_s: np.ndarray,
+    **kwargs: Any,
+) -> np.ndarray:
+    """Interpolate an edge field to the cell centers with the bilinear C2E weights."""
+    e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
+    c2e = connectivities[dims.C2E]
+    return np.sum(interpolant[c2e] * e_bln_c_s, axis=1)

@@ -19,22 +19,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp i
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
-
-
-def interpolate_to_cell_center_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
-    interpolant: np.ndarray,
-    e_bln_c_s: np.ndarray,
-    **kwargs: Any,
-) -> np.ndarray:
-    e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    c2e = connectivities[dims.C2E]
-
-    interpolation = np.sum(
-        interpolant[c2e] * e_bln_c_s,
-        axis=1,
-    )
-    return interpolation
+from icon4py.model.testing.reference_funcs import interpolate_to_cell_center_numpy
 
 
 class TestInterpolateToCellCenterVp(stencil_tests.StencilTest):
