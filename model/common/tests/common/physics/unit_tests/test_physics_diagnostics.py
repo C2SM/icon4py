@@ -386,11 +386,11 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         virtual_temperature=diagnostic_state.virtual_temperature,
         virtual_temperature_tendency=virtual_temperature_tendency,
         exner=exner,
-        exner_tendency=exner_tendency,
-        horizontal_start=start_cell_nudging,
-        horizontal_end=end_cell_local,
-        vertical_start=vertical_params.kstart_moist,
-        vertical_end=icon_grid.num_levels,
+        out=exner_tendency,
+        domain={
+            dims.CellDim: (start_cell_nudging, end_cell_local),
+            dims.KDim: (vertical_params.kstart_moist, icon_grid.num_levels),
+        },
         offset_provider={},
     )
 

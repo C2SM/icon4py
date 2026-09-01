@@ -86,7 +86,7 @@ def compute_virtual_temperature_tendency(
 
 
 @gtx.field_operator
-def _compute_exner_tendency(
+def compute_exner_tendency(
     dtime: ta.wpfloat,
     virtual_temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
@@ -112,33 +112,8 @@ def _compute_exner_tendency(
     return (new_exner - exner) / dtime
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_exner_tendency(
-    dtime: ta.wpfloat,
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
-    exner: fa.CellKField[ta.wpfloat],
-    exner_tendency: fa.CellKField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _compute_exner_tendency(
-        dtime=dtime,
-        virtual_temperature=virtual_temperature,
-        virtual_temperature_tendency=virtual_temperature_tendency,
-        exner=exner,
-        out=exner_tendency,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 @gtx.field_operator
-def _calculate_cell_kdim_field_tendency(
+def _compute_cell_kdim_field_tendency(
     dtime: ta.wpfloat,
     old_field: fa.CellKField[ta.wpfloat],
     new_field: fa.CellKField[ta.wpfloat],
@@ -158,7 +133,7 @@ def _calculate_cell_kdim_field_tendency(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_cell_kdim_field_tendency(
+def compute_cell_kdim_field_tendency(
     dtime: ta.wpfloat,
     old_field: fa.CellKField[ta.wpfloat],
     new_field: fa.CellKField[ta.wpfloat],
@@ -168,7 +143,7 @@ def calculate_cell_kdim_field_tendency(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _calculate_cell_kdim_field_tendency(
+    _compute_cell_kdim_field_tendency(
         dtime=dtime,
         old_field=old_field,
         new_field=new_field,

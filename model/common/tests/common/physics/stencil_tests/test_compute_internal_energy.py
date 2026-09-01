@@ -18,7 +18,7 @@ from icon4py.model.testing import stencil_tests
 
 class TestInternalEnergy(stencil_tests.StencilTest):
     PROGRAM = compute_internal_energy
-    OUTPUTS = ("energy",)
+    OUTPUTS = ("out",)
 
     @stencil_tests.static_reference
     def reference(
@@ -32,10 +32,10 @@ class TestInternalEnergy(stencil_tests.StencilTest):
         dz: np.ndarray,
         **kwargs,
     ) -> dict:
-        return dict(energy=np.full(t.shape, 38265357.270336017))
+        return dict(out=np.full(t.shape, 38265357.270336017))
 
     @stencil_tests.input_data_fixture
-    def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
         return dict(
             t=data_alloc.constant_field(255.756, dims.CellDim, dims.KDim, dtype=wpfloat),
             qv=data_alloc.constant_field(0.00122576, dims.CellDim, dims.KDim, dtype=wpfloat),
@@ -43,5 +43,9 @@ class TestInternalEnergy(stencil_tests.StencilTest):
             qice=data_alloc.constant_field(1.09462e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho=data_alloc.constant_field(0.83444, dims.CellDim, dims.KDim, dtype=wpfloat),
             dz=data_alloc.constant_field(249.569, dims.CellDim, dims.KDim, dtype=wpfloat),
-            energy=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+            out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )
