@@ -52,13 +52,14 @@ explicit surface flux, the lower boundary condition of the system.
 
 '_compute_inverted_diffusion_momentum' is IMPORTED rather than copied. It is section 9)'s
 operator, and 'prep_impl_vert_diff' really is the same subroutine for the TKE and for the model
-variables; the module it comes from keeps the '@gtx.program' that section 9) binds.
+variables; it lives in 'prep_impl_vert_diff_for_the_tke', which is section 9)'s flavour of this
+very subroutine.
 """
 
 import gt4py.next as gtx
 from gt4py.next import broadcast
 
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_impl_vert_diff_for_the_tke import (
     _compute_inverted_diffusion_momentum,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa

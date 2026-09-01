@@ -47,6 +47,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_imp
     _compute_implicit_diffusion_momentum,
     _subtract_implicit_diffusion_momentum,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_impl_vert_diff_for_the_tke import (
+    _compute_inverted_diffusion_momentum,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_turb_budgets import (
     _compute_diffusion_coefficients_from_stability_lengths,
     _compute_stability_lengths,
@@ -62,6 +65,7 @@ __all__ = [
     "compute_diffusion_right_hand_side",
     "compute_explicit_flux_density",
     "compute_implicit_diffusion_momentum",
+    "compute_inverted_diffusion_momentum",
     "compute_stability_lengths",
     "compute_turbulent_velocity_scale",
     "solve_vertical_diffusion_equation",
@@ -239,6 +243,36 @@ def compute_implicit_diffusion_momentum(
         diffusion_momentum=diffusion_momentum,
         implicit_weight=implicit_weight,
         out=implicit_diffusion_momentum,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_inverted_diffusion_momentum(
+    discretisation_momentum: fa.CellKField[wpfloat],
+    implicit_diffusion_momentum: fa.CellKField[wpfloat],
+    inverted_diffusion_momentum: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """The forward elimination, run alone. ICON's own shared scan, and it lost its program.
+
+    See 'ONE STATEMENT AT A TIME' above. The elimination is one subroutine for the TKE and for
+    the model variables, so the operator lives in 'prep_impl_vert_diff_for_the_tke' and is a
+    statement of both merged factorisations. 'DiffusionRun' runs it BETWEEN two programs -- the
+    surface-flux row that follows it is 'invert_diffusion_momentum_at_the_surface_flux_level',
+    which stays a program because DaCe drops an in-place shifted statement -- so it needs a
+    program of its own, and this is it, over the same operator.
+    """
+    _compute_inverted_diffusion_momentum(
+        discretisation_momentum=discretisation_momentum,
+        implicit_diffusion_momentum=implicit_diffusion_momentum,
+        out=inverted_diffusion_momentum,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

@@ -68,6 +68,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_virt
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.calc_impl_vert_diff import (
     calc_impl_vert_diff,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.calc_impl_vert_diff_for_the_tke import (
+    calc_impl_vert_diff_for_the_tke,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_and_apply_diffusion_tendency import (
     compute_and_apply_diffusion_tendency,
 )
@@ -92,20 +95,11 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_diffusion_coefficients import (
     compute_effective_diffusion_coefficients,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_tke_flux_density import (
-    compute_explicit_tke_flux_density,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_half_level_interpolation_weight import (
     compute_half_level_interpolation_weight,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_horizontal_wind_including_the_zero_level import (
     compute_horizontal_wind_including_the_zero_level,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_part_of_tke_diffusion_momentum import (
-    compute_implicit_part_of_tke_diffusion_momentum,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
-    compute_inverted_diffusion_momentum,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_layer_depth import (
     compute_layer_depth,
@@ -115,9 +109,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_surface_profile_value_from_flux_gradient import (
     compute_surface_profile_value_from_flux_gradient,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_tke_diffusion_right_hand_side import (
-    compute_tke_diffusion_right_hand_side,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_tke_forcing_functions import (
     compute_tke_forcing_functions,
@@ -150,6 +141,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_d
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_impl_vert_diff import (
     prep_impl_vert_diff,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_impl_vert_diff_for_the_tke import (
+    prep_impl_vert_diff_for_the_tke,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prepare_the_tke_diffusion import (
     prepare_the_tke_diffusion,
 )
@@ -162,14 +156,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.set_turb
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.smooth_tke_forcing_vertically import (
     smooth_tke_forcing_vertically,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_tke_diffusion_equation import (
-    solve_tke_diffusion_equation,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_turb_budgets import (
     solve_turb_budgets,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_part_of_tke_diffusion_momentum import (
-    subtract_implicit_part_of_tke_diffusion_momentum,
 )
 from icon4py.model.common import (
     constants,
@@ -1669,39 +1657,19 @@ class Turbulence:
             shifted=True,
         )
 
-        # -- section 9) the semi-implicit TKE diffusion
-        self._compute_implicit_part_of_tke_diffusion_momentum = self._program(
-            compute_implicit_part_of_tke_diffusion_momentum,
+        # -- section 9) the semi-implicit TKE diffusion, ICON's own two subroutines. The bound
+        # pair is the solve's 'k_tp+1 .. k_sf-1'; every other range in the two programs is
+        # arithmetic on it. 'uppermost_diffused_level' and 'nlev' are passed at CALL time even
+        # though they equal those bounds -- 'gt4py-01', see 'Turbulence._program'.
+        self._prep_impl_vert_diff_for_the_tke = self._program(
+            prep_impl_vert_diff_for_the_tke,
             constant_args={"implicit_weight": self._implicit_weight},
-            levels=(2, nlev + 1),
-        )
-        self._subtract_implicit_part_of_tke_diffusion_momentum = self._program(
-            subtract_implicit_part_of_tke_diffusion_momentum,
-            levels=(2, nlev),
-        )
-        self._compute_inverted_diffusion_momentum = self._program(
-            compute_inverted_diffusion_momentum,
-            levels=(1, nlev),  # 'k_tp+1' to 'ke'
+            levels=(1, nlev),  # 'k_tp+1' to 'k_sf-1'
             shifted=True,
         )
-        self._compute_diffusion_inversion_factor = self._program(
-            compute_diffusion_inversion_factor,
-            levels=(2, nlev),
-            shifted=True,
-        )
-        self._compute_explicit_tke_flux_density = self._program(
-            compute_explicit_tke_flux_density,
-            levels=(2, nlev + 1),
-            shifted=True,
-        )
-        self._compute_tke_diffusion_right_hand_side = self._program(
-            compute_tke_diffusion_right_hand_side,
-            levels=(1, nlev + 1),
-            shifted=True,
-        )
-        self._solve_tke_diffusion_equation = self._program(
-            solve_tke_diffusion_equation,
-            levels=(1, nlev),
+        self._calc_impl_vert_diff_for_the_tke = self._program(
+            calc_impl_vert_diff_for_the_tke,
+            levels=(1, nlev),  # 'k_tp+1' to 'k_sf-1'
             shifted=True,
         )
         self._add_virtual_diffusion_increment_to_tke_profile = self._program(
@@ -2235,49 +2203,33 @@ class Turbulence:
 
         # -- 9) the semi-implicit vertical diffusion of the TKE -------------------------------------
 
-        self._compute_implicit_part_of_tke_diffusion_momentum(
-            diffusion_momentum=self._zaux_3,
-            implicit_diffusion_momentum=self._zaux_4,
-        )
-        # IN PLACE, as the Fortran is. The subtraction is pointwise and covers one flux level
-        # less than the implicit part, so the surface row has to keep the value section 6) put
-        # there -- which it does only if this writes the storage it reads.
-        self._subtract_implicit_part_of_tke_diffusion_momentum(
-            diffusion_momentum=self._zaux_3,
-            implicit_diffusion_momentum=self._zaux_4,
-            explicit_diffusion_momentum=self._zaux_3,
-        )
-        self._compute_inverted_diffusion_momentum(
+        # 'prep_impl_vert_diff' factorises the matrix; 'calc_impl_vert_diff' builds the
+        # right-hand side and solves. ICON runs the same pair for the model variables, which is
+        # 'vertdiff' below.
+        #
+        # 'self._zaux_3' IS UPDATED IN PLACE by the second statement of the factorisation, as
+        # the Fortran does: it arrives holding the full diffusion momentum and leaves holding
+        # the explicit part, except at the surface flux level. That is one program parameter
+        # read and written POINTWISE, which is the only in-place shape DaCe compiles correctly.
+        self._prep_impl_vert_diff_for_the_tke(
             discretisation_momentum=self._dicke,
-            implicit_diffusion_momentum=self._zaux_4,
-            inverted_diffusion_momentum=self._zaux_5,
-        )
-        self._compute_diffusion_inversion_factor(
-            inverted_diffusion_momentum=self._zaux_5,
-            implicit_diffusion_momentum=self._zaux_4,
-            inversion_factor=self._frh,
-        )
-        self._compute_explicit_tke_flux_density(
             explicit_diffusion_momentum=self._zaux_3,
             implicit_diffusion_momentum=self._zaux_4,
-            current_tke_profile=self._current_virtual_profile,
-            nlev=self._nlev,
-            explicit_tke_flux_density=self._explicit_tke_flux_density,
+            inverted_diffusion_momentum=self._zaux_5,
+            inversion_factor=self._frh,
         )
         # 'len_scale' stops being the master length scale here; section 6) was its last reader.
-        self._compute_tke_diffusion_right_hand_side(
-            discretisation_momentum=self._dicke,
-            current_tke_profile=self._current_virtual_profile,
-            explicit_tke_flux_density=self._explicit_tke_flux_density,
-            uppermost_diffused_level=gtx.int32(1),
-            nlev=self._nlev,
-            right_hand_side=self._len_scale,
-        )
-        self._solve_tke_diffusion_equation(
-            right_hand_side=self._len_scale,
+        self._calc_impl_vert_diff_for_the_tke(
+            explicit_diffusion_momentum=self._zaux_3,
             implicit_diffusion_momentum=self._zaux_4,
             inverted_diffusion_momentum=self._zaux_5,
             inversion_factor=self._frh,
+            discretisation_momentum=self._dicke,
+            current_tke_profile=self._current_virtual_profile,
+            uppermost_diffused_level=gtx.int32(1),
+            nlev=self._nlev,
+            explicit_tke_flux_density=self._explicit_tke_flux_density,
+            right_hand_side=self._len_scale,
             updated_tke_profile=self._zaux_1,
         )
         if self._circulation_term_is_active:

@@ -41,9 +41,6 @@ import numpy as np
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
     compute_diffusion_inversion_factor,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
-    compute_inverted_diffusion_momentum,
-)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_diffusion_momentum_at_the_surface_flux_level import (
     invert_diffusion_momentum_at_the_surface_flux_level,
 )
@@ -607,7 +604,7 @@ class DiffusionRun:
                 offset_provider=KOFF,
                 **bounds,
             )
-        compute_inverted_diffusion_momentum.with_backend(backend)(
+        single_statement_stencils.compute_inverted_diffusion_momentum.with_backend(backend)(
             discretisation_momentum=discretisation_momentum,
             implicit_diffusion_momentum=implicit_momentum,
             inverted_diffusion_momentum=inverted_momentum,

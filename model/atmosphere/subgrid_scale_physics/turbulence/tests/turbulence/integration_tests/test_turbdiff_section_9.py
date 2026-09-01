@@ -14,16 +14,22 @@ expected outputs, for the four timesteps that 'exp.mch_icon-ch2_small' serialize
 The section is two calls -- 'prep_impl_vert_diff' factorises the tridiagonal matrix of the
 diffusion equation, 'calc_impl_vert_diff' builds its right-hand side and solves it -- plus one
 in-line block that undoes the virtual-profile trick section 8) used to smuggle the circulation
-term into the same solve. Seven programs, in the order the caller must run them:
+term into the same solve. SINCE THE STENCIL MERGE THE PORT HAS THE SAME THREE UNITS, where it
+had eight programs:
 
-    1  compute_implicit_part_of_tke_diffusion_momentum   'impl_mom'   zaux(:,:,4)
-    2  subtract_implicit_part_of_tke_diffusion_momentum  'expl_mom'   zaux(:,:,3)
-    3  compute_inverted_diffusion_momentum               'invs_mom'   zaux(:,:,5)
-    4  compute_diffusion_inversion_factor                'invs_fac'   frh
-    5  compute_explicit_tke_flux_density                 -- (see below)
-    6  compute_tke_diffusion_right_hand_side             'eff_flux'   len_scale
-    7  solve_tke_diffusion_equation                      'upd_prof'   zaux(:,:,1)
-    8  add_virtual_diffusion_increment_to_tke_profile    'upd_prof'   zaux(:,:,1)
+    'prep_impl_vert_diff_for_the_tke'                    four statements
+      1  the implicit split                              'impl_mom'   zaux(:,:,4)
+      2  the in-place reduction to the explicit part     'expl_mom'   zaux(:,:,3)
+      3  the forward elimination (a scan)                'invs_mom'   zaux(:,:,5)
+      4  the inversion factor                            'invs_fac'   frh
+    'calc_impl_vert_diff_for_the_tke'                    three statements
+      5  the explicit flux density                       -- (see below)
+      6  the right-hand side                             'eff_flux'   len_scale
+      7  the Thomas solve (two scans)                    'upd_prof'   zaux(:,:,1)
+    'add_virtual_diffusion_increment_to_tke_profile'     'upd_prof'   zaux(:,:,1)
+
+'compute_diffusion_inversion_factor' is still a '@gtx.program' as well, because 'vertdiff' calls
+it; statement 4 is its operator. Everything else in the first two units lost its program.
 
 WHAT THIS SECTION WRITES
 ------------------------
@@ -58,14 +64,23 @@ The practical consequence is agreeable: the right-hand side of the solve survive
 savepoint, so 'solve_tke_diffusion_equation' can be handed ICON's own right-hand side rather
 than the one this port computes.
 
-WHY SOME TESTS HERE XFAIL ON 'embedded'
----------------------------------------
-Programs 5 and 6 select a boundary row with 'concat_where', which gt4py 1.1.10 cannot run on
-the embedded backend (package README, "Boundary rows"), so their tests carry
-'uses_concat_where'. The other five programs do not use it, and they keep their embedded
-cross-check because every program here takes its inputs from a savepoint rather than from the
-program before it -- the convention section 1a) established, and the reason a failure in this
-module names one translation instead of a chain.
+WHY EVERY TEST HERE IS SKIPPED ON 'embedded'
+--------------------------------------------
+Statements 5 and 6 select a boundary row with 'concat_where', which gt4py 1.1.10 cannot run on
+the embedded backend (package README, "Boundary rows"); statements 3 and 7 are scans, which the
+embedded backend runs as a Python loop over 662080 points. Before the stencil merge those were
+two disjoint sets of programs, so the two 'concat_where' tests were 'uses_concat_where' xfails
+and the five others were 'embedded_too_slow' skips. Now each merged program contains both, so
+all of them are 'embedded_too_slow' -- a SKIP rather than an xfail, which is different in kind:
+an xfail still runs the test. Nothing is lost on a compiled backend, where every comparison
+below runs.
+
+WHAT IS FED FROM WHERE, since the merge changed half of it. Between the two units the
+convention section 1a) established still holds: 'calc_impl_vert_diff_for_the_tke' is handed
+ICON's own matrix -- 'expl_mom', 'impl_mom', 'invs_mom', 'invs_fac' from the exit savepoint --
+so a defect in the factorisation cannot travel into the solve's test. WITHIN a unit the
+statements necessarily chain, which is what a merged program is; every one of them is gated
+'Exact', so the chaining introduces no rounding.
 """
 
 from __future__ import annotations
@@ -79,26 +94,11 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_virtual_diffusion_increment_to_tke_profile import (
     add_virtual_diffusion_increment_to_tke_profile,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_diffusion_inversion_factor import (
-    compute_diffusion_inversion_factor,
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.calc_impl_vert_diff_for_the_tke import (
+    calc_impl_vert_diff_for_the_tke,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_explicit_tke_flux_density import (
-    compute_explicit_tke_flux_density,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_implicit_part_of_tke_diffusion_momentum import (
-    compute_implicit_part_of_tke_diffusion_momentum,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_inverted_diffusion_momentum import (
-    compute_inverted_diffusion_momentum,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_tke_diffusion_right_hand_side import (
-    compute_tke_diffusion_right_hand_side,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.solve_tke_diffusion_equation import (
-    solve_tke_diffusion_equation,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.subtract_implicit_part_of_tke_diffusion_momentum import (
-    subtract_implicit_part_of_tke_diffusion_momentum,
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.prep_impl_vert_diff_for_the_tke import (
+    prep_impl_vert_diff_for_the_tke,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.turbulence import TurbulenceConfig
 from icon4py.model.common import dimension as dims
@@ -119,8 +119,8 @@ _KOFF = {dims.Koff.value: dims.KDim}
 UPPERMOST_DIFFUSED_LEVEL = 1
 
 
-class Section9(NamedTuple):
-    """One timestep of section 9): the savepoints, the bounds and every computed output."""
+class Factorisation(NamedTuple):
+    """One timestep of 'prep_impl_vert_diff_for_the_tke': the savepoints, the bounds, the matrix."""
 
     entry: sb.IconTurbdiffEntrySavepoint
     before: sb.IconTurbdiffSectionSavepoint
@@ -134,6 +134,16 @@ class Section9(NamedTuple):
     explicit_diffusion_momentum: gtx.Field
     inverted_diffusion_momentum: gtx.Field
     inversion_factor: gtx.Field
+
+
+class Solve(NamedTuple):
+    """One timestep of 'calc_impl_vert_diff_for_the_tke' and the circulation correction."""
+
+    after: sb.IconTurbdiffSectionSavepoint
+    nlev: int
+    columns: slice
+    explicit_tke_flux_density: gtx.Field
+    right_hand_side: gtx.Field
     updated_tke_profile: gtx.Field
 
 
@@ -174,18 +184,19 @@ def _implicit_weight(vct_a: np.ndarray, nlev: int, backend) -> gtx.Field:
     return gtx.as_field((dims.KDim,), weight, allocator=backend)
 
 
-def _run_the_matrix_and_the_solve(data_provider, grid_savepoint, date: str, backend) -> Section9:
-    """Run the five programs of section 9) that do not select a boundary row.
+def _run_the_factorisation(data_provider, grid_savepoint, date: str, backend) -> Factorisation:
+    """Run 'prep_impl_vert_diff_for_the_tke' on the 'turbdiff-8-exit' state of one timestep.
 
-    Every program is given ICON's own inputs, from the savepoint that holds them, rather than
-    the output of the program before it: a defect in one translation then cannot travel into
-    another test, and each failure names one program. Where a quantity only exists between the
-    two savepoints -- the tridiagonal matrix, the right-hand side -- the savepoint that holds
-    it is 'turbdiff-9-exit', because this section is what produces it.
+    ONE PROGRAM SINCE THE STENCIL MERGE, where there were four. Its four statements chain
+    inside it -- that is what a merged program is -- and every one of them is gated 'Exact', so
+    the chaining introduces no rounding that a per-program feed would have kept out. What the
+    old runner bought by handing each program ICON's own inputs is preserved BETWEEN the units
+    instead: '_run_the_solve' is handed the reference's matrix and not this one.
 
-    'compute_explicit_tke_flux_density' and 'compute_tke_diffusion_right_hand_side' are not run
-    here: they need 'concat_where', which the embedded backend cannot execute, and keeping them
-    out of this runner is what lets the other five keep their embedded cross-check.
+    'expl_mom' IS UPDATED IN PLACE, as the Fortran does and as the granule does: the field
+    handed in as 'explicit_diffusion_momentum' arrives holding the full diffusion momentum and
+    leaves holding the explicit remainder. The buffer is therefore a copy of the entry state and
+    not the savepoint field itself.
     """
     entry = data_provider.from_savepoint_turbdiff_entry(date=date)
     before = data_provider.from_savepoint_turbdiff_section(section="8", date=date)
@@ -195,38 +206,21 @@ def _run_the_matrix_and_the_solve(data_provider, grid_savepoint, date: str, back
 
     implicit_weight = _implicit_weight(grid_savepoint.vct_a().asnumpy(), nlev, backend)
 
-    # 'zaux(:,:,4)' arrives holding the buoyancy factor 'g_tet_l' and leaves holding 'impl_mom'.
+    # 'zaux(:,:,4)' arrives holding the buoyancy factor 'g_tet_l' and leaves holding 'impl_mom';
+    # 'zaux(:,:,5)' arrives holding 'g_h2o' and leaves holding 'invs_mom'; 'frh' arrives holding
+    # section 6)'s CKE flux density and leaves holding 'invs_fac'.
     implicit_diffusion_momentum = utils.copy_of(before.g_tet_l(), backend)
-    compute_implicit_part_of_tke_diffusion_momentum.with_backend(backend)(
-        diffusion_momentum=before.expl_mom(),
-        implicit_weight=implicit_weight,
-        implicit_diffusion_momentum=implicit_diffusion_momentum,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(2),
-        vertical_end=gtx.int32(nlev + 1),
-        offset_provider={},
-    )
-
-    # 'expl_mom' is updated in place, one flux level short of the implicit part.
     explicit_diffusion_momentum = utils.copy_of(before.expl_mom(), backend)
-    subtract_implicit_part_of_tke_diffusion_momentum.with_backend(backend)(
-        diffusion_momentum=before.expl_mom(),
-        implicit_diffusion_momentum=after.impl_mom(),
-        explicit_diffusion_momentum=explicit_diffusion_momentum,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(2),
-        vertical_end=gtx.int32(nlev),
-        offset_provider={},
-    )
-
-    # 'zaux(:,:,5)' arrives holding the buoyancy factor 'g_h2o' and leaves holding 'invs_mom'.
     inverted_diffusion_momentum = utils.copy_of(before.g_h2o(), backend)
-    compute_inverted_diffusion_momentum.with_backend(backend)(
+    inversion_factor = utils.copy_of(before.cke_flux_density(), backend)
+
+    prep_impl_vert_diff_for_the_tke.with_backend(backend)(
+        implicit_weight=implicit_weight,
         discretisation_momentum=before.disc_mom(),
-        implicit_diffusion_momentum=after.impl_mom(),
+        explicit_diffusion_momentum=explicit_diffusion_momentum,
+        implicit_diffusion_momentum=implicit_diffusion_momentum,
         inverted_diffusion_momentum=inverted_diffusion_momentum,
+        inversion_factor=inversion_factor,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         vertical_start=gtx.int32(UPPERMOST_DIFFUSED_LEVEL),
@@ -234,31 +228,56 @@ def _run_the_matrix_and_the_solve(data_provider, grid_savepoint, date: str, back
         offset_provider=_KOFF,
     )
 
-    # 'frh' arrives holding section 6)'s CKE flux density and leaves holding 'invs_fac'.
-    inversion_factor = utils.copy_of(before.cke_flux_density(), backend)
-    compute_diffusion_inversion_factor.with_backend(backend)(
-        inverted_diffusion_momentum=after.invs_mom(),
-        implicit_diffusion_momentum=after.impl_mom(),
+    return Factorisation(
+        entry=entry,
+        before=before,
+        after=after,
+        nlev=nlev,
+        columns=slice(before.ivstart(), before.ivend()),
+        implicit_diffusion_momentum=implicit_diffusion_momentum,
+        explicit_diffusion_momentum=explicit_diffusion_momentum,
+        inverted_diffusion_momentum=inverted_diffusion_momentum,
         inversion_factor=inversion_factor,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(2),
-        vertical_end=gtx.int32(nlev),
-        offset_provider=_KOFF,
     )
 
-    # 'zaux(:,:,1)' arrives holding the Exner factor and leaves holding 'upd_prof'. The solve
-    # writes it and the circulation correction rewrites the same rows in place, as the Fortran
-    # does; every row there is a function of its own row alone.
+
+def _run_the_solve(data_provider, date: str, backend) -> Solve:
+    """Run 'calc_impl_vert_diff_for_the_tke' and the circulation correction on ICON's matrix.
+
+    THE MATRIX COMES FROM THE SAVEPOINT, not from '_run_the_factorisation': 'expl_mom',
+    'impl_mom', 'invs_mom' and 'invs_fac' are the reference's own, so a defect in the
+    factorisation cannot travel into this test. That is the convention section 1a) established,
+    kept at the boundary the merge left available.
+
+    The explicit flux density is the one quantity of this section that no savepoint holds in
+    full: the Fortran computes it in the storage it is about to overwrite with the right-hand
+    side, and only the surface row survives. Its buffer is therefore allocated as NaN rather
+    than as an entry state, since it has none.
+    """
+    entry = data_provider.from_savepoint_turbdiff_entry(date=date)
+    before = data_provider.from_savepoint_turbdiff_section(section="8", date=date)
+    after = data_provider.from_savepoint_turbdiff_section(section="9", date=date)
+    nlev = entry.ke()
+    horizontal_start, horizontal_end = gtx.int32(before.ivstart()), gtx.int32(before.ivend())
+
+    explicit_tke_flux_density = utils.nan_like(before.mixing_length(), backend)
+    # The 'len_scale' storage arrives holding the turbulent master length scale, and 'zaux(:,:,1)'
+    # the Exner factor. The solve writes the latter and the circulation correction rewrites the
+    # same rows in place, as the Fortran does; every row there is a function of its own row alone.
+    right_hand_side = utils.copy_of(before.mixing_length(), backend)
     updated_tke_profile = utils.copy_of(before.exner_factor(), backend)
-    solve_tke_diffusion_equation.with_backend(backend)(
-        # 'eff_tke_flux()' is the savepoint reader's name for this storage; what it actually
-        # holds on these rows is the right-hand side of the system being solved, see the
-        # module docstring.
-        right_hand_side=after.eff_tke_flux(),
+
+    calc_impl_vert_diff_for_the_tke.with_backend(backend)(
+        explicit_diffusion_momentum=after.expl_mom(),
         implicit_diffusion_momentum=after.impl_mom(),
         inverted_diffusion_momentum=after.invs_mom(),
         inversion_factor=after.invs_fac(),
+        discretisation_momentum=before.disc_mom(),
+        current_tke_profile=before.hlp(),
+        uppermost_diffused_level=gtx.int32(UPPERMOST_DIFFUSED_LEVEL),
+        nlev=gtx.int32(nlev),
+        explicit_tke_flux_density=explicit_tke_flux_density,
+        right_hand_side=right_hand_side,
         updated_tke_profile=updated_tke_profile,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
@@ -278,72 +297,13 @@ def _run_the_matrix_and_the_solve(data_provider, grid_savepoint, date: str, back
         offset_provider={},
     )
 
-    return Section9(
-        entry=entry,
-        before=before,
+    return Solve(
         after=after,
         nlev=nlev,
         columns=slice(before.ivstart(), before.ivend()),
-        implicit_diffusion_momentum=implicit_diffusion_momentum,
-        explicit_diffusion_momentum=explicit_diffusion_momentum,
-        inverted_diffusion_momentum=inverted_diffusion_momentum,
-        inversion_factor=inversion_factor,
-        updated_tke_profile=updated_tke_profile,
-    )
-
-
-def _run_the_flux_and_the_right_hand_side(
-    data_provider, date: str, backend
-) -> tuple[gtx.Field, gtx.Field, sb.IconTurbdiffSectionSavepoint, int, slice]:
-    """Run the two programs of section 9) that select a boundary row with 'concat_where'.
-
-    The explicit flux density is the one quantity of this section that no savepoint holds in
-    full: the Fortran computes it in the storage it is about to overwrite with the right-hand
-    side, and only the surface row survives. It is therefore chained into the right-hand side
-    here -- there is nothing else to feed it from -- and its output is allocated as NaN rather
-    than as an entry state, since it has none.
-    """
-    entry = data_provider.from_savepoint_turbdiff_entry(date=date)
-    before = data_provider.from_savepoint_turbdiff_section(section="8", date=date)
-    after = data_provider.from_savepoint_turbdiff_section(section="9", date=date)
-    nlev = entry.ke()
-    horizontal_start, horizontal_end = gtx.int32(before.ivstart()), gtx.int32(before.ivend())
-
-    explicit_tke_flux_density = utils.nan_like(before.mixing_length(), backend)
-    compute_explicit_tke_flux_density.with_backend(backend)(
-        explicit_diffusion_momentum=after.expl_mom(),
-        implicit_diffusion_momentum=after.impl_mom(),
-        current_tke_profile=before.hlp(),
-        nlev=gtx.int32(nlev),
         explicit_tke_flux_density=explicit_tke_flux_density,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(2),
-        vertical_end=gtx.int32(nlev + 1),
-        offset_provider=_KOFF,
-    )
-
-    # The 'len_scale' storage arrives holding the turbulent master length scale.
-    right_hand_side = utils.copy_of(before.mixing_length(), backend)
-    compute_tke_diffusion_right_hand_side.with_backend(backend)(
-        discretisation_momentum=before.disc_mom(),
-        current_tke_profile=before.hlp(),
-        explicit_tke_flux_density=explicit_tke_flux_density,
-        uppermost_diffused_level=gtx.int32(UPPERMOST_DIFFUSED_LEVEL),
-        nlev=gtx.int32(nlev),
         right_hand_side=right_hand_side,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(UPPERMOST_DIFFUSED_LEVEL),
-        vertical_end=gtx.int32(nlev + 1),
-        offset_provider=_KOFF,
-    )
-    return (
-        explicit_tke_flux_density,
-        right_hand_side,
-        after,
-        nlev,
-        slice(before.ivstart(), before.ivend()),
+        updated_tke_profile=updated_tke_profile,
     )
 
 
@@ -522,10 +482,10 @@ def test_compute_implicit_part_of_tke_diffusion_momentum_agrees_with_icon(
     pins the implicit weight bit-exactly: it is the only place the profile is multiplied by
     anything.
     """
-    run = _run_the_matrix_and_the_solve(data_provider, grid_savepoint, date, backend)
+    run = _run_the_factorisation(data_provider, grid_savepoint, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_implicit_part_of_tke_diffusion_momentum",
+        "prep_impl_vert_diff_for_the_tke",
         "zaux(:,:,4) [impl_mom]",
         run.implicit_diffusion_momentum,
         run.after.impl_mom(),
@@ -550,10 +510,10 @@ def test_subtract_implicit_part_of_tke_diffusion_momentum_agrees_with_icon(
     implicit part, and it is the row the whole-slab comparison is here to check: the surface
     flux density reads the full diffusion momentum out of it two programs later.
     """
-    run = _run_the_matrix_and_the_solve(data_provider, grid_savepoint, date, backend)
+    run = _run_the_factorisation(data_provider, grid_savepoint, date, backend)
 
     utils.assert_agrees_with_icon(
-        "subtract_implicit_part_of_tke_diffusion_momentum",
+        "prep_impl_vert_diff_for_the_tke",
         "zaux(:,:,3) [expl_mom]",
         run.explicit_diffusion_momentum,
         run.after.expl_mom(),
@@ -581,10 +541,10 @@ def test_compute_inverted_diffusion_momentum_agrees_with_icon(
     the scan's carry rather than by a boundary expression, so that the embedded backend keeps
     this test.
     """
-    run = _run_the_matrix_and_the_solve(data_provider, grid_savepoint, date, backend)
+    run = _run_the_factorisation(data_provider, grid_savepoint, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_inverted_diffusion_momentum",
+        "prep_impl_vert_diff_for_the_tke",
         "zaux(:,:,5) [invs_mom]",
         run.inverted_diffusion_momentum,
         run.after.invs_mom(),
@@ -608,10 +568,10 @@ def test_compute_diffusion_inversion_factor_agrees_with_icon(
     The elimination multiplier is defined one half level lower than the inverted momentum it is
     built from, and the row between them is the one this comparison would catch being written.
     """
-    run = _run_the_matrix_and_the_solve(data_provider, grid_savepoint, date, backend)
+    run = _run_the_factorisation(data_provider, grid_savepoint, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_diffusion_inversion_factor",
+        "prep_impl_vert_diff_for_the_tke",
         "frh [invs_fac]",
         run.inversion_factor,
         run.after.invs_fac(),
@@ -623,7 +583,7 @@ def test_compute_diffusion_inversion_factor_agrees_with_icon(
 
 
 @pytest.mark.datatest
-@pytest.mark.uses_concat_where
+@pytest.mark.embedded_too_slow
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_explicit_tke_flux_density_agrees_with_icon_at_the_surface(
@@ -638,20 +598,18 @@ def test_compute_explicit_tke_flux_density_agrees_with_icon_at_the_surface(
     is also the one worth comparing. The rows above are validated indirectly, through the
     right-hand side that consumes them.
     """
-    flux, _, after, nlev, columns = _run_the_flux_and_the_right_hand_side(
-        data_provider, date, backend
-    )
+    run = _run_the_solve(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_explicit_tke_flux_density",
+        "calc_impl_vert_diff_for_the_tke",
         "len_scale(:,ke1) [explicit surface flux]",
-        flux.asnumpy()[columns, nlev],
-        after.eff_tke_flux().asnumpy()[columns, nlev],
+        run.explicit_tke_flux_density.asnumpy()[run.columns, run.nlev],
+        run.after.eff_tke_flux().asnumpy()[run.columns, run.nlev],
     )
 
 
 @pytest.mark.datatest
-@pytest.mark.uses_concat_where
+@pytest.mark.embedded_too_slow
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_tke_diffusion_right_hand_side_agrees_with_icon(
@@ -666,16 +624,14 @@ def test_compute_tke_diffusion_right_hand_side_agrees_with_icon(
     previous program left there, which this program has to carry through rather than
     recompute.
     """
-    _, right_hand_side, after, _, columns = _run_the_flux_and_the_right_hand_side(
-        data_provider, date, backend
-    )
+    run = _run_the_solve(data_provider, date, backend)
 
     utils.assert_agrees_with_icon(
-        "compute_tke_diffusion_right_hand_side",
+        "calc_impl_vert_diff_for_the_tke",
         "len_scale [right-hand side of the TKE diffusion]",
-        right_hand_side,
-        after.eff_tke_flux(),
-        columns=columns,
+        run.right_hand_side,
+        run.after.eff_tke_flux(),
+        columns=run.columns,
     )
 
 
@@ -687,15 +643,11 @@ def test_compute_tke_diffusion_right_hand_side_agrees_with_icon(
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 @pytest.mark.embedded_too_slow
 def test_the_updated_tke_profile_agrees_with_icon(
-    date: str,
-    *,
-    data_provider: sb.IconSerialDataProvider,
-    grid_savepoint: sb.IconGridSavepoint,
-    backend,
+    date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
     """The section's actual product: the TKE profile updated by the diffusion tendency.
 
-    TWO PROGRAMS SHARE ONE ORACLE. 'solve_tke_diffusion_equation' produces the diffused
+    TWO PROGRAMS SHARE ONE ORACLE. 'calc_impl_vert_diff_for_the_tke' produces the diffused
     VIRTUAL profile and 'add_virtual_diffusion_increment_to_tke_profile' turns it into the true
     one; ICON overwrites the intermediate in place and serializes only the composition, so
     there is nothing to compare the solve against on its own. The assertion is therefore made
@@ -706,10 +658,10 @@ def test_the_updated_tke_profile_agrees_with_icon(
     Exner factor that shared this storage until section 8), and a solve that ran one row too
     far would overwrite one of them.
     """
-    run = _run_the_matrix_and_the_solve(data_provider, grid_savepoint, date, backend)
+    run = _run_the_solve(data_provider, date, backend)
 
     for stencil in (
-        "solve_tke_diffusion_equation",
+        "calc_impl_vert_diff_for_the_tke",
         "add_virtual_diffusion_increment_to_tke_profile",
     ):
         utils.assert_agrees_with_icon(

@@ -1404,7 +1404,7 @@ def test_the_factorisation_agrees(
     after, reference, computed = run.after, run.reference, run.computed
 
     utils.assert_agrees_with_icon(
-        "compute_inverted_diffusion_momentum",
+        "prep_impl_vert_diff",
         "invs_mom [the elimination]",
         computed["invs_mom:sca"],
         after.invs_mom(),
@@ -1428,7 +1428,7 @@ def test_the_factorisation_agrees(
         levels=slice(1, nlev),
     )
     utils.assert_agrees_with_icon(
-        "compute_inverted_diffusion_momentum",
+        "prep_impl_vert_diff",
         "invs_mom [mom]",
         computed["invs_mom:mom"],
         reference["invs_mom:mom"],

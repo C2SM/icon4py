@@ -335,19 +335,27 @@ GATES: dict[str, Gate] = {
     # of reporting. The agents that wrote these stencils were killed before validating
     # them, so no measurement stands behind this yet. A failure here is a real finding.
     "prepare_the_tke_diffusion": Exact(),
-    # turbdiff section 9) TKE profile update through the diffusion tendency.
+    # turbdiff section 9) TKE profile update through the diffusion tendency -- ICON's own two
+    # subroutines since the stencil merge, plus the circulation correction that undoes section
+    # 8)'s virtual-profile trick. 'prep_impl_vert_diff_for_the_tke' has four statements (the
+    # implicit split, the in-place reduction to the explicit part, the forward elimination and
+    # the inversion factor); 'calc_impl_vert_diff_for_the_tke' has three (the explicit flux
+    # density, the right-hand side and the Thomas solve). All the entries they replace were
+    # Exact, so no tolerance was widened by the collapse, and the section test still asserts
+    # each of the six outputs separately, so a failure names the Fortran quantity.
+    #
+    # 'compute_diffusion_inversion_factor' KEEPS ITS ENTRY: its operator is a statement of the
+    # TKE factorisation, but the '@gtx.program' survives because 'vertdiff' calls it, after
+    # 'invert_diffusion_momentum_at_the_surface_flux_level', which cannot be a statement. One
+    # operator, two callers, exactly as ICON has one subroutine.
     # PROVISIONAL: entered as the documented default so the section datatests can run at
     # all -- 'gate_for' refuses to default, so without an entry the tests error instead
     # of reporting. The agents that wrote these stencils were killed before validating
     # them, so no measurement stands behind these yet. A failure here is a real finding.
     "add_virtual_diffusion_increment_to_tke_profile": Exact(),
+    "calc_impl_vert_diff_for_the_tke": Exact(),
     "compute_diffusion_inversion_factor": Exact(),
-    "compute_explicit_tke_flux_density": Exact(),
-    "compute_implicit_part_of_tke_diffusion_momentum": Exact(),
-    "compute_inverted_diffusion_momentum": Exact(),
-    "compute_tke_diffusion_right_hand_side": Exact(),
-    "solve_tke_diffusion_equation": Exact(),
-    "subtract_implicit_part_of_tke_diffusion_momentum": Exact(),
+    "prep_impl_vert_diff_for_the_tke": Exact(),
     # turbdiff section 2a) the 3D complements of the mechanical shear forcing. Measured on
     # 'embedded', 'gtfn_cpu' and 'dace_cpu', which produce bit-identical results to each other --
     # so, as in section 0, the disagreement is on ICON's side of the comparison and not in any
