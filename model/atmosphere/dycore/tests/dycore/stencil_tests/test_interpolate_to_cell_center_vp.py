@@ -14,8 +14,8 @@ import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
-    interpolate_to_cell_center,
+from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp import (
+    interpolate_to_cell_center_vp,
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
@@ -37,8 +37,8 @@ def interpolate_to_cell_center_numpy(
     return interpolation
 
 
-class TestInterpolateToCellCenter(stencil_tests.StencilTest):
-    PROGRAM = interpolate_to_cell_center
+class TestInterpolateToCellCenterVp(stencil_tests.StencilTest):
+    PROGRAM = interpolate_to_cell_center_vp
     OUTPUTS = ("interpolation",)
 
     @stencil_tests.static_reference

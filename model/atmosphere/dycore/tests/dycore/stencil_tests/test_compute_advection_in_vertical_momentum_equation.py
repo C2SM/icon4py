@@ -33,7 +33,7 @@ from .test_compute_horizontal_advection_term_for_vertical_velocity import (
 from .test_interpolate_cell_field_to_half_levels import (
     interpolate_cell_field_to_half_levels_vp_numpy,
 )
-from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
+from .test_interpolate_to_cell_center_vp import interpolate_to_cell_center_numpy
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
