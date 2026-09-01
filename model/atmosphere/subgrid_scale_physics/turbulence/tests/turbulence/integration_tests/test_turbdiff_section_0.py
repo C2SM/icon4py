@@ -15,20 +15,28 @@ exp.mch_icon-ch2_small.
 Section 0) is the first thing 'turbdiff' does and the largest of its fifteen sections. It turns
 ICON's model variables into the set the turbulence closure differentiates, diagnoses the
 sub-grid cloud cover that the buoyancy factors depend on, puts everything the closure reads at
-half levels there, and builds the turbulent master length scale. Seven programs, in the order
-the Fortran runs them:
+half levels there, and builds the turbulent master length scale. SINCE THE STENCIL MERGE it is
+FIVE programs, which are ICON's own five blocks, in the order the Fortran runs them:
 
     compute_conserved_variables_and_factors_at_main_levels   adjust_satur_equil, 1st call
     compute_conserved_variables_and_factors_at_the_surface   adjust_satur_equil, 2nd call
-    compute_layer_depth                                      dicke
-    compute_horizontal_wind_including_the_zero_level         zvari(:,:,u_m), zvari(:,:,v_m)
-    compute_half_level_interpolation_weight                  bound_level_interp, 'auxil'
-    interpolate_variables_onto_half_levels                   bound_level_interp, seven '%bl'
+    compute_horizontal_wind_and_layer_depth                  "Windgeschwindigkeiten und
+                                                              Schichtdicken": dicke and
+                                                              zvari(:,:,u_m/v_m), one loop
+    bound_level_interp                                       the weight, the seven profiles,
+                                                              and the row-0 pass-through
     compute_turbulent_length_scale                           len_scale
 
-Why the two 'adjust_satur_equil' calls are two programs rather than one 'concat_where' is in
-their module docstrings and follows the boundary-row rule of the package README; why the wind
-and the length scale ARE merged is in theirs.
+THE TWO 'adjust_satur_equil' CALLS STAY TWO PROGRAMS, and the reason is now measured rather than
+stylistic. The second one reads the main-level result one row above the row it writes -- the
+Fortran interpolates the lowest main level down to the zero level -- so as a statement of the
+same program it would either name the parameter it writes as a SHIFTED input (variant A1 of the
+aliasing table in 'solve_turb_budgets', which DaCe silently drops) or take it through a second
+parameter the caller aliases to the same field with the writer first (variant C, wrong on
+'dace_gpu'). Both are the shapes that defect covers, so the two '_extract_level' calls in
+'run_turbdiff' stay -- the merge plan's §3.1 expected them to go and they cannot. The four
+'_copy_level' calls after the interpolation DID go: they are the third statement of
+'bound_level_interp'.
 
 WHAT THIS SECTION WRITES, MEASURED
 ----------------------------------
@@ -47,12 +55,14 @@ undefined here too; the savepoint reader's own docstring records which section w
 
 BIT-EXACTNESS: WHERE IT STOPS, AND WHY
 --------------------------------------
-Four of the seven programs are bit-exact, all four dates: 'compute_layer_depth',
-'compute_horizontal_wind_including_the_zero_level', 'compute_half_level_interpolation_weight'
-and 'compute_turbulent_length_scale'. On 'gtfn_cpu' and 'dace_cpu' that holds for all four; two
-of them -- the wind and the length scale -- select a boundary row with 'concat_where' and so
-carry 'uses_concat_where', which xfails them on 'embedded' (gt4py 1.1.10 cannot execute
-'concat_where' there), so their exactness rests on the two compiled backends only.
+'compute_horizontal_wind_and_layer_depth' and 'compute_turbulent_length_scale' are bit-exact,
+all four dates, and so is the interpolation weight inside 'bound_level_interp' -- which is why
+that weight is asserted with 'array_equal' rather than through the merged 'Tol' gate. The first
+two select a boundary row with 'concat_where' and so carry 'uses_concat_where', which xfails
+them on 'embedded' (gt4py 1.1.10 cannot execute 'concat_where' there), so their exactness rests
+on the compiled backends only. THE LAYER DEPTH JOINED THEM AT THE MERGE: it has no
+'concat_where' of its own, but it is a statement of ICON's block and the wind statement beside
+it has one. Four tests, and that is the whole embedded cost of merging section 0).
 
 The other three are not, and section 0) is the first section of the port that cannot be. It is
 the first to evaluate a TRANSCENDENTAL function: Magnus' formula for the saturation vapour
@@ -84,31 +94,26 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.bound_level_interp import (
+    bound_level_interp,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_conserved_variables_and_factors_at_main_levels import (
     compute_conserved_variables_and_factors_at_main_levels,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_conserved_variables_and_factors_at_the_surface import (
     compute_conserved_variables_and_factors_at_the_surface,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_half_level_interpolation_weight import (
-    compute_half_level_interpolation_weight,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_horizontal_wind_including_the_zero_level import (
-    compute_horizontal_wind_including_the_zero_level,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_layer_depth import (
-    compute_layer_depth,
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_horizontal_wind_and_layer_depth import (
+    compute_horizontal_wind_and_layer_depth,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_turbulent_length_scale import (
     compute_turbulent_length_scale,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.interpolate_variables_onto_half_levels import (
-    interpolate_variables_onto_half_levels,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.thermodynamic_functions import (
     ThermoConstants,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb
 
 from .. import utils
@@ -175,16 +180,18 @@ class Section0(NamedTuple):
     half_level_pressure: gtx.Field
     air_density: gtx.Field
     #: The two geometric quantities.
-    layer_depth: gtx.Field
     interpolation_weight: gtx.Field
 
 
 def _run_the_thermodynamics(data_provider, date: str, backend) -> Section0:
-    """Run the five programs of section 0) that contain no 'concat_where'.
+    """Run the three programs of section 0) that contain no 'concat_where'.
 
-    The wind and the length scale are left out on purpose: they select their boundary row with
-    'concat_where', which the embedded backend cannot execute, and running them here would make
-    every test in this module xfail there instead of only their own two.
+    The wind block and the length scale are left out on purpose: they select their boundary row
+    with 'concat_where', which the embedded backend cannot execute, and running them here would
+    make every test in this module xfail there instead of only their own. That is also why
+    'compute_layer_depth' is no longer here: since the stencil merge it is a statement of
+    'compute_horizontal_wind_and_layer_depth', which is ICON's own block and carries the wind's
+    'concat_where' with it.
 
     The two inputs that come from another stencil of this section -- the interpolation weight
     'hlp' and, for the surface call, the main-level values one row up -- are taken from the EXIT
@@ -274,29 +281,6 @@ def _run_the_thermodynamics(data_provider, date: str, backend) -> Section0:
         offset_provider={},
     )
 
-    # Fortran 'DO k=1,ke'.
-    layer_depth = utils.nan_like(entry.rcld(), backend)
-    compute_layer_depth.with_backend(backend)(
-        half_level_height=entry.hhl(),
-        layer_depth=layer_depth,
-        horizontal_start=gtx.int32(ivstart),
-        horizontal_end=gtx.int32(ivend),
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(nlev),
-        offset_provider={dims.Koff.value: dims.KDim},
-    )
-    # Fortran 'bound_level_interp(..., k_st=2, k_en=ke, ...)'.
-    interpolation_weight = utils.nan_like(entry.rcld(), backend)
-    compute_half_level_interpolation_weight.with_backend(backend)(
-        layer_pressure_thickness=entry.dp0(),
-        interpolation_weight=interpolation_weight,
-        horizontal_start=gtx.int32(ivstart),
-        horizontal_end=gtx.int32(ivend),
-        vertical_start=gtx.int32(1),
-        vertical_end=gtx.int32(nlev),
-        offset_provider={dims.Koff.value: dims.KDim},
-    )
-
     # The seven interpolated storages start as what the two 'adjust_satur_equil' calls left in
     # them, which is what makes rows 0 and nlev come out as those calls wrote them -- the
     # Fortran interpolates in place over rows 1..nlev-1 only. The half-level pressure has no
@@ -309,7 +293,24 @@ def _run_the_thermodynamics(data_provider, date: str, backend) -> Section0:
     buoyancy_factor_h2o_g_on_half_levels = utils.copy_of(buoyancy_factor_h2o_g, backend)
     half_level_pressure = utils.copy_of(entry.zvari(PRESSURE), backend)
     air_density_on_half_levels = utils.copy_of(air_density, backend)
-    interpolate_variables_onto_half_levels.with_backend(backend)(
+    # ROW 0 OF THE FOUR IN-PLACE STORAGES IS POISONED FIRST, because the merged program writes it
+    # and the copies above would otherwise have made it right already. The Fortran gets that row
+    # for free by interpolating in place; the port writes it as a statement, and this is what
+    # proves the statement runs.
+    for poisoned in (
+        cloud_cover_on_half_levels,
+        dqsat_dt_on_half_levels,
+        buoyancy_factor_tet_l_on_half_levels,
+        buoyancy_factor_h2o_g_on_half_levels,
+    ):
+        values = data_alloc.as_numpy(poisoned).copy()
+        values[:, 0] = np.nan
+        utils.overwrite_with(poisoned, values, backend)
+
+    # Fortran 'bound_level_interp(..., k_st=2, k_en=ke, ...)'.
+    interpolation_weight = utils.nan_like(entry.rcld(), backend)
+    bound_level_interp.with_backend(backend)(
+        layer_pressure_thickness=entry.dp0(),
         cloud_cover=cloud_cover,
         exner_factor=entry.epr(),
         dqsat_dt=dqsat_dt,
@@ -317,7 +318,7 @@ def _run_the_thermodynamics(data_provider, date: str, backend) -> Section0:
         buoyancy_factor_h2o_g=buoyancy_factor_h2o_g,
         pressure=entry.prs(),
         air_density=entry.rhoh(),
-        interpolation_weight=after.hlp(),
+        interpolation_weight=interpolation_weight,
         cloud_cover_on_half_levels=cloud_cover_on_half_levels,
         exner_factor_on_half_levels=exner_factor_on_half_levels,
         dqsat_dt_on_half_levels=dqsat_dt_on_half_levels,
@@ -352,9 +353,46 @@ def _run_the_thermodynamics(data_provider, date: str, backend) -> Section0:
         buoyancy_factor_h2o_g=buoyancy_factor_h2o_g_on_half_levels,
         half_level_pressure=half_level_pressure,
         air_density=air_density_on_half_levels,
-        layer_depth=layer_depth,
         interpolation_weight=interpolation_weight,
     )
+
+
+def _run_the_wind_and_the_depths(data_provider, date: str, backend):
+    """Run 'compute_horizontal_wind_and_layer_depth', ICON's own block, on one timestep.
+
+    IT IS KEPT OUT OF '_run_the_thermodynamics' because the wind selects the zero level with
+    'concat_where', which the embedded backend cannot execute; the two tests that need this
+    runner carry 'uses_concat_where' and everything else in this module keeps its embedded
+    cross-check. The layer depth joined them at the stencil merge, which is the whole embedded
+    cost of merging section 0).
+
+    The outputs are allocated as COPIES OF THE ENTRY STATE of 'zvari' and compared over the whole
+    column, so the comparison distinguishes the two ways the row selection can be wrong: the zero
+    level taking the un-reduced wind, and the lowest main level taking the reduced one.
+    """
+    entry = data_provider.from_savepoint_turbdiff_entry(date=date)
+    after = data_provider.from_savepoint_turbdiff_section(section="0", date=date)
+    nlev = entry.ke()
+
+    layer_depth = utils.nan_like(entry.rcld(), backend)
+    zonal = utils.copy_of(entry.zvari(U_M), backend)
+    meridional = utils.copy_of(entry.zvari(V_M), backend)
+    compute_horizontal_wind_and_layer_depth.with_backend(backend)(
+        half_level_height=entry.hhl(),
+        zonal_wind=entry.u(),
+        meridional_wind=entry.v(),
+        laminar_reduction_factor_for_momentum=entry.tfm(),
+        nlev=gtx.int32(nlev),
+        layer_depth=layer_depth,
+        zonal_wind_on_conserved_variable_levels=zonal,
+        meridional_wind_on_conserved_variable_levels=meridional,
+        horizontal_start=gtx.int32(entry.ivstart()),
+        horizontal_end=gtx.int32(entry.ivend()),
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(nlev),
+        offset_provider={dims.Koff.value: dims.KDim},
+    )
+    return entry, after, nlev, slice(entry.ivstart(), entry.ivend()), layer_depth, zonal, meridional
 
 
 # ------------------------------------------------------------------------- the output set ---
@@ -419,40 +457,56 @@ def test_the_roughness_layer_loop_is_dead(
 
 
 @pytest.mark.datatest
+@pytest.mark.uses_concat_where
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
 def test_compute_layer_depth_agrees_with_icon(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
-    """The main-level depths, and nothing at the surface row."""
-    run = _run_the_thermodynamics(data_provider, date, backend)
+    """The main-level depths, and nothing at the surface row.
+
+    'uses_concat_where' SINCE THE STENCIL MERGE. The depth has none of its own -- it is
+    'hhl(k) - hhl(k+1)' -- but it is a statement of ICON's block, and the wind statement beside
+    it selects the zero level with one.
+    """
+    _, after, nlev, columns, layer_depth, _, _ = _run_the_wind_and_the_depths(
+        data_provider, date, backend
+    )
 
     utils.assert_agrees_with_icon(
-        "compute_layer_depth",
+        "compute_horizontal_wind_and_layer_depth",
         "dicke",
-        run.layer_depth,
-        run.after.layer_depth(),
-        columns=run.columns,
-        levels=slice(0, run.nlev),
+        layer_depth,
+        after.layer_depth(),
+        columns=columns,
+        levels=slice(0, nlev),
     )
 
 
 @pytest.mark.datatest
 @utils.experiment_for_turbulence
 @pytest.mark.parametrize("date", utils.TURBDIFF_DATES)
-def test_compute_half_level_interpolation_weight_agrees_with_icon(
+def test_the_interpolation_weight_is_bit_exact(
     date: str, *, data_provider: sb.IconSerialDataProvider, backend
 ) -> None:
-    """'hlp' on rows 1..nlev-1; the model top and the surface are not written."""
+    """'hlp' on rows 1..nlev-1; the model top and the surface are not written.
+
+    ASSERTED DIRECTLY AND NOT THROUGH THE MERGED GATE. Since the stencil merge the weight is the
+    first statement of 'bound_level_interp', whose gate is 'Tol' because the profiles it
+    interpolates carry the main-level program's exponential in. The weight carries nothing: it
+    is 'dp0(k-1)/(dp0(k-1)+dp0(k))', metric arithmetic, and it was 'Exact()' before the merge.
+    Letting the tolerance reach it would weaken a check nobody decided to weaken -- the pattern
+    section 0) already uses for the conserved variables and step 5 for 'vertdiff's setup.
+    """
     run = _run_the_thermodynamics(data_provider, date, backend)
 
-    utils.assert_agrees_with_icon(
-        "compute_half_level_interpolation_weight",
-        "hlp",
-        run.interpolation_weight,
-        run.after.hlp(),
-        columns=run.columns,
-        levels=slice(1, run.nlev),
+    levels = slice(1, run.nlev)
+    got = run.interpolation_weight.asnumpy()[run.columns, levels]
+    want = run.after.hlp().asnumpy()[run.columns, levels]
+    assert np.array_equal(got, want), (
+        f"'hlp' has no transcendental in it and must be bit-exact, but "
+        f"{np.count_nonzero(got != want)} of {got.size} values differ by up to "
+        f"{np.nanmax(np.abs(got - want))}"
     )
 
 
@@ -469,25 +523,8 @@ def test_compute_horizontal_wind_including_the_zero_level_agrees_with_icon(
     column, so the comparison distinguishes the two ways the row selection can be wrong: the
     zero level taking the un-reduced wind, and the lowest main level taking the reduced one.
     """
-    entry = data_provider.from_savepoint_turbdiff_entry(date=date)
-    after = data_provider.from_savepoint_turbdiff_section(section="0", date=date)
-    nlev = entry.ke()
-    columns = slice(entry.ivstart(), entry.ivend())
-
-    zonal = utils.copy_of(entry.zvari(U_M), backend)
-    meridional = utils.copy_of(entry.zvari(V_M), backend)
-    compute_horizontal_wind_including_the_zero_level.with_backend(backend)(
-        zonal_wind=entry.u(),
-        meridional_wind=entry.v(),
-        laminar_reduction_factor_for_momentum=entry.tfm(),
-        nlev=gtx.int32(nlev),
-        zonal_wind_on_conserved_variable_levels=zonal,
-        meridional_wind_on_conserved_variable_levels=meridional,
-        horizontal_start=gtx.int32(entry.ivstart()),
-        horizontal_end=gtx.int32(entry.ivend()),
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(entry.ke1()),
-        offset_provider={dims.Koff.value: dims.KDim},
+    entry, after, _, columns, _, zonal, meridional = _run_the_wind_and_the_depths(
+        data_provider, date, backend
     )
 
     for quantity, computed, reference in (
@@ -495,7 +532,7 @@ def test_compute_horizontal_wind_including_the_zero_level_agrees_with_icon(
         ("zvari(:,:,v_m)", meridional, after.conserved_variable(V_M)),
     ):
         utils.assert_agrees_with_icon(
-            "compute_horizontal_wind_including_the_zero_level",
+            "compute_horizontal_wind_and_layer_depth",
             quantity,
             computed,
             reference,
@@ -692,7 +729,7 @@ def test_interpolate_variables_onto_half_levels_agrees_with_icon(
     skipped. The Exner factor and the density have no defined row 0 at all, so they stop at 1.
     """
     run = _run_the_thermodynamics(data_provider, date, backend)
-    name = "interpolate_variables_onto_half_levels"
+    name = "bound_level_interp"
     whole = slice(0, run.nlevp1)
     below_the_top = slice(1, run.nlevp1)
 

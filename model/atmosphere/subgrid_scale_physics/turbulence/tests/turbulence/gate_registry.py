@@ -296,14 +296,29 @@ GATES: dict[str, Gate] = {
         reason=Reason.TRANSCENDENTAL,
         measured_max_rel_err=5.3564e-13,  # 'zvari(:,ke1,liq)', 2020-12-10T06:02:00
     ),
-    "interpolate_variables_onto_half_levels": Tol(
+    # 'bound_level_interp' -- ICON's own name, and one program of three statements since the
+    # stencil merge: the interpolation weight, the seven interpolated profiles, and the row-0
+    # pass-through that replaces four host-side '_copy_level' calls.
+    #
+    # THE MERGE COLLAPSED A 'Tol' ENTRY WITH AN 'Exact' ONE, and the tolerance is deliberately
+    # not allowed to spread. Only the interpolated profiles carry the exponential's rounding in
+    # from the main-level program; the weight 'hlp' is 'dp0(k-1)/(dp0(k-1)+dp0(k))', pure metric
+    # arithmetic with no transcendental anywhere near it, and is asserted BIT-EXACT with
+    # 'np.array_equal' by 'test_the_interpolation_weight_is_bit_exact'. So this entry buys the
+    # seven profiles a tolerance and buys 'hlp' none, exactly as the two entries it replaces did.
+    # 'rtol' and 'measured_max_rel_err' are the interpolation's own. They were RE-MEASURED on
+    # 'gtfn_cpu' over all four dates and all eight outputs after the merge, as the merge plan
+    # asks, and NOTHING MOVED: 'rcld' 5.326993e-11 against the 5.3270e-11 on record, and 'hlp'
+    # bit-exact on every date. Three statements of one program are the two programs'
+    # arithmetic, unchanged, plus a row-0 copy that was a host loop before.
+    "bound_level_interp": Tol(
         rtol=5e-10,
         reason=Reason.TRANSCENDENTAL,
         measured_max_rel_err=5.3270e-11,  # 'rcld', 2020-12-10T06:01:20
     ),
-    "compute_half_level_interpolation_weight": Exact(),
-    "compute_horizontal_wind_including_the_zero_level": Exact(),
-    "compute_layer_depth": Exact(),
+    # ICON's block "Berechnung der horizontalen Windgeschwindigkeiten und Schichtdicken", one
+    # program of two statements since the stencil merge. Both entries it replaces were Exact.
+    "compute_horizontal_wind_and_layer_depth": Exact(),
     "compute_turbulent_length_scale": Exact(),
     # turbdiff section 2c) final preparations. The single live statement turns the diffusion
     # coefficients back into stability lengths, and it is the exact inverse of section 3's

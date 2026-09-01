@@ -65,6 +65,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_thre
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.add_virtual_diffusion_increment_to_tke_profile import (
     add_virtual_diffusion_increment_to_tke_profile,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.bound_level_interp import (
+    bound_level_interp,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.calc_impl_vert_diff import (
     calc_impl_vert_diff,
 )
@@ -95,14 +98,8 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_effective_diffusion_coefficients import (
     compute_effective_diffusion_coefficients,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_half_level_interpolation_weight import (
-    compute_half_level_interpolation_weight,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_horizontal_wind_including_the_zero_level import (
-    compute_horizontal_wind_including_the_zero_level,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_layer_depth import (
-    compute_layer_depth,
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_horizontal_wind_and_layer_depth import (
+    compute_horizontal_wind_and_layer_depth,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_stability_lengths_from_diffusion_coefficients import (
     compute_stability_lengths_from_diffusion_coefficients,
@@ -131,9 +128,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.compute_
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.interpolate_supersaturation_deviation_to_main_levels import (
     interpolate_supersaturation_deviation_to_main_levels,
-)
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.interpolate_variables_onto_half_levels import (
-    interpolate_variables_onto_half_levels,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.turbulence.stencils.invert_diffusion_momentum_at_the_surface_flux_level import (
     invert_diffusion_momentum_at_the_surface_flux_level,
@@ -1453,25 +1447,19 @@ class Turbulence:
             constant_args=cloud_diagnosis,
             levels=(nlev, nlev + 1),  # 'k_st=ke1, k_en=ke1'
         )
-        self._compute_layer_depth = self._program(
-            compute_layer_depth,
+        # ICON's own block: "Berechnung der horizontalen Windgeschwindigkeiten und
+        # Schichtdicken", one loop over the main levels plus the zero-level row of the wind.
+        self._compute_horizontal_wind_and_layer_depth = self._program(
+            compute_horizontal_wind_and_layer_depth,
             constant_args={"half_level_height": metric.hhl},
-            levels=(0, nlev),  # 'DO k=1,ke'
+            levels=(0, nlev),  # 'DO k=1,ke'; the wind runs one row deeper
             shifted=True,
         )
-        self._compute_horizontal_wind_including_the_zero_level = self._program(
-            compute_horizontal_wind_including_the_zero_level,
-            levels=(0, nlev + 1),  # 'DO k=1,ke' plus the separate 'ke1' row
-            shifted=True,
-        )
-        self._compute_half_level_interpolation_weight = self._program(
-            compute_half_level_interpolation_weight,
+        # 'bound_level_interp', one program of three statements: the weight, the seven
+        # interpolations, and the row-0 pass-through that replaces four host copies.
+        self._bound_level_interp = self._program(
+            bound_level_interp,
             constant_args={"layer_pressure_thickness": metric.dp0},
-            levels=(1, nlev),  # 'bound_level_interp(..., k_st=2, k_en=ke)'
-            shifted=True,
-        )
-        self._interpolate_variables_onto_half_levels = self._program(
-            interpolate_variables_onto_half_levels,
             levels=(1, nlev),  # 'bound_level_interp(..., k_st=2, k_en=ke)'
             shifted=True,
         )
@@ -1944,18 +1932,20 @@ class Turbulence:
             buoyancy_factor_h2o_g=self._zaux_5,
         )
 
-        self._compute_layer_depth(layer_depth=self._dicke)
-        self._compute_horizontal_wind_including_the_zero_level(
+        self._compute_horizontal_wind_and_layer_depth(
             zonal_wind=input_state.u,
             meridional_wind=input_state.v,
             laminar_reduction_factor_for_momentum=diagnostic_state.tfm,
             nlev=self._nlev,
+            layer_depth=self._dicke,
             zonal_wind_on_conserved_variable_levels=self._conserved_zonal_wind,
             meridional_wind_on_conserved_variable_levels=self._conserved_meridional_wind,
         )
 
-        self._compute_half_level_interpolation_weight(interpolation_weight=self._hlp)
-        self._interpolate_variables_onto_half_levels(
+        # The four in-place interpolations' row 0 is a statement of the program now, not four
+        # host copies: 'bound_level_interp' writes it from the main-level field it is already
+        # given.
+        self._bound_level_interp(
             cloud_cover=self._cloud_cover_on_main_levels,
             exner_factor=input_state.epr,
             dqsat_dt=self._dqsat_dt_on_main_levels,
@@ -1972,13 +1962,6 @@ class Turbulence:
             pressure_on_half_levels=self._half_level_pressure,
             air_density_on_half_levels=diagnostic_state.rhon,
         )
-        # Four of the seven interpolations are IN PLACE in the Fortran, over rows 1..nlev-1 of
-        # the storage that already held the main-level values. Row 0 is therefore the main-level
-        # value there, and the port has to put it back because it interpolates out of place.
-        _copy_level(self._cloud_cover_on_main_levels, 0, self._rcld, num_cells)
-        _copy_level(self._dqsat_dt_on_main_levels, 0, self._zaux_3, num_cells)
-        _copy_level(self._buoyancy_factor_tet_l_on_main_levels, 0, self._zaux_4, num_cells)
-        _copy_level(self._buoyancy_factor_h2o_g_on_main_levels, 0, self._zaux_5, num_cells)
         # 'prss' is a pointer into 'zvari(:,:,0)' whose surface row 'turb_setup' filled with the
         # surface pressure (turb_utilities.f90:341); section 3) reads it there.
         _set_level(surface_state.ps, nlev, self._half_level_pressure, num_cells)
