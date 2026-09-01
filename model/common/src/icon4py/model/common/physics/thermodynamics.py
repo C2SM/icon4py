@@ -26,7 +26,7 @@ from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import wpfloat
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_temperature_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
     u: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
@@ -100,7 +100,7 @@ def compute_temperature_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-
     return (u + rho * dz * (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)) / cv
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],

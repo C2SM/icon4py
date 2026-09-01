@@ -85,7 +85,7 @@ def compute_virtual_temperature_tendency(
     )
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_exner_tendency(
     dtime: ta.wpfloat,
     virtual_temperature: fa.CellKField[ta.wpfloat],
