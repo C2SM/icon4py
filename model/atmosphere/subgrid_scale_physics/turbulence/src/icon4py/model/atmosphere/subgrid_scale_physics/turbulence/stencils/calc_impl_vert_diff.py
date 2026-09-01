@@ -29,9 +29,10 @@ STATEMENT 3 IS A SWITCH EXPRESSED AS A DOMAIN. The Fortran guards it with
 'IF (.NOT.lsflucond)' -- the momentum type takes a surface-CONCENTRATION condition and so has an
 implicit coupling to the ground, the scalar type takes a surface-FLUX condition and does not.
 Here 'surface_addition_start' is 'vertical_end' when it applies and 'vertical_end + 1' when it
-does not, and an EMPTY vertical domain is a no-op. Measured on 'gtfn_cpu' and 'dace_cpu' with a
-standalone reproducer before it was relied on; the datatest exercises both types on every
-backend. It is the same device 'prep_impl_vert_diff' uses for 'elimination_end', and it is what
+does not, and an EMPTY vertical domain is a no-op. Measured on all four compiled backends
+before it was relied on --
+'docs/superpowers/notes/2026-09-01-gt4py-empty-vertical-domain.py' in the workspace -- and the
+datatest exercises both types on every one of them. It is the same device 'prep_impl_vert_diff' uses for 'elimination_end', and it is what
 lets one program serve both types.
 
 THE FLUX IS BUILT IN PLACE AND THAT IS ADMISSIBLE. Statement 3 reads 'explicit_flux_density'

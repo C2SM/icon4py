@@ -66,7 +66,8 @@ statement of 'solve_turb_budgets' it would read, through 'Koff[1]', the paramete
 'test_set_turbulent_velocity_scale_at_model_top_agrees_with_icon_within_its_gate' on 'dace_gpu'
 after a fully green 'gtfn_cpu' run. Binding one field to TWO parameters -- which is what the
 separate program does -- is a different shape and compiles correctly everywhere. The standalone
-reproducer is '.scratch/merge2/toy_alias.py' in the workspace, variants A1 and A2.
+reproducer is 'docs/superpowers/notes/2026-09-01-gt4py-dace-intra-program-aliasing.py'
+in the workspace, variants A1 and A2.
 
 ONE ALIAS THIS PORT REPRODUCES, ONE IT DOES NOT
 -----------------------------------------------

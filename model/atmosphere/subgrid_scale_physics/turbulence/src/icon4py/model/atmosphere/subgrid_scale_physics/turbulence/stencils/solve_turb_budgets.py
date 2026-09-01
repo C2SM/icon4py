@@ -27,9 +27,9 @@ THE MODEL-TOP ROW IS THE SIXTH PROGRAM OF THE SECTION AND STAYS ONE, and the rea
 measured rather than stylistic. 'set_turbulent_velocity_scale_at_model_top' copies 'tke(:,2)'
 onto 'tke(:,1)', so as a statement of this program it would read, through 'Koff[1]', the very
 parameter it writes. THAT SHAPE IS SILENTLY MISCOMPILED BY DACE. Measured 2026-09-01 on
-'dace_cpu' and 'dace_gpu' with a standalone two-program reproducer
-('.scratch/merge2/toy_alias.py' in the workspace, variants A1 and A2): a statement whose 'out='
-names the same program parameter as a SHIFTED input is dropped -- the destination row keeps
+'dace_cpu' and 'dace_gpu' with a standalone reproducer -- variants A1 and A2 of
+'docs/superpowers/notes/2026-09-01-gt4py-dace-intra-program-aliasing.py' in the workspace:
+a statement whose 'out=' names the same program parameter as a SHIFTED input is dropped -- the destination row keeps
 whatever it held -- while 'gtfn_cpu', 'gtfn_gpu' and 'embedded' execute it correctly. The
 pointwise in-place form is not affected. It first showed up here as four failures of
 'test_set_turbulent_velocity_scale_at_model_top_agrees_with_icon_within_its_gate' on 'dace_gpu'
