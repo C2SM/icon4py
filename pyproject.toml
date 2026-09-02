@@ -418,13 +418,13 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
-gt4py = {index = "test.pypi"}
 icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
 icon4py-atmosphere-muphys = {workspace = true}
 icon4py-atmosphere-physics-driver = {workspace = true}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
+# gt4py = {index = "test.pypi"}
 # dace = {index = "gridtools"}
 icon4py-atmosphere-tracer_advection = {workspace = true}
 icon4py-bindings = {workspace = true}
