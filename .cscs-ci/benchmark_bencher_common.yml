@@ -9,10 +9,6 @@
 .benchmark_driver_base_variables:
   variables:
     TEST_SELECTION: "test_benchmark_driver"
-    DRIVER_BENCHMARK_EXPERIMENT: "jw"
-    DRIVER_BENCHMARK_STEPS: 1
-    DRIVER_BENCHMARK_ROUNDS: 5
-    DRIVER_BENCHMARK_WARMUP_ROUNDS: 2
     BACKEND: "dace_gpu"
     GRID: "R02B06_GLOBAL"
     SLURM_TIMELIMIT: '02:00:00'
@@ -34,8 +30,20 @@
 .benchmark_driver_nox_job:
   stage: benchmark
   script:
-    - .cscs-ci/scripts/ci-mpi-wrapper.sh nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID --driver-benchmark-experiment=$DRIVER_BENCHMARK_EXPERIMENT --driver-benchmark-steps=$DRIVER_BENCHMARK_STEPS --driver-benchmark-rounds=$DRIVER_BENCHMARK_ROUNDS --driver-benchmark-warmup-rounds=$DRIVER_BENCHMARK_WARMUP_ROUNDS -k "${TEST_SELECTION}"
+    - .cscs-ci/scripts/ci-mpi-wrapper.sh nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
   extends: [.benchmark_driver_base_variables]
+  parallel:
+    matrix:
+      - BACKEND: [dace_gpu]
+
+.benchmark_driver_single_rank_nox_job:
+  stage: benchmark
+  script:
+    - nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
+  extends: [.benchmark_driver_base_variables]
+  parallel:
+    matrix:
+      - BACKEND: [dace_gpu]
 
 .bencher_github_event_setup:
   script:
