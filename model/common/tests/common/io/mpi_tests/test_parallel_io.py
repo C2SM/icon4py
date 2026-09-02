@@ -60,7 +60,7 @@ def synthetic_decomposition_info(
     info = decomp_defs.DecompositionInfo()
     for dim, global_size in GLOBAL_SIZES.items():
         # deterministic, rank-independent seed (hash() is per-process randomized)
-        rng = np.random.default_rng(seed=sum(ord(c) for c in dim.value))
+        rng = np.random.default_rng(seed=sum(ord(c) for c in dim.tag))
         permutation = rng.permutation(global_size)
         working_ranks = [r for r in range(process_props.comm_size) if r != empty_rank]
         bounds = np.linspace(0, global_size, len(working_ranks) + 1).astype(int)
