@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.dycore.stencils.spatially_average_flux_or_velocity
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2EO
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
-    _compute_tangential_wind,
+    _compute_tangential_wind_vp,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -33,7 +33,7 @@ def _compute_avg_vn_and_graddiv_vn_and_vt(
     """Formerly known as _mo_solve_nonhydro_stencil_30."""
     z_vn_avg_wp = _spatially_average_flux_or_velocity(e_flx_avg=e_flx_avg, flux_or_velocity=vn)
     z_graddiv_vn_vp = astype(neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=dims.E2C2EODim), vpfloat)
-    vt_vp = _compute_tangential_wind(vn=vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
+    vt_vp = _compute_tangential_wind_vp(vn=vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
     return z_vn_avg_wp, z_graddiv_vn_vp, vt_vp
 
 

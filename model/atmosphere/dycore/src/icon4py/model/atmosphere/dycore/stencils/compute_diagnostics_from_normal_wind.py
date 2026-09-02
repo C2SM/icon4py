@@ -21,7 +21,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
-    _compute_tangential_wind,
+    _compute_tangential_wind_vp,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -70,7 +70,7 @@ def _compute_diagnostics_from_normal_wind(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-    tangential_wind = _compute_tangential_wind(vn, rbf_vec_coeff_e)
+    tangential_wind = _compute_tangential_wind_vp(vn, rbf_vec_coeff_e)
     horizontal_kinetic_energy_at_edges_on_model_levels = _compute_horizontal_kinetic_energy(
         vn, tangential_wind
     )

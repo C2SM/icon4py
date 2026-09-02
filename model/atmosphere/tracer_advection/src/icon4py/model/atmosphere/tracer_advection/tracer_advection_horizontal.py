@@ -532,7 +532,7 @@ class SemiLagrangian(FiniteVolume):
         )
 
         # stencils
-        self._compute_edge_tangential = model_options.setup_program(
+        self._compute_tangential_wind_wp = model_options.setup_program(
             backend=self._backend,
             program=compute_tangential_wind_wp,
             constant_args={
@@ -605,7 +605,7 @@ class SemiLagrangian(FiniteVolume):
 
         # compute tangential velocity
         log.debug("running stencil compute_tangential_wind_wp - start")
-        self._compute_edge_tangential(
+        self._compute_tangential_wind_wp(
             vn=prep_adv.vn_traj,
             vt=self._z_real_vt,
         )

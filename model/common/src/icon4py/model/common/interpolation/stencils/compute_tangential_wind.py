@@ -38,14 +38,12 @@ def _compute_tangential_wind_wp(
 
 
 @gtx.field_operator
-def _compute_tangential_wind(
+def _compute_tangential_wind_vp(
     vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     """
     Variable-precision variant of ``_compute_tangential_wind_wp``.
-
-    Formerly known as _mo_velocity_advection_stencil_01.
     """
     return astype(_compute_tangential_wind_wp(vn, rbf_vec_coeff_e), vpfloat)
 
@@ -72,7 +70,7 @@ def compute_tangential_wind_wp(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_tangential_wind(
+def compute_tangential_wind_vp(
     vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     vt: fa.EdgeKField[vpfloat],
@@ -81,7 +79,7 @@ def compute_tangential_wind(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_tangential_wind(
+    _compute_tangential_wind_vp(
         vn=vn,
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         out=vt,

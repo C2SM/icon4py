@@ -15,7 +15,7 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
-    compute_tangential_wind,
+    compute_tangential_wind_vp,
     compute_tangential_wind_wp,
 )
 from icon4py.model.testing import reference_funcs, stencil_tests
@@ -111,7 +111,7 @@ class TestComputeTangentialWindWpFullLevels(stencil_tests.StencilTest):
 class TestComputeTangentialWind(stencil_tests.StencilTest):
     """Variable-precision variant used by the dycore velocity advection."""
 
-    PROGRAM = compute_tangential_wind
+    PROGRAM = compute_tangential_wind_vp
     OUTPUTS = ("vt",)
 
     @stencil_tests.static_reference

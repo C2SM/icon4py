@@ -18,11 +18,7 @@ def _interpolate_to_cell_center_vp(
     interpolant: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
 ) -> fa.CellKField[vpfloat]:
-    """Interpolate an edge field to the cell centers with the bilinear C2E weights.
-
-    Formerly known as mo_velocity_advection_stencil_08 or
-    mo_velocity_advection_stencil_09.
-    """
+    """Interpolate an edge field to the cell centers with the bilinear C2E weights."""
     interpolant_wp = astype(interpolant, wpfloat)
     interpolation_wp = neighbor_sum(e_bln_c_s * interpolant_wp(C2E), axis=dims.C2EDim)
     return astype(interpolation_wp, vpfloat)
