@@ -11,9 +11,9 @@
 """Generate GitLab CI child pipeline YAML from pipeline variables.
 
 Reads the pipeline variables (SESSIONS, MODEL_SUBPACKAGES, MODEL_MPI_SUBPACKAGES,
-BACKENDS, LEVELS, GRIDS, MODEL_SUBSETS, TOOLS_SUBSETS) or corresponding command-line options
-and writes a child pipeline that includes ``.cscs-ci/base.yml`` and instantiates only
-the test jobs whose matrix entries match the requested filter and collect at
+BACKENDS, LEVELS, GRIDS, FLOAT_PRECISIONS, MODEL_SUBSETS, TOOLS_SUBSETS) or corresponding
+command-line options and writes a child pipeline that includes ``.cscs-ci/base.yml`` and
+instantiates only the test jobs whose matrix entries match the requested filter and collect at
 least one test.
 
 Each SESSION value maps to a single job template that corresponds to a nox
@@ -34,7 +34,7 @@ import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Annotated
 
 import typer
@@ -74,7 +74,7 @@ ALL_GRIDS = ["simple", "icon_regional", "icon_global"]
 # should be changed to simplify this.
 ALL_LEVELS = ["unit", "integration", "validation"]
 ALL_TOOLS_SUBSETS = ["datatest", "unittest"]
-ALL_PRECISIONS = ["double", "single"]
+ALL_FLOAT_PRECISIONS = ["double", "single"]
 
 # Collection tuning. The per-cell timeout should be generous enough for the
 # first cold import of icon4py/GT4Py; the overall collection run is bounded
@@ -219,8 +219,9 @@ def _run_nox_collection(
 ) -> bool:
     """Run a nox session with --collect-only and return whether to keep the cell.
 
-    *variables* are the cell's CI job variables; they are exported so that
-    collection sees the same environment as the generated job.
+    *variables* are the cell's CI job variables, including the ones the job
+    template derives from matrix entries; they are exported so that collection
+    sees the same environment as the generated job.
 
     Returns True when nox exits 0 (the cell collected at least one runnable
     test). Returns False when nox exits 1 (the cell collected zero tests).
@@ -293,12 +294,26 @@ class _MatrixCell:
     pytest_args: list[str]
 
 
+def _derived_variables(matrix: dict[str, str]) -> dict[str, str]:
+    """Return env vars the job templates derive from matrix entries.
+
+    Keep in sync with the corresponding mappings in ``.cscs-ci/base.yml`` so
+    that collection sees the same environment as the generated job.
+    """
+    derived: dict[str, str] = {}
+    if float_precision := matrix.get("FLOAT_PRECISION"):
+        derived["ICON4PY_FLOAT_PRECISION"] = float_precision
+    return derived
+
+
 def _model_cells(
+    *,
     subpackages: list[str],
     backends: list[str],
     grids: list[str],
     levels: list[str],
     subsets: list[str],
+    float_precisions: list[str],
 ) -> list[_MatrixCell]:
     """Build collection cells for the serial model test sessions."""
     cells: list[_MatrixCell] = []
@@ -307,27 +322,29 @@ def _model_cells(
         for subpackage in subpackages:
             for backend in backends:
                 for grid in grids:
-                    cells.append(  # noqa: PERF401
-                        _MatrixCell(
-                            job_name="test_model_stencils_aarch64",
-                            extends=".test_model_aarch64",
-                            variables={"MODEL_SUBSET": "stencils"},
-                            matrix={
-                                "MODEL_SUBPACKAGE": subpackage,
-                                "BACKEND": backend,
-                                "GRID": grid,
-                            },
-                            session=_nox_session_name("test_model", f"stencils, {subpackage}"),
-                            pytest_args=[
-                                "--collect-only",
-                                "-n0",
-                                "-p",
-                                "no:tach",
-                                f"--backend={backend}",
-                                f"--grid={grid}",
-                            ],
+                    for float_precision in float_precisions:
+                        cells.append(  # noqa: PERF401
+                            _MatrixCell(
+                                job_name="test_model_stencils_aarch64",
+                                extends=".test_model_aarch64",
+                                variables={"MODEL_SUBSET": "stencils"},
+                                matrix={
+                                    "MODEL_SUBPACKAGE": subpackage,
+                                    "BACKEND": backend,
+                                    "GRID": grid,
+                                    "FLOAT_PRECISION": float_precision,
+                                },
+                                session=_nox_session_name("test_model", f"stencils, {subpackage}"),
+                                pytest_args=[
+                                    "--collect-only",
+                                    "-n0",
+                                    "-p",
+                                    "no:tach",
+                                    f"--backend={backend}",
+                                    f"--grid={grid}",
+                                ],
+                            )
                         )
-                    )
 
     for subset in ("datatest", "basic"):
         if subset not in subsets or not levels:
@@ -335,47 +352,50 @@ def _model_cells(
         for subpackage in subpackages:
             for backend in backends:
                 for level in levels:
-                    pytest_args = [
-                        "--collect-only",
-                        "-n0",
-                        "-p",
-                        "no:tach",
-                        f"--backend={backend}",
-                        f"--level={level}",
-                    ]
-                    cells.append(
-                        _MatrixCell(
-                            job_name=f"test_model_{subset}_aarch64",
-                            extends=".test_model_aarch64",
-                            variables={"MODEL_SUBSET": subset},
-                            matrix={
-                                "MODEL_SUBPACKAGE": subpackage,
-                                "BACKEND": backend,
-                                "LEVEL": level,
-                            },
-                            session=_nox_session_name("test_model", f"{subset}, {subpackage}"),
-                            pytest_args=pytest_args,
+                    for float_precision in float_precisions:
+                        pytest_args = [
+                            "--collect-only",
+                            "-n0",
+                            "-p",
+                            "no:tach",
+                            f"--backend={backend}",
+                            f"--level={level}",
+                        ]
+                        cells.append(
+                            _MatrixCell(
+                                job_name=f"test_model_{subset}_aarch64",
+                                extends=".test_model_aarch64",
+                                variables={"MODEL_SUBSET": subset},
+                                matrix={
+                                    "MODEL_SUBPACKAGE": subpackage,
+                                    "BACKEND": backend,
+                                    "LEVEL": level,
+                                    "FLOAT_PRECISION": float_precision,
+                                },
+                                session=_nox_session_name("test_model", f"{subset}, {subpackage}"),
+                                pytest_args=pytest_args,
+                            )
                         )
-                    )
 
     return cells
 
 
-def _tools_cells(selections: list[str]) -> list[_MatrixCell]:
+def _tools_cells(selections: list[str], float_precisions: list[str]) -> list[_MatrixCell]:
     """Build collection cells for the tools/bindings test session."""
     cells: list[_MatrixCell] = []
     for selection in selections:
-        pytest_args = ["--collect-only", "-n0", "-p", "no:tach"]
-        cells.append(
-            _MatrixCell(
-                job_name="test_tools_aarch64",
-                extends=".test_tools_aarch64",
-                variables={},
-                matrix={"SELECTION": selection},
-                session=_nox_session_name("test_tools_and_bindings", selection),
-                pytest_args=pytest_args,
+        for float_precision in float_precisions:
+            pytest_args = ["--collect-only", "-n0", "-p", "no:tach"]
+            cells.append(
+                _MatrixCell(
+                    job_name="test_tools_aarch64",
+                    extends=".test_tools_aarch64",
+                    variables={},
+                    matrix={"SELECTION": selection, "FLOAT_PRECISION": float_precision},
+                    session=_nox_session_name("test_tools_and_bindings", selection),
+                    pytest_args=pytest_args,
+                )
             )
-        )
     return cells
 
 
@@ -384,6 +404,7 @@ def _model_mpi_cells(
     backends: list[str],
     levels: list[str],
     subsets: list[str],
+    float_precisions: list[str],
 ) -> list[_MatrixCell]:
     """Build collection cells for the MPI model test sessions."""
     cells: list[_MatrixCell] = []
@@ -393,51 +414,33 @@ def _model_mpi_cells(
         for subpackage in subpackages:
             for backend in backends:
                 for level in levels:
-                    pytest_args = [
-                        "--collect-only",
-                        "-n0",
-                        "-p",
-                        "no:tach",
-                        f"--backend={backend}",
-                        f"--level={level}",
-                    ]
-                    cells.append(
-                        _MatrixCell(
-                            job_name=f"test_model_mpi_{subset}_aarch64",
-                            extends=".test_model_mpi_aarch64",
-                            variables={"SELECTION": subset},
-                            matrix={
-                                "MODEL_MPI_SUBPACKAGE": subpackage,
-                                "BACKEND": backend,
-                                "LEVEL": level,
-                            },
-                            session=_nox_session_name("test_model_mpi", f"{subset}, {subpackage}"),
-                            pytest_args=pytest_args,
+                    for float_precision in float_precisions:
+                        pytest_args = [
+                            "--collect-only",
+                            "-n0",
+                            "-p",
+                            "no:tach",
+                            f"--backend={backend}",
+                            f"--level={level}",
+                        ]
+                        cells.append(
+                            _MatrixCell(
+                                job_name=f"test_model_mpi_{subset}_aarch64",
+                                extends=".test_model_mpi_aarch64",
+                                variables={"SELECTION": subset},
+                                matrix={
+                                    "MODEL_MPI_SUBPACKAGE": subpackage,
+                                    "BACKEND": backend,
+                                    "LEVEL": level,
+                                    "FLOAT_PRECISION": float_precision,
+                                },
+                                session=_nox_session_name(
+                                    "test_model_mpi", f"{subset}, {subpackage}"
+                                ),
+                                pytest_args=pytest_args,
+                            )
                         )
-                    )
     return cells
-
-
-def _add_precision_variants(cells: list[_MatrixCell], precisions: list[str]) -> list[_MatrixCell]:
-    """Create cells for each precision variant.
-
-    For each precision in the list, creates cells with appropriate settings:
-    - "double": original cells (default)
-    - "single": cells with suffix _single_precision and ICON4PY_FLOAT_PRECISION="single"
-    """
-    # Only keep original cells if "double" is requested
-    result = list(cells) if "double" in precisions else []
-
-    if "single" in precisions:
-        for cell in cells:
-            new_cell = replace(
-                cell,
-                job_name=f"{cell.job_name}_single_precision",
-                variables={**cell.variables, "ICON4PY_FLOAT_PRECISION": "single"},
-            )
-            result.append(new_cell)
-
-    return result
 
 
 def _collect_cells(cells: list[_MatrixCell]) -> tuple[list[_MatrixCell], list[_MatrixCell]]:
@@ -465,7 +468,7 @@ def _collect_cells(cells: list[_MatrixCell]) -> tuple[list[_MatrixCell], list[_M
                 cell.pytest_args,
                 env,
                 _COLLECTION_TIMEOUT_SECONDS,
-                cell.variables,
+                {**cell.variables, **_derived_variables(cell.matrix)},
             ): i
             for i, cell in enumerate(cells)
         }
@@ -513,7 +516,7 @@ def _print_collection_summary(
     backends: list[str],
     levels: list[str],
     grids: list[str],
-    precisions: list[str],
+    float_precisions: list[str],
     kept: list[_MatrixCell],
     dropped: list[_MatrixCell],
 ) -> None:
@@ -536,8 +539,8 @@ def _print_collection_summary(
         print(f"  levels: {levels}", file=sys.stderr)
     if grids:
         print(f"  grids: {grids}", file=sys.stderr)
-    if precisions:
-        print(f"  precisions: {precisions}", file=sys.stderr)
+    if float_precisions:
+        print(f"  float_precisions: {float_precisions}", file=sys.stderr)
     print(f"  eligible cells: {len(kept) + len(dropped)}", file=sys.stderr)
     print(f"  selected cells: {len(kept)}", file=sys.stderr)
     for cell in kept:
@@ -562,7 +565,7 @@ def _generate_child_pipeline(
     backends: str | None = None,
     levels: str | None = None,
     grids: str | None = None,
-    precision_variants: str | None = None,
+    float_precisions: str | None = None,
 ) -> str:
     """Return the child pipeline YAML as a string.
 
@@ -616,12 +619,13 @@ def _generate_child_pipeline(
     )
     _validate_tokens("TOOLS_SUBSETS", requested_tools_subsets, ALL_TOOLS_SUBSETS)
 
-    requested_precisions = _resolve_filter(
-        precision_variants, "PRECISION_VARIANTS", all_values=ALL_PRECISIONS, default=["double"]
+    requested_float_precisions = _resolve_filter(
+        float_precisions, "FLOAT_PRECISIONS", all_values=ALL_FLOAT_PRECISIONS, default=["double"]
     )
-    _validate_tokens("PRECISION_VARIANTS", requested_precisions, ALL_PRECISIONS)
+    _validate_tokens("FLOAT_PRECISIONS", requested_float_precisions, ALL_FLOAT_PRECISIONS)
 
     cells: list[_MatrixCell] = []
+    selected_float_precisions = _intersect(requested_float_precisions, ALL_FLOAT_PRECISIONS)
 
     if "model" in requested_sessions:
         cells.extend(
@@ -631,6 +635,7 @@ def _generate_child_pipeline(
                 grids=_intersect(requested_grids, ALL_GRIDS),
                 levels=_intersect(requested_levels, ALL_LEVELS),
                 subsets=_intersect(requested_model_subsets, ALL_MODEL_SUBSETS),
+                float_precisions=selected_float_precisions,
             )
         )
 
@@ -638,6 +643,7 @@ def _generate_child_pipeline(
         cells.extend(
             _tools_cells(
                 selections=_intersect(requested_tools_subsets, ALL_TOOLS_SUBSETS),
+                float_precisions=selected_float_precisions,
             )
         )
 
@@ -648,11 +654,9 @@ def _generate_child_pipeline(
                 backends=_intersect(requested_backends, ALL_BACKENDS),
                 levels=_intersect(requested_levels, ALL_LEVELS),
                 subsets=_intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS),
+                float_precisions=selected_float_precisions,
             )
         )
-
-    # Add precision variants (e.g., single-precision) for all cells
-    cells = _add_precision_variants(cells, requested_precisions)
 
     kept_cells, dropped_cells = _collect_cells(cells)
 
@@ -666,7 +670,7 @@ def _generate_child_pipeline(
         backends=requested_backends,
         levels=requested_levels,
         grids=requested_grids,
-        precisions=requested_precisions,
+        float_precisions=requested_float_precisions,
         kept=kept_cells,
         dropped=dropped_cells,
     )
@@ -741,11 +745,11 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
         str | None,
         typer.Option("--grids", help="Colon/comma-separated grid filter"),
     ] = None,
-    precision_variants: Annotated[
+    float_precisions: Annotated[
         str | None,
         typer.Option(
-            "--precision-variants",
-            help="Colon/comma-separated precision filter (double, single)",
+            "--float-precisions",
+            help="Colon/comma-separated float precision filter (double, single)",
         ),
     ] = None,
 ) -> None:
@@ -766,7 +770,7 @@ def generate_ci_pipeline(  # noqa: PLR0917 [too-many-positional-arguments]
             backends=backends,
             levels=levels,
             grids=grids,
-            precision_variants=precision_variants,
+            float_precisions=float_precisions,
         )
     )
 
