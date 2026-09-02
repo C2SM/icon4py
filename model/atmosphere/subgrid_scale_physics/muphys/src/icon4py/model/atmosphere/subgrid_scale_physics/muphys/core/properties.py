@@ -9,6 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import exp, log, maximum, minimum, power, sqrt, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
+    AesGraupelConsts,
     GraupelConsts,
     ThermodynamicConsts,
 )
@@ -326,7 +327,7 @@ def _snow_number(
     n0s = (
         N0S3
         * power(
-            (maximum(rho_s, GraupelConsts.rho_s_mn) / GraupelConsts.ams),
+            (maximum(rho_s, AesGraupelConsts.rho_s_mn) / GraupelConsts.ams),
             (wpfloat(4.0) - wpfloat(3.0) * bet),
         )
         / (alf * alf * alf)
@@ -374,7 +375,7 @@ def _snow_number_scalar(
     n0s = (
         N0S3
         * power(
-            (maximum(rho_s, GraupelConsts.rho_s_mn) / GraupelConsts.ams),
+            (maximum(rho_s, AesGraupelConsts.rho_s_mn) / GraupelConsts.ams),
             (wpfloat(4.0) - wpfloat(3.0) * bet),
         )
         / (alf * alf * alf)
@@ -442,10 +443,14 @@ def _vm_rain_scalar(
 
     Result:           Fall speed
     """
-    x = log(minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, rho_x)))
-    return GraupelConsts.vm_a_r_1 + x * (
-        GraupelConsts.vm_a_r_2
-        + x * (GraupelConsts.vm_a_r_3 + x * (GraupelConsts.vm_a_r_4 + x * GraupelConsts.vm_a_r_5))
+    x = log(minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x)))
+    return AesGraupelConsts.vm_a_r_1 + x * (
+        AesGraupelConsts.vm_a_r_2
+        + x
+        * (
+            AesGraupelConsts.vm_a_r_3
+            + x * (AesGraupelConsts.vm_a_r_4 + x * AesGraupelConsts.vm_a_r_5)
+        )
     ) * sqrt(GraupelConsts.rho_00 / rho)
 
 
@@ -464,10 +469,10 @@ def _vm_ice_scalar(
     Result:           Fall speed
     """
     B_I = wpfloat(0.33333333333333333)
-    x = minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, rho_x))
+    x = minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x))
     return (
-        GraupelConsts.vm_prefactor_i
-        * power(x, GraupelConsts.vm_exponent_i)
+        AesGraupelConsts.vm_prefactor_i
+        * power(x, AesGraupelConsts.vm_exponent_i)
         * power(GraupelConsts.rho_00 / rho, B_I)
     )
 
@@ -491,10 +496,10 @@ def _vm_snow_scalar(
     Result:           Fall speed
     """
     B_S = wpfloat(-0.16666666666666667)
-    x = minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, rho_x))
+    x = minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x))
     return (
-        GraupelConsts.vm_prefactor_s
-        * power(x, GraupelConsts.vm_exponent_s)
+        AesGraupelConsts.vm_prefactor_s
+        * power(x, AesGraupelConsts.vm_exponent_s)
         * sqrt(GraupelConsts.rho_00 / rho)
         * power(_snow_number_scalar(t=t, rho_s=x), B_S)
     )
@@ -514,9 +519,9 @@ def _vm_graupel_scalar(
 
     Result:           Fall speed
     """
-    x = minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, rho_x))
+    x = minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x))
     return (
-        GraupelConsts.vm_prefactor_g
-        * power(x, GraupelConsts.vm_exponent_g)
+        AesGraupelConsts.vm_prefactor_g
+        * power(x, AesGraupelConsts.vm_exponent_g)
         * sqrt(GraupelConsts.rho_00 / rho)
     )

@@ -9,6 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import exp, log, maximum, minimum, power, sqrt, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
+    AesGraupelConsts,
     GraupelConsts,
     ThermodynamicConsts,
 )
@@ -660,10 +661,11 @@ def _cloud_to_rain(
         / ((X3 + wpfloat(1.0)) * (X3 + wpfloat(1.0)))
     )
 
-    x = log(minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, rho * qr)))
-    ac_kernel = GraupelConsts.a_ac_1 + x * (
-        GraupelConsts.a_ac_2
-        + x * (GraupelConsts.a_ac_3 + x * (GraupelConsts.a_ac_4 + x * GraupelConsts.a_ac_5))
+    x = log(minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho * qr)))
+    ac_kernel = AesGraupelConsts.a_ac_1 + x * (
+        AesGraupelConsts.a_ac_2
+        + x
+        * (AesGraupelConsts.a_ac_3 + x * (AesGraupelConsts.a_ac_4 + x * AesGraupelConsts.a_ac_5))
     )
     tau = maximum(TAU_MIN, minimum(wpfloat(1.0) - qc / (qc + qr), TAU_MAX))
     phi = power(tau, B_PHI)
@@ -761,14 +763,18 @@ def _rain_to_vapor(  # noqa: PLR0917 [too-many-positional-arguments]
 
     tc = t - ThermodynamicConsts.tmelt
     evap_max = (C1_RV + tc * (C2_RV + C3_RV * tc)) * (-dvsw) / dt
-    x = log(minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, qr * rho)))
+    x = log(minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, qr * rho)))
     evap = (
         -exp(
-            GraupelConsts.a_ev_1
+            AesGraupelConsts.a_ev_1
             + x
             * (
-                GraupelConsts.a_ev_2
-                + x * (GraupelConsts.a_ev_3 + x * (GraupelConsts.a_ev_4 + x * GraupelConsts.a_ev_5))
+                AesGraupelConsts.a_ev_2
+                + x
+                * (
+                    AesGraupelConsts.a_ev_3
+                    + x * (AesGraupelConsts.a_ev_4 + x * AesGraupelConsts.a_ev_5)
+                )
             )
         )
         * dvsw
