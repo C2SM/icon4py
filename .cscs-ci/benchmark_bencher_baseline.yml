@@ -34,8 +34,8 @@ benchmark_bencher_granules_baseline_aarch64:
 benchmark_bencher_driver_baseline_aarch64:
   extends: [.test_runner_mpi, .test_template_aarch64, .bencher_driver_baseline_tests, .retry_on_transient_failure]
   variables:
-    SLURM_NTASKS: 8
-    SLURM_JOB_NUM_NODES: 2
+    SLURM_NTASKS: 4
+    SLURM_JOB_NUM_NODES: 1
     ICON4PY_TEST_MPI_SUBCOMM_SIZE: $SLURM_NTASKS
   rules:
     - if: $ICON4PY_DISABLE_DRIVER_BENCHMARK == "1" || $ICON4PY_DISABLE_DRIVER_BENCHMARK == "true"
