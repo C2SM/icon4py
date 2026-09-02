@@ -26,12 +26,13 @@ classifiers = [
 dependencies = [
   # workspace members
   'icon4py-common[io]~=0.4.1',
+  'icon4py-driver~=0.4.1',
   # external dependencies
   # TODO(msimberg): https://github.com/tox-dev/filelock/pull/408 added in 3.20.4
   # and 3.21.0 seems to lead to hangs in CI. Investigate if other lock types are
   # safe or if this is a bug in filelock.
   "filelock>=3.18.0,<3.20",
-  "gt4py==1.2.1",
+  "gt4py==1.2.2",
   "numpy>=1.23.3",
   'packaging>=20.0',
   "pooch>=1.7.0",

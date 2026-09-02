@@ -16,14 +16,14 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _extrapolate_at_top(
     wgtfacq_e: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
-) -> fa.EdgeKField[vpfloat]:
+) -> fa.EdgeKHalfField[vpfloat]:
     """Formerly known as mo_velocity_advection_stencil_06 or mo_solve_nonhydro_stencil_38."""
     wgtfacq_e_wp = astype(wgtfacq_e, wpfloat)
 
     vn_ie_wp = (
-        wgtfacq_e_wp(dims.KDim - 1) * vn(dims.KDim - 1)
-        + wgtfacq_e_wp(dims.KDim - 2) * vn(dims.KDim - 2)
-        + wgtfacq_e_wp(dims.KDim - 3) * vn(dims.KDim - 3)
+        wgtfacq_e_wp(dims.KHalfDim - 0.5) * vn(dims.KHalfDim - 0.5)
+        + wgtfacq_e_wp(dims.KHalfDim - 1.5) * vn(dims.KHalfDim - 1.5)
+        + wgtfacq_e_wp(dims.KHalfDim - 2.5) * vn(dims.KHalfDim - 2.5)
     )
 
     return astype(vn_ie_wp, vpfloat)
@@ -33,7 +33,7 @@ def _extrapolate_at_top(
 def extrapolate_at_top(
     wgtfacq_e: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
-    vn_ie: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKHalfField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -45,6 +45,6 @@ def extrapolate_at_top(
         out=vn_ie,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

@@ -386,6 +386,7 @@ def initialize_granules(
             cell_geometry=cell_geometry,
             owner_mask=owner_mask,
             exchange=exchange,
+            max_nudging_coefficient=config.interpolation.max_nudging_coefficient,
         )
 
     diffusion_granule: diffusion.Diffusion | None = None
@@ -402,6 +403,8 @@ def initialize_granules(
             cell_params=cell_geometry,
             backend=backend,
             exchange=exchange,
+            ndyn_substeps=config.driver.ndyn_substeps,
+            max_nudging_coefficient=config.interpolation.max_nudging_coefficient,
         )
 
     tracer_advection_granule: tracer_advection.Advection | None = None

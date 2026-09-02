@@ -16,11 +16,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @gtx.field_operator
 def _apply_nabla2_to_w(
     area: fa.CellField[wpfloat],
-    z_nabla2_c: fa.CellKField[vpfloat],
+    z_nabla2_c: fa.CellKHalfField[vpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
-    w: fa.CellKField[wpfloat],
+    w: fa.CellKHalfField[wpfloat],
     diff_multfac_w: wpfloat,
-) -> fa.CellKField[wpfloat]:
+) -> fa.CellKHalfField[wpfloat]:
     z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
 
     w_wp = w - diff_multfac_w * (area * area) * neighbor_sum(
@@ -32,9 +32,9 @@ def _apply_nabla2_to_w(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_nabla2_to_w(
     area: fa.CellField[wpfloat],
-    z_nabla2_c: fa.CellKField[vpfloat],
+    z_nabla2_c: fa.CellKHalfField[vpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
-    w: fa.CellKField[wpfloat],
+    w: fa.CellKHalfField[wpfloat],
     diff_multfac_w: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -50,6 +50,6 @@ def apply_nabla2_to_w(
         out=w,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

@@ -1,3 +1,9 @@
+shared:
+  - u0: 35.0
+    eta_0: 0.252
+    consumers:
+      - initial_condition
+      - topography
 geometry:
   use_analytical_means: true
 metrics:
@@ -14,7 +20,6 @@ metrics:
 interpolation:
   divergence_averaging_central_cell_weight: 0.5
   max_nudging_coefficient: 0.375
-  _nudge_max_coeff:
   nudge_efold_width: 2.0
   nudge_zone_width: 10
   rbf_kernel_cell: gaussian
@@ -42,29 +47,23 @@ vertical_grid:
   _SLEVE_minimum_layer_thickness_2: 500.0
   _SLEVE_minimum_relative_layer_thickness_1: 0.3333333333333333
   _SLEVE_minimum_relative_layer_thickness_2: 0.5
-topography:
-  config:
-    type: jablonowski_williamson
-    u0: 35.0
-    eta_0: 0.252
 initial_condition:
-  config:
-    type: jablonowski_williamson
-    p_sfc: 100000.0
-    baroclinic_amplitude: 1.0
-    u0: 35.0
-    temp0: 288.0
-    eta_0: 0.252
-    eta_t: 0.2
-    gamma: 0.005
-    dtemp: 480000.0
-    lon_perturbation_center: 0.3490658503988659
-    lat_perturbation_center: 0.6981317007977318
-    rh_at_1000hpa: 0.7
-    qv_max: 0.02
-    moisture_init_iterations: 10
-    global_moisture_content: 25.006
-    normalize_global_moisture: false
+  type: jablonowski_williamson
+  p_sfc: 100000.0
+  baroclinic_amplitude: 1.0
+  temp0: 288.0
+  eta_t: 0.2
+  gamma: 0.005
+  dtemp: 480000.0
+  lon_perturbation_center: 0.3490658503988659
+  lat_perturbation_center: 0.6981317007977318
+  rh_at_1000hpa: 0.7
+  qv_max: 0.02
+  moisture_init_iterations: 10
+  global_moisture_content: 25.006
+  normalize_global_moisture: false
+topography:
+  type: jablonowski_williamson
 prescribed_tendencies:
   data_path:
 driver:

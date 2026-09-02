@@ -180,11 +180,9 @@ def test_io_roundtrip_cls_cls() -> None:
             vertical_grid:
                 num_levels: 10
             topography:
-                config:
-                    type: jablonowski_williamson
+                type: jablonowski_williamson
             initial_condition:
-                config:
-                    type: jablonowski_williamson
+                type: jablonowski_williamson
             prescribed_tendencies: {}
             driver:
                 experiment_name: foo

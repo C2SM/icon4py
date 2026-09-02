@@ -62,8 +62,6 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
         smagorinski_scaling_factor=0.025,
         apply_zdiffusion_t=False,
         velocity_boundary_diffusion_denominator=150.0,
-        max_nudging_coefficient=0.375,
-        ndyn_substeps=5,
         shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
@@ -140,16 +138,14 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
     )
 
     prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, allocator=allocator
-        ),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, low=0.0, allocator=allocator),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
@@ -167,6 +163,8 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
         cell_params=cell_geometry,
         backend=backend_like,
         exchange=decomp_defs.SingleNodeExchange(),
+        ndyn_substeps=5,
+        max_nudging_coefficient=0.375,
     )
 
     benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)
