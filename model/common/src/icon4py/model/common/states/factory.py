@@ -250,7 +250,7 @@ class FieldSource(GridProvider, Protocol):
                 return (
                     buffer
                     if type_ in (RetrievalType.FIELD, RetrievalType.SCALAR)
-                    else state_utils.to_data_array(buffer, self.metadata[field_name])
+                    else xa.DataArray(data_alloc.as_numpy(buffer), attrs=self.metadata[field_name])
                 )
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
