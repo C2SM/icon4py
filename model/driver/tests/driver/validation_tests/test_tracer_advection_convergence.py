@@ -138,13 +138,13 @@ def test_horizontal_tracer_advection_convergence(
     domain_length = grid_managers[-1].grid.grid_params.domain_length
     domain_height = grid_managers[-1].grid.grid_params.domain_height
     assert (
-        type(experiment_config.initial_condition.config)
+        type(experiment_config.initial_condition)
         is linear_horizontal_tracer_advection.LinearHorizontalAdvectionConfig
     )
     assert domain_length is not None
     assert domain_height is not None
     vel_max = linear_horizontal_tracer_advection.compute_max_velocity(
-        velocity_field=experiment_config.initial_condition.config.velocity_field,
+        velocity_field=experiment_config.initial_condition.velocity_field,
         domain_length=domain_length,
         domain_height=domain_height,
     )
@@ -160,7 +160,7 @@ def test_horizontal_tracer_advection_convergence(
                 f"end_of_simulation {experiment_config.driver.end_of_simulation} must be specified as a RelativeTime or AbsoluteTime for this test"
             )
     dtime = min(
-        experiment_config.initial_condition.config.cfl_number
+        experiment_config.initial_condition.cfl_number
         * grid_managers[-1].geometry_fields[gridfile.GeometryName.EDGE_LENGTH].asnumpy().mean()
         / vel_max,
         integration_time,
@@ -184,11 +184,11 @@ def test_horizontal_tracer_advection_convergence(
         simulated_tracer = ds.tracers.current.qv.ndarray
 
         assert (
-            type(experiment_config.initial_condition.config)
+            type(experiment_config.initial_condition)
             is linear_horizontal_tracer_advection.LinearHorizontalAdvectionConfig
         )
         reference_tracer = linear_horizontal_tracer_advection.construct_reference_tracer(
-            config=experiment_config.initial_condition.config,
+            config=experiment_config.initial_condition,
             grid=grid_managers[i].grid,
             static_fields=icon4py_driver.static_field_factories,
             integration_time=num_steps * experiment_config.driver.dtime.total_seconds(),
@@ -256,11 +256,11 @@ def test_vertical_tracer_advection_convergence(
     ).with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
 
     assert (
-        type(experiment_config.initial_condition.config)
+        type(experiment_config.initial_condition)
         is linear_vertical_tracer_advection.LinearVerticalAdvectionConfig
     )
     w_max = linear_vertical_tracer_advection.compute_max_velocity(
-        velocity_field=experiment_config.initial_condition.config.velocity_field,
+        velocity_field=experiment_config.initial_condition.velocity_field,
         model_top_height=experiment_config.vertical_grid.model_top_height,
     )
     match experiment_config.driver.end_of_simulation:
@@ -275,7 +275,7 @@ def test_vertical_tracer_advection_convergence(
                 f"end_of_simulation {experiment_config.driver.end_of_simulation} must be specified as a RelativeTime or AbsoluteTime for this test"
             )
     dtime = min(
-        experiment_config.initial_condition.config.cfl_number
+        experiment_config.initial_condition.cfl_number
         * experiment_config.vertical_grid.model_top_height
         / num_levels[-1]
         / w_max,
@@ -308,11 +308,11 @@ def test_vertical_tracer_advection_convergence(
         simulated_tracer = ds.tracers.current.qv.ndarray
 
         assert (
-            type(experiment_config_local.initial_condition.config)
+            type(experiment_config_local.initial_condition)
             is linear_vertical_tracer_advection.LinearVerticalAdvectionConfig
         )
         reference_tracer = linear_vertical_tracer_advection.construct_reference_tracer(
-            config=experiment_config_local.initial_condition.config,
+            config=experiment_config_local.initial_condition,
             metrics=icon4py_driver.static_field_factories.metrics,
             vertical_config=experiment_config_local.vertical_grid,
             integration_time=num_steps * experiment_config_local.driver.dtime.total_seconds(),
