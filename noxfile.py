@@ -192,17 +192,35 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
     )
 
 
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
-def benchmark_driver_mpi(session: nox.Session) -> None:
-    """Run the distributed driver benchmark under MPI."""
-    _install_session_venv(session, extras=["all"], groups=["test"])
+def _resolve_rank() -> int | None:
+    """Return the MPI rank from the runtime environment, or None when not set.
 
+    The precedence mirrors ``.cscs-ci/scripts/ci-mpi-wrapper.sh``:
+    ``PMI_RANK`` -> ``OMPI_COMM_WORLD_RANK`` -> ``SLURM_PROCID``.
+    """
     rank = (
         os.environ.get("PMI_RANK")
         or os.environ.get("OMPI_COMM_WORLD_RANK")
         or os.environ.get("SLURM_PROCID")
     )
-    rank = int(rank) if rank is not None else None
+    return int(rank) if rank is not None else None
+
+
+def _is_upload_rank(rank: int | None) -> bool:
+    """Return True if this rank is responsible for uploading benchmark results.
+
+    In MPI runs only rank 0 uploads; in single-rank runs the resolved rank is
+    treated as rank 0.
+    """
+    return rank is None or rank == 0
+
+
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+def benchmark_driver_mpi(session: nox.Session) -> None:
+    """Run the distributed driver benchmark under MPI."""
+    _install_session_venv(session, extras=["all"], groups=["test"])
+
+    rank = _resolve_rank()
     with session.chdir("model/driver"):
         session.run(
             "pytest",
@@ -239,10 +257,8 @@ def _driver_bencher_testbed() -> str:
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
 def __bencher_driver_baseline_CI(session: nox.Session) -> None:
     """Upload the distributed driver benchmark baseline to bencher."""
-    from icon4py.model.testing.benchmark import is_upload_rank, resolve_rank  # noqa: PLC0415
-
-    rank = resolve_rank()
-    if not is_upload_rank(rank):
+    rank = _resolve_rank()
+    if not _is_upload_rank(rank):
         return
 
     session.run(
@@ -258,16 +274,71 @@ def __bencher_driver_baseline_CI(session: nox.Session) -> None:
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
 def __bencher_driver_feature_branch_CI(session: nox.Session) -> None:
     """Upload the distributed driver benchmark feature-branch results to bencher."""
-    from icon4py.model.testing.benchmark import is_upload_rank, resolve_rank  # noqa: PLC0415
-
-    rank = resolve_rank()
-    if not is_upload_rank(rank):
+    rank = _resolve_rank()
+    if not _is_upload_rank(rank):
         return
 
     bencher_testbed = _driver_bencher_testbed()
     session.run(
         *_bencher_feature_command(
             f"model/driver/pytest_benchmark_results_{session.python}_{rank}.json", bencher_testbed
+        ),
+        env=_bencher_feature_env(bencher_testbed, os.environ["FEATURE_BRANCH"].strip()),
+        external=True,
+        silent=True,
+    )
+
+
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+def benchmark_driver_single_rank(session: nox.Session) -> None:
+    """Run the single-rank driver benchmark."""
+    _install_session_venv(session, extras=["all"], groups=["test"])
+
+    with session.chdir("model/driver"):
+        session.run(
+            "pytest",
+            "-sv",
+            "-m",
+            "continuous_benchmarking",
+            "--benchmark-json",
+            f"pytest_benchmark_results_{session.python}.json",
+            "tests/driver/integration_tests/test_benchmark_driver_single_rank.py",
+            *session.posargs,
+        )
+
+
+def _driver_single_rank_bencher_testbed() -> str:
+    """Build the bencher testbed string for the single-rank driver benchmark."""
+    experiment = os.environ.get("DRIVER_BENCHMARK_EXPERIMENT", "jw")
+    grid = os.environ.get("GRID", "default")
+    return (
+        f"{os.environ['RUNNER']}:"
+        f"{os.environ['SYSTEM_TAG']}:"
+        f"{os.environ['BACKEND']}:"
+        f"{experiment}:"
+        f"{grid}:"
+        f"1n1N"
+    )
+
+
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_single_rank-{python}"])
+def __bencher_driver_single_rank_baseline_CI(session: nox.Session) -> None:
+    """Upload the single-rank driver benchmark baseline to bencher."""
+    session.run(
+        *_bencher_baseline_command(f"model/driver/pytest_benchmark_results_{session.python}.json"),
+        env=_bencher_baseline_env(_driver_single_rank_bencher_testbed()),
+        external=True,
+        silent=True,
+    )
+
+
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_single_rank-{python}"])
+def __bencher_driver_single_rank_feature_branch_CI(session: nox.Session) -> None:
+    """Upload the single-rank driver benchmark feature-branch results to bencher."""
+    bencher_testbed = _driver_single_rank_bencher_testbed()
+    session.run(
+        *_bencher_feature_command(
+            f"model/driver/pytest_benchmark_results_{session.python}.json", bencher_testbed
         ),
         env=_bencher_feature_env(bencher_testbed, os.environ["FEATURE_BRANCH"].strip()),
         external=True,
