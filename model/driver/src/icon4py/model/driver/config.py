@@ -289,8 +289,8 @@ class DriverConfig:
         common_conf_opt.ConfigOption(
             description=(
                 "Configuration of the external DaCe workspace. `None` falls back "
-                "to the 'ICON4PY_BACKEND_WORKSPACE_<SIZE|ALIGNMENT>' environment "
-                "variables, if set, otherwise the workspace is disabled."
+                "to the 'ICON4PY_BACKEND_WORKSPACE_SIZE' environment variable, if "
+                "set, otherwise the workspace is disabled."
             ),
             icon_equivalent=None,
         ),
