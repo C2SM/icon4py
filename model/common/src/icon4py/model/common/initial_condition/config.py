@@ -58,7 +58,7 @@ config_io.register_config_union(
     {
         "jablonowski_williamson": jw_ic.JablonowskiWilliamsonConfig,
         "gauss_3d": gauss_ic.Gauss3DConfig,
-        "weissman_klemp": wk_ic.WeismanKlempConfig,
+        "weisman_klemp": wk_ic.WeismanKlempConfig,
         "linear_horizontal_adv": lin_hor_adv_ic.LinearHorizontalAdvectionConfig,
         "linear_vertical_adv": lin_ver_adv_ic.LinearVerticalAdvectionConfig,
         "from_file": from_file_ic.FromFileConfig,
