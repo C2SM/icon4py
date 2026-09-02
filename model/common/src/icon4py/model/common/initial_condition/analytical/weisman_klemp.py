@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-from typing import TYPE_CHECKING, ClassVar
+import typing
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -18,6 +19,7 @@ from icon4py.model.common import (
     model_backends,
     thermodynamic_functions as thermo,
 )
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
@@ -34,6 +36,7 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.decomposition import definitions as decomposition_defs
     from icon4py.model.common.states import static_fields
+    from icon4py.model.driver import config as driver_config
 
 log = logging.getLogger(__name__)
 
@@ -41,61 +44,114 @@ log = logging.getLogger(__name__)
 @dataclasses.dataclass
 class WeismanKlempConfig:
     # The default values are from mo_nh_wk_exp.f90 and mo_nh_testcases_nml.f90.
-    #: base height of the profile [m] (hmin_wk)
-    h_min: float = 0.0
-    #: height of the tropopause [m] (h_tropo_wk)
-    h_tropopause: float = 12000.0
-    #: potential temperature at the surface [K] (theta_0_wk)
-    theta_surface: float = 300.0
-    #: potential temperature at the tropopause [K] (theta_tropo_wk)
-    theta_tropopause: float = 343.0
-    #: exponent of the potential-temperature profile below the tropopause (expo_theta_wk)
-    exponent_theta: float = 1.25
-    #: exponent of the relative-humidity profile below the tropopause (expo_relhum_wk)
-    exponent_relative_humidity: float = 1.25
-    #: temperature of the tropopause [K] (t_tropo_wk)
-    t_tropopause: float = 213.0
-    #: relative humidity above the tropopause (rh_min_wk)
-    rh_min: float = 0.10
-    #: maximum relative humidity below the tropopause (rh_max_wk)
-    rh_max: float = 0.95
-    #: scaling height of the wind profile (height of 70% wind speed) [m] (href_wk)
-    wind_scale_height: float = 3000.0
-    #: maximum horizontal wind speed [m/s] (u_infty_wk)
-    max_wind_speed: float = 15.0
-    #: maximum moisture content below the tropopause [kg/kg] (qv_max_wk)
-    qv_max: float = 0.014
-    #: x coordinate (torus) or longitude in degrees (sphere) of the bubble centre (bubctr_lon)
-    bubble_center_x: float = 0.0
-    #: y coordinate (torus) or latitude in degrees (sphere) of the bubble centre (bubctr_lat)
-    bubble_center_y: float = 0.0
-    #: altitude of the bubble centre [m] (bubctr_z)
-    bubble_center_z: float = 1400.0
-    #: horizontal size of the warm bubble [m] (bub_hor_width)
-    bubble_horizontal_width: float = 5000.0
-    #: vertical size of the warm bubble [m] (bub_ver_width)
-    bubble_vertical_width: float = 1400.0
-    #: temperature amplitude of the warm bubble [K] (bub_amp)
-    bubble_amplitude: float = 2.0
-    #: normalized radius below which the bubble perturbation is applied
-    bubble_radius: float = 1.0
-
-    fortran_name_map: ClassVar[dict[str, str]] = {
-        "qv_max_wk": "qv_max",
-        "u_infty_wk": "max_wind_speed",
-        "bub_hor_width": "bubble_horizontal_width",
-        "bub_ver_width": "bubble_vertical_width",
-        "bubctr_lon": "bubble_center_x",
-        "bubctr_lat": "bubble_center_y",
-        "bubctr_z": "bubble_center_z",
-        "bub_amp": "bubble_amplitude",
-    }
+    h_min: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="Base height of the profile [m].")
+    ] = 0.0
+    h_tropopause: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="Height of the tropopause [m].")
+    ] = 12000.0
+    theta_surface: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="Potential temperature at the surface [K].")
+    ] = 300.0
+    theta_tropopause: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(description="Potential temperature at the tropopause [K]."),
+    ] = 343.0
+    exponent_theta: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Exponent of the potential-temperature profile below the tropopause."
+        ),
+    ] = 1.25
+    exponent_relative_humidity: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Exponent of the relative-humidity profile below the tropopause."
+        ),
+    ] = 1.25
+    t_tropopause: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="Temperature of the tropopause [K].")
+    ] = 213.0
+    rh_min: typing.Annotated[
+        float, common_conf_opt.ConfigOption(description="Relative humidity above the tropopause.")
+    ] = 0.10
+    rh_max: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(description="Maximum relative humidity below the tropopause."),
+    ] = 0.95
+    wind_scale_height: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Scaling height of the wind profile (height of 70 % wind speed) [m]."
+        ),
+    ] = 3000.0
+    max_wind_speed: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Maximum horizontal wind speed [m/s].",
+            icon_equivalent=common_conf_opt.IconOption(name="u_infty_wk", path=()),
+        ),
+    ] = 15.0
+    qv_max: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Maximum moisture content below the tropopause [kg/kg].",
+            icon_equivalent=common_conf_opt.IconOption(name="qv_max_wk", path=()),
+        ),
+    ] = 0.014
+    bubble_center_x: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="X coordinate (torus) or longitude in degrees (sphere) of the bubble centre.",
+            icon_equivalent=common_conf_opt.IconOption(name="bubctr_lon", path=()),
+        ),
+    ] = 0.0
+    bubble_center_y: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Y coordinate (torus) or latitude in degrees (sphere) of the bubble centre.",
+            icon_equivalent=common_conf_opt.IconOption(name="bubctr_lat", path=()),
+        ),
+    ] = 0.0
+    bubble_center_z: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Altitude of the bubble centre [m].",
+            icon_equivalent=common_conf_opt.IconOption(name="bubctr_z", path=()),
+        ),
+    ] = 1400.0
+    bubble_horizontal_width: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Horizontal size of the warm bubble [m].",
+            icon_equivalent=common_conf_opt.IconOption(name="bub_hor_width", path=()),
+        ),
+    ] = 5000.0
+    bubble_vertical_width: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Vertical size of the warm bubble [m].",
+            icon_equivalent=common_conf_opt.IconOption(name="bub_ver_width", path=()),
+        ),
+    ] = 1400.0
+    bubble_amplitude: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Temperature amplitude of the warm bubble [K].",
+            icon_equivalent=common_conf_opt.IconOption(name="bub_amp", path=()),
+        ),
+    ] = 2.0
+    bubble_radius: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Normalized radius below which the bubble perturbation is applied."
+        ),
+    ] = 1.0
 
 
 def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     *,
-    config: WeismanKlempConfig,
-    vertical_config: v_grid.VerticalGridConfig,
+    config: driver_config.ExperimentConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
@@ -113,6 +169,8 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     The reference experiment config for this is exp.exclaim_nh_weisman_klemp_sb.
     """
+    ic_config = config.initial_condition
+    assert isinstance(ic_config, WeismanKlempConfig)
     if tracer_state_now.qv is None:
         raise ValueError(
             "The Weisman-Klemp initial condition requires the 'qv' tracer to be active."
@@ -142,10 +200,10 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     grav_o_cpd = phy_const.GRAV_O_CPD
     vtmpc1 = phy_const.RV_O_RD_MINUS_1
-    h_tropopause = config.h_tropopause
-    t_tropopause = config.t_tropopause
-    theta_tropopause = config.theta_tropopause
-    qv_max = config.qv_max
+    h_tropopause = ic_config.h_tropopause
+    t_tropopause = ic_config.t_tropopause
+    theta_tropopause = ic_config.theta_tropopause
+    qv_max = ic_config.qv_max
 
     exner_ndarray = prognostic_state_now.exner.ndarray
     rho_ndarray = prognostic_state_now.rho.ndarray
@@ -170,7 +228,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     # Tropopause reference values.
     exner_tropopause = t_tropopause / theta_tropopause
-    vapor_pressure_tropopause = config.rh_min * thermo.sat_pres_water(
+    vapor_pressure_tropopause = ic_config.rh_min * thermo.sat_pres_water(
         array_ns.asarray(t_tropopause)
     )
     pressure_tropopause = phy_const.P0REF * exner_tropopause**phy_const.CPD_O_RD
@@ -189,7 +247,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     pressure_above = phy_const.P0REF * exner[above] ** phy_const.CPD_O_RD
     qv[above] = thermo.specific_humidity(vapor_pressure_tropopause, pressure_above)
     theta_v[above] = theta[above] * (1.0 + vtmpc1 * qv[above])
-    relative_humidity[above] = config.rh_min
+    relative_humidity[above] = ic_config.rh_min
     temperature[above] = t_tropopause
 
     # Below the tropopause the potential temperature and relative humidity profiles are
@@ -197,13 +255,13 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     below = slice(k_tropopause + 1, num_levels)
     height_below = height[below]
     theta[below] = (
-        config.theta_surface
-        + (theta_tropopause - config.theta_surface)
-        * (height_below / h_tropopause) ** config.exponent_theta
+        ic_config.theta_surface
+        + (theta_tropopause - ic_config.theta_surface)
+        * (height_below / h_tropopause) ** ic_config.exponent_theta
     )
     relative_humidity[below] = array_ns.minimum(
-        1.0 - 0.75 * (height_below / h_tropopause) ** config.exponent_relative_humidity,
-        config.rh_max,
+        1.0 - 0.75 * (height_below / h_tropopause) ** ic_config.exponent_relative_humidity,
+        ic_config.rh_max,
     )
 
     def _integrate_layer(
@@ -264,8 +322,9 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
     log.info("Weisman-Klemp base-state profile completed.")
 
     # Sheared horizontal wind, projected onto the edge-normal direction.
-    wind_speed = config.max_wind_speed * (
-        array_ns.tanh((height - config.h_min) / (config.wind_scale_height - config.h_min)) - 0.45
+    wind_speed = ic_config.max_wind_speed * (
+        array_ns.tanh((height - ic_config.h_min) / (ic_config.wind_scale_height - ic_config.h_min))
+        - 0.45
     )
     boundary_lvl2 = zone_idx["end_edge_lateral_boundary_level_2"]
     prognostic_state_now.vn.ndarray[:boundary_lvl2, :] = 0.0
@@ -273,7 +332,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         wind_speed[array_ns.newaxis, :] * primal_normal_x[boundary_lvl2:, array_ns.newaxis]
     )
 
-    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator)
+    _, vct_b = v_grid.get_vct_a_and_vct_b(config.vertical_grid, allocator)
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid=grid,
         z_ifc=z_ifc,
@@ -309,12 +368,12 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         rho=rho_ndarray,
         qv=tracer_state_now.qv.ndarray,
         exner=exner_ndarray,
-        center_x=config.bubble_center_x,
-        center_y=config.bubble_center_y,
-        center_z=config.bubble_center_z,
-        horizontal_width=config.bubble_horizontal_width,
-        vertical_width=config.bubble_vertical_width,
-        amplitude=config.bubble_amplitude,
-        radius=config.bubble_radius,
+        center_x=ic_config.bubble_center_x,
+        center_y=ic_config.bubble_center_y,
+        center_z=ic_config.bubble_center_z,
+        horizontal_width=ic_config.bubble_horizontal_width,
+        vertical_width=ic_config.bubble_vertical_width,
+        amplitude=ic_config.bubble_amplitude,
+        radius=ic_config.bubble_radius,
     )
     log.info("Warm-bubble perturbation completed.")
