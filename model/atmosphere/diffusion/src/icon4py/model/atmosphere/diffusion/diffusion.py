@@ -522,6 +522,7 @@ class Diffusion:
         self._edge_params = edge_params
         self._cell_params = cell_params
         ndyn_substeps_as_float = wpfloat(ndyn_substeps)
+        max_nudging_coefficient = wpfloat(max_nudging_coefficient)
 
         assert self._cell_params.area is not None
 
@@ -537,11 +538,9 @@ class Diffusion:
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
         self.nudgezone_diff: vpfloat = gtx.astype(
-            wpfloat(0.04) / (config.max_nudging_coefficient + constants.WP_EPS), vpfloat
+            wpfloat(0.04) / (max_nudging_coefficient + constants.WP_EPS), vpfloat
         )
-        self.bdy_diff: wpfloat = wpfloat(0.015) / (
-            config.max_nudging_coefficient + constants.WP_EPS
-        )
+        self.bdy_diff: wpfloat = wpfloat(0.015) / (max_nudging_coefficient + constants.WP_EPS)
         self.fac_bdydiff_v: wpfloat = wpfloat(
             math.sqrt(ndyn_substeps_as_float) / config.velocity_boundary_diffusion_denominator
         )
