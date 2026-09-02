@@ -9,13 +9,21 @@
 from __future__ import annotations
 
 import dataclasses
+import enum
 import functools
 import types
 import typing
 
 import rich.tree
+import textual.app
+import textual.containers
+import textual.widget
+import textual.widgets.tree
+import yaml
 
-from icon4py.model.common.config import options as config_options
+from icon4py.model.common import time, type_alias as ta
+from icon4py.model.common.config import config_io, options as config_options
+from icon4py.model.driver.config import ExperimentConfig
 
 
 type HINT = type | typing.TypeAliasType | types.UnionType
@@ -67,6 +75,12 @@ def resolve_type(type_hint: HINT) -> RESOLVED:
         actual_type = resolve_type(typing.cast(RESOLVED, type_hint.__origin__))
     if isinstance(actual_type, typing.TypeAliasType):
         actual_type = resolve_type(actual_type.__value__)
+    if (
+        hasattr(actual_type, "__args__")
+        and hasattr(actual_type, "__name__")
+        and actual_type.__name__ == "Final"
+    ):
+        actual_type = resolve_type(next(iter(actual_type.__args__)))
     return actual_type
 
 
@@ -87,8 +101,8 @@ class Record:
     ) -> typing.Self:
         actual_type = resolve_type(type_hint)
         option_meta = (
-            config_options.ConfigOption.from_type_hint(type_hint)
-            if hasattr(type_hint, "__metadata__")
+            config_options.ConfigOption.from_type_hint(ctx.current_typehint)
+            if hasattr(ctx.current_typehint, "__metadata__")
             else config_options.ConfigOption(description="??")
         )
         return cls(
@@ -205,8 +219,8 @@ def node_from_union(type_hint: types.UnionType, ctx: TraversalContext) -> UnionC
 
 def node_from_other_type(type_hint: HINT, ctx: TraversalContext) -> Record:
     option_meta = (
-        config_options.ConfigOption.from_type_hint(type_hint)
-        if hasattr(type_hint, "__metadata__")
+        config_options.ConfigOption.from_type_hint(ctx.current_typehint)
+        if hasattr(ctx.current_typehint, "__metadata__")
         else config_options.ConfigOption(description="??")
     )
     return Record(
@@ -252,3 +266,174 @@ def tree_from_union_container(node: UnionContainer) -> rich.tree.Tree:
     for alternative in node.alternatives:
         types_node.add(tree_from_node(alternative))
     return result
+
+
+@functools.singledispatch
+def add_node_to_ttree(node: Record, ttree: textual.widgets.tree.TreeNode) -> None:
+    ttree.add_leaf(node.qualified_name[-1], data=node)
+
+
+@add_node_to_ttree.register
+def add_conf_container(node: ConfigClassContainer, ttree: textual.widgets.tree.TreeNode) -> None:
+    container = ttree.add(node.record.qualified_name[-1], data=node)
+    for child in node.children:
+        add_node_to_ttree(child, container)
+
+
+@add_node_to_ttree.register
+def add_union_container(node: UnionContainer, ttree: textual.widgets.tree.TreeNode) -> None:
+    union = ttree.add(
+        f"{node.record.qualified_name[-1]}: one of the following", data=node, expand=True
+    )
+    for alt in node.alternatives:
+        add_node_to_ttree(alt, union)
+
+
+def record_from_node(node: Record | ConfigClassContainer | UnionContainer) -> Record:
+    match node:
+        case Record():
+            return node
+        case _:
+            return node.record
+
+
+T = typing.TypeVar("T")
+
+
+@functools.singledispatch
+def examples_for[T](some_type: type[T]) -> typing.Iterator[tuple[T | dict | str, type]]:
+    some_type = resolve_type(some_type)
+    try:
+        yield some_type(), some_type
+    except TypeError:
+        if dataclasses.is_dataclass(some_type):
+            field_types = typing.get_type_hints(some_type)
+            yield (
+                some_type(
+                    **{
+                        f.name: next(examples_for(resolve_type(field_types[f.name])))[0]
+                        for f in dataclasses.fields(some_type)
+                    }
+                ),
+                some_type,
+            )
+        elif some_type is time.AbsoluteTime:
+            yield from examples_for_abstime(some_type)
+        elif some_type is ta.wpfloat:
+            yield from examples_for_wpfloat(some_type)
+        else:
+            yield "No example found.", str
+
+
+@examples_for.register
+def examples_for_enum(
+    some_type: enum.EnumType,
+) -> typing.Iterator[tuple[typing.Any, enum.EnumType]]:
+    yield from ((e, some_type) for e in some_type)
+
+
+@examples_for.register
+def examples_for_none(some_type: types.NoneType) -> typing.Iterator[tuple[None, types.NoneType]]:
+    yield None, some_type
+
+
+@examples_for.register
+def examples_for_union(some_type: types.UnionType) -> typing.Iterator[tuple[None, types.UnionType]]:
+    for allowed_type in some_type.__args__:
+        yield from ((ex, some_type) for ex, _ in examples_for(allowed_type))
+
+
+def examples_for_abstime(
+    some_type: type[time.AbsoluteTime],
+) -> typing.Iterator[tuple[time.AbsoluteTime, type[time.AbsoluteTime]]]:
+    yield time.AbsoluteTime(year=2026, month=1, day=1, hour=11, minute=55, second=59), some_type
+
+
+def examples_for_wpfloat(
+    some_type: type[ta.wpfloat],
+) -> typing.Iterator[tuple[float, type[ta.wpfloat]]]:
+    yield 0.0, ta.wpfloat
+
+
+class ConfigDocWidget(textual.widget.Widget):
+    """Broswe config options."""
+
+    def compose(self: typing.Self) -> textual.app.ComposeResult:
+        with textual.containers.Horizontal():
+            with textual.containers.VerticalScroll():
+                yield textual.widgets.Tree[Record | ConfigClassContainer | UnionContainer](
+                    "Icon4Py Config File", id="tree"
+                )
+            with textual.containers.VerticalScroll():
+                yield textual.widgets.DataTable(id="info-table", show_header=False)
+                yield textual.widgets.TextArea(id="example", read_only=True, soft_wrap=False)
+
+    def on_mount(self: typing.Self) -> None:
+        # TODO(ricoh): [c38] build tree
+        tree: textual.widgets.Tree = self.query_one("#tree", expect_type=textual.widgets.Tree)
+        tree.root.expand()
+        tree.root.data = Record(
+            qualified_name=("icon4py-config.yml",),
+            option_meta=config_options.ConfigOption(
+                description="This is the top-level of the config file."
+            ),
+            allowed_type=ExperimentConfig,
+        )
+        doctree = node_from_dataclass(
+            ExperimentConfig,
+            ctx=TraversalContext(
+                name_path=(), current_field=None, current_typehint=ExperimentConfig
+            ),
+        )
+        for child in doctree.children:
+            add_node_to_ttree(child, tree.root)
+
+        table: textual.widgets.DataTable = self.query_one(
+            "#info-table", expect_type=textual.widgets.DataTable
+        )
+        table.add_columns("", "")
+
+    def on_tree_node_selected(
+        self: typing.Self, message: textual.widgets.Tree.NodeSelected
+    ) -> None:
+        # TODO(ricoh): [c38] grab doc node from tree node .data
+        node = message.node
+        # TODO(ricoh): [c38] populate info table
+        table: textual.widgets.DataTable = self.query_one(
+            "#info-table", expect_type=textual.widgets.DataTable
+        )
+        record = record_from_node(
+            typing.cast(Record | ConfigClassContainer | UnionContainer, node.data)
+        )
+        table.clear(columns=False)
+        table.add_rows(
+            [("description:", record.option_meta.description), ("type:", record.allowed_type)]
+        )
+        example: textual.widgets.TextArea = self.query_one(
+            "#example", expect_type=textual.widgets.TextArea
+        )
+        example_name = (
+            record.qualified_name[-1]
+            if not record.qualified_name[-1].startswith("<class")
+            else record.qualified_name[-2]
+        )
+        example.text = "Examples:\n\n" + "\n---\n\n".join(
+            yaml.dump(
+                {
+                    example_name: config_io.CONV.unstructure(
+                        example, unstructure_as=unstructure_type
+                    )
+                },
+                sort_keys=False,
+                Dumper=config_io.IndentSequencesDumper,
+            )
+            for example, unstructure_type in examples_for(record.allowed_type)
+        )
+        example.language = "yaml"
+        # TODO(ricoh): [c38] try best effort syntax example
+        ...
+
+
+class ConfigDocApp(textual.app.App):
+    def compose(self) -> textual.app.ComposeResult:
+        yield ConfigDocWidget()
