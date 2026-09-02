@@ -109,7 +109,10 @@ def test_horizontal_tracer_advection_convergence(
 ) -> None:
     allocator = model_backends.get_allocator(backend)
 
-    grid_file_paths = [grid_utils._download_grid_file(grid_description) for grid_description in _HORIZONTAL_CONVERGENCE_GRIDS]
+    grid_file_paths = [
+        grid_utils._download_grid_file(grid_description)
+        for grid_description in _HORIZONTAL_CONVERGENCE_GRIDS
+    ]
 
     error_l1: list[float] = []
     error_linf: list[float] = []
