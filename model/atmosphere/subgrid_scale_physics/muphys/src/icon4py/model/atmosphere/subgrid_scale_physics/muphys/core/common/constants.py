@@ -11,24 +11,6 @@ import enum
 from icon4py.model.common import type_alias as ta
 
 
-class GraupelConsts(ta.wpfloat, enum.Enum):
-    rho_00 = 1.225  # reference air density
-    q1 = 8.0e-6
-    qmin = 1.0e-15  # threshold for computation
-    ams = 0.069  # Formfactor in the mass-size relation of snow particles
-    bms = 2.0  # Exponent in the mass-size relation of snow particles
-    v0s = 25.0  # prefactor in snow fall speed
-    v1s = 0.5  # Exponent in the terminal velocity for snow
-    m0_ice = 1.0e-12  # initial crystal mass for cloud ice nucleation
-    ci = 2108.0  # specific heat of ice
-    tx = 3339.5
-    tfrz_het1 = 267.15  # temperature for het. freezing of cloud water with supersat => TMELT - 6.0
-    tfrz_het2 = 248.15  # temperature for het. freezing of cloud water => TMELT - 25.0
-    tfrz_hom = 236.15  # temperature for hom. freezing of cloud water => TMELT - 37.0
-    lvc = 3135383.2031928  # invariant part of vaporization enthalpy => alv - (cpv - clw) * tmelt
-    lsc = 2899657.201  # invariant part of vaporization enthalpy => als - (cpv - ci) * tmelt
-
-
 class ThermodynamicConsts(ta.wpfloat, enum.Enum):
     # Thermodynamic constants for the dry and moist atmosphere
     # Dry air
@@ -70,22 +52,7 @@ class ThermodynamicConsts(ta.wpfloat, enum.Enum):
     cv_v = 78.37934216297742  # (rcpv + 1.0) * cpd - rv
 
 
-class IndexConsts(ta.wpfloat, enum.Enum):
-    prefactor_r = 14.58
-    exponent_r = 0.111
-    offset_r = 1.0e-12
-    prefactor_i = 1.25
-    exponent_i = 0.160
-    offset_i = 1.0e-12
-    prefactor_s = 57.80
-    exponent_s = 1 / 6
-    offset_s = 1.0e-12
-    prefactor_g = 12.24
-    exponent_g = 0.217
-    offset_g = 1.0e-08
-
-
-class AesGraupelConsts(ta.wpfloat, enum.Enum):
+class GraupelConsts(ta.wpfloat, enum.Enum):
     # Constants of the newer MPIM rain-microphysics revisions in ICON
     # (mo_aes_graupel.f90), used by the AES_GRAUPEL scheme variants only.
     # Hydrometeor-density clamp bounds, shared by all polynomial fits and fall speeds

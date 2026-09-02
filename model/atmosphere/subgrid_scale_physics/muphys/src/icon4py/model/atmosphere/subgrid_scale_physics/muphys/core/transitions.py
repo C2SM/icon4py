@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import exp, log, maximum, minimum, power, sqrt, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
-    AesGraupelConsts,
     GraupelConsts,
     ThermodynamicConsts,
 )
@@ -625,7 +624,7 @@ def vapor_x_snow(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.field_operator
-def _cloud_to_rain_aes_graupel(
+def _cloud_to_rain(
     t: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
@@ -633,11 +632,7 @@ def _cloud_to_rain_aes_graupel(
     nc: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Compute the conversion rate from cloud to rain, AES_GRAUPEL scheme.
-
-    Same autoconversion as the original graupel scheme, but the SB2001 accretion kernel is a
-    degree-4 polynomial in log(clamped rho*qr) instead of a constant
-    (ICON mo_aes_graupel.f90 cloud_to_rain).
+    Compute the conversion rate from cloud to rain.
 
     Args:
         t:                  Temperature
@@ -665,11 +660,10 @@ def _cloud_to_rain_aes_graupel(
         / ((X3 + wpfloat(1.0)) * (X3 + wpfloat(1.0)))
     )
 
-    x = log(minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho * qr)))
-    ac_kernel = AesGraupelConsts.a_ac_1 + x * (
-        AesGraupelConsts.a_ac_2
-        + x
-        * (AesGraupelConsts.a_ac_3 + x * (AesGraupelConsts.a_ac_4 + x * AesGraupelConsts.a_ac_5))
+    x = log(minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, rho * qr)))
+    ac_kernel = GraupelConsts.a_ac_1 + x * (
+        GraupelConsts.a_ac_2
+        + x * (GraupelConsts.a_ac_3 + x * (GraupelConsts.a_ac_4 + x * GraupelConsts.a_ac_5))
     )
     tau = maximum(TAU_MIN, minimum(wpfloat(1.0) - qc / (qc + qr), TAU_MAX))
     phi = power(tau, B_PHI)
@@ -684,7 +678,7 @@ def _cloud_to_rain_aes_graupel(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def cloud_to_rain_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
+def cloud_to_rain(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],  # Temperature
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
@@ -692,11 +686,11 @@ def cloud_to_rain_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     nc: ta.wpfloat,  # Cloud water number concentration
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
 ):
-    _cloud_to_rain_aes_graupel(t=t, rho=rho, qc=qc, qr=qr, nc=nc, out=conversion_rate)
+    _cloud_to_rain(t=t, rho=rho, qc=qc, qr=qr, nc=nc, out=conversion_rate)
 
 
 @gtx.field_operator
-def _cloud_to_snow_aes_graupel(
+def _cloud_to_snow(
     t: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
     qs: fa.CellKField[ta.wpfloat],
@@ -704,10 +698,7 @@ def _cloud_to_snow_aes_graupel(
     lam: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Compute the conversion rate from cloud to snow, AES_GRAUPEL scheme.
-
-    Same as the original cloud-to-snow with the additional riming tuning factor 3.0
-    (ICON mo_aes_graupel.f90 cloud_to_snow).
+    Compute the conversion rate from cloud to snow.
 
     Args:
         t:                  Temperature
@@ -731,7 +722,7 @@ def _cloud_to_snow_aes_graupel(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def cloud_to_snow_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
+def cloud_to_snow(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],  # Temperature
     qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
     qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
@@ -739,11 +730,11 @@ def cloud_to_snow_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     lam: fa.CellKField[ta.wpfloat],  # Snow slope parameter
     riming_snow_rate: fa.CellKField[ta.wpfloat],  # output
 ):
-    _cloud_to_snow_aes_graupel(t=t, qc=qc, qs=qs, ns=ns, lam=lam, out=riming_snow_rate)
+    _cloud_to_snow(t=t, qc=qc, qs=qs, ns=ns, lam=lam, out=riming_snow_rate)
 
 
 @gtx.field_operator
-def _rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
+def _rain_to_vapor(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
@@ -752,11 +743,7 @@ def _rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     dt: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Compute the conversion rate from rain to vapor, AES_GRAUPEL scheme.
-
-    Same trigger and evaporation cap as the original rain-to-vapor, but the evaporation rate
-    is the exponential of a degree-4 polynomial in log(clamped rho*qr) instead of
-    a power law (ICON mo_aes_graupel.f90 rain_to_vapor).
+    Compute the conversion rate from rain to vapor.
 
     Args:
         t:                  Temperature
@@ -774,18 +761,14 @@ def _rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
 
     tc = t - ThermodynamicConsts.tmelt
     evap_max = (C1_RV + tc * (C2_RV + C3_RV * tc)) * (-dvsw) / dt
-    x = log(minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, qr * rho)))
+    x = log(minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, qr * rho)))
     evap = (
         -exp(
-            AesGraupelConsts.a_ev_1
+            GraupelConsts.a_ev_1
             + x
             * (
-                AesGraupelConsts.a_ev_2
-                + x
-                * (
-                    AesGraupelConsts.a_ev_3
-                    + x * (AesGraupelConsts.a_ev_4 + x * AesGraupelConsts.a_ev_5)
-                )
+                GraupelConsts.a_ev_2
+                + x * (GraupelConsts.a_ev_3 + x * (GraupelConsts.a_ev_4 + x * GraupelConsts.a_ev_5))
             )
         )
         * dvsw
@@ -798,7 +781,7 @@ def _rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
+def rain_to_vapor(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],  # Temperature
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     qc: fa.CellKField[ta.wpfloat],  # Cloud specific mass
@@ -807,4 +790,4 @@ def rain_to_vapor_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     dt: ta.wpfloat,  # time step
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
 ):
-    _rain_to_vapor_aes_graupel(t=t, rho=rho, qc=qc, qr=qr, dvsw=dvsw, dt=dt, out=conversion_rate)
+    _rain_to_vapor(t=t, rho=rho, qc=qc, qr=qr, dvsw=dvsw, dt=dt, out=conversion_rate)

@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import exp, log, maximum, minimum, power, sqrt, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
-    AesGraupelConsts,
     GraupelConsts,
     ThermodynamicConsts,
 )
@@ -291,16 +290,12 @@ def ice_sticking(
 
 
 @gtx.field_operator
-def _snow_number_aes_graupel(
+def _snow_number(
     t: fa.CellKField[ta.wpfloat],
     rho_s: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Compute the snow number, AES_GRAUPEL scheme.
-
-    Same fit as the original snow_number, but operates on the snow mass density rho*qs with a
-    lower clamp MAX(rho_s, rho_s_mn) instead of the additive (qs + 2e-6)*rho offset,
-    and branches on rho_s > qmin (ICON mo_aes_graupel.f90 snow_number).
+    Compute the snow number.
 
     Args:
         t:            Temperature
@@ -331,7 +326,7 @@ def _snow_number_aes_graupel(
     n0s = (
         N0S3
         * power(
-            (maximum(rho_s, AesGraupelConsts.rho_s_mn) / GraupelConsts.ams),
+            (maximum(rho_s, GraupelConsts.rho_s_mn) / GraupelConsts.ams),
             (wpfloat(4.0) - wpfloat(3.0) * bet),
         )
         / (alf * alf * alf)
@@ -343,12 +338,12 @@ def _snow_number_aes_graupel(
 
 
 @gtx.field_operator
-def _snow_number_aes_graupel_scalar(
+def _snow_number_scalar(
     t: ta.wpfloat,
     rho_s: ta.wpfloat,
 ) -> ta.wpfloat:
     """
-    Compute the snow number, AES_GRAUPEL scheme (scalar version for scan operators).
+    Compute the snow number (scalar version for scan operators).
 
     Args:
         t:            Temperature
@@ -379,7 +374,7 @@ def _snow_number_aes_graupel_scalar(
     n0s = (
         N0S3
         * power(
-            (maximum(rho_s, AesGraupelConsts.rho_s_mn) / GraupelConsts.ams),
+            (maximum(rho_s, GraupelConsts.rho_s_mn) / GraupelConsts.ams),
             (wpfloat(4.0) - wpfloat(3.0) * bet),
         )
         / (alf * alf * alf)
@@ -391,24 +386,21 @@ def _snow_number_aes_graupel_scalar(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def snow_number_aes_graupel(
+def snow_number(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     rho_s: fa.CellKField[ta.wpfloat],  # Snow mass density rho*qs
     number: fa.CellKField[ta.wpfloat],  # output
 ):
-    _snow_number_aes_graupel(t=t, rho_s=rho_s, out=number)
+    _snow_number(t=t, rho_s=rho_s, out=number)
 
 
 @gtx.field_operator
-def _snow_lambda_aes_graupel(
+def _snow_lambda(
     rho_s: fa.CellKField[ta.wpfloat],
     ns: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Compute the snow slope parameter, AES_GRAUPEL scheme.
-
-    Same formula as the original snow_lambda but operating on the snow mass density rho*qs
-    and branching on rho_s > qmin (ICON mo_aes_graupel.f90 snow_lambda).
+    Compute the snow slope parameter.
 
     Args:
         rho_s:        Snow mass density rho*qs
@@ -424,21 +416,21 @@ def _snow_lambda_aes_graupel(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def snow_lambda_aes_graupel(
+def snow_lambda(
     rho_s: fa.CellKField[ta.wpfloat],  # Snow mass density rho*qs
     ns: fa.CellKField[ta.wpfloat],  # Snow number
     riming_snow_rate: fa.CellKField[ta.wpfloat],  # output
 ):
-    _snow_lambda_aes_graupel(rho_s=rho_s, ns=ns, out=riming_snow_rate)
+    _snow_lambda(rho_s=rho_s, ns=ns, out=riming_snow_rate)
 
 
 @gtx.field_operator
-def _vm_rain_aes_graupel_scalar(
+def _vm_rain_scalar(
     rho_x: ta.wpfloat,
     rho: ta.wpfloat,
 ) -> ta.wpfloat:
     """
-    Rain fall speed, AES_GRAUPEL scheme (scalar version for scan operators).
+    Rain fall speed (scalar version for scan operators).
 
     Degree-4 polynomial in log of the clamped rain mass density. As in the Fortran
     (mo_aes_graupel.f90 vm), the density correction sqrt(rho_00/rho) multiplies
@@ -450,24 +442,20 @@ def _vm_rain_aes_graupel_scalar(
 
     Result:           Fall speed
     """
-    x = log(minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x)))
-    return AesGraupelConsts.vm_a_r_1 + x * (
-        AesGraupelConsts.vm_a_r_2
-        + x
-        * (
-            AesGraupelConsts.vm_a_r_3
-            + x * (AesGraupelConsts.vm_a_r_4 + x * AesGraupelConsts.vm_a_r_5)
-        )
+    x = log(minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, rho_x)))
+    return GraupelConsts.vm_a_r_1 + x * (
+        GraupelConsts.vm_a_r_2
+        + x * (GraupelConsts.vm_a_r_3 + x * (GraupelConsts.vm_a_r_4 + x * GraupelConsts.vm_a_r_5))
     ) * sqrt(GraupelConsts.rho_00 / rho)
 
 
 @gtx.field_operator
-def _vm_ice_aes_graupel_scalar(
+def _vm_ice_scalar(
     rho_x: ta.wpfloat,
     rho: ta.wpfloat,
 ) -> ta.wpfloat:
     """
-    Ice fall speed, AES_GRAUPEL scheme (scalar version for scan operators).
+    Ice fall speed (scalar version for scan operators).
 
     Args:
         rho_x:        Ice mass density rho*qi
@@ -476,22 +464,22 @@ def _vm_ice_aes_graupel_scalar(
     Result:           Fall speed
     """
     B_I = wpfloat(0.33333333333333333)
-    x = minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x))
+    x = minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, rho_x))
     return (
-        AesGraupelConsts.vm_prefactor_i
-        * power(x, AesGraupelConsts.vm_exponent_i)
+        GraupelConsts.vm_prefactor_i
+        * power(x, GraupelConsts.vm_exponent_i)
         * power(GraupelConsts.rho_00 / rho, B_I)
     )
 
 
 @gtx.field_operator
-def _vm_snow_aes_graupel_scalar(
+def _vm_snow_scalar(
     rho_x: ta.wpfloat,
     rho: ta.wpfloat,
     t: ta.wpfloat,
 ) -> ta.wpfloat:
     """
-    Snow fall speed, AES_GRAUPEL scheme (scalar version for scan operators).
+    Snow fall speed (scalar version for scan operators).
 
     snow_number is evaluated at the clamped falling-mass density, as in the Fortran.
 
@@ -503,22 +491,22 @@ def _vm_snow_aes_graupel_scalar(
     Result:           Fall speed
     """
     B_S = wpfloat(-0.16666666666666667)
-    x = minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x))
+    x = minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, rho_x))
     return (
-        AesGraupelConsts.vm_prefactor_s
-        * power(x, AesGraupelConsts.vm_exponent_s)
+        GraupelConsts.vm_prefactor_s
+        * power(x, GraupelConsts.vm_exponent_s)
         * sqrt(GraupelConsts.rho_00 / rho)
-        * power(_snow_number_aes_graupel_scalar(t=t, rho_s=x), B_S)
+        * power(_snow_number_scalar(t=t, rho_s=x), B_S)
     )
 
 
 @gtx.field_operator
-def _vm_graupel_aes_graupel_scalar(
+def _vm_graupel_scalar(
     rho_x: ta.wpfloat,
     rho: ta.wpfloat,
 ) -> ta.wpfloat:
     """
-    Graupel fall speed, AES_GRAUPEL scheme (scalar version for scan operators).
+    Graupel fall speed (scalar version for scan operators).
 
     Args:
         rho_x:        Graupel mass density rho*qg
@@ -526,9 +514,9 @@ def _vm_graupel_aes_graupel_scalar(
 
     Result:           Fall speed
     """
-    x = minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x))
+    x = minimum(GraupelConsts.rhox_mx, maximum(GraupelConsts.rhox_mn, rho_x))
     return (
-        AesGraupelConsts.vm_prefactor_g
-        * power(x, AesGraupelConsts.vm_exponent_g)
+        GraupelConsts.vm_prefactor_g
+        * power(x, GraupelConsts.vm_exponent_g)
         * sqrt(GraupelConsts.rho_00 / rho)
     )

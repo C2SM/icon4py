@@ -23,12 +23,12 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
     _ice_mass,
     _ice_number,
     _ice_sticking,
-    _snow_lambda_aes_graupel,
-    _snow_number_aes_graupel,
-    _vm_graupel_aes_graupel_scalar,
-    _vm_ice_aes_graupel_scalar,
-    _vm_rain_aes_graupel_scalar,
-    _vm_snow_aes_graupel_scalar,
+    _snow_lambda,
+    _snow_number,
+    _vm_graupel_scalar,
+    _vm_ice_scalar,
+    _vm_rain_scalar,
+    _vm_snow_scalar,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
     _internal_energy_scalar,
@@ -38,14 +38,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import (
     _cloud_to_graupel,
-    _cloud_to_rain_aes_graupel,
-    _cloud_to_snow_aes_graupel,
+    _cloud_to_rain,
+    _cloud_to_snow,
     _cloud_x_ice,
     _graupel_to_rain,
     _ice_to_graupel,
     _ice_to_snow,
     _rain_to_graupel,
-    _rain_to_vapor_aes_graupel,
+    _rain_to_vapor,
     _snow_to_graupel,
     _snow_to_rain,
     _vapor_x_graupel,
@@ -82,7 +82,7 @@ class IntegrationState(NamedTuple):
 
 
 @gtx.field_operator
-def precip_qx_level_update_aes_graupel(  # noqa: PLR0917 [too-many-positional-arguments]
+def precip_qx_level_update(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level_q: PrecipStateQx,
     zeta: ta.wpfloat,  # dt/(2dz)
     q: ta.wpfloat,  # specific mass of hydrometeor
@@ -205,50 +205,50 @@ def _precip_and_t(  # noqa: PLR0917 [too-many-positional-arguments]
     if current_level_activated:
         # full vm formulas: fall_speed at this level's hydrometeor density,
         # vt at the level-averaged density using the previous level's rho and t
-        r_update = precip_qx_level_update_aes_graupel(
+        r_update = precip_qx_level_update(
             previous_level.r,
             zeta,
             q.r,
             rho,
-            _vm_rain_aes_graupel_scalar(q.r * rho, rho),
-            _vm_rain_aes_graupel_scalar(
+            _vm_rain_scalar(q.r * rho, rho),
+            _vm_rain_scalar(
                 (previous_level.r.x + q.r) * wpfloat(0.5) * previous_level.rho,
                 previous_level.rho,
             ),
             mask_r,
         )
-        s_update = precip_qx_level_update_aes_graupel(
+        s_update = precip_qx_level_update(
             previous_level.s,
             zeta,
             q.s,
             rho,
-            _vm_snow_aes_graupel_scalar(q.s * rho, rho, t),
-            _vm_snow_aes_graupel_scalar(
+            _vm_snow_scalar(q.s * rho, rho, t),
+            _vm_snow_scalar(
                 (previous_level.s.x + q.s) * wpfloat(0.5) * previous_level.rho,
                 previous_level.rho,
                 previous_level.t_in,
             ),
             mask_s,
         )
-        i_update = precip_qx_level_update_aes_graupel(
+        i_update = precip_qx_level_update(
             previous_level.i,
             zeta,
             q.i,
             rho,
-            _vm_ice_aes_graupel_scalar(q.i * rho, rho),
-            _vm_ice_aes_graupel_scalar(
+            _vm_ice_scalar(q.i * rho, rho),
+            _vm_ice_scalar(
                 (previous_level.i.x + q.i) * wpfloat(0.5) * previous_level.rho,
                 previous_level.rho,
             ),
             mask_i,
         )
-        g_update = precip_qx_level_update_aes_graupel(
+        g_update = precip_qx_level_update(
             previous_level.g,
             zeta,
             q.g,
             rho,
-            _vm_graupel_aes_graupel_scalar(q.g * rho, rho),
-            _vm_graupel_aes_graupel_scalar(
+            _vm_graupel_scalar(q.g * rho, rho),
+            _vm_graupel_scalar(
                 (previous_level.g.x + q.g) * wpfloat(0.5) * previous_level.rho,
                 previous_level.rho,
             ),
@@ -350,18 +350,18 @@ def _q_t_update(  # noqa: PLR0917 [too-many-positional-arguments, too-many-state
     dvsw = q.v - _qsat_rho(t, rho)
     qvsi = _qsat_ice_rho(t, rho)
     dvsi = q.v - qvsi
-    n_snow = _snow_number_aes_graupel(t, rho * q.s)
-    l_snow = _snow_lambda_aes_graupel(rho * q.s, n_snow)
+    n_snow = _snow_number(t, rho * q.s)
+    l_snow = _snow_lambda(rho * q.s, n_snow)
 
     t_below_tmelt = t < ThermodynamicConsts.tmelt
     t_at_least_tmelt = ~t_below_tmelt
 
     # Define conversion 'matrix'
-    c2r = _cloud_to_rain_aes_graupel(t, rho, q.c, q.r, qnc)
-    r2v = _rain_to_vapor_aes_graupel(t, rho, q.c, q.r, dvsw, dt)
+    c2r = _cloud_to_rain(t, rho, q.c, q.r, qnc)
+    r2v = _rain_to_vapor(t, rho, q.c, q.r, dvsw, dt)
     c2i, i2c = symmetric(_cloud_x_ice(t, q.c, q.i, dt))
 
-    c2s = _cloud_to_snow_aes_graupel(t, q.c, q.s, n_snow, l_snow)
+    c2s = _cloud_to_snow(t, q.c, q.s, n_snow, l_snow)
     c2g = _cloud_to_graupel(t, rho, q.c, q.g)
 
     c2r = where(t_at_least_tmelt, c2r + c2s + c2g, c2r)
