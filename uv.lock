@@ -1162,23 +1162,26 @@ wheels = [
 [[package]]
 dependencies = [
   {name = "astunparse"},
+  {name = "cmake"},
   {name = "dill"},
   {name = "fparser"},
   {name = "ml-dtypes"},
   {name = "networkx"},
+  {name = "ninja"},
   {name = "numpy"},
   {name = "ordered-set"},
   {name = "packaging"},
   {name = "ply"},
   {name = "pyreadline", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"},
   {name = "pyyaml"},
+  {name = "scikit-build"},
   {name = "sympy"},
   {name = "typing-extensions"}
 ]
 name = "dace"
-sdist = {url = "https://files.pythonhosted.org/packages/ea/f2/31941fed070b22a94a265e612fb9615080a3d5f788273e37be6eadf57042/dace-2.0.0a6.tar.gz", hash = "sha256:d05884911a5f49bc89bf4b90b1aca2c1dc713541c5e0b5c9039cb7b39de24102", size = 6373222, upload-time = "2026-08-14T10:17:41.117Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/df/e0/2c45877476eb300fc8211fb2a46b3e3203468cd2bd3e0ecb4a7f5a7a4694/dace-2.0.0a7.tar.gz", hash = "sha256:ab15a73ce4c2cacaf9244832f84ea56328e181b21956a6d0c529782201609095", size = 6827344, upload-time = "2026-08-28T14:11:38.633Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "2.0.0a6"
+version = "2.0.0a7"
 
 [[package]]
 dependencies = [
@@ -1326,6 +1329,15 @@ source = {registry = "https://pypi.org/simple"}
 version = "2026.3.0"
 wheels = [
   {url = "https://files.pythonhosted.org/packages/b9/77/2ff7aefc09cf1306a81cd7a46af34f80ebefef81a2e8329b94b58ad813ae/distributed-2026.3.0-py3-none-any.whl", hash = "sha256:52518f4b3e6795e87b442e8f57788ba1ddc750c62d0835669c85927280d38f07", size = 1009769, upload-time = "2026-03-18T07:10:21.241Z"}
+]
+
+[[package]]
+name = "distro"
+sdist = {url = "https://files.pythonhosted.org/packages/fc/f8/98eea607f65de6527f8a2e8885fc8015d3e6f5775df186e443e0964a11c3/distro-1.9.0.tar.gz", hash = "sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed", size = 60722, upload-time = "2023-12-24T09:54:32.31Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "1.9.0"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl", hash = "sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2", size = 20277, upload-time = "2023-12-24T09:54:30.421Z"}
 ]
 
 [[package]]
@@ -1647,11 +1659,11 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-sdist = {url = "https://files.pythonhosted.org/packages/a7/1b/32d686217f33923be252c4dda950aedbd20aa94447d62e2332c1ae776fe1/gt4py-1.2.1.tar.gz", hash = "sha256:8f3cce85380994cf532b0433300496cddfb5e1855ee623642ef188851ce1ccea", size = 882545, upload-time = "2026-08-17T10:47:25.351Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/b4/54/c9a0cfe5eb6289b6cc2a63113e9bff4807dfc672b2512f0bac5ac74d8740/gt4py-1.2.2.tar.gz", hash = "sha256:78704e71fb719d7d5ba61690f9ea749e80c5088ef194ffdb3d5c4bff31585739", size = 891724, upload-time = "2026-09-02T08:10:11.521Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "1.2.1"
+version = "1.2.2"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/c0/8d/30417e009216393825d4584f93a7cbf858a9d3987cc8ee28538af26f029a/gt4py-1.2.1-py3-none-any.whl", hash = "sha256:7cad0421f13c558166991a5e1f6042351473e52957461f406c068bec5d8b459c", size = 1100850, upload-time = "2026-08-17T10:47:23.49Z"}
+  {url = "https://files.pythonhosted.org/packages/30/dc/a66802bed6b499349315b5e20108341306d0430235e1b1d0e56cf011e97e/gt4py-1.2.2-py3-none-any.whl", hash = "sha256:2aa7ea57081ed1ba51b202bc87e89a67c5fcb3588a8cb9b3a13d5343f0d83762", size = 1111109, upload-time = "2026-09-02T08:10:09.771Z"}
 ]
 
 [package.optional-dependencies]
@@ -2035,7 +2047,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2052,7 +2064,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2069,7 +2081,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2087,7 +2099,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
@@ -2120,7 +2132,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2149,7 +2161,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
@@ -2201,7 +2213,7 @@ requires-dist = [
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
   {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
   {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'"},
@@ -2273,8 +2285,10 @@ dependencies = [
   {name = "gt4py"},
   {name = "icon4py-atmosphere-diffusion"},
   {name = "icon4py-atmosphere-dycore"},
+  {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-atmosphere-physics-driver"},
+  {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common", extra = ["io"]},
   {name = "packaging"},
   {name = "typer"}
@@ -2286,11 +2300,13 @@ version = "0.4.1"
 [package.metadata]
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
+  {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
   {name = "icon4py-atmosphere-physics-driver", editable = "model/atmosphere/subgrid_scale_physics/physics_driver"},
+  {name = "icon4py-atmosphere-tracer-advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"},
   {name = "typer", specifier = ">=0.20.0"}
@@ -2301,6 +2317,7 @@ dependencies = [
   {name = "filelock"},
   {name = "gt4py"},
   {name = "icon4py-common", extra = ["io"]},
+  {name = "icon4py-driver"},
   {name = "numpy"},
   {name = "packaging"},
   {name = "pooch"},
@@ -2314,8 +2331,9 @@ version = "0.4.1"
 [package.metadata]
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
+  {name = "icon4py-driver", editable = "model/driver"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"},
   {name = "pooch", specifier = ">=1.7.0"},
@@ -2346,7 +2364,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.1.7"},
   {name = "configargparse", specifier = ">=1.7.1"},
   {name = "fprettify", specifier = ">=0.3.7"},
-  {name = "gt4py", specifier = "==1.2.1"},
+  {name = "gt4py", specifier = "==1.2.2"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},
@@ -4585,6 +4603,21 @@ wheels = [
   {url = "https://files.pythonhosted.org/packages/36/38/012bf76752e1f89ed50b77b99532d90f3a3e287bc7918e1fc0948ac866ac/ruff-0.15.14-py3-none-win32.whl", hash = "sha256:6d0c1ad2a0ab718d39b6d8fd2217981ce4d625cd96a720095f798fb47d8b13e6", size = 10805548, upload-time = "2026-05-21T14:34:33.453Z"},
   {url = "https://files.pythonhosted.org/packages/d1/b7/4ea2c170f10ad760fff2a5250beb18897719dc8b52b53a24cddbb9dd3f19/ruff-0.15.14-py3-none-win_amd64.whl", hash = "sha256:802342981e056db3851a7836e5b070f8f15f67d4a685ae2a6160939d364b2902", size = 11939523, upload-time = "2026-05-21T14:34:18.077Z"},
   {url = "https://files.pythonhosted.org/packages/62/d5/bc97ff895ec35cf3925d4bd60f3b39d822f377a446906ec9bcc87405e59b/ruff-0.15.14-py3-none-win_arm64.whl", hash = "sha256:ff47b90a9ef6a40c9e2f3b479c1fb78531adf055b94c1eba0a7ba04b31951826", size = 11208607, upload-time = "2026-05-21T14:34:26.525Z"}
+]
+
+[[package]]
+dependencies = [
+  {name = "distro"},
+  {name = "packaging"},
+  {name = "setuptools"},
+  {name = "wheel"}
+]
+name = "scikit-build"
+sdist = {url = "https://files.pythonhosted.org/packages/c7/ce/8ec52888f74a3e849a56bfe0a6d48d93646ac95ad4ff22915639a4393ea6/scikit_build-0.19.1.tar.gz", hash = "sha256:b9a8d07fca2d5d10d93220bc57a685161d72af1fc76285d55c564ddaa862e584", size = 276708, upload-time = "2026-06-23T01:39:06.454Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "0.19.1"
+wheels = [
+  {url = "https://files.pythonhosted.org/packages/47/ef/53c5d9293d1d11ed4e682fdd7f32c776b79ee30f83757395db0d4d0f0276/scikit_build-0.19.1-py3-none-any.whl", hash = "sha256:a4fa78a7222ca40d5e8bae6700514bbf7efea4346efd9fc1f8cfca837cd1de71", size = 86399, upload-time = "2026-06-23T01:39:04.874Z"}
 ]
 
 [[package]]
