@@ -50,7 +50,6 @@ from gt4py.next.ffront.decorator import FieldOperator
 from gt4py.next.instrumentation import hooks as gtx_hooks, metrics as gtx_metrics
 
 from icon4py.model.common import exceptions, model_backends, model_options, type_alias as ta
-from icon4py.model.common.constants import WP_EPS
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation, device_utils
 from icon4py.model.testing import test_utils

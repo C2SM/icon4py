@@ -128,12 +128,8 @@ class TestApplyDiffusionToVn(stencil_tests.StencilTest):
         u_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=vpfloat)
         v_vert = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=vpfloat)
 
-        primal_normal_vert_v1 = data_alloc.random_field(
-            dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
-        )
-        primal_normal_vert_v2 = data_alloc.random_field(
-            dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
-        )
+        primal_normal_vert_v1 = data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_v2 = data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
 
         inv_vert_vert_length = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
         inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)

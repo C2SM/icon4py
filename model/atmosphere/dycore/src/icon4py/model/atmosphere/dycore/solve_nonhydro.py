@@ -20,7 +20,6 @@ from gt4py.next import common as gtx_common
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.common.states import utils as state_utils
 from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
@@ -67,7 +66,11 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.model_options import setup_program
-from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
+from icon4py.model.common.states import (
+    nonhydro_states,
+    prognostic_state as prognostics,
+    utils as state_utils,
+)
 from icon4py.model.common.type_alias import dataclass_scalars_to_wp
 from icon4py.model.common.utils import data_allocation as data_alloc
 
