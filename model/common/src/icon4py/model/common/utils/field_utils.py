@@ -11,7 +11,7 @@ from gt4py import next as gtx
 from gt4py.next import typing as gtx_typing
 
 
-def flip(field: gtx.Field, dim: type[gtx.Dimension], allocator: gtx_typing.Allocator) -> gtx.Field:
+def flip(field: gtx.Field, dim: gtx.Dimension, allocator: gtx_typing.Allocator) -> gtx.Field:
     """Flip a field along a given dimension.
 
     Args:
@@ -26,7 +26,7 @@ def flip(field: gtx.Field, dim: type[gtx.Dimension], allocator: gtx_typing.Alloc
 
 
 def index2offset(
-    index_field: gtx.Field, dim: type[gtx.Dimension], allocator: gtx_typing.Allocator
+    index_field: gtx.Field, dim: gtx.Dimension, allocator: gtx_typing.Allocator
 ) -> gtx.Field:
     """Convert an index field to an offset field.
 

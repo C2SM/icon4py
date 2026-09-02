@@ -50,12 +50,12 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 log = logging.getLogger(__name__)
 
 #: CF dimension name ("cell", "edge", "vertex") for each horizontal dimension.
-HORIZONTAL_DIM_NAMES: Final[dict[type[gtx.Dimension], str]] = {
+HORIZONTAL_DIM_NAMES: Final[dict[gtx.Dimension, str]] = {
     dim: ugrid.dimension_mapping(dim, is_on_half_levels=False) for dim in dims.horizontal_dims()
 }
 
 #: Horizontal dimension for each CF dimension name (inverse of HORIZONTAL_DIM_NAMES).
-HORIZONTAL_DIMS_BY_NAME: Final[dict[str, type[gtx.Dimension]]] = {
+HORIZONTAL_DIMS_BY_NAME: Final[dict[str, gtx.Dimension]] = {
     name: dim for dim, name in HORIZONTAL_DIM_NAMES.items()
 }
 
@@ -182,7 +182,7 @@ def check_chunks_align_with_blocks(
 
 
 def _owned_global_index(
-    decomposition_info: decomposition.DecompositionInfo, dim: type[gtx.Dimension]
+    decomposition_info: decomposition.DecompositionInfo, dim: gtx.Dimension
 ) -> np.ndarray:
     """Owned global indices of a dimension, as int64 (the MPI-exchange dtype)."""
     return np.asarray(

@@ -33,7 +33,7 @@ functionality needed for single grid ordering and decomposition.
 """
 _log = logging.getLogger(__name__)
 
-_MAX_ORDERED: Final[dict[type[gtx.Dimension], int]] = {
+_MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: gridfile.FixedSizeDimension.CELL_GRF.size,
     dims.EdgeDim: gridfile.FixedSizeDimension.EDGE_GRF.size,
     dims.VertexDim: gridfile.FixedSizeDimension.VERTEX_GRF.size,
@@ -108,7 +108,7 @@ Grid points can be ordered (moved to the beginning of an field array) up to any 
 ordered rows is a parameter to the grid generation.
 """
 
-_GRID_REFINEMENT_BOUNDARY_WIDTH: Final[dict[type[gtx.Dimension], int]] = {
+_GRID_REFINEMENT_BOUNDARY_WIDTH: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 4,
     dims.EdgeDim: 9,
     dims.VertexDim: 4,
@@ -123,14 +123,14 @@ refinement value of elements in buffer:   |1, 1, ... |2, 2, ...                 
 
 """
 
-_UNORDERED: Final[dict[type[gtx.Dimension], tuple[int, int]]] = {
+_UNORDERED: Final[dict[gtx.Dimension, tuple[int, int]]] = {
     dims.CellDim: (0, -4),
     dims.EdgeDim: (0, -8),
     dims.VertexDim: (0, -4),
 }
 """Refinement value indicating a point is in the unordered interior (fully prognostic) of the grid: this is encoded by 0 or -4 in coarser parent grid."""
 
-_MIN_ORDERED: Final[dict[type[gtx.Dimension], int]] = {
+_MIN_ORDERED: Final[dict[gtx.Dimension, int]] = {
     dim: value[1] + 1 for dim, value in _UNORDERED.items()
 }
 """For coarse parent grids the refinement control value of overlapping boundary regions are counted with negative values.
@@ -140,12 +140,12 @@ _MIN_ORDERED: Final[dict[type[gtx.Dimension], int]] = {
 DEFAULT_GRF_NUDGEZONE_WIDTH: Final[int] = 8
 
 
-_LAST_NUDGING: dict[type[gtx.Dimension], h_grid.Zone] = {
+_LAST_NUDGING: dict[gtx.Dimension, h_grid.Zone] = {
     dims.EdgeDim: h_grid.Zone.NUDGING_LEVEL_2,
     dims.CellDim: h_grid.Zone.NUDGING,
     dims.VertexDim: h_grid.Zone.NUDGING,
 }
-_LAST_BOUNDARY: dict[type[gtx.Dimension], h_grid.Zone] = {
+_LAST_BOUNDARY: dict[gtx.Dimension, h_grid.Zone] = {
     dims.EdgeDim: h_grid.Zone.LATERAL_BOUNDARY_LEVEL_8,
     dims.CellDim: h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4,
     dims.VertexDim: h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4,
@@ -173,8 +173,8 @@ def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
 
 
 def compute_domain_bounds(
-    dim: type[gtx.Dimension],
-    refinement_fields: dict[type[gtx.Dimension], gtx.Field],
+    dim: gtx.Dimension,
+    refinement_fields: dict[gtx.Dimension, gtx.Field],
     decomposition_info: decomposition.DecompositionInfo,
 ) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
     """
@@ -281,18 +281,18 @@ def compute_domain_bounds(
     return start_indices, end_indices
 
 
-def get_nudging_refinement_value(dim: type[gtx.Dimension]) -> int:
+def get_nudging_refinement_value(dim: gtx.Dimension) -> int:
     return _LAST_BOUNDARY[dim].level + _LAST_NUDGING[dim].level
 
 
-def is_unordered_field(field: data_alloc.NDArray, dim: type[gtx.Dimension]) -> data_alloc.NDArray:
+def is_unordered_field(field: data_alloc.NDArray, dim: gtx.Dimension) -> data_alloc.NDArray:
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"  # type: ignore [attr-defined]
     array_ns = data_alloc.array_namespace(field)
     return array_ns.isin(field, _UNORDERED[dim])
 
 
 def convert_to_non_nested_refinement_values(
-    field: data_alloc.NDArray, dim: type[gtx.Dimension]
+    field: data_alloc.NDArray, dim: gtx.Dimension
 ) -> data_alloc.NDArray:
     """Convenience function that converts the grid refinement value from a coarser
     parent grid to the canonical values used in an unnested setup.

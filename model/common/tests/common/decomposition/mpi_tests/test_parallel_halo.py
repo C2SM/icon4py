@@ -27,7 +27,7 @@ _log = logging.getLogger(__name__)
 backend = None
 
 
-def global_indices(dim: type[gtx.Dimension]) -> np.ndarray:
+def global_indices(dim: gtx.Dimension) -> np.ndarray:
     mesh = simple.simple_grid()
     return np.arange(mesh.size[dim], dtype=gtx.int32)
 

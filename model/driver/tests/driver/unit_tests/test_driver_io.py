@@ -46,7 +46,7 @@ def _make_prognostic_state(
 ) -> prognostics.PrognosticState:
     # Constructed directly (instead of `initialize_prognostic_state`) so it works with
     # the generic `simple_grid`.
-    def _cell_k(extend: dict[type[gtx.Dimension], int] | None = None) -> gtx.Field:
+    def _cell_k(extend: dict[gtx.Dimension, int] | None = None) -> gtx.Field:
         return data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend=extend, allocator=allocator
         )
@@ -68,7 +68,7 @@ def prognostic_state(grid: base.Grid) -> prognostics.PrognosticState:
 
 
 def _expected(
-    cf_key: str, horizontal_dim: type[gtx.Dimension], *, is_on_half_levels: bool = False
+    cf_key: str, horizontal_dim: gtx.Dimension, *, is_on_half_levels: bool = False
 ) -> state_model.FieldMetaData:
     """Expected output metadata: the shared CF entry plus the expected dims and vertical
     placement. ``standard_name``/``units`` come from the shared table rather than being
@@ -91,15 +91,15 @@ _EXPECTED: dict[str, state_model.FieldMetaData] = {
 }
 
 #: UGRID dimension names of the horizontal dimensions.
-_UGRID_DIM_NAMES: dict[type[gtx.Dimension], str] = {
+_UGRID_DIM_NAMES: dict[gtx.Dimension, str] = {
     dims.CellDim: "cell",
     dims.EdgeDim: "edge",
     dims.VertexDim: "vertex",
 }
 
 
-def _horizontal_size(grid: base.Grid, dim: type[gtx.Dimension]) -> int:
-    sizes: dict[type[gtx.Dimension], int] = {
+def _horizontal_size(grid: base.Grid, dim: gtx.Dimension) -> int:
+    sizes: dict[gtx.Dimension, int] = {
         dims.CellDim: grid.num_cells,
         dims.EdgeDim: grid.num_edges,
         dims.VertexDim: grid.num_vertices,

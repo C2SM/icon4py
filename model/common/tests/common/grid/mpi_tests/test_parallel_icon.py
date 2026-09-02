@@ -57,13 +57,13 @@ def test_props(process_props: decomp_defs.ProcessProperties) -> None:
     ghex.make_context(process_props.comm)
 
 
-LOCAL_IDX_2: dict[type[gtx.Dimension], dict[int, int]] = {
+LOCAL_IDX_2: dict[gtx.Dimension, dict[int, int]] = {
     dims.CellDim: {0: 10454, 1: 10454},
     dims.EdgeDim: {0: 15830, 1: 15754},
     dims.VertexDim: {0: 5375, 1: 5296},
 }
 
-LOCAL_IDX_4: dict[type[gtx.Dimension], dict[int, int]] = {
+LOCAL_IDX_4: dict[gtx.Dimension, dict[int, int]] = {
     dims.CellDim: {0: 5238, 1: 5222, 2: 5231, 3: 5230},
     dims.EdgeDim: {0: 7929, 1: 7838, 2: 7955, 3: 7889},
     dims.VertexDim: {0: 2688, 1: 2612, 2: 2723, 3: 2656},
@@ -84,7 +84,7 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_start_index_end_index_local_zone_on_distributed_lam_grid(
     process_props: decomp_defs.ProcessProperties,
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     icon_grid: base_grid.Grid,
     experiment: test_defs.Experiment,
 ) -> None:
@@ -103,7 +103,7 @@ def test_start_index_end_index_local_zone_on_distributed_lam_grid(
     )
 
 
-HALO_IDX_4: dict[type[gtx.Dimension], dict[int, tuple[int, int, int]]] = {
+HALO_IDX_4: dict[gtx.Dimension, dict[int, tuple[int, int, int]]] = {
     dims.CellDim: {
         0: (5238, 5340, 5446),
         1: (5222, 5325, 5433),
@@ -123,7 +123,7 @@ HALO_IDX_4: dict[type[gtx.Dimension], dict[int, tuple[int, int, int]]] = {
         3: (2656, 2723, 2832),
     },
 }
-HALO_IDX_2: dict[type[gtx.Dimension], dict[int, tuple[int, int, int]]] = {
+HALO_IDX_2: dict[gtx.Dimension, dict[int, tuple[int, int, int]]] = {
     dims.CellDim: {
         0: (10454, 10531, 10611),
         1: (10454, 10531, 10612),
@@ -154,7 +154,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
 def test_start_index_end_index_halo_zones_on_distributed_lam_grid(  # noqa: PLR0917 [too-many-positional-arguments]
     process_props: decomp_defs.ProcessProperties,
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
     experiment: test_defs.Experiment,

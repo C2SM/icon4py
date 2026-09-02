@@ -30,7 +30,7 @@ from .. import utils
 def test_is_local_area_grid_for_grid_files(
     grid_file: test_defs.GridDescription,
     expected: bool,
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     backend: gtx_typing.Backend | None,
 ) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(
@@ -143,7 +143,7 @@ _FALLBACK_FAIL = (-10, -10)
 )
 def test_compute_domain_bounds_for_limited_area_grid(
     grid_description: test_defs.GridDescription,
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     expected: dict[h_grid.Zone, tuple[int, int]],
     cpu_allocator: gtx_typing.Allocator,
 ) -> None:
@@ -176,7 +176,7 @@ def test_compute_domain_bounds_for_limited_area_grid(
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_compute_domain_bounds_for_global_grid(
     grid_description: test_defs.GridDescription,
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     if grid_description.limited_area:

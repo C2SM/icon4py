@@ -62,23 +62,23 @@ def nudging() -> Iterator[h_grid.Zone]:
             yield marker
 
 
-LATERAL_BOUNDARY_IDX: dict[type[gtx.Dimension], list[int]] = {
+LATERAL_BOUNDARY_IDX: dict[gtx.Dimension, list[int]] = {
     dims.CellDim: [0, 850, 1688, 2511, 3316, 4104],
     dims.EdgeDim: [0, 428, 1278, 1700, 2538, 2954, 3777, 4184, 4989, 5387, 6176],
     dims.VertexDim: [0, 428, 850, 1266, 1673, 2071],
 }
 
-NUDGING_IDX: dict[type[gtx.Dimension], list[int]] = {
+NUDGING_IDX: dict[gtx.Dimension, list[int]] = {
     dims.CellDim: [3316, 4104],
     dims.EdgeDim: [4989, 5387, 6176],
     dims.VertexDim: [1673, 2071],
 }
-HALO_IDX: dict[type[gtx.Dimension], list[int]] = {
+HALO_IDX: dict[gtx.Dimension, list[int]] = {
     dims.CellDim: [20896, 20896],
     dims.EdgeDim: [31558, 31558],
     dims.VertexDim: [10663, 10663],
 }
-INTERIOR_IDX: dict[type[gtx.Dimension], list[int]] = {
+INTERIOR_IDX: dict[gtx.Dimension, list[int]] = {
     dims.CellDim: [4104, HALO_IDX[dims.CellDim][0]],
     dims.EdgeDim: [6176, HALO_IDX[dims.EdgeDim][0]],
     dims.VertexDim: [2071, HALO_IDX[dims.VertexDim][0]],
@@ -109,7 +109,7 @@ def grid(
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 @pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
-def test_halo(grid: base_grid.Grid, dim: type[gtx.Dimension], marker: h_grid.Zone) -> None:
+def test_halo(grid: base_grid.Grid, dim: gtx.Dimension, marker: h_grid.Zone) -> None:
     # For single node this returns an empty region - start and end index are the same see  also ./mpi_tests/test_icon.py
     domain = h_grid.domain(dim)(marker)
     assert grid.start_index(domain) == HALO_IDX[dim][0]
@@ -118,7 +118,7 @@ def test_halo(grid: base_grid.Grid, dim: type[gtx.Dimension], marker: h_grid.Zon
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
-def test_local(dim: type[gtx.Dimension], grid: base_grid.Grid) -> None:
+def test_local(dim: gtx.Dimension, grid: base_grid.Grid) -> None:
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
     assert grid.start_index(domain) == 0
     assert grid.end_index(domain) == grid.size[dim]
@@ -127,9 +127,7 @@ def test_local(dim: type[gtx.Dimension], grid: base_grid.Grid) -> None:
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 @pytest.mark.parametrize("marker", lateral_boundary())
-def test_lateral_boundary(
-    grid: base_grid.Grid, dim: type[gtx.Dimension], marker: h_grid.Zone
-) -> None:
+def test_lateral_boundary(grid: base_grid.Grid, dim: gtx.Dimension, marker: h_grid.Zone) -> None:
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if num > 4 and dim in (dims.VertexDim, dims.CellDim):
         with pytest.raises(AssertionError, match=f"Invalid zone {marker} for dimension"):
@@ -144,7 +142,7 @@ def test_lateral_boundary(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
-def test_end(grid: base_grid.Grid, dim: type[gtx.Dimension]) -> None:
+def test_end(grid: base_grid.Grid, dim: gtx.Dimension) -> None:
     domain = h_grid.domain(dim)(h_grid.Zone.END)
     assert grid.start_index(domain) == grid.size[dim]
     assert grid.end_index(domain) == grid.size[dim]
@@ -153,7 +151,7 @@ def test_end(grid: base_grid.Grid, dim: type[gtx.Dimension]) -> None:
 @pytest.mark.datatest
 @pytest.mark.parametrize("marker", nudging())
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
-def test_nudging(grid: base_grid.Grid, dim: type[gtx.Dimension], marker: h_grid.Zone) -> None:
+def test_nudging(grid: base_grid.Grid, dim: gtx.Dimension, marker: h_grid.Zone) -> None:
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if dim in (dims.VertexDim, dims.CellDim) and num > 1:
         with pytest.raises(AssertionError, match=f"Invalid zone {marker} for dimension"):
@@ -168,7 +166,7 @@ def test_nudging(grid: base_grid.Grid, dim: type[gtx.Dimension], marker: h_grid.
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
-def test_interior(grid: base_grid.Grid, dim: type[gtx.Dimension]) -> None:
+def test_interior(grid: base_grid.Grid, dim: gtx.Dimension) -> None:
     domain = h_grid.domain(dim)(h_grid.Zone.INTERIOR)
     start_index = grid.start_index(domain)
     end_index = grid.end_index(domain)
@@ -214,7 +212,7 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(
 @pytest.mark.parametrize("dim", (dims.local_dims()))
 def test_when_replace_skip_values_then_only_pentagon_points_remain(
     grid_description: test_defs.GridDescription,
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
     if dim == dims.V2E2VDim:

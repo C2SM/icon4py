@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("dim", dims.non_horizontal_dims())
-def test_domain_raises_for_non_horizontal_dim(dim: type[gtx.Dimension]) -> None:
+def test_domain_raises_for_non_horizontal_dim(dim: gtx.Dimension) -> None:
     with pytest.raises(AssertionError, match="horizontal dimensions"):
         h_grid.domain(dim)
 
@@ -37,7 +37,7 @@ def zones() -> Iterator[h_grid.Zone]:
 
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 @pytest.mark.parametrize("zone", zones())
-def test_domain_raises_for_invalid_zones(dim: type[gtx.Dimension], zone: h_grid.Zone) -> None:
+def test_domain_raises_for_invalid_zones(dim: gtx.Dimension, zone: h_grid.Zone) -> None:
     if dim in (dims.CellDim, dims.VertexDim):
         if zone in (
             h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5,
@@ -59,5 +59,5 @@ def test_halo_zones(zone: h_grid.Zone) -> None:
 @pytest.mark.parametrize(
     "dim, expected", [(dims.CellDim, 4), (dims.VertexDim, 4), (dims.EdgeDim, 8)]
 )
-def test_max_boundary_level(dim: type[gtx.Dimension], expected: int) -> None:
+def test_max_boundary_level(dim: gtx.Dimension, expected: int) -> None:
     assert expected == h_grid.max_boundary_level(dim)

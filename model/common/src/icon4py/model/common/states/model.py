@@ -32,7 +32,7 @@ class OptionalMetaData(TypedDict, total=False):
     #: list index for variables stored in fortran lists (e.g. tracers)
     icon_var_list_index: int
     # TODO(halungge): dims should probably be required?
-    dims: Sequence[type[gtx.Dimension]]
+    dims: Sequence[gtx.Dimension]
     dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
     #: whether the vertical dimension of the field lives on interface (half) levels
     #: rather than full levels

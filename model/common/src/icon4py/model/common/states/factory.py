@@ -344,8 +344,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         self,
         *,
         func: gtx_typing.FieldOperator,
-        domain: dict[type[gtx.Dimension], tuple[DomainType, DomainType]]
-        | tuple[type[gtx.Dimension], ...],
+        domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
         fields: dict[str, str],
         deps: dict[str, str],
         do_exchange: bool,
@@ -353,8 +352,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
     ):
         self._func = func
         self._dims: (
-            dict[type[gtx.Dimension], tuple[DomainType, DomainType]]
-            | tuple[type[gtx.Dimension], ...]
+            dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...]
         ) = domain
         self._dependencies = deps
         self._output = fields
@@ -459,7 +457,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         xp: ModuleType,
         metadata: dict[str, model.FieldMetaData],
     ) -> dict[str, state_utils.FieldType]:
-        def _map_size(dim: type[gtx.Dimension], grids: GridProvider) -> int:
+        def _map_size(dim: gtx.Dimension, grids: GridProvider) -> int:
             match dim:
                 case dims.KHalfDim:
                     return grids.vertical_grid.num_levels + 1
@@ -468,7 +466,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
                 case _:
                     return grids.grid.size[dim]
 
-        def _map_dim(dim: type[gtx.Dimension]) -> type[gtx.Dimension]:
+        def _map_dim(dim: gtx.Dimension) -> gtx.Dimension:
             match dim:
                 case dims.KHalfDim:
                     return dims.KDim
@@ -515,7 +513,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         self,
         *,
         func: gtx_typing.Program,
-        domain: dict[type[gtx.Dimension], tuple[DomainType, DomainType]],
+        domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
         fields: dict[str, str],
         deps: dict[str, str],
         do_exchange: bool,
@@ -539,12 +537,12 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         grid: base_grid.Grid,  # TODO @halungge: change to vertical grid
         dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
-        def _map_size(dim: type[gtx.Dimension], grid: base_grid.Grid) -> int:
+        def _map_size(dim: gtx.Dimension, grid: base_grid.Grid) -> int:
             if dim == dims.KHalfDim:
                 return grid.num_levels + 1
             return grid.size[dim]
 
-        def _map_dim(dim: type[gtx.Dimension]) -> type[gtx.Dimension]:
+        def _map_dim(dim: gtx.Dimension) -> gtx.Dimension:
             if dim == dims.KHalfDim:
                 return dims.KDim
             return dim
@@ -674,10 +672,10 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self,
         *,
         func: Callable,
-        domain: Sequence[type[gtx.Dimension]],
+        domain: Sequence[gtx.Dimension],
         fields: Sequence[str],
         deps: dict[str, str],
-        connectivities: dict[str, type[gtx.Dimension]] | None = None,
+        connectivities: dict[str, gtx.Dimension] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
         do_exchange: bool = False,
     ):
@@ -822,6 +820,6 @@ def dtype_or_default(
     return metadata[field_name].get("dtype", ta.wpfloat)
 
 
-def replace_khalfdim(dim: type[gtx.Dimension]) -> type[gtx.Dimension]:
+def replace_khalfdim(dim: gtx.Dimension) -> gtx.Dimension:
     """workaround to have consistent definitions. Remove once gt4py supports vertically staggered dimension"""
     return dims.KDim if dim == dims.KHalfDim else dim

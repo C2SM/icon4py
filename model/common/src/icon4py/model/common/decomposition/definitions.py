@@ -149,9 +149,9 @@ class DecompositionInfo:
     def __init__(
         self,
     ) -> None:
-        self._global_index: dict[type[gtx.Dimension], data_alloc.NDArray] = {}
-        self._halo_levels: dict[type[gtx.Dimension], data_alloc.NDArray] = {}
-        self._owner_mask: dict[type[gtx.Dimension], data_alloc.NDArray] = {}
+        self._global_index: dict[gtx.Dimension, data_alloc.NDArray] = {}
+        self._halo_levels: dict[gtx.Dimension, data_alloc.NDArray] = {}
+        self._owner_mask: dict[gtx.Dimension, data_alloc.NDArray] = {}
 
     class EntryType(int, Enum):
         ALL = 0
@@ -163,7 +163,7 @@ class DecompositionInfo:
     @utils.chainable
     def set_dimension(
         self,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         global_index: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
         halo_levels: data_alloc.NDArray | None,
@@ -203,7 +203,7 @@ class DecompositionInfo:
         return host
 
     def local_index(
-        self, dim: type[gtx.Dimension], entry_type: EntryType = EntryType.ALL
+        self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
     ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
@@ -225,17 +225,17 @@ class DecompositionInfo:
                 mask = self._owner_mask[dim]
                 return index[mask]
 
-    def _to_local_index(self, dim: type[gtx.Dimension]) -> data_alloc.NDArray:
+    def _to_local_index(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         data = self._global_index[dim]
         assert data.ndim == 1
         return data_alloc.array_namespace(data).arange(data.shape[0])
 
-    def owner_mask(self, dim: type[gtx.Dimension]) -> data_alloc.NDArray:
+    def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
     def global_index(
         self,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         entry_type: DecompositionInfo.EntryType = EntryType.ALL,
     ) -> data_alloc.NDArray:
         match entry_type:
@@ -261,16 +261,14 @@ class DecompositionInfo:
             num_vertices=self.global_index(dims.VertexDim, self.EntryType.ALL).shape[0],
         )
 
-    def get_halo_size(self, dim: type[gtx.Dimension], flag: DecompositionFlag) -> int:
+    def get_halo_size(self, dim: gtx.Dimension, flag: DecompositionFlag) -> int:
         level_mask = self.halo_level_mask(dim, flag)
         return data_alloc.array_namespace(level_mask).count_nonzero(level_mask)
 
-    def halo_levels(self, dim: type[gtx.Dimension]) -> data_alloc.NDArray:
+    def halo_levels(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._halo_levels[dim]
 
-    def halo_level_mask(
-        self, dim: type[gtx.Dimension], level: DecompositionFlag
-    ) -> data_alloc.NDArray:
+    def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag) -> data_alloc.NDArray:
         levels = self._halo_levels[dim]
         return data_alloc.array_namespace(levels).where(levels == level.value, True, False)
 
@@ -310,7 +308,7 @@ class ExchangeRuntime(Protocol):
     @overload
     def start(
         self,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
         stream: StreamLike = DEFAULT_STREAM,
     ) -> ExchangeResult: ...
@@ -318,7 +316,7 @@ class ExchangeRuntime(Protocol):
     @overload
     def start(
         self,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         *fields: gtx.Field,
         stream: StreamLike = DEFAULT_STREAM,
     ) -> ExchangeResult: ...
@@ -326,7 +324,7 @@ class ExchangeRuntime(Protocol):
     @abc.abstractmethod
     def start(
         self,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
         stream: StreamLike = DEFAULT_STREAM,
     ) -> ExchangeResult:
@@ -349,7 +347,7 @@ class ExchangeRuntime(Protocol):
     @overload
     def exchange(
         self,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
         stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None: ...
@@ -357,14 +355,14 @@ class ExchangeRuntime(Protocol):
     @overload
     def exchange(
         self,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         *fields: gtx.Field,
         stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None: ...
 
     def exchange(
         self,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
         stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None:
@@ -397,7 +395,7 @@ class ExchangeRuntime(Protocol):
     def __call__(
         self,
         *fields: gtx.Field | data_alloc.NDArray,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         full_exchange: Literal[True],
         stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None: ...
@@ -406,7 +404,7 @@ class ExchangeRuntime(Protocol):
     def __call__(
         self,
         *fields: gtx.Field | data_alloc.NDArray,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         full_exchange: Literal[False],
         stream: StreamLike = DEFAULT_STREAM,
     ) -> ExchangeResult: ...
@@ -414,7 +412,7 @@ class ExchangeRuntime(Protocol):
     def __call__(
         self,
         *fields: gtx.Field | data_alloc.NDArray,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         full_exchange: bool = True,
         stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None | ExchangeResult:
@@ -468,7 +466,7 @@ class SingleNodeExchange(ExchangeRuntime):
 
     def start(
         self,
-        dim: type[gtx.Dimension],
+        dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
         stream: StreamLike = DEFAULT_STREAM,
     ) -> ExchangeResult:

@@ -162,9 +162,9 @@ THIRD_HALO_LINE = {
 
 
 def assert_same_entries(
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     my_owned: np.ndarray,
-    reference: dict[type[gtx.Dimension], dict],
+    reference: dict[gtx.Dimension, dict],
     rank: int,
 ) -> None:
     print(f"myowned {my_owned}")

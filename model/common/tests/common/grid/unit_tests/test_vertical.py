@@ -107,7 +107,7 @@ def test_grid_size(experiment: test_defs.Experiment, grid_savepoint: sb.IconGrid
 )
 @pytest.mark.datatest
 def test_grid_size_raises_for_non_vertical_dim(
-    grid_savepoint: sb.IconGridSavepoint, dim: type[gtx.Dimension]
+    grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension
 ) -> None:
     vertical_grid = configure_vertical_grid(grid_savepoint)
     with pytest.raises(AssertionError):
@@ -117,7 +117,7 @@ def test_grid_size_raises_for_non_vertical_dim(
 @pytest.mark.datatest
 def test_grid_size_raises_for_unknown_vertical_dim(grid_savepoint: sb.IconGridSavepoint) -> None:
     vertical_grid = configure_vertical_grid(grid_savepoint)
-    j_dim = gtx.Dimension("J", kind=gtx.DimensionKind.VERTICAL)
+    j_dim = gtx.dimension("J", kind=gtx.DimensionKind.VERTICAL)
     with pytest.raises(ValueError):
         vertical_grid.size(j_dim)
 
@@ -180,7 +180,7 @@ def vertical_zones() -> Iterator[v_grid.Zone]:
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("kind", (gtx.DimensionKind.LOCAL, gtx.DimensionKind.HORIZONTAL))
 def test_domain_raises_for_non_vertical_dim(zone: v_grid.Zone, kind: gtx.DimensionKind) -> None:
-    dim = gtx.Dimension("I", kind=kind)
+    dim = gtx.dimension("I", kind=kind)
     with pytest.raises(AssertionError):
         v_grid.Domain(dim, zone)
 
@@ -189,7 +189,7 @@ def test_domain_raises_for_non_vertical_dim(zone: v_grid.Zone, kind: gtx.Dimensi
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_top(
-    grid_savepoint: sb.IconGridSavepoint, dim: type[gtx.Dimension], offset: int
+    grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
 ) -> None:
     vertical_grid = configure_vertical_grid(grid_savepoint)
     assert offset == vertical_grid.index(v_grid.Domain(dim, v_grid.Zone.TOP, offset))
@@ -200,7 +200,7 @@ def test_grid_index_top(
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(
-    grid_savepoint: sb.IconGridSavepoint, dim: type[gtx.Dimension], offset: int
+    grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
 ) -> None:
     vertical_grid = configure_vertical_grid(grid_savepoint)
     upwards = -offset
@@ -217,7 +217,7 @@ def test_grid_index_damping(
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(
-    grid_savepoint: sb.IconGridSavepoint, dim: type[gtx.Dimension], offset: int
+    grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
 ) -> None:
     vertical_grid = configure_vertical_grid(grid_savepoint)
     upwards = -offset
@@ -234,7 +234,7 @@ def test_grid_index_moist(
 @pytest.mark.parametrize("dim", dims.vertical_dims())
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(
-    grid_savepoint: sb.IconGridSavepoint, dim: type[gtx.Dimension], offset: int
+    grid_savepoint: sb.IconGridSavepoint, dim: gtx.Dimension, offset: int
 ) -> None:
     vertical_grid = configure_vertical_grid(grid_savepoint)
     upwards = -offset
@@ -256,7 +256,7 @@ def test_grid_index_flat(
 def test_grid_index_bottom(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     offset: int,
 ) -> None:
     valid_offset = -offset
@@ -279,7 +279,7 @@ def test_grid_index_raises_if_index_above_num_levels(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     zone: v_grid.Zone,
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     offset: int,
 ) -> None:
     vertical_size = (
@@ -303,7 +303,7 @@ def test_grid_index_raises_if_index_below_zero(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     zone: v_grid.Zone,
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     offset: int,
 ) -> None:
     vertical_size = (

@@ -50,38 +50,38 @@ _EDGE_GRF: Final[int] = 24
 _CELL_GRF: Final[int] = 14
 _VERTEX_GRF: Final[int] = 13
 
-_ICON_CONSTANTS_BOUNDS: Final[dict[type[gtx.Dimension], tuple[int, int]]] = {
+_ICON_CONSTANTS_BOUNDS: Final[dict[gtx.Dimension, tuple[int, int]]] = {
     dims.CellDim: (0, _CELL_GRF - 1),
     dims.EdgeDim: (0, _EDGE_GRF - 1),
     dims.VertexDim: (0, _VERTEX_GRF - 1),
 }
 
-_ICON_LATERAL_BOUNDARY: Final[dict[type[gtx.Dimension], int]] = {
+_ICON_LATERAL_BOUNDARY: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 9,
     dims.EdgeDim: 14,
     dims.VertexDim: 8,
 }
-ICON_LOCAL: Final[dict[type[gtx.Dimension], int]] = {
+ICON_LOCAL: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 4,
     dims.EdgeDim: 5,
     dims.VertexDim: 3,
 }
-_ICON_HALO: Final[dict[type[gtx.Dimension], int]] = {
+_ICON_HALO: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 3,
     dims.EdgeDim: 4,
     dims.VertexDim: 2,
 }
-_ICON_INTERIOR: Final[dict[type[gtx.Dimension], int]] = {
+_ICON_INTERIOR: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 8,
     dims.EdgeDim: 13,
     dims.VertexDim: 7,
 }
-_ICON_NUDGING: Final[dict[type[gtx.Dimension], int]] = {
+_ICON_NUDGING: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 13,
     dims.EdgeDim: 22,
     dims.VertexDim: 12,
 }
-_ICON_END: Final[dict[type[gtx.Dimension], int]] = {
+_ICON_END: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 0,
     dims.EdgeDim: 0,
     dims.VertexDim: 0,
@@ -97,7 +97,7 @@ The values here are translations of these indices taking into account that all a
 """
 
 
-def _icon_domain_index(value_dict: dict, dim: type[gtx.Dimension], offset: int = 0) -> int:
+def _icon_domain_index(value_dict: dict, dim: gtx.Dimension, offset: int = 0) -> int:
     index = value_dict[dim] + offset
     assert index <= _ICON_CONSTANTS_BOUNDS[dim][1], (
         f"Index {index} out of bounds for {dim}:  {_ICON_CONSTANTS_BOUNDS[dim]}"
@@ -298,7 +298,7 @@ VERTEX_AND_CELL_ZONES = (
 EDGE_ZONES = tuple(Zone)
 
 
-def max_boundary_level(dim: type[gtx.Dimension]) -> int:
+def max_boundary_level(dim: gtx.Dimension) -> int:
     return max((d.level for d in _get_zones_for_dim(dim) if d.is_lateral_boundary()), default=1)
 
 
@@ -321,7 +321,7 @@ _ZONE_TO_INDEX_MAPPING = {
 }
 
 
-def _map_zone_to_icon_array_index(dim: type[gtx.Dimension], zone: Zone) -> int:
+def _map_zone_to_icon_array_index(dim: gtx.Dimension, zone: Zone) -> int:
     return _ZONE_TO_INDEX_MAPPING[zone](dim)
 
 
@@ -332,7 +332,7 @@ class Domain:
     Used to access domain bounds in concrete the ICON grid.
     """
 
-    dim: type[gtx.Dimension]
+    dim: gtx.Dimension
     zone: Zone
 
     def __eq__(self, other: Any) -> bool:
@@ -356,7 +356,7 @@ class Domain:
         return self.zone.is_local()
 
 
-def domain(dim: type[gtx.Dimension]) -> Callable[[Zone], Domain]:
+def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
     """
     Factory function to create a domain object for a given dimension.
 
@@ -384,11 +384,11 @@ edge_domain = domain(dims.EdgeDim)
 cell_domain = domain(dims.CellDim)
 
 
-def _validate(dim: type[gtx.Dimension], marker: Zone) -> bool:
+def _validate(dim: gtx.Dimension, marker: Zone) -> bool:
     return marker in _get_zones_for_dim(dim)
 
 
-def _get_zones_for_dim(dim: type[gtx.Dimension]) -> tuple[Zone, ...]:
+def _get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
     """
     Get the grid zones valid for a given horizontal dimension in ICON .
     """
@@ -403,7 +403,7 @@ def _get_zones_for_dim(dim: type[gtx.Dimension]) -> tuple[Zone, ...]:
             )
 
 
-def get_domains_for_dim(dim: type[gtx.Dimension]) -> Iterator[Domain]:
+def get_domains_for_dim(dim: gtx.Dimension) -> Iterator[Domain]:
     """
     Generate all grid Domains for a given dimension
     Args:
@@ -418,13 +418,13 @@ def get_domains_for_dim(dim: type[gtx.Dimension]) -> Iterator[Domain]:
     return domains
 
 
-def get_halo_domains(dim: type[gtx.Dimension]) -> Iterator[Domain]:
+def get_halo_domains(dim: gtx.Dimension) -> Iterator[Domain]:
     get_domain = domain(dim)
     domains = (get_domain(zone) for zone in _get_zones_for_dim(dim) if zone.is_halo())
     return domains
 
 
-def get_ordered_domains(dim: type[gtx.Dimension]) -> Iterator[Domain]:
+def get_ordered_domains(dim: gtx.Dimension) -> Iterator[Domain]:
     get_domain = domain(dim)
     domains = (
         get_domain(zone)
@@ -440,9 +440,9 @@ def get_last_nudging(dim):
 
 
 def get_start_end_idx_from_icon_arrays(
-    dim: type[gtx.Dimension],
-    start_indices: dict[type[gtx.Dimension], np.ndarray],
-    end_indices: dict[type[gtx.Dimension], np.ndarray],
+    dim: gtx.Dimension,
+    start_indices: dict[gtx.Dimension, np.ndarray],
+    end_indices: dict[gtx.Dimension, np.ndarray],
 ) -> tuple[dict[Domain, gtx.int32], dict[Domain, gtx.int32]]:  # type: ignore [name-defined]
     """
     Translates ICON type start_idx and end_idx arrays to mapping of Domains to index values
@@ -460,7 +460,7 @@ def get_start_end_idx_from_icon_arrays(
 
 
 def _map_icon_array_to_domains(
-    dim: type[gtx.Dimension], pre_computed_bounds: np.ndarray
+    dim: gtx.Dimension, pre_computed_bounds: np.ndarray
 ) -> dict[Domain, gtx.int32]:  # type: ignore [name-defined]
     domains = get_domains_for_dim(dim)
     return {

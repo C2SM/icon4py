@@ -67,7 +67,7 @@ def test_props(process_props: decomp_defs.ProcessProperties) -> None:
 )
 @pytest.mark.datatest
 def test_decomposition_info_masked(  # noqa: PLR0917 [too-many-positional-arguments]
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     owned: int,
     total: int,
     caplog: Any,
@@ -123,7 +123,7 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 @pytest.mark.datatest
 @pytest.mark.mpi(min_size=2)
 def test_decomposition_info_local_index(  # noqa: PLR0917 [too-many-positional-arguments]
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     owned: int,
     total: int,
     caplog: Any,
@@ -158,7 +158,7 @@ def test_decomposition_info_local_index(  # noqa: PLR0917 [too-many-positional-a
 @pytest.mark.mpi
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_decomposition_info_halo_level_mask(
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     experiment: test_defs.Experiment,
     decomposition_info: decomp_defs.DecompositionInfo,
 ) -> None:
@@ -185,7 +185,7 @@ def test_decomposition_info_halo_level_mask(
 @pytest.mark.mpi
 @pytest.mark.parametrize("dim", dims.horizontal_dims())
 def test_decomposition_info_third_level_is_empty(
-    dim: type[gtx.Dimension],
+    dim: gtx.Dimension,
     experiment: test_defs.Experiment,
     decomposition_info: decomp_defs.DecompositionInfo,
 ) -> None:
@@ -269,7 +269,7 @@ def test_exchange_on_dummy_data(
     process_props: decomp_defs.ProcessProperties,
     decomposition_info: decomp_defs.DecompositionInfo,
     grid_savepoint: serialbox.IconGridSavepoint,
-    dimension: type[gtx.Dimension],
+    dimension: gtx.Dimension,
     backend: gtx.typing.Backend | None,
 ) -> None:
     exchange = decomp_defs.create_exchange(process_props, decomposition_info)

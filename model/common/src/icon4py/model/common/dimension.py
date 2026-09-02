@@ -11,84 +11,84 @@ import gt4py.next as gtx
 from gt4py.next import common as gtx_common
 
 
-class KDim(gtx.Dimension, kind=gtx.DimensionKind.VERTICAL):
-    value = "K"
+class KDim(gtx.DimensionIndex, kind=gtx.DimensionKind.VERTICAL):
+    tag = "K"
 
 
-class KHalfDim(gtx.Dimension, kind=gtx.DimensionKind.VERTICAL):
-    value = "KHalf"
+class KHalfDim(gtx.DimensionIndex, kind=gtx.DimensionKind.VERTICAL):
+    tag = "KHalf"
 
 
-class EdgeDim(gtx.Dimension):
-    value = "Edge"
+class EdgeDim(gtx.DimensionIndex):
+    tag = "Edge"
 
 
-class CellDim(gtx.Dimension):
-    value = "Cell"
+class CellDim(gtx.DimensionIndex):
+    tag = "Cell"
 
 
-class VertexDim(gtx.Dimension):
-    value = "Vertex"
+class VertexDim(gtx.DimensionIndex):
+    tag = "Vertex"
 
 
-class LsqUnkDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "LsqUnk"
+class LsqUnkDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "LsqUnk"
 
 
-class E2CDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "E2C"
+class E2CDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "E2C"
 
 
-class E2VDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "E2V"
+class E2VDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "E2V"
 
 
-class C2EDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "C2E"
+class C2EDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "C2E"
 
 
-class V2CDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "V2C"
+class V2CDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "V2C"
 
 
-class C2VDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "C2V"
+class C2VDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "C2V"
 
 
-class V2EDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "V2E"
+class V2EDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "V2E"
 
 
-class V2E2VDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "V2E2V"
+class V2E2VDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "V2E2V"
 
 
-class E2C2VDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "E2C2V"
+class E2C2VDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "E2C2V"
 
 
-class C2E2CODim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "C2E2CO"
+class C2E2CODim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "C2E2CO"
 
 
-class E2C2EODim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "E2C2EO"
+class E2C2EODim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "E2C2EO"
 
 
-class E2C2EDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "E2C2E"
+class E2C2EDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "E2C2E"
 
 
-class C2E2CDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "C2E2C"
+class C2E2CDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "C2E2C"
 
 
-class C2E2C2EDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "C2E2C2E"
+class C2E2C2EDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "C2E2C2E"
 
 
-class C2E2C2E2CDim(gtx.Dimension, kind=gtx.DimensionKind.LOCAL):
-    value = "C2E2C2E2C"
+class C2E2C2E2CDim(gtx.DimensionIndex, kind=gtx.DimensionKind.LOCAL):
+    tag = "C2E2C2E2C"
 
 
 E2C = gtx.FieldOffset("E2C", source=CellDim, target=(EdgeDim, E2CDim))
@@ -109,7 +109,7 @@ Koff = gtx.FieldOffset("Koff", source=KDim, target=(KDim,))
 KHalfOff = gtx.FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
 
 
-def horizontal_dims() -> Iterator[type[gtx.Dimension]]:
+def horizontal_dims() -> Iterator[gtx.Dimension]:
     return iter(
         tuple(
             d
@@ -119,18 +119,18 @@ def horizontal_dims() -> Iterator[type[gtx.Dimension]]:
     )
 
 
-def non_horizontal_dims() -> Iterator[type[gtx.Dimension]]:
+def non_horizontal_dims() -> Iterator[gtx.Dimension]:
     yield from vertical_dims()
     yield from local_dims()
 
 
-def local_dims() -> Iterator[type[gtx.Dimension]]:
+def local_dims() -> Iterator[gtx.Dimension]:
     for d in globals().values():
         if isinstance(d, gtx_common.DimensionMeta) and d.kind == gtx.DimensionKind.LOCAL:
             yield d
 
 
-def vertical_dims() -> Iterator[type[gtx.Dimension]]:
+def vertical_dims() -> Iterator[gtx.Dimension]:
     return iter(
         tuple(
             d

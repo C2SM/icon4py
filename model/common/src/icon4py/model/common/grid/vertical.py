@@ -54,7 +54,7 @@ class Domain:
     Simple data class used to specify a vertical domain such that index lookup and domain specification can be separated.
     """
 
-    dim: type[gtx.Dimension]
+    dim: gtx.Dimension
     marker: Zone
     offset: int = 0
 
@@ -69,7 +69,7 @@ class Domain:
             )
 
 
-def domain(dim: type[gtx.Dimension]):
+def domain(dim: gtx.Dimension):
     def _domain(marker: Zone):
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
         return Domain(dim, marker)
@@ -278,7 +278,7 @@ class VerticalGrid:
     def vct_b(self) -> fa.KField | None:
         return self._vct_b
 
-    def size(self, dim: type[gtx.Dimension]) -> int:
+    def size(self, dim: gtx.Dimension) -> int:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported."
         match dim:
             case dims.KDim:
