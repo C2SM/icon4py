@@ -149,7 +149,8 @@ variables:
     # also scales with number of workers; 32 is a balance between these for jobs
     # that don't run many tests.
     NUM_PROCESSES: 32
-    GT4PY_BUILD_JOBS: 8
+    OMP_NUM_THREADS: 8
+    GT4PY_BUILD_JOBS: 12
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
@@ -249,18 +250,10 @@ variables:
         # for bitwise-identical single- vs multi-rank results on GPU backends
         # in the driver validation tests.
         NVCC_APPEND_FLAGS: "--fmad=false"
-        # TODO(msimberg): Decrease this when there's more parallelism for compilation.
-        SLURM_TIMELIMIT: '02:00:00'
-    - if: $MODEL_MPI_SUBPACKAGE == 'driver' || ($MODEL_MPI_SUBPACKAGE == 'common' && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'))
-      variables:
-        # TODO(msimberg): Decrease this when there's more parallelism for compilation.
-        SLURM_TIMELIMIT: '02:00:00'
-    - if: $MODEL_MPI_SUBPACKAGE == 'common'
-      variables:
-        SLURM_TIMELIMIT: '00:55:00'
+        SLURM_TIMELIMIT: '01:30:00'
+        SLURM_GPUS_PER_NODE: 2
+        SLURM_NTASKS: 24
     - when: on_success
-      variables:
-        SLURM_TIMELIMIT: '00:30:00'
   artifacts:
     when: always
     paths:
