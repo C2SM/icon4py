@@ -14,7 +14,6 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _init_cell_kdim_field_with_zero_vp() -> fa.CellKField[vpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_57 or _mo_solve_nonhydro_stencil_64."""
     return broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
 
 
