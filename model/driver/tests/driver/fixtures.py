@@ -14,7 +14,6 @@ from icon4py.model.testing.fixtures import (
     download_ser_data,
     experiment,
     experiment_description,
-    generate_torus_grid,
     grid_savepoint,
     interpolation_savepoint,
     istep_exit,

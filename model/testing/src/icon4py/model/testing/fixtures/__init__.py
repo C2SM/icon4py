@@ -10,4 +10,3 @@ from __future__ import annotations
 
 from .datatest import *  # noqa: F403
 from .stencil_tests import *  # noqa: F403
-from .torus_grids import *  # noqa: F403

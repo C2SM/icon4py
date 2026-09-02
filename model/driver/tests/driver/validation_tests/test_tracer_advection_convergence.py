@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pathlib
-from collections.abc import Callable
 from typing import Final
 
 import gt4py.next.typing as gtx_typing
@@ -26,7 +25,7 @@ from icon4py.model.common.initial_condition.analytical import (
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver, driver_utils
-from icon4py.model.testing import config as test_config
+from icon4py.model.testing import config as test_config, definitions as test_defs, grid_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -38,13 +37,12 @@ _THIRD_ORDER = 3.0
 _TOL = 0.1
 _DEGRADED_TOL = 0.5
 _STD_TOL = 0.4
-
-_BASE_TORUS_ROWS: Final = 150
-_BASE_TORUS_COLS: Final = 174
-_MINIMAL_TORUS_ROWS: Final = 6
-_MINIMAL_TORUS_COLS: Final = 4
-_TORUS_EDGE_LENGTH: Final = 100.0
-_REFINEMENT_FACTORS: Final = tuple(2**exponent for exponent in range(3))
+_HORIZONTAL_CONVERGENCE_GRIDS: Final = (
+    test_defs.Grids.TORUS_100X116_1000M,
+    test_defs.Grids.TORUS_200X232_500M,
+    test_defs.Grids.TORUS_400X462_250M,
+)
+_VERTICAL_CONVERGENCE_GRID: Final = test_defs.Grids.TORUS_1000X1000_250M
 
 
 def _compute_relative_errors(
@@ -106,20 +104,12 @@ def test_horizontal_tracer_advection_convergence(
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
     tmp_path: pathlib.Path,
-    generate_torus_grid: Callable[..., pathlib.Path],
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
 
-    grid_file_paths = [
-        generate_torus_grid(
-            n_rows=_BASE_TORUS_ROWS * factor,
-            n_cols=_BASE_TORUS_COLS * factor,
-            edge_length=_TORUS_EDGE_LENGTH / factor,
-        )
-        for factor in _REFINEMENT_FACTORS
-    ]
+    grid_file_paths = [grid_utils._download_grid_file(grid_description) for grid_description in _HORIZONTAL_CONVERGENCE_GRIDS]
 
     error_l1: list[float] = []
     error_linf: list[float] = []
@@ -248,20 +238,14 @@ def test_vertical_tracer_advection_convergence(
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
     tmp_path: pathlib.Path,
-    generate_torus_grid: Callable[..., pathlib.Path],
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
     allocator = model_backends.get_allocator(backend)
 
-    grid_path = generate_torus_grid(
-        n_rows=_MINIMAL_TORUS_ROWS,
-        n_cols=_MINIMAL_TORUS_COLS,
-        edge_length=_TORUS_EDGE_LENGTH,
-    )
+    grid_path = grid_utils._download_grid_file(_VERTICAL_CONVERGENCE_GRID)
     error_l1: list[float] = []
     error_linf: list[float] = []
-
     config_path = test_config.EXPERIMENT_CONFIG_PATH / f"{experiment_case}.yaml"
 
     experiment_config = config_io.read_yaml_str(
