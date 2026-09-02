@@ -32,7 +32,7 @@ if mpi_decomposition.mpi4py is None:
 
 _log = logging.getLogger(__file__)
 
-BENCHMARK_EXPERIMENT: test_defs.ExperimentDescription = test_defs.Experiments.JW
+BENCHMARK_EXPERIMENTS: list[test_defs.ExperimentDescription] = [test_defs.Experiments.JW]
 BENCHMARK_STEPS: int = 100
 BENCHMARK_ROUNDS: int = 5
 BENCHMARK_WARMUP_ROUNDS: int = 2
@@ -71,7 +71,6 @@ def _resolve_grid(
 
 
 def _make_config(
-    request: pytest.FixtureRequest,
     experiment: test_defs.ExperimentDescription,
     grid: test_defs.GridDescription,
     process_props: decomp_defs.ProcessProperties,
@@ -122,8 +121,10 @@ def _with_barriers[T](
 
 
 @pytest.fixture(scope="module")
-def driver_benchmark_experiment() -> test_defs.ExperimentDescription:
-    return BENCHMARK_EXPERIMENT
+def driver_benchmark_experiment(
+    request: pytest.FixtureRequest,
+) -> test_defs.ExperimentDescription:
+    return request.param
 
 
 @pytest.fixture
@@ -136,12 +137,11 @@ def driver_benchmark_grid(
 
 @pytest.fixture
 def driver_benchmark_config(
-    request: pytest.FixtureRequest,
     driver_benchmark_experiment: test_defs.ExperimentDescription,
     driver_benchmark_grid: test_defs.GridDescription,
     process_props: decomp_defs.ProcessProperties,
 ) -> driver_config.ExperimentConfig:
-    return _make_config(request, driver_benchmark_experiment, driver_benchmark_grid, process_props)
+    return _make_config(driver_benchmark_experiment, driver_benchmark_grid, process_props)
 
 
 @pytest.fixture
@@ -164,6 +164,12 @@ def driver_benchmark_grid_manager(
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 @pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "driver_benchmark_experiment",
+    BENCHMARK_EXPERIMENTS,
+    indirect=True,
+    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+)
 def test_benchmark_driver_init(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
@@ -208,6 +214,12 @@ def test_benchmark_driver_init(
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 @pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "driver_benchmark_experiment",
+    BENCHMARK_EXPERIMENTS,
+    indirect=True,
+    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+)
 def test_benchmark_driver_timeloop(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
@@ -245,6 +257,12 @@ def test_benchmark_driver_timeloop(
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 @pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "driver_benchmark_experiment",
+    BENCHMARK_EXPERIMENTS,
+    indirect=True,
+    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+)
 def test_benchmark_driver_total(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,

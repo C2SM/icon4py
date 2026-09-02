@@ -237,17 +237,21 @@ def benchmark_driver_mpi(session: nox.Session) -> None:
 
 
 def _driver_bencher_testbed() -> str:
-    """Build the bencher testbed string for the driver benchmark."""
+    """Build the bencher testbed string for the distributed driver benchmark.
+
+    The experiment is a test-level parameter (see ``BENCHMARK_EXPERIMENTS`` in
+    the benchmark module) and is therefore not part of the testbed. The GHEX
+    transport (``GHEX_TRANSPORT_BACKEND``) is a build property of the image and
+    is part of the testbed so MPI- and NCCL-transport runs are separate baselines.
+    """
     comm_size = os.environ.get("SLURM_NTASKS") or os.environ.get("OMPI_COMM_WORLD_SIZE") or "1"
     nodes = os.environ.get("SLURM_JOB_NUM_NODES", "1")
-    experiment = os.environ.get("DRIVER_BENCHMARK_EXPERIMENT", "jw")
     grid = os.environ.get("GRID", "default")
     transport = os.environ.get("GHEX_TRANSPORT_BACKEND", "unknown").lower()
     return (
         f"{os.environ['RUNNER']}:"
         f"{os.environ['SYSTEM_TAG']}:"
         f"{os.environ['BACKEND']}:"
-        f"{experiment}:"
         f"{grid}:"
         f"{comm_size}n{nodes}N:"
         f"{transport}"
@@ -308,17 +312,13 @@ def benchmark_driver_single_rank(session: nox.Session) -> None:
 
 
 def _driver_single_rank_bencher_testbed() -> str:
-    """Build the bencher testbed string for the single-rank driver benchmark."""
-    experiment = os.environ.get("DRIVER_BENCHMARK_EXPERIMENT", "jw")
+    """Build the bencher testbed string for the single-rank driver benchmark.
+
+    Matches the existing serial benchmark testbed shape (``RUNNER:SYSTEM_TAG:BACKEND:GRID``).
+    The experiment is a test-level parameter and is not part of the testbed.
+    """
     grid = os.environ.get("GRID", "default")
-    return (
-        f"{os.environ['RUNNER']}:"
-        f"{os.environ['SYSTEM_TAG']}:"
-        f"{os.environ['BACKEND']}:"
-        f"{experiment}:"
-        f"{grid}:"
-        f"1n1N"
-    )
+    return f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{grid}"
 
 
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_single_rank-{python}"])

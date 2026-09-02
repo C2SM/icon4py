@@ -21,15 +21,45 @@ from icon4py.model.testing import datatest_utils as dt_utils, definitions as tes
 from icon4py.model.testing.fixtures.datatest import backend, process_props
 
 
-BENCHMARK_EXPERIMENT: test_defs.ExperimentDescription = test_defs.Experiments.JW
-BENCHMARK_GRID: test_defs.GridDescription = test_defs.Grids.R02B06_GLOBAL
+BENCHMARK_EXPERIMENTS: list[test_defs.ExperimentDescription] = [test_defs.Experiments.JW]
 BENCHMARK_STEPS: int = 100
 BENCHMARK_ROUNDS: int = 5
 BENCHMARK_WARMUP_ROUNDS: int = 2
 
+_GRID_PRESETS: dict[str, test_defs.GridDescription] = {
+    "icon_global": test_defs.Grids.R02B04_GLOBAL,
+    "icon_benchmark_global": test_defs.Grids.R02B06_GLOBAL,
+}
+
+
+def _resolve_grid(
+    request: pytest.FixtureRequest,
+    experiment: test_defs.ExperimentDescription,
+) -> test_defs.GridDescription:
+    spec = request.config.getoption("--grid")
+    if spec is None:
+        return experiment.grid
+
+    name = spec.split(":")[0].strip()
+    grid = _GRID_PRESETS.get(name)
+    if grid is None and hasattr(test_defs.Grids, name):
+        grid = getattr(test_defs.Grids, name)
+    if grid is None:
+        for maybe_grid in vars(test_defs.Grids).values():
+            if isinstance(maybe_grid, test_defs.GridDescription) and maybe_grid.name == name:
+                grid = maybe_grid
+                break
+    if grid is None:
+        raise pytest.UsageError(
+            f"Unknown grid '{name}' in '--grid' option. "
+            f"Use a preset, a 'Grids' attribute name, or a grid description name."
+        )
+    return grid
+
 
 def _make_config(
     experiment: test_defs.ExperimentDescription,
+    grid: test_defs.GridDescription,
     process_props: decomp_defs.ProcessProperties,
 ) -> driver_config.ExperimentConfig:
     dt_utils.download_experiment(experiment, process_props)
@@ -61,21 +91,37 @@ def _make_grid_manager(
 
 
 @pytest.fixture
+def driver_benchmark_experiment(request: pytest.FixtureRequest) -> test_defs.ExperimentDescription:
+    return request.param
+
+
+@pytest.fixture
+def driver_benchmark_grid(
+    request: pytest.FixtureRequest,
+    driver_benchmark_experiment: test_defs.ExperimentDescription,
+) -> test_defs.GridDescription:
+    return _resolve_grid(request, driver_benchmark_experiment)
+
+
+@pytest.fixture
 def driver_benchmark_config(
+    driver_benchmark_experiment: test_defs.ExperimentDescription,
+    driver_benchmark_grid: test_defs.GridDescription,
     process_props: decomp_defs.ProcessProperties,
 ) -> driver_config.ExperimentConfig:
-    return _make_config(BENCHMARK_EXPERIMENT, process_props)
+    return _make_config(driver_benchmark_experiment, driver_benchmark_grid, process_props)
 
 
 @pytest.fixture
 def driver_benchmark_grid_manager(
     driver_benchmark_config: driver_config.ExperimentConfig,
+    driver_benchmark_grid: test_defs.GridDescription,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
 ) -> gm.GridManager:
     return _make_grid_manager(
         config=driver_benchmark_config,
-        grid=BENCHMARK_GRID,
+        grid=driver_benchmark_grid,
         process_props=process_props,
         backend=backend,
     )
@@ -84,6 +130,12 @@ def driver_benchmark_grid_manager(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
+@pytest.mark.parametrize(
+    "driver_benchmark_experiment",
+    BENCHMARK_EXPERIMENTS,
+    indirect=True,
+    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+)
 def test_benchmark_driver_single_rank_init(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
@@ -126,6 +178,12 @@ def test_benchmark_driver_single_rank_init(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
+@pytest.mark.parametrize(
+    "driver_benchmark_experiment",
+    BENCHMARK_EXPERIMENTS,
+    indirect=True,
+    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+)
 def test_benchmark_driver_single_rank_timeloop(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
@@ -161,6 +219,12 @@ def test_benchmark_driver_single_rank_timeloop(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
+@pytest.mark.parametrize(
+    "driver_benchmark_experiment",
+    BENCHMARK_EXPERIMENTS,
+    indirect=True,
+    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+)
 def test_benchmark_driver_single_rank_total(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
