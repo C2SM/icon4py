@@ -220,8 +220,8 @@ class NoLimiter(VerticalLimiter):
         # simply copy to up/low face values
         log.debug("running stencil copy_half_level_above_to_model_levels_on_cells - start")
         self._copy_half_level_above_to_model_levels_on_cells(
-            field_in=p_face,
-            field_out=p_face_up,
+            half_level_field=p_face,
+            model_level_field=p_face_up,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
@@ -229,8 +229,8 @@ class NoLimiter(VerticalLimiter):
 
         log.debug("running stencil copy_half_level_below_to_model_levels_on_cells - start")
         self._copy_half_level_below_to_model_levels_on_cells(
-            field_in=p_face,
-            field_out=p_face_low,
+            half_level_field=p_face,
+            model_level_field=p_face_low,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
@@ -454,8 +454,8 @@ class NoAdvection(VerticalAdvection):
 
         log.debug("running stencil copy_field_on_cell_k - start")
         self._copy_field_on_cell_k(
-            field_in=p_tracer_now,
-            field_out=p_tracer_new,
+            field=p_tracer_now,
+            output_field=p_tracer_new,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
@@ -968,8 +968,8 @@ class PiecewiseParabolicMethod(FiniteVolume):
         # compute highest face value
         log.debug("running stencil copy_model_level_below_to_half_levels_on_cells - start")
         self._copy_model_level_below_to_half_levels_on_cells(
-            field_in=p_tracer_now,
-            field_out=self._z_face,
+            model_level_field=p_tracer_now,
+            half_level_field=self._z_face,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
@@ -978,8 +978,8 @@ class PiecewiseParabolicMethod(FiniteVolume):
         # compute lowest face value
         log.debug("running stencil copy_model_level_above_to_half_levels_on_cells - start")
         self._copy_model_level_above_to_half_levels_on_cells(
-            field_in=p_tracer_now,
-            field_out=self._z_face,
+            model_level_field=p_tracer_now,
+            half_level_field=self._z_face,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )

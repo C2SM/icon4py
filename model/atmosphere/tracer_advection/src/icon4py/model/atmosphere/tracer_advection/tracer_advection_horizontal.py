@@ -413,8 +413,8 @@ class NoAdvection(HorizontalAdvection):
 
         log.debug("running stencil copy_field_on_cell_k - start")
         self._copy_field_on_cell_k(
-            field_in=p_tracer_now,
-            field_out=p_tracer_new,
+            field=p_tracer_now,
+            output_field=p_tracer_new,
         )
         log.debug("running stencil copy_field_on_cell_k - end")
         log.debug("horizontal tracer_advection run - end")
