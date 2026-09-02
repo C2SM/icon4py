@@ -60,7 +60,7 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
     """
 
     for je in range(horizontal_start, nedges):
-        for jk in range(int(flat_idx[je]) + 1, nlev):
+        for jk in range(flat_idx[je] + 1, nlev):
             """
             Second part for loop implementation with gt4py code
             >>> param_2 = as_field((KDim,), array_ns.asarray([False] * nlev))
@@ -70,7 +70,7 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
             >>>     z_me_jk=z_me[je, jk],
             >>>     z_ifc_off=z_ifc_off_e,
             >>>     z_ifc_off_koff=as_field((KDim,), z_ifc_off_koff.ndarray[je, :]),
-            >>>     lower=int(flat_idx[je]),
+            >>>     lower=flat_idx[je],
             >>>     nlev=nlev - 1,
             >>>     out=(param_3, param_2),
             >>>     offset_provider={}
@@ -79,7 +79,7 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
             """
 
             param = array_ns.zeros((nlev,), dtype=bool)
-            for jk1 in range(int(flat_idx[je]), nlev):
+            for jk1 in range(flat_idx[je], nlev):
                 if jk1 == nlev - 1 or (
                     z_me[je, jk] <= z_ifc[e2c[je, 0], jk1]
                     and z_me[je, jk] >= z_ifc[e2c[je, 0], jk1 + 1]
@@ -88,8 +88,8 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
             vertidx_gradp[je, 0, jk] = array_ns.where(param)[0][0]
             zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], array_ns.where(param)[0][0]]
 
-        jk_start = int(flat_idx[je])
-        for jk in range(int(flat_idx[je]) + 1, nlev):
+        jk_start = flat_idx[je]
+        for jk in range(flat_idx[je] + 1, nlev):
             for jk1 in range(jk_start, nlev):
                 if jk1 == nlev - 1 or (
                     z_me[je, jk] <= z_ifc[e2c[je, 1], jk1]
@@ -101,8 +101,8 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
                     break
 
     for je in range(horizontal_start_1, nedges):
-        jk_start = int(flat_idx[je])
-        for jk in range(int(flat_idx[je]) + 1, nlev):
+        jk_start = flat_idx[je]
+        for jk in range(flat_idx[je] + 1, nlev):
             if z_me[je, jk] < z_aux2[je]:
                 for jk1 in range(jk_start, nlev):
                     if jk1 == nlev - 1 or (
@@ -114,8 +114,8 @@ def compute_zdiff_gradp(  # noqa: PLR0912 [too-many-branches]
                         jk_start = jk1
                         break
 
-        jk_start = int(flat_idx[je])
-        for jk in range(int(flat_idx[je]) + 1, nlev):
+        jk_start = flat_idx[je]
+        for jk in range(flat_idx[je] + 1, nlev):
             if z_me[je, jk] < z_aux2[je]:
                 for jk1 in range(jk_start, nlev):
                     if jk1 == nlev - 1 or (
