@@ -50,7 +50,7 @@ def test_domain_raises_for_invalid_zones(dim: gtx.Dimension, zone: h_grid.Zone) 
 
 @pytest.mark.parametrize("zone", zones())
 def test_halo_zones(zone: h_grid.Zone) -> None:
-    if zone in (h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2):
+    if zone in (h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2, h_grid.Zone.HALO_LEVEL_3):
         assert zone.is_halo()
     else:
         assert not zone.is_halo()

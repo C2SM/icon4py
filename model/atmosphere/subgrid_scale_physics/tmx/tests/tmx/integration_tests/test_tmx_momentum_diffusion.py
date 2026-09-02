@@ -1,0 +1,241 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""Integration tests of the Tmx granule momentum diffusion stages (M5).
+
+Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys)
+and verifies one call of ``run_horizontal_wind_diffusion`` against
+the tmx-hor-wind-exit savepoint and one call of ``run_vertical_wind_diffusion``
+against the tmx-vert-wind-exit savepoint. Both steps are seeded
+from the tmx-diagnostics-exit savepoint (the diagnostics they consume)
+instead of running them, so that failures do not cascade between the
+steps. The vertical wind diffusion only reads the input state and the diagnostics, so no
+horizontal wind diffusion outputs need to be seeded.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+from typing import TYPE_CHECKING
+
+import pytest
+
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx, tmx_states
+from icon4py.model.common import model_backends
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.testing import definitions, test_utils
+
+from ..fixtures import *  # noqa: F403
+from .utils import (
+    RTOL,
+    TMX_DATES,
+    construct_input_state,
+    construct_interpolation_state,
+    construct_metric_state,
+    construct_surface_flux_state,
+)
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import icon as icon_grid_
+    from icon4py.model.testing import serialbox as sb
+
+
+@dataclasses.dataclass
+class _GranuleSetup:
+    granule: tmx.Tmx
+    input_state: tmx_states.TmxInputState
+    surface_flux_state: tmx_states.TmxSurfaceFluxState
+    diagnostic_state: tmx_states.TmxDiagnosticState
+    tendency_state: tmx_states.TmxTendencyState
+    new_state: tmx_states.TmxNewState
+    dtime: float
+
+
+def _setup_granule(
+    *,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: icon_grid_.IconGrid,
+    backend: gtx_typing.Backend | None,
+    date: str,
+    config: tmx.TmxConfig,
+    dtime: float,
+) -> _GranuleSetup:
+    """Construct the granule and its states, seeded from the savepoints."""
+    allocator = model_backends.get_allocator(backend)
+    init_savepoint = data_provider.from_savepoint_tmx_init()
+    entry_savepoint = data_provider.from_savepoint_tmx_entry(date=date)
+    surface_fluxes_savepoint = data_provider.from_savepoint_tmx_surface_fluxes(date=date)
+    diagnostics_exit_savepoint = data_provider.from_savepoint_tmx_diagnostics_exit(date=date)
+
+    granule = tmx.Tmx(
+        grid=icon_grid,
+        config=config,
+        metric_state=construct_metric_state(
+            metrics_savepoint=metrics_savepoint,
+            init_savepoint=init_savepoint,
+            grid_savepoint=grid_savepoint,
+            allocator=allocator,
+        ),
+        interpolation_state=construct_interpolation_state(interpolation_savepoint),
+        edge_params=grid_savepoint.construct_edge_geometry(),
+        cell_params=grid_savepoint.construct_cell_geometry(),
+        backend=backend,
+        exchange=decomposition.SingleNodeExchange(),
+    )
+
+    # seed the diagnostics consumed by the momentum diffusion from the
+    # diagnostics-exit savepoint instead of running them (failures there
+    # must not cascade into these tests)
+    diagnostic_state = dataclasses.replace(
+        tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator),
+        vn=diagnostics_exit_savepoint.vn(),
+        u_vert=diagnostics_exit_savepoint.u_vert(),
+        v_vert=diagnostics_exit_savepoint.v_vert(),
+        w_vert=diagnostics_exit_savepoint.w_vert(),
+        w_ie=diagnostics_exit_savepoint.w_ie(),
+        rho_ic=diagnostics_exit_savepoint.rho_ic(),
+        div_c=diagnostics_exit_savepoint.div_c(),
+        km_c=diagnostics_exit_savepoint.km_c(),
+        km_ic=diagnostics_exit_savepoint.km_ic(),
+        km_iv=diagnostics_exit_savepoint.km_iv(),
+        km_ie=diagnostics_exit_savepoint.km_ie(),
+    )
+
+    return _GranuleSetup(
+        granule=granule,
+        input_state=construct_input_state(entry_savepoint),
+        surface_flux_state=construct_surface_flux_state(surface_fluxes_savepoint),
+        diagnostic_state=diagnostic_state,
+        tendency_state=tmx_states.TmxTendencyState.allocate(icon_grid, allocator=allocator),
+        new_state=tmx_states.TmxNewState.allocate(icon_grid, allocator=allocator),
+        dtime=dtime,
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment_description, date",
+    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
+)
+def test_tmx_run_horizontal_wind_diffusion_single_step(
+    *,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: icon_grid_.IconGrid,
+    backend: gtx_typing.Backend | None,
+    date: str,
+    tmx_config: tmx.TmxConfig,
+    tmx_dtime: float,
+) -> None:
+    setup = _setup_granule(
+        data_provider=data_provider,
+        grid_savepoint=grid_savepoint,
+        metrics_savepoint=metrics_savepoint,
+        interpolation_savepoint=interpolation_savepoint,
+        icon_grid=icon_grid,
+        backend=backend,
+        date=date,
+        config=tmx_config,
+        dtime=tmx_dtime,
+    )
+    exit_savepoint = data_provider.from_savepoint_tmx_hor_wind_exit(date=date)
+
+    setup.granule.run_horizontal_wind_diffusion(
+        input_state=setup.input_state,
+        surface_flux_state=setup.surface_flux_state,
+        diagnostic_state=setup.diagnostic_state,
+        tendency_state=setup.tendency_state,
+        new_state=setup.new_state,
+        dtime=setup.dtime,
+    )
+
+    # (actual, desired, name, absolute tolerance; see verify_full_run_fields in
+    # utils.py for how the tolerances are chosen)
+    fields = (
+        (setup.granule.tot_tend, exit_savepoint.tot_tend(), "tot_tend", 5.0e-17),
+        (setup.tendency_state.tend_u, exit_savepoint.tend_ua(), "tend_ua", 4.0e-17),
+        (setup.tendency_state.tend_v, exit_savepoint.tend_va(), "tend_va", 4.0e-17),
+        (setup.new_state.u, exit_savepoint.ua_new(), "ua_new", 2.0e-14),
+        (setup.new_state.v, exit_savepoint.va_new(), "va_new", 1.0e-14),
+    )
+    for actual, desired, name, atol in fields:
+        test_utils.assert_dallclose(
+            actual.asnumpy(),
+            desired.asnumpy(),
+            rtol=RTOL,
+            atol=atol,
+            err_msg=name,
+        )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment_description, date",
+    [(definitions.Experiments.EXCLAIM_APE_AES, date) for date in TMX_DATES],
+)
+def test_tmx_run_vertical_wind_diffusion_single_step(
+    *,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: icon_grid_.IconGrid,
+    backend: gtx_typing.Backend | None,
+    date: str,
+    tmx_config: tmx.TmxConfig,
+    tmx_dtime: float,
+) -> None:
+    setup = _setup_granule(
+        data_provider=data_provider,
+        grid_savepoint=grid_savepoint,
+        metrics_savepoint=metrics_savepoint,
+        interpolation_savepoint=interpolation_savepoint,
+        icon_grid=icon_grid,
+        backend=backend,
+        date=date,
+        config=tmx_config,
+        dtime=tmx_dtime,
+    )
+    exit_savepoint = data_provider.from_savepoint_tmx_vert_wind_exit(date=date)
+    # tend_wa is compared against the tmx-exit savepoint: on GPU runs the
+    # tmx-vert-wind-exit serialization races with the still-running ASYNC(1)
+    # horizontal-stress kernel, so its tend_wa copy predates the horizontal
+    # contribution (wa_new, updated to host a moment later, is complete, and
+    # nothing modifies tend_wa between the two savepoints). Verified on the
+    # v06 archive: wa_new == wa + tend_wa(tmx-exit) * dtime to 3e-19, while
+    # tend_wa(tmx-vert-wind-exit) is off by exactly the horizontal term.
+    final_savepoint = data_provider.from_savepoint_tmx_exit(date=date)
+
+    setup.granule.run_vertical_wind_diffusion(
+        input_state=setup.input_state,
+        diagnostic_state=setup.diagnostic_state,
+        tendency_state=setup.tendency_state,
+        new_state=setup.new_state,
+        dtime=setup.dtime,
+    )
+
+    fields = (
+        (setup.tendency_state.tend_w, final_savepoint.tend_wa(), "tend_wa", 9.0e-19),
+        (setup.new_state.w, exit_savepoint.wa_new(), "wa_new", 3.0e-16),
+    )
+    for actual, desired, name, atol in fields:
+        test_utils.assert_dallclose(
+            actual.asnumpy(),
+            desired.asnumpy(),
+            rtol=RTOL,
+            atol=atol,
+            err_msg=name,
+        )

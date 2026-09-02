@@ -28,7 +28,7 @@ from gt4py.next import (
 )
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
@@ -954,3 +954,39 @@ def compute_exner_w_implicit_weight_parameter(
         ]
 
     return exner_w_implicit_weight_parameter
+
+
+def compute_geopot_agl_ifc(z_ifc: data_alloc.NDArray) -> data_alloc.NDArray:
+    """Geopotential above ground level at cell interface levels [m2 s-2].
+
+    ``grav * (z_ifc - z_sfc)`` with the surface height taken from the bottom
+    interface row (``z_ifc[:, -1]``).
+    """
+    return constants.GRAV * (z_ifc - z_ifc[:, -1:])
+
+
+def compute_height_above_ground(
+    *,
+    z_mc: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    """
+    Geometric height of the full levels above the surface.
+
+    Port of ``compute_geopotential_height_above_ground`` (mo_vdf_atmo.f90):
+
+        ghf(jk) = z_mc(jk) - z_ifc(nlevp1)
+
+    Despite the Fortran name the result is a geometric height in meters;
+    gravity is only applied by the users of the field (e.g.
+    ``compute_dry_static_energy``). Computed with numpy because GT4Py offsets
+    are relative and cannot address the fixed absolute surface row of ``z_ifc``.
+
+    Args:
+        z_mc: geometric height of the full levels [m]
+        z_ifc: geometric height of the half levels [m], surface at the last row
+
+    Returns:
+        height of the full levels above the surface [m]
+    """
+    return z_mc - z_ifc[:, -1:]

@@ -22,7 +22,6 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.diagnostic_calculations import pressure as pressure_diagnostics
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
@@ -32,6 +31,7 @@ from icon4py.model.common.initial_condition.analytical import utils as testcases
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.physics import pressure as pressure_diagnostics
 from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -51,7 +51,9 @@ class JablonowskiWilliamsonConfig:
     # reads zp_ape from the nh_testcase_nml
     # The default values are from mo_nh_jabw_exp.f90 and mo_nh_testcases_nml.f90
     p_sfc: float = 100000.0
-    # amplitude of the u-perturbation [m/s] (jw_up); jabw_s resets it to 0.0.
+    # amplitude of the u-perturbation [m/s] (jw_up). Default matches the ICON
+    # namelist default (1.0); the jabw_s/jabw_m cases reset it to 0.0 (see
+    # mo_nh_testcases.f90 and the initial_condition dispatcher).
     baroclinic_amplitude: float = 1.0
     u0: float = 35.0
     temp0: float = 288.0
@@ -68,9 +70,11 @@ class JablonowskiWilliamsonConfig:
     # number of iterations to converge qv against the moisture-dependent
     # temperature (Fortran l_rediag=.TRUE. => 10 iterations).
     moisture_init_iterations: int = 10
-    # target column-integrated moisture for APE cases [kg/m**2] (ztmc_ape).
+    # target column-integrated moisture [kg/m**2] (ztmc_ape). Only used by the
+    # APE test cases, which rescale qv to match this global value.
     global_moisture_content: float = 25.006
-    # rescale qv to global_moisture_content (APE only; Fortran opt_global_moist).
+    # whether to rescale qv to global_moisture_content; enabled for the APE
+    # cases (mirrors the optional opt_global_moist argument in Fortran).
     normalize_global_moisture: bool = False
 
     fortran_name_map: ClassVar[dict[str, str]] = {

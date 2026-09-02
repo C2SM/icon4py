@@ -1,0 +1,64 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
+import gt4py.next as gtx
+import numpy as np
+import pytest
+
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
+from icon4py.model.common.math.stencils.init_cell_kdim_field_with_zero_wp import (
+    init_cell_kdim_field_with_zero_wp,
+)
+from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.testing import stencil_tests
+
+
+@pytest.mark.continuous_benchmarking
+class TestInitCellKdimFieldWithZeroWp(stencil_tests.StencilTest):
+    PROGRAM = init_cell_kdim_field_with_zero_wp
+    OUTPUTS = ("field_with_zero_wp",)
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+        ),
+    }
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        field_with_zero_wp: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
+        field_with_zero_wp = np.zeros_like(field_with_zero_wp)
+        return dict(field_with_zero_wp=field_with_zero_wp)
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        field_with_zero_wp = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+
+        return dict(
+            field_with_zero_wp=field_with_zero_wp,
+            horizontal_start=0,
+            horizontal_end=gtx.int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=gtx.int32(grid.num_levels),
+        )

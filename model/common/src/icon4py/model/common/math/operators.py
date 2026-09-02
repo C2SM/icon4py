@@ -51,12 +51,69 @@ def _compute_difference_on_cell_k(
 
 
 @gtx.field_operator
+def _compute_reciprocal_on_cell_k(
+    input_field: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """Compute the elementwise reciprocal ``1 / input_field``."""
+    return wpfloat("1.0") / input_field
+
+
+@gtx.field_operator
+def _compute_reciprocal_on_edge_k(
+    input_field: fa.EdgeKField[ta.wpfloat],
+) -> fa.EdgeKField[ta.wpfloat]:
+    """Compute the elementwise reciprocal ``1 / input_field``."""
+    return wpfloat("1.0") / input_field
+
+
+@gtx.field_operator
+def _subtract_cell_field_on_cell_k(
+    minuend: fa.CellKField[ta.wpfloat],
+    subtrahend_cell: fa.CellField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """Subtract a single-level cell field from every K level of a cell K field."""
+    return minuend - subtrahend_cell
+
+
+@gtx.field_operator
 def _compute_field_a_plus_coeff_times_field_b_on_cell_k(
     field_a: fa.CellKField[ta.wpfloat],
     coeff: ta.wpfloat,
     field_b: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     return field_a + coeff * field_b
+
+
+@gtx.field_operator
+def _broadcast_value_on_cell_k(
+    value: ta.wpfloat,
+    like: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    A cell K field holding ``value`` on the K range of ``like``.
+
+    TODO(jcanton): drop this once a ``broadcast`` can carry a bounded K range.
+    Workaround for GT4Py: both branches of a ``concat_where`` must be fields
+    with a bounded K range. A bare scalar or a ``broadcast`` leaves the range
+    open, which raises "Cannot compute length of open 'UnitRange'" on the
+    embedded backend and silently computes wrong values with gtfn. Multiplying
+    an input field by zero anchors the result to that field's range.
+
+    ``like`` is only used for its domain; its values must be finite.
+    """
+    return like * wpfloat("0.0") + value
+
+
+@gtx.field_operator
+def _broadcast_value_on_edge_k(
+    value: ta.wpfloat,
+    like: fa.EdgeKField[ta.wpfloat],
+) -> fa.EdgeKField[ta.wpfloat]:
+    """An edge K field holding ``value`` on the K range of ``like``.
+
+    See :func:`_broadcast_value_on_cell_k`.
+    """
+    return like * wpfloat("0.0") + value
 
 
 @gtx.field_operator

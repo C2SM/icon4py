@@ -24,15 +24,15 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.components.physics_state import PhysicsState
-from icon4py.model.common.diagnostic_calculations.stencils import (
-    calculate_tendency,
-    diagnose_pressure,
-    diagnose_surface_pressure,
-    diagnose_temperature,
-    update_exner_and_theta_v,
-)
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.physics.stencils import (
+    compute_hydrostatic_pressure,
+    compute_surface_pressure,
+    compute_thermodynamic_tendencies,
+    compute_virtual_temperature_and_temperature,
+    update_exner_and_theta_v,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -85,14 +85,14 @@ class State(PhysicsState):
         }
 
         self._diagnose_temperature = model_options.setup_program(
-            program=diagnose_temperature.diagnose_virtual_temperature_and_temperature,
+            program=compute_virtual_temperature_and_temperature.compute_virtual_temperature_and_temperature,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        self._diagnose_surface_pressure = model_options.setup_program(
-            program=diagnose_surface_pressure.diagnose_surface_pressure,
+        self._compute_surface_pressure = model_options.setup_program(
+            program=compute_surface_pressure.compute_surface_pressure,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes={
@@ -101,8 +101,8 @@ class State(PhysicsState):
             },
             offset_provider={},
         )
-        self._diagnose_pressure = model_options.setup_program(
-            program=diagnose_pressure.diagnose_pressure,
+        self._compute_hydrostatic_pressure = model_options.setup_program(
+            program=compute_hydrostatic_pressure.compute_hydrostatic_pressure,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
@@ -115,8 +115,8 @@ class State(PhysicsState):
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        self._calculate_virtual_temperature_tendency = model_options.setup_program(
-            program=calculate_tendency.calculate_virtual_temperature_tendency,
+        self._compute_virtual_temperature_tendency = model_options.setup_program(
+            program=compute_thermodynamic_tendencies.compute_virtual_temperature_tendency,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
@@ -178,7 +178,7 @@ class State(PhysicsState):
             temperature=self.te,
         )
 
-        self._diagnose_surface_pressure(
+        self._compute_surface_pressure(
             exner=prognostic.exner,
             virtual_temperature=self.tv,
             ddqz_z_full=self.dz,
@@ -189,7 +189,7 @@ class State(PhysicsState):
             self.pressure_on_cells_half_levels.ndarray[:, -1],
             allocator=self._backend,
         )
-        self._diagnose_pressure(
+        self._compute_hydrostatic_pressure(
             ddqz_z_full=self.dz,
             virtual_temperature=self.tv,
             surface_pressure=surface_pressure,
@@ -230,7 +230,7 @@ class State(PhysicsState):
         )
 
         # dTv/dt from the new temperature and the species just updated in step 1
-        self._calculate_virtual_temperature_tendency(
+        self._compute_virtual_temperature_tendency(
             dtime=dt_seconds,
             qv=self._tracers.qv,
             qc=self._tracers.qc,

@@ -98,6 +98,18 @@ STRATOSPHERE_PRESSURE_THRESHOLD: Final[ta.wpfloat] = 10000.0
 # Stratospheric specific-humidity cap [kg/kg].
 STRATOSPHERIC_QV_CAP: Final[ta.wpfloat] = 5.0e-6
 
+# Invariant part of the vaporization enthalpy [J/kg], 'lvc' in mo_aes_thermo.f90:
+# alv - (cpv - clw) * tmelt.
+LATENT_HEAT_FOR_VAPORISATION_INVARIANT: Final[ta.wpfloat] = (
+    LATENT_HEAT_FOR_VAPORISATION - (CPV - CPL) * MELTING_TEMPERATURE
+)
+
+# Invariant part of the sublimation enthalpy [J/kg], 'lsc' in mo_aes_thermo.f90:
+# als - (cpv - ci) * tmelt.
+LATENT_HEAT_FOR_SUBLIMATION_INVARIANT: Final[ta.wpfloat] = (
+    LATENT_HEAT_FOR_SUBLIMATION - (CPV - SPECIFIC_HEAT_CAPACITY_ICE) * MELTING_TEMPERATURE
+)
+
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
 TVMPC1: Final[ta.wpfloat] = RV_O_RD_MINUS_1
@@ -136,6 +148,10 @@ DEL_T_BG: Final[ta.wpfloat] = DELTA_TEMPERATURE
 HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE = 10000.0
 _H_SCAL_BG: Final[ta.wpfloat] = HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
 
+# Von Karman constant, called 'ckap' in ICON (mo_turb_vdiff_params.f90).
+VON_KARMAN_CONSTANT: Final[ta.wpfloat] = 0.4
+CKAP: Final[ta.wpfloat] = VON_KARMAN_CONSTANT
+
 # Math constants
 DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 
@@ -172,6 +188,9 @@ class PhysicsConstants(ta.wpfloat, enum.Enum):
     grav_o_cpd = GRAV_O_CPD
     grav_o_rd = GRAV_O_RD
     p0ref = REFERENCE_PRESSURE
+    lvc = LATENT_HEAT_FOR_VAPORISATION_INVARIANT
+    lsc = LATENT_HEAT_FOR_SUBLIMATION_INVARIANT
+    von_karman = VON_KARMAN_CONSTANT
     eps = DBL_EPS
 
 

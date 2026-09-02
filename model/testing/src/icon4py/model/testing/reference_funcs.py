@@ -49,3 +49,14 @@ def nabla2_on_cell_k_numpy(
         np.where((c2e2cO != -1)[:, :, np.newaxis], psi_c[c2e2cO] * geofac_n2s, 0), axis=1
     )
     return nabla2_psi_c
+
+
+def compute_tangential_wind_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    vn: np.ndarray,
+    rbf_vec_coeff_e: np.ndarray,
+) -> np.ndarray:
+    """RBF interpolation of the normal wind to the edge-tangential direction."""
+    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
+    e2c2e = connectivities[dims.E2C2E]
+    return np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)

@@ -133,3 +133,53 @@ def compute_wgtfacq_e_dsl(
     wgtfacq_e_dsl[:, nlev - 2] = z_aux_e[:, 2]
 
     return wgtfacq_e_dsl[:, -3:]
+
+
+def compute_wgtfacq1_c(
+    z_ifc: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    """
+    Compute weighting factors for quadratic extrapolation to the model top.
+
+    The top-boundary counterpart of :func:`compute_wgtfacq_c_dsl`
+    (mo_vertical_grid.f90:953-967); the same coefficients are computed (and
+    discarded) as ``z_aux_c[:, 3:6]`` inside :func:`compute_wgtfacq_e_dsl`.
+
+    Args:
+        z_ifc: geometric height at the vertical interface of cells.
+    Returns:
+        (ncells, 3): row k multiplies full level k (``wgtfacq1_c(jc, k+1, jb)``).
+    """
+    array_ns = data_alloc.array_namespace(z_ifc)
+    z1, z2, z3 = _compute_z1_z2_z3(z_ifc, 0, 1, 2, 3)
+    w3 = z1 * z2 / (z2 - z3) / (z1 - z3)
+    w2 = (z1 - w3 * (z1 - z3)) / (z1 - z2)
+    w1 = 1.0 - (w2 + w3)
+    return array_ns.stack([w1, w2, w3], axis=1)
+
+
+def compute_wgtfacq1_e(
+    *,
+    e2c: data_alloc.NDArray,
+    wgtfacq1_c: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    exchange: decomposition.ExchangeRuntime,
+) -> data_alloc.NDArray:
+    """
+    Interpolate the top-boundary quadratic extrapolation weights from cells to edges.
+
+    The top-boundary counterpart of :func:`compute_wgtfacq_e_dsl`
+    (mo_vertical_grid.f90:989-1014). Skip-value neighbors (``e2c == -1``) carry
+    zero ``c_lin_e`` weight, so the garbage index contributes nothing.
+
+    Args:
+        e2c: Edge to Cell offset
+        wgtfacq1_c: (ncells, 3) cell weights in Fortran coefficient order
+        c_lin_e: cell-to-edge linear interpolation weights
+    Returns:
+        (nedges, 3): row k multiplies full level k (``wgtfacq1_e(je, k+1, jb)``).
+    """
+    array_ns = data_alloc.array_namespace(e2c)
+    wgtfacq1_e = array_ns.sum(c_lin_e[:, :, array_ns.newaxis] * wgtfacq1_c[e2c], axis=1)
+    exchange.exchange(dims.EdgeDim, wgtfacq1_e, stream=decomposition.BLOCK)
+    return wgtfacq1_e
