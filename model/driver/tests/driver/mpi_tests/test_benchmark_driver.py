@@ -15,22 +15,11 @@ from typing import Any
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import initial_condition, model_backends, time
+from icon4py.model.common import model_backends, time
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.grid import grid_manager as gm
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    nonhydro_states,
-    prognostic_state as prognostics,
-    tracer_states,
-)
 from icon4py.model.driver import config as driver_config, driver, driver_states, driver_utils
-from icon4py.model.testing import (
-    benchmark as benchmark_utils,
-    datatest_utils as dt_utils,
-    definitions as test_defs,
-    grid_utils,
-)
+from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures.datatest import backend, process_props
 
 
@@ -42,32 +31,21 @@ if mpi_decomposition.mpi4py is None:
 
 
 _log = logging.getLogger(__file__)
-_DRIVER_BENCHMARK_EXPERIMENTS: dict[str, test_defs.ExperimentDescription] = {
-    "jw": test_defs.Experiments.JW,
-}
+
+BENCHMARK_EXPERIMENT: test_defs.ExperimentDescription = test_defs.Experiments.JW
+BENCHMARK_STEPS: int = 100
+BENCHMARK_ROUNDS: int = 5
+BENCHMARK_WARMUP_ROUNDS: int = 2
 
 _GRID_PRESETS: dict[str, test_defs.GridDescription] = {
     "icon_global": test_defs.Grids.R02B04_GLOBAL,
     "icon_benchmark_global": test_defs.Grids.R02B06_GLOBAL,
-    "icon_regional": test_defs.Grids.MCH_CH_R04B09_DSL,
-    "icon_benchmark_regional": test_defs.Grids.MCH_OPR_R19B08_DOMAIN01,
 }
 
 
-def _resolve_experiment(request: pytest.FixtureRequest) -> test_defs.ExperimentDescription:
-    name = request.config.getoption("--driver-benchmark-experiment")
-    assert isinstance(name, str)
-    key = name.lower()
-    if key not in _DRIVER_BENCHMARK_EXPERIMENTS:
-        raise pytest.UsageError(
-            f"Unknown driver benchmark experiment '{name}'. "
-            f"Supported values: {list(_DRIVER_BENCHMARK_EXPERIMENTS)}."
-        )
-    return _DRIVER_BENCHMARK_EXPERIMENTS[key]
-
-
 def _resolve_grid(
-    request: pytest.FixtureRequest, experiment: test_defs.ExperimentDescription
+    request: pytest.FixtureRequest,
+    experiment: test_defs.ExperimentDescription,
 ) -> test_defs.GridDescription:
     spec = request.config.getoption("--grid")
     if spec is None:
@@ -92,18 +70,6 @@ def _resolve_grid(
     return grid
 
 
-def _num_steps(request: pytest.FixtureRequest) -> int:
-    return request.config.getoption("--driver-benchmark-steps")
-
-
-def _rounds(request: pytest.FixtureRequest) -> int:
-    return request.config.getoption("--driver-benchmark-rounds")
-
-
-def _warmup_rounds(request: pytest.FixtureRequest) -> int:
-    return request.config.getoption("--driver-benchmark-warmup-rounds")
-
-
 def _make_config(
     request: pytest.FixtureRequest,
     experiment: test_defs.ExperimentDescription,
@@ -113,12 +79,11 @@ def _make_config(
     dt_utils.download_experiment(experiment, process_props)
     experiment_path = dt_utils.get_path_for_experiment(experiment, process_props)
     config = driver_config.read_experiment_config_from_fortran(experiment_path)
-    steps = _num_steps(request)
-    benchmark_utils.validate_grid_override(experiment.grid.name, grid.name, steps)
     return config.with_overrides(
         driver={
+            "dtime": time.RelativeTime(seconds=50),
             "enable_output": False,
-            "end_of_simulation": time.NumTimeSteps(steps),
+            "end_of_simulation": time.NumTimeSteps(BENCHMARK_STEPS),
         }
     )
 
@@ -139,60 +104,6 @@ def _make_grid_manager(
     )
 
 
-def _assemble_driver_states(
-    icon4py_driver: driver.Icon4pyDriver,
-) -> driver_states.DriverStates:
-    backend = icon4py_driver.backend
-    allocator = model_backends.get_allocator(backend)
-    grid = icon4py_driver.grid
-
-    prognostic_state_now = prognostics.initialize_prognostic_state(
-        grid=grid,
-        allocator=allocator,
-    )
-    tracer_state_now = tracer_states.initialize_tracer_state(
-        grid=grid,
-        allocator=allocator,
-        tracer_config=icon4py_driver.config.tracer_config,
-    )
-    solve_nonhydro_diagnostic_state = (
-        nonhydro_states.initialize_solve_nonhydro_diagnostic_state(grid=grid, allocator=allocator)
-        if icon4py_driver.config.nonhydrostatic is not None
-        else None
-    )
-    initial_condition.create(
-        config=icon4py_driver.config.initial_condition,
-        vertical_config=icon4py_driver.config.vertical_grid,
-        grid=grid,
-        static_fields=icon4py_driver.static_field_factories,
-        prognostic_state_now=prognostic_state_now,
-        tracer_state_now=tracer_state_now,
-        solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
-        backend=backend,
-        exchange=icon4py_driver.exchange,
-        global_reductions=icon4py_driver.global_reductions,
-    )
-    diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
-    ds = driver_states.assemble_driver_states(
-        grid=grid,
-        allocator=allocator,
-        backend=backend,
-        exchange=icon4py_driver.exchange,
-        static_fields=icon4py_driver.static_field_factories,
-        prognostic_state_now=prognostic_state_now,
-        tracer_state_now=tracer_state_now,
-        diagnostic_state=diagnostic_state,
-        experiment_config=icon4py_driver.config,
-        solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
-    )
-    driver_utils.validate_granule_state_consistency(
-        config=icon4py_driver.config,
-        granules=icon4py_driver.granules,
-        states=ds,
-    )
-    return ds
-
-
 def _barrier(process_props: decomp_defs.ProcessProperties) -> None:
     if process_props.comm is not None:
         process_props.comm.Barrier()
@@ -211,8 +122,8 @@ def _with_barriers[T](
 
 
 @pytest.fixture(scope="module")
-def driver_benchmark_experiment(request: pytest.FixtureRequest) -> test_defs.ExperimentDescription:
-    return _resolve_experiment(request)
+def driver_benchmark_experiment() -> test_defs.ExperimentDescription:
+    return BENCHMARK_EXPERIMENT
 
 
 @pytest.fixture
@@ -253,8 +164,7 @@ def driver_benchmark_grid_manager(
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_benchmark_driver_init(  # noqa: PLR0917 [too-many-positional-arguments]
-    request: pytest.FixtureRequest,
+def test_benchmark_driver_init(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
     process_props: decomp_defs.ProcessProperties,
@@ -287,9 +197,9 @@ def test_benchmark_driver_init(  # noqa: PLR0917 [too-many-positional-arguments]
     benchmark.pedantic(
         _with_barriers(process_props, _timed),
         setup=_setup,
-        rounds=_rounds(request),
+        rounds=BENCHMARK_ROUNDS,
         iterations=1,
-        warmup_rounds=_warmup_rounds(request),
+        warmup_rounds=BENCHMARK_WARMUP_ROUNDS,
     )
 
 
@@ -298,8 +208,7 @@ def test_benchmark_driver_init(  # noqa: PLR0917 [too-many-positional-arguments]
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_benchmark_driver_timeloop(  # noqa: PLR0917 [too-many-positional-arguments]
-    request: pytest.FixtureRequest,
+def test_benchmark_driver_timeloop(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
     process_props: decomp_defs.ProcessProperties,
@@ -315,7 +224,8 @@ def test_benchmark_driver_timeloop(  # noqa: PLR0917 [too-many-positional-argume
             process_props=process_props,
             backend=backend,
         )
-        ds = _assemble_driver_states(icon4py_driver)
+        allocator = model_backends.get_allocator(backend)
+        ds = driver.initialize_driver_states(icon4py_driver, allocator)
         return (icon4py_driver, ds), {}
 
     def _timed(fresh_driver: driver.Icon4pyDriver, ds: driver_states.DriverStates) -> None:
@@ -324,9 +234,9 @@ def test_benchmark_driver_timeloop(  # noqa: PLR0917 [too-many-positional-argume
     benchmark.pedantic(
         _with_barriers(process_props, _timed),
         setup=_setup,
-        rounds=_rounds(request),
+        rounds=BENCHMARK_ROUNDS,
         iterations=1,
-        warmup_rounds=_warmup_rounds(request),
+        warmup_rounds=BENCHMARK_WARMUP_ROUNDS,
     )
 
 
@@ -335,8 +245,7 @@ def test_benchmark_driver_timeloop(  # noqa: PLR0917 [too-many-positional-argume
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 @pytest.mark.parametrize("process_props", [True], indirect=True)
-def test_benchmark_driver_total(  # noqa: PLR0917 [too-many-positional-arguments]
-    request: pytest.FixtureRequest,
+def test_benchmark_driver_total(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
     process_props: decomp_defs.ProcessProperties,
@@ -355,7 +264,7 @@ def test_benchmark_driver_total(  # noqa: PLR0917 [too-many-positional-arguments
 
     benchmark.pedantic(
         _with_barriers(process_props, _timed),
-        rounds=_rounds(request),
+        rounds=BENCHMARK_ROUNDS,
         iterations=1,
-        warmup_rounds=_warmup_rounds(request),
+        warmup_rounds=BENCHMARK_WARMUP_ROUNDS,
     )
