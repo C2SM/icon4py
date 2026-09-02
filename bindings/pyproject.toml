@@ -32,7 +32,7 @@ dependencies = [
   # external dependencies
   'cffi>=1.5',
   'click>=8.0',
-  'gt4py==1.2.1',
+  'gt4py==1.2.2',
   "numpy>=1.23.3",
   'packaging>=20.0'
 ]
