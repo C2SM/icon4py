@@ -24,10 +24,37 @@ snapshots the whole rendered library and reports any difference; this one states
 turbulence half of the snapshot has to contain, so that a change to the wrapper's signature
 fails with the argument that moved rather than with a diff of a hundred and fifty thousand
 lines.
+
+THE CHAIN THAT BINDS 'TurbulenceConfig' TO ICON'S NAMELIST HAS THREE LINKS, and until 2026-09-02
+only two of them were tested:
+
+    1. 'TurbulenceConfig' <-> the signature of 'turbulence_init'  -- 'test_turbulence_init_
+       builds_the_configuration_the_flat_arguments_describe', through '_config_kwargs'
+    2. that signature <-> the Fortran interface py2fgen renders -- 'test_the_generated_fortran_
+       takes_the_wrappers_arguments_in_order'
+    3. that interface <-> the hand-written call in ICON's 'mo_icon4py_turbulence.f90'
+
+Link 3 is 93 keyword arguments typed out by hand in another repository.
+'test_the_icon_call_passes_every_configuration_member' closes it, and skips where the ICON tree
+is not checked out beside icon4py.
+
+THE AUDIT THAT ASKED FOR THAT TEST GAVE THE WRONG REASON FOR IT, and the right one is narrower
+and still worth the test. Its reason was that "a new 't_turbdiff_config' member would compile
+silently and take the icon4py default". It would not: py2fgen renders every dummy argument of
+'turbulence_init' WITHOUT the 'optional' attribute (grep the reference '.f90' -- there are zero),
+so a member added on the Python side and forgotten in ICON's call is a Fortran compile error. The
+failure mode that really is silent is a keyword bound to the WRONG member of the same type --
+'tkhmin = tdc%tkmmin' compiles, links, runs, and puts one namelist parameter where another
+belongs. No compiler can see that and no other test looks. The test below asserts keyword and
+member are the same name for all 92, which is what catches it; catching the omitted-member case
+in seconds instead of after an ICON build is the lesser benefit.
 """
 
 import dataclasses
+import inspect
 import math
+import pathlib
+import re
 from unittest import mock
 
 import cffi
@@ -41,7 +68,10 @@ from icon4py.bindings import (
     grid_wrapper,
     turbulence_wrapper,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import turbulence
+from icon4py.model.atmosphere.subgrid_scale_physics.turbulence import (
+    turbulence,
+    turbulence_states as states,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -440,6 +470,128 @@ def test_the_tracer_tuples_are_empty(grid, grid_state):
 
     assert captured["input_state"].tracers == ()
     assert captured["tendency_state"].ddt_tracers == ()
+
+
+# ------------------------------------------------------------- the two registries ---
+
+
+#: The four containers 'turbulence_run' assembles. 'TurbulenceMetricState' is left out because
+#: it is built by 'turbulence_init' from arguments of its own and has no unused member, and
+#: 'TurbulenceTileState' because the wrapper never builds one at all -- it is 'turbtran's, and
+#: phase 3 of the plan.
+STATE_CLASSES_THE_WRAPPER_ASSEMBLES = (
+    states.TurbulenceInputState,
+    states.TurbulenceSurfaceState,
+    states.TurbulenceDiagnosticState,
+    states.TurbulenceTendencyState,
+)
+
+
+def test_the_unused_field_list_is_exactly_what_the_granule_never_touches():
+    """'_UNUSED_STATE_FIELDS' is a claim about the granule, and nothing checked it.
+
+    The wrapper keeps 22 declared state members out of 'turbulence_run's signature and NaN-fills
+    them, on the grounds that 'Turbulence.run' reads and writes neither. That is the right
+    treatment -- a zero is a plausible value for every one of them and a NaN is not -- but the
+    list was the only statement of it, so a member the granule STARTED reading would go on being
+    handed NaN, and a member it stopped reading would go on being an argument nobody supplies a
+    meaningful value for. Both are silent.
+
+    The granule side is read textually rather than by running anything, because "never touched"
+    is a property of the source and not of one execution: a field read only under a
+    configuration this test does not set would be missed by any dynamic check. Attribute access
+    through a container is the only way the granule can reach these members -- they are frozen
+    dataclasses and the granule holds them as 'input_state', 'surface_state',
+    'diagnostic_state' and 'tendency_state' -- so the pattern below sees every one of them.
+    """
+    source = inspect.getsource(turbulence)
+    touched = set(re.findall(r"\b[a-z_]*state\.([a-z_0-9]+)", source))
+    declared = {
+        field.name
+        for state_class in STATE_CLASSES_THE_WRAPPER_ASSEMBLES
+        for field in dataclasses.fields(state_class)
+    }
+
+    assert declared - touched == set(turbulence_wrapper._UNUSED_STATE_FIELDS)
+
+
+def test_every_unused_field_is_declared_by_a_container_the_wrapper_builds():
+    """The other direction: nothing is NaN-filled that no container has a slot for.
+
+    An entry left behind by a rename would allocate a field, poison it and hand it to a
+    constructor that does not take it, which is a 'TypeError' at the first call rather than
+    here -- but only on a path that constructs the granule for real.
+    """
+    declared = {
+        field.name
+        for state_class in STATE_CLASSES_THE_WRAPPER_ASSEMBLES
+        for field in dataclasses.fields(state_class)
+    }
+
+    assert set(turbulence_wrapper._UNUSED_STATE_FIELDS) <= declared
+
+
+def _icon_turbulence_module() -> pathlib.Path | None:
+    """ICON's 'mo_icon4py_turbulence.f90', if the ICON tree is checked out beside icon4py.
+
+    icon4py is a repository of its own and is cloned on its own in CI, so this test cannot
+    require ICON to be present. It walks up from this file rather than counting '..' levels,
+    which would break the moment the test moves.
+    """
+    relative = pathlib.Path("icon/src/atm_phy_nwp/mo_icon4py_turbulence.f90")
+    for parent in pathlib.Path(__file__).resolve().parents:
+        candidate = parent / relative
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def test_the_icon_call_passes_every_configuration_member():
+    """The third link of the chain the module docstring describes, and the untested one.
+
+    ICON's 'turbulence_lazy_init' spells out one 'name = tdc%name' line per member of
+    'TurbulenceConfig', and the third assertion below -- that the keyword and the member are the
+    same name -- is the one that earns the test. A member ICON omits is caught by the Fortran
+    compiler, loudly, because py2fgen marks no argument 'optional'; a member ICON binds to the
+    WRONG 'tdc%' field of the same type is caught by nothing at all. 'tkhmin = tdc%tkmmin'
+    compiles, links and runs, and puts one namelist parameter where another belongs. That is the
+    silent-configuration defect this whole file is about, one level up.
+
+    The first two assertions are worth their line anyway: they turn "ICON fails to link after a
+    forty-minute build" into "this test names the member", which is the difference between a
+    diagnosis and a hunt.
+
+    'l3dturb' is the single deliberate exception and is asserted as such rather than skipped:
+    ICON passes the literal '.FALSE._c_bool' because 'l3dturb' is not a member of
+    't_turbdiff_config' at all but a dummy argument that both ICON call sites hardcode.
+    """
+    module = _icon_turbulence_module()
+    if module is None:
+        pytest.skip("the ICON tree is not checked out beside icon4py")
+
+    source = module.read_text(encoding="utf-8")  # not the locale encoding; see test_config.py
+    start = source.index("CALL turbulence_init(")
+    call = source[start : source.index("rc             = rc )", start)]
+    passed_from_the_config = {
+        keyword: member
+        for keyword, member in re.findall(
+            r"&\s+([a-z_0-9]+)\s*=\s*(?:LOGICAL\()?tdc%([a-z_0-9]+)", call
+        )
+    }
+    fields = {field.name for field in dataclasses.fields(turbulence.TurbulenceConfig)}
+
+    assert fields - set(passed_from_the_config) == {"l3dturb"}, (
+        "a member of 'TurbulenceConfig' that ICON does not pass takes the icon4py default "
+        "silently; add it to the 'turbulence_init' call in mo_icon4py_turbulence.f90"
+    )
+    assert set(passed_from_the_config) - fields == set(), (
+        "ICON passes a 'tdc%' member that 'TurbulenceConfig' does not declare"
+    )
+    assert all(keyword == member for keyword, member in passed_from_the_config.items()), (
+        "a keyword argument is bound to a differently named 'tdc%' member, which no compiler "
+        "and no other test can see"
+    )
+    assert "l3dturb        = .FALSE._c_bool" in call
 
 
 # --------------------------------------------------------------------------- codegen ---

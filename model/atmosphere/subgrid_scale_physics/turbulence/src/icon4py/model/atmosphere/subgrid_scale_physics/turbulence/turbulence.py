@@ -15,7 +15,7 @@ a namelist. Every default is the compiled-in default of mo_turbdiff_config.f90.
 Carrying parameters the implementation refuses is deliberate. The granule interface is the
 contract and has to be expressible from Fortran, C and Python alike, so it accepts anything ICON
 can be configured to do; `FROZEN_SWITCHES` is where the implementation says which of those
-formulations were ported (port spec D5/D6). Twenty-nine switches select alternatives that were
+formulations were ported (port spec D5/D6). Thirty-one switches select alternatives that were
 not ported and are refused with a 'NotImplementedError' that names the one supported value, says
 what it means, and points at the Fortran scheme. Eight more do vary operationally across the DWD
 and MeteoSwiss setups -- 'itype_sher', 'icldm_turb', 'imode_tkesso', 'imode_charpar',
@@ -23,21 +23,30 @@ and MeteoSwiss setups -- 'itype_sher', 'icldm_turb', 'imode_tkesso', 'imode_char
 need. Which values occur was verified by grepping all 648 configurations under 'icon/run/',
 not assumed.
 
-WHAT 'TurbulenceConfig' ACCEPTS IS NOT WHAT THE GRANULE RUNS. `Turbulence` refuses four further
-configurations at construction because the assembled stencils cannot express them, each being a
-guarded Fortran block fused into an unguarded expression: see
-`Turbulence._validate_the_configuration_the_stencils_can_express`. The widest of the four gaps is
-'itype_sher', where the config accepts all four Fortran values and the granule runs only '2'; that
-field's doc comment says so. Read the granule's refusal, not the config's acceptance, as the
-contract.
+WHAT 'TurbulenceConfig' ACCEPTS IS NOT WHAT THE GRANULE RUNS. `Turbulence` refuses eight further
+configurations at construction because the assembled stencils cannot express them: see
+`Turbulence._validate_the_configuration_the_stencils_can_express`. Four of them are a guarded
+Fortran block fused into an unguarded expression -- correct only while the guard holds -- and
+four are a Fortran block the port simply does not contain, so that a value the granule accepted
+would be a term left out without a word. The widest of the eight gaps is 'itype_sher', where the
+config accepts all four Fortran values and the granule runs only '2'; that field's doc comment
+says so, as do those of 'icldm_turb', 'rsur_sher', 'a_stab' and 'it_end'. Read the granule's
+refusal, not the config's acceptance, as the contract.
+
+A FLOAT CAN BE A SWITCH. 'rsur_sher' and 'a_stab' are plain 'REAL' parameters that the Fortran
+branches on with '> 0', so each selects a formulation exactly as an 'imode_' integer does, and
+each is refused above zero for that reason. They were accepted, unread and unremarked until the
+2026-08-31 configuration audit, because the accounting test keyed on the integer prefixes and on
+'bool' defaults and therefore inspected no 'float' field at all. 'test_config.py' now accounts
+for every field of this dataclass, not only the ones that look like switches.
 
 Every other formulation switch is accounted for too, because what D6 rules out is silence, not
-acceptance. Eight of them -- 'imode_pat_len', 'imode_snowsmot', 'lconst_z0', 'ldiff_qi',
-'ldiff_qs', 'loutsso', 'loutnst' and 'loutbms' -- are accepted at any value because no statement
-of the ported scheme reads them: each is either consumed by ICON code that is out of scope (port
-spec D1: port the scheme, not the interface) and reaches the granule only through a field the
-caller has already filled, or gates an output argument the ICON interfaces never pass. The doc
-comment of each field names the line that consumes it.
+acceptance. Six of them -- 'imode_pat_len', 'imode_snowsmot', 'lconst_z0', 'loutsso', 'loutnst'
+and 'loutbms' -- are accepted at any value because no statement of the ported scheme reads them:
+each is either consumed by ICON code that is out of scope (port spec D1: port the scheme, not the
+interface) and reaches the granule only through a field the caller has already filled, or gates
+an output argument the ICON interfaces never pass. The doc comment of each field names the line
+that consumes it.
 
 `Turbulence` is the granule itself: it owns the working set and runs the ported stencils in the
 Fortran's order. Both stages are here -- `run_turbdiff`, then `run_vertdiff`, composed by `run`,
@@ -248,10 +257,11 @@ class FrozenSwitch:
 
 #: The reject list: switches frozen at their compiled-in default. The trailing comment of each
 #: entry is the declaration in 'icon/src/configure_model/mo_turbdiff_config.f90' the default and
-#: the meaning were read from. Twelve are reachable from 'turbdiff_nml' (mo_turbdiff_nml.f90:
+#: the meaning were read from. Fourteen are reachable from 'turbdiff_nml' (mo_turbdiff_nml.f90:
 #: 56-71); the other seventeen can only change by editing Fortran. Across all 648 configurations
-#: under 'icon/run/' only three settings differ from a value frozen here -- 'imode_frcsmot = 0',
-#: 'icldm_tran = -1' and 'lfreeslip = .TRUE.' -- and the entries below record where.
+#: under 'icon/run/' only four settings differ from a value frozen here -- 'imode_frcsmot = 0',
+#: 'icldm_tran = -1', 'lfreeslip = .TRUE.' and 'ldiff_qi = .TRUE.' -- and the entries below
+#: record where.
 FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
     FrozenSwitch("imode_turb", 1, "prognostic TKE equation"),  # :299
     FrozenSwitch("imode_tran", 0, "diagnostic TKE equation in the transfer scheme"),  # :298
@@ -386,6 +396,32 @@ FROZEN_SWITCHES: Final[tuple[FrozenSwitch, ...]] = (
     #: 'turbdiff' (turb_diffusion.f90:439) that ICON hardcodes to .FALSE. at both call sites,
     #: mo_nwp_turbdiff_interface.f90:584 and mo_nwp_phy_init.f90:1732, "not yet arranged for ICON".
     FrozenSwitch("l3dturb", False, "no 3D turbulent diffusion"),
+    #: THE TWO THAT ARE NOT A FORMULATION OF THE SCHEME. Neither appears in
+    #: 'turb_diffusion.f90', 'turb_vertdiff.f90', 'turb_utilities.f90' or 'turb_transfer.f90':
+    #: they are read once by the interface, 'mo_nwp_turbdiff_interface.f90:356' and ':389', to
+    #: decide whether cloud ice and snow join the 'ptr(:)' list that becomes
+    #: 'nturb_tracer_tot' (:473). They are frozen here because that list is exactly what the
+    #: granule refuses -- 'run_vertdiff' rejects a non-empty 'tracers' tuple, the wrapper
+    #: rejects 'nturb_tracer_tot /= 0' and ICON's 'check_supported_configuration' rejects it
+    #: again -- so '.TRUE.' cannot be honoured anywhere. Accepting it was the one case in this
+    #: dataclass where a switch was argued to have no bearing (D6) on the strength of the
+    #: scheme not reading it, while the caller that does read it produces a state the granule
+    #: refuses. A direct Python caller can still build the self-contradictory pair
+    #: ('ldiff_qi = True', 'tracers = ()'), which runs to completion and diffuses no ice; this
+    #: is where that pair stops. Two ART configurations set 'ldiff_qi = .TRUE.'
+    #: ('exp.art_oem:473', 'checksuite.art/exp_art_horeka_lam_oem:417'), and both are already
+    #: refused for their ART tracers.
+    FrozenSwitch(
+        "ldiff_qi",
+        False,
+        "no turbulent diffusion of cloud ice, which the granule cannot perform because it "
+        "diffuses no passive tracers at all",
+    ),  # :282
+    FrozenSwitch(
+        "ldiff_qs",
+        False,
+        "no turbulent diffusion of snow, refused for the same reason as 'ldiff_qi'",
+    ),  # :283
 )
 
 
@@ -438,7 +474,12 @@ class TurbulenceConfig:
     prfsecu: float = 0.50
     #: Relative limit of accuracy for the comparison of numbers.
     epsi: float = 1.0e-6
-    #: Number of initialization iterations (>= 0).
+    #: Number of initialization iterations (>= 0). THE GRANULE REFUSES ANYTHING BUT 1: there
+    #: is no iteration loop in the port and no cold start, so a larger count would be accepted
+    #: and one pass performed. Inert today only as a consequence of the call site --
+    #: 'iini = 0' makes 'it_start = tdc%it_end' (turb_utilities.f90:387), so
+    #: 'DO it_durch = it_start, tdc%it_end' (turb_diffusion.f90:1800) is a single pass at any
+    #: value -- and that ceases the moment a cold start exists.
     it_end: int = 1
 
     # 2. Physical properties of the lower boundary (mo_turbdiff_config.f90:155-190)
@@ -458,7 +499,12 @@ class TurbulenceConfig:
     rat_can: float = 1.0
     #: Mode of the local wind definition at near-surface levels, related to `rsur_sher`.
     imode_nsf_wind: int = 1
-    #: Fraction of the additional surface shear forcing that is transmitted upwards.
+    #: Fraction of the additional surface shear forcing that is transmitted upwards. A FLOAT
+    #: THAT IS A SWITCH, and one the granule refuses above zero. 'lsrfshear = (rsur_sher > 0
+    #: .OR. (imode_trancnf < 4 .AND. imode_suradap >= 1))' (turb_diffusion.f90:968), and with
+    #: 'imode_trancnf' frozen at 2 and 'imode_suradap' at 0 the second disjunct is dead, so on
+    #: this granule 'lsrfshear' IS 'rsur_sher > 0'. Not reachable from 'turbdiff_nml'; only by
+    #: editing 'mo_turbdiff_config.f90:176', which is why it went unremarked for so long.
     rsur_sher: float = 0.0
     #: Mode of estimating the Charnock parameter. Operationally 2 (DWD) or 3 (MCH).
     imode_charpar: options.CharnockParameterType = options.CharnockParameterType.WIND_DEPENDENT
@@ -510,7 +556,15 @@ class TurbulenceConfig:
     imode_vel_min: int = 2
     #: Minimal velocity scale [m/s].
     vel_min: float = 0.01
-    #: Maximal velocity scale [m/s].
+    #: Maximal velocity scale [m/s]. Accepted at any value and NOT refused, which is a
+    #: conclusion rather than an omission. Its only use in the ported scheme is the limit on
+    #: the EDR at 'turb_utilities.f90:1846', reached under 'lpres_edr .OR. ltmpcor' (:1830);
+    #: 'ltmpcor' is frozen '.FALSE.' and 'lpres_edr = lsrfshear .OR. ASSOCIATED(edr)'
+    #: (turb_diffusion.f90:1820), of which the first term is 'rsur_sher > 0' -- refused by the
+    #: granule -- and the second is false because ICON leaves 'edr' disassociated unless
+    #: 'ldiagnose_tke', which 'mo_icon4py_turbulence.f90' refuses. So with 'rsur_sher = 0'
+    #: enforced this parameter is provably unreachable, and it stops being so the moment that
+    #: refusal is lifted: the two must be reconsidered together.
     vel_max: float = 30.0
     #: Von Karman constant.
     akt: float = 0.4
@@ -524,7 +578,20 @@ class TurbulenceConfig:
     d_mom: float = 16.6
     #: Length-scale factor for the turbulent transport of TKE.
     c_diff: float = 0.20
-    #: Length-scale factor for the stability correction of the integral turbulent length scale.
+    #: Length-scale factor for the stability correction of the integral turbulent length
+    #: scale. A FLOAT THAT IS A SWITCH, and one the granule refuses above zero: the correction
+    #: at 'turb_utilities.f90:1339-1353' has no counterpart in 'solve_turb_budgets.py', and its
+    #: guard 'a_stab > 0 .AND. it_s == it_start' is satisfied at every level of every timestep
+    #: at this call site, because 'iini = 0' makes the iteration a single pass.
+    #:
+    #: NOT SETTABLE FROM 'turbdiff_nml' -- it is listed there (mo_turbdiff_nml.f90:66) but its
+    #: live source is 'ensemble_pert_nml': 'set_scalar_ens_pert' overwrites it with
+    #: 'MAX(0, a_stab_sv + 2*(rnd-0.5)*range_a_stab)' (mo_ensemble_pert_config.f90:818-820),
+    #: which is positive definite by construction. The Fortran says so itself
+    #: (turb_utilities.f90:1349-1351): "Even if 'a_stab=0.' has been set initially ... this
+    #: block may be executed due to PERTURBATIONS applied to 'a_stab'!". An EPS member
+    #: configured that way and run through the granule would reproduce the unperturbed member's
+    #: stable-boundary-layer mixing, which is the spread the perturbation exists to create.
     a_stab: float = 0.00
     #: Length-scale factor for separate horizontal shear circulations, related to `ltkeshs`.
     #: Operationally 1.25 (RUC) or 2.0.
@@ -577,14 +644,13 @@ class TurbulenceConfig:
     #: Consider non-turbulent fluxes related to near-surface circulations.
     lcirflx: bool = False
     #: Turbulent diffusion of cloud ice active. Read only by
-    #: 'mo_nwp_turbdiff_interface.f90:353', which decides whether 'qi' joins the 'ptr(:)' list
-    #: that reaches the granule as `TurbulenceInputState.tracers`. vertdiff diffuses the tracers
-    #: it is handed and never tests the switch, so it cannot change what the granule computes --
-    #: assembling the tracer list is the caller's job, the interface being out of scope (D1).
+    #: 'mo_nwp_turbdiff_interface.f90:356', which decides whether 'qi' joins the 'ptr(:)' list
+    #: that reaches the granule as `TurbulenceInputState.tracers` -- and that tuple is what the
+    #: granule refuses. Frozen at '.FALSE.' in `FROZEN_SWITCHES`; see the entry there for why
+    #: "the scheme does not read it" was the wrong reason to accept it.
     ldiff_qi: bool = False
     #: Turbulent diffusion of snow active. As `ldiff_qi`, at
-    #: 'mo_nwp_turbdiff_interface.f90:386', and equally unable to change what the granule
-    #: computes.
+    #: 'mo_nwp_turbdiff_interface.f90:389', and frozen for the same reason.
     ldiff_qs: bool = False
     #: Free-slip lower boundary condition (idealized runs only).
     lfreeslip: bool = False
@@ -602,6 +668,15 @@ class TurbulenceConfig:
     icldm_tran: int = 2
     #: Mode of cloud representation in the turbulence parameterization. Operationally 1 (DWD
     #: global) or 2.
+    #: THE GRANULE IS NARROWER THAN THIS FIELD, exactly as for `itype_sher`. 'Turbulence' runs
+    #: 'icldm_turb = 2' and refuses 1 at construction
+    #: ('_validate_the_configuration_the_stencils_can_express'), because only the mode-2 branch
+    #: of 'adjust_satur_equil' was translated. At mode 1 the Fortran does not reach 'turb_cloud'
+    #: at all: the arm 'icldmod == 1 .AND. PRESENT(qc)' (turb_utilities.f90:869-882) terminates
+    #: the 'ELSEIF' chain, and both 'turbdiff' calls pass 'qc' (turb_diffusion.f90:983, :1014).
+    #: The cloud cover becomes binary and the liquid water becomes 'qc' unchanged, and nine
+    #: further quantities follow them. So mode 1 is not a missing term but a different scheme,
+    #: and it is the value the field's own "Operationally 1 (DWD global)" names.
     icldm_turb: options.CloudRepresentationType = options.CloudRepresentationType.SUBGRID_SCALE
     #: Type of water cloud diagnosis within the turbulence scheme.
     itype_wcld: int = 2
@@ -950,16 +1025,37 @@ class Turbulence:
         """Refuse the configurations the ported stencils cannot represent.
 
         `TurbulenceConfig` states which formulations the PORT supports; this states which of
-        those the assembled 'turbdiff' can actually run, which is narrower in four places. Each
-        of the four is a stencil that fuses a guarded Fortran block into an unguarded expression
-        -- correct only while the guard holds -- so the alternative is not a missing term but a
-        wrong number.
+        those the assembled 'turbdiff' can actually run, which is narrower in eight places.
 
-        'imode_tkesso' used to be a fifth. It is not any more: mode 1 has its own program
+        THE EIGHT ARE OF TWO KINDS, and the second kind is the one that was missing until the
+        2026-08-31 configuration audit:
+
+        * FOUR FUSED GUARDS -- 'itype_sher', 'ltkeshs', 'ltkesso' and 'c_diff'. A stencil folds
+          a guarded Fortran block into an unguarded expression, so it is correct exactly while
+          the guard holds and the alternative is a wrong number rather than a missing term.
+        * FOUR ABSENT BLOCKS -- 'icldm_turb', 'rsur_sher', 'a_stab' and 'it_end'. The Fortran
+          block simply has no counterpart here, so the granule would run its own formulation
+          and report nothing. All four were ACCEPTED AND SILENTLY IGNORED before this method
+          refused them, and two of them are values an operational setup really sets:
+          'icldm_turb = 1' is the DWD global configuration, and 'a_stab > 0' is what
+          'ensemble_pert_nml' produces for an EPS member.
+
+        Refusing here rather than in `TurbulenceConfig._validate` is deliberate for all eight.
+        The configuration is the granule's INTERFACE and has to stay expressible from Fortran,
+        C and Python alike (port spec D5/D6), so it accepts whatever ICON can be configured to
+        do; what the implementation can run is narrower and is stated here. 'icldm_turb' is the
+        clearest case: 'from_fortran_dict' must keep accepting the echoed 'turbdiff_nml' of the
+        DWD global setup, and the run must still stop before it computes anything.
+
+        'imode_tkesso' used to be a ninth. It is not any more: mode 1 has its own program
         ('compute_total_mechanical_forcing_without_richardson_reduction') and
         '_setup_turbdiff_programs' selects it, so both values 'TurbulenceConfig' accepts run
         here. Mode 1 is validated against ICON only where the reduction factor is exactly 1;
         that stencil's module docstring says so.
+
+        Raises:
+            NotImplementedError: For any of the eight, naming the parameter, the value given
+                and the Fortran statement that would have to be ported.
         """
         if (
             self._config.itype_sher
@@ -989,6 +1085,57 @@ class Turbulence:
                 f"{self._config.c_diff}. At c_diff = 0 'turbdiff' skips sections 6) and 8) to "
                 f"10) and zeroes 'tketens' instead (turb_diffusion.f90:2541), a branch the "
                 f"reference capture does not exercise."
+            )
+        if self._config.icldm_turb is not options.CloudRepresentationType.SUBGRID_SCALE:
+            raise NotImplementedError(
+                f"Only icldm_turb = 2 (the sub-grid statistical saturation adjustment) is "
+                f"implemented in 'run_turbdiff'; got {int(self._config.icldm_turb)}. "
+                f"'compute_conserved_variables_and_factors_at_main_levels' and "
+                f"'_diagnose_cloud_cover_and_liquid_water' "
+                f"(thermodynamic_functions.py:151-262) carry the 'icldmod == 2' arm of "
+                f"'adjust_satur_equil' and no other. At icldm_turb = 1 the Fortran never "
+                f"reaches 'turb_cloud': the arm at turb_utilities.f90:869-882 terminates the "
+                f"ELSEIF chain because both 'turbdiff' calls pass 'qc' "
+                f"(turb_diffusion.f90:983, :1014), so the cloud cover becomes binary and the "
+                f"liquid water becomes 'qc' unchanged, and nine further quantities follow them. "
+                f"Use the Fortran scheme for the DWD global configuration."
+            )
+        if self._config.rsur_sher != 0.0:
+            raise NotImplementedError(
+                f"Only rsur_sher = 0 (no surface-layer adaptation to the additional shear of "
+                f"non-turbulent circulations) is implemented in 'run_turbdiff'; got "
+                f"{self._config.rsur_sher}. A positive value is 'lsrfshear' on this granule "
+                f"(turb_diffusion.f90:968, the other disjunct being dead while 'imode_trancnf' "
+                f"is frozen at 2 and 'imode_suradap' at 0), and none of what it switches on is "
+                f"ported: 'ftm(:,ke)' (:1386-1393), the only write of 'tfv' (:1690-1697), which "
+                f"the next 'turbtran' and TERRA both consume, 'lpres_edr' (:1820), and 'tfm' "
+                f"and 'tfh' overwritten with different physical quantities (:1899-1909, "
+                f":1999-2006). The granule would return the three surface fields unwritten and "
+                f"the error would surface one timestep later, through 'turbtran'. Use the "
+                f"Fortran scheme."
+            )
+        if self._config.a_stab != 0.0:
+            raise NotImplementedError(
+                f"Only a_stab = 0 (no stability correction of the master length scale) is "
+                f"implemented in 'run_turbdiff'; got {self._config.a_stab}. "
+                f"'solve_turb_budgets' carries no counterpart of turb_utilities.f90:1339-1353, "
+                f"whose guard 'a_stab > 0 .AND. it_s == it_start' holds at every level of every "
+                f"timestep here, so the corrected 'tls' -- and with it every diffusion "
+                f"coefficient, the SDSS and the EDR -- would silently be the uncorrected one. "
+                f"A non-zero value most likely arrives from 'ensemble_pert_nml' rather than "
+                f"'turbdiff_nml': 'set_scalar_ens_pert' makes it positive definite "
+                f"(mo_ensemble_pert_config.f90:818-820). Use the Fortran scheme."
+            )
+        if self._config.it_end != 1:
+            raise NotImplementedError(
+                f"Only it_end = 1 (a single pass) is implemented in 'run_turbdiff'; got "
+                f"{self._config.it_end}. The granule has no iteration loop and no cold start, "
+                f"so a larger count would be accepted and one pass performed. It is inert today "
+                f"only because the call site passes 'iini = 0', which makes "
+                f"'it_start = tdc%it_end' (turb_utilities.f90:387) and the loop at "
+                f"turb_diffusion.f90:1800 a single pass whatever 'it_end' is -- and that stops "
+                f"holding the moment the initialisation call site is in scope. Use the Fortran "
+                f"scheme."
             )
 
     def _determine_derived_switches(self) -> None:
@@ -1842,7 +1989,9 @@ class Turbulence:
 
         'diagnostic_state.tfm', 'tfh' and 'tfv' are NOT written. The Fortran would overwrite
         them in sections 3) and 4) under 'lsrfshear' and in section 2c) under "rsur_sher > 0",
-        and both are false for every configuration this granule accepts ('rsur_sher = 0' and
+        and both are false for every configuration this granule accepts -- since 2026-09-02
+        because '_validate_the_configuration_the_stencils_can_express' REFUSES 'rsur_sher /= 0'
+        rather than merely assuming it ('rsur_sher = 0' and
         the frozen 'imode_suradap = 0'). Measured over the capture: all three keep the values
         'turbtran' left, at every one of the fifteen section savepoints.
 

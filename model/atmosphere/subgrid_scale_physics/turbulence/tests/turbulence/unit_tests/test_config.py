@@ -13,10 +13,26 @@ every namelist switch of the Fortran scheme is accepted as an argument, but the 
 alternative formulations were not ported are refused rather than silently ignored. These tests
 pin both halves of that contract -- what is accepted and what is refused -- and the defaults the
 refusal is anchored on, which are read from 'mo_turbdiff_config.f90'.
+
+WHAT IS REFUSED HERE IS NOT ALL OF WHAT IS REFUSED. The configuration is the interface and stays
+as wide as ICON's namelist; the granule is narrower and refuses eight further settings at
+construction. Those refusals are exercised in 'test_granule.py', which is where a reader looking
+for 'icldm_turb = 1', 'rsur_sher', 'a_stab' or 'it_end' should go.
+
+THE ACCOUNTING TEST IS THE POINT OF THIS MODULE. Every one of the 93 fields of
+'TurbulenceConfig' has to be classified into one of the five buckets below, and that requirement
+is what the 2026-08-31 audit found missing: its predecessor selected the fields
+to account for by 'bool' default and by the 'imode_'/'itype_'/'icldm_'/'ilow_' prefixes, so it
+inspected no 'float' field at all -- and 'rsur_sher' and 'a_stab' are floats the Fortran branches
+on with '> 0', i.e. switches that do not look like one. Both were accepted, unread and unremarked
+for the whole port. The five buckets below are exhaustive and, apart from the deliberate overlap
+of 'THRESHOLD_SWITCHES', disjoint.
 """
 
+import ast
 import dataclasses
 import inspect
+import pathlib
 
 import pytest
 
@@ -58,6 +74,8 @@ EXPECTED_FROZEN_DEFAULTS = {
     "loutshs": True,  # :271
     "lsflcnd": True,  # :280
     "lfreeslip": False,  # :284
+    "ldiff_qi": False,  # :282
+    "ldiff_qs": False,  # :283
     "l3dturb": False,  # not a namelist switch: hardcoded at mo_nwp_turbdiff_interface.f90:584
 }
 
@@ -66,15 +84,104 @@ EXPECTED_FROZEN_DEFAULTS = {
 #: Each is consumed by an ICON file that is out of scope (port spec D1) or gates an output
 #: argument the interfaces never pass; the doc comment of the field names the line. Listed here
 #: so that freezing one later has to be a deliberate edit in two places rather than a silent one.
+#:
+#: 'ldiff_qi' and 'ldiff_qs' USED TO BE HERE AND ARE NOT ANY MORE. The scheme does not read them
+#: -- that much was and stays true -- but the interface that does read them
+#: ('mo_nwp_turbdiff_interface.f90:356', ':389') builds the tracer list out of them, and the
+#: tracer list is exactly what the granule refuses. "No statement of the scheme reads it" is
+#: therefore not sufficient grounds for accepting a switch: what matters is whether the value can
+#: be HONOURED, and 'ldiff_qi = True' cannot be. Both are in 'FROZEN_SWITCHES' now.
 NO_BEARING_ON_THE_GRANULE = (
     "imode_pat_len",
     "imode_snowsmot",
     "lconst_z0",
-    "ldiff_qi",
-    "ldiff_qs",
     "loutsso",
     "loutnst",
     "loutbms",
+)
+
+
+#: The parameters that are not spelled as switches and behave as switches anyway: the Fortran
+#: branches on a threshold, almost always '> 0', so the value selects a formulation rather than
+#: scaling one. This is the class the accounting test used to be blind to. Each entry says what
+#: the granule does with it and where that is pinned; 'refused' entries are refused by
+#: 'Turbulence', not by 'TurbulenceConfig', and are exercised in 'test_granule.py'.
+#:
+#: Two of them ALSO appear above -- 'frcsmot' and 'a_hshr' vary operationally as well -- which is
+#: why this mapping is kept beside the accounting rather than as a sixth disjoint bucket. The
+#: other six are classified here and nowhere else.
+THRESHOLD_SWITCHES = {
+    #: 'lcircterm' (turb_diffusion.f90:945): at zero the circulation term is off. Honoured --
+    #: 'Turbulence._determine_derived_switches' selects the pair of programs from it.
+    "pat_len": "honoured",
+    #: Section 2c) smooths the TKE forcing when it is positive. Honoured, and range-checked to
+    #: [0, 1] in '_validate'.
+    "frcsmot": "honoured",
+    #: Crosschecked against 'ltkeshs', as ICON does at 'mo_nml_crosscheck.f90:432'.
+    "a_hshr": "honoured",
+    #: At zero 'turbdiff' skips sections 6) and 8) to 10) (turb_diffusion.f90:2541). Refused.
+    "c_diff": "refused",
+    #: 'lsrfshear' (turb_diffusion.f90:968). Refused; see the field's doc comment.
+    "rsur_sher": "refused",
+    #: The stability correction of the master length scale (turb_utilities.f90:1339). Refused.
+    "a_stab": "refused",
+    #: The iteration count, a threshold in the sense that only '1' means "no loop". Refused.
+    "it_end": "refused",
+    #: The EDR limit (turb_utilities.f90:1846), reachable only under 'lpres_edr'. Argued in the
+    #: field's doc comment to be unreachable once 'rsur_sher = 0' is enforced, and NOT refused --
+    #: which is why the two have to be revisited together.
+    "vel_max": "argued",
+}
+
+
+#: Everything else: values the scheme reads arithmetically, with no Fortran branch on them. A
+#: wrong number here is a tuning error, not a missing formulation, so none of them is refused and
+#: none needs an argument. Spelled out so that a NEW parameter cannot join them in silence --
+#: adding a field to 'TurbulenceConfig' without classifying it fails
+#: 'test_every_configuration_parameter_is_accounted_for'.
+CONTINUOUS_PARAMETERS = (
+    "impl_s",
+    "impl_t",
+    "tkhmin",
+    "tkmmin",
+    "tkhmin_strat",
+    "tkmmin_strat",
+    "ditsmot",
+    "tkesmot",
+    "frcsecu",
+    "tkesecu",
+    "stbsecu",
+    "prfsecu",
+    "epsi",
+    "rlam_heat",
+    "rlam_mom",
+    "rat_lam",
+    "rat_sea",
+    "rat_glac",
+    "rat_can",
+    "alpha0",
+    "alpha0_max",
+    "alpha0_pert",
+    "alpha1",
+    "c_lnd",
+    "c_sea",
+    "c_soil",
+    "c_stm",
+    "e_surf",
+    "const_z0",
+    "z0m_dia",
+    "z0_ice",
+    "tur_len",
+    "len_min",
+    "vel_min",
+    "akt",
+    "a_heat",
+    "a_mom",
+    "d_heat",
+    "d_mom",
+    "clc_diag",
+    "q_crit",
+    "c_scld",
 )
 
 
@@ -187,6 +294,11 @@ def test_every_formulation_switch_is_accounted_for() -> None:
 
     The point of the reject list is that a formulation switch may not pass unremarked (port spec
     D6); this is the test that notices when a new one does.
+
+    KEPT, THOUGH 'test_every_configuration_parameter_is_accounted_for' SUBSUMES IT. What this one
+    says and the wider one does not is that a field which LOOKS like a switch may not be
+    classified as a continuous parameter: the wider test would be satisfied by putting
+    'imode_whatever' in 'CONTINUOUS_PARAMETERS', and this one would not.
     """
     frozen = {switch.name for switch in turbulence.FROZEN_SWITCHES}
     accounted = frozen | set(VARY_OPERATIONALLY) | set(NO_BEARING_ON_THE_GRANULE)
@@ -197,6 +309,77 @@ def test_every_formulation_switch_is_accounted_for() -> None:
         or field.name.startswith(("imode_", "itype_", "icldm_", "ilow_"))
     }
     assert switches - accounted == set()
+
+
+def _accounting_buckets() -> dict[str, set[str]]:
+    """The five classifications, as sets, in the order a field should be looked for."""
+    return {
+        "FROZEN_SWITCHES": {switch.name for switch in turbulence.FROZEN_SWITCHES},
+        "VARY_OPERATIONALLY": set(VARY_OPERATIONALLY),
+        "NO_BEARING_ON_THE_GRANULE": set(NO_BEARING_ON_THE_GRANULE),
+        "THRESHOLD_SWITCHES": set(THRESHOLD_SWITCHES),
+        "CONTINUOUS_PARAMETERS": set(CONTINUOUS_PARAMETERS),
+    }
+
+
+def test_every_configuration_parameter_is_accounted_for() -> None:
+    """EVERY field of 'TurbulenceConfig' is classified, not only the ones that look like switches.
+
+    This is the widened form of the test above, and the hole it closes is a measured one: keying
+    on 'bool' defaults and on the integer prefixes inspects no 'float' field, and 'rsur_sher',
+    'a_stab' and 'vel_max' are floats the Fortran branches on. All three passed the narrow test
+    and none of them was read by the granule.
+
+    Both directions are asserted. An unclassified field is the hole; a classified name that is
+    not a field is a rename the classification did not follow, which would silently stop
+    covering the parameter it was written for.
+    """
+    fields = {field.name for field in dataclasses.fields(turbulence.TurbulenceConfig)}
+    accounted = set().union(*_accounting_buckets().values())
+
+    assert fields - accounted == set(), "unclassified parameter: add it to one of the buckets"
+    assert accounted - fields == set(), "classified name that is not a parameter"
+
+
+def test_the_continuous_parameters_claim_nothing_that_is_a_switch() -> None:
+    """'CONTINUOUS_PARAMETERS' is the residue, so nothing may be in it and in another bucket.
+
+    Without this the accounting could be satisfied by listing a frozen switch twice, and the
+    second listing would read as an assertion that it has no Fortran branch behind it.
+    """
+    buckets = _accounting_buckets()
+    residue = buckets.pop("CONTINUOUS_PARAMETERS")
+    for name, bucket in buckets.items():
+        assert residue & bucket == set(), f"CONTINUOUS_PARAMETERS overlaps {name}"
+
+
+@pytest.mark.parametrize("name", sorted(THRESHOLD_SWITCHES))
+def test_threshold_switch_is_a_parameter_with_a_disposition(name: str) -> None:
+    """A float the Fortran branches on is a switch, and D6 forbids it passing unremarked.
+
+    Each has to be refused, honoured or argued -- and 'argued' has to be argued in the field's
+    own doc comment, where the next reader of the declaration will find it, rather than only
+    here.
+    """
+    fields = {field.name for field in dataclasses.fields(turbulence.TurbulenceConfig)}
+    assert name in fields
+    disposition = THRESHOLD_SWITCHES[name]
+    assert disposition in ("refused", "honoured", "argued")
+    if disposition == "argued":
+        comment = _doc_comment(name)
+        assert ".f90:" in comment, f"{name}: no Fortran citation for the branch"
+        assert "unreachable" in comment, f"{name}: no conclusion stated"
+
+
+def test_the_two_threshold_switches_the_audit_found_are_refused() -> None:
+    """The specific finding, named, so that a bucket rename cannot quietly drop it.
+
+    'rsur_sher' and 'a_stab' are the two parameters the 2026-08-31 audit found accepted and
+    silently ignored, and 'a_stab' is the one an operational EPS member really sets, through
+    'ensemble_pert_nml' rather than 'turbdiff_nml'.
+    """
+    assert THRESHOLD_SWITCHES["rsur_sher"] == "refused"
+    assert THRESHOLD_SWITCHES["a_stab"] == "refused"
 
 
 # --- the switches that vary operationally ---------------------------------------------------
@@ -300,6 +483,60 @@ def test_horizontal_shear_switch_and_length_scale_must_agree() -> None:
         turbulence.TurbulenceConfig(ltkeshs=True, a_hshr=0.0)
     with pytest.raises(ValueError, match="ltkeshs"):
         turbulence.TurbulenceConfig(ltkeshs=False, a_hshr=2.0)
+
+
+def test_the_configuration_still_accepts_the_cloud_representation_the_granule_refuses() -> None:
+    """'icldm_turb = 1' must reach 'TurbulenceConfig' and be stopped by 'Turbulence'.
+
+    The interface is the contract (port spec D5/D6) and 'from_fortran_dict' has to keep reading
+    the echoed 'turbdiff_nml' of the DWD global setup, which sets 1. Refusing it here instead
+    would refuse the namelist rather than the run, and the two are not the same message. The
+    refusal that matters is in 'test_granule.py'.
+    """
+    config = turbulence.TurbulenceConfig.from_fortran_dict({"turbdiff_nml": {"icldm_turb": 1}})
+    assert config.icldm_turb is options.CloudRepresentationType.GRID_SCALE
+
+
+def _package_modules_that_compute() -> list[pathlib.Path]:
+    """Every module of the package that a stencil is built from.
+
+    'turbulence.py' is excluded on purpose: it is where 'icldm_turb' is declared, validated and
+    refused, so it is the one module that must mention it.
+    """
+    root = pathlib.Path(inspect.getfile(turbulence)).parent
+    return [
+        path
+        for path in sorted(root.rglob("*.py"))
+        if path.name not in ("turbulence.py", "__init__.py")
+    ]
+
+
+def test_no_stencil_reads_the_cloud_representation_mode() -> None:
+    """Why 'icldm_turb = 1' has to be refused rather than dispatched on.
+
+    The mode-2 arm of 'adjust_satur_equil' is carried unguarded: no stencil takes 'icldm_turb'
+    as an argument and none branches on it, so at mode 1 the granule would run the sub-grid
+    statistical saturation adjustment that the Fortran does not reach at all
+    (turb_utilities.f90:869-882 terminates the ELSEIF chain before 'turb_cloud').
+
+    Identifiers only, by way of the AST, so that the doc comments which DISCUSS 'icldm_turb' --
+    and several of them do, at length -- do not register as a use.
+    """
+    for path in _package_modules_that_compute():
+        # The encoding is spelled out because 'read_text()' defaults to the LOCALE encoding,
+        # which is ASCII in a SLURM job that sets no LANG -- and several modules of this package
+        # carry an em dash. Measured: this passed on two runs and failed on the third with a
+        # UnicodeDecodeError, same tree, same node, same flags (job 843849).
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        identifiers = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name):
+                identifiers.add(node.id)
+            elif isinstance(node, ast.arg):
+                identifiers.add(node.arg)
+            elif isinstance(node, ast.Attribute):
+                identifiers.add(node.attr)
+        assert "icldm_turb" not in identifiers, f"{path.name} reads icldm_turb"
 
 
 def test_options_are_coerced_to_their_enum() -> None:

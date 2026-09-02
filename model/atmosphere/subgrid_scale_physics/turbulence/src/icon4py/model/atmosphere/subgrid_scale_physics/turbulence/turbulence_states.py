@@ -297,8 +297,13 @@ class TurbulenceDiagnosticState:
     #: 'tfv' -- additional shear forcing by non-turbulent subgrid circulations (NTCs) at the "P"
     #: level [1/s2]: SSO wakes, separated horizontal shear, convective and near-surface thermal
     #: circulations together. Computed as the total mechanical forcing minus the pure-mean-shear
-    #: forcing, 'frm - ftm' (turb_diffusion.f90:1677), i.e. the whole scale-interaction residual;
+    #: forcing, 'frm - ftm' (turb_diffusion.f90:1695), i.e. the whole scale-interaction residual;
     #: near-surface thermals alone have their own slot, 'tket_nstc'.
+    #:
+    #: NEVER WRITTEN BY THE GRANULE, and now provably so rather than as an observation: its
+    #: only writer is 'turb_diffusion.f90:1695', under 'rsur_sher > 0', and
+    #: 'Turbulence._validate_the_configuration_the_stencils_can_express' refuses a non-zero
+    #: 'rsur_sher'. The same refusal is what makes 'tprn' inert.
     tfv: fa.CellField[ta.wpfloat]
     #: 'tkred_sfc' -- reduction factor for the minimum momentum diffusion coefficient near the
     #: surface [1].
@@ -346,9 +351,25 @@ class TurbulenceDiagnosticState:
     #: 'edr' -- eddy dissipation rate of TKE, on half levels [m2/s3]. A pointer argument that
     #: ICON leaves disassociated unless 'ldiagnose_tke' is set
     #: (mo_nwp_turbdiff_interface.f90:309).
+    #:
+    #: THE GRANULE NEVER WRITES IT, AND A CALLER MUST NOT READ IT. This field and
+    #: `tur_len_scale` are the two declared outputs of this container that the port does not
+    #: produce: 'turbdiff' aliases them onto its working arrays only when they are associated
+    #: (turb_diffusion.f90:847-858), and no stencil of this package computes either. Whatever
+    #: was in the array when the granule was called is still there when it returns.
+    #:
+    #: THERE IS NO REFUSAL FOR THIS, DELIBERATELY, AND THAT IS WHY IT IS WRITTEN HERE. The
+    #: container has no flag saying the caller wants them, so the granule cannot tell a request
+    #: from an allocation; the condition lives one level up, and both callers that exist
+    #: enforce it: ICON's 'check_supported_configuration' aborts on 'ldiagnose_tke = .TRUE.'
+    #: ('mo_icon4py_turbulence.f90'), and 'icon4py.bindings.turbulence_wrapper' passes a
+    #: NaN-filled field it allocated itself, so a blue-line read produces NaN rather than a
+    #: plausible number. A green-line driver has neither, which leaves this statement as the
+    #: whole of the contract: pass a field if the interface needs one, and do not read it back.
     edr: fa.CellKField[ta.wpfloat]
     #: 'tur_len_scale' -- turbulent length scale, on half levels [m]. Output-only, and
-    #: disassociated under the same condition as 'edr'.
+    #: disassociated under the same condition as 'edr'. Never written by the granule and not to
+    #: be read by the caller, for exactly the reasons given for `edr`.
     tur_len_scale: fa.CellKField[ta.wpfloat]
     #: 'tke(:,:,ntur)' -- the turbulent velocity q = sqrt(2 * TKE) the scheme produces, on half
     #: levels [m/s]. The counterpart of `TurbulenceInputState.tke`, which is 'tke(:,:,nvor)',
