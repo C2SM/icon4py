@@ -186,6 +186,7 @@ def test_model(
     _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
+
     success_codes = (
         [0] if "--collect-only" in session.posargs else [0, NO_TESTS_COLLECTED_EXIT_CODE]
     )

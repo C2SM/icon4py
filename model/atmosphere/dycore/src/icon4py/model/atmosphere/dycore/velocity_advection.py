@@ -61,8 +61,8 @@ class VelocityAdvection:
         self._edge_params: grid_states.EdgeParams = edge_params
         self._c_owner_mask: fa.CellField[bool] = owner_mask
 
-        self._cfl_w_limit: float = 0.65
-        self._scalfac_exdiff: float = 0.05
+        self._cfl_w_limit: ta.vpfloat = ta.vpfloat(0.65)
+        self._scalfac_exdiff: ta.wpfloat = ta.wpfloat(0.05)
         self._allocate_local_fields(model_backends.get_allocator(backend))
         self._determine_local_domains()
 
@@ -238,9 +238,9 @@ class VelocityAdvection:
         skip_compute_predictor_vertical_advection: bool,
         diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
-        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
-        tangential_wind_on_half_levels: fa.EdgeKField[ta.anyfloat],
+        contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
+        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
+        tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat],
         dtime: ta.wpfloat,
         cell_areas: fa.CellField[ta.wpfloat],
     ) -> None:
@@ -317,18 +317,20 @@ class VelocityAdvection:
             apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
         )
 
-    def _scale_factors_by_dtime(self, dtime: float) -> tuple[float, float]:
-        scaled_cfl_w_limit = self._cfl_w_limit / dtime
-        scalfac_exdiff = self._scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
-        return scaled_cfl_w_limit, scalfac_exdiff
+    def _scale_factors_by_dtime(self, dtime: ta.wpfloat) -> tuple[ta.vpfloat, ta.wpfloat]:
+        scaled_cfl_w_limit = gtx.astype(self._cfl_w_limit, ta.wpfloat) / dtime
+        scalfac_exdiff = self._scalfac_exdiff / (
+            dtime * (ta.wpfloat(0.85) - scaled_cfl_w_limit * dtime)
+        )
+        return gtx.astype(scaled_cfl_w_limit, ta.vpfloat), scalfac_exdiff
 
     def run_corrector_step(
         self,
         *,
         diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
-        tangential_wind_on_half_levels: fa.EdgeKField[ta.anyfloat],
+        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
+        tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat],
         dtime: ta.wpfloat,
         cell_areas: fa.CellField[ta.wpfloat],
     ) -> None:

@@ -10,6 +10,7 @@ from gt4py.next import exp, log
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -24,7 +25,7 @@ def _diagnose_surface_pressure(
         * (
             ddqz_z_full(dims.KDim - 1) / virtual_temperature(dims.KDim - 1)
             + ddqz_z_full(dims.KDim - 2) / virtual_temperature(dims.KDim - 2)
-            + 0.5 * ddqz_z_full(dims.KDim - 3) / virtual_temperature(dims.KDim - 3)
+            + wpfloat(0.5) * ddqz_z_full(dims.KDim - 3) / virtual_temperature(dims.KDim - 3)
         )
     )
     return surface_pressure

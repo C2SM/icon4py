@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import exp, log, maximum, minimum, power, sqrt, where
+from gt4py.next import astype, exp, log, maximum, minimum, power, sqrt, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
     AesGraupelConsts,
@@ -367,7 +367,7 @@ def _snow_number(
         * power(((qs + QSMIN) * rho / GraupelConsts.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
         / (alf * alf * alf)
     )
-    y = exp(N0S2 * tc)
+    y = astype(exp(N0S2 * tc), wpfloat)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
     return where(qs > GraupelConsts.qmin, minimum(n0smx, maximum(n0smn, n0s)), N0S0)
@@ -416,7 +416,7 @@ def _snow_number_scalar(
         * power(((qs + QSMIN) * rho / GraupelConsts.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
         / (alf * alf * alf)
     )
-    y = exp(N0S2 * tc)
+    y = astype(exp(N0S2 * tc), wpfloat)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
     return minimum(n0smx, maximum(n0smn, n0s)) if qs > GraupelConsts.qmin else N0S0

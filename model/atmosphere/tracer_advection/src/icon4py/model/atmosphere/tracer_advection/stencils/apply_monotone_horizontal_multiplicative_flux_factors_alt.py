@@ -11,6 +11,7 @@ from gt4py.next import minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO(dastrm): this stencil is unused
@@ -24,14 +25,14 @@ def _apply_monotone_horizontal_multiplicative_flux_factors_alt(
     r_m: fa.CellKField[ta.wpfloat],
     r_p: fa.CellKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    z_signum = where((z_anti > 0.0), 1.0, -1.0)
+    z_signum = where((z_anti > wpfloat(0.0)), wpfloat(1.0), wpfloat(-1.0))
 
-    r_frac = 0.5 * (
-        (1.0 + z_signum) * minimum(r_m(E2C[0]), r_p(E2C[1]))
-        + (1.0 - z_signum) * minimum(r_m(E2C[1]), r_p(E2C[0]))
+    r_frac = wpfloat(0.5) * (
+        (wpfloat(1.0) + z_signum) * minimum(r_m(E2C[0]), r_p(E2C[1]))
+        + (wpfloat(1.0) - z_signum) * minimum(r_m(E2C[1]), r_p(E2C[0]))
     )
 
-    p_mflx_tracer_h = z_mflx_low + minimum(1.0, r_frac) * z_anti
+    p_mflx_tracer_h = z_mflx_low + minimum(wpfloat(1.0), r_frac) * z_anti
 
     return p_mflx_tracer_h
 

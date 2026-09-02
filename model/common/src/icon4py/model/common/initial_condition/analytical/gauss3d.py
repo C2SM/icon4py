@@ -68,19 +68,21 @@ def gauss3d(
 
     geometry = static_fields.geometry
     metrics = static_fields.metrics
-    primal_normal_x = geometry.get(geometry_meta.EDGE_NORMAL_U).ndarray
-    inv_dual_edge_length = geometry.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}").ndarray
-    edge_cell_distance = geometry.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray
-    primal_edge_length = geometry.get(geometry_meta.EDGE_LENGTH).ndarray
-    cell_area = geometry.get(geometry_meta.CELL_AREA).ndarray
-    geopot = phy_const.GRAV * metrics.get(metrics_attributes.Z_MC).ndarray
-    z_ifc = metrics.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
-    exner_ref_mc = metrics.get(metrics_attributes.EXNER_REF_MC).ndarray
-    d_exner_dz_ref_ic = metrics.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
-    theta_ref_mc = metrics.get(metrics_attributes.THETA_REF_MC).ndarray
-    theta_ref_ic = metrics.get(metrics_attributes.THETA_REF_IC).ndarray
-    wgtfac_c = metrics.get(metrics_attributes.WGTFAC_C).ndarray
-    ddqz_z_half = metrics.get(metrics_attributes.DDQZ_Z_HALF).ndarray
+    primal_normal_x = geometry.export_field(geometry_meta.EDGE_NORMAL_U).ndarray
+    inv_dual_edge_length = geometry.export_field(
+        f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+    ).ndarray
+    edge_cell_distance = geometry.export_field(geometry_meta.EDGE_CELL_DISTANCE).ndarray
+    primal_edge_length = geometry.export_field(geometry_meta.EDGE_LENGTH).ndarray
+    cell_area = geometry.export_field(geometry_meta.CELL_AREA).ndarray
+    geopot = phy_const.GRAV * metrics.export_field(metrics_attributes.Z_MC).ndarray
+    z_ifc = metrics.export_field(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray
+    exner_ref_mc = metrics.export_field(metrics_attributes.EXNER_REF_MC).ndarray
+    d_exner_dz_ref_ic = metrics.export_field(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
+    theta_ref_mc = metrics.export_field(metrics_attributes.THETA_REF_MC).ndarray
+    theta_ref_ic = metrics.export_field(metrics_attributes.THETA_REF_IC).ndarray
+    wgtfac_c = metrics.export_field(metrics_attributes.WGTFAC_C).ndarray
+    ddqz_z_half = metrics.export_field(metrics_attributes.DDQZ_Z_HALF).ndarray
     zone_idx = testcases_utils.zone_indices(grid)
 
     num_edges = grid.num_edges

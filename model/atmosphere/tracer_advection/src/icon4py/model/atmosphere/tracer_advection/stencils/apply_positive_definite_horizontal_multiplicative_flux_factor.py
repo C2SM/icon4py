@@ -11,6 +11,7 @@ from gt4py.next import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO(dastrm): this stencil has no test
@@ -22,7 +23,7 @@ def _apply_positive_definite_horizontal_multiplicative_flux_factor(
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
     p_mflx_tracer_h_out = where(
-        p_mflx_tracer_h >= 0.0,
+        p_mflx_tracer_h >= wpfloat(0.0),
         p_mflx_tracer_h * r_m(E2C[0]),
         p_mflx_tracer_h * r_m(E2C[1]),
     )

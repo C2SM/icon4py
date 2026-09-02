@@ -28,6 +28,7 @@ from icon4py.model.common import (
     topography as topo,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.type_alias import dataclass_scalars_to_wp
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
@@ -125,6 +126,16 @@ class VerticalGridConfig:
     #: minimum relative layer thickness for a nominal thickness of _SLEVE_minimum_layer_thickness_2 (hardcoded in init_vert_coord, not a namelist parameter)
     _SLEVE_minimum_relative_layer_thickness_2: Final[ta.wpfloat] = 0.5
 
+    def __post_init__(self):
+        dataclass_scalars_to_wp(
+            self,
+            attributes=[
+                field.name
+                for field in self.__dataclass_fields__.values()
+                if "float" in repr(field.type)
+            ],
+        )
+
     @classmethod
     def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> VerticalGridConfig:
         sleve_nml = atmo_dict["sleve_nml"]
@@ -171,12 +182,12 @@ class VerticalGrid:
         object.__setattr__(
             self,
             "_vct_a",
-            vct_a,
+            gtx.astype(vct_a, ta.wpfloat),
         )
         object.__setattr__(
             self,
             "_vct_b",
-            vct_b,
+            gtx.astype(vct_b, ta.wpfloat) if vct_b is not None else None,
         )
         vct_a_array = self._vct_a.asnumpy()
         object.__setattr__(
@@ -293,14 +304,16 @@ class VerticalGrid:
         cls, vct_a: np.ndarray, top_moist_threshold: ta.wpfloat, nshift_total: int = 0
     ) -> gtx.int32:
         n_levels = vct_a.shape[0]
-        interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
+        interface_height = ta.wpfloat(0.5) * (
+            vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :]
+        )
         return gtx.int32(np.min(np.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
     def _determine_damping_height_index(
         cls, vct_a: np.ndarray, damping_height: ta.wpfloat
     ) -> gtx.int32:
-        assert damping_height >= 0.0, "Damping height must be positive."
+        assert damping_height >= ta.wpfloat(0.0), "Damping height must be positive."
         return (
             0
             if damping_height > vct_a[0]
@@ -311,7 +324,7 @@ class VerticalGrid:
     def _determine_end_index_of_flat_layers(
         cls, vct_a: np.ndarray, flat_height: ta.wpfloat
     ) -> gtx.int32:
-        assert flat_height >= 0.0, "Flat surface height must be positive."
+        assert flat_height >= ta.wpfloat(0.0), "Flat surface height must be positive."
         return (
             0
             if flat_height > vct_a[0]
@@ -413,8 +426,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
         vct_a_exponential_factor = np.log(
             vertical_config.lowest_layer_thickness / vertical_config.model_top_height
         ) / np.log(
-            2.0
-            / math.pi
+            ta.wpfloat(2.0 / math.pi)
             * np.arccos(
                 ta.wpfloat(vertical_config.num_levels - 1) ** vertical_config.stretch_factor
                 / ta.wpfloat(vertical_config.num_levels) ** vertical_config.stretch_factor
@@ -424,8 +436,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
         vct_a = (
             vertical_config.model_top_height
             * (
-                2.0
-                / math.pi
+                ta.wpfloat(2.0 / math.pi)
                 * np.arccos(
                     np.arange(vertical_config.num_levels + 1, dtype=ta.wpfloat)
                     ** vertical_config.stretch_factor
@@ -436,9 +447,9 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
         )
 
         if (
-            2.0 * vertical_config.lowest_layer_thickness
+            ta.wpfloat(2.0) * vertical_config.lowest_layer_thickness
             < vertical_config.maximal_layer_thickness
-            < 0.5 * vertical_config.top_height_limit_for_maximal_layer_thickness
+            < ta.wpfloat(0.5) * vertical_config.top_height_limit_for_maximal_layer_thickness
         ):
             layer_thickness = vct_a[: vertical_config.num_levels] - vct_a[1:]
             lowest_level_exceeding_limit = np.max(
@@ -465,7 +476,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
                     modified_vct_a[k] = modified_vct_a[k + 1] + layer_thickness[k + shifted_levels]
 
             stretchfac = (
-                1.0
+                ta.wpfloat(1.0)
                 if shifted_levels == 0
                 else (
                     vct_a[0]
@@ -498,7 +509,10 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
                     )
 
             # Try to apply additional smoothing on the stretching factor above the constant-thickness layer
-            if stretchfac != 1.0 and lowest_level_exceeding_limit < vertical_config.num_levels - 4:
+            if (
+                stretchfac != ta.wpfloat(1.0)
+                and lowest_level_exceeding_limit < vertical_config.num_levels - 4
+            ):
                 for k in range(vertical_config.num_levels - 1, -1, -1):
                     if (
                         modified_vct_a[k + 1]
@@ -507,8 +521,8 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
                         modified_vct_a[k] = vct_a[k]
                     else:
                         modified_layer_thickness = np.minimum(
-                            1.025 * (vct_a[k] - vct_a[k + 1]),
-                            1.025
+                            ta.wpfloat(1.025) * (vct_a[k] - vct_a[k + 1]),
+                            ta.wpfloat(1.025)
                             * (
                                 modified_vct_a[lowest_level_exceeding_limit + 1]
                                 - modified_vct_a[lowest_level_exceeding_limit + 2]
@@ -529,7 +543,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
                             lowest_level_unmodified_thickness + 1 : vertical_config.num_levels
                         ]
                     )
-                    vct_a[2 : lowest_level_unmodified_thickness + 1] = 0.5 * (
+                    vct_a[2 : lowest_level_unmodified_thickness + 1] = ta.wpfloat(0.5) * (
                         modified_vct_a[1:lowest_level_unmodified_thickness]
                         + modified_vct_a[3 : lowest_level_unmodified_thickness + 2]
                     )
@@ -542,7 +556,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
             )
             / ta.wpfloat(vertical_config.num_levels)
         )
-    vct_b = np.exp(-vct_a / 5000.0)
+    vct_b = np.exp(-vct_a / ta.wpfloat(5000.0))
 
     if not np.allclose(vct_a[0], vertical_config.model_top_height):
         log.warning(
@@ -590,10 +604,10 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
     nflatlev: int,
-    model_top_height: ta.wpfloat,
-    SLEVE_decay_scale_1: ta.wpfloat,
-    SLEVE_decay_exponent: ta.wpfloat,
-    SLEVE_decay_scale_2: ta.wpfloat,
+    model_top_height: gtx.float64,
+    SLEVE_decay_scale_1: gtx.float64,
+    SLEVE_decay_exponent: gtx.float64,
+    SLEVE_decay_scale_2: gtx.float64,
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """
@@ -611,9 +625,9 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
 
     def _decay_func(
         vct_a: data_alloc.NDArray,
-        model_top_height: ta.wpfloat,
-        decay_scale: ta.wpfloat,
-        decay_exponent: ta.wpfloat,
+        model_top_height: gtx.float64,
+        decay_scale: gtx.float64,
+        decay_exponent: gtx.float64,
     ) -> data_alloc.NDArray:
         return array_ns.sinh(
             (model_top_height / decay_scale) ** decay_exponent
@@ -628,7 +642,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
         exchange=exchange,
     )
 
-    vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
+    vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1))
     vertical_coordinate[:, num_levels] = topography
 
     # Small-scale topography (i.e. full topo - smooth topo)
@@ -664,11 +678,11 @@ def _check_and_correct_layer_thickness(
     *,
     vertical_coordinate: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
-    SLEVE_minimum_layer_thickness_1: ta.wpfloat,
-    SLEVE_minimum_relative_layer_thickness_1: ta.wpfloat,
-    SLEVE_minimum_layer_thickness_2: ta.wpfloat,
-    SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
-    lowest_layer_thickness: ta.wpfloat,
+    SLEVE_minimum_layer_thickness_1: gtx.float64,
+    SLEVE_minimum_relative_layer_thickness_1: gtx.float64,
+    SLEVE_minimum_layer_thickness_2: gtx.float64,
+    SLEVE_minimum_relative_layer_thickness_2: gtx.float64,
+    lowest_layer_thickness: gtx.float64,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(vertical_coordinate)
     num_cells = vertical_coordinate.shape[0]
@@ -697,7 +711,7 @@ def _check_and_correct_layer_thickness(
             minimum_layer_thickness = (
                 SLEVE_minimum_relative_layer_thickness_2
                 * SLEVE_minimum_layer_thickness_2
-                * (delta_vct_a / SLEVE_minimum_layer_thickness_2) ** (1.0 / 3.0)
+                * (delta_vct_a / SLEVE_minimum_layer_thickness_2) ** ta.wpfloat(1.0 / 3.0)
             )
 
         minimum_layer_thickness = max(minimum_layer_thickness, min(50, lowest_layer_thickness))
@@ -724,7 +738,7 @@ def _check_and_correct_layer_thickness(
             vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 3]
             - vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 2]
         )
-        stretching_factor = (delta_z2 / delta_z1) ** 0.25
+        stretching_factor = (delta_z2 / delta_z1) ** ta.wpfloat(0.25)
         delta_z3 = (
             vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 2]
             - vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1]
@@ -770,15 +784,15 @@ def compute_vertical_coordinate(
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
     nflatlev: int,
-    model_top_height: ta.wpfloat,
-    SLEVE_decay_scale_1: ta.wpfloat,
-    SLEVE_decay_exponent: ta.wpfloat,
-    SLEVE_decay_scale_2: ta.wpfloat,
-    SLEVE_minimum_layer_thickness_1: ta.wpfloat,
-    SLEVE_minimum_relative_layer_thickness_1: ta.wpfloat,
-    SLEVE_minimum_layer_thickness_2: ta.wpfloat,
-    SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
-    lowest_layer_thickness: ta.wpfloat,
+    model_top_height: gtx.float64,
+    SLEVE_decay_scale_1: gtx.float64,
+    SLEVE_decay_exponent: gtx.float64,
+    SLEVE_decay_scale_2: gtx.float64,
+    SLEVE_minimum_layer_thickness_1: gtx.float64,
+    SLEVE_minimum_relative_layer_thickness_1: gtx.float64,
+    SLEVE_minimum_layer_thickness_2: gtx.float64,
+    SLEVE_minimum_relative_layer_thickness_2: gtx.float64,
+    lowest_layer_thickness: gtx.float64,
     exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     """

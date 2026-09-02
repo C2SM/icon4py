@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO(dastrm): this stencil has no test
@@ -23,9 +24,9 @@ def _compute_courant_number_below(
     z_cfl: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    z_mass_pos = z_mass > 0.0
+    z_mass_pos = z_mass > wpfloat(0.0)
 
     in_bounds_p0 = k <= nlev - 1
     in_bounds_p1 = k <= nlev - 2
@@ -33,27 +34,27 @@ def _compute_courant_number_below(
     in_bounds_p3 = k <= nlev - 4
 
     mass_gt_cellmass_p0 = where(z_mass_pos & in_bounds_p0, z_mass >= p_cellmass_now, False)
-    z_mass = z_mass - where(mass_gt_cellmass_p0, p_cellmass_now, 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p0, p_cellmass_now, wpfloat(0.0))
 
     mass_gt_cellmass_p1 = mass_gt_cellmass_p0 & where(
         z_mass_pos & in_bounds_p1, z_mass >= p_cellmass_now(dims.KDim + 1), False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p1, p_cellmass_now(dims.KDim + 1), 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p1, p_cellmass_now(dims.KDim + 1), wpfloat(0.0))
 
     mass_gt_cellmass_p2 = mass_gt_cellmass_p1 & where(
         z_mass_pos & in_bounds_p2, z_mass >= p_cellmass_now(dims.KDim + 2), False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p2, p_cellmass_now(dims.KDim + 2), 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p2, p_cellmass_now(dims.KDim + 2), wpfloat(0.0))
 
     mass_gt_cellmass_p3 = mass_gt_cellmass_p2 & where(
         z_mass_pos & in_bounds_p3, z_mass >= p_cellmass_now(dims.KDim + 3), False
     )
-    z_mass = z_mass - where(mass_gt_cellmass_p3, p_cellmass_now(dims.KDim + 3), 0.0)
+    z_mass = z_mass - where(mass_gt_cellmass_p3, p_cellmass_now(dims.KDim + 3), wpfloat(0.0))
 
-    z_cfl = z_cfl + where(mass_gt_cellmass_p0, 1.0, 0.0)
-    z_cfl = z_cfl + where(mass_gt_cellmass_p1, 1.0, 0.0)
-    z_cfl = z_cfl + where(mass_gt_cellmass_p2, 1.0, 0.0)
-    z_cfl = z_cfl + where(mass_gt_cellmass_p3, 1.0, 0.0)
+    z_cfl = z_cfl + where(mass_gt_cellmass_p0, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl + where(mass_gt_cellmass_p1, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl + where(mass_gt_cellmass_p2, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl + where(mass_gt_cellmass_p3, wpfloat(1.0), wpfloat(0.0))
 
     p_cellmass_now_jks = p_cellmass_now
     p_cellmass_now_jks = where(
@@ -69,8 +70,8 @@ def _compute_courant_number_below(
         mass_gt_cellmass_p3, p_cellmass_now(dims.KDim + 4), p_cellmass_now_jks
     )
 
-    z_cflfrac = where(z_mass_pos, z_mass / p_cellmass_now_jks, 0.0)
-    z_cfl = z_cfl + where(z_cflfrac < 1.0, z_cflfrac, 1.0 - dbl_eps)
+    z_cflfrac = where(z_mass_pos, z_mass / p_cellmass_now_jks, wpfloat(0.0))
+    z_cfl = z_cfl + where(z_cflfrac < wpfloat(1.0), z_cflfrac, wpfloat(1.0) - wp_eps)
 
     return z_cfl
 
@@ -82,9 +83,9 @@ def _compute_courant_number_above(
     z_cfl: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    z_mass_neg = z_mass <= 0.0
+    z_mass_neg = z_mass <= wpfloat(0.0)
 
     in_bounds_m0 = k >= slevp1_ti + 1
     in_bounds_m1 = k >= slevp1_ti + 2
@@ -94,22 +95,22 @@ def _compute_courant_number_above(
     mass_gt_cellmass_m0 = where(
         z_mass_neg & in_bounds_m0, abs(z_mass) >= p_cellmass_now(dims.KDim - 1), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m0, p_cellmass_now(dims.KDim - 1), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m0, p_cellmass_now(dims.KDim - 1), wpfloat(0.0))
 
     mass_gt_cellmass_m1 = mass_gt_cellmass_m0 & where(
         z_mass_neg & in_bounds_m1, abs(z_mass) >= p_cellmass_now(dims.KDim - 2), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m1, p_cellmass_now(dims.KDim - 2), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m1, p_cellmass_now(dims.KDim - 2), wpfloat(0.0))
 
     mass_gt_cellmass_m2 = mass_gt_cellmass_m1 & where(
         z_mass_neg & in_bounds_m2, abs(z_mass) >= p_cellmass_now(dims.KDim - 3), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m2, p_cellmass_now(dims.KDim - 3), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m2, p_cellmass_now(dims.KDim - 3), wpfloat(0.0))
 
     mass_gt_cellmass_m3 = mass_gt_cellmass_m2 & where(
         z_mass_neg & in_bounds_m3, abs(z_mass) >= p_cellmass_now(dims.KDim - 4), False
     )
-    z_mass = z_mass + where(mass_gt_cellmass_m3, p_cellmass_now(dims.KDim - 4), 0.0)
+    z_mass = z_mass + where(mass_gt_cellmass_m3, p_cellmass_now(dims.KDim - 4), wpfloat(0.0))
 
     p_cellmass_now_jks = p_cellmass_now(dims.KDim - 1)
     p_cellmass_now_jks = where(
@@ -125,13 +126,13 @@ def _compute_courant_number_above(
         mass_gt_cellmass_m3, p_cellmass_now(dims.KDim - 5), p_cellmass_now_jks
     )
 
-    z_cfl = z_cfl - where(mass_gt_cellmass_m0, 1.0, 0.0)
-    z_cfl = z_cfl - where(mass_gt_cellmass_m1, 1.0, 0.0)
-    z_cfl = z_cfl - where(mass_gt_cellmass_m2, 1.0, 0.0)
-    z_cfl = z_cfl - where(mass_gt_cellmass_m3, 1.0, 0.0)
+    z_cfl = z_cfl - where(mass_gt_cellmass_m0, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl - where(mass_gt_cellmass_m1, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl - where(mass_gt_cellmass_m2, wpfloat(1.0), wpfloat(0.0))
+    z_cfl = z_cfl - where(mass_gt_cellmass_m3, wpfloat(1.0), wpfloat(0.0))
 
-    z_cflfrac = where(z_mass_neg, z_mass / p_cellmass_now_jks, 0.0)
-    z_cfl = z_cfl + where(abs(z_cflfrac) < 1.0, z_cflfrac, dbl_eps - 1.0)
+    z_cflfrac = where(z_mass_neg, z_mass / p_cellmass_now_jks, wpfloat(0.0))
+    z_cfl = z_cfl + where(abs(z_cflfrac) < wpfloat(1.0), z_cflfrac, wp_eps - wpfloat(1.0))
 
     return z_cfl
 
@@ -144,7 +145,7 @@ def _compute_ppm4gpu_courant_number(
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
     nlev: gtx.int32,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     z_mass = p_dtime * p_mflx_contra_v
@@ -155,7 +156,7 @@ def _compute_ppm4gpu_courant_number(
         z_cfl=z_cfl,
         k=k,
         nlev=nlev,
-        dbl_eps=dbl_eps,
+        wp_eps=wp_eps,
     )
     cfl_above = _compute_courant_number_above(
         p_cellmass_now=p_cellmass_now,
@@ -163,7 +164,7 @@ def _compute_ppm4gpu_courant_number(
         z_cfl=z_cfl,
         k=k,
         slevp1_ti=slevp1_ti,
-        dbl_eps=dbl_eps,
+        wp_eps=wp_eps,
     )
 
     z_cfl = cfl_below + cfl_above
@@ -179,7 +180,7 @@ def compute_ppm4gpu_courant_number(
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
     nlev: gtx.int32,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -193,7 +194,7 @@ def compute_ppm4gpu_courant_number(
         k=k,
         slevp1_ti=slevp1_ti,
         nlev=nlev,
-        dbl_eps=dbl_eps,
+        wp_eps=wp_eps,
         p_dtime=p_dtime,
         out=z_cfl,
         domain={

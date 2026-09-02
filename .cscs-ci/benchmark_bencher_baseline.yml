@@ -2,6 +2,9 @@ include:
   - local: '.cscs-ci/base.yml'
   - local: '.cscs-ci/benchmark_bencher_common.yml'
 
+variables:
+  FLOAT_PRECISION: "double"
+
 benchmark_bencher_stencils_baseline_aarch64:
   extends: [.test_runner_serial, .test_template_aarch64, .benchmark_nox_job]
   variables:

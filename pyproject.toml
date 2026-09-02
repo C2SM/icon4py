@@ -241,13 +241,15 @@ module = ["icon4py.model.common.initial_condition.*"]
 
 [[tool.mypy.overrides]]
 disable_error_code = [
-  "valid-type"  # vfloat is not a valid type
+  "valid-type"  # wpfloat/vpfloat is not a valid type
 ]
 module = [
-  "icon4py.model.atmosphere.tracer_advection.stencils.*",
-  "icon4py.model.atmosphere.diffusion.stencils.*",
-  "icon4py.model.atmosphere.dycore.dycore_states",
-  "icon4py.model.atmosphere.dycore.stencils.*"
+  "icon4py.model.atmosphere.*",
+  "icon4py.model.common.*",
+  "icon4py.model.testing.*",
+  "icon4py.model.standalone_driver.*",
+  "icon4py.bindings.*",
+  "tests.*"
 ]
 
 # -- pytest --

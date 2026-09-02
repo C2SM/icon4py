@@ -12,7 +12,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 # TODO(dastrm): this stencil has no test
@@ -76,27 +76,27 @@ def _compute_ffsl_flux_area_list(
     fa.EdgeKField[gtx.int32],
 ]:
     famask_bool = famask_int == 1
-    lvn_pos = p_vn >= 0.0
+    lvn_pos = p_vn >= wpfloat(0.0)
     # Translation of patch 1 and patch 2 in system relative to respective cell
     bf_cc_patch1_lon = where(
         famask_bool,
         where(lvn_pos, bf_cc_patch1_lon[dims.E2CDim(0)], bf_cc_patch1_lon[dims.E2CDim(1)]),
-        0.0,
+        wpfloat(0.0),
     )
     bf_cc_patch1_lat = where(
         famask_bool,
         where(lvn_pos, bf_cc_patch1_lat[dims.E2CDim(0)], bf_cc_patch1_lat[dims.E2CDim(1)]),
-        0.0,
+        wpfloat(0.0),
     )
     bf_cc_patch2_lon = where(
         famask_bool,
         where(lvn_pos, bf_cc_patch2_lon[dims.E2CDim(0)], bf_cc_patch2_lon[dims.E2CDim(1)]),
-        0.0,
+        wpfloat(0.0),
     )
     bf_cc_patch2_lat = where(
         famask_bool,
         where(lvn_pos, bf_cc_patch2_lat[dims.E2CDim(0)], bf_cc_patch2_lat[dims.E2CDim(1)]),
-        0.0,
+        wpfloat(0.0),
     )
 
     # patch1 in translated system

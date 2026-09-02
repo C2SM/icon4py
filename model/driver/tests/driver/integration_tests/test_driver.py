@@ -12,7 +12,7 @@ import pathlib
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import (
@@ -29,18 +29,18 @@ from ..fixtures import *  # noqa: F403
 # Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends
 _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]]] = {
     test_defs.Experiments.JW: {
-        "vn": (5.3e-7, 0.0),
-        "w": (8e-9, 0.0),
-        "exner": (4.5e-11, 5.5e-11),
-        "theta_v": (5.5e-8, 1.3e-10),
-        "rho": (1.5e-10, 2.2e-10),
+        "vn": (5.3e-7 if test_utils.wp_is_dp else 0.00015, 0.0),
+        "w": (8e-9 if test_utils.wp_is_dp else 4e-5, 0.0),
+        "exner": (4.5e-11, 5.5e-11 if test_utils.wp_is_dp else 5e-7),
+        "theta_v": (5.5e-8, 1.3e-10 if test_utils.wp_is_dp else 2e-6),
+        "rho": (1.5e-10, 2.2e-10 if test_utils.wp_is_dp else 2e-6),
     },
     test_defs.Experiments.GAUSS3D: {
-        "vn": (4.1e-13, 0.0),
-        "w": (8.1e-14, 0.0),
-        "exner": (1.3e-10, 1.3e-10),
-        "theta_v": (9.3e-8, 3.1e-10),
-        "rho": (1.8e-15, 3.7e-15),
+        "vn": (4.1e-13 if test_utils.wp_is_dp else 4.5e-4, 0.0),
+        "w": (8.1e-14 if test_utils.wp_is_dp else 8e-5, 0.0),
+        "exner": (1.3e-10, 1.3e-10 if test_utils.wp_is_dp else 1e-6),
+        "theta_v": (9.3e-8, 3.1e-10 if test_utils.wp_is_dp else 1.1e-6),
+        "rho": (1.8e-15, 3.7e-15 if test_utils.wp_is_dp else 3e-6),
     },
     test_defs.Experiments.MCH_CH_R04B09: {
         "vn": (3.5e-3, 0.0),
@@ -86,6 +86,7 @@ def timeloop_diffusion_linit_exit() -> bool:
 @pytest.mark.datatest
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "experiment_description, timeloop_date_init, timeloop_date_exit, step_date_exit",
     [

@@ -13,6 +13,7 @@ variables:
   LEVELS: "unit:integration"
   GRIDS: "simple:icon_regional"
   TOOLS_SUBSETS: "datatest:unittest"
+  FLOAT_PRECISIONS: "double:single"
 
 .only_merge_queue:
   rules: &only_merge_queue

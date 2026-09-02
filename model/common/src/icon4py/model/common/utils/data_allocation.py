@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-import logging as log
+import logging
 import math
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, TypeVar
@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as grid_base
     from icon4py.model.common.states import utils as state_utils
 
+
+log = logging.getLogger(__name__)
 
 try:
     import cupy as xp  # type: ignore[import-not-found]
@@ -108,9 +110,10 @@ def scalar_like_array[ScalarT: gtx_typing.Scalar](
 def reallocate(
     field: gtx.Field,
     allocator: gtx_typing.Allocator | None = None,
+    dtype: npt.DTypeLike | None = None,
 ) -> gtx.Field:
     """Transfer an existing field to the device the allocator selects."""
-    return gtx.as_field(field.domain, data=field.ndarray, allocator=allocator)
+    return gtx.as_field(field.domain, data=field.ndarray, allocator=allocator, dtype=dtype)
 
 
 def random_field(
@@ -243,7 +246,7 @@ def scattered_field(
     xp = array_namespace(values)
     arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
     arr[indices] = values
-    return gtx.as_field(domain, arr, allocator=allocator)
+    return gtx.as_field(domain, arr, allocator=allocator, dtype=type(default_value))
 
 
 def adjust_fortran_indices(inp: NDArray) -> NDArray:

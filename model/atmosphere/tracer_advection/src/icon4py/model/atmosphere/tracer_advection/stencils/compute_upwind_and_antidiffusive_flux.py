@@ -11,6 +11,7 @@ from gt4py.next import abs  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO(dastrm): this stencil has no test
@@ -22,7 +23,7 @@ def _compute_upwind_and_antidiffusive_flux(
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
 ) -> tuple[fa.EdgeKField[ta.wpfloat], fa.EdgeKField[ta.wpfloat]]:
-    z_mflx_low = 0.5 * (
+    z_mflx_low = wpfloat(0.5) * (
         p_mass_flx_e * (p_cc(E2C[0]) + p_cc(E2C[1]))
         - abs(p_mass_flx_e) * (p_cc(E2C[1]) - p_cc(E2C[0]))
     )
