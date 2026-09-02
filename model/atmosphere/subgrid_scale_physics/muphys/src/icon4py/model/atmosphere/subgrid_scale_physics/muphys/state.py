@@ -26,12 +26,10 @@ from icon4py.model.common import (
 from icon4py.model.common.components.physics_state import PhysicsState
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.physics.stencils import (
-    compute_hydrostatic_pressure,
-    compute_surface_pressure,
-    compute_thermodynamic_tendencies,
-    compute_virtual_temperature_and_temperature,
-    update_exner_and_theta_v,
+from icon4py.model.common.physics.thermodynamics import (
+    compute_pressure,
+    compute_temperature,
+    compute_tendencies,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -85,14 +83,14 @@ class State(PhysicsState):
         }
 
         self._diagnose_temperature = model_options.setup_program(
-            program=compute_virtual_temperature_and_temperature.compute_virtual_temperature_and_temperature,
+            program=compute_temperature.compute_virtual_temperature_and_temperature,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
             offset_provider={},
         )
         self._compute_surface_pressure = model_options.setup_program(
-            program=compute_surface_pressure.compute_surface_pressure,
+            program=compute_pressure.compute_surface_pressure,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes={
@@ -102,7 +100,7 @@ class State(PhysicsState):
             offset_provider={},
         )
         self._compute_hydrostatic_pressure = model_options.setup_program(
-            program=compute_hydrostatic_pressure.compute_hydrostatic_pressure,
+            program=compute_pressure.compute_hydrostatic_pressure,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
@@ -116,14 +114,14 @@ class State(PhysicsState):
             offset_provider={},
         )
         self._compute_virtual_temperature_tendency = model_options.setup_program(
-            program=compute_thermodynamic_tendencies.compute_virtual_temperature_tendency,
+            program=compute_tendencies.compute_virtual_temperature_tendency,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
             offset_provider={},
         )
         self._update_exner_and_theta_v = model_options.setup_program(
-            program=update_exner_and_theta_v.update_exner_and_theta_v,
+            program=compute_temperature.update_exner_and_theta_v,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,

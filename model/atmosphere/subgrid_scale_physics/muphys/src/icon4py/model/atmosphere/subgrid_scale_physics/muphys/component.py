@@ -32,7 +32,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.math.stencils import generic_math_operations
-from icon4py.model.common.physics.stencils import compute_thermodynamic_tendencies
+from icon4py.model.common.physics.thermodynamics import compute_tendencies
 
 
 if TYPE_CHECKING:
@@ -85,7 +85,7 @@ class MuphysComponent:
         vertical_sizes = {"vertical_start": gtx.int32(0), "vertical_end": gtx.int32(self._nlev)}
 
         self._calculate_tendency = model_options.setup_program(
-            program=compute_thermodynamic_tendencies.compute_cell_kdim_field_tendency,
+            program=compute_tendencies.compute_cell_kdim_field_tendency,
             backend=self._backend,
             horizontal_sizes=prognostic_horizontal_sizes,
             vertical_sizes=vertical_sizes,

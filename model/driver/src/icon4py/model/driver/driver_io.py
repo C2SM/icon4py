@@ -31,8 +31,7 @@ from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
-from icon4py.model.common.physics import pressure as pressure_diagnostics
-from icon4py.model.common.physics.stencils import compute_virtual_temperature_and_temperature
+from icon4py.model.common.physics.thermodynamics import compute_pressure, compute_temperature
 from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -179,9 +178,7 @@ class DiagnosticsComputer:
         num_levels = self._num_levels
         end_cell_end = self._end_cell_end
 
-        compute_virtual_temperature_and_temperature.compute_virtual_temperature_and_temperature.with_backend(
-            backend
-        )(
+        compute_temperature.compute_virtual_temperature_and_temperature.with_backend(backend)(
             qv=self._qv,
             qc=self._qc,
             qi=self._qi,
@@ -212,7 +209,7 @@ class DiagnosticsComputer:
             offset_provider={"C2E2C2E": self._grid.get_connectivity("C2E2C2E")},
         )
 
-        pressure_diagnostics.diagnose_pressure_surface_to_top(
+        compute_pressure.compute_surface_and_hydrostatic_pressure(
             grid=self._grid,
             backend=backend,
             exner=prognostic_state.exner,

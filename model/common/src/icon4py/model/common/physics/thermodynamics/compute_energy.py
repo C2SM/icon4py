@@ -6,13 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 """
-AES thermodynamic helper functions shared across physics parameterizations.
+Moist internal energy and its inverse, the temperature.
 
-This module implements the ``internal_energy`` and ``T_from_internal_energy``
-functions of ICON's ``mo_aes_thermo.f90``. They were originally ported as part
-of the muphys (graupel) microphysics and were promoted to ``icon4py.model.common``
-so that other parameterizations (e.g. the AES turbulent mixing energy diffusion)
-can use them without depending on muphys.
+The internal energy of a grid cell follows from the specific heats of dry air,
+vapour, liquid and ice weighted by their mass fractions, minus the latent heats
+of the condensed phases; the inverse relation recovers the temperature from it.
 
 The constants come from :class:`icon4py.model.common.constants.PhysicsConstants`
 (a ``wpfloat``-based ``enum.Enum``, which is what GT4Py/gtfn needs for symbols

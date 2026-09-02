@@ -61,7 +61,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
     _vapor_x_snow,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.physics.thermodynamics import compute_internal_energy_scalar
+from icon4py.model.common.physics.thermodynamics.compute_energy import (
+    compute_internal_energy_scalar,
+)
 from icon4py.model.common.type_alias import wpfloat
 
 

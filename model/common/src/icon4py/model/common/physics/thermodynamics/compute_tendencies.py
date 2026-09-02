@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _compute_virtual_temperature_tendency(
+def _compute_virtual_temperature_tendency(  # noqa: PLR0917 [too-many-positional-arguments]
     dtime: ta.wpfloat,
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
@@ -51,7 +51,7 @@ def _compute_virtual_temperature_tendency(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_virtual_temperature_tendency(
+def compute_virtual_temperature_tendency(  # noqa: PLR0917 [too-many-positional-arguments]
     dtime: ta.wpfloat,
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
@@ -133,7 +133,7 @@ def _compute_cell_kdim_field_tendency(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_cell_kdim_field_tendency(
+def compute_cell_kdim_field_tendency(  # noqa: PLR0917 [too-many-positional-arguments]
     dtime: ta.wpfloat,
     old_field: fa.CellKField[ta.wpfloat],
     new_field: fa.CellKField[ta.wpfloat],

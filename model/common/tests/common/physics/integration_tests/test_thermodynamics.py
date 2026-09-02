@@ -18,12 +18,10 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import simple, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
-from icon4py.model.common.physics.stencils import (
-    compute_hydrostatic_pressure,
-    compute_surface_pressure,
-    compute_thermodynamic_tendencies,
-    compute_virtual_temperature_and_temperature,
-    update_exner_and_theta_v,
+from icon4py.model.common.physics.thermodynamics import (
+    compute_pressure,
+    compute_temperature,
+    compute_tendencies,
 )
 from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_states as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -49,63 +47,9 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-def test_update_exner_and_theta_v(backend: gtx_typing.Backend) -> None:
-    """The physics coupling recomputes exner via the exact EOS and theta_v = Tv/exner.
-
-    Mirrors ICON's mo_interface_iconam_aes.f90:
-        Tv_new    = Tv + dt * dTv/dt
-        exner_new = (rd/p0ref * rho * Tv_new) ** (rd/cpd)
-        theta_v   = Tv_new / exner_new
-    """
-    grid = simple.simple_grid()
-    rho_value, tv_value, tv_tendency_value, dtime = 1.1, 280.0, 0.05, 20.0
-
-    rho = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    virtual_temperature = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
-    )
-    virtual_temperature_tendency = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
-    )
-    exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    theta_v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    rho.ndarray[...] = rho_value
-    virtual_temperature.ndarray[...] = tv_value
-    virtual_temperature_tendency.ndarray[...] = tv_tendency_value
-
-    update_exner_and_theta_v.update_exner_and_theta_v.with_backend(backend)(
-        rho=rho,
-        virtual_temperature=virtual_temperature,
-        virtual_temperature_tendency=virtual_temperature_tendency,
-        dtime=dtime,
-        exner=exner,
-        theta_v=theta_v,
-        horizontal_start=0,
-        horizontal_end=grid.num_cells,
-        vertical_start=0,
-        vertical_end=grid.num_levels,
-        offset_provider={},
-    )
-
-    new_virtual_temperature = tv_value + tv_tendency_value * dtime
-    expected_exner = np.exp(
-        PhysicsConstants.rd_o_cpd
-        * np.log(PhysicsConstants.rd_o_p0ref * rho_value * new_virtual_temperature)
-    )
-    expected_theta_v = new_virtual_temperature / expected_exner
-
-    assert test_utils.dallclose(exner.asnumpy(), expected_exner)
-    assert test_utils.dallclose(theta_v.asnumpy(), expected_theta_v)
-    # EOS consistency: by definition theta_v * exner == Tv_new
-    assert test_utils.dallclose(
-        theta_v.asnumpy() * exner.asnumpy(),
-        np.full_like(theta_v.asnumpy(), new_virtual_temperature),
-    )
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
-def test_diagnose_temperature(
+def test_compute_virtual_temperature_and_temperature(
     data_provider: sb.IconSerialDataProvider, icon_grid: base_grid.Grid, backend: gtx_typing.Backend
 ) -> None:
     diagnostic_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
@@ -129,9 +73,7 @@ def test_diagnose_temperature(
     qs = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
     qg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
 
-    compute_virtual_temperature_and_temperature.compute_virtual_temperature_and_temperature.with_backend(
-        backend
-    )(
+    compute_temperature.compute_virtual_temperature_and_temperature.with_backend(backend)(
         qv=qv,
         qc=qc,
         qr=qr,
@@ -162,60 +104,7 @@ def test_diagnose_temperature(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
-def test_diagnose_meridional_and_zonal_winds(
-    data_provider: sb.IconSerialDataProvider,
-    interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
-    backend: gtx_typing.Backend,
-) -> None:
-    prognostics_init_savepoint = data_provider.from_savepoint_prognostics_initial()
-    vn = prognostics_init_savepoint.vn_now()
-    rbv_vec_coeff_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
-    rbv_vec_coeff_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
-
-    diagnostics_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
-    u_ref = diagnostics_reference_savepoint.zonal_wind().asnumpy()
-    v_ref = diagnostics_reference_savepoint.meridional_wind().asnumpy()
-
-    u = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    v = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-
-    cell_domain = h_grid.domain(dims.CellDim)
-    cell_end_lateral_boundary_level_2 = icon_grid.end_index(
-        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-    end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
-
-    rbf.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-        p_e_in=vn,
-        ptr_coeff_1=rbv_vec_coeff_c1,
-        ptr_coeff_2=rbv_vec_coeff_c2,
-        p_u_out=u,
-        p_v_out=v,
-        horizontal_start=cell_end_lateral_boundary_level_2,
-        horizontal_end=end_cell_end,
-        vertical_start=0,
-        vertical_end=icon_grid.num_levels,
-        offset_provider={
-            "C2E2C2E": icon_grid.get_connectivity("C2E2C2E"),
-        },
-    )
-
-    assert test_utils.dallclose(
-        u.asnumpy(),
-        u_ref,
-    )
-
-    assert test_utils.dallclose(
-        v.asnumpy(),
-        v_ref,
-        atol=1.0e-13,
-    )
-
-
-@pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
-def test_diagnose_surface_pressure(
+def test_compute_surface_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
@@ -234,7 +123,7 @@ def test_diagnose_surface_pressure(
 
     cell_domain = h_grid.domain(dims.CellDim)
 
-    compute_surface_pressure.compute_surface_pressure.with_backend(backend)(
+    compute_pressure.compute_surface_pressure.with_backend(backend)(
         exner=exner,
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,
@@ -254,7 +143,7 @@ def test_diagnose_surface_pressure(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
-def test_diagnose_pressure(
+def test_compute_hydrostatic_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
@@ -280,7 +169,7 @@ def test_diagnose_pressure(
 
     pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
 
-    compute_hydrostatic_pressure.compute_hydrostatic_pressure.with_backend(backend)(
+    compute_pressure.compute_hydrostatic_pressure.with_backend(backend)(
         ddqz_z_full,
         virtual_temperature,
         surface_pressure,
@@ -358,7 +247,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
     end_cell_local = icon_grid.start_index(cell_domain(h_grid.Zone.END))
-    compute_thermodynamic_tendencies.compute_virtual_temperature_tendency.with_backend(backend)(
+    compute_tendencies.compute_virtual_temperature_tendency.with_backend(backend)(
         dtime=dtime,
         qv=tracer_state.qv,
         qc=tracer_state.qc,
@@ -381,7 +270,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         + virtual_temperature_tendency.asnumpy() * dtime
     )
 
-    compute_thermodynamic_tendencies.compute_exner_tendency.with_backend(backend)(
+    compute_tendencies.compute_exner_tendency.with_backend(backend)(
         dtime=dtime,
         virtual_temperature=diagnostic_state.virtual_temperature,
         virtual_temperature_tendency=virtual_temperature_tendency,
@@ -396,7 +285,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
 
     updated_exner = exner.asnumpy() + exner_tendency.asnumpy() * dtime
 
-    compute_surface_pressure.compute_surface_pressure.with_backend(backend)(
+    compute_pressure.compute_surface_pressure.with_backend(backend)(
         gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
         gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         metrics_savepoint.ddqz_z_full(),
@@ -408,7 +297,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         offset_provider={},
     )
 
-    compute_hydrostatic_pressure.compute_hydrostatic_pressure.with_backend(backend)(
+    compute_pressure.compute_hydrostatic_pressure.with_backend(backend)(
         metrics_savepoint.ddqz_z_full(),
         gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         diagnostic_state.surface_pressure,

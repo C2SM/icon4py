@@ -13,13 +13,13 @@ import pytest
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
-from icon4py.model.common.physics.stencils.compute_virtual_temperature_and_temperature import (
+from icon4py.model.common.physics.thermodynamics.compute_temperature import (
     compute_virtual_temperature_and_temperature,
 )
 from icon4py.model.testing import stencil_tests
 
 
-class TestDiagnoseTemperature(stencil_tests.StencilTest):
+class TestComputeVirtualTemperatureAndTemperature(stencil_tests.StencilTest):
     PROGRAM = compute_virtual_temperature_and_temperature
     OUTPUTS = ("virtual_temperature", "temperature")
 
