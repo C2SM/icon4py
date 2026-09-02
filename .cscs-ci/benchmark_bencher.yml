@@ -33,12 +33,15 @@ benchmark_bencher_stencils_feature_aarch64:
   variables:
     TEST_SELECTION: "${STENCIL_TEST_SELECTION}"
     GT4PY_COLLECT_METRICS_LEVEL: 10
+  rules:
+    - when: never  # TEMPORARY: disabled for driver bencher trial; restore before merge
 
 benchmark_bencher_granules_feature_aarch64:
   extends: [.test_runner_serial, .test_template_aarch64, .bencher_feature_tests]
   variables:
     TEST_SELECTION: "${GRANULE_TEST_SELECTION}"
-
+  rules:
+    - when: never  # TEMPORARY: disabled for driver bencher trial; restore before merge
 
 benchmark_bencher_driver_feature_aarch64:
   extends: [.bencher_driver_feature_tests, .retry_on_transient_failure]
