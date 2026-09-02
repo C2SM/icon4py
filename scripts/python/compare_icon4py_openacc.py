@@ -1,4 +1,4 @@
-#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
+#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --only-group scripts python3
 #
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
@@ -16,12 +16,12 @@ import json
 import logging
 import pathlib
 import sys
-from typing import Any, TypeAlias
+from typing import Any
 
 import typer
 
 
-VariantDescriptor: TypeAlias = tuple[str, dict[str, Any]]
+type VariantDescriptor = tuple[str, dict[str, Any]]
 
 cli = typer.Typer()
 
@@ -35,7 +35,7 @@ output_filename = "bench_blueline_stencil_compute"
 
 # the default 'file_prefix' assumes that the json files are in the script folder
 file_prefix = pathlib.Path(__file__).parent
-openacc_input = file_prefix / "../data/bencher=mch_icon-ch1_medium_stencils=0.604598=ACC.json"
+openacc_input = file_prefix / "../data/bencher=mch_icon-ch1_medium_stencils=0.939946=OPENACC.json"
 gt4py_input = {}
 gt4py_metrics = ["compute"]  # here we can add other metrics, e.g. 'total'
 gt4py_unmatched_ncalls_threshold = (

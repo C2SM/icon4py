@@ -34,7 +34,10 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
+    DiffusionType,
     ForcingType,
+    SmagorinskyStencilType,
+    TemperatureDiscretizationType,
     TurbulenceShearForcingType,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -117,13 +120,13 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
 
     # Diffusion parameters
     config = DiffusionConfig(
-        diffusion_type=diffusion_type,
-        hdiff_w=hdiff_w,
-        hdiff_vn=hdiff_vn,
-        hdiff_smag_w=hdiff_smag_w,
-        zdiffu_t=zdiffu_t,
-        type_t_diffu=type_t_diffu,
-        type_vn_diffu=type_vn_diffu,
+        diffusion_type=DiffusionType(diffusion_type),
+        apply_to_vertical_wind=hdiff_w,
+        apply_to_horizontal_wind=hdiff_vn,
+        apply_smag_diff_to_vertical_wind=hdiff_smag_w,
+        apply_zdiffusion_t=zdiffu_t,
+        type_t_diffu=TemperatureDiscretizationType(type_t_diffu),
+        type_vn_diffu=SmagorinskyStencilType(type_vn_diffu),
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
@@ -134,10 +137,8 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         smagorinski_scaling_height2=smagorinski_scaling_height2,
         smagorinski_scaling_height3=smagorinski_scaling_height3,
         smagorinski_scaling_height4=smagorinski_scaling_height4,
-        hdiff_temp=hdiff_temp,
-        n_substeps=ndyn_substeps,
-        velocity_boundary_diffusion_denom=denom_diffu_v,
-        max_nudging_coefficient=nudge_max_coeff,
+        apply_to_temperature=hdiff_temp,
+        velocity_boundary_diffusion_denominator=denom_diffu_v,
         shear_type=TurbulenceShearForcingType(itype_sher),
         iforcing=ForcingType(iforcing),
         a_hshr=a_hshr,
@@ -175,7 +176,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
         # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
         zd_vertidx = zd_vertidx[0, :]
 
-        zd_diffcoef = data_alloc.list2field(
+        zd_diffcoef = data_alloc.scattered_field(
             domain=cell_k_domain,
             values=zd_diffcoef,
             indices=(
@@ -185,7 +186,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             default_value=gtx.float64(0.0),
             allocator=allocator,
         )
-        zd_intcoef = data_alloc.list2field(
+        zd_intcoef = data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
             values=zd_intcoef.T,
             indices=(
@@ -196,7 +197,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             default_value=gtx.float64(0.0),
             allocator=allocator,
         )
-        zd_vertoffset = data_alloc.list2field(
+        zd_vertoffset = data_alloc.scattered_field(
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(
@@ -252,6 +253,8 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
             cell_params=grid_wrapper.grid_state.cell_geometry,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
+            ndyn_substeps=ndyn_substeps,
+            max_nudging_coefficient=nudge_max_coeff,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )

@@ -5,13 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
     compute_advection_in_horizontal_momentum,
 )
@@ -26,7 +26,7 @@ from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_
 
 def _compute_advective_normal_wind_tendency_numpy(
     *,
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
     coeff_gradekin: np.ndarray,
     horizontal_kinetic_energy_at_cells_on_model_levels: np.ndarray,
@@ -38,7 +38,7 @@ def _compute_advective_normal_wind_tendency_numpy(
     vn_on_half_levels: np.ndarray,
     ddqz_z_full_e: np.ndarray,
 ) -> np.ndarray:
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     horizontal_kinetic_energy_at_cells_on_model_levels_e2c = (
         horizontal_kinetic_energy_at_cells_on_model_levels[e2c]
     )
@@ -56,7 +56,7 @@ def _compute_advective_normal_wind_tendency_numpy(
         + tangential_wind
         * (
             coriolis_frequency
-            + 0.5 * np.sum(upward_vorticity_at_vertices[connectivities[dims.E2VDim]], axis=1)
+            + 0.5 * np.sum(upward_vorticity_at_vertices[connectivities[dims.E2V]], axis=1)
         )
         + np.sum(contravariant_corrected_w_at_cells_on_model_levels[e2c] * c_lin_e, axis=1)
         * (vn_on_half_levels[:, :-1] - vn_on_half_levels[:, 1:])
@@ -67,7 +67,7 @@ def _compute_advective_normal_wind_tendency_numpy(
 
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask_numpy(
     *,
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     c_lin_e: np.ndarray,
     contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
     ddqz_z_full_e: np.ndarray,
@@ -91,7 +91,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
     tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
     inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
 
-    e2c = connectivities[dims.E2CDim]
+    e2c = connectivities[dims.E2C]
     contravariant_corrected_w_at_edges_on_model_levels = np.sum(
         np.where(
             (e2c != -1)[:, :, np.newaxis],
@@ -111,8 +111,8 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
         ),
         difcoef,
     )
-    e2v = connectivities[dims.E2VDim]
-    e2c2eo = connectivities[dims.E2C2EODim]
+    e2v = connectivities[dims.E2V]
+    e2c2eo = connectivities[dims.E2C2EO]
     normal_wind_advective_tendency = np.where(
         (np.abs(contravariant_corrected_w_at_edges_on_model_levels) > cfl_w_limit * ddqz_z_full_e),
         normal_wind_advective_tendency
@@ -158,9 +158,9 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
         *,
         normal_wind_advective_tendency: np.ndarray,
         vn: np.ndarray,
@@ -185,6 +185,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         normal_wind_advective_tendency_cp = normal_wind_advective_tendency.copy()
         nlev = kwargs["vertical_end"]
         k = np.arange(nlev)
@@ -247,40 +248,40 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
 
         return dict(normal_wind_advective_tendency=normal_wind_advective_tendency)
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"apply_extra_diffusion_on_vn": value} for value in [True, False]
         ],  # True for testing, False for benchmarking
         ids=lambda param: f"apply_extra_diffusion_on_vn[{param['apply_extra_diffusion_on_vn']}]",
     )
     def input_data(
-        self, request: pytest.FixtureRequest, grid: base.Grid
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        normal_wind_advective_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        normal_wind_advective_tendency = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
+            dims.EdgeDim, dims.KDim
         )
-        tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        coriolis_frequency = data_alloc.random_field(grid, dims.EdgeDim)
+        tangential_wind = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        coriolis_frequency = data_alloc.random_field(dims.EdgeDim)
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
+            dims.CellDim, dims.KDim
         )
-        vn_on_half_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
-        )
-        coeff_gradekin = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        vn_on_half_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        coeff_gradekin = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
+        e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        c_lin_e = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
         ddqz_z_full_e = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, low=0.0
+            dims.EdgeDim, dims.KDim, low=0.0
         )  # this makes sure that the simplified stencil produces the same result as the numpy version
-        area_edge = data_alloc.random_field(grid, dims.EdgeDim)
-        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
-        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        geofac_grdiv = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
+        area_edge = data_alloc.random_field(dims.EdgeDim)
+        tangent_orientation = data_alloc.random_field(dims.EdgeDim)
+        inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim)
+        geofac_grdiv = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
 
-        geofac_rot = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim)
+        geofac_rot = data_alloc.random_field(dims.VertexDim, dims.V2EDim)
         scalfac_exdiff = 0.6
         dtime = 2.0
         cfl_w_limit = 0.65 / dtime

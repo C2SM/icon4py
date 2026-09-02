@@ -18,7 +18,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.metrics.compute_zdiff_gradp import compute_zdiff_gradp
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -68,7 +68,7 @@ def test_compute_zdiff_gradp(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k_lev.ndarray,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     zdiff_gradp_full_field, vertoffset_gradp_full_field = compute_zdiff_gradp(
@@ -81,7 +81,7 @@ def test_compute_zdiff_gradp(
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     assert test_utils.dallclose(

@@ -19,9 +19,9 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils as testing_test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 
@@ -205,7 +205,7 @@ def solve_nh_init(
         extra_diffu=cfg.extra_diffu,
         rhotheta_offctr=cfg.rhotheta_offctr,
         veladv_offctr=cfg.veladv_offctr,
-        nudge_max_coeff=cfg.max_nudging_coefficient,
+        nudge_max_coeff=experiment.config.interpolation.max_nudging_coefficient,
         divdamp_fac=cfg.fourth_order_divdamp_factor,
         divdamp_fac2=cfg.fourth_order_divdamp_factor2,
         divdamp_fac3=cfg.fourth_order_divdamp_factor3,
@@ -227,7 +227,7 @@ def solve_nh_init(
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
@@ -481,7 +481,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
-    expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+    expected_diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(max_vertical_cfl, backend),
         tangential_wind=sp.vt(),
         vn_on_half_levels=sp.vn_ie(),
@@ -610,7 +610,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
             extra_diffu=cfg.extra_diffu,
             rhotheta_offctr=cfg.rhotheta_offctr,
             veladv_offctr=cfg.veladv_offctr,
-            nudge_max_coeff=cfg.max_nudging_coefficient,
+            nudge_max_coeff=experiment.config.interpolation.max_nudging_coefficient,
             divdamp_fac=cfg.fourth_order_divdamp_factor,
             divdamp_fac2=cfg.fourth_order_divdamp_factor2,
             divdamp_fac3=cfg.fourth_order_divdamp_factor3,
@@ -776,7 +776,7 @@ def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-ar
     "experiment_description,step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
@@ -958,7 +958,7 @@ def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, vn_only, at_initial_timestep",
     [

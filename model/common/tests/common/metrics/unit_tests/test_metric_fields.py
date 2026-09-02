@@ -13,12 +13,12 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils as testing_helpers
+from icon4py.model.testing import definitions as test_defs, test_utils as testing_helpers
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -135,7 +135,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
 @pytest.mark.datatest
 def test_compute_rayleigh_w(
     icon_grid: base_grid.Grid,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
@@ -224,7 +224,7 @@ def test_compute_exner_exfac(
     grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
@@ -267,7 +267,7 @@ def test_compute_exner_w_implicit_weight_parameter(  # noqa: PLR0917 [too-many-p
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()
@@ -397,7 +397,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
     # TODO (nfarabullini): fix type ignore
     flat_idx = gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend)  # type: ignore [arg-type]

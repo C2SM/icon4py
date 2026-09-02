@@ -300,7 +300,9 @@ class PrecomputedFieldProvider(FieldProvider):
     """Simple FieldProvider that does not do any computation but gets its fields at construction
     and returns it upon provider.get(field_name)."""
 
-    def __init__(self, fields: dict[str, state_utils.GTXFieldType]):
+    def __init__(
+        self, fields: Mapping[str, state_utils.GTXFieldType | state_utils.ScalarType]
+    ) -> None:
         self._fields = fields
 
     @property
@@ -315,11 +317,11 @@ class PrecomputedFieldProvider(FieldProvider):
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
         exchange: decomposition.ExchangeRuntime,
-    ) -> state_utils.GTXFieldType:
+    ) -> state_utils.GTXFieldType | state_utils.ScalarType:
         return self.fields[field_name]
 
     @property
-    def fields(self) -> Mapping[str, state_utils.GTXFieldType]:
+    def fields(self) -> Mapping[str, state_utils.GTXFieldType | state_utils.ScalarType]:
         return self._fields
 
     @property
@@ -405,7 +407,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
         deps = {
-            k: data_alloc.as_field(factory.get(v), allocator=compute_backend)
+            k: data_alloc.reallocate(factory.get(v), allocator=compute_backend)
             for k, v in self._dependencies.items()
         }
 
@@ -417,7 +419,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
                 f"transferring result {k} to target backend: "
                 f"{data_alloc.backend_name(factory.backend)}"
             )
-            self._fields[k] = data_alloc.as_field(v, allocator=factory.backend)
+            self._fields[k] = data_alloc.reallocate(v, allocator=factory.backend)
 
     def _unravel_output_fields(self):
         out_fields = tuple(self._fields.values())

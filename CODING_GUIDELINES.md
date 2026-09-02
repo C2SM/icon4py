@@ -20,6 +20,29 @@ TODO: we should add a doc folder (separate for `tools` and `model`? separate for
 Remember that important design decisions should be properly documented for future reference and to share the knowledge with other developers. We decided to use lightweight _Architecture Decision Records_ (ADRs) for this purpose. The full list of ADRs and documentation for writing new ones can be found in [docs/functional/architecture/Index.md](docs/functional/architecture/Index.md).
 -->
 
+## Shared code and generic naming
+
+Code that is not specific to a single model component belongs in `model/common`, and code that lives there must be named after the operation it performs, not after the caller that happens to use it. When a generic operation carries a caller-specific name, the next component does not find it and ports the same Fortran expression again: `dycore/compute_tangential_wind` and `tracer_advection/compute_edge_tangential` are the same `neighbor_sum` over `E2C2E`, written twice.
+
+### Does it belong in `model/common`?
+
+Describe in one sentence what the code does. If the sentence only needs
+
+- grid entities (cell, edge, vertex, level) and dimensions, and
+- mathematical operations (gradient, divergence, curl, interpolation, average, copy, tendency),
+
+then the code is generic and belongs in `model/common`. If the sentence needs a named prognostic or diagnostic field (`vn`, `theta_v`, `exner`, a tracer) or a numerical scheme (Smagorinsky, PPM, FFSL, divergence damping), it is component-specific and stays in the component.
+
+For example `tracer_advection/compute_tendency` computes `(new - old) / dtime`. Nothing in that sentence is a tracer, so the stencil belongs in `model/common`.
+
+This does not contradict the YAGNI item above: do not _generalise_ code speculatively so that it might be shared one day. But code that is _already_ generic should be placed and named generically from the start, because moving it later also means moving its tests and coordinating stencil renames.
+
+### Naming
+
+Stencil names must follow the [naming conventions for stencils](docs/stencil_naming_convention.md).
+
+The same applies outside stencils: shared enums, options and dictionaries are named after what they configure, not after the component that introduced them.
+
 ## Code Style
 
 We follow the [Google Python Style Guide][google-style-guide] with a few minor changes (mentioned below). Since the best way to remember something is to understand the reasons behind it, make sure you go through the style guide at least once, paying special attention to the discussions in the _Pros_, _Cons_, and _Decision_ subsections.
@@ -142,7 +165,7 @@ Testing components is a critical part of a software development project. We foll
 Each software component project in the repository should place tests inside a folder named `tests`, which should be a proper Python package structured with the following content:
 
 - a `__init__.py` file at root level adding subfolders as members of a virtual `tests.` package
-- a `<component>` folder with a **unique name** in this repository for the package being tested (e.g. `atmosphere_advection` for the `icon4py.model.atmosphere.advection` component).
+- a `<component>` folder with a **unique name** in this repository for the package being tested (e.g. `atmosphere_tracer_advection` for the `icon4py.model.atmosphere.tracer_advection` component).
 
 The `<component>` folder should be a Python package and contain subfolders for every kind of test (e.g. `unit_tests`, `integration_tests`, ...). If needed, it may contain at any level of the file tree a `conftests.py` module for changing the pytest configuration, a `fixtures.py` module with shared fixture definitions and a `utils.py`python modules testing utilities used in the tests.
 

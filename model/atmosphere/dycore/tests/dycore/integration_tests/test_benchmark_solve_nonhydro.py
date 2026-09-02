@@ -31,7 +31,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory, prognostic_state as prognostics
+from icon4py.model.common.states import factory, nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
@@ -55,7 +55,6 @@ def solve_nonhydro(
     config = solve_nh.NonHydrostaticConfig(
         divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         fourth_order_divdamp_factor=0.004,
-        max_nudging_coefficient=0.375,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -200,8 +199,9 @@ def solve_nonhydro(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=geometry_field_source.get("cell_owner_mask"),
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
         backend=backend_like,
+        max_nudging_coefficient=0.375,
     )
 
     return solve_nonhydro
@@ -242,7 +242,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         ),
     )
 
-    diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+    diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, allocator),
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator

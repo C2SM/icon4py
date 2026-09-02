@@ -16,7 +16,7 @@ from icon4py.bindings import common as wrapper_common, diffusion_wrapper
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
-from icon4py.model.testing import definitions, test_utils as testing_test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 
@@ -29,7 +29,7 @@ from .test_grid_init import grid_init
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
@@ -153,7 +153,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
             zd_vertidx=zd_vertidx,
             zd_intcoef=zd_intcoef,
             zd_diffcoef=zd_diffcoef,
-            ndyn_substeps=cfg.ndyn_substeps,
+            ndyn_substeps=experiment.config.driver.ndyn_substeps,
             diffusion_type=cfg.diffusion_type,
             hdiff_w=cfg.apply_to_vertical_wind,
             hdiff_vn=cfg.apply_to_horizontal_wind,
@@ -173,7 +173,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
             smagorinski_scaling_height4=cfg.smagorinski_scaling_height4,
             hdiff_temp=cfg.apply_to_temperature,
             denom_diffu_v=cfg.velocity_boundary_diffusion_denominator,
-            nudge_max_coeff=cfg.max_nudging_coefficient,
+            nudge_max_coeff=experiment.config.interpolation.max_nudging_coefficient,
             itype_sher=cfg.shear_type.value,
             iforcing=cfg.iforcing.value,
             a_hshr=cfg.a_hshr,
@@ -255,7 +255,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
@@ -347,7 +347,7 @@ def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-ar
         zd_vertidx=zd_vertidx,
         zd_intcoef=zd_intcoef,
         zd_diffcoef=zd_diffcoef,
-        ndyn_substeps=cfg.ndyn_substeps,
+        ndyn_substeps=experiment.config.driver.ndyn_substeps,
         diffusion_type=cfg.diffusion_type,
         hdiff_w=cfg.apply_to_vertical_wind,
         hdiff_vn=cfg.apply_to_horizontal_wind,
@@ -367,7 +367,7 @@ def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-ar
         smagorinski_scaling_height4=cfg.smagorinski_scaling_height4,
         hdiff_temp=cfg.apply_to_temperature,
         denom_diffu_v=cfg.velocity_boundary_diffusion_denominator,
-        nudge_max_coeff=cfg.max_nudging_coefficient,
+        nudge_max_coeff=experiment.config.interpolation.max_nudging_coefficient,
         itype_sher=cfg.shear_type.value,
         iforcing=cfg.iforcing.value,
         a_hshr=cfg.a_hshr,

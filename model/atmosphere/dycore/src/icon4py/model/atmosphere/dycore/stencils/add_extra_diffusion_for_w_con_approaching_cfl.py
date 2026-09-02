@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import abs, astype, minimum, neighbor_sum, where  # noqa: A004
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E2CO, C2E2CODim
+from icon4py.model.common.dimension import C2E2CO
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -20,7 +20,7 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
     z_w_con_c: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], ta.wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     w: fa.CellKField[ta.wpfloat],
     ddt_w_adv: fa.CellKField[ta.vpfloat],
     scalfac_exdiff: ta.wpfloat,
@@ -44,7 +44,7 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
 
     ddt_w_adv_wp = where(
         cfl_clipping & owner_mask,
-        ddt_w_adv_wp + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
+        ddt_w_adv_wp + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=dims.C2E2CODim),
         ddt_w_adv_wp,
     )
 
@@ -58,7 +58,7 @@ def add_extra_diffusion_for_w_con_approaching_cfl(
     z_w_con_c: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     area: fa.CellField[ta.wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], ta.wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     w: fa.CellKField[ta.wpfloat],
     ddt_w_adv: fa.CellKField[ta.vpfloat],
     scalfac_exdiff: ta.wpfloat,

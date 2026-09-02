@@ -19,6 +19,8 @@ Writing a new ADR is simple:
 ### ICON4Py Model Framework
 
 - [0001: Model Physics Components Interface](0001_model_physics_components_interface.md)
+- [0002: Configuration Classes](0002_configuration_classes.md)
+- [0003: Configuration IO](0003_configuration_classes.md)
 
 ## Other References
 
