@@ -17,14 +17,14 @@ def _diagnose_surface_pressure(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKHalfField[ta.wpfloat]:
     surface_pressure = PhysicsConstants.p0ref * exp(
-        PhysicsConstants.cpd_o_rd * log(exner(dims.KDim - 3))
+        PhysicsConstants.cpd_o_rd * log(exner(dims.KHalfDim - 2.5))
         + PhysicsConstants.grav_o_rd
         * (
-            ddqz_z_full(dims.KDim - 1) / virtual_temperature(dims.KDim - 1)
-            + ddqz_z_full(dims.KDim - 2) / virtual_temperature(dims.KDim - 2)
-            + 0.5 * ddqz_z_full(dims.KDim - 3) / virtual_temperature(dims.KDim - 3)
+            ddqz_z_full(dims.KHalfDim - 0.5) / virtual_temperature(dims.KHalfDim - 0.5)
+            + ddqz_z_full(dims.KHalfDim - 1.5) / virtual_temperature(dims.KHalfDim - 1.5)
+            + 0.5 * ddqz_z_full(dims.KHalfDim - 2.5) / virtual_temperature(dims.KHalfDim - 2.5)
         )
     )
     return surface_pressure
@@ -35,7 +35,7 @@ def diagnose_surface_pressure(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
-    surface_pressure: fa.CellKField[ta.wpfloat],
+    surface_pressure: fa.CellKHalfField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -48,6 +48,6 @@ def diagnose_surface_pressure(
         out=surface_pressure,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
