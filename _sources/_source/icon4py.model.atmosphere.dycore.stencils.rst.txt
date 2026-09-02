@@ -124,14 +124,6 @@ icon4py.model.atmosphere.dycore.stencils.compute\_advection\_in\_vertical\_momen
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.compute\_advective\_vertical\_wind\_tendency module
---------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_advective_vertical_wind_tendency
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.compute\_airmass module
 ----------------------------------------------------------------
 
@@ -432,14 +424,6 @@ icon4py.model.atmosphere.dycore.stencils.extrapolate\_temporally\_exner\_pressur
 ----------------------------------------------------------------------------------------
 
 .. automodule:: icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-icon4py.model.atmosphere.dycore.stencils.init\_cell\_kdim\_field\_with\_zero\_wp module
----------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp
    :members:
    :undoc-members:
    :show-inheritance:
