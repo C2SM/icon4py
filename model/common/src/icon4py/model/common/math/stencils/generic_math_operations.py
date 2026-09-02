@@ -60,7 +60,7 @@ def compute_field_a_plus_coeff_times_field_b_on_cell_k(
     )
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def copy_field_on_cell_k(
     field: fa.CellKField[ta.wpfloat],
     output_field: fa.CellKField[ta.wpfloat],
@@ -86,7 +86,7 @@ def _copy_field_on_cell_khalf(
     return field
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def copy_field_on_cell_khalf(
     field: fa.CellKHalfField[ta.wpfloat],
     output_field: fa.CellKHalfField[ta.wpfloat],
