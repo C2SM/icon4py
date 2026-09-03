@@ -104,7 +104,7 @@ def test_compute_virtual_temperature_and_temperature(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
-def test_compute_hydrostatic_pressure(
+def test_compute_surface_and_hydrostatic_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
@@ -126,7 +126,7 @@ def test_compute_hydrostatic_pressure(
     )
     cell_domain = h_grid.domain(dims.CellDim)
 
-    compute_pressure.compute_hydrostatic_pressure.with_backend(backend)(
+    compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(backend)(
         exner,
         virtual_temperature,
         ddqz_z_full,
@@ -242,7 +242,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
 
     updated_exner = exner.asnumpy() + exner_tendency.asnumpy() * dtime
 
-    compute_pressure.compute_hydrostatic_pressure.with_backend(backend)(
+    compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(backend)(
         gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
         gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         metrics_savepoint.ddqz_z_full(),

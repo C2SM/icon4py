@@ -89,8 +89,8 @@ class State(PhysicsState):
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        self._compute_hydrostatic_pressure = model_options.setup_program(
-            program=compute_pressure.compute_hydrostatic_pressure,
+        self._compute_surface_and_hydrostatic_pressure = model_options.setup_program(
+            program=compute_pressure.compute_surface_and_hydrostatic_pressure,
             backend=self._backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
@@ -169,7 +169,7 @@ class State(PhysicsState):
             temperature=self.te,
         )
 
-        self._compute_hydrostatic_pressure(
+        self._compute_surface_and_hydrostatic_pressure(
             exner=prognostic.exner,
             virtual_temperature=self.tv,
             ddqz_z_full=self.dz,

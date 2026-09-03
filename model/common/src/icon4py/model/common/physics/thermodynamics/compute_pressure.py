@@ -101,7 +101,7 @@ def _compute_hydrostatic_pressure_on_model_levels(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_hydrostatic_pressure(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_surface_and_hydrostatic_pressure(  # noqa: PLR0917 [too-many-positional-arguments]
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
@@ -147,43 +147,6 @@ def compute_hydrostatic_pressure(  # noqa: PLR0917 [too-many-positional-argument
     )
 
 
-def compute_surface_and_hydrostatic_pressure(
-    *,
-    grid: grid_base.Grid,
-    backend: gtx_typing.Backend | None,
-    exner: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    ddqz_z_full: fa.CellKField[ta.wpfloat],
-    pressure: fa.CellKField[ta.wpfloat],
-    pressure_on_cells_half_levels: fa.CellKHalfField[ta.wpfloat],
-) -> None:
-    """Diagnose the hydrostatic pressure into caller-provided buffers.
-
-    Args:
-        grid, backend: grid and gt4py backend.
-        exner, virtual_temperature, ddqz_z_full: input cell-K fields.
-        pressure: cell-K field receiving the full-level pressure.
-        pressure_on_cells_half_levels: half-level (``nlev+1``) output buffer for
-            pressure on cell half-levels; its bottom row is the surface pressure.
-    """
-    cell_domain = h_grid.domain(dims.CellDim)
-    compute_hydrostatic_pressure.with_backend(backend)(
-        exner=exner,
-        virtual_temperature=virtual_temperature,
-        ddqz_z_full=ddqz_z_full,
-        pressure=pressure,
-        pressure_ifc_on_model_levels=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend, dtype=ta.wpfloat
-        ),
-        pressure_ifc=pressure_on_cells_half_levels,
-        horizontal_start=0,
-        horizontal_end=grid.end_index(cell_domain(h_grid.Zone.END)),
-        vertical_start=0,
-        vertical_end=grid.num_levels,
-        offset_provider={},
-    )
-
-
 def compute_surface_and_hydrostatic_pressure_ndarray(
     *,
     grid: grid_base.Grid,
@@ -193,25 +156,30 @@ def compute_surface_and_hydrostatic_pressure_ndarray(
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
 ) -> data_alloc.NDArray:
-    """Allocate work buffers, diagnose the hydrostatic pressure, return its ndarray.
+    """Allocate work buffers, diagnose the pressure, return its ndarray.
 
-    Convenience wrapper around :func:`compute_surface_and_hydrostatic_pressure` for one-shot callers
-    (e.g. initial-condition setup) that do not keep their own buffers.
+    For one-shot callers (e.g. initial-condition setup) that keep no buffers of their own.
     """
     pressure = data_alloc.zero_field(
         grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
-    pressure_on_cells_half_levels = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.wpfloat
-    )
-    compute_surface_and_hydrostatic_pressure(
-        grid=grid,
-        backend=backend,
+    cell_domain = h_grid.domain(dims.CellDim)
+    compute_surface_and_hydrostatic_pressure.with_backend(backend)(
         exner=exner,
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,
         pressure=pressure,
-        pressure_on_cells_half_levels=pressure_on_cells_half_levels,
+        pressure_ifc_on_model_levels=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+        ),
+        pressure_ifc=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.wpfloat
+        ),
+        horizontal_start=0,
+        horizontal_end=grid.end_index(cell_domain(h_grid.Zone.END)),
+        vertical_start=0,
+        vertical_end=grid.num_levels,
+        offset_provider={},
     )
     return pressure.ndarray
 

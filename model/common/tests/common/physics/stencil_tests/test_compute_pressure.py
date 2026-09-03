@@ -14,13 +14,13 @@ import numpy as np
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.physics.thermodynamics.compute_pressure import (
-    compute_hydrostatic_pressure,
+    compute_surface_and_hydrostatic_pressure,
 )
 from icon4py.model.testing import stencil_tests
 
 
-class TestComputeHydrostaticPressure(stencil_tests.StencilTest):
-    PROGRAM = compute_hydrostatic_pressure
+class TestComputeSurfaceAndHydrostaticPressure(stencil_tests.StencilTest):
+    PROGRAM = compute_surface_and_hydrostatic_pressure
     OUTPUTS = ("pressure", "pressure_ifc")
 
     @stencil_tests.static_reference
