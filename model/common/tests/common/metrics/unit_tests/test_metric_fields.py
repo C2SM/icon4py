@@ -56,9 +56,7 @@ def test_compute_ddq_z_half(
 
     nlevp1 = icon_grid.num_levels + 1
     z_mc = metrics_savepoint.z_mc()
-    ddqz_z_half = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
+    ddqz_z_half = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend)
 
     mf.compute_ddqz_z_half.with_backend(backend=backend)(
         z_ifc=z_ifc,
@@ -142,9 +140,7 @@ def test_compute_rayleigh_w(
 ) -> None:
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
-    rayleigh_w_full = data_alloc.zero_field(
-        icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
+    rayleigh_w_full = data_alloc.zero_field(icon_grid, dims.KHalfDim, allocator=backend)
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
@@ -275,10 +271,10 @@ def test_compute_exner_w_implicit_weight_parameter(  # noqa: PLR0917 [too-many-p
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     z_ddxn_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.EdgeDim, dims.KHalfDim, allocator=backend
     )
     z_ddxt_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.EdgeDim, dims.KHalfDim, allocator=backend
     )
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
@@ -349,9 +345,7 @@ def test_compute_wgtfac_e(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    wgtfac_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-    )
+    wgtfac_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KHalfDim, allocator=backend)
     wgtfac_e_ref = metrics_savepoint.wgtfac_e()
     mf.compute_wgtfac_e.with_backend(backend)(
         wgtfac_c=metrics_savepoint.wgtfac_c(),

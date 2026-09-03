@@ -144,15 +144,15 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
 
         geofac_grg_x = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
         geofac_grg_y = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
-        diff_multfac_n2w = data_alloc.random_field(dims.KDim)
+        diff_multfac_n2w = data_alloc.random_field(dims.KHalfDim)
         area = data_alloc.random_field(dims.CellDim)
         geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
-        w_old = data_alloc.random_field(dims.CellDim, dims.KDim)
+        w_old = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         diff_multfac_w = 5.0
 
-        w = data_alloc.zero_field(dims.CellDim, dims.KDim)
-        dwdx = data_alloc.random_field(dims.CellDim, dims.KDim)
-        dwdy = data_alloc.random_field(dims.CellDim, dims.KDim)
+        w = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
+        dwdx = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        dwdy = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
 
         return dict(
             area=area,
@@ -172,5 +172,5 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,
-            vertical_end=grid.num_levels,
+            vertical_end=grid.num_levels + 1,
         )

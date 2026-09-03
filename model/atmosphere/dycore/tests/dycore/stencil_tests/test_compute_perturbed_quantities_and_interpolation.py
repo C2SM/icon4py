@@ -176,7 +176,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
                 & (horz_idx < end_cell_halo)
                 & (vert_idx == surface_level - 1),
                 extrapolate_quadratically_to_surface_numpy(
-                    interpolant=temporal_extrapolation_of_perturbed_exner,
+                    interpolant=temporal_extrapolation_of_perturbed_exner[:, : surface_level - 1],
                     wgtfacq_c=wgtfacq_c,
                     interpolation_to_surface=exner_at_cells_on_half_levels,
                 ),
@@ -189,7 +189,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
                 & (vert_idx < surface_level - 1),
                 interpolate_cell_field_to_half_levels_vp_numpy(
                     wgtfac_c=wgtfac_c, interpolant=temporal_extrapolation_of_perturbed_exner
-                ),
+                )[:, :-1],
                 exner_at_cells_on_half_levels,
             )
 
@@ -238,10 +238,10 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             theta_ref_mc=reference_theta_at_cells_on_model_levels,
         )
 
-        rho_at_cells_on_half_levels = np.where(
+        rho_at_cells_on_half_levels[:, : surface_level - 1] = np.where(
             below_model_top & (horz_idx < end_cell_local),
-            rho_at_cells_on_half_levels_ref,
-            rho_at_cells_on_half_levels,
+            rho_at_cells_on_half_levels_ref[:, : surface_level - 1],
+            rho_at_cells_on_half_levels[:, : surface_level - 1],
         )
 
         (
@@ -276,22 +276,22 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
 
         (
             perturbed_theta_v_at_cells_on_half_levels[:, : surface_level - 1],
-            nonhydro_buoy_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels[:, : surface_level - 1],
         ) = np.where(
             below_model_top & (horz_idx < end_cell_local),
             (
-                perturbed_theta_v_at_cells_on_half_levels_ref,
-                nonhydro_buoy_at_cells_on_half_levels_ref,
+                perturbed_theta_v_at_cells_on_half_levels_ref[:, : surface_level - 1],
+                nonhydro_buoy_at_cells_on_half_levels_ref[:, : surface_level - 1],
             ),
             (
                 perturbed_theta_v_at_cells_on_half_levels[:, : surface_level - 1],
-                nonhydro_buoy_at_cells_on_half_levels,
+                nonhydro_buoy_at_cells_on_half_levels[:, : surface_level - 1],
             ),
         )
 
         theta_v_at_cells_on_half_levels[:, : surface_level - 1] = np.where(
             below_model_top & (horz_idx < end_cell_halo),
-            theta_v_at_cells_on_half_levels_ref,
+            theta_v_at_cells_on_half_levels_ref[:, : surface_level - 1],
             theta_v_at_cells_on_half_levels[:, : surface_level - 1],
         )
 
@@ -300,7 +300,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             theta_v_at_cells_on_half_levels_surface,
         ) = set_theta_v_prime_ic_at_lower_boundary_numpy(
             wgtfacq_c=wgtfacq_c,
-            z_rth_pr=perturbed_theta_v_at_cells_on_model_levels,
+            z_rth_pr=perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
             theta_ref_ic=reference_theta_at_cells_on_half_levels,
             z_theta_v_pr_ic=np.zeros_like(perturbed_theta_v_at_cells_on_half_levels),
             theta_v_ic=np.zeros_like(theta_v_at_cells_on_half_levels),
@@ -374,19 +374,19 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         reference_theta_at_cells_on_half_levels = data_alloc.random_field(
-            dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            dims.CellDim, dims.KHalfDim
         )
         d2dexdz2_fac1_mc = data_alloc.random_field(dims.CellDim, dims.KDim)
         d2dexdz2_fac2_mc = data_alloc.random_field(dims.CellDim, dims.KDim)
-        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         exner_w_explicit_weight_parameter = data_alloc.random_field(dims.CellDim)
         perturbed_exner_at_cells_on_model_levels = data_alloc.zero_field(dims.CellDim, dims.KDim)
         ddz_of_reference_exner_at_cells_on_half_levels = data_alloc.random_field(
-            dims.CellDim, dims.KDim
+            dims.CellDim, dims.KHalfDim
         )
-        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KDim)
-        nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(dims.CellDim, dims.KDim)
-        rho_at_cells_on_half_levels = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
+        rho_at_cells_on_half_levels = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
         time_extrapolation_parameter_for_exner = data_alloc.random_field(dims.CellDim, dims.KDim)
         current_exner = data_alloc.random_field(dims.CellDim, dims.KDim)
         reference_exner_at_cells_on_model_levels = data_alloc.random_field(dims.CellDim, dims.KDim)
@@ -399,9 +399,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
             dims.CellDim, dims.KDim
         )
-        theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-            dims.CellDim, dims.KDim, extend={dims.KDim: 1}
-        )
+        theta_v_at_cells_on_half_levels = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
         inv_ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim)
         current_rho = data_alloc.random_field(dims.CellDim, dims.KDim)
         current_theta_v = data_alloc.random_field(dims.CellDim, dims.KDim)

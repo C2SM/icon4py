@@ -250,8 +250,9 @@ def _verify_init_values_against_savepoint(
     )
 
     assert test_utils.dallclose(diffusion_granule.smag_limit.asnumpy(), savepoint.smag_limit())
+    # ICON allocates this half-level factor with only nlev entries, as the surface half level is unused.
     assert test_utils.dallclose(
-        diffusion_granule.diff_multfac_n2w.asnumpy(), savepoint.diff_multfac_n2w()
+        diffusion_granule.diff_multfac_n2w.asnumpy()[:-1], savepoint.diff_multfac_n2w()
     )
     assert test_utils.dallclose(
         diffusion_granule.diff_multfac_vn.asnumpy(), savepoint.diff_multfac_vn()

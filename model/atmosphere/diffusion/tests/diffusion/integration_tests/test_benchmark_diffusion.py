@@ -137,16 +137,14 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
     )
 
     prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, allocator=allocator
-        ),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, low=0.0, allocator=allocator),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),

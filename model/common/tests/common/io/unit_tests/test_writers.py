@@ -41,7 +41,7 @@ def _vertical_params(grid: grid_def.Grid) -> v_grid.VerticalGrid:
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
     return v_grid.VerticalGrid(
         vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), heights),
+        vct_a=gtx.as_field((dims.KHalfDim,), heights),
         vct_b=None,
     )
 

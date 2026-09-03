@@ -15,30 +15,30 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_quadratic_fa
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-# TODO(dastrm): this stencil is imported but never called
-# TODO(dastrm): slev/elev and vertical_start/end are redundant
+# TODO(nfarabullini, OngChia): this stencil is imported but never called
+# TODO(nfarabullini, OngChia): slev/elev and vertical_start/end are redundant
 
 
 @gtx.field_operator
 def _compute_ppm_all_face_values(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
-    p_face_in: fa.CellKField[ta.wpfloat],
+    p_face_in: fa.CellKHalfField[ta.wpfloat],
     slev: gtx.int32,
     elev: gtx.int32,
     slevp1: gtx.int32,
     elevp1: gtx.int32,
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKHalfField[ta.wpfloat]:
     quadratic = _compute_ppm_quadratic_face_values(p_cc, p_cellhgt_mc_now)
     p_face = concat_where(
-        dims.KDim == slevp1,
+        dims.KHalfDim == slevp1,
         quadratic,
-        concat_where(dims.KDim == elev, quadratic, p_face_in),
+        concat_where(dims.KHalfDim == elev, quadratic, p_face_in),
     )
 
-    p_face = concat_where(dims.KDim == slev, p_cc, p_face)
+    p_face = concat_where(dims.KHalfDim == slev, p_cc(dims.KHalfDim + 0.5), p_face)
 
-    p_face = concat_where(dims.KDim == elevp1, p_cc(dims.KDim - 1), p_face)
+    p_face = concat_where(dims.KHalfDim == elevp1, p_cc(dims.KHalfDim - 0.5), p_face)
 
     return p_face
 
@@ -47,8 +47,8 @@ def _compute_ppm_all_face_values(
 def compute_ppm_all_face_values(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
-    p_face_in: fa.CellKField[ta.wpfloat],
-    p_face: fa.CellKField[ta.wpfloat],
+    p_face_in: fa.CellKHalfField[ta.wpfloat],
+    p_face: fa.CellKHalfField[ta.wpfloat],
     slev: gtx.int32,
     elev: gtx.int32,
     slevp1: gtx.int32,
@@ -69,6 +69,6 @@ def compute_ppm_all_face_values(
         out=p_face,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

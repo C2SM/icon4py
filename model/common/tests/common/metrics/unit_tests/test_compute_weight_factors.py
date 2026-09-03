@@ -46,9 +46,8 @@ def test_compute_wgtfac_c(
     wgtfac_c = data_alloc.zero_field(
         icon_grid,
         dims.CellDim,
-        dims.KDim,
+        dims.KHalfDim,
         dtype=ta.wpfloat,
-        extend={dims.KDim: 1},
         allocator=backend,
     )
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
