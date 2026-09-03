@@ -39,7 +39,7 @@ class TracerPrepAdvState:
     mass_flx_me: fa.EdgeKField[ta.wpfloat]
 
     #: mass flux at half level centers averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_ic: fa.CellKField[ta.wpfloat]
+    mass_flx_ic: fa.CellKHalfField[ta.wpfloat]
 
 
 def initialize_tracer_prep_adv_state(
