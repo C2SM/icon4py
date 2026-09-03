@@ -49,9 +49,11 @@ from .test_update_dynamical_exner_time_increment import update_dynamical_exner_t
 from .test_update_mass_volume_flux import update_mass_volume_flux_numpy
 
 
-# `uses_concat_where`: `solve_w` wraps a scan operator in `concat_where(K == 0, ..., scan)`,
-# but embedded evaluates the scan eagerly over the full output K range while the scan's
-# `Koff[-1]`-shifted inputs only cover K>=1, causing an out-of-bounds at K=0.
+# `uses_concat_where`: `solve_w` guards its scan operator with `concat_where(K > 0, scan, ...)`,
+# which the embedded backend cannot evaluate because the false region `(-inf, 0]` is an open
+# range. The mask cannot be inverted to `K == 0`: `concat_where` restricts the domain of its
+# true branch only, so a scan in the false branch would start at k=0 and read its
+# `KHalfDim - 1` / `KHalfDim - 0.5` inputs out of bounds.
 @pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
