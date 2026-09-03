@@ -33,7 +33,8 @@ export_with_mapping_hook = py2fgen.export(
     },
 )
 
-SomeDim = gtx.Dimension("SomeDim")
+
+class SomeDim(gtx.DimensionIndex): ...
 
 
 def make_array_info(

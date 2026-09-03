@@ -62,23 +62,23 @@ def nudging() -> Iterator[h_grid.Zone]:
             yield marker
 
 
-LATERAL_BOUNDARY_IDX = {
+LATERAL_BOUNDARY_IDX: dict[gtx.Dimension, list[int]] = {
     dims.CellDim: [0, 850, 1688, 2511, 3316, 4104],
     dims.EdgeDim: [0, 428, 1278, 1700, 2538, 2954, 3777, 4184, 4989, 5387, 6176],
     dims.VertexDim: [0, 428, 850, 1266, 1673, 2071],
 }
 
-NUDGING_IDX = {
+NUDGING_IDX: dict[gtx.Dimension, list[int]] = {
     dims.CellDim: [3316, 4104],
     dims.EdgeDim: [4989, 5387, 6176],
     dims.VertexDim: [1673, 2071],
 }
-HALO_IDX = {
+HALO_IDX: dict[gtx.Dimension, list[int]] = {
     dims.CellDim: [20896, 20896],
     dims.EdgeDim: [31558, 31558],
     dims.VertexDim: [10663, 10663],
 }
-INTERIOR_IDX = {
+INTERIOR_IDX: dict[gtx.Dimension, list[int]] = {
     dims.CellDim: [4104, HALO_IDX[dims.CellDim][0]],
     dims.EdgeDim: [6176, HALO_IDX[dims.EdgeDim][0]],
     dims.VertexDim: [2071, HALO_IDX[dims.VertexDim][0]],
@@ -220,15 +220,15 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
     if dim == dims.LsqUnkDim:
         pytest.skip("LsqUnkDim is not an offset dimension.")
     grid = utils.run_grid_manager(grid_description, keep_skip_values=False, backend=backend).grid
-    connectivity = grid.get_connectivity(dim.value)
+    connectivity = grid.get_connectivity(dim.tag)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
         assert np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item(), (
-            f"Connectivity {dim.value} for {grid_description.name} should have skip values."
+            f"Connectivity {dim.tag} for {grid_description.name} should have skip values."
         )
         assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
     else:
         assert not np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item(), (
-            f"Connectivity {dim.value} for {grid_description.name} contains skip values, but none are expected."
+            f"Connectivity {dim.tag} for {grid_description.name} contains skip values, but none are expected."
         )
         assert connectivity.skip_value is None
 

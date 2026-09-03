@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import functools
 from types import ModuleType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -163,7 +163,9 @@ def height_coordinate_source(
 def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> None:
     field_op = coord_trans.geographical_to_cartesian_on_cells.with_backend(None)
 
-    domain = {dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))}
+    domain: dict[gtx.Dimension, tuple[h_grid.Domain, h_grid.Domain]] = {
+        dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))
+    }
     deps = {"lat": "lat", "lon": "lon"}
     fields = {"x": "x", "y": "y", "z": "z"}
 
@@ -185,7 +187,7 @@ def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> N
 @pytest.mark.datatest
 def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     program = vertical_ops.average_two_vertical_levels_downwards_on_cells
-    domain = {
+    domain: dict[gtx.Dimension, tuple[Any, Any]] = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }
@@ -211,7 +213,7 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
 @pytest.mark.datatest
 def test_field_source_raise_error_on_register(cell_coordinate_source: SimpleFieldSource) -> None:
     program = vertical_ops.average_two_vertical_levels_downwards_on_cells
-    domain = {
+    domain: dict[gtx.Dimension, tuple[Any, Any]] = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }

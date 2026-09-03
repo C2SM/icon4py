@@ -37,11 +37,12 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 if TYPE_CHECKING:
+    import gt4py.next as gtx
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.testing import serialbox
 
-RBF_TOLERANCES = {
+RBF_TOLERANCES: dict[gtx.Dimension, dict[test_defs.ExperimentDescription, float]] = {
     dims.CellDim: {
         test_defs.Experiments.EXCLAIM_APE: 3.1e-9,
         test_defs.Experiments.MCH_CH_R04B09: 4e-2,

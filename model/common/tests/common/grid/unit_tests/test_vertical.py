@@ -117,7 +117,7 @@ def test_grid_size_raises_for_non_vertical_dim(
 @pytest.mark.datatest
 def test_grid_size_raises_for_unknown_vertical_dim(grid_savepoint: sb.IconGridSavepoint) -> None:
     vertical_grid = configure_vertical_grid(grid_savepoint)
-    j_dim = gtx.Dimension("J", kind=gtx.DimensionKind.VERTICAL)
+    j_dim = gtx.dimension("J", kind=gtx.DimensionKind.VERTICAL)
     with pytest.raises(ValueError):
         vertical_grid.size(j_dim)
 
@@ -180,7 +180,7 @@ def vertical_zones() -> Iterator[v_grid.Zone]:
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("kind", (gtx.DimensionKind.LOCAL, gtx.DimensionKind.HORIZONTAL))
 def test_domain_raises_for_non_vertical_dim(zone: v_grid.Zone, kind: gtx.DimensionKind) -> None:
-    dim = gtx.Dimension("I", kind=kind)
+    dim = gtx.dimension("I", kind=kind)
     with pytest.raises(AssertionError):
         v_grid.Domain(dim, zone)
 

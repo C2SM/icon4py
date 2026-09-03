@@ -84,7 +84,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     my_halo_levels = decomp_info.halo_levels(dim)
-    print(f"{dim.value}: rank {process_props.rank} has halo levels {my_halo_levels} ")
+    print(f"{dim.tag}: rank {process_props.rank} has halo levels {my_halo_levels} ")
     assert np.all(my_halo_levels != definitions.DecompositionFlag.UNDEFINED), (
         "All indices should have a defined DecompositionFlag"
     )

@@ -8,6 +8,7 @@
 
 import pathlib
 
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import pytest
 
@@ -134,14 +135,14 @@ def test_initial_conditions(
     )
     prognostics_savepoint = data_provider.from_savepoint_prognostics_initial()
 
-    computed = {
+    computed: dict[str, gtx.Field] = {
         "rho": prognostic_state_now.rho,
         "exner": prognostic_state_now.exner,
         "theta_v": prognostic_state_now.theta_v,
         "vn": prognostic_state_now.vn,
         "w": prognostic_state_now.w,
     }
-    references = {
+    references: dict[str, gtx.Field] = {
         "rho": prognostics_savepoint.rho_now(),
         "exner": prognostics_savepoint.exner_now(),
         "theta_v": prognostics_savepoint.theta_v_now(),
