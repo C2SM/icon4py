@@ -20,7 +20,7 @@ below) and conform to
 [CF conventions](https://cfconventions.org/cf-conventions/cf-conventions.html).
 In addition, upon start-up the monitor writes a copy of the original ICON grid file enhanced with a
 [UGRID](https://ugrid-conventions.github.io/ugrid-conventions/) conforming mesh, which is referenced
-in the datafiles.
+in the datafiles. This grid file has the same name as the original grid file with the suffix `_ugrid.nc`.
 
 The model state is a dictionary of `xarray.DataArrays` containing the ICON4Py fields as data buffers and
 CF conventional metadata. For some basic examples see [data.py](../states/data.py).
