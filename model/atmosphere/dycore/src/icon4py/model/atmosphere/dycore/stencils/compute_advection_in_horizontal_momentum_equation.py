@@ -32,7 +32,7 @@ def _compute_advective_normal_wind_tendency(
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     upward_vorticity_at_vertices_on_model_levels: fa.VertexKField[ta.vpfloat],
     tangential_wind: fa.EdgeKField[ta.vpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    vn_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     coriolis_frequency: fa.EdgeField[ta.wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
@@ -70,7 +70,7 @@ def _compute_advective_normal_wind_tendency(
         neighbor_sum(
             c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=dims.E2CDim
         )
-        * astype((vn_on_half_levels - vn_on_half_levels(dims.KDim + 1)), wpfloat)
+        * astype((vn_on_half_levels(dims.KDim - 0.5) - vn_on_half_levels(dims.KDim + 0.5)), wpfloat)
         / ddqz_z_full_e_wp
     )
 
@@ -181,7 +181,7 @@ def _compute_advection_in_horizontal_momentum(
     tangential_wind: fa.EdgeKField[ta.vpfloat],
     coriolis_frequency: fa.EdgeField[ta.wpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    vn_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat],
@@ -248,7 +248,7 @@ def compute_advection_in_horizontal_momentum(
     tangential_wind: fa.EdgeKField[ta.vpfloat],
     coriolis_frequency: fa.EdgeField[ta.wpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    vn_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], ta.wpfloat],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.vpfloat],

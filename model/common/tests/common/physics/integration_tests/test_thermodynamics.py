@@ -118,7 +118,7 @@ def test_compute_surface_pressure(
     ddqz_z_full = metrics_savepoint.ddqz_z_full()
 
     surface_pressure = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KHalfDim, dtype=float, allocator=backend
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -164,7 +164,7 @@ def test_compute_hydrostatic_pressure(
     cell_domain = h_grid.domain(dims.CellDim)
 
     pressure_ifc = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, allocator=backend
+        icon_grid, dims.CellDim, dims.KHalfDim, dtype=float, allocator=backend
     )
 
     pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
@@ -174,6 +174,7 @@ def test_compute_hydrostatic_pressure(
         virtual_temperature,
         surface_pressure,
         pressure,
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
         pressure_ifc,
         horizontal_start=0,
         horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
@@ -302,6 +303,7 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
         gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         diagnostic_state.surface_pressure,
         diagnostic_state.pressure,
+        data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
         diagnostic_state.pressure_ifc,
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,

@@ -57,9 +57,7 @@ class TestComputeSurfacePressure(stencil_tests.StencilTest):
             dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat
         )
         ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat)
-        surface_pressure = data_alloc.zero_field(
-            dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend={dims.KDim: 1}
-        )
+        surface_pressure = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
 
         return dict(
             exner=exner,
@@ -101,6 +99,8 @@ class TestComputeHydrostaticPressure(stencil_tests.StencilTest):
             )
             pressure[:, k] = np.sqrt(pressure_ifc[:, k] * pressure_ifc[:, k + 1])
 
+        # the half-level field carries the surface pressure in its bottom entry
+        pressure_ifc = np.concatenate([pressure_ifc, surface_pressure[:, None]], axis=1)
         return dict(
             pressure=pressure,
             pressure_ifc=pressure_ifc,
@@ -114,13 +114,16 @@ class TestComputeHydrostaticPressure(stencil_tests.StencilTest):
         )
         surface_pressure = data_alloc.random_field(dims.CellDim, low=1.0, dtype=ta.wpfloat)
         pressure = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        pressure_ifc = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        pressure_ifc = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
 
         return dict(
             ddqz_z_full=ddqz_z_full,
             virtual_temperature=virtual_temperature,
             surface_pressure=surface_pressure,
             pressure=pressure,
+            pressure_ifc_on_model_levels=data_alloc.zero_field(
+                dims.CellDim, dims.KDim, dtype=ta.wpfloat
+            ),
             pressure_ifc=pressure_ifc,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(grid.num_cells),
