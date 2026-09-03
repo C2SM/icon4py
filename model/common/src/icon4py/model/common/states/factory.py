@@ -407,7 +407,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
         deps = {
-            k: data_alloc.as_field(factory.get(v), allocator=compute_backend)
+            k: data_alloc.reallocate(factory.get(v), allocator=compute_backend)
             for k, v in self._dependencies.items()
         }
 
@@ -419,7 +419,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
                 f"transferring result {k} to target backend: "
                 f"{data_alloc.backend_name(factory.backend)}"
             )
-            self._fields[k] = data_alloc.as_field(v, allocator=factory.backend)
+            self._fields[k] = data_alloc.reallocate(v, allocator=factory.backend)
 
     def _unravel_output_fields(self):
         out_fields = tuple(self._fields.values())
@@ -465,13 +465,6 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
                 case _:
                     return grids.grid.size[dim]
 
-        def _map_dim(dim: gtx.Dimension) -> gtx.Dimension:
-            match dim:
-                case dims.KHalfDim:
-                    return dims.KDim
-                case _:
-                    return dim
-
         def _allocate(
             grid_provider: GridProvider,
             backend: gtx_typing.Backend,
@@ -479,9 +472,8 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             dtype: state_utils.ScalarType = ta.wpfloat,
         ) -> gtx.Field:
             shape = tuple(_map_size(dim, grid_provider) for dim in self._dims)
-            dims = tuple(_map_dim(dim) for dim in self._dims)
             buffer = array_ns.zeros(shape, dtype=dtype)
-            return gtx.as_field(dims, data=buffer, allocator=backend, dtype=dtype)
+            return gtx.as_field(tuple(self._dims), data=buffer, allocator=backend, dtype=dtype)
 
         return {
             k: _allocate(grid_provider, backend, xp, dtype=dtype_or_default(k, metadata))
@@ -536,18 +528,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         grid: base_grid.Grid,  # TODO @halungge: change to vertical grid
         dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
-        def _map_size(dim: gtx.Dimension, grid: base_grid.Grid) -> int:
-            if dim == dims.KHalfDim:
-                return grid.num_levels + 1
-            return grid.size[dim]
-
-        def _map_dim(dim: gtx.Dimension) -> gtx.Dimension:
-            if dim == dims.KHalfDim:
-                return dims.KDim
-            return dim
-
         allocate = gtx.constructors.zeros.partial(allocator=backend)
-        field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
+        field_domain = {dim: (0, grid.size[dim]) for dim in self._dims}
         return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
     # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
@@ -678,7 +660,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         do_exchange: bool = False,
     ):
         self._func = func
-        self._dims = tuple(map(replace_khalfdim, domain))
+        self._dims = tuple(domain)
         self._fields: dict[str, state_utils.ScalarType | state_utils.FieldType | None] = {
             name: None for name in fields
         }
@@ -816,8 +798,3 @@ def dtype_or_default(
     field_name: str, metadata: dict[str, model.FieldMetaData]
 ) -> state_utils.ScalarType:
     return metadata[field_name].get("dtype", ta.wpfloat)
-
-
-def replace_khalfdim(dim: gtx.Dimension) -> gtx.Dimension:
-    """workaround to have consistent definitions. Remove once gt4py supports vertically staggered dimension"""
-    return dims.KDim if dim == dims.KHalfDim else dim

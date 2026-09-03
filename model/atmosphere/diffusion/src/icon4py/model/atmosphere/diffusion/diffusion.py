@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import functools
 import logging
 import math
 import sys
@@ -24,7 +23,6 @@ import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
-    copy_field,
     init_diffusion_local_fields_for_regular_timestep,
     scale_k,
     setup_fields_for_initial_step,
@@ -52,6 +50,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, v
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
+from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -325,14 +324,6 @@ class DiffusionConfig:
         ),
     ] = True
 
-    ndyn_substeps: typing.Annotated[
-        int,
-        common_conf_opt.ConfigOption(
-            description="Number of dynamics substeps per fast-physics step.",
-            icon_equivalent=common_conf_opt.IconOption("ndyn_substeps", ("nonhydrostatic_nml",)),
-        ),
-    ] = 5
-
     temperature_boundary_diffusion_denominator: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
@@ -348,16 +339,6 @@ class DiffusionConfig:
             icon_equivalent=common_conf_opt.IconOption("denom_diffu_v", ("gridref_nml",)),
         ),
     ] = 200.0
-
-    max_nudging_coefficient: typing.Annotated[
-        float,
-        common_conf_opt.ConfigOption(
-            description="Maximum relaxation coefficient for lateral boundary nudging",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="nudge_max_coeff", path=("interpol_nml",), read_from_icon=False
-            ),
-        ),
-    ] = constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
 
     shear_type: typing.Annotated[
         TurbulenceShearForcingType,
@@ -396,7 +377,6 @@ class DiffusionConfig:
     ] = False
 
     def __post_init__(self) -> None:
-
         self._validate()
 
     @classmethod
@@ -438,10 +418,6 @@ class DiffusionConfig:
                 f"and {TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND} "
                 f"implemented"
             )
-
-    @functools.cached_property
-    def substep_as_float(self) -> float:
-        return float(self.ndyn_substeps)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -511,6 +487,8 @@ class Diffusion:
         | model_backends.BackendDescriptor
         | None,
         exchange: decomposition.ExchangeRuntime,
+        ndyn_substeps: int,
+        max_nudging_coefficient: float,
     ) -> None:
         self._allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
@@ -522,6 +500,7 @@ class Diffusion:
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
+        ndyn_substeps_as_float = float(ndyn_substeps)
 
         assert self._cell_params.area is not None
 
@@ -535,16 +514,14 @@ class Diffusion:
         self.thresh_tdiff: float = -5.0
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
-        self.nudgezone_diff: float = 0.04 / (
-            config.max_nudging_coefficient + sys.float_info.epsilon
-        )
-        self.bdy_diff: float = 0.015 / (config.max_nudging_coefficient + sys.float_info.epsilon)
+        self.nudgezone_diff: float = 0.04 / (max_nudging_coefficient + sys.float_info.epsilon)
+        self.bdy_diff: float = 0.015 / (max_nudging_coefficient + sys.float_info.epsilon)
         self.fac_bdydiff_v: float = (
-            math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
+            math.sqrt(ndyn_substeps_as_float) / config.velocity_boundary_diffusion_denominator
         )
 
-        self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
-        self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
+        self.smag_offset: float = 0.25 * params.K4 * ndyn_substeps_as_float
+        self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * ndyn_substeps_as_float)
         self._determine_horizontal_domains()
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
@@ -691,7 +668,18 @@ class Diffusion:
             },
             offset_provider=self._grid.connectivities,
         )
-        self.copy_field = setup_program(backend=backend, program=copy_field)
+        self.copy_field_on_cell_k = setup_program(
+            backend=backend,
+            program=generic_math_operations.copy_field_on_cell_k,
+            horizontal_sizes={"horizontal_start": 0, "horizontal_end": self._grid.num_cells},
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
+        )
+        self.copy_field_on_cell_khalf = setup_program(
+            backend=backend,
+            program=generic_math_operations.copy_field_on_cell_khalf,
+            horizontal_sizes={"horizontal_start": 0, "horizontal_end": self._grid.num_cells},
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels + 1},
+        )
         self.scale_k = setup_program(backend=backend, program=scale_k)
         self.setup_fields_for_initial_step = setup_program(
             backend=backend, program=setup_fields_for_initial_step
@@ -707,7 +695,7 @@ class Diffusion:
 
         self.init_diffusion_local_fields_for_regular_timestep(
             params.K4,
-            config.substep_as_float,
+            ndyn_substeps_as_float,
             *params.smagorinski_factor,
             *params.smagorinski_height,
             self._vertical_grid.interface_physical_height,
@@ -736,7 +724,9 @@ class Diffusion:
 
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
-        self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
+        self.diff_multfac_n2w = data_alloc.zero_field(
+            self._grid, dims.KHalfDim, allocator=allocator
+        )
         self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.enh_smag_fac = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.u_vert = data_alloc.zero_field(
@@ -755,10 +745,7 @@ class Diffusion:
             self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
-        # TODO(halungge): this is KHalfDim
-        self.vertical_index = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        )
+        self.vertical_index = data_alloc.index_field(self._grid, dims.KHalfDim, allocator=allocator)
         self.horizontal_cell_index = data_alloc.index_field(
             self._grid, dims.CellDim, allocator=allocator
         )
@@ -766,7 +753,7 @@ class Diffusion:
             self._grid, dims.EdgeDim, allocator=allocator
         )
         self.w_tmp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
         )
         self.theta_v_tmp = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
@@ -948,7 +935,7 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
-        self.copy_field(prognostic_state.w, self.w_tmp)
+        self.copy_field_on_cell_khalf(field=prognostic_state.w, output_field=self.w_tmp)
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             w_old=self.w_tmp,
@@ -980,8 +967,8 @@ class Diffusion:
                 "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
             )
             log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
-            self.copy_field(
-                prognostic_state.theta_v, self.theta_v_tmp
+            self.copy_field_on_cell_k(
+                field=prognostic_state.theta_v, output_field=self.theta_v_tmp
             )  # TODO(): write in a way that we can avoid the copy
             self.apply_diffusion_to_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,

@@ -240,7 +240,7 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
             update_mass_flux_weighted_original[
                 ::5
             ],  # take ONLY every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep
-            unmatched_data.pop("init_cell_kdim_field_with_zero_wp"),
+            unmatched_data.pop("set_constant_on_half_levels_on_cells"),
             strict=True,
         )
     ]
