@@ -12,13 +12,15 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.physics.thermodynamics.compute_energy import compute_internal_energy
+from icon4py.model.common.physics.thermodynamics.compute_energy import (
+    compute_internal_energy_per_area,
+)
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-class TestComputeInternalEnergy(stencil_tests.StencilTest):
-    PROGRAM = compute_internal_energy
+class TestComputeInternalEnergyPerArea(stencil_tests.StencilTest):
+    PROGRAM = compute_internal_energy_per_area
     OUTPUTS = ("out",)
 
     @stencil_tests.static_reference

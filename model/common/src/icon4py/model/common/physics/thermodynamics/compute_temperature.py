@@ -126,8 +126,8 @@ def update_exner_and_theta_v(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_temperature_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
-    u: fa.CellKField[ta.wpfloat],
+def compute_temperature_from_internal_energy_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
+    internal_energy_per_area: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qliq: fa.CellKField[ta.wpfloat],
     qice: fa.CellKField[ta.wpfloat],
@@ -138,12 +138,12 @@ def compute_temperature_from_internal_energy(  # noqa: PLR0917 [too-many-positio
     Compute the temperature from the internal energy per unit area
 
     Args:
-        u:                  Internal energy per unit area
-        qv:                 Water vapor specific humidity
-        qliq:               Specific mass of liquid phases
-        qice:               Specific mass of solid phases
-        rho:                Ambient density
-        dz:                 Vertical extent of grid cell
+        internal_energy_per_area:  Internal energy per unit area
+        qv:                        Water vapor specific humidity
+        qliq:                      Specific mass of liquid phases
+        qice:                      Specific mass of solid phases
+        rho:                       Ambient density
+        dz:                        Vertical extent of grid cell
 
     Return:                 Temperature
     """
@@ -159,12 +159,15 @@ def compute_temperature_from_internal_energy(  # noqa: PLR0917 [too-many-positio
         * dz
     )  # Moist heat capacity per unit area
 
-    return (u + rho * dz * (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)) / cv
+    return (
+        internal_energy_per_area
+        + rho * dz * (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)
+    ) / cv
 
 
 @gtx.field_operator
-def compute_temperature_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
-    u: ta.wpfloat,
+def compute_temperature_from_internal_energy_per_area_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
+    internal_energy_per_area: ta.wpfloat,
     qv: ta.wpfloat,
     qliq: ta.wpfloat,
     qice: ta.wpfloat,
@@ -175,12 +178,12 @@ def compute_temperature_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-
     Compute the temperature from the internal energy per unit area (scalar version callable from scan_operator)
 
     Args:
-        u:                  Internal energy per unit area
-        qv:                 Water vapor specific humidity
-        qliq:               Specific mass of liquid phases
-        qice:               Specific mass of solid phases
-        rho:                Ambient density
-        dz:                 Vertical extent of grid cell
+        internal_energy_per_area:  Internal energy per unit area
+        qv:                        Water vapor specific humidity
+        qliq:                      Specific mass of liquid phases
+        qice:                      Specific mass of solid phases
+        rho:                       Ambient density
+        dz:                        Vertical extent of grid cell
 
     Return:                 Temperature
     """
@@ -196,4 +199,7 @@ def compute_temperature_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-
         * dz
     )  # Moist heat capacity per unit area
 
-    return (u + rho * dz * (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)) / cv
+    return (
+        internal_energy_per_area
+        + rho * dz * (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)
+    ) / cv

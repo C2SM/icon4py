@@ -13,7 +13,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_internal_energy_per_area(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qliq: fa.CellKField[ta.wpfloat],
@@ -46,7 +46,7 @@ def compute_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.field_operator
-def compute_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_internal_energy_per_area_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
     t: ta.wpfloat,
     qv: ta.wpfloat,
     qliq: ta.wpfloat,

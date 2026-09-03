@@ -14,7 +14,7 @@ import pytest
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.physics.thermodynamics.compute_temperature import (
-    compute_temperature_from_internal_energy,
+    compute_temperature_from_internal_energy_per_area,
     compute_virtual_temperature_and_temperature,
 )
 from icon4py.model.testing import stencil_tests
@@ -81,15 +81,15 @@ class TestComputeVirtualTemperatureAndTemperature(stencil_tests.StencilTest):
         )
 
 
-class TestComputeTemperatureFromInternalEnergy(stencil_tests.StencilTest):
-    PROGRAM = compute_temperature_from_internal_energy
+class TestComputeTemperatureFromInternalEnergyPerArea(stencil_tests.StencilTest):
+    PROGRAM = compute_temperature_from_internal_energy_per_area
     OUTPUTS = ("out",)
 
     @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         *,
-        u: np.ndarray,
+        internal_energy_per_area: np.ndarray,
         qv: np.ndarray,
         qliq: np.ndarray,
         qice: np.ndarray,
@@ -97,12 +97,12 @@ class TestComputeTemperatureFromInternalEnergy(stencil_tests.StencilTest):
         dz: np.ndarray,
         **kwargs,
     ) -> dict:
-        return dict(out=np.full(u.shape, 255.75599999999997))
+        return dict(out=np.full(internal_energy_per_area.shape, 255.75599999999997))
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
         return dict(
-            u=data_alloc.constant_field(
+            internal_energy_per_area=data_alloc.constant_field(
                 38265357.270336017, dims.CellDim, dims.KDim, dtype=ta.wpfloat
             ),
             qv=data_alloc.constant_field(0.00122576, dims.CellDim, dims.KDim, dtype=ta.wpfloat),

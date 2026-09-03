@@ -62,7 +62,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.physics.thermodynamics.compute_energy import (
-    compute_internal_energy_scalar,
+    compute_internal_energy_per_area_scalar,
 )
 from icon4py.model.common.type_alias import wpfloat
 
@@ -192,14 +192,14 @@ def _temperature_update(  # noqa: PLR0917 [too-many-positional-arguments]
         )
 
         e_int = (
-            compute_internal_energy_scalar(
+            compute_internal_energy_per_area_scalar(
                 t=t, qv=q.v, qliq=q.c + q.r, qice=q.s + q.i + q.g, rho=rho, dz=dz
             )
             + dt * previous_level.eflx
             - dt * eflx
         )
 
-        #  Inlined calculation using compute_temperature_from_internal_energy_scalar
+        #  Inlined calculation using compute_temperature_from_internal_energy_per_area_scalar
         #  in order to avoid scan_operator -> field_operator
         qtot = qliq + qice + q.v  # total water specific mass
         cv = (
