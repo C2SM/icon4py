@@ -372,14 +372,6 @@ icon4py.model.atmosphere.dycore.stencils.compute\_solver\_coefficients\_matrix m
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.compute\_tangential\_wind module
--------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.compute\_virtual\_potential\_temperatures\_and\_pressure\_gradient module
 ------------------------------------------------------------------------------------------------------------------
 
