@@ -89,16 +89,6 @@ class State(PhysicsState):
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        self._compute_surface_pressure = model_options.setup_program(
-            program=compute_pressure.compute_surface_pressure,
-            backend=self._backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes={
-                "vertical_start": gtx.int32(self._num_levels),
-                "vertical_end": gtx.int32(self._num_levels + 1),
-            },
-            offset_provider={},
-        )
         self._compute_hydrostatic_pressure = model_options.setup_program(
             program=compute_pressure.compute_hydrostatic_pressure,
             backend=self._backend,
@@ -179,21 +169,10 @@ class State(PhysicsState):
             temperature=self.te,
         )
 
-        self._compute_surface_pressure(
+        self._compute_hydrostatic_pressure(
             exner=prognostic.exner,
             virtual_temperature=self.tv,
             ddqz_z_full=self.dz,
-            surface_pressure=self.pressure_on_cells_half_levels,
-        )
-        surface_pressure = gtx.as_field(
-            (dims.CellDim,),
-            self.pressure_on_cells_half_levels.ndarray[:, -1],
-            allocator=self._backend,
-        )
-        self._compute_hydrostatic_pressure(
-            ddqz_z_full=self.dz,
-            virtual_temperature=self.tv,
-            surface_pressure=surface_pressure,
             pressure=self.p,
             pressure_ifc_on_model_levels=self._pressure_ifc_on_model_levels,
             pressure_ifc=self.pressure_on_cells_half_levels,

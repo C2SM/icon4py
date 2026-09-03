@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 from gt4py.next import exp, log, sqrt
-from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -24,7 +23,16 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.math.vertical_operations import (
+    _copy_model_level_below_to_half_levels_on_cells,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as grid_base
 
 
 @gtx.field_operator
@@ -44,29 +52,6 @@ def _compute_surface_pressure(
         )
     )
     return surface_pressure
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_surface_pressure(  # noqa: PLR0917 [too-many-positional-arguments]
-    exner: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    ddqz_z_full: fa.CellKField[ta.wpfloat],
-    surface_pressure: fa.CellKHalfField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _compute_surface_pressure(
-        exner=exner,
-        virtual_temperature=virtual_temperature,
-        ddqz_z_full=ddqz_z_full,
-        out=surface_pressure,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KHalfDim: (vertical_start, vertical_end),
-        },
-    )
 
 
 @gtx.scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
@@ -93,7 +78,7 @@ def _scan_pressure(
 def _compute_hydrostatic_pressure_on_model_levels(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
-    surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
+    pressure_ifc: fa.CellKHalfField[ta.wpfloat],
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     """
     Compute the hydrostatic pressure from the hydrostatic balance equation
@@ -105,34 +90,21 @@ def _compute_hydrostatic_pressure_on_model_levels(
     Args:
         ddqz_z_full: vertical grid spacing at full levels [m]
         virtual_temperature: air virtual temperature [K]
-        surface_pressure: surface air pressure [Pa]
+        pressure_ifc: pressure at half levels, of which only the surface row is used [Pa]
     Returns:
         pressure at full levels, pressure at the bounding upper interface of each level
     """
-    pressure, pressure_ifc, _ = _scan_pressure(ddqz_z_full, virtual_temperature, surface_pressure)
-    return pressure, pressure_ifc
-
-
-@gtx.field_operator
-def _pressure_on_half_levels(
-    pressure_ifc_on_model_levels: fa.CellKField[ta.wpfloat],
-    surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
-    nlev: gtx.int32,
-) -> fa.CellKHalfField[ta.wpfloat]:
-    # TODO(havogt): The range of the scan is deduced from the (unique) domain,
-    # therefore multiple output domains are currently not possible with scans.
-    return concat_where(
-        dims.KHalfDim == nlev,
-        surface_pressure,
-        pressure_ifc_on_model_levels(dims.KHalfDim + 0.5),
+    pressure, pressure_ifc_on_model_levels, _ = _scan_pressure(
+        ddqz_z_full, virtual_temperature, pressure_ifc(dims.KDim + 0.5)
     )
+    return pressure, pressure_ifc_on_model_levels
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_hydrostatic_pressure(  # noqa: PLR0917 [too-many-positional-arguments]
-    ddqz_z_full: fa.CellKField[ta.wpfloat],
+    exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
-    surface_pressure: fa.CellField[ta.wpfloat],
+    ddqz_z_full: fa.CellKField[ta.wpfloat],
     pressure: fa.CellKField[ta.wpfloat],
     pressure_ifc_on_model_levels: fa.CellKField[ta.wpfloat],
     pressure_ifc: fa.CellKHalfField[ta.wpfloat],
@@ -141,32 +113,38 @@ def compute_hydrostatic_pressure(  # noqa: PLR0917 [too-many-positional-argument
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
+    # The surface pressure goes into the bottom row of pressure_ifc first: the scan's
+    # first iteration reads it from there, and the later calls must not overwrite it.
+    _compute_surface_pressure(
+        exner=exner,
+        virtual_temperature=virtual_temperature,
+        ddqz_z_full=ddqz_z_full,
+        out=pressure_ifc,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_end, vertical_end + 1),
+        },
+    )
     _compute_hydrostatic_pressure_on_model_levels(
         ddqz_z_full,
         virtual_temperature,
-        surface_pressure,
+        pressure_ifc,
         out=(pressure, pressure_ifc_on_model_levels),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
         },
     )
-    _pressure_on_half_levels(
+    # TODO(havogt): The range of the scan is deduced from the (unique) domain,
+    # therefore multiple output domains are currently not possible with scans.
+    _copy_model_level_below_to_half_levels_on_cells(
         pressure_ifc_on_model_levels,
-        surface_pressure,
-        vertical_end,
         out=pressure_ifc,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KHalfDim: (vertical_start, vertical_end + 1),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
-
-
-if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.common.grid import base as grid_base
 
 
 def compute_surface_and_hydrostatic_pressure(
@@ -176,7 +154,6 @@ def compute_surface_and_hydrostatic_pressure(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
-    surface_pressure: fa.CellField[ta.wpfloat],
     pressure: fa.CellKField[ta.wpfloat],
     pressure_on_cells_half_levels: fa.CellKHalfField[ta.wpfloat],
 ) -> None:
@@ -185,43 +162,24 @@ def compute_surface_and_hydrostatic_pressure(
     Args:
         grid, backend: grid and gt4py backend.
         exner, virtual_temperature, ddqz_z_full: input cell-K fields.
-        surface_pressure: cell field receiving the surface pressure.
         pressure: cell-K field receiving the full-level pressure.
         pressure_on_cells_half_levels: half-level (``nlev+1``) output buffer for
-            pressure on cell half-levels; also receives the diagnosed surface pressure.
+            pressure on cell half-levels; its bottom row is the surface pressure.
     """
-    num_levels = grid.num_levels
     cell_domain = h_grid.domain(dims.CellDim)
-    horizontal_end = grid.end_index(cell_domain(h_grid.Zone.END))
-
-    compute_surface_pressure.with_backend(backend)(
+    compute_hydrostatic_pressure.with_backend(backend)(
         exner=exner,
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,
-        surface_pressure=pressure_on_cells_half_levels,
-        horizontal_start=0,
-        horizontal_end=horizontal_end,
-        vertical_start=num_levels,
-        vertical_end=num_levels + 1,
-        offset_provider={},
-    )
-    # surface pressure lives at the bottom interface; extract it as a cell field
-    surface_pressure.ndarray[:] = pressure_on_cells_half_levels.ndarray[:, num_levels]
-    pressure_on_cells_half_levels.ndarray[:, -1] = surface_pressure.ndarray
-
-    compute_hydrostatic_pressure.with_backend(backend)(
-        ddqz_z_full=ddqz_z_full,
-        virtual_temperature=virtual_temperature,
-        surface_pressure=surface_pressure,
         pressure=pressure,
         pressure_ifc_on_model_levels=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, allocator=backend, dtype=ta.wpfloat
         ),
         pressure_ifc=pressure_on_cells_half_levels,
         horizontal_start=0,
-        horizontal_end=horizontal_end,
+        horizontal_end=grid.end_index(cell_domain(h_grid.Zone.END)),
         vertical_start=0,
-        vertical_end=num_levels,
+        vertical_end=grid.num_levels,
         offset_provider={},
     )
 
@@ -240,9 +198,6 @@ def compute_surface_and_hydrostatic_pressure_ndarray(
     Convenience wrapper around :func:`compute_surface_and_hydrostatic_pressure` for one-shot callers
     (e.g. initial-condition setup) that do not keep their own buffers.
     """
-    surface_pressure = data_alloc.zero_field(
-        grid, dims.CellDim, allocator=allocator, dtype=ta.wpfloat
-    )
     pressure = data_alloc.zero_field(
         grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
@@ -255,7 +210,6 @@ def compute_surface_and_hydrostatic_pressure_ndarray(
         exner=exner,
         virtual_temperature=virtual_temperature,
         ddqz_z_full=ddqz_z_full,
-        surface_pressure=surface_pressure,
         pressure=pressure,
         pressure_on_cells_half_levels=pressure_on_cells_half_levels,
     )

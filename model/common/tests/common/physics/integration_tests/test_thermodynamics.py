@@ -104,7 +104,7 @@ def test_compute_virtual_temperature_and_temperature(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
-def test_compute_surface_pressure(
+def test_compute_hydrostatic_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
@@ -112,67 +112,24 @@ def test_compute_surface_pressure(
 ) -> None:
     initial_diagnostic_savepoint = data_provider.from_savepoint_diagnostics_initial()
     surface_pressure_ref = initial_diagnostic_savepoint.pressure_sfc().asnumpy()
-    initial_prognostic_savepoint = data_provider.from_savepoint_prognostics_initial()
-    exner = initial_prognostic_savepoint.exner_now()
+    pressure_ifc_ref = initial_diagnostic_savepoint.pressure_ifc().asnumpy()
+    pressure_ref = initial_diagnostic_savepoint.pressure().asnumpy()
+    exner = data_provider.from_savepoint_prognostics_initial().exner_now()
     virtual_temperature = initial_diagnostic_savepoint.virtual_temperature()
     ddqz_z_full = metrics_savepoint.ddqz_z_full()
-
-    surface_pressure = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KHalfDim, dtype=float, allocator=backend
-    )
-
-    cell_domain = h_grid.domain(dims.CellDim)
-
-    compute_pressure.compute_surface_pressure.with_backend(backend)(
-        exner=exner,
-        virtual_temperature=virtual_temperature,
-        ddqz_z_full=ddqz_z_full,
-        surface_pressure=surface_pressure,
-        horizontal_start=0,
-        horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
-        vertical_start=icon_grid.num_levels,
-        vertical_end=icon_grid.num_levels + 1,
-        offset_provider={},
-    )
-
-    assert test_utils.dallclose(
-        surface_pressure.asnumpy()[:, icon_grid.num_levels],
-        surface_pressure_ref,
-    )
-
-
-@pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
-def test_compute_hydrostatic_pressure(
-    data_provider: sb.IconSerialDataProvider,
-    icon_grid: base_grid.Grid,
-    backend: gtx_typing.Backend,
-    metrics_savepoint: sb.MetricSavepoint,
-) -> None:
-    ddqz_z_full = metrics_savepoint.ddqz_z_full()
-
-    diagnostics_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
-    virtual_temperature = diagnostics_reference_savepoint.temperature()
-    surface_pressure = diagnostics_reference_savepoint.pressure_sfc()
-
-    pressure_ifc_ref = diagnostics_reference_savepoint.pressure_ifc().asnumpy()
-    pressure_ref = diagnostics_reference_savepoint.pressure().asnumpy()
 
     pressure = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
     )
-    cell_domain = h_grid.domain(dims.CellDim)
-
     pressure_ifc = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KHalfDim, dtype=float, allocator=backend
     )
-
-    pressure_ifc.ndarray[:, -1] = surface_pressure.ndarray
+    cell_domain = h_grid.domain(dims.CellDim)
 
     compute_pressure.compute_hydrostatic_pressure.with_backend(backend)(
-        ddqz_z_full,
+        exner,
         virtual_temperature,
-        surface_pressure,
+        ddqz_z_full,
         pressure,
         data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
         pressure_ifc,
@@ -183,12 +140,11 @@ def test_compute_hydrostatic_pressure(
         offset_provider={},
     )
 
-    assert test_utils.dallclose(pressure_ifc_ref, pressure_ifc.asnumpy())
-
     assert test_utils.dallclose(
-        pressure_ref,
-        pressure.asnumpy(),
+        surface_pressure_ref, pressure_ifc.asnumpy()[:, icon_grid.num_levels]
     )
+    assert test_utils.dallclose(pressure_ifc_ref, pressure_ifc.asnumpy())
+    assert test_utils.dallclose(pressure_ref, pressure.asnumpy())
 
 
 @pytest.mark.parametrize(
@@ -286,22 +242,10 @@ def test_diagnostic_update_after_saturation_adjustement(  # noqa: PLR0917 [too-m
 
     updated_exner = exner.asnumpy() + exner_tendency.asnumpy() * dtime
 
-    compute_pressure.compute_surface_pressure.with_backend(backend)(
+    compute_pressure.compute_hydrostatic_pressure.with_backend(backend)(
         gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
         gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
         metrics_savepoint.ddqz_z_full(),
-        diagnostic_state.pressure_ifc,
-        horizontal_start=start_cell_nudging,
-        horizontal_end=end_cell_local,
-        vertical_start=icon_grid.num_levels,
-        vertical_end=gtx.int32(icon_grid.num_levels + 1),
-        offset_provider={},
-    )
-
-    compute_pressure.compute_hydrostatic_pressure.with_backend(backend)(
-        metrics_savepoint.ddqz_z_full(),
-        gtx.as_field((dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend),
-        diagnostic_state.surface_pressure,
         diagnostic_state.pressure,
         data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
         diagnostic_state.pressure_ifc,

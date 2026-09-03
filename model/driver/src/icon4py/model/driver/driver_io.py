@@ -154,9 +154,6 @@ class DiagnosticsComputer:
         # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
         # in-place buffer fills below would not type-check against the precise Field type.
         self._pressure_on_cells_half_levels: Any = _zero_interface()
-        self._surface_pressure: Any = data_alloc.zero_field(
-            grid, dims.CellDim, dtype=ta.wpfloat, allocator=backend
-        )
 
     def compute(
         self,
@@ -214,7 +211,6 @@ class DiagnosticsComputer:
             exner=prognostic_state.exner,
             virtual_temperature=self._virtual_temperature,
             ddqz_z_full=ddqz_z_full,
-            surface_pressure=self._surface_pressure,
             pressure=self._pressure,
             pressure_on_cells_half_levels=self._pressure_on_cells_half_levels,
         )
