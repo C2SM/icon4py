@@ -1971,13 +1971,13 @@ class TmxInitSavepoint(IconSavepoint):
     """
 
     def inv_ddqz_z_half(self):
-        return self._get_field("inv_ddqz_z_half", dims.CellDim, dims.KDim)
+        return self._get_field("inv_ddqz_z_half", dims.CellDim, dims.KHalfDim)
 
     def inv_ddqz_z_half_e(self):
-        return self._get_field("inv_ddqz_z_half_e", dims.EdgeDim, dims.KDim)
+        return self._get_field("inv_ddqz_z_half_e", dims.EdgeDim, dims.KHalfDim)
 
     def inv_ddqz_z_half_v(self):
-        return self._get_field("inv_ddqz_z_half_v", dims.VertexDim, dims.KDim)
+        return self._get_field("inv_ddqz_z_half_v", dims.VertexDim, dims.KHalfDim)
 
     def inv_ddqz_z_full_e(self):
         return self._get_field("inv_ddqz_z_full_e", dims.EdgeDim, dims.KDim)
@@ -1996,10 +1996,10 @@ class TmxInitSavepoint(IconSavepoint):
         return self._get_field("wgtfacq1_e", dims.EdgeDim, dims.KDim)
 
     def geopot_agl_ifc(self):
-        return self._get_field("geopot_agl_ifc", dims.CellDim, dims.KDim)
+        return self._get_field("geopot_agl_ifc", dims.CellDim, dims.KHalfDim)
 
     def mix_len_sq(self):
-        return self._get_field("mix_len_sq", dims.CellDim, dims.KDim)
+        return self._get_field("mix_len_sq", dims.CellDim, dims.KHalfDim)
 
     def scaling_factor_louis(self):
         return self._get_field("scaling_factor_louis", dims.CellDim)
@@ -2022,7 +2022,7 @@ class TmxEntrySavepoint(IconSavepoint):
         return self._get_field("va", dims.CellDim, dims.KDim)
 
     def wa(self):
-        return self._get_field("wa", dims.CellDim, dims.KDim)
+        return self._get_field("wa", dims.CellDim, dims.KHalfDim)
 
     def qv(self):
         return self._get_field("qv", dims.CellDim, dims.KDim)
@@ -2052,7 +2052,7 @@ class TmxEntrySavepoint(IconSavepoint):
         return self._get_field("pres", dims.CellDim, dims.KDim)
 
     def pres_ifc(self):
-        return self._get_field("pres_ifc", dims.CellDim, dims.KDim)
+        return self._get_field("pres_ifc", dims.CellDim, dims.KHalfDim)
 
     def mair(self):
         return self._get_field("mair", dims.CellDim, dims.KDim)
