@@ -418,7 +418,7 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
-gt4py = {git = "https://github.com/GridTools/gt4py", rev = "fefb8e213f0ec3d4ff5ad1c477e3122d59cdb9d8"}
+gt4py = {git = "https://github.com/GridTools/gt4py", rev = "26016ac9cc32c3a1478a0c8f835263bf23085c00"}
 icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
