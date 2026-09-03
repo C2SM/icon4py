@@ -1962,6 +1962,124 @@ class TopographySavepoint(IconSavepoint):
         return self._get_field("smooth_topography", dims.CellDim)
 
 
+class TmxInitSavepoint(IconSavepoint):
+    """
+    Static savepoint of the TMX (AES turbulent mixing) scheme.
+
+    Written once at the initial time step of vdf Compute_diagnostics in mo_vdf_atmo.f90,
+    after Smagorinsky_init has filled mix_len_sq and the Louis scaling factor.
+    """
+
+    def inv_ddqz_z_half(self):
+        return self._get_field("inv_ddqz_z_half", dims.CellDim, dims.KDim)
+
+    def inv_ddqz_z_half_e(self):
+        return self._get_field("inv_ddqz_z_half_e", dims.EdgeDim, dims.KDim)
+
+    def inv_ddqz_z_half_v(self):
+        return self._get_field("inv_ddqz_z_half_v", dims.VertexDim, dims.KDim)
+
+    def inv_ddqz_z_full_e(self):
+        return self._get_field("inv_ddqz_z_full_e", dims.EdgeDim, dims.KDim)
+
+    def wgtfacq1_c(self):
+        # Top-extrapolation coefficients: unlike `wgtfacq_c` (bottom extrapolation, stored
+        # surface-first, i.e. reversed w.r.t. increasing k, hence flipped in its accessor),
+        # `wgtfacq1_c(jc,k,jb)` with k=1..3 multiplies the full level k counted from the model
+        # top (mo_vertical_grid.f90 ll. 955-968), which already matches icon4py's top-down KDim
+        # orientation. No flip needed.
+        return self._get_field("wgtfacq1_c", dims.CellDim, dims.KDim)
+
+    def wgtfacq1_e(self):
+        # No flip, see `wgtfacq1_c`. Usage in mo_vdf_atmo.f90 (interpolate_normal_velocity_
+        # edge_interface, ll. 1247-1250): vn_ie(je,1,jb) = sum_k wgtfacq1_e(je,k,jb)*vn(je,k,jb).
+        return self._get_field("wgtfacq1_e", dims.EdgeDim, dims.KDim)
+
+    def geopot_agl_ifc(self):
+        return self._get_field("geopot_agl_ifc", dims.CellDim, dims.KDim)
+
+    def mix_len_sq(self):
+        return self._get_field("mix_len_sq", dims.CellDim, dims.KDim)
+
+    def scaling_factor_louis(self):
+        return self._get_field("scaling_factor_louis", dims.CellDim)
+
+
+class TmxEntrySavepoint(IconSavepoint):
+    """Savepoint at entry of vdf Compute in mo_vdf.f90 (inputs of the TMX scheme)."""
+
+    def ta(self):
+        return self._get_field("ta", dims.CellDim, dims.KDim)
+
+    def ta_phy(self):
+        # Sanity twin of `ta`: prm_field%ta, must be identical to the tmx input temp_c.
+        return self._get_field("ta_phy", dims.CellDim, dims.KDim)
+
+    def ua(self):
+        return self._get_field("ua", dims.CellDim, dims.KDim)
+
+    def va(self):
+        return self._get_field("va", dims.CellDim, dims.KDim)
+
+    def wa(self):
+        return self._get_field("wa", dims.CellDim, dims.KDim)
+
+    def qv(self):
+        return self._get_field("qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        return self._get_field("qc", dims.CellDim, dims.KDim)
+
+    def qi(self):
+        return self._get_field("qi", dims.CellDim, dims.KDim)
+
+    def qr(self):
+        return self._get_field("qr", dims.CellDim, dims.KDim)
+
+    def qs(self):
+        return self._get_field("qs", dims.CellDim, dims.KDim)
+
+    def qg(self):
+        return self._get_field("qg", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("rho", dims.CellDim, dims.KDim)
+
+    def tempv(self):
+        return self._get_field("tempv", dims.CellDim, dims.KDim)
+
+    def pres(self):
+        return self._get_field("pres", dims.CellDim, dims.KDim)
+
+    def pres_ifc(self):
+        return self._get_field("pres_ifc", dims.CellDim, dims.KDim)
+
+    def mair(self):
+        return self._get_field("mair", dims.CellDim, dims.KDim)
+
+    def cvair(self):
+        return self._get_field("cvair", dims.CellDim, dims.KDim)
+
+
+class TmxSurfaceFluxesSavepoint(IconSavepoint):
+    """Savepoint after the surface model call in vdf Compute in mo_vdf.f90."""
+
+    def evspsbl(self):
+        return self._get_field("evspsbl", dims.CellDim)
+
+    def hfss(self):
+        return self._get_field("hfss", dims.CellDim)
+
+    def tauu(self):
+        return self._get_field("tauu", dims.CellDim)
+
+    def tauv(self):
+        return self._get_field("tauv", dims.CellDim)
+
+    def q_snocpymlt(self):
+        return self._get_field("q_snocpymlt", dims.CellDim)
+
+
 class IconTimeStepExitSavepoint(IconSavepoint):
     """End-of-timestep prognostic state, written in perform_nh_timeloop right after
     integrate_nh returns: all physics tendencies applied, time levels swapped."""
@@ -2381,5 +2499,23 @@ class IconSerialDataProvider:
     def from_savepoint_muphys_exit(self, date: str) -> IconMuphysExitSavepoint:
         savepoint = self.serializer.savepoint["aes-graupel-exit"].id[1].date[date].as_savepoint()
         return IconMuphysExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_init(self) -> TmxInitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-init"].id[1].as_savepoint()
+        return TmxInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_entry(self, date: str) -> TmxEntrySavepoint:
+        savepoint = self.serializer.savepoint["tmx-entry"].id[1].date[date].as_savepoint()
+        return TmxEntrySavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_surface_fluxes(self, date: str) -> TmxSurfaceFluxesSavepoint:
+        savepoint = self.serializer.savepoint["tmx-surface-fluxes"].id[1].date[date].as_savepoint()
+        return TmxSurfaceFluxesSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
