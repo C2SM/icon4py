@@ -31,15 +31,12 @@ import zarr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time as common_time
-from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.io import distributed, io as common_io, netcdf_writers, writers
 
 from ...fixtures import process_props
 
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 NUM_LEVELS = 4
 GLOBAL_SIZES = {dims.CellDim: 109, dims.EdgeDim: 75, dims.VertexDim: 41}
@@ -142,7 +139,7 @@ def create_monitor(
     )
     vertical = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=NUM_LEVELS),
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, NUM_LEVELS + 1)),
+        vct_a=gtx.as_field((dims.KHalfDim,), np.linspace(12000.0, 0.0, NUM_LEVELS + 1)),
         vct_b=None,
     )
     return common_io.FieldGroupMonitor(

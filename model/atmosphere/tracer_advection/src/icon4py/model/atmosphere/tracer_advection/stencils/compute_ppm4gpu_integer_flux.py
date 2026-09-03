@@ -13,34 +13,54 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO(dastrm): this stencil has no test
-# TODO(dastrm): this stencil does not strictly match the fortran code
+# TODO(nfarabullini, OngChia): this stencil has no test
+# TODO(nfarabullini, OngChia): this stencil does not strictly match the fortran code
 
 
 @gtx.field_operator
 def _sum_neighbor_contributions_all(
-    mask1: fa.CellKField[bool],
-    mask2: fa.CellKField[bool],
-    js: fa.CellKField[ta.wpfloat],
+    mask1: fa.CellKHalfField[bool],
+    mask2: fa.CellKHalfField[bool],
+    js: fa.CellKHalfField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKHalfField[ta.wpfloat]:
     js_gt0 = js >= 0.0
     js_gt1 = js >= 1.0
     js_gt2 = js >= 2.0
     js_gt3 = js >= 3.0
     js_gt4 = js >= 4.0
 
-    prod_p0 = where(mask1 & js_gt0, p_cc * p_cellmass_now, 0.0)
-    prod_p1 = where(mask1 & js_gt1, p_cc(dims.KDim + 1) * p_cellmass_now(dims.KDim + 1), 0.0)
-    prod_p2 = where(mask1 & js_gt2, p_cc(dims.KDim + 2) * p_cellmass_now(dims.KDim + 2), 0.0)
-    prod_p3 = where(mask1 & js_gt3, p_cc(dims.KDim + 3) * p_cellmass_now(dims.KDim + 3), 0.0)
-    prod_p4 = where(mask1 & js_gt4, p_cc(dims.KDim + 4) * p_cellmass_now(dims.KDim + 4), 0.0)
-    prod_m0 = where(mask2 & js_gt0, p_cc(dims.KDim - 1) * p_cellmass_now(dims.KDim - 1), 0.0)
-    prod_m1 = where(mask2 & js_gt1, p_cc(dims.KDim - 2) * p_cellmass_now(dims.KDim - 2), 0.0)
-    prod_m2 = where(mask2 & js_gt2, p_cc(dims.KDim - 3) * p_cellmass_now(dims.KDim - 3), 0.0)
-    prod_m3 = where(mask2 & js_gt3, p_cc(dims.KDim - 4) * p_cellmass_now(dims.KDim - 4), 0.0)
-    prod_m4 = where(mask2 & js_gt4, p_cc(dims.KDim - 5) * p_cellmass_now(dims.KDim - 5), 0.0)
+    prod_p0 = where(
+        mask1 & js_gt0, p_cc(dims.KHalfDim + 0.5) * p_cellmass_now(dims.KHalfDim + 0.5), 0.0
+    )
+    prod_p1 = where(
+        mask1 & js_gt1, p_cc(dims.KHalfDim + 1.5) * p_cellmass_now(dims.KHalfDim + 1.5), 0.0
+    )
+    prod_p2 = where(
+        mask1 & js_gt2, p_cc(dims.KHalfDim + 2.5) * p_cellmass_now(dims.KHalfDim + 2.5), 0.0
+    )
+    prod_p3 = where(
+        mask1 & js_gt3, p_cc(dims.KHalfDim + 3.5) * p_cellmass_now(dims.KHalfDim + 3.5), 0.0
+    )
+    prod_p4 = where(
+        mask1 & js_gt4, p_cc(dims.KHalfDim + 4.5) * p_cellmass_now(dims.KHalfDim + 4.5), 0.0
+    )
+    prod_m0 = where(
+        mask2 & js_gt0, p_cc(dims.KHalfDim - 0.5) * p_cellmass_now(dims.KHalfDim - 0.5), 0.0
+    )
+    prod_m1 = where(
+        mask2 & js_gt1, p_cc(dims.KHalfDim - 1.5) * p_cellmass_now(dims.KHalfDim - 1.5), 0.0
+    )
+    prod_m2 = where(
+        mask2 & js_gt2, p_cc(dims.KHalfDim - 2.5) * p_cellmass_now(dims.KHalfDim - 2.5), 0.0
+    )
+    prod_m3 = where(
+        mask2 & js_gt3, p_cc(dims.KHalfDim - 3.5) * p_cellmass_now(dims.KHalfDim - 3.5), 0.0
+    )
+    prod_m4 = where(
+        mask2 & js_gt4, p_cc(dims.KHalfDim - 4.5) * p_cellmass_now(dims.KHalfDim - 4.5), 0.0
+    )
 
     prod_jks = (
         prod_p0
@@ -61,19 +81,19 @@ def _sum_neighbor_contributions_all(
 def _compute_ppm4gpu_integer_flux(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
-    z_cfl: fa.CellKField[ta.wpfloat],
-    p_upflux: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
+    z_cfl: fa.CellKHalfField[ta.wpfloat],
+    p_upflux: fa.CellKHalfField[ta.wpfloat],
+    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKHalfField[ta.wpfloat]:
     js = floor(abs(z_cfl)) - 1.0
 
     z_cfl_pos = z_cfl > 0.0
     z_cfl_neg = z_cfl < 0.0
     wsign = where(z_cfl_pos, 1.0, -1.0)
 
-    in_slev_bounds = astype(k, wpfloat) - js >= astype(slev, wpfloat)
+    in_slev_bounds = astype(k_half, wpfloat) - js >= astype(slev, wpfloat)
 
     p_cc_cellmass_now_jks = _sum_neighbor_contributions_all(
         mask1=z_cfl_pos,
@@ -94,9 +114,9 @@ def _compute_ppm4gpu_integer_flux(
 def compute_ppm4gpu_integer_flux(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
-    z_cfl: fa.CellKField[ta.wpfloat],
-    p_upflux: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
+    z_cfl: fa.CellKHalfField[ta.wpfloat],
+    p_upflux: fa.CellKHalfField[ta.wpfloat],
+    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
@@ -109,12 +129,12 @@ def compute_ppm4gpu_integer_flux(
         p_cellmass_now=p_cellmass_now,
         z_cfl=z_cfl,
         p_upflux=p_upflux,
-        k=k,
+        k_half=k_half,
         slev=slev,
         p_dtime=p_dtime,
         out=p_upflux,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

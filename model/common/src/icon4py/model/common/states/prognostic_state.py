@@ -31,7 +31,7 @@ class PrognosticState:
     """
 
     rho: fa.CellKField[ta.wpfloat]  # density, rho(nproma, nlev, nblks_c) [kg/m^3]
-    w: fa.CellKField[ta.wpfloat]  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
+    w: fa.CellKHalfField[ta.wpfloat]  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
     vn: fa.EdgeKField[
         ta.wpfloat
     ]  # horizontal wind normal to edges, vn(nproma, nlev, nblks_e)  [m/s]
@@ -58,8 +58,7 @@ def initialize_prognostic_state(
     w = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.wpfloat,
     )
