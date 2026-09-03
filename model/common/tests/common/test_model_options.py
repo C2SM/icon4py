@@ -12,8 +12,17 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import field_type_aliases as fa, model_backends
+from icon4py.model.common import (
+    backend_configuration as backend_cfg,
+    field_type_aliases as fa,
+    model_backends,
+)
 from icon4py.model.common.model_options import customize_backend, setup_program
+
+
+@pytest.fixture(autouse=True)
+def clear_backend_workspace_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ICON4PY_BACKEND_WORKSPACE_SIZE", raising=False)
 
 
 @gtx.field_operator  # type: ignore[call-overload]
@@ -55,6 +64,17 @@ def test_custom_backend_device() -> None:
     default_backend = model_backends.make_custom_dace_backend(device=device)
     # TODO(havogt): test should be improved to work without string comparison
     assert repr(default_backend) == repr(backend)
+
+
+def test_custom_backend_with_external_workspace_config_and_no_explicit_device() -> None:
+    backend = customize_backend(
+        None,
+        {"backend_factory": model_backends.make_custom_dace_backend, "device": None},
+        backend_config=backend_cfg.BackendConfig(workspace_size=4096),
+    )
+    assert backend is not None
+    assert hasattr(backend, "external_workspace")
+    assert backend.external_workspace[gtx.DeviceType.CPU].size == 4096
 
 
 @pytest.mark.parametrize(
