@@ -36,7 +36,6 @@ def apply_nabla2_to_w_numpy(
     return w
 
 
-@pytest.mark.embedded_remap_error
 class TestMoApplyNabla2ToW(stencil_tests.StencilTest):
     PROGRAM = apply_nabla2_to_w
     OUTPUTS = ("w",)

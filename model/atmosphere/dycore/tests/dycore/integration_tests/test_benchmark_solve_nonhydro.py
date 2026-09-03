@@ -210,7 +210,6 @@ def solve_nonhydro(
 @pytest.mark.parametrize(
     "at_first_substep, at_last_substep", [(True, False), (False, True), (False, False)]
 )
-@pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only

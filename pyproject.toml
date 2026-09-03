@@ -256,7 +256,6 @@ module = [
 [tool.pytest.ini_options]
 addopts = ['-p icon4py.model.testing.pytest_hooks', '--strict-markers']
 markers = [
-  "embedded_remap_error",
   "embedded_static_args",
   "skip_value_error",
   "datatest",

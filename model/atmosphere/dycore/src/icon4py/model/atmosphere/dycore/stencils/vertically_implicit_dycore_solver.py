@@ -259,14 +259,14 @@ def _vertically_implicit_solver_at_predictor_step(
     )
 
     w_explicit_term = concat_where(
-        1 <= dims.KHalfDim,
+        dims.KHalfDim == 0,
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
         _compute_w_explicit_term_with_predictor_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
             nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             dtime=dtime,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
@@ -293,9 +293,9 @@ def _vertically_implicit_solver_at_predictor_step(
         dtime=dtime,
     )
     tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
-        dims.KHalfDim < n_lev,
-        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        dims.KHalfDim == n_lev,
         broadcast(vpfloat("0.0"), (dims.CellDim,)),
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
@@ -601,7 +601,8 @@ def _vertically_implicit_solver_at_corrector_step(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
     w_explicit_term = concat_where(
-        1 <= dims.KHalfDim,
+        dims.KHalfDim == 0,
+        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
         _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
@@ -611,7 +612,6 @@ def _vertically_implicit_solver_at_corrector_step(
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         (1 <= dims.KHalfDim) & (dims.KHalfDim < n_lev),
@@ -636,9 +636,9 @@ def _vertically_implicit_solver_at_corrector_step(
         dtime=dtime,
     )
     tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
-        dims.KHalfDim < n_lev,
-        tridiagonal_alpha_coeff_at_cells_on_half_levels,
+        dims.KHalfDim == n_lev,
         broadcast(vpfloat("0.0"), (dims.CellDim,)),
+        tridiagonal_alpha_coeff_at_cells_on_half_levels,
     )
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
         rho_nnow=current_rho,
@@ -715,7 +715,11 @@ def _vertically_implicit_solver_at_corrector_step(
             dynamical_vertical_mass_flux_at_cells_on_half_levels,
             dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
         ) = concat_where(
-            1 <= dims.KHalfDim,
+            dims.KHalfDim == 0,
+            (
+                dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+            ),
             _update_mass_volume_flux(
                 z_contr_w_fl_l=vertical_mass_flux_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels,
@@ -724,10 +728,6 @@ def _vertically_implicit_solver_at_corrector_step(
                 mass_flx_ic=dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 vol_flx_ic=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
                 r_nsubsteps=r_nsubsteps,
-            ),
-            (
-                dynamical_vertical_mass_flux_at_cells_on_half_levels,
-                dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             ),
         )
 

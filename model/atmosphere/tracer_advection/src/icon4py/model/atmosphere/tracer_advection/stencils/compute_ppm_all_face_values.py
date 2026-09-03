@@ -29,10 +29,11 @@ def _compute_ppm_all_face_values(
     slevp1: gtx.int32,
     elevp1: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
+    quadratic = _compute_ppm_quadratic_face_values(p_cc, p_cellhgt_mc_now)
     p_face = concat_where(
-        (dims.KHalfDim == slevp1) | (dims.KHalfDim == elev),
-        _compute_ppm_quadratic_face_values(p_cc, p_cellhgt_mc_now),
-        p_face_in,
+        dims.KHalfDim == slevp1,
+        quadratic,
+        concat_where(dims.KHalfDim == elev, quadratic, p_face_in),
     )
 
     p_face = concat_where(dims.KHalfDim == slev, p_cc(dims.KHalfDim + 0.5), p_face)

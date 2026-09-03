@@ -44,9 +44,9 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 ]:
     dwdx, dwdy = (
         concat_where(
-            0 < dims.KHalfDim,
-            _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
+            dims.KHalfDim == 0,
             (dwdx, dwdy),
+            _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
         )
         if type_shear == 2
         else (dwdx, dwdy)
@@ -61,11 +61,12 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     )
 
     w = concat_where(
-        (0 < dims.KHalfDim)
-        & (dims.KHalfDim < nrdmax)
-        & (interior_idx <= dims.CellDim)
-        & (dims.CellDim < halo_idx),
-        _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
+        (0 < dims.KHalfDim) & (dims.KHalfDim < nrdmax),
+        concat_where(
+            (interior_idx <= dims.CellDim) & (dims.CellDim < halo_idx),
+            _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
+            w,
+        ),
         w,
     )
 

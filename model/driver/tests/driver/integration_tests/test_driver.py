@@ -85,7 +85,6 @@ def timeloop_diffusion_linit_exit() -> bool:
 
 @pytest.mark.datatest
 @pytest.mark.level("integration")
-@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment_description, timeloop_date_init, timeloop_date_exit, step_date_exit",
     [

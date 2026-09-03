@@ -45,7 +45,6 @@ def _open_output(path: pathlib.Path, output_backend: common_io.OutputBackend) ->
 
 
 @pytest.mark.datatest
-@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.JW])
 @pytest.mark.parametrize(
     "output_backend", [common_io.OutputBackend.NETCDF, common_io.OutputBackend.ZARR]
