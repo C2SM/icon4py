@@ -9,17 +9,15 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import (
-    snow_number_aes_graupel,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import snow_number
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-class TestSnowNumberAesGraupel(stencil_tests.StencilTest):
-    PROGRAM = snow_number_aes_graupel
+class TestSnowNumber(stencil_tests.StencilTest):
+    PROGRAM = snow_number
     OUTPUTS = ("number",)
 
     @stencil_tests.static_reference

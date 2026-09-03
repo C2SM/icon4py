@@ -14,10 +14,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
-    config as muphys_config,
-    data as muphys_data,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import data as muphys_data
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES, Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver.run_full_muphys import (
     setup_muphys,
@@ -56,7 +53,6 @@ class MuphysComponent:
         qnc: float,
         backend: gtx_typing.Backend | None = None,
         *,
-        scheme: muphys_config.MuphysScheme = muphys_config.MuphysScheme.KOKKOS_MUPHYS,
         step: Callable[..., Any] | None = None,
     ) -> None:
         self._ncells = grid.num_cells
@@ -109,7 +105,6 @@ class MuphysComponent:
                 qnc=qnc,
                 backend=backend,
                 single_program=False,
-                scheme=scheme,
             )
         self._step = step
 

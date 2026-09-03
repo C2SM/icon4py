@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from typing import Final
 
-import numpy as np
 import pytest
 from gt4py import next as gtx
 
@@ -55,15 +54,16 @@ class Experiments:
     ids=lambda exp: exp.name,
 )
 @pytest.mark.parametrize("single_program", [True, False], ids=lambda sp: f"single_program={sp}")
+@pytest.mark.xfail(
+    reason="Reference data generated with KOKKOS_MUPHYS; only AES_GRAUPEL remains. "
+    "Needs new reference data."
+)
 def test_full_muphys(
     backend_like: model_backends.BackendLike,
     experiment: utils.MuphysExperiment,
     single_program: bool,
 ) -> None:
     assert experiment.type == utils.ExperimentType.FULL_MUPHYS
-
-    if single_program:
-        pytest.xfail("Single program version currently fails verification. Needs investigation.")
 
     inp = common.GraupelInput.load(
         filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)

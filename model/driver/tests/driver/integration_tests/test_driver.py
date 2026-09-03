@@ -141,7 +141,7 @@ def test_driver(
     after the dynamics, which the driver does not (see the comment in the body).
     Per-field tolerances live in ``_TOLERANCES``.
 
-    muphys (EXCLAIM_APE_AES): runs ``MuphysScheme.AES_GRAUPEL`` -- the port of the exact
+    muphys (EXCLAIM_APE_AES): runs the aes-graupel scheme -- the port of the exact
     ICON formulation that generated the reference. Graupel is the only *physics*
     parameterization active, so vn/w/rho/exner/theta_v compare tightly; the tracer
     comparison carries residuals from gaps not yet ported:

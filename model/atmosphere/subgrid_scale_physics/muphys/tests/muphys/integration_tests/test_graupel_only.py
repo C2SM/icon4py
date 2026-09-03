@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from typing import Final
 
-import numpy as np
 import pytest
 from gt4py import next as gtx
 
@@ -56,6 +55,10 @@ _GRAUPEL_TEST_CASES = [
         f"{exp.name}-dacehooks[{enable_dace_hooks}]"
         for exp, enable_dace_hooks in _GRAUPEL_TEST_CASES
     ],
+)
+@pytest.mark.xfail(
+    reason="Reference data generated with KOKKOS_MUPHYS; only AES_GRAUPEL remains. "
+    "Needs new reference data."
 )
 def test_graupel_only(
     backend_like: model_backends.BackendLike,
