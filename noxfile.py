@@ -253,7 +253,7 @@ def _driver_bencher_testbed() -> str:
         f"{os.environ['SYSTEM_TAG']}:"
         f"{os.environ['BACKEND']}:"
         f"{grid}:"
-        f"{comm_size}n{nodes}N:"
+        f"{nodes}N{comm_size}R:"
         f"{transport}"
     )
 
