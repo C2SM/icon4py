@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import pathlib
 from typing import Final
 
 import gt4py.next.typing as gtx_typing
@@ -15,7 +14,6 @@ import pytest
 from scipy.stats import linregress
 
 from icon4py.model.common import model_backends, time
-from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, gridfile
 from icon4py.model.common.initial_condition.analytical import (
@@ -25,7 +23,7 @@ from icon4py.model.common.initial_condition.analytical import (
 from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver, driver_utils
-from icon4py.model.testing import config as test_config, definitions as test_defs, grid_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -54,10 +52,10 @@ def _compute_relative_errors(
     array_ns = data_alloc.array_namespace(simulated_values)
     error_l1 = array_ns.sum(array_ns.abs(simulated_values - reference)) / array_ns.sum(
         array_ns.abs(reference)
-    )
+    ).item()
     error_linf = array_ns.max(array_ns.abs(simulated_values - reference)) / array_ns.max(
         array_ns.abs(reference)
-    )
+    ).item()
     return error_l1, error_linf
 
 
@@ -103,7 +101,7 @@ def test_horizontal_tracer_advection_convergence(
     experiment_case: str,
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
-    tmp_path: pathlib.Path,
+    experiment_config: driver_config.ExperimentConfig,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -117,12 +115,6 @@ def test_horizontal_tracer_advection_convergence(
     error_l1: list[float] = []
     error_linf: list[float] = []
     mean_edge_length: list[float] = []
-
-    config_path = test_config.EXPERIMENT_CONFIG_PATH / f"{experiment_case}.yaml"
-
-    experiment_config = config_io.read_yaml_str(
-        config_path.read_text(), driver_config.ExperimentConfig
-    ).with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
 
     grid_managers = [
         driver_utils.create_grid_manager(
@@ -240,7 +232,7 @@ def test_vertical_tracer_advection_convergence(
     num_levels: tuple[int, ...],
     l1_acceptable_range: tuple[float, float],
     linf_acceptable_range: tuple[float, float],
-    tmp_path: pathlib.Path,
+    experiment_config: driver_config.ExperimentConfig,
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -249,11 +241,6 @@ def test_vertical_tracer_advection_convergence(
     grid_path = grid_utils._download_grid_file(_VERTICAL_CONVERGENCE_GRID)
     error_l1: list[float] = []
     error_linf: list[float] = []
-    config_path = test_config.EXPERIMENT_CONFIG_PATH / f"{experiment_case}.yaml"
-
-    experiment_config = config_io.read_yaml_str(
-        config_path.read_text(), driver_config.ExperimentConfig
-    ).with_overrides(driver={"output_path": tmp_path / "ci_driver_output"})
 
     assert (
         type(experiment_config.initial_condition)

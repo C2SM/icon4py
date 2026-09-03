@@ -173,7 +173,7 @@ def create(
             )
         case lin_hor_adv_ic.LinearHorizontalAdvectionConfig():
             lin_hor_adv_ic.linear_horizontal_advection(
-                config=config.config,
+                config=config,
                 grid=grid,
                 static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
@@ -182,7 +182,7 @@ def create(
             )
         case lin_ver_adv_ic.LinearVerticalAdvectionConfig():
             lin_ver_adv_ic.linear_vertical_advection(
-                config=config.config,
+                config=config,
                 vertical_config=vertical_config,
                 metrics=static_fields.metrics,
                 prognostic_state_now=prognostic_state_now,

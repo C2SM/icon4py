@@ -6,15 +6,13 @@ vertical_grid:
   model_top_height: 10000.0
   lowest_layer_thickness: 0.0
 topography:
-  config:
-    type: flat
+  type: flat
 initial_condition:
-  config:
-    type: linear_vertical_adv
-    tracer_profile: box
-    velocity_field: uniform_positive
-    cfl_number: 0.11
-    initial_center: 0.3
+  type: linear_vertical_adv
+  tracer_profile: box
+  velocity_field: uniform_positive
+  cfl_number: 0.11
+  initial_center: 0.3
 prescribed_tendencies:
   data_path:
 driver:
