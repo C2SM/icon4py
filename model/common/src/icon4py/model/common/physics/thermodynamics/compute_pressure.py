@@ -6,19 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Hydrostatic pressure, and the saturation vapour pressures.
-
-The surface pressure is extrapolated from the lowest three levels, then the
-pressure is obtained by vertical integration of the virtual temperature;
-``compute_surface_and_hydrostatic_pressure`` sequences the two stencils the way
-ICON's ``diagnose_pres_temp`` does.
-
-This is the *hydrostatic* pressure, deliberately not the Exner-function shortcut
-``P0REF * exner ** CPD_O_RD``. The moist initial conditions rely on the
-hydrostatic value because ICON re-diagnoses pressure via ``diagnose_pres_temp``
-when initializing the water vapour (``init_nh_inwp_tracers`` with
-``l_rediag=.TRUE.``), so the converged/serialized state matches this integration.
-"""
+"""Hydrostatic pressure, and the saturation vapour pressures."""
 
 from __future__ import annotations
 
@@ -45,6 +33,7 @@ def _compute_surface_pressure(
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKHalfField[ta.wpfloat]:
+    """Extrapolate the surface pressure from the lowest three model levels."""
     surface_pressure = PhysicsConstants.p0ref * exp(
         PhysicsConstants.cpd_o_rd * log(exner(dims.KHalfDim - 2.5))
         + PhysicsConstants.grav_o_rd
@@ -107,7 +96,10 @@ def _compute_hydrostatic_pressure_on_model_levels(
     surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     """
-    Update pressure by assuming hydrostatic balance (dp/dz = -rho g = p g / Rd / Tv).
+    Compute the hydrostatic pressure from the hydrostatic balance equation
+    dp/dz = -rho g = -p g / (Rd Tv). This differs from the total pressure derived
+    from the Exner function, ``P0REF * exner ** CPD_O_RD``, because the latter also
+    contains the non-hydrostatic component.
     Note that virtual temperature is used in the equation.
 
     Args:

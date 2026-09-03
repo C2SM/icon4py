@@ -6,10 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Virtual temperature and temperature diagnostics, and the equation-of-state-consistent
-update of exner and theta_v from a virtual-temperature tendency.
-"""
-
 import gt4py.next as gtx
 from gt4py.next import exp, log
 
@@ -127,3 +123,77 @@ def update_exner_and_theta_v(  # noqa: PLR0917 [too-many-positional-arguments]
             dims.KDim: (vertical_start, vertical_end),
         },
     )
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_temperature_from_internal_energy(  # noqa: PLR0917 [too-many-positional-arguments]
+    u: fa.CellKField[ta.wpfloat],
+    qv: fa.CellKField[ta.wpfloat],
+    qliq: fa.CellKField[ta.wpfloat],
+    qice: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    dz: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the temperature from the internal energy per unit area
+
+    Args:
+        u:                  Internal energy per unit area
+        qv:                 Water vapor specific humidity
+        qliq:               Specific mass of liquid phases
+        qice:               Specific mass of solid phases
+        rho:                Ambient density
+        dz:                 Vertical extent of grid cell
+
+    Return:                 Temperature
+    """
+    qtot = qliq + qice + qv  # total water specific mass
+    cv = (
+        (
+            PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
+            + PhysicsConstants.cvv * qv
+            + PhysicsConstants.cpl * qliq
+            + PhysicsConstants.cpi * qice
+        )
+        * rho
+        * dz
+    )  # Moist heat capacity per unit area
+
+    return (u + rho * dz * (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)) / cv
+
+
+@gtx.field_operator
+def compute_temperature_from_internal_energy_scalar(  # noqa: PLR0917 [too-many-positional-arguments]
+    u: ta.wpfloat,
+    qv: ta.wpfloat,
+    qliq: ta.wpfloat,
+    qice: ta.wpfloat,
+    rho: ta.wpfloat,
+    dz: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Compute the temperature from the internal energy per unit area (scalar version callable from scan_operator)
+
+    Args:
+        u:                  Internal energy per unit area
+        qv:                 Water vapor specific humidity
+        qliq:               Specific mass of liquid phases
+        qice:               Specific mass of solid phases
+        rho:                Ambient density
+        dz:                 Vertical extent of grid cell
+
+    Return:                 Temperature
+    """
+    qtot = qliq + qice + qv  # total water specific mass
+    cv = (
+        (
+            PhysicsConstants.cvd * (wpfloat(1.0) - qtot)
+            + PhysicsConstants.cvv * qv
+            + PhysicsConstants.cpl * qliq
+            + PhysicsConstants.cpi * qice
+        )
+        * rho
+        * dz
+    )  # Moist heat capacity per unit area
+
+    return (u + rho * dz * (qliq * PhysicsConstants.lvc + qice * PhysicsConstants.lsc)) / cv

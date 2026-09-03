@@ -156,6 +156,7 @@ DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[float] = 5.0
 
 
+# a wpfloat-based Enum: what gtfn needs for constants referenced inside field operators
 class PhysicsConstants(ta.wpfloat, enum.Enum):
     """
     Constants used in gt4py stencils.
