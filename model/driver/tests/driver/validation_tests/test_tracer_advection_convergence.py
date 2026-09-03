@@ -50,11 +50,13 @@ def _compute_relative_errors(
     # compute the errors relative to the reference
     # note: the following lines take the errors of all the levels, which is fine
     array_ns = data_alloc.array_namespace(simulated_values)
-    error_l1 = array_ns.sum(array_ns.abs(simulated_values - reference)) / array_ns.sum(
-        array_ns.abs(reference)
+    error_l1 = (
+        array_ns.sum(array_ns.abs(simulated_values - reference))
+        / array_ns.sum(array_ns.abs(reference))
     ).item()
-    error_linf = array_ns.max(array_ns.abs(simulated_values - reference)) / array_ns.max(
-        array_ns.abs(reference)
+    error_linf = (
+        array_ns.max(array_ns.abs(simulated_values - reference))
+        / array_ns.max(array_ns.abs(reference))
     ).item()
     return error_l1, error_linf
 
