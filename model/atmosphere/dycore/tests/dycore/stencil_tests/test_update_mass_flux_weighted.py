@@ -65,13 +65,13 @@ class TestUpdateMassFluxWeighted(stencil_tests.StencilTest):
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         r_nsubsteps = wpfloat("10.0")
-        rho_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
         vwind_expl_wgt = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
         vwind_impl_wgt = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        w_now = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_new = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        w_concorr_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        mass_flx_ic = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_now = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        w_new = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        w_concorr_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        mass_flx_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
 
         return dict(
             rho_ic=rho_ic,
@@ -85,5 +85,5 @@ class TestUpdateMassFluxWeighted(stencil_tests.StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

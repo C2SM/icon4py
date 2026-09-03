@@ -46,9 +46,7 @@ class TestInterpolateContravariantVerticalVelocityToFullLevels(stencil_tests.Ste
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_w_con_c = data_alloc.random_field(
-            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
-        )
+        z_w_con_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
 
         z_w_con_c_full = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 

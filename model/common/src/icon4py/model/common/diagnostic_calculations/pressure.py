@@ -49,7 +49,7 @@ def diagnose_pressure_surface_to_top(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     surface_pressure: fa.CellField[ta.wpfloat],
     pressure: fa.CellKField[ta.wpfloat],
-    pressure_on_cells_half_levels: fa.CellKField[ta.wpfloat],
+    pressure_on_cells_half_levels: fa.CellKHalfField[ta.wpfloat],
 ) -> None:
     """Diagnose the hydrostatic pressure into caller-provided buffers.
 
@@ -58,7 +58,7 @@ def diagnose_pressure_surface_to_top(
         exner, virtual_temperature, ddqz_z_full: input cell-K fields.
         surface_pressure: cell field receiving the surface pressure.
         pressure: cell-K field receiving the full-level pressure.
-        pressure_on_cells_half_levels: K-extended (``nlev+1``) output buffer for
+        pressure_on_cells_half_levels: half-level (``nlev+1``) output buffer for
             pressure on cell half-levels; also receives the diagnosed surface pressure.
     """
     num_levels = grid.num_levels
@@ -85,6 +85,9 @@ def diagnose_pressure_surface_to_top(
         virtual_temperature=virtual_temperature,
         surface_pressure=surface_pressure,
         pressure=pressure,
+        pressure_ifc_on_model_levels=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=backend, dtype=ta.wpfloat
+        ),
         pressure_ifc=pressure_on_cells_half_levels,
         horizontal_start=0,
         horizontal_end=horizontal_end,
@@ -115,7 +118,7 @@ def diagnose_pressure_surface_to_top_ndarray(
         grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
     pressure_on_cells_half_levels = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.wpfloat
     )
     diagnose_pressure_surface_to_top(
         grid=grid,

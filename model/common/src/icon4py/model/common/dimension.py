@@ -15,8 +15,7 @@ class KDim(gtx.DimensionIndex, kind=gtx.DimensionKind.VERTICAL):
     tag = "K"
 
 
-class KHalfDim(gtx.DimensionIndex, kind=gtx.DimensionKind.VERTICAL):
-    tag = "KHalf"
+KHalfDim = gtx.flip_staggered(KDim)
 
 
 class EdgeDim(gtx.DimensionIndex):
@@ -106,7 +105,6 @@ C2E2C2E = gtx.FieldOffset("C2E2C2E", source=EdgeDim, target=(CellDim, C2E2C2EDim
 C2E2C2E2C = gtx.FieldOffset("C2E2C2E2C", source=CellDim, target=(CellDim, C2E2C2E2CDim))
 V2E2V = gtx.FieldOffset("V2E2V", source=VertexDim, target=(VertexDim, V2E2VDim))
 Koff = gtx.FieldOffset("Koff", source=KDim, target=(KDim,))
-KHalfOff = gtx.FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
 
 
 def horizontal_dims() -> Iterator[gtx.Dimension]:

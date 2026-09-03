@@ -286,7 +286,7 @@ def test_composite_field_source_get_all_fields(
 
     lat = composite.get("height_coordinate")
     assert isinstance(lat, gtx.Field)
-    assert dims.KDim in lat.domain.dims
+    assert dims.KHalfDim in lat.domain.dims
     assert len(lat.domain.dims) == 2
 
 
