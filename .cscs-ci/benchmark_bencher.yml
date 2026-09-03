@@ -10,23 +10,23 @@ include:
   variables:
     NOX_SESSION: "__bencher_feature_branch_CI-${PYVERSION_SHORT}"
 
+.bencher_driver_mpi_feature_tests:
+  extends: [.test_runner_mpi, .test_template_aarch64, .benchmark_driver_mpi_nox_job]
+  stage: benchmark
+  script:
+    - !reference [.bencher_github_event_setup, script]
+    - !reference [.benchmark_driver_mpi_nox_job, script]
+  variables:
+    NOX_SESSION: "__bencher_driver_mpi_feature_branch_CI-${PYVERSION_SHORT}"
+
 .bencher_driver_feature_tests:
-  extends: [.test_runner_mpi, .test_template_aarch64, .benchmark_driver_nox_job]
+  extends: [.test_runner_serial, .test_template_aarch64, .benchmark_driver_nox_job]
   stage: benchmark
   script:
     - !reference [.bencher_github_event_setup, script]
     - !reference [.benchmark_driver_nox_job, script]
   variables:
     NOX_SESSION: "__bencher_driver_feature_branch_CI-${PYVERSION_SHORT}"
-
-.bencher_driver_single_rank_feature_tests:
-  extends: [.test_runner_serial, .test_template_aarch64, .benchmark_driver_single_rank_nox_job]
-  stage: benchmark
-  script:
-    - !reference [.bencher_github_event_setup, script]
-    - !reference [.benchmark_driver_single_rank_nox_job, script]
-  variables:
-    NOX_SESSION: "__bencher_driver_single_rank_feature_branch_CI-${PYVERSION_SHORT}"
 
 benchmark_bencher_stencils_feature_aarch64:
   extends: [.test_runner_serial, .test_template_aarch64, .bencher_feature_tests]
@@ -43,8 +43,8 @@ benchmark_bencher_granules_feature_aarch64:
   rules:
     - when: never  # TEMPORARY: disabled for driver bencher trial; restore before merge
 
-benchmark_bencher_driver_feature_aarch64:
-  extends: [.bencher_driver_feature_tests, .retry_on_transient_failure]
+benchmark_bencher_driver_mpi_feature_aarch64:
+  extends: [.bencher_driver_mpi_feature_tests, .retry_on_transient_failure]
   variables:
     SLURM_NTASKS: 4
     SLURM_JOB_NUM_NODES: 1
@@ -54,8 +54,8 @@ benchmark_bencher_driver_feature_aarch64:
       when: never
     - when: on_success
 
-benchmark_bencher_driver_feature_single_rank_aarch64:
-  extends: [.bencher_driver_single_rank_feature_tests, .retry_on_transient_failure]
+benchmark_bencher_driver_feature_aarch64:
+  extends: [.bencher_driver_feature_tests, .retry_on_transient_failure]
   rules:
     - if: $ICON4PY_DISABLE_DRIVER_BENCHMARK == "1" || $ICON4PY_DISABLE_DRIVER_BENCHMARK == "true"
       when: never

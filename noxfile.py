@@ -236,7 +236,7 @@ def benchmark_driver_mpi(session: nox.Session) -> None:
         )
 
 
-def _driver_bencher_testbed() -> str:
+def _driver_mpi_bencher_testbed() -> str:
     """Build the bencher testbed string for the distributed driver benchmark.
 
     The experiment is a test-level parameter (see ``BENCHMARK_EXPERIMENTS`` in
@@ -259,7 +259,7 @@ def _driver_bencher_testbed() -> str:
 
 
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
-def __bencher_driver_baseline_CI(session: nox.Session) -> None:
+def __bencher_driver_mpi_baseline_CI(session: nox.Session) -> None:
     """Upload the distributed driver benchmark baseline to bencher."""
     rank = _resolve_rank()
     if not _is_upload_rank(rank):
@@ -269,20 +269,20 @@ def __bencher_driver_baseline_CI(session: nox.Session) -> None:
         *_bencher_baseline_command(
             f"model/driver/pytest_benchmark_results_{session.python}_{rank}.json"
         ),
-        env=_bencher_baseline_env(_driver_bencher_testbed()),
+        env=_bencher_baseline_env(_driver_mpi_bencher_testbed()),
         external=True,
         silent=True,
     )
 
 
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
-def __bencher_driver_feature_branch_CI(session: nox.Session) -> None:
+def __bencher_driver_mpi_feature_branch_CI(session: nox.Session) -> None:
     """Upload the distributed driver benchmark feature-branch results to bencher."""
     rank = _resolve_rank()
     if not _is_upload_rank(rank):
         return
 
-    bencher_testbed = _driver_bencher_testbed()
+    bencher_testbed = _driver_mpi_bencher_testbed()
     session.run(
         *_bencher_feature_command(
             f"model/driver/pytest_benchmark_results_{session.python}_{rank}.json", bencher_testbed
@@ -294,7 +294,7 @@ def __bencher_driver_feature_branch_CI(session: nox.Session) -> None:
 
 
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
-def benchmark_driver_single_rank(session: nox.Session) -> None:
+def benchmark_driver(session: nox.Session) -> None:
     """Run the single-rank driver benchmark."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
@@ -311,7 +311,7 @@ def benchmark_driver_single_rank(session: nox.Session) -> None:
         )
 
 
-def _driver_single_rank_bencher_testbed() -> str:
+def _driver_bencher_testbed() -> str:
     """Build the bencher testbed string for the single-rank driver benchmark.
 
     Matches the existing serial benchmark testbed shape (``RUNNER:SYSTEM_TAG:BACKEND:GRID``).
@@ -321,21 +321,21 @@ def _driver_single_rank_bencher_testbed() -> str:
     return f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{grid}"
 
 
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_single_rank-{python}"])
-def __bencher_driver_single_rank_baseline_CI(session: nox.Session) -> None:
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver-{python}"])
+def __bencher_driver_baseline_CI(session: nox.Session) -> None:
     """Upload the single-rank driver benchmark baseline to bencher."""
     session.run(
         *_bencher_baseline_command(f"model/driver/pytest_benchmark_results_{session.python}.json"),
-        env=_bencher_baseline_env(_driver_single_rank_bencher_testbed()),
+        env=_bencher_baseline_env(_driver_bencher_testbed()),
         external=True,
         silent=True,
     )
 
 
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_single_rank-{python}"])
-def __bencher_driver_single_rank_feature_branch_CI(session: nox.Session) -> None:
+@nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver-{python}"])
+def __bencher_driver_feature_branch_CI(session: nox.Session) -> None:
     """Upload the single-rank driver benchmark feature-branch results to bencher."""
-    bencher_testbed = _driver_single_rank_bencher_testbed()
+    bencher_testbed = _driver_bencher_testbed()
     session.run(
         *_bencher_feature_command(
             f"model/driver/pytest_benchmark_results_{session.python}.json", bencher_testbed

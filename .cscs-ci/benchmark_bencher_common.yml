@@ -12,7 +12,6 @@
 .benchmark_driver_base_variables:
   variables:
     TEST_SELECTION: "test_benchmark_driver"
-    BACKEND: "dace_gpu"
     GRID: "R02B06_GLOBAL"
     SLURM_TIMELIMIT: '02:00:00'
     OMP_PROC_BIND: close
@@ -37,10 +36,18 @@
     SLURM_PARTITION: normal
     SLURM_TIMELIMIT: '01:30:00'
 
-.benchmark_driver_nox_job:
+.benchmark_driver_mpi_nox_job:
   stage: benchmark
   script:
     - .cscs-ci/scripts/ci-mpi-wrapper.sh nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
+  # These jobs use a dedicated GPU per task (ci-mpi-wrapper.sh pins one GPU
+  # per rank), so override .test_template_aarch64's before_script without
+  # start-cuda-mps.sh, which is intended for shared GPUs (multiple ranks per
+  # GPU) and would also unset CUDA_VISIBLE_DEVICES after the wrapper pinned it.
+  before_script:
+    - cd /icon4py
+    - source .venv/bin/activate # For nox etc. not for the testing venv itself
+    - source .cscs-ci/scripts/gt4py-cache.sh
   extends: [.benchmark_driver_base_variables]
   variables:
     # Full-node layout: 4 ranks on 4 GPUs (ci-mpi-wrapper.sh pins one GPU per
@@ -53,10 +60,17 @@
     matrix:
       - BACKEND: [dace_gpu]
 
-.benchmark_driver_single_rank_nox_job:
+.benchmark_driver_nox_job:
   stage: benchmark
   script:
     - nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
+  # This job uses a dedicated GPU per task (SLURM_GPUS_PER_TASK: 1), so
+  # override .test_template_aarch64's before_script without start-cuda-mps.sh,
+  # which is intended for shared GPUs (multiple ranks per GPU).
+  before_script:
+    - cd /icon4py
+    - source .venv/bin/activate # For nox etc. not for the testing venv itself
+    - source .cscs-ci/scripts/gt4py-cache.sh
   extends: [.benchmark_driver_base_variables]
   variables:
     SLURM_GPUS_PER_TASK: 1
