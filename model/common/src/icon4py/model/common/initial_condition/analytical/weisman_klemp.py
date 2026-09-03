@@ -12,12 +12,7 @@ import dataclasses
 import logging
 from typing import TYPE_CHECKING, ClassVar
 
-from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
-    model_backends,
-    thermodynamic_functions as thermo,
-)
+from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     icon as icon_grid,
@@ -25,6 +20,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.initial_condition.analytical import utils as testcases_utils
 from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.physics.thermodynamics import compute_moisture, compute_pressure
 from icon4py.model.common.states import prognostic_state as prognostics, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -170,11 +166,13 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
 
     # Tropopause reference values.
     exner_tropopause = t_tropopause / theta_tropopause
-    vapor_pressure_tropopause = config.rh_min * thermo.sat_pres_water(
+    vapor_pressure_tropopause = config.rh_min * compute_pressure.sat_pres_water(
         array_ns.asarray(t_tropopause)
     )
     pressure_tropopause = phy_const.P0REF * exner_tropopause**phy_const.CPD_O_RD
-    qv_tropopause = thermo.specific_humidity(vapor_pressure_tropopause, pressure_tropopause)
+    qv_tropopause = compute_moisture.specific_humidity(
+        vapor_pressure_tropopause, pressure_tropopause
+    )
     theta_v_tropopause = theta_tropopause * (1.0 + vtmpc1 * qv_tropopause)
 
     # Above the tropopause the layer is isothermal (T = t_tropopause).
@@ -187,7 +185,7 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         -grav_o_cpd / t_tropopause * (height_above - h_tropopause)
     )
     pressure_above = phy_const.P0REF * exner[above] ** phy_const.CPD_O_RD
-    qv[above] = thermo.specific_humidity(vapor_pressure_tropopause, pressure_above)
+    qv[above] = compute_moisture.specific_humidity(vapor_pressure_tropopause, pressure_above)
     theta_v[above] = theta[above] * (1.0 + vtmpc1 * qv[above])
     relative_humidity[above] = config.rh_min
     temperature[above] = t_tropopause
@@ -223,9 +221,11 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
         exner_aux = exner_above - grav_o_cpd * delta_height / (
             theta_v_aux - theta_v_above
         ) * array_ns.log(theta_v_aux / theta_v_above)
-        vapor_pressure_aux = relative_humidity[k] * thermo.sat_pres_water(theta[k] * exner_aux)
+        vapor_pressure_aux = relative_humidity[k] * compute_pressure.sat_pres_water(
+            theta[k] * exner_aux
+        )
         pressure_aux = phy_const.P0REF * exner_aux**phy_const.CPD_O_RD
-        qv_aux = thermo.specific_humidity(vapor_pressure_aux, pressure_aux)
+        qv_aux = compute_moisture.specific_humidity(vapor_pressure_aux, pressure_aux)
         if k > k_tropopause + 1:
             qv_aux = array_ns.minimum(qv_max, qv_aux)
         theta_v_aux = theta[k] * (1.0 + vtmpc1 * qv_aux)
@@ -234,9 +234,9 @@ def weisman_klemp(  # noqa: PLR0915 [too-many-statements]
             theta_v_aux - theta_v_above
         ) * array_ns.log(theta_v_aux / theta_v_above)
         temperature[k] = theta[k] * exner[k]
-        vapor_pressure = relative_humidity[k] * thermo.sat_pres_water(temperature[k])
+        vapor_pressure = relative_humidity[k] * compute_pressure.sat_pres_water(temperature[k])
         pressure = phy_const.P0REF * exner[k] ** phy_const.CPD_O_RD
-        qv[k] = thermo.specific_humidity(vapor_pressure, pressure)
+        qv[k] = compute_moisture.specific_humidity(vapor_pressure, pressure)
         if k > k_tropopause + 1:
             qv[k] = array_ns.minimum(qv_max, qv[k])
         theta_v[k] = theta[k] * (1.0 + vtmpc1 * qv[k])

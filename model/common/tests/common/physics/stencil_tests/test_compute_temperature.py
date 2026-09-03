@@ -12,15 +12,16 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
-from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
-    diagnose_virtual_temperature_and_temperature,
-)
 from icon4py.model.common.grid import base
+from icon4py.model.common.physics.thermodynamics.compute_temperature import (
+    compute_temperature_from_internal_energy_per_area,
+    compute_virtual_temperature_and_temperature,
+)
 from icon4py.model.testing import stencil_tests
 
 
-class TestDiagnoseTemperature(stencil_tests.StencilTest):
-    PROGRAM = diagnose_virtual_temperature_and_temperature
+class TestComputeVirtualTemperatureAndTemperature(stencil_tests.StencilTest):
+    PROGRAM = compute_virtual_temperature_and_temperature
     OUTPUTS = ("virtual_temperature", "temperature")
 
     @stencil_tests.static_reference
@@ -77,4 +78,41 @@ class TestDiagnoseTemperature(stencil_tests.StencilTest):
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(grid.num_levels),
+        )
+
+
+class TestComputeTemperatureFromInternalEnergyPerArea(stencil_tests.StencilTest):
+    PROGRAM = compute_temperature_from_internal_energy_per_area
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        internal_energy_per_area: np.ndarray,
+        qv: np.ndarray,
+        qliq: np.ndarray,
+        qice: np.ndarray,
+        rho: np.ndarray,
+        dz: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        return dict(out=np.full(internal_energy_per_area.shape, 255.75599999999997))
+
+    @stencil_tests.input_data_fixture
+    def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
+        return dict(
+            internal_energy_per_area=data_alloc.constant_field(
+                38265357.270336017, dims.CellDim, dims.KDim, dtype=ta.wpfloat
+            ),
+            qv=data_alloc.constant_field(0.00122576, dims.CellDim, dims.KDim, dtype=ta.wpfloat),
+            qliq=data_alloc.constant_field(1.63837e-20, dims.CellDim, dims.KDim, dtype=ta.wpfloat),
+            qice=data_alloc.constant_field(1.09462e-08, dims.CellDim, dims.KDim, dtype=ta.wpfloat),
+            rho=data_alloc.constant_field(0.83444, dims.CellDim, dims.KDim, dtype=ta.wpfloat),
+            dz=data_alloc.constant_field(249.569, dims.CellDim, dims.KDim, dtype=ta.wpfloat),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+            out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat),
         )
