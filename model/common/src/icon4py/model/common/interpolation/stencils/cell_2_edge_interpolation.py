@@ -55,3 +55,24 @@ def cell_2_edge_interpolation(
             dims.KDim: (vertical_start, vertical_end),
         },
     )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def cell_2_edge_interpolation_on_half_levels(
+    in_field: fa.CellKHalfField[ta.wpfloat],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    out_field: fa.EdgeKHalfField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _cell_2_edge_interpolation_on_half_levels(
+        in_field=in_field,
+        coeff=coeff,
+        out=out_field,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
+        },
+    )

@@ -1,0 +1,151 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+import pytest
+
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import (
+    EnergyType,
+    SurfaceType,
+    TmxConfig,
+    TurbulenceSolverType,
+)
+from icon4py.model.common.config import config_io
+
+
+@pytest.mark.parametrize("turb_prandtl", [0.0, -1.0])
+def test_config_rejects_non_positive_turb_prandtl(turb_prandtl: float) -> None:
+    with pytest.raises(ValueError, match="turb_prandtl"):
+        TmxConfig(turb_prandtl=turb_prandtl)
+
+
+def test_config_rejects_negative_km_min() -> None:
+    with pytest.raises(ValueError, match="km_min"):
+        TmxConfig(km_min=-1.0)
+
+
+def test_config_coerces_enums_from_ints() -> None:
+    config = TmxConfig(solver_type=1, energy_type=1)
+    assert config.solver_type is TurbulenceSolverType.EXPLICIT
+    assert config.energy_type is EnergyType.DRY_STATIC
+
+
+def test_config_rejects_invalid_enum_values() -> None:
+    with pytest.raises(ValueError):
+        TmxConfig(solver_type=3)
+
+
+def _echoed_vdf_record(**overrides: object) -> list[object]:
+    """A positional t_vdiff_config record as echoed in aes_vdf_nml.
+
+    Positions not pinned by a TmxConfig option get a dummy value; the
+    overrides are placed at the pinned 'unnamed_index' positions.
+    """
+    positions = {
+        "use_tmx": 22,
+        "solver_type": 23,
+        "energy_type": 24,
+        "dissipation_factor": 25,
+        "use_louis": 26,
+        "use_louis_land": 27,
+        "use_louis_ice": 28,
+        "louis_constant_b": 29,
+        "use_km_const": 30,
+        "km_const": 31,
+        "use_scale_turb_energy_flux": 32,
+        "scale_turb_energy_flux": 33,
+        "smag_constant": 34,
+        "turb_prandtl": 35,
+        "km_min": 37,
+        "max_turb_scale": 38,
+    }
+    record: list[object] = [0.0] * 42
+    record[positions["use_tmx"]] = True
+    for name, value in overrides.items():
+        record[positions[name]] = value
+    return record
+
+
+def test_config_from_fortran_dict() -> None:
+    fortran_dict = {
+        "aes_vdf_nml": {
+            "aes_vdf_config": _echoed_vdf_record(
+                solver_type=1,
+                energy_type=1,
+                dissipation_factor=0.5,
+                use_louis=False,
+                use_louis_land=False,
+                use_louis_ice=False,
+                louis_constant_b=2.1,
+                use_km_const=True,
+                km_const=2.0,
+                use_scale_turb_energy_flux=True,
+                scale_turb_energy_flux=0.9,
+                smag_constant=0.28,
+                turb_prandtl=0.5,
+                km_min=0.002,
+                max_turb_scale=150.0,
+            )
+        }
+    }
+    config = TmxConfig.from_fortran_dict(atm_dict=fortran_dict, input_dict={})
+    assert config.solver_type is TurbulenceSolverType.EXPLICIT
+    assert config.energy_type is EnergyType.DRY_STATIC
+    assert config.dissipation_factor == 0.5
+    assert config.use_louis is False
+    assert config.use_louis_land is False
+    assert config.use_louis_ice is False
+    assert config.louis_constant_b == 2.1
+    assert config.use_km_const is True
+    assert config.km_const == 2.0
+    assert config.use_scale_turb_energy_flux is True
+    assert config.scale_turb_energy_flux == 0.9
+    assert config.smag_constant == 0.28
+    assert config.turb_prandtl == 0.5
+    assert config.km_min == 0.002
+    assert config.max_turb_scale == 150.0
+
+
+def test_config_from_fortran_dict_rejects_changed_member_count() -> None:
+    record = _echoed_vdf_record()
+    with pytest.raises(ValueError, match="not a multiple"):
+        TmxConfig.from_fortran_dict(
+            atm_dict={"aes_vdf_nml": {"aes_vdf_config": [*record, 0.0]}}, input_dict={}
+        )
+
+
+def test_config_from_fortran_dict_rejects_missing_use_tmx() -> None:
+    record = _echoed_vdf_record()
+    record[22] = False
+    with pytest.raises(ValueError, match="use_tmx"):
+        TmxConfig.from_fortran_dict(
+            atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}}, input_dict={}
+        )
+
+
+def test_config_round_trips_through_config_io() -> None:
+    """Every enum option is registered, so the config survives (un)structuring."""
+    config = TmxConfig()
+    unstructured = config_io.CONV.unstructure(config)
+
+    assert unstructured["solver_type"] == "implicit"
+    assert unstructured["energy_type"] == "internal"
+    assert unstructured["surface_type"] == "interactive"
+    assert config_io.CONV.structure(unstructured, TmxConfig) == config
+
+
+def test_surface_flux_options_come_from_the_input_namelist() -> None:
+    """Absent 'nh_testcase_nml' members keep the TmxConfig default."""
+    record = _echoed_vdf_record(solver_type=2, energy_type=2, turb_prandtl=0.33333333333)
+    config = TmxConfig.from_fortran_dict(
+        atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}},
+        input_dict={"nh_testcase_nml": {"isrfc_type": 1, "shflx": 0.2}},
+    )
+    assert config.surface_type is SurfaceType.FIXED_HEAT_FLUXES
+    assert config.shflx == 0.2
+    assert config.lhflx == 0.0
