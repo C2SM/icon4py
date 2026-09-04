@@ -1659,7 +1659,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering#3487b99f11bf202db93071b4ce795bfe387d8689"}
+source = {git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering#6ea1d066fe531dbe9af6cfa7c13fb33574ab14b9"}
 version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
