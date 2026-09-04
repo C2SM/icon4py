@@ -418,6 +418,7 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
+dace = {git = "https://github.com/romanc/dace", branch = "romanc/stree-sdfg-nested-sdfg-connectors"}
 # dace = {index = "gridtools"}
 gt4py = {git = "https://github.com/edopao/gt4py", branch = "dace_refactor_lowering"}
 # gt4py = {index = "test.pypi"}

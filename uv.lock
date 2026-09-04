@@ -1162,6 +1162,7 @@ wheels = [
 [[package]]
 dependencies = [
   {name = "astunparse"},
+  {name = "click"},
   {name = "cmake"},
   {name = "dill"},
   {name = "fparser"},
@@ -1179,9 +1180,8 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-sdist = {url = "https://files.pythonhosted.org/packages/df/e0/2c45877476eb300fc8211fb2a46b3e3203468cd2bd3e0ecb4a7f5a7a4694/dace-2.0.0a7.tar.gz", hash = "sha256:ab15a73ce4c2cacaf9244832f84ea56328e181b21956a6d0c529782201609095", size = 6827344, upload-time = "2026-08-28T14:11:38.633Z"}
-source = {registry = "https://pypi.org/simple"}
-version = "2.0.0a7"
+source = {git = "https://github.com/romanc/dace?branch=romanc%2Fstree-sdfg-nested-sdfg-connectors#00c61216762a0a2ce4bb6d725bdc7b1a5400be9a"}
+version = "2.0.0a8"
 
 [[package]]
 dependencies = [
@@ -1659,7 +1659,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering#875bac3f36f9cff983a8a317969acc677dc33471"}
+source = {git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering#3487b99f11bf202db93071b4ce795bfe387d8689"}
 version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
@@ -2187,6 +2187,7 @@ profiling = [
 dependencies = [
   {name = "array-api-compat"},
   {name = "cattrs"},
+  {name = "dace"},
   {name = "gt4py"},
   {name = "numpy"},
   {name = "packaging"},
@@ -2207,6 +2208,7 @@ requires-dist = [
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
+  {name = "dace", git = "https://github.com/romanc/dace?branch=romanc%2Fstree-sdfg-nested-sdfg-connectors"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
   {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
