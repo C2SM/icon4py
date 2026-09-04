@@ -11,9 +11,15 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING, Protocol
 
+import gt4py.next as gtx
+from gt4py.next import common as gtx_common
+
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
-from icon4py.model.common import constants
-from icon4py.model.common.physics.thermodynamics import compute_moisture, compute_pressure
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants
+from icon4py.model.common.physics.thermodynamics.compute_moisture import specific_humidity_on_cells
+from icon4py.model.common.physics.thermodynamics.compute_pressure import sat_pres_water_on_cells
+from icon4py.model.common.type_alias import wpfloat
 
 
 if TYPE_CHECKING:
@@ -46,6 +52,46 @@ class ZeroFluxProvider:
     def compute(self, *, out: tmx_states.TmxSurfaceFluxState) -> None:
         for field in dataclasses.fields(out):
             getattr(out, field.name).ndarray[...] = 0.0
+
+
+@gtx.field_operator
+def _compute_prescribed_surface_fluxes(
+    surface_temperature: fa.CellField[ta.wpfloat],
+    surface_pressure: fa.CellField[ta.wpfloat],
+    shflx: ta.wpfloat,
+    lhflx: ta.wpfloat,
+) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
+    """Sensible heat flux and evapotranspiration from the prescribed coefficients."""
+    q_sat = specific_humidity_on_cells(
+        sat_pres_water_on_cells(surface_temperature), surface_pressure
+    )
+    density = surface_pressure / (
+        PhysicsConstants.rd
+        * surface_temperature
+        * (wpfloat("1.0") + PhysicsConstants.rv_o_rd_minus_1 * q_sat)
+    )
+    return -shflx * PhysicsConstants.cvd * density, -lhflx * density
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_prescribed_surface_fluxes(  # noqa: PLR0917 [too-many-positional-arguments]
+    surface_temperature: fa.CellField[ta.wpfloat],
+    surface_pressure: fa.CellField[ta.wpfloat],
+    sensible_heat_flux: fa.CellField[ta.wpfloat],
+    evapotranspiration: fa.CellField[ta.wpfloat],
+    shflx: ta.wpfloat,
+    lhflx: ta.wpfloat,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+) -> None:
+    _compute_prescribed_surface_fluxes(
+        surface_temperature,
+        surface_pressure,
+        shflx,
+        lhflx,
+        out=(sensible_heat_flux, evapotranspiration),
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
+    )
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -85,14 +131,23 @@ class PrescribedFluxProvider:
             )
 
     def compute(self, *, out: tmx_states.TmxSurfaceFluxState) -> None:
-        t_sfc = self.surface_temperature.ndarray
-        # psfc: bottom interface of pressure_ifc (Fortran pres_ifc(:, nlevp1, :))
-        p_sfc = self.pressure_ifc.ndarray[:, -1]
-        q_sat = compute_moisture.specific_humidity(compute_pressure.sat_pres_water(t_sfc), p_sfc)
-        rho_sfc = p_sfc / (constants.RD * t_sfc * (1.0 + constants.RV_O_RD_MINUS_1 * q_sat))
-
-        out.sensible_heat_flux.ndarray[...] = -self.config.shflx * constants.CVD * rho_sfc
-        out.evapotranspiration.ndarray[...] = -self.config.lhflx * rho_sfc
+        num_cells = self.surface_temperature.domain[dims.CellDim].unit_range.stop
+        # psfc: bottom interface of pressure_ifc (Fortran pres_ifc(:, nlevp1, :)).
+        # A view, so the live buffer is read rather than copied on every step.
+        surface_pressure = gtx_common._field(
+            self.pressure_ifc.ndarray[:, -1], domain={dims.CellDim: (0, num_cells)}
+        )
+        compute_prescribed_surface_fluxes(
+            surface_temperature=self.surface_temperature,
+            surface_pressure=surface_pressure,
+            sensible_heat_flux=out.sensible_heat_flux,
+            evapotranspiration=out.evapotranspiration,
+            shflx=self.config.shflx,
+            lhflx=self.config.lhflx,
+            horizontal_start=0,
+            horizontal_end=num_cells,
+            offset_provider={},
+        )
         out.u_stress.ndarray[...] = 0.0
         out.v_stress.ndarray[...] = 0.0
         out.q_snocpymlt.ndarray[...] = 0.0
