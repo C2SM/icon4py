@@ -142,8 +142,7 @@ class EntryState:
         # Physics needs all six moisture species; TracerState fields are optional (a
         # tracer may be inactive per TracerConfig), so fail loudly once here rather
         # than feed None into the physics.
-        missing = [name for name in MOISTURE_SPECIES if getattr(tracers, name) is None]
-        if missing:
+        if missing := [name for name in MOISTURE_SPECIES if getattr(tracers, name) is None]:
             raise ValueError(
                 f"physics requires all moisture species active in the TracerState; missing: {missing}"
             )
@@ -191,11 +190,10 @@ class EntryState:
 class TendencyAccumulators:
     """Per-variable tendency sums over the processes of one timestep (ICON ``tend%*_phy``).
 
-    Buffers are keyed by output name (``tend_*``) and allocated lazily from the
-    first contributing field's domain, so cell-(K) and cell-(K+1) shapes work
-    alike. Only outputs whose metadata carries ``kind == "tendency"`` accumulate;
-    the rest are diagnostics, written by the granules directly into the
-    layer-owned buffers of the ``DiagnosticsStore``.
+    Buffers are keyed by output name (``tend_*``) and allocated lazily on first
+    contribution. Only outputs whose metadata carries ``kind == "tendency"``
+    accumulate; the rest are diagnostics, written by the granules directly into
+    the layer-owned buffers of the ``DiagnosticsStore``.
     """
 
     def __init__(self, *, backend: gtx_typing.Backend | None = None) -> None:
@@ -210,17 +208,17 @@ class TendencyAccumulators:
     def accumulate(self, outputs: dict, outputs_properties: dict) -> None:
         """Add a process's tendency outputs to the per-variable sums.
 
-        Element-wise sum with no neighbor access — a plain array operation on the
-        field buffers, valid for numpy and cupy backing storage alike.
+        Element-wise sum with no neighbor access, so a plain array operation on
+        the field buffers rather than a stencil.
         """
         for name, props in outputs_properties.items():
             if props.get("kind") != "tendency":
                 continue
             field = outputs[name]
-            buffer = self.acc.get(name)
-            if buffer is None:
-                buffer = gtx.zeros(field.domain, dtype=field.dtype, allocator=self._backend)
-                self.acc[name] = buffer
+            if (buffer := self.acc.get(name)) is None:
+                buffer = self.acc[name] = gtx.zeros(
+                    field.domain, dtype=field.dtype, allocator=self._backend
+                )
             buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
 
