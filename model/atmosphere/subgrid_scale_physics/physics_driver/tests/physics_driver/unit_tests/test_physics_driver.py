@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.physics_drive
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
     ProcessTimeControl,
 )
-from icon4py.model.common.components.physics_state import PhysicsState
+from icon4py.model.common.components.component_state import ComponentState
 from icon4py.model.common.states.model import FieldMetaData
 
 
@@ -33,8 +33,6 @@ def test_field_metadata_accepts_kind() -> None:
 
 _T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
 _DT = datetime.timedelta(seconds=300)  # 5-min physics interval
-# 'PhysicsDriver.run' takes the date at the END of the step, so the step starting at
-# '_T0' is passed as '_T0 + _DT'.
 
 
 def _tc(
@@ -121,7 +119,7 @@ def test_physics_process_construction() -> None:
         def __call__(self, state, time_step):
             return {}
 
-    state = RecordingPhysicsState()
+    state = RecordingComponentState()
     proc = PhysicsProcess(
         name="muphys",
         component=_DummyComponent(),
@@ -147,6 +145,8 @@ class RecordingComponent:
     call_count: int = 0
     last_state: dict | None = None
     last_time: datetime.datetime | None = None
+    #: what the driver bound at construction (the layer-owned diagnostic buffers)
+    bound: dict | None = None
 
     @property
     def inputs_properties(self) -> dict:
@@ -165,87 +165,133 @@ class RecordingComponent:
         self.last_time = time_step
         return dict(self.outputs)
 
+    def bind_output_buffers(self, buffers: dict) -> None:
+        self.bound = dict(buffers)
+
 
 @dataclasses.dataclass
-class RecordingPhysicsState(PhysicsState):
-    """Stub PhysicsState: records refresh / scatter; returns a fixed dict
-    from as_component_input. Implements just enough surface for the PhysicsDriver."""
+class RecordingComponentState(ComponentState):
+    """Stub ComponentState: records collect_inputs calls; fixed dict from as_component_input."""
 
-    gather_calls: list = dataclasses.field(default_factory=list)
-    scatter_calls: list = dataclasses.field(default_factory=list)
+    collect_calls: list = dataclasses.field(default_factory=list)
 
-    def gather_from_prognostic(self, prognostic, tracers) -> None:
-        self.gather_calls.append(prognostic)
+    def collect_inputs(self, entry_state) -> None:
+        self.collect_calls.append(entry_state)
 
     def as_component_input(self) -> dict:
         return {"foo": "bar"}
 
-    def scatter_to_prognostic(self, prognostic, outputs, dtime) -> None:
-        self.scatter_calls.append((prognostic, outputs, dtime))
+
+@dataclasses.dataclass
+class RecordingCoupling:
+    """Stub for the whole PhysicsState layer, recording the driver's coupling calls.
+
+    Plays entry state, accumulators, and apply at once — the driver only cares
+    about the call sequence, which `events` captures in order.
+    """
+
+    events: list = dataclasses.field(default_factory=list)
+
+    # EntryState surface
+    def diagnose_from(self, prognostic, tracers) -> None:
+        self.events.append(("diagnose", prognostic))
+
+    # TendencyAccumulators surface
+    def zero(self) -> None:
+        self.events.append(("zero",))
+
+    def accumulate(self, outputs, outputs_properties) -> None:
+        self.events.append(("accumulate", dict(outputs)))
+
+    # ApplyToPrognostic surface
+    def __call__(self, entry_state, accumulators, dt_seconds) -> None:
+        self.events.append(("apply", dt_seconds))
+
+    # DiagnosticsStore surface
+    store: dict = dataclasses.field(default_factory=dict)
+
+    def allocate(self, process_name, outputs_properties):
+        self.events.append(("allocate", process_name))
+        buffers = {
+            name: f"BUF_{name}"
+            for name, props in outputs_properties.items()
+            if props.get("kind") != "tendency"
+        }
+        self.store[process_name] = buffers
+        return buffers
+
+    def __getitem__(self, process_name):
+        return self.store[process_name]
 
 
-def test_recording_doubles_record_calls() -> None:
-    component = RecordingComponent(
-        outputs={"tend_temperature": "T_TEND_VALUE", "pflx": "PFLX_VALUE"},
-        output_kinds={"tend_temperature": "tendency", "pflx": "diagnostic"},
+def _driver(processes) -> tuple[PhysicsDriver, RecordingCoupling]:
+    coupling = RecordingCoupling()
+    driver = PhysicsDriver(
+        processes=processes,
+        entry_state=coupling,
+        accumulators=coupling,
+        apply_to_prognostic=coupling,
+        diagnostics=coupling,
     )
-    state = RecordingPhysicsState()
-
-    # Simulate what PhysicsDriver would do.
-    state.gather_from_prognostic("prog", "tracers")
-    out = component(state.as_component_input(), _T0)
-    state.scatter_to_prognostic("prog", out, datetime.timedelta(seconds=300))
-
-    assert state.gather_calls == ["prog"]
-    assert component.call_count == 1
-    assert component.last_state == {"foo": "bar"}  # what as_component_input returned
-    assert state.scatter_calls == [("prog", out, datetime.timedelta(seconds=300))]
+    return driver, coupling
 
 
-def test_run_invokes_components_in_order() -> None:
-    state = RecordingPhysicsState()
+def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
+    state = RecordingComponentState()
     comp_a = RecordingComponent(
         outputs={"tend_temperature": "A"},
         output_kinds={"tend_temperature": "tendency"},
     )
     comp_b = RecordingComponent(
-        outputs={"tend_temperature": "B"},
-        output_kinds={"tend_temperature": "tendency"},
+        outputs={"tend_temperature": "B", "kh": "KH"},
+        output_kinds={"tend_temperature": "tendency", "kh": "diagnostic"},
     )
-
-    driver = PhysicsDriver(
-        processes=[
+    driver, coupling = _driver(
+        [
             PhysicsProcess(name="A", component=comp_a, state=state, time_control=_tc()),
             PhysicsProcess(name="B", component=comp_b, state=state, time_control=_tc()),
-        ],
+        ]
     )
 
     driver.run(
         prognostic="prog",
         tracers="tracers",
-        dtime=datetime.timedelta(seconds=300),
+        dtime=_DT,
         simulation_current_datetime=_T0 + _DT,
     )
 
     assert comp_a.call_count == 1
     assert comp_b.call_count == 1
-    # B's scatter must follow A's (operator-splitting ordering)
-    assert state.scatter_calls[0][1] == {"tend_temperature": "A"}
-    assert state.scatter_calls[1][1] == {"tend_temperature": "B"}
+    # parallel coupling: buffers allocated at construction, diagnose + zero once at
+    # entry, one accumulate per process, exactly one apply at the very end
+    assert coupling.events == [
+        ("allocate", "A"),
+        ("allocate", "B"),
+        ("diagnose", "prog"),
+        ("zero",),
+        ("accumulate", {"tend_temperature": "A"}),
+        ("accumulate", {"tend_temperature": "B", "kh": "KH"}),
+        ("apply", 300.0),
+    ]
+    # both processes were gathered on the same (frozen) entry state
+    assert state.collect_calls == [coupling, coupling]
+    # the store holds the layer-allocated buffers the granule writes into, by process
+    assert driver.diagnostics["B"] == {"kh": "BUF_kh"}
+    assert driver.diagnostics["A"] == {}
 
 
 def test_run_raises_for_non_multiple_interval() -> None:
-    state = RecordingPhysicsState()
+    state = RecordingComponentState()
     comp = RecordingComponent(
         outputs={"tend_temperature": "X"},
         output_kinds={"tend_temperature": "tendency"},
     )
-    driver = PhysicsDriver(
-        processes=[
+    driver, _ = _driver(
+        [
             PhysicsProcess(
                 name="X", component=comp, state=state, time_control=_tc(interval=1.5 * _DT)
             ),
-        ],
+        ]
     )
 
     with pytest.raises(ValueError, match="integer multiple"):
@@ -258,138 +304,134 @@ def test_run_raises_for_non_multiple_interval() -> None:
     assert comp.call_count == 0
 
 
-def test_disabled_process_is_skipped() -> None:
-    state = RecordingPhysicsState()
+def test_disabled_process_is_never_collected() -> None:
+    state = RecordingComponentState()
     comp = RecordingComponent(
         outputs={"tend_temperature": "X"},
         output_kinds={"tend_temperature": "tendency"},
     )
-    tc_disabled = _tc(enable_process=False)
-
-    driver = PhysicsDriver(
-        processes=[
-            PhysicsProcess(name="disabled", component=comp, state=state, time_control=tc_disabled)
-        ],
+    driver, coupling = _driver(
+        [
+            PhysicsProcess(
+                name="disabled",
+                component=comp,
+                state=state,
+                time_control=_tc(enable_process=False),
+            )
+        ]
     )
 
     driver.run(
         prognostic="prog",
         tracers="tracers",
-        dtime=datetime.timedelta(seconds=300),
+        dtime=_DT,
         simulation_current_datetime=_T0,
     )
 
     assert comp.call_count == 0
-    assert state.scatter_calls == []
+    assert state.collect_calls == []
+    # entry diagnosis and the (empty) apply still frame the step
+    assert coupling.events == [
+        ("allocate", "disabled"),
+        ("diagnose", "prog"),
+        ("zero",),
+        ("apply", 300.0),
+    ]
 
 
 def test_out_of_window_process_does_nothing() -> None:
-    state = RecordingPhysicsState()
+    state = RecordingComponentState()
     comp = RecordingComponent(
         outputs={"tend_temperature": "X"},
         output_kinds={"tend_temperature": "tendency"},
     )
-    # Window starts in the future — `simulation_current_datetime=_T0` is before it.
+    # Window starts in the future — the step being integrated is before it.
     future = _T0 + datetime.timedelta(days=1)
     tc = _tc(start=future, end=future + datetime.timedelta(hours=1))
-
-    driver = PhysicsDriver(
-        processes=[PhysicsProcess(name="future", component=comp, state=state, time_control=tc)],
+    driver, coupling = _driver(
+        [PhysicsProcess(name="future", component=comp, state=state, time_control=tc)]
     )
 
     driver.run(
         prognostic="prog",
         tracers="tracers",
-        dtime=datetime.timedelta(seconds=300),
+        dtime=_DT,
         simulation_current_datetime=_T0,
     )
 
     assert comp.call_count == 0
-    assert state.scatter_calls == []
-
-
-def test_active_call_caches_outputs_and_applies_them() -> None:
-    state = RecordingPhysicsState()
-    comp = RecordingComponent(
-        outputs={"tend_temperature": "FRESH"},
-        output_kinds={"tend_temperature": "tendency"},
-    )
-    driver = PhysicsDriver(
-        processes=[PhysicsProcess(name="p", component=comp, state=state, time_control=_tc())],
-    )
-
-    driver.run(
-        prognostic="prog",
-        tracers="tracers",
-        dtime=datetime.timedelta(seconds=300),
-        simulation_current_datetime=_T0 + _DT,
-    )
-
-    assert comp.call_count == 1
-    assert state.scatter_calls == [
-        ("prog", {"tend_temperature": "FRESH"}, datetime.timedelta(seconds=300))
+    assert state.collect_calls == []
+    assert coupling.events == [
+        ("allocate", "future"),
+        ("diagnose", "prog"),
+        ("zero",),
+        ("apply", 300.0),
     ]
 
 
 def test_inactive_in_window_recycles_cached_outputs() -> None:
-    state = RecordingPhysicsState()
-    # Component returns "FRESH" the first time, would return "STALE" the second
-    # if called — but on the recycle step it MUST NOT be called.
+    state = RecordingComponentState()
+    # Component computes once; on the recycle step it MUST NOT be called, but its
+    # cached tendencies accumulate again.
     comp = RecordingComponent(
         outputs={"tend_temperature": "FRESH"},
         output_kinds={"tend_temperature": "tendency"},
     )
-    # interval = 2 * dt → process fires every other call.
-    interval = 2 * _DT
-    tc = _tc(interval=interval)
-    driver = PhysicsDriver(
-        processes=[PhysicsProcess(name="p", component=comp, state=state, time_control=tc)],
+    # interval = 2 * dt → process fires every other step.
+    driver, coupling = _driver(
+        [PhysicsProcess(name="p", component=comp, state=state, time_control=_tc(interval=2 * _DT))]
     )
 
-    # Step 1: active (elapsed == 0), compute + cache.
+    # Step 1: active (step start == _T0, elapsed == 0), compute + cache.
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
-        dtime=_DT,
-        simulation_current_datetime=_T0 + _DT,
+        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + _DT
     )
-    # Step 2: in window, but not active (elapsed == _DT, not a multiple of 2*_DT).
+    # Step 2: in window, but not active (elapsed == _DT) — recycle the cached outputs.
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
-        dtime=_DT,
-        simulation_current_datetime=_T0 + 2 * _DT,
+        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + 2 * _DT
     )
 
-    # Component invoked once total (compute step only).
     assert comp.call_count == 1
-    # But scatter happened twice — once with the fresh tendency, once recycled.
-    assert len(state.scatter_calls) == 2
-    assert state.scatter_calls[0][1] == {"tend_temperature": "FRESH"}
-    assert state.scatter_calls[1][1] == {"tend_temperature": "FRESH"}  # recycled
+    accumulates = [e for e in coupling.events if e[0] == "accumulate"]
+    assert accumulates == [
+        ("accumulate", {"tend_temperature": "FRESH"}),
+        ("accumulate", {"tend_temperature": "FRESH"}),  # recycled
+    ]
+    applies = [e for e in coupling.events if e[0] == "apply"]
+    assert len(applies) == 2  # one per run
 
 
 def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
     # Regression (jcanton review): a process whose first-ever in-window step is NOT active
     # (interval = 2*dt, first step lands at start + dt) used to KeyError on the empty recycle
     # cache. With nothing cached to recycle yet, it must compute instead.
-    state = RecordingPhysicsState()
+    state = RecordingComponentState()
     comp = RecordingComponent(
         outputs={"tend_temperature": "FRESH"},
         output_kinds={"tend_temperature": "tendency"},
     )
-    tc = _tc(interval=2 * _DT)  # start = _T0
-    driver = PhysicsDriver(
-        processes=[PhysicsProcess(name="p", component=comp, state=state, time_control=tc)],
+    driver, coupling = _driver(
+        [PhysicsProcess(name="p", component=comp, state=state, time_control=_tc(interval=2 * _DT))]
     )
 
-    # First call lands in-window but off the firing tick (elapsed == _DT, interval == 2*_DT).
+    # First call lands in-window but off the firing tick (step start == _T0 + _DT).
     driver.run(
-        prognostic="prog",
-        tracers="tracers",
-        dtime=_DT,
-        simulation_current_datetime=_T0 + 2 * _DT,
+        prognostic="prog", tracers="tracers", dtime=_DT, simulation_current_datetime=_T0 + 2 * _DT
     )
 
     assert comp.call_count == 1
-    assert state.scatter_calls == [("prog", {"tend_temperature": "FRESH"}, _DT)]
+    assert ("accumulate", {"tend_temperature": "FRESH"}) in coupling.events
+
+
+def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:
+    state = RecordingComponentState()
+    comp = RecordingComponent(
+        outputs={"tend_temperature": "T", "kh": "KH"},
+        output_kinds={"tend_temperature": "tendency", "kh": "diagnostic"},
+    )
+    driver, _ = _driver(
+        [PhysicsProcess(name="tmx", component=comp, state=state, time_control=_tc())]
+    )
+    # before any run: the layer allocated, the component adopted the buffer
+    assert comp.bound == {"kh": "BUF_kh"}
+    assert driver.diagnostics["tmx"] == {"kh": "BUF_kh"}
