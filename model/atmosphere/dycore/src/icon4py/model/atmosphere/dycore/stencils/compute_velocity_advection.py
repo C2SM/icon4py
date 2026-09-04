@@ -23,7 +23,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 @gtx.field_operator
 def _compute_velocity_advection_in_predictor_step(
     tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
-    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     w: fa.CellKHalfField[ta.wpfloat],
@@ -78,7 +77,6 @@ def _compute_velocity_advection_in_predictor_step(
         contravariant_correction_at_edges_on_model_levels,
     ) = _compute_diagnostics_from_normal_wind(
         tangential_wind_on_half_levels=tangential_wind_on_half_levels,
-        contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         vn=vn,
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         wgtfac_e=wgtfac_e,
@@ -86,7 +84,6 @@ def _compute_velocity_advection_in_predictor_step(
         ddxn_z_full=ddxn_z_full,
         ddxt_z_full=ddxt_z_full,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-        nflatlev=nflatlev,
         nlev=nlev,
     )
 
@@ -274,7 +271,6 @@ def compute_velocity_advection_in_predictor_step(
 
     _compute_velocity_advection_in_predictor_step(
         tangential_wind_on_half_levels=tangential_wind_on_half_levels,
-        contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         vertical_wind_advective_tendency=vertical_wind_advective_tendency,
         vn=vn,
         w=w,
@@ -340,7 +336,7 @@ def compute_velocity_advection_in_predictor_step(
             },
             {
                 dims.EdgeDim: (start_edge_lateral_boundary_level_5, end_edge_halo_level_2),
-                dims.KDim: (vertical_start, vertical_end),
+                dims.KDim: (nflatlev, vertical_end),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_4, end_cell_halo),

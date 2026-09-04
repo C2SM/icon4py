@@ -46,7 +46,6 @@ def _compute_horizontal_kinetic_energy(
 @gtx.field_operator
 def _compute_diagnostics_from_normal_wind(
     tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
-    contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
     wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
@@ -54,7 +53,6 @@ def _compute_diagnostics_from_normal_wind(
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     ddxt_z_full: fa.EdgeKField[ta.vpfloat],
     skip_compute_predictor_vertical_advection: bool,
-    nflatlev: gtx.int32,
     nlev: gtx.int32,
 ) -> tuple[
     fa.EdgeKField[ta.vpfloat],
@@ -79,10 +77,8 @@ def _compute_diagnostics_from_normal_wind(
         else tangential_wind_on_half_levels
     )
 
-    contravariant_correction_at_edges_on_model_levels = concat_where(
-        nflatlev <= dims.KDim,
-        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
-        contravariant_correction_at_edges_on_model_levels,
+    contravariant_correction_at_edges_on_model_levels = _compute_contravariant_correction(
+        vn, ddxn_z_full, ddxt_z_full, tangential_wind
     )
 
     return (
