@@ -159,54 +159,6 @@ def test_config_from_fortran_dict_rejects_missing_use_tmx() -> None:
         )
 
 
-def _expected_shapes(
-    grid: base_grid.Grid,
-) -> dict[str, tuple[int, ...]]:
-    nlev = grid.num_levels
-    return {
-        "cell_full": (grid.num_cells, nlev),
-        "cell_half": (grid.num_cells, nlev + 1),
-        "edge_full": (grid.num_edges, nlev),
-        "edge_half": (grid.num_edges, nlev + 1),
-        "vertex_full": (grid.num_vertices, nlev),
-        "vertex_half": (grid.num_vertices, nlev + 1),
-        "cell_2d": (grid.num_cells,),
-    }
-
-
-SURFACE_FLUX_FIELD_KINDS = {
-    "evapotranspiration": "cell_2d",
-    "sensible_heat_flux": "cell_2d",
-    "u_stress": "cell_2d",
-    "v_stress": "cell_2d",
-    "q_snocpymlt": "cell_2d",
-}
-
-
-@pytest.mark.parametrize(
-    ("state_cls", "field_kinds"),
-    [(tmx_states.TmxSurfaceFluxState, SURFACE_FLUX_FIELD_KINDS)],
-    ids=["surface_flux"],
-)
-def test_state_allocation_produces_zero_fields_with_correct_shapes(
-    grid: base_grid.Grid,
-    backend_like: model_backends.BackendLike,
-    state_cls: type,
-    field_kinds: dict[str, str],
-) -> None:
-    allocator = model_backends.get_allocator(backend_like)
-    state = state_cls.allocate(grid, allocator=allocator)
-    shapes = _expected_shapes(grid)
-
-    state_field_names = {f.name for f in dataclasses.fields(state_cls)}
-    assert state_field_names == set(field_kinds.keys())
-
-    for name, kind in field_kinds.items():
-        field = getattr(state, name).asnumpy()
-        assert field.shape == shapes[kind], f"Wrong shape for field '{name}'."
-        assert np.all(field == 0.0), f"Field '{name}' is not zero-initialized."
-
-
 def test_config_round_trips_through_config_io() -> None:
     """Every enum option is registered, so the config survives (un)structuring."""
     config = TmxConfig()

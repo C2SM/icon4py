@@ -2061,25 +2061,6 @@ class TmxEntrySavepoint(IconSavepoint):
         return self._get_field("cvair", dims.CellDim, dims.KDim)
 
 
-class TmxSurfaceFluxesSavepoint(IconSavepoint):
-    """Savepoint after the surface model call in vdf Compute in mo_vdf.f90."""
-
-    def evspsbl(self):
-        return self._get_field("evspsbl", dims.CellDim)
-
-    def hfss(self):
-        return self._get_field("hfss", dims.CellDim)
-
-    def tauu(self):
-        return self._get_field("tauu", dims.CellDim)
-
-    def tauv(self):
-        return self._get_field("tauv", dims.CellDim)
-
-    def q_snocpymlt(self):
-        return self._get_field("q_snocpymlt", dims.CellDim)
-
-
 class IconTimeStepExitSavepoint(IconSavepoint):
     """End-of-timestep prognostic state, written in perform_nh_timeloop right after
     integrate_nh returns: all physics tendencies applied, time levels swapped."""
@@ -2511,11 +2492,5 @@ class IconSerialDataProvider:
     def from_savepoint_tmx_entry(self, date: str) -> TmxEntrySavepoint:
         savepoint = self.serializer.savepoint["tmx-entry"].id[1].date[date].as_savepoint()
         return TmxEntrySavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_tmx_surface_fluxes(self, date: str) -> TmxSurfaceFluxesSavepoint:
-        savepoint = self.serializer.savepoint["tmx-surface-fluxes"].id[1].date[date].as_savepoint()
-        return TmxSurfaceFluxesSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
