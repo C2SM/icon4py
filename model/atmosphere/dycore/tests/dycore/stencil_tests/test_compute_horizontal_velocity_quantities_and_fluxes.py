@@ -22,13 +22,34 @@ from icon4py.model.testing import stencil_tests
 
 from .test_compute_avg_vn_and_graddiv_vn_and_vt import compute_avg_vn_and_graddiv_vn_and_vt_numpy
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
-from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
 from .test_compute_mass_flux import compute_mass_flux_numpy
-from .test_compute_velocity_advection import extrapolate_to_surface_numpy
-from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
-    interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy,
+from .test_compute_velocity_advection import (
+    compute_horizontal_kinetic_energy_at_edges_numpy,
+    extrapolate_to_surface_numpy,
+    interpolate_vn_to_half_levels_numpy,
 )
 from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
+
+
+def interpolate_vn_to_half_levels_and_compute_kinetic_energy_numpy(
+    wgtfac_e: np.ndarray, vn: np.ndarray, vt: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    return (
+        interpolate_vn_to_half_levels_numpy(wgtfac_e, vn),
+        compute_horizontal_kinetic_energy_at_edges_numpy(vn, vt),
+    )
+
+
+def copy_to_half_levels_and_compute_kinetic_energy_at_top_numpy(
+    vn: np.ndarray, vt: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    # ICON sets vn_ie, z_vt_ie and z_kin_hor_e directly from the model level at jk=1.
+    nlev = vn.shape[1]
+    vn_ie = np.zeros((vn.shape[0], nlev + 1))
+    vn_ie[:, :nlev] = vn
+    z_vt_ie = np.zeros((vt.shape[0], nlev + 1))
+    z_vt_ie[:, :nlev] = vt
+    return vn_ie, z_vt_ie, compute_horizontal_kinetic_energy_at_edges_numpy(vn, vt)
 
 
 def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
@@ -46,7 +67,7 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     k = np.arange(nlevp1)[np.newaxis, :]
     k_nlev = k[:, :-1]
 
-    vn_ie, z_kin_hor_e = interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
+    vn_ie, z_kin_hor_e = interpolate_vn_to_half_levels_and_compute_kinetic_energy_numpy(
         wgtfac_e, vn, tangential_wind
     )
     vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels = np.where(
@@ -62,7 +83,7 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     )
 
     vn_ie_at_top, tangential_wind_on_half_levels_at_top, z_kin_hor_e_at_top = (
-        compute_horizontal_kinetic_energy_numpy(vn, tangential_wind)
+        copy_to_half_levels_and_compute_kinetic_energy_at_top_numpy(vn, tangential_wind)
     )
     (
         vn_on_half_levels[:, :-1],

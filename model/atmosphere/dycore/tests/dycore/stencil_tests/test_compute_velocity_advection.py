@@ -32,15 +32,24 @@ from .test_compute_horizontal_advection_term_for_vertical_velocity import (
 from .test_interpolate_cell_field_to_half_levels import (
     interpolate_cell_field_to_half_levels_vp_numpy,
 )
-from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
-    interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_vn_ie_numpy,
-    interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_z_kin_hor_e_numpy,
-)
 from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
+
+
+def interpolate_vn_to_half_levels_numpy(wgtfac_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
+    nlev = vn.shape[1]
+    vn_ie = np.zeros((vn.shape[0], nlev + 1))
+    w = wgtfac_e[:, 1:nlev]
+    vn_ie[:, 1:nlev] = w * vn[:, 1:nlev] + (1.0 - w) * vn[:, 0 : nlev - 1]
+    vn_ie[:, 0] = vn[:, 0]
+    return vn_ie
+
+
+def compute_horizontal_kinetic_energy_at_edges_numpy(vn: np.ndarray, vt: np.ndarray) -> np.ndarray:
+    return 0.5 * (vn * vn + vt * vt)
 
 
 def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
@@ -75,13 +84,9 @@ def compute_diagnostics_from_normal_wind_numpy(
         connectivities, vn, rbf_vec_coeff_e
     )
     horizontal_kinetic_energy_at_edges_on_model_levels = (
-        interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_z_kin_hor_e_numpy(
-            vn, tangential_wind
-        )
+        compute_horizontal_kinetic_energy_at_edges_numpy(vn, tangential_wind)
     )
-    vn_on_half_levels = (
-        interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_vn_ie_numpy(wgtfac_e, vn)
-    )
+    vn_on_half_levels = interpolate_vn_to_half_levels_numpy(wgtfac_e, vn)
     vn_on_half_levels[:, nlev] = extrapolate_to_surface_numpy(wgtfacq_e, vn)
 
     tangential_wind_on_half_levels = tangential_wind_on_half_levels.copy()
