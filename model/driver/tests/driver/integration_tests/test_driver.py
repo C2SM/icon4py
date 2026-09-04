@@ -68,7 +68,7 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
 # Metadata selecting the MCH mid-time-step dynamics savepoints (see the MCH branch in
 # the test body): solve-nonhydro exit at the corrector (istep=2) of the last substep
 # (2 for MCH), and the non-initial diffusion savepoint. Only instantiated for MCH.
-@pytest.fixture  # type: ignore[no-redef]  # deliberately shadows the fixtures.py import
+@pytest.fixture
 def istep_exit() -> int:
     return 2
 

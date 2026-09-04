@@ -155,6 +155,14 @@ def _bencher_feature_env(testbed: str, branch: str) -> dict[str, str]:
     }
 
 
+def _serial_testbed() -> str:
+    """Build the serial bencher testbed string.
+
+    Shape: ``RUNNER:SYSTEM_TAG:BACKEND:GRID``.
+    """
+    return f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}"
+
+
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_model-{python}"])
 def __bencher_baseline_CI(session: nox.Session) -> None:
     """
@@ -164,7 +172,7 @@ def __bencher_baseline_CI(session: nox.Session) -> None:
     Alerts are raised if there is performance regression according to the thresholds.
     Note: This session is intended to be run from the CI only -bencher and suitable env vars are needed-.
     """
-    testbed = f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}"
+    testbed = _serial_testbed()
     session.run(
         *_bencher_baseline_command(f"pytest_benchmark_results_{session.python}.json"),
         env=_bencher_baseline_env(testbed),
@@ -181,7 +189,7 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
     Alerts are raised if the performance of the feature branch is worse than the historical baseline (according to the thresholds).
     Note: This session is intended to be run from the CI only -bencher and suitable env vars are needed-.
     """
-    bencher_testbed = f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}"
+    bencher_testbed = _serial_testbed()
     session.run(
         *_bencher_feature_command(
             f"pytest_benchmark_results_{session.python}.json", bencher_testbed
@@ -246,7 +254,7 @@ def _driver_mpi_bencher_testbed() -> str:
     """
     comm_size = os.environ.get("SLURM_NTASKS") or os.environ.get("OMPI_COMM_WORLD_SIZE") or "1"
     nodes = os.environ.get("SLURM_JOB_NUM_NODES", "1")
-    grid = os.environ.get("GRID", "default")
+    grid = os.environ["GRID"]
     transport = os.environ.get("GHEX_TRANSPORT_BACKEND", "unknown").lower()
     return (
         f"{os.environ['RUNNER']}:"
@@ -311,22 +319,12 @@ def benchmark_driver(session: nox.Session) -> None:
         )
 
 
-def _driver_bencher_testbed() -> str:
-    """Build the bencher testbed string for the single-rank driver benchmark.
-
-    Matches the existing serial benchmark testbed shape (``RUNNER:SYSTEM_TAG:BACKEND:GRID``).
-    The experiment is a test-level parameter and is not part of the testbed.
-    """
-    grid = os.environ.get("GRID", "default")
-    return f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{grid}"
-
-
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver-{python}"])
 def __bencher_driver_baseline_CI(session: nox.Session) -> None:
     """Upload the single-rank driver benchmark baseline to bencher."""
     session.run(
         *_bencher_baseline_command(f"model/driver/pytest_benchmark_results_{session.python}.json"),
-        env=_bencher_baseline_env(_driver_bencher_testbed()),
+        env=_bencher_baseline_env(_serial_testbed()),
         external=True,
         silent=True,
     )
@@ -335,7 +333,7 @@ def __bencher_driver_baseline_CI(session: nox.Session) -> None:
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver-{python}"])
 def __bencher_driver_feature_branch_CI(session: nox.Session) -> None:
     """Upload the single-rank driver benchmark feature-branch results to bencher."""
-    bencher_testbed = _driver_bencher_testbed()
+    bencher_testbed = _serial_testbed()
     session.run(
         *_bencher_feature_command(
             f"model/driver/pytest_benchmark_results_{session.python}.json", bencher_testbed
