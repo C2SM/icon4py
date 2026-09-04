@@ -269,7 +269,18 @@ class TmxConfig:
     ] = 0.0
 
     def __post_init__(self) -> None:
-        self._validate()
+        self.solver_type = TurbulenceSolverType(self.solver_type)
+        self.energy_type = EnergyType(self.energy_type)
+        self.surface_type = SurfaceType(self.surface_type)
+
+        if self.turb_prandtl <= 0.0:
+            raise ValueError(
+                f"Invalid argument 'turb_prandtl': should be positive, got {self.turb_prandtl}."
+            )
+        if self.km_min < 0.0:
+            raise ValueError(
+                f"Invalid argument 'km_min': should be non-negative, got {self.km_min}."
+            )
 
     @classmethod
     def from_fortran_dict(
@@ -328,18 +339,3 @@ class TmxConfig:
         return common_conf_opt.construct_config_from_icon(
             cls, atm_dict, **(surface_fluxes | overrides)
         )
-
-    def _validate(self) -> None:
-        """Apply consistency checks and validation on configuration parameters."""
-        self.solver_type = TurbulenceSolverType(self.solver_type)
-        self.energy_type = EnergyType(self.energy_type)
-        self.surface_type = SurfaceType(self.surface_type)
-
-        if self.turb_prandtl <= 0.0:
-            raise ValueError(
-                f"Invalid argument 'turb_prandtl': should be positive, got {self.turb_prandtl}."
-            )
-        if self.km_min < 0.0:
-            raise ValueError(
-                f"Invalid argument 'km_min': should be non-negative, got {self.km_min}."
-            )
