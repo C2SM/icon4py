@@ -9,6 +9,14 @@
     OMP_PLACES: cores
     OMP_NUM_THREADS: 72
 
+.benchmark_driver_base_variables:
+  variables:
+    TEST_SELECTION: "test_benchmark_driver"
+    SLURM_TIMELIMIT: '02:00:00'
+    OMP_PROC_BIND: close
+    OMP_PLACES: cores
+    OMP_NUM_THREADS: 72
+
 .benchmark_nox_job:
   stage: benchmark
   script:
@@ -26,6 +34,52 @@
     SLURM_CPUS_PER_TASK: 72
     SLURM_PARTITION: normal
     SLURM_TIMELIMIT: '01:30:00'
+
+.benchmark_driver_mpi_nox_job:
+  stage: benchmark
+  script:
+    - .cscs-ci/scripts/ci-mpi-wrapper.sh nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
+  # start-cuda-mps.sh is for shared GPUs; these jobs have one GPU per task.
+  before_script:
+    - cd /icon4py
+    - source .cscs-ci/scripts/gt4py-cache.sh
+  extends: [.benchmark_driver_base_variables]
+  variables:
+    # allow-task-sharing lets NCCL open peer GPUs for GPU-GPU communication.
+    SLURM_GPUS_PER_NODE: 4
+    SLURM_CPUS_PER_TASK: 72
+    SLURM_GRES_FLAGS: allow-task-sharing
+  parallel:
+    matrix:
+      - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+        GRID: [R02B06_GLOBAL]
+.benchmark_driver_nox_job:
+  stage: benchmark
+  script:
+    - nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
+  # start-cuda-mps.sh is for shared GPUs; this job has one GPU per task.
+  before_script:
+    - cd /icon4py
+    - source .cscs-ci/scripts/gt4py-cache.sh
+  extends: [.benchmark_driver_base_variables]
+  variables:
+    SLURM_GPUS_PER_TASK: 1
+    SLURM_CPUS_PER_TASK: 72
+  parallel:
+    matrix:
+      - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+        GRID: [R02B06_GLOBAL]
+.bencher_github_event_setup:
+  script:
+    - export PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
+    - export FEATURE_BRANCH=$(curl -s https://api.github.com/repos/C2SM/icon4py/pulls/$PR_ID | jq -r '.head.ref')
+    - export GITHUB_ACTIONS=true
+    - export GITHUB_EVENT_NAME=pull_request
+    - export GITHUB_STEP_SUMMARY=$CI_PROJECT_DIR/step_summary.log
+    - export GITHUB_SHA=$CI_COMMIT_SHA
+    - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json
+    - |
+      echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
 
 
 build_baseimage_aarch64:

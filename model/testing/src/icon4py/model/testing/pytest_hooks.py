@@ -187,23 +187,40 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
             item_filter.action()
 
 
-_name_from_fullname_pattern = re.compile(
+# StencilTest fullnames (``<path>::<class_name>::test_stencil[<variant>]``) are
+# shortened to ``<class_name>[<variant>]``. Function-based benchmark fullnames
+# (``<path>::test_name[<params>]``) are shortened to ``<test_name>[<params>]``.
+_stenciltest_name_pattern = re.compile(
     r"""
-        ::(?P<class>[A-Za-z_]\w*)       # capture class name
-        (?::: [A-Za-z_]\w*              # skip method name
-        (?:\[(?P<params>.+)\])? )       # optional parameterization; allow '[' and ']' inside params
-        """,
+    ::(?P<class>[A-Za-z_]\w*)       # capture class name
+    (?::: [A-Za-z_]\w*              # skip method name
+    (?:\[(?P<params>.+)\])? )       # optional parameterization
+    """,
+    re.VERBOSE,
+)
+_function_name_pattern = re.compile(
+    r"""
+    ::(?P<func>[A-Za-z_]\w*)         # trailing function name
+    (?:\[(?P<params>.+)\])?          # optional parameterization
+    $
+    """,
     re.VERBOSE,
 )
 
 
 def _name_from_fullname(fullname: str) -> str:
-    match = _name_from_fullname_pattern.search(fullname)
-    if match is None:
-        return fullname  # assume already fixed
-    class_name = match.group("class")
-    params = match.group("params")
-    return f"{class_name}[{params}]" if params else class_name
+    """Shorten a pytest-benchmark fullname for bencher readability."""
+    match = _stenciltest_name_pattern.search(fullname)
+    if match is not None:
+        class_name = match.group("class")
+        params = match.group("params")
+        return f"{class_name}[{params}]" if params else class_name
+    match = _function_name_pattern.search(fullname)
+    if match is not None:
+        func = match.group("func")
+        params = match.group("params")
+        return f"{func}[{params}]" if params else func
+    return fullname
 
 
 # pytest benchmark hook, see:
@@ -213,8 +230,11 @@ def pytest_benchmark_update_json(output_json):
     Replace 'fullname' of pytest benchmarks with a shorter name for better readability in bencher.
 
     Note:
-    Currently works only for 'StencilTest's as they have the following fixed structure:
-      '<path>::<class_name>::test_stencil[<variant>]'.
+    Shortens two kinds of fullnames:
+      - StencilTest class-based benchmarks:
+        '<path>::<class_name>::test_stencil[<variant>]' -> '<class_name>[<variant>]'.
+      - Function-based benchmarks:
+        '<path>::<function_name>[<params>]' -> '<function_name>[<params>]'.
     """
 
     for bench in output_json["benchmarks"]:

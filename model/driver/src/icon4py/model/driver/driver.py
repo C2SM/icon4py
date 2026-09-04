@@ -797,20 +797,16 @@ def initialize_driver(
     return icon4py_driver
 
 
-def run_driver(
-    *,
-    config: driver_config.ExperimentConfig,
-    grid_manager: gm.GridManager,
-    process_props: decomposition_defs.ProcessProperties,
-    backend: gtx.typing.Backend | None,
-) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
-    icon4py_driver = initialize_driver(
-        config=config,
-        grid_manager=grid_manager,
-        process_props=process_props,
-        backend=backend,
-    )
-    allocator = model_backends.get_allocator(backend)
+def initialize_driver_states(
+    icon4py_driver: Icon4pyDriver,
+    allocator: gtx.typing.Allocator,
+) -> driver_states.DriverStates:
+    """Build and validate the initial driver states from a freshly initialized driver.
+
+    This wraps the creation of the prognostic/tracer/nonhydro/diagnostic states, the
+    application of the initial condition, the assembly of ``DriverStates``, and the
+    consistency check that precedes the time loop.
+    """
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
         allocator=allocator,
@@ -859,5 +855,23 @@ def run_driver(
         granules=icon4py_driver.granules,
         states=ds,
     )
+    return ds
+
+
+def run_driver(
+    *,
+    config: driver_config.ExperimentConfig,
+    grid_manager: gm.GridManager,
+    process_props: decomposition_defs.ProcessProperties,
+    backend: gtx.typing.Backend | None,
+) -> tuple[driver_states.DriverStates, Icon4pyDriver]:
+    icon4py_driver = initialize_driver(
+        config=config,
+        grid_manager=grid_manager,
+        process_props=process_props,
+        backend=backend,
+    )
+    allocator = model_backends.get_allocator(backend)
+    ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
     icon4py_driver.time_integration(ds)
     return ds, icon4py_driver
