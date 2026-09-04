@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import gt4py.next as gtx
@@ -577,6 +577,41 @@ class TestComputeVelocityAdvectionInPredictorStep(stencil_tests.StencilTest):
             "apply_extra_diffusion_on_vn",
         ),
     }
+
+    @pytest.fixture(autouse=True)
+    def _xfail_undecidable_subset_split(
+        self,
+        request: pytest.FixtureRequest,
+        static_variant: Sequence[str],
+        input_data: dict[str, gtx.Field | state_utils.ScalarType],
+    ) -> None:
+        # GT4Py's dace `SplitMemlet.can_be_applied` reaches
+        # `assert read_right or read_left` in
+        # `runners/dace/transformations/splitting_tools.py:515`, where both flags come from
+        # `(a < b) == True` on SymPy relationals. That is undecidable, hence False both
+        # ways, when the horizontal bounds are symbolic while the vertical ones are static.
+        # `setup_program` binds horizontal and vertical bounds together, so the model
+        # never compiles this combination.
+        vertical_is_static = "vertical_start" in static_variant
+        horizontal_is_static = "start_edge_lateral_boundary_level_5" in static_variant
+        if (
+            "dace" in str(request.config.getoption("backend", ""))
+            and vertical_is_static
+            and not horizontal_is_static
+            and input_data["skip_compute_predictor_vertical_advection"]
+            and not input_data["apply_extra_diffusion_on_vn"]
+        ):
+            request.node.add_marker(
+                pytest.mark.xfail(
+                    reason=(
+                        "gt4py dace: undecidable SymPy comparison asserted in"
+                        " decompose_subset (dace/transformations/splitting_tools.py:515),"
+                        " reached from SplitMemlet.can_be_applied with symbolic horizontal"
+                        " and static vertical bounds"
+                    ),
+                    strict=True,
+                )
+            )
 
     @stencil_tests.static_reference
     def reference(
