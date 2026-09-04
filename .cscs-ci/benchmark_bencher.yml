@@ -44,11 +44,11 @@ benchmark_bencher_granules_feature_aarch64:
     - when: never  # TEMPORARY: disabled for driver bencher trial; restore before merge
 
 benchmark_bencher_driver_mpi_feature_aarch64:
-  extends: [.bencher_driver_mpi_feature_tests, .retry_on_transient_failure]
+  extends: [.bencher_driver_mpi_feature_tests]
   variables:
     SLURM_NTASKS: 4
     SLURM_JOB_NUM_NODES: 1
     ICON4PY_TEST_MPI_SUBCOMM_SIZE: $SLURM_NTASKS
 
 benchmark_bencher_driver_feature_aarch64:
-  extends: [.bencher_driver_feature_tests, .retry_on_transient_failure]
+  extends: [.bencher_driver_feature_tests]
