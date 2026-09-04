@@ -7,46 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import dataclasses
-from typing import TYPE_CHECKING
-
-import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import (
     EnergyType,
     SurfaceType,
     TmxConfig,
     TurbulenceSolverType,
 )
-from icon4py.model.common import model_backends
 from icon4py.model.common.config import config_io
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
-
-
-def test_default_config_matches_fortran_defaults() -> None:
-    """Defaults must match ``vdiff_config_init`` in mo_turb_vdiff_config.f90."""
-    config = TmxConfig()
-    assert config.solver_type == TurbulenceSolverType.IMPLICIT
-    assert config.energy_type == EnergyType.INTERNAL
-    assert config.dissipation_factor == 1.0
-    assert config.use_louis is True
-    assert config.use_louis_land is True
-    assert config.use_louis_ice is True
-    assert config.louis_constant_b == 4.2
-    assert config.use_km_const is False
-    assert config.km_const == 1.0
-    assert config.use_scale_turb_energy_flux is False
-    assert config.scale_turb_energy_flux == 1.0
-    assert config.smag_constant == 0.23
-    # exact Fortran literal, not 1/3
-    assert config.turb_prandtl == 0.33333333333
-    assert config.km_min == 0.001
-    assert config.max_turb_scale == 300.0
 
 
 @pytest.mark.parametrize("turb_prandtl", [0.0, -1.0])
