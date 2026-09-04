@@ -61,12 +61,7 @@ from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import (
-    base as base_grid,
-    horizontal as h_grid,
-    icon as icon_grid,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -498,6 +493,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
             the key is the variable name used in the `gtx.program` and the value the name
             of the field it depends on.
         params: scalar parameters used in the program
+        vertically_bounded_by_domain: the computed fields exist only on the levels in
+            `domain`, rather than on the whole column, and are allocated accordingly.
     """
 
     def __init__(
@@ -509,9 +506,11 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         deps: dict[str, str],
         do_exchange: bool,
         params: dict[str, state_utils.ScalarType] | None = None,
+        vertically_bounded_by_domain: bool = False,
     ):
         self._func = func
         self._compute_domain = domain
+        self._vertically_bounded = vertically_bounded_by_domain
         self._dims = domain.keys()
         self._dependencies = deps
         self._output = fields
@@ -522,14 +521,31 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         }
         self._do_exchange = do_exchange
 
+    def _field_extent(self, dim: gtx.Dimension, grid: GridProvider) -> tuple[int, int]:
+        """The extent to allocate for ``dim``.
+
+        A vertical sub-range in the compute domain can mean two different things, and
+        only the caller knows which: either the field exists on the whole column and
+        just this part of it is computed (the default), or the field exists on these
+        levels alone, as the quadratic extrapolation weights do. The second case is
+        ``vertically_bounded_by_domain``, and it keeps the levels' absolute indices.
+
+        Horizontal dimensions are always full size: neighbour access and halo exchange
+        need the whole extent whatever part of it is computed.
+        """
+        if self._vertically_bounded and dim.kind == gtx.DimensionKind.VERTICAL:
+            start, stop = self._compute_domain[dim]
+            return grid.vertical_grid.index(start), grid.vertical_grid.index(stop)
+        return 0, grid.grid.size[dim]
+
     def _allocate(
         self,
         backend: gtx_typing.Backend | None,
-        grid: base_grid.Grid,  # TODO @halungge: change to vertical grid
+        grid: GridProvider,
         dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
         allocate = gtx.constructors.zeros.partial(allocator=backend)
-        field_domain = {dim: (0, grid.size[dim]) for dim in self._dims}
+        field_domain = {dim: self._field_extent(dim, grid) for dim in self._dims}
         return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
     # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
@@ -609,7 +625,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         except (ValueError, KeyError):
             dtype = {v: ta.wpfloat for v in self._output.values()}
 
-        self._fields = self._allocate(backend, grid.grid, dtype=dtype)
+        self._fields = self._allocate(backend, grid, dtype=dtype)
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
         deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
