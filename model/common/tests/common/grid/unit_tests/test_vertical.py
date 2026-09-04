@@ -51,7 +51,7 @@ def test_damping_layer_calculation(
     max_h: float, damping_height: float, delta: float, flat_height: float
 ) -> None:
     vct_a = np.arange(0, max_h, delta)
-    vct_a_field = gtx.as_field((dims.KDim,), data=vct_a[::-1])  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+    vct_a_field = gtx.as_field((dims.KHalfDim,), data=vct_a[::-1])  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=1000,
         flat_height=flat_height,

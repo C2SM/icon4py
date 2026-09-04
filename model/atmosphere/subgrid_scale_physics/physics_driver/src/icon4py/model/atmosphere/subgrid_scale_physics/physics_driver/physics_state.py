@@ -24,13 +24,6 @@ from typing import TYPE_CHECKING, Final
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, model_options
-from icon4py.model.common.diagnostic_calculations.stencils import (
-    calculate_tendency,
-    diagnose_pressure,
-    diagnose_surface_pressure,
-    diagnose_temperature,
-    update_exner_and_theta_v,
-)
 from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation.stencils.compute_vn_from_uv import compute_vn_from_uv
@@ -39,6 +32,11 @@ from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpol
 )
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.physics.thermodynamics import (
+    compute_pressure,
+    compute_temperature,
+    compute_tendencies,
+)
 from icon4py.model.common.states import diagnostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -71,7 +69,6 @@ class EntryState:
         metrics: factory.FieldSource,
         backend: gtx_typing.Backend | None = None,
     ) -> None:
-        self._backend = backend
         num_cells = grid.num_cells
         num_levels = grid.num_levels
 
@@ -87,24 +84,14 @@ class EntryState:
         self._ddqz_z_full = metrics.get(metrics_attributes.DDQZ_Z_FULL)
 
         self._diagnose_temperature = model_options.setup_program(
-            program=diagnose_temperature.diagnose_virtual_temperature_and_temperature,
+            program=compute_temperature.compute_virtual_temperature_and_temperature,
             backend=backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        self._diagnose_surface_pressure = model_options.setup_program(
-            program=diagnose_surface_pressure.diagnose_surface_pressure,
-            backend=backend,
-            horizontal_sizes=full_horizontal,
-            vertical_sizes={
-                "vertical_start": gtx.int32(num_levels),
-                "vertical_end": gtx.int32(num_levels + 1),
-            },
-            offset_provider={},
-        )
-        self._diagnose_pressure = model_options.setup_program(
-            program=diagnose_pressure.diagnose_pressure,
+        self._compute_surface_and_hydrostatic_pressure = model_options.setup_program(
+            program=compute_pressure.compute_surface_and_hydrostatic_pressure,
             backend=backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
@@ -124,6 +111,12 @@ class EntryState:
         )
 
         self.diagnostics = diagnostic_state.initialize_diagnostic_state(grid, backend)
+        # Scratch for the pressure scan: a scan's range is deduced from its single
+        # output domain, so the half-level result lands on model levels first and
+        # compute_surface_and_hydrostatic_pressure copies it up (see that program).
+        self._pressure_ifc_on_model_levels = data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, allocator=backend
+        )
 
         # Pointers into the model state — bound by every diagnose_from call
         self.exner: gtx.Field | None = None
@@ -178,22 +171,12 @@ class EntryState:
         )
 
         # 2. Surface pressure at the bottom interface, then the full pressure column
-        self._diagnose_surface_pressure(
+        self._compute_surface_and_hydrostatic_pressure(
             exner=prognostic.exner,
             virtual_temperature=self.diagnostics.virtual_temperature,
             ddqz_z_full=self._ddqz_z_full,
-            surface_pressure=self.diagnostics.pressure_ifc,
-        )
-        surface_pressure = gtx.as_field(
-            (dims.CellDim,),
-            self.diagnostics.pressure_ifc.ndarray[:, -1],
-            allocator=self._backend,
-        )
-        self._diagnose_pressure(
-            ddqz_z_full=self._ddqz_z_full,
-            virtual_temperature=self.diagnostics.virtual_temperature,
-            surface_pressure=surface_pressure,
             pressure=self.diagnostics.pressure,
+            pressure_ifc_on_model_levels=self._pressure_ifc_on_model_levels,
             pressure_ifc=self.diagnostics.pressure_ifc,
         )
 
@@ -302,15 +285,15 @@ class ApplyToPrognostic:
             vertical_sizes=full_vertical,
             offset_provider={},
         )
-        self._calculate_virtual_temperature_tendency = model_options.setup_program(
-            program=calculate_tendency.calculate_virtual_temperature_tendency,
+        self._compute_virtual_temperature_tendency = model_options.setup_program(
+            program=compute_tendencies.compute_virtual_temperature_tendency,
             backend=backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
             offset_provider={},
         )
         self._update_exner_and_theta_v = model_options.setup_program(
-            program=update_exner_and_theta_v.update_exner_and_theta_v,
+            program=compute_temperature.update_exner_and_theta_v,
             backend=backend,
             horizontal_sizes=full_horizontal,
             vertical_sizes=full_vertical,
@@ -366,7 +349,7 @@ class ApplyToPrognostic:
                 field_b=acc["tend_temperature"],
                 output_field=self._new_te,
             )
-            self._calculate_virtual_temperature_tendency(
+            self._compute_virtual_temperature_tendency(
                 dtime=dt_seconds,
                 qv=tracers.qv,
                 qc=tracers.qc,

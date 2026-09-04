@@ -84,7 +84,7 @@ def compute_field_a_plus_coeff_times_field_b_on_edge_k(
     )
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def copy_field_on_cell_k(
     field: fa.CellKField[ta.wpfloat],
     output_field: fa.CellKField[ta.wpfloat],
@@ -99,5 +99,31 @@ def copy_field_on_cell_k(
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
+def _copy_field_on_cell_khalf(
+    field: fa.CellKHalfField[ta.wpfloat],
+) -> fa.CellKHalfField[ta.wpfloat]:
+    return field
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def copy_field_on_cell_khalf(
+    field: fa.CellKHalfField[ta.wpfloat],
+    output_field: fa.CellKHalfField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _copy_field_on_cell_khalf(
+        field,
+        out=output_field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

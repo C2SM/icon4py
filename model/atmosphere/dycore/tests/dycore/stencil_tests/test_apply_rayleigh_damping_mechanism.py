@@ -52,8 +52,8 @@ class TestApplyRayleighDampingMechanism(stencil_tests.StencilTest):
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_raylfac = data_alloc.random_field(dims.KDim, dtype=wpfloat)
-        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_raylfac = data_alloc.random_field(dims.KHalfDim, dtype=wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
 
         return dict(
             z_raylfac=z_raylfac,
@@ -61,5 +61,5 @@ class TestApplyRayleighDampingMechanism(stencil_tests.StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

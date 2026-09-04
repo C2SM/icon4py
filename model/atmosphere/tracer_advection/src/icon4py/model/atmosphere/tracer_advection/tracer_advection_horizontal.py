@@ -19,17 +19,11 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_positive_definite_
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_backtrajectory_alt import (
     compute_barycentric_backtrajectory_alt,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_edge_tangential import (
-    compute_edge_tangential,
-)
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field import (
-    copy_cell_kdim_field,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
@@ -47,6 +41,10 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
+    compute_tangential_wind_wp,
+)
+from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -384,9 +382,9 @@ class NoAdvection(HorizontalAdvection):
         self._end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         # stencils
-        self._copy_cell_kdim_field = model_options.setup_program(
+        self._copy_field_on_cell_k = model_options.setup_program(
             backend=self._backend,
-            program=copy_cell_kdim_field,
+            program=generic_math_operations.copy_field_on_cell_k,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_nudging,
                 "horizontal_end": self._end_cell_local,
@@ -413,12 +411,12 @@ class NoAdvection(HorizontalAdvection):
     ) -> None:
         log.debug("horizontal tracer_advection run - start")
 
-        log.debug("running stencil copy_cell_kdim_field - start")
-        self._copy_cell_kdim_field(
-            field_in=p_tracer_now,
-            field_out=p_tracer_new,
+        log.debug("running stencil copy_field_on_cell_k - start")
+        self._copy_field_on_cell_k(
+            field=p_tracer_now,
+            output_field=p_tracer_new,
         )
-        log.debug("running stencil copy_cell_kdim_field - end")
+        log.debug("running stencil copy_field_on_cell_k - end")
         log.debug("horizontal tracer_advection run - end")
 
 
@@ -532,11 +530,11 @@ class SemiLagrangian(FiniteVolume):
         )
 
         # stencils
-        self._compute_edge_tangential = model_options.setup_program(
+        self._compute_tangential_wind_wp = model_options.setup_program(
             backend=self._backend,
-            program=compute_edge_tangential,
+            program=compute_tangential_wind_wp,
             constant_args={
-                "ptr_coeff": self._interpolation_state.rbf_vec_coeff_e,
+                "rbf_vec_coeff_e": self._interpolation_state.rbf_vec_coeff_e,
             },
             horizontal_sizes={
                 "horizontal_start": self._start_edge_lateral_boundary_level_2,
@@ -604,12 +602,12 @@ class SemiLagrangian(FiniteVolume):
         ## tracer-independent part
 
         # compute tangential velocity
-        log.debug("running stencil compute_edge_tangential - start")
-        self._compute_edge_tangential(
-            p_vn_in=prep_adv.vn_traj,
-            p_vt_out=self._z_real_vt,
+        log.debug("running stencil compute_tangential_wind_wp - start")
+        self._compute_tangential_wind_wp(
+            vn=prep_adv.vn_traj,
+            vt=self._z_real_vt,
         )
-        log.debug("running stencil compute_edge_tangential - end")
+        log.debug("running stencil compute_tangential_wind_wp - end")
 
         # backtrajectory calculation
         log.debug("running stencil compute_barycentric_backtrajectory_alt - start")
