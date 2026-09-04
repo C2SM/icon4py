@@ -16,18 +16,11 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import model_backends, time
-from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import grid_manager as gm
 from icon4py.model.driver import config as driver_config, driver, driver_states, driver_utils
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures.datatest import backend, process_props
-
-
-if mpi_decomposition.mpi4py is None:
-    pytest.skip(
-        "Skipping parallel driver benchmark tests on single-node installation",
-        allow_module_level=True,
-    )
 
 
 _log = logging.getLogger(__file__)
@@ -168,7 +161,7 @@ def driver_benchmark_grid_manager(
     "driver_benchmark_experiment",
     BENCHMARK_EXPERIMENTS,
     indirect=True,
-    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+    ids=lambda e: e.name,
 )
 def test_benchmark_driver_init(
     driver_benchmark_config: driver_config.ExperimentConfig,
@@ -218,7 +211,7 @@ def test_benchmark_driver_init(
     "driver_benchmark_experiment",
     BENCHMARK_EXPERIMENTS,
     indirect=True,
-    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+    ids=lambda e: e.name,
 )
 def test_benchmark_driver_timeloop(
     driver_benchmark_config: driver_config.ExperimentConfig,
@@ -237,7 +230,7 @@ def test_benchmark_driver_timeloop(
             backend=backend,
         )
         allocator = model_backends.get_allocator(backend)
-        ds = driver.initialize_driver_states(icon4py_driver, allocator)
+        ds = driver.initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
         return (icon4py_driver, ds), {}
 
     def _timed(fresh_driver: driver.Icon4pyDriver, ds: driver_states.DriverStates) -> None:
@@ -261,7 +254,7 @@ def test_benchmark_driver_timeloop(
     "driver_benchmark_experiment",
     BENCHMARK_EXPERIMENTS,
     indirect=True,
-    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+    ids=lambda e: e.name,
 )
 def test_benchmark_driver_total(
     driver_benchmark_config: driver_config.ExperimentConfig,

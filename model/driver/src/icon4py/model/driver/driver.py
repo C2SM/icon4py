@@ -805,8 +805,7 @@ def initialize_driver_states(
 
     This wraps the creation of the prognostic/tracer/nonhydro/diagnostic states, the
     application of the initial condition, the assembly of ``DriverStates``, and the
-    consistency check that precedes the time loop. It is shared between ``run_driver``
-    and the driver benchmarks.
+    consistency check that precedes the time loop.
     """
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=icon4py_driver.grid,
@@ -873,6 +872,6 @@ def run_driver(
         backend=backend,
     )
     allocator = model_backends.get_allocator(backend)
-    ds = initialize_driver_states(icon4py_driver, allocator)
+    ds = initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
     icon4py_driver.time_integration(ds)
     return ds, icon4py_driver

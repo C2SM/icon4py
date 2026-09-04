@@ -134,9 +134,9 @@ def driver_benchmark_grid_manager(
     "driver_benchmark_experiment",
     BENCHMARK_EXPERIMENTS,
     indirect=True,
-    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+    ids=lambda e: e.name,
 )
-def test_benchmark_driver_single_rank_init(
+def test_benchmark_driver_init(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
     process_props: decomp_defs.ProcessProperties,
@@ -182,9 +182,9 @@ def test_benchmark_driver_single_rank_init(
     "driver_benchmark_experiment",
     BENCHMARK_EXPERIMENTS,
     indirect=True,
-    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+    ids=lambda e: e.name,
 )
-def test_benchmark_driver_single_rank_timeloop(
+def test_benchmark_driver_timeloop(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
     process_props: decomp_defs.ProcessProperties,
@@ -201,7 +201,7 @@ def test_benchmark_driver_single_rank_timeloop(
             backend=backend,
         )
         allocator = model_backends.get_allocator(backend)
-        ds = driver.initialize_driver_states(icon4py_driver, allocator)
+        ds = driver.initialize_driver_states(icon4py_driver=icon4py_driver, allocator=allocator)
         return (icon4py_driver, ds), {}
 
     def _timed(fresh_driver: driver.Icon4pyDriver, ds: driver_states.DriverStates) -> None:
@@ -223,9 +223,9 @@ def test_benchmark_driver_single_rank_timeloop(
     "driver_benchmark_experiment",
     BENCHMARK_EXPERIMENTS,
     indirect=True,
-    ids=[e.name for e in BENCHMARK_EXPERIMENTS],
+    ids=lambda e: e.name,
 )
-def test_benchmark_driver_single_rank_total(
+def test_benchmark_driver_total(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
     process_props: decomp_defs.ProcessProperties,

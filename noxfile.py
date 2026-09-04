@@ -306,7 +306,7 @@ def benchmark_driver(session: nox.Session) -> None:
             "continuous_benchmarking",
             "--benchmark-json",
             f"pytest_benchmark_results_{session.python}.json",
-            "tests/driver/integration_tests/test_benchmark_driver_single_rank.py",
+            "tests/driver/integration_tests/test_benchmark_driver.py",
             *session.posargs,
         )
 

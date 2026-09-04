@@ -49,14 +49,6 @@ benchmark_bencher_driver_mpi_feature_aarch64:
     SLURM_NTASKS: 4
     SLURM_JOB_NUM_NODES: 1
     ICON4PY_TEST_MPI_SUBCOMM_SIZE: $SLURM_NTASKS
-  rules:
-    - if: $ICON4PY_DISABLE_DRIVER_BENCHMARK == "1" || $ICON4PY_DISABLE_DRIVER_BENCHMARK == "true"
-      when: never
-    - when: on_success
 
 benchmark_bencher_driver_feature_aarch64:
   extends: [.bencher_driver_feature_tests, .retry_on_transient_failure]
-  rules:
-    - if: $ICON4PY_DISABLE_DRIVER_BENCHMARK == "1" || $ICON4PY_DISABLE_DRIVER_BENCHMARK == "true"
-      when: never
-    - when: on_success
