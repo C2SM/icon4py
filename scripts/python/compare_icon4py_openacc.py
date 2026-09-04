@@ -46,6 +46,9 @@ gt4py_unmatched_ncalls_threshold = (
 # besides the gt4py stencil name, a dictionary of static arguments that should be
 # matched in the gt4py timer report. If the value is `None`, we do not check the
 # static arguments and assume the stencil name is the same.
+# The velocity advection kernels have no entry: 'compute_velocity_advection_in_predictor_step'
+# and 'compute_velocity_advection_in_corrector_step' each aggregate several openacc kernels,
+# which this one-icon4py-variant-per-fortran-kernel mapping cannot express.
 fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "apply_diffusion_to_theta_and_exner": None,
     "apply_diffusion_to_vn": None,
@@ -56,14 +59,6 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "calculate_diagnostic_quantities_for_turbulence": None,
     "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools": None,
     "calculate_nabla2_and_smag_coefficients_for_vn": None,
-    "compute_advection_in_horizontal_momentum_equation": (
-        "compute_advection_in_horizontal_momentum",
-        {},
-    ),
-    "compute_advection_in_vertical_momentum_equation": (
-        "compute_advection_in_corrector_vertical_momentum",
-        {},
-    ),
     "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection": (
         "compute_averaged_vn_and_fluxes",
         {
@@ -77,26 +72,6 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
             "at_first_substep": True,
             "prepare_advection": True,
         },
-    ),
-    "compute_advection_in_predictor_vertical_momentum": (
-        "compute_advection_in_predictor_vertical_momentum",
-        {
-            "skip_compute_predictor_vertical_advection": False,
-        },
-    ),
-    "compute_advection_in_predictor_vertical_momentum_skip": (
-        "compute_advection_in_predictor_vertical_momentum",
-        {
-            "skip_compute_predictor_vertical_advection": True,
-        },
-    ),
-    "compute_diagnostics_from_normal_wind": (
-        "compute_diagnostics_from_normal_wind",
-        {"skip_compute_predictor_vertical_advection": False},
-    ),
-    "compute_diagnostics_from_normal_wind_skip": (
-        "compute_diagnostics_from_normal_wind",
-        {"skip_compute_predictor_vertical_advection": True},
     ),
     "compute_horizontal_velocity_quantities_and_fluxes": None,
     "compute_perturbed_quantities_and_interpolation": None,
