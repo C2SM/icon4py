@@ -195,7 +195,6 @@ def _compute_contravariant_corrected_w_and_cfl(
 
 @gtx.field_operator
 def _compute_advective_vertical_wind_tendency(
-    vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
     w: fa.CellKHalfField[ta.wpfloat],
     horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
@@ -211,21 +210,15 @@ def _compute_advective_vertical_wind_tendency(
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.vpfloat]:
-    vertical_wind_advective_tendency = concat_where(
-        1 <= dims.KHalfDim,
+    vertical_wind_advective_tendency = (
         _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
             contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
-        ),
-        vertical_wind_advective_tendency,
+        )
     )
 
-    vertical_wind_advective_tendency = concat_where(
-        1 <= dims.KHalfDim,
-        _add_interpolated_horizontal_advection_of_w(
-            e_bln_c_s,
-            horizontal_advection_of_w_at_edges_on_half_levels,
-            vertical_wind_advective_tendency,
-        ),
+    vertical_wind_advective_tendency = _add_interpolated_horizontal_advection_of_w(
+        e_bln_c_s,
+        horizontal_advection_of_w_at_edges_on_half_levels,
         vertical_wind_advective_tendency,
     )
 
@@ -248,7 +241,6 @@ def _compute_advective_vertical_wind_tendency(
 
 @gtx.field_operator
 def _compute_advection_in_corrector_vertical_momentum(
-    vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
     w: fa.CellKHalfField[ta.wpfloat],
     tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
     vn_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
@@ -296,7 +288,6 @@ def _compute_advection_in_corrector_vertical_momentum(
     )
 
     vertical_wind_advective_tendency = _compute_advective_vertical_wind_tendency(
-        vertical_wind_advective_tendency=vertical_wind_advective_tendency,
         w=w,
         horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
@@ -416,7 +407,6 @@ def _compute_advection_in_predictor_vertical_momentum(
             tangent_orientation=tangent_orientation,
         )
         vertical_wind_advective_tendency = _compute_advective_vertical_wind_tendency(
-            vertical_wind_advective_tendency=vertical_wind_advective_tendency,
             w=w,
             horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
             contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,

@@ -344,7 +344,7 @@ def compute_velocity_advection_in_predictor_step(
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_4, end_cell_halo),
-                dims.KHalfDim: (vertical_start, vertical_end),
+                dims.KHalfDim: (vertical_start + 1, vertical_end),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_4, end_cell_halo),
@@ -360,7 +360,6 @@ def compute_velocity_advection_in_predictor_step(
 
 @gtx.field_operator
 def _compute_velocity_advection_in_corrector_step(
-    vertical_wind_advective_tendency: fa.CellKHalfField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     w: fa.CellKHalfField[ta.wpfloat],
     tangential_wind: fa.EdgeKField[ta.vpfloat],
@@ -402,7 +401,6 @@ def _compute_velocity_advection_in_corrector_step(
         contravariant_corrected_w_at_cells_on_model_levels,
         vertical_cfl,
     ) = _compute_advection_in_corrector_vertical_momentum(
-        vertical_wind_advective_tendency=vertical_wind_advective_tendency,
         w=w,
         tangential_wind_on_half_levels=tangential_wind_on_half_levels,
         vn_on_half_levels=vn_on_half_levels,
@@ -549,7 +547,6 @@ def compute_velocity_advection_in_corrector_step(
     """
 
     _compute_velocity_advection_in_corrector_step(
-        vertical_wind_advective_tendency=vertical_wind_advective_tendency,
         vn=vn,
         w=w,
         tangential_wind=tangential_wind,
@@ -589,7 +586,7 @@ def compute_velocity_advection_in_corrector_step(
         domain=(
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_4, end_cell_halo),
-                dims.KHalfDim: (vertical_start, vertical_end),
+                dims.KHalfDim: (vertical_start + 1, vertical_end),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_4, end_cell_halo),

@@ -821,7 +821,9 @@ class TestComputeVelocityAdvectionInPredictorStep(stencil_tests.StencilTest):
                 vertical_wind_advective_tendency_new,
                 vertical_wind_advective_tendency,
                 cell_slice,
-                (vertical_start, vertical_end),
+                # ICON computes the tendency over jk = 2..nlev
+                # (mo_velocity_advection.f90:598), so the top half level is untouched.
+                (vertical_start + 1, vertical_end),
             ),
             vertical_cfl=_restore_outside(
                 vertical_cfl_new, vertical_cfl, cell_slice, (vertical_start, vertical_end)
@@ -1131,7 +1133,9 @@ class TestComputeVelocityAdvectionInCorrectorStep(stencil_tests.StencilTest):
                 vertical_wind_advective_tendency_new,
                 vertical_wind_advective_tendency,
                 cell_slice,
-                (vertical_start, vertical_end),
+                # ICON computes the tendency over jk = 2..nlev
+                # (mo_velocity_advection.f90:598), so the top half level is untouched.
+                (vertical_start + 1, vertical_end),
             ),
             vertical_cfl=_restore_outside(
                 vertical_cfl_new, vertical_cfl, cell_slice, (vertical_start, vertical_end)
