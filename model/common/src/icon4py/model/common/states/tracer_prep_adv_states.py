@@ -53,7 +53,7 @@ def initialize_tracer_prep_adv_state(
         grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
     )
     mass_flx_ic = data_alloc.zero_field(
-        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator, dtype=ta.wpfloat
+        grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.wpfloat
     )
     return TracerPrepAdvState(
         vn_traj=vn_traj,
