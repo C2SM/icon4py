@@ -40,6 +40,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
 
@@ -58,8 +59,10 @@ class HorizontalAdvectionType(Enum):
 
     #: no horizontal tracer advection
     NO_ADVECTION = 0
+    #: 1st order upwind
+    FIRST_ORDER_UPWIND = 1
     #: 2nd order MIURA with linear reconstruction
-    LINEAR_2ND_ORDER = 2
+    SECOND_ORDER_LINEAR_MIURA = 2
 
 
 @config_io.register_enum
@@ -83,9 +86,9 @@ class VerticalAdvectionType(Enum):
     #: no vertical tracer advection
     NO_ADVECTION = 0
     #: 1st order upwind
-    UPWIND_1ST_ORDER = 1
+    FIRST_ORDER_UPWIND = 1
     #: 3rd order PPM
-    PPM_3RD_ORDER = 3
+    THIRD_ORDER_PPM = 3
 
 
 @config_io.register_enum
@@ -146,7 +149,7 @@ class Advection(ABC):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -166,7 +169,7 @@ class Advection(ABC):
 
 
 class NoAdvection(Advection):
-    """Class that implements disabled three-dimensional tracer advection."""
+    """Disable three-dimensional tracer advection."""
 
     def __init__(
         self,
@@ -205,7 +208,7 @@ class NoAdvection(Advection):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -228,7 +231,7 @@ class NoAdvection(Advection):
 
 
 class GodunovSplittingAdvection(Advection):
-    """Class that implements three-dimensional tracer_advection based on Godunov splitting."""
+    """Implements three-dimensional tracer advection based on Godunov splitting."""
 
     def __init__(
         self,
@@ -314,7 +317,7 @@ class GodunovSplittingAdvection(Advection):
         self,
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        prep_adv: prep_adv_states.TracerPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -457,7 +460,14 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
             horizontal_advection = tracer_advection_horizontal.NoAdvection(
                 grid=grid, backend=backend
             )
-        case HorizontalAdvectionType.LINEAR_2ND_ORDER:
+        case HorizontalAdvectionType.FIRST_ORDER_UPWIND:
+            horizontal_advection = tracer_advection_horizontal.FirstOrderUpwind(
+                grid=grid,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                backend=backend,
+            )
+        case HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA:
             tracer_flux = tracer_advection_horizontal.SecondOrderMiura(
                 grid=grid,
                 least_squares_state=least_squares_state,
@@ -491,7 +501,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     match config.vertical_advection_type:
         case VerticalAdvectionType.NO_ADVECTION:
             vertical_advection = tracer_advection_vertical.NoAdvection(grid=grid, backend=backend)
-        case VerticalAdvectionType.UPWIND_1ST_ORDER:
+        case VerticalAdvectionType.FIRST_ORDER_UPWIND:
             boundary_conditions = tracer_advection_vertical.NoFluxCondition(
                 grid=grid, backend=backend
             )
@@ -501,7 +511,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 metric_state=metric_state,
                 backend=backend,
             )
-        case VerticalAdvectionType.PPM_3RD_ORDER:
+        case VerticalAdvectionType.THIRD_ORDER_PPM:
             boundary_conditions = tracer_advection_vertical.NoFluxCondition(
                 grid=grid, backend=backend
             )

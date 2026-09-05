@@ -23,7 +23,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.grid import icon as icon_grid
+    from icon4py.model.common.grid import base as grid_base
 
 log = logging.getLogger(__name__)
 
@@ -234,7 +234,7 @@ class PrepAdvection:
 
 
 def initialize_prep_advection(
-    grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator
+    grid: grid_base.Grid, allocator: gtx_typing.Allocator
 ) -> PrepAdvection:
     vn_traj = data_alloc.zero_field(
         grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat

@@ -141,12 +141,12 @@ def unstructure_abstime(abstime: time.AbsoluteTime) -> str:
 def structure_reltime(reltime_val: str, _: typing.Any) -> time.RelativeTime:
     if isinstance(reltime_val, time.RelativeTime):
         return reltime_val
-    return time.RelativeTime(seconds=int(reltime_val))
+    return time.RelativeTime(seconds=float(reltime_val))
 
 
 @CONV.register_unstructure_hook
-def unstructure_reltime(reltime: time.RelativeTime) -> int:
-    return int(reltime.total_seconds())
+def unstructure_reltime(reltime: time.RelativeTime) -> float:
+    return reltime.total_seconds()
 
 
 @CONV.register_structure_hook

@@ -18,10 +18,13 @@ from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
+    linear_horizontal_tracer_advection as lin_hor_adv_ic,
+    linear_vertical_tracer_advection as lin_ver_adv_ic,
     weisman_klemp as wk_ic,
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import fortran_config
 
 
@@ -43,8 +46,10 @@ log = logging.getLogger(__name__)
 type IC_CONFIG = (
     jw_ic.JablonowskiWilliamsonConfig
     | gauss_ic.Gauss3DConfig
-    | from_file_ic.FromFileConfig
     | wk_ic.WeismanKlempConfig
+    | lin_hor_adv_ic.LinearHorizontalAdvectionConfig
+    | lin_ver_adv_ic.LinearVerticalAdvectionConfig
+    | from_file_ic.FromFileConfig
 )
 
 
@@ -53,8 +58,10 @@ config_io.register_config_union(
     {
         "jablonowski_williamson": jw_ic.JablonowskiWilliamsonConfig,
         "gauss_3d": gauss_ic.Gauss3DConfig,
-        "from_file": from_file_ic.FromFileConfig,
         "weisman_klemp": wk_ic.WeismanKlempConfig,
+        "linear_horizontal_adv": lin_hor_adv_ic.LinearHorizontalAdvectionConfig,
+        "linear_vertical_adv": lin_ver_adv_ic.LinearVerticalAdvectionConfig,
+        "from_file": from_file_ic.FromFileConfig,
     },
 )
 
@@ -118,6 +125,7 @@ def create(
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
+    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
@@ -162,6 +170,24 @@ def create(
                 tracer_state_now=tracer_state_now,
                 backend=backend,
                 exchange=exchange,
+            )
+        case lin_hor_adv_ic.LinearHorizontalAdvectionConfig():
+            lin_hor_adv_ic.linear_horizontal_advection(
+                config=config,
+                grid=grid,
+                static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
+                tracer_prep_adv_state=tracer_prep_adv_state,
+            )
+        case lin_ver_adv_ic.LinearVerticalAdvectionConfig():
+            lin_ver_adv_ic.linear_vertical_advection(
+                config=config,
+                vertical_config=vertical_config,
+                metrics=static_fields.metrics,
+                prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
+                tracer_prep_adv_state=tracer_prep_adv_state,
             )
         case from_file_ic.FromFileConfig():
             if config.is_restart:
