@@ -1162,6 +1162,7 @@ wheels = [
 [[package]]
 dependencies = [
   {name = "astunparse"},
+  {name = "click"},
   {name = "cmake"},
   {name = "dill"},
   {name = "fparser"},
@@ -1179,9 +1180,8 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-sdist = {url = "https://files.pythonhosted.org/packages/df/e0/2c45877476eb300fc8211fb2a46b3e3203468cd2bd3e0ecb4a7f5a7a4694/dace-2.0.0a7.tar.gz", hash = "sha256:ab15a73ce4c2cacaf9244832f84ea56328e181b21956a6d0c529782201609095", size = 6827344, upload-time = "2026-08-28T14:11:38.633Z"}
-source = {registry = "https://pypi.org/simple"}
-version = "2.0.0a7"
+source = {git = "https://github.com/romanc/dace?branch=romanc%2Fstree-sdfg-nested-sdfg-connectors#00c61216762a0a2ce4bb6d725bdc7b1a5400be9a"}
+version = "2.0.0a8"
 
 [[package]]
 dependencies = [
@@ -1659,12 +1659,8 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-sdist = {url = "https://files.pythonhosted.org/packages/b4/54/c9a0cfe5eb6289b6cc2a63113e9bff4807dfc672b2512f0bac5ac74d8740/gt4py-1.2.2.tar.gz", hash = "sha256:78704e71fb719d7d5ba61690f9ea749e80c5088ef194ffdb3d5c4bff31585739", size = 891724, upload-time = "2026-09-02T08:10:11.521Z"}
-source = {registry = "https://pypi.org/simple"}
-version = "1.2.2"
-wheels = [
-  {url = "https://files.pythonhosted.org/packages/30/dc/a66802bed6b499349315b5e20108341306d0430235e1b1d0e56cf011e97e/gt4py-1.2.2-py3-none-any.whl", hash = "sha256:2aa7ea57081ed1ba51b202bc87e89a67c5fcb3588a8cb9b3a13d5343f0d83762", size = 1111109, upload-time = "2026-09-02T08:10:09.771Z"}
-]
+source = {git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering#004375ac15fa04ed8486bf6a456213cfbd474872"}
+version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
 cuda12 = [
@@ -2047,7 +2043,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.2"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2064,7 +2060,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.2"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2081,7 +2077,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.2"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2099,7 +2095,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.2"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "numpy", specifier = ">=1.23.3"},
   {name = "packaging", specifier = ">=20.0"}
@@ -2132,7 +2128,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.2"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
@@ -2161,9 +2157,9 @@ requires-dist = [
   {name = "click", specifier = ">=8.0"},
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
-  {name = "gt4py", specifier = "==1.2.2"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
@@ -2191,6 +2187,7 @@ profiling = [
 dependencies = [
   {name = "array-api-compat"},
   {name = "cattrs"},
+  {name = "dace"},
   {name = "gt4py"},
   {name = "numpy"},
   {name = "packaging"},
@@ -2211,12 +2208,13 @@ requires-dist = [
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
+  {name = "dace", git = "https://github.com/romanc/dace?branch=romanc%2Fstree-sdfg-nested-sdfg-connectors"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
-  {name = "gt4py", specifier = "==1.2.2"},
-  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'"},
-  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'"},
-  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
+  {name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
+  {name = "gt4py", extras = ["cuda13"], marker = "extra == 'cuda13'", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
+  {name = "gt4py", extras = ["rocm7"], marker = "extra == 'rocm7'", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0"},
   {name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common"},
   {name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5"},
@@ -2300,7 +2298,7 @@ version = "0.4.1"
 [package.metadata]
 requires-dist = [
   {name = "devtools", specifier = ">=0.12"},
-  {name = "gt4py", specifier = "==1.2.2"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion"},
   {name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore"},
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
@@ -2331,7 +2329,7 @@ version = "0.4.1"
 [package.metadata]
 requires-dist = [
   {name = "filelock", specifier = ">=3.18.0,<3.20"},
-  {name = "gt4py", specifier = "==1.2.2"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "icon4py-common", extras = ["io"], editable = "model/common"},
   {name = "icon4py-driver", editable = "model/driver"},
   {name = "numpy", specifier = ">=1.23.3"},
@@ -2364,7 +2362,7 @@ requires-dist = [
   {name = "click", specifier = ">=8.1.7"},
   {name = "configargparse", specifier = ">=1.7.1"},
   {name = "fprettify", specifier = ">=0.3.7"},
-  {name = "gt4py", specifier = "==1.2.2"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common"},
   {name = "icon4py-common", extras = ["cuda13"], marker = "extra == 'cuda13'", editable = "model/common"},
   {name = "icon4py-common", extras = ["rocm7"], marker = "extra == 'rocm7'", editable = "model/common"},

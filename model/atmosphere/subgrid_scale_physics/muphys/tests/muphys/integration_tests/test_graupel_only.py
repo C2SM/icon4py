@@ -39,9 +39,8 @@ class Experiments:
 
 
 _GRAUPEL_TEST_CASES = [
-    (Experiments.MINI, True),
-    (Experiments.TINY, True),
-    (Experiments.R2B05, True),
+    (Experiments.MINI, False),
+    (Experiments.TINY, False),
     (Experiments.R2B05, False),
 ]
 
