@@ -112,7 +112,7 @@ def make_custom_dace_backend(
         use_zero_origin=use_zero_origin,
         use_max_domain_range_on_unstructured_shift=use_max_domain_range_on_unstructured_shift,
         use_stree_lowering=True,
-        apply_common_transforms=False,
+        apply_common_transforms=True,
     )
 
 
