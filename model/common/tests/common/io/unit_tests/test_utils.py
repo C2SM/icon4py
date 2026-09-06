@@ -38,3 +38,15 @@ def test_type_check_for_datafields():
     dataarray = utils.to_data_array(field, attrs=model_field.attrs)
     assert isinstance(dataarray, xa.DataArray)
     assert isinstance(dataarray, model.DataField)
+
+
+def test_host_copy_decouples_from_source_buffer():
+    grid = simple_grid.simple_grid()
+    buffer = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    source = utils.to_data_array(buffer, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"])
+    copy = utils.host_copy(source)
+    assert copy.dims == source.dims
+    assert copy.attrs == source.attrs
+    assert (copy.values == source.values).all()
+    source.data[...] = -99.0
+    assert not (copy.values == source.values).any()

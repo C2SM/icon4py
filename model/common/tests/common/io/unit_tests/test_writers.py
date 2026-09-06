@@ -5,8 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 import importlib.util
 import pathlib
+import threading
 from datetime import datetime, timedelta
 
 import gt4py.next as gtx
@@ -194,6 +196,7 @@ def initialized_zarr_writer(
     horizontal: grid_def.HorizontalGridSize | None = None,
     horizontal_chunk_size: int | None = None,
     horizontal_shard_size: int | None = None,
+    async_queue: writers.AsyncWriteQueue | None = None,
 ) -> tuple[zarr_writers.ZarrWriter, pathlib.Path]:
     store_path = test_path.absolute() / f"{random_name}.zarr"
     writer = zarr_writers.ZarrWriter(
@@ -208,6 +211,7 @@ def initialized_zarr_writer(
         horizontal_chunk_size=horizontal_chunk_size,
         horizontal_shard_size=horizontal_shard_size,
         process_props=decomposition_defs.SingleNodeProcessProperties(),
+        async_queue=async_queue,
     )
     writer.initialize_dataset()
     return writer, store_path
@@ -287,6 +291,7 @@ def test_zarr_writer_refuses_to_overwrite(test_path: pathlib.Path, random_name: 
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
         rank_blocks=None,
         process_props=decomposition_defs.SingleNodeProcessProperties(),
+        async_queue=None,
     )
     with pytest.raises(FileExistsError):
         duplicate.initialize_dataset()
@@ -339,17 +344,20 @@ def test_zarr_writer_root_failure_reaches_non_root_ranks(
         process_props=_NonRootProcessProperties(
             _ReplayingComm("FileExistsError: store already exists")
         ),
+        async_queue=None,
     )
     with pytest.raises(RuntimeError, match=r"failed on the root rank.*store already exists"):
         non_root.initialize_dataset()
 
 
+@pytest.mark.parametrize("asynchronous", [False, True])
 def test_zarr_writer_rank_block_writes_padded_block(
-    test_path: pathlib.Path, random_name: str
+    test_path: pathlib.Path, random_name: str, asynchronous: bool
 ) -> None:
     # single-rank rank-block layout with padding: the store's horizontal axes are the
     # padded sizes, data lands in the rank's block, padding stays NaN and the
-    # global-index coordinates mark it with -1
+    # global-index coordinates mark it with -1 -- through the queued write path as
+    # well as the synchronous one
     grid = test_io_utils.simple_grid
     padding = 3
     rank_blocks = {
@@ -372,12 +380,24 @@ def test_zarr_writer_rank_block_writes_padded_block(
         num_edges=grid.num_edges + padding,
         num_vertices=grid.num_vertices + padding,
     )
+    async_queue = (
+        writers.AsyncWriteQueue(name="test", max_pending=writers.MAX_PENDING_WRITES)
+        if asynchronous
+        else None
+    )
     writer, store_path = initialized_zarr_writer(
-        test_path, random_name, grid, rank_blocks=rank_blocks, horizontal=padded_horizontal
+        test_path,
+        random_name,
+        grid,
+        rank_blocks=rank_blocks,
+        horizontal=padded_horizontal,
+        async_queue=async_queue,
     )
     state = dict(air_density=test_io_utils.model_state(grid)["air_density"])
     writer.append(state, datetime.now())
     writer.close()
+    if async_queue is not None:
+        async_queue.shutdown()
     with xr.open_zarr(store_path) as ds:
         assert ds["air_density"].shape == (1, grid.num_levels, grid.num_cells + padding)
         values = ds["air_density"].values[0]
@@ -549,6 +569,7 @@ def test_zarr_writer_rejects_chunks_crossing_rank_blocks(
             rank_blocks=_single_rank_block(10),
             horizontal_chunk_size=4,
             process_props=decomposition_defs.SingleNodeProcessProperties(),
+            async_queue=None,
         )
 
 
@@ -936,6 +957,7 @@ def test_zarr_writer_rejects_shards_crossing_rank_blocks(
             horizontal_chunk_size=8,
             horizontal_shard_size=16,
             process_props=decomposition_defs.SingleNodeProcessProperties(),
+            async_queue=None,
         )
 
 
@@ -957,6 +979,7 @@ def test_zarr_writer_rejects_shard_without_dividing_chunk(
             horizontal_shard_size=8,
             rank_blocks=None,
             process_props=decomposition_defs.SingleNodeProcessProperties(),
+            async_queue=None,
         )
 
 
@@ -1000,3 +1023,112 @@ def test_netcdf_writer_append_two_fields_sharing_standard_name(
     assert "air_density" in writer.variables
     assert "air_density_copy" in writer.variables
     writer.close()
+
+
+# ------------------------------------------------------------------------------------
+# Asynchronous writing
+# ------------------------------------------------------------------------------------
+
+
+def _noop() -> None:
+    pass
+
+
+def test_async_write_queue_runs_tasks_in_submission_order() -> None:
+    queue = writers.AsyncWriteQueue(name="order", max_pending=2)
+    ran: list[int] = []
+    for index in range(8):
+        queue.submit(functools.partial(ran.append, index))
+    queue.shutdown()
+    assert ran == list(range(8))
+
+
+def test_async_write_queue_submit_blocks_when_full(test_path: pathlib.Path) -> None:
+    # with the consumer held in the first task and the queue filled up, a further
+    # submit must block until the consumer advances
+    release = threading.Event()
+    consumer_busy = threading.Event()
+
+    def gate() -> None:
+        consumer_busy.set()
+        release.wait()
+
+    queue = writers.AsyncWriteQueue(name="backpressure", max_pending=1)
+    queue.submit(gate)
+    assert consumer_busy.wait(timeout=10.0)
+    queue.submit(_noop)  # fills the queue while the consumer is held in `gate`
+
+    blocked_submit_returned = threading.Event()
+
+    def submit_one_more() -> None:
+        queue.submit(_noop)
+        blocked_submit_returned.set()
+
+    submitter = threading.Thread(target=submit_one_more)
+    submitter.start()
+    assert not blocked_submit_returned.wait(timeout=0.2)
+    release.set()
+    assert blocked_submit_returned.wait(timeout=10.0)
+    submitter.join()
+    queue.shutdown()
+    assert len(queue.wait_seconds) == 3
+    assert len(queue.task_seconds) == 3
+
+
+def test_async_write_queue_reraises_failure_and_discards_queued_tasks() -> None:
+    release = threading.Event()
+
+    def fail() -> None:
+        release.wait()
+        raise ValueError("broken task")
+
+    queue = writers.AsyncWriteQueue(name="failure", max_pending=2)
+    ran: list[int] = []
+    queue.submit(fail)
+    queue.submit(functools.partial(ran.append, 1))
+    release.set()
+    with pytest.raises(RuntimeError, match="write task failed") as drain_error:
+        queue.drain()
+    assert isinstance(drain_error.value.__cause__, ValueError)
+    assert ran == []
+    # the failure keeps surfacing on subsequent calls
+    with pytest.raises(RuntimeError, match="write task failed"):
+        queue.submit(functools.partial(ran.append, 2))
+    with pytest.raises(RuntimeError, match="write task failed"):
+        queue.shutdown()
+
+
+def test_async_write_queue_shutdown_joins_thread_and_rejects_submissions() -> None:
+    queue = writers.AsyncWriteQueue(name="shutdown", max_pending=2)
+    ran: list[int] = []
+    queue.submit(functools.partial(ran.append, 1))
+    queue.shutdown()
+    assert ran == [1]
+    with pytest.raises(RuntimeError, match="shut down"):
+        queue.submit(functools.partial(ran.append, 2))
+    queue.shutdown()  # idempotent
+
+
+def test_zarr_writer_async_matches_synchronous_output(
+    test_path: pathlib.Path, random_name: str
+) -> None:
+    grid = test_io_utils.simple_grid
+    state = test_io_utils.model_state(grid)
+    times = [datetime(2024, 1, 1) + n * timedelta(hours=1) for n in range(3)]
+
+    sync_writer, sync_path = initialized_zarr_writer(test_path, f"{random_name}_sync")
+    async_queue = writers.AsyncWriteQueue(name="test", max_pending=writers.MAX_PENDING_WRITES)
+    async_writer, async_path = initialized_zarr_writer(
+        test_path, f"{random_name}_async", async_queue=async_queue
+    )
+    for model_time in times:
+        sync_writer.append(state, model_time)
+        async_writer.append(state, model_time)
+    sync_writer.close()
+    async_writer.close()  # drains: the store is complete once close returns
+    async_queue.shutdown()
+
+    with xr.open_zarr(sync_path) as sync_ds, xr.open_zarr(async_path) as async_ds:
+        assert sync_ds.sizes[writers.TIME] == async_ds.sizes[writers.TIME] == len(times)
+        for name in state:
+            test_utils.assert_dallclose(async_ds[name].values, sync_ds[name].values)
