@@ -42,7 +42,7 @@ from icon4py.model.common import (
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
-    compute_tangential_wind_wp,
+    compute_tangential_wind,
 )
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -530,9 +530,9 @@ class SemiLagrangian(FiniteVolume):
         )
 
         # stencils
-        self._compute_tangential_wind_wp = model_options.setup_program(
+        self._compute_tangential_wind = model_options.setup_program(
             backend=self._backend,
-            program=compute_tangential_wind_wp,
+            program=compute_tangential_wind,
             constant_args={
                 "rbf_vec_coeff_e": self._interpolation_state.rbf_vec_coeff_e,
             },
@@ -602,12 +602,12 @@ class SemiLagrangian(FiniteVolume):
         ## tracer-independent part
 
         # compute tangential velocity
-        log.debug("running stencil compute_tangential_wind_wp - start")
-        self._compute_tangential_wind_wp(
+        log.debug("running stencil compute_tangential_wind - start")
+        self._compute_tangential_wind(
             vn=prep_adv.vn_traj,
             vt=self._z_real_vt,
         )
-        log.debug("running stencil compute_tangential_wind_wp - end")
+        log.debug("running stencil compute_tangential_wind - end")
 
         # backtrajectory calculation
         log.debug("running stencil compute_barycentric_backtrajectory_alt - start")
