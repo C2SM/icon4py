@@ -11,12 +11,14 @@ from __future__ import annotations
 import dataclasses
 import enum
 import functools
+import textwrap
 import types
 import typing
 
 import rich.tree
 import textual.app
 import textual.containers
+import textual.reactive
 import textual.widget
 import textual.widgets.tree
 import yaml
@@ -103,7 +105,7 @@ class Record:
         option_meta = (
             config_options.ConfigOption.from_type_hint(ctx.current_typehint)
             if hasattr(ctx.current_typehint, "__metadata__")
-            else config_options.ConfigOption(description="??")
+            else config_options.ConfigOption(description=description_from_type(actual_type))
         )
         return cls(
             qualified_name=ctx.name_path,
@@ -217,11 +219,18 @@ def node_from_union(type_hint: types.UnionType, ctx: TraversalContext) -> UnionC
     )
 
 
+def description_from_type(type_hint: RESOLVED) -> str:
+    if dataclasses.is_dataclass(type_hint) or isinstance(type_hint, enum.EnumType):
+        return type_hint.__doc__ or "??"
+    else:
+        return "??"
+
+
 def node_from_other_type(type_hint: HINT, ctx: TraversalContext) -> Record:
     option_meta = (
         config_options.ConfigOption.from_type_hint(ctx.current_typehint)
         if hasattr(ctx.current_typehint, "__metadata__")
-        else config_options.ConfigOption(description="??")
+        else config_options.ConfigOption(description=description_from_type(resolve_type(type_hint)))
     )
     return Record(
         qualified_name=ctx.name_path,
@@ -303,26 +312,35 @@ T = typing.TypeVar("T")
 @functools.singledispatch
 def examples_for[T](some_type: type[T]) -> typing.Iterator[tuple[T | dict | str, type]]:
     some_type = resolve_type(some_type)
-    try:
-        yield some_type(), some_type
-    except TypeError:
-        if dataclasses.is_dataclass(some_type):
-            field_types = typing.get_type_hints(some_type)
-            yield (
-                some_type(
-                    **{
-                        f.name: next(examples_for(resolve_type(field_types[f.name])))[0]
-                        for f in dataclasses.fields(some_type)
-                    }
-                ),
-                some_type,
-            )
-        elif some_type is time.AbsoluteTime:
-            yield from examples_for_abstime(some_type)
-        elif some_type is ta.wpfloat:
-            yield from examples_for_wpfloat(some_type)
-        else:
-            yield "No example found.", str
+    if some_type is config_io.SharedOptionSet:
+        yield (
+            config_io.SharedOptionSet(
+                options={"<option 1>": "<value 1>", "<option 2>": "<value 2>"},
+                consumers=["<section A>", "<section B>"],
+            ),
+            some_type,
+        )
+    else:
+        try:
+            yield some_type(), some_type
+        except TypeError:
+            if dataclasses.is_dataclass(some_type):
+                field_types = typing.get_type_hints(some_type)
+                yield (
+                    some_type(
+                        **{
+                            f.name: next(examples_for(resolve_type(field_types[f.name])))[0]
+                            for f in dataclasses.fields(some_type)
+                        }
+                    ),
+                    some_type,
+                )
+            elif some_type is time.AbsoluteTime:
+                yield from examples_for_abstime(some_type)
+            elif some_type is ta.wpfloat:
+                yield from examples_for_wpfloat(some_type)
+            else:
+                yield "No example found.", str
 
 
 @examples_for.register
@@ -343,10 +361,21 @@ def examples_for_union(some_type: types.UnionType) -> typing.Iterator[tuple[None
         yield from ((ex, some_type) for ex, _ in examples_for(allowed_type))
 
 
+@examples_for.register
+def examples_for_seq(
+    some_type: types.GenericAlias,
+) -> typing.Iterator[tuple[list, types.GenericAlias]]:
+    if some_type.__name__ == "list":
+        yield [], some_type
+        for arg in some_type.__args__:
+            e, _ = next(examples_for(arg))
+            yield [e], some_type
+
+
 def examples_for_abstime(
     some_type: type[time.AbsoluteTime],
 ) -> typing.Iterator[tuple[time.AbsoluteTime, type[time.AbsoluteTime]]]:
-    yield time.AbsoluteTime(year=2026, month=1, day=1, hour=11, minute=55, second=59), some_type
+    yield time.AbsoluteTime(year=2026, month=1, day=1, hour=0, minute=0, second=0), some_type
 
 
 def examples_for_wpfloat(
@@ -358,67 +387,59 @@ def examples_for_wpfloat(
 class ConfigDocWidget(textual.widget.Widget):
     """Broswe config options."""
 
+    root_class: textual.reactive.var[type | None] = textual.reactive.var(None, init=True)
+
     def compose(self: typing.Self) -> textual.app.ComposeResult:
         with textual.containers.Horizontal():
-            with textual.containers.VerticalScroll():
+            with textual.containers.VerticalScroll(id="left"):
                 yield textual.widgets.Tree[Record | ConfigClassContainer | UnionContainer](
                     "Icon4Py Config File", id="tree"
                 )
-            with textual.containers.VerticalScroll():
-                yield textual.widgets.DataTable(id="info-table", show_header=False)
-                yield textual.widgets.TextArea(id="example", read_only=True, soft_wrap=False)
+            with textual.containers.VerticalScroll(id="right"):
+                yield textual.widgets.Markdown(id="description")
 
     def on_mount(self: typing.Self) -> None:
-        # TODO(ricoh): [c38] build tree
-        tree: textual.widgets.Tree = self.query_one("#tree", expect_type=textual.widgets.Tree)
-        tree.root.expand()
-        tree.root.data = Record(
-            qualified_name=("icon4py-config.yml",),
-            option_meta=config_options.ConfigOption(
-                description="This is the top-level of the config file."
-            ),
-            allowed_type=ExperimentConfig,
+        self.query_one("#left").styles.width = "1fr"
+        self.query_one("#right").styles.width = "2fr"
+        tree: textual.widgets.Tree[Record | ConfigClassContainer | UnionContainer] = self.query_one(
+            "#tree", expect_type=textual.widgets.Tree
         )
+        tree.root.expand()
+        tree.auto_expand = False
+        tree.root.data = Record(
+            qualified_name=("Config File",),
+            option_meta=config_options.ConfigOption(description=str(self.root_class.__doc__)),
+            allowed_type=self.root_class,
+        )
+        tree.root.label = tree.root.data.qualified_name[-1]
         doctree = node_from_dataclass(
-            ExperimentConfig,
+            self.root_class,
             ctx=TraversalContext(
-                name_path=(), current_field=None, current_typehint=ExperimentConfig
+                name_path=(), current_field=None, current_typehint=self.root_class
             ),
         )
         for child in doctree.children:
             add_node_to_ttree(child, tree.root)
 
-        table: textual.widgets.DataTable = self.query_one(
-            "#info-table", expect_type=textual.widgets.DataTable
-        )
-        table.add_columns("", "")
+        tree.select_node(tree.root)
+        tree.focus()
 
     def on_tree_node_selected(
         self: typing.Self, message: textual.widgets.Tree.NodeSelected
     ) -> None:
-        # TODO(ricoh): [c38] grab doc node from tree node .data
         node = message.node
-        # TODO(ricoh): [c38] populate info table
-        table: textual.widgets.DataTable = self.query_one(
-            "#info-table", expect_type=textual.widgets.DataTable
-        )
+        node.expand()
+        desc = self.query_one("#description", expect_type=textual.widgets.Markdown)
         record = record_from_node(
             typing.cast(Record | ConfigClassContainer | UnionContainer, node.data)
-        )
-        table.clear(columns=False)
-        table.add_rows(
-            [("description:", record.option_meta.description), ("type:", record.allowed_type)]
-        )
-        example: textual.widgets.TextArea = self.query_one(
-            "#example", expect_type=textual.widgets.TextArea
         )
         example_name = (
             record.qualified_name[-1]
             if not record.qualified_name[-1].startswith("<class")
             else record.qualified_name[-2]
         )
-        example.text = "Examples:\n\n" + "\n---\n\n".join(
-            yaml.dump(
+        examples = "\n--\n\n".join(
+            yaml.dump(  # TODO(ricoh): [c38] make this part of API
                 {
                     example_name: config_io.CONV.unstructure(
                         example, unstructure_as=unstructure_type
@@ -429,11 +450,35 @@ class ConfigDocWidget(textual.widget.Widget):
             )
             for example, unstructure_type in examples_for(record.allowed_type)
         )
-        example.language = "yaml"
-        # TODO(ricoh): [c38] try best effort syntax example
-        ...
+        markdown = textwrap.dedent(
+            f"""
+            ## Description
+
+            {record.option_meta.description}
+
+            ## Info
+
+            - type: {record.allowed_type}
+            - default: {record.default}
+
+            ## Examples
+
+            ```yaml
+            {{examples}}
+            ```
+            """
+        ).format(examples=examples)
+        desc.update(markdown)
 
 
 class ConfigDocApp(textual.app.App):
+    root_class: textual.reactive.var[type | None] = textual.reactive.var(None, init=True)
+
+    def __init__(self, root_class: type | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self.root_class = root_class if root_class else ExperimentConfig
+
     def compose(self) -> textual.app.ComposeResult:
-        yield ConfigDocWidget()
+        config_widget = ConfigDocWidget()
+        config_widget.root_class = self.root_class
+        yield config_widget
