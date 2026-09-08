@@ -17,12 +17,6 @@ from gt4py.next import (
 )
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
-    _add_extra_diffusion_for_w_con_approaching_cfl,
-)
-from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advection_of_w import (
-    _add_interpolated_horizontal_advection_of_w,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
@@ -41,7 +35,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl i
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2C2EO, E2V
+from icon4py.model.common.dimension import C2E, C2E2CO, E2C, E2C2EO, E2V
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
     _compute_tangential_wind_vp,
 )
@@ -148,7 +142,7 @@ def _compute_horizontal_advection_of_w(
 
 
 @gtx.field_operator
-def _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
+def _compute_vertical_advection_of_w(
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[vpfloat],
     w: fa.CellKHalfField[wpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
@@ -169,6 +163,45 @@ def _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
         + w * astype(coeff2_dwdz_at_half_levels - coeff1_dwdz_at_half_levels, wpfloat)
     )
     return astype(vertical_wind_advective_tendency_wp, vpfloat)
+
+
+@gtx.field_operator
+def _compute_interpolated_horizontal_advection_of_w(
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
+) -> fa.CellKHalfField[ta.wpfloat]:
+    """Formerly known as _mo_velocity_advection_stencil_17."""
+    horizontal_advection_of_w_at_edges_on_half_levels_wp = astype(
+        horizontal_advection_of_w_at_edges_on_half_levels, wpfloat
+    )
+    return neighbor_sum(
+        horizontal_advection_of_w_at_edges_on_half_levels_wp(C2E) * e_bln_c_s, axis=dims.C2EDim
+    )
+
+
+@gtx.field_operator
+def _compute_extra_diffusion_for_w(
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
+    area: fa.CellField[ta.wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
+    w: fa.CellKHalfField[ta.wpfloat],
+    scalfac_exdiff: ta.wpfloat,
+    cfl_w_limit: ta.vpfloat,
+    dtime: ta.wpfloat,
+) -> fa.CellKHalfField[ta.wpfloat]:
+    """Formerly known as _mo_velocity_advection_stencil_18."""
+    contravariant_corrected_w_at_cells_on_half_levels_wp, ddqz_z_half_wp, cfl_w_limit_wp = astype(
+        (contravariant_corrected_w_at_cells_on_half_levels, ddqz_z_half, cfl_w_limit), wpfloat
+    )
+
+    difcoef = scalfac_exdiff * minimum(
+        wpfloat("0.85") - cfl_w_limit_wp * dtime,
+        abs(contravariant_corrected_w_at_cells_on_half_levels_wp) * dtime / ddqz_z_half_wp
+        - cfl_w_limit_wp * dtime,
+    )
+
+    return difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=dims.C2E2CODim)
 
 
 @gtx.field_operator
@@ -280,30 +313,38 @@ def _compute_advective_vertical_wind_tendency(
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.vpfloat]:
-    vertical_wind_advective_tendency = (
-        _add_vertical_advection_of_w_to_advective_vertical_wind_tendency(
-            contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
-        )
+    # TODO(havogt): the wp-vp roundtrips are here to be faithful to ICON's mixed precision,
+    # but was that a deliberate decision on the Fortran side?
+    vertical_advection_of_w = _compute_vertical_advection_of_w(
+        contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
     )
-
-    vertical_wind_advective_tendency = _add_interpolated_horizontal_advection_of_w(
-        e_bln_c_s,
-        horizontal_advection_of_w_at_edges_on_half_levels,
-        vertical_wind_advective_tendency,
+    interpolated_horizontal_advection_of_w = _compute_interpolated_horizontal_advection_of_w(
+        e_bln_c_s, horizontal_advection_of_w_at_edges_on_half_levels
     )
-
-    vertical_wind_advective_tendency = _add_extra_diffusion_for_w_con_approaching_cfl(
-        cfl_clipping,
-        owner_mask,
+    extra_diffusion_for_w = _compute_extra_diffusion_for_w(
         contravariant_corrected_w_at_cells_on_half_levels,
         ddqz_z_half,
         area,
         geofac_n2s,
         w,
-        vertical_wind_advective_tendency,
         scalfac_exdiff,
         cfl_w_limit,
         dtime,
+    )
+
+    vertical_wind_advective_tendency = astype(
+        astype(vertical_advection_of_w, wpfloat) + interpolated_horizontal_advection_of_w,
+        vpfloat,
+    )
+
+    vertical_wind_advective_tendency_wp = astype(vertical_wind_advective_tendency, wpfloat)
+    vertical_wind_advective_tendency = astype(
+        where(
+            cfl_clipping & owner_mask,
+            vertical_wind_advective_tendency_wp + extra_diffusion_for_w,
+            vertical_wind_advective_tendency_wp,
+        ),
+        vpfloat,
     )
 
     return vertical_wind_advective_tendency

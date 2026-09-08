@@ -13,6 +13,8 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_velocity_advection import (
+    _compute_extra_diffusion_for_w,
+    _compute_interpolated_horizontal_advection_of_w,
     compute_velocity_advection_in_corrector_step,
     compute_velocity_advection_in_predictor_step,
 )
@@ -22,9 +24,6 @@ from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import reference_funcs, stencil_tests
 from icon4py.model.testing.reference_funcs import interpolate_to_cell_center_numpy
 
-from .test_add_interpolated_horizontal_advection_of_w import (
-    add_interpolated_horizontal_advection_of_w_numpy,
-)
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity_numpy,
@@ -316,11 +315,11 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
 
     vertical_wind_advective_tendency = np.where(
         condition1,
-        add_interpolated_horizontal_advection_of_w_numpy(
+        vertical_wind_advective_tendency
+        + compute_interpolated_horizontal_advection_of_w_numpy(
             connectivities,
             e_bln_c_s,
             horizontal_advection_of_w_at_edges_on_half_levels[:, :-1],
-            vertical_wind_advective_tendency,
         ),
         vertical_wind_advective_tendency,
     )
@@ -539,6 +538,166 @@ def _restore_outside(
     result = initial.copy()
     result[domain] = computed[domain]
     return result
+
+
+def compute_interpolated_horizontal_advection_of_w_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    e_bln_c_s: np.ndarray,
+    horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
+    **kwargs: Any,
+) -> np.ndarray:
+    e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
+    c2e = connectivities[dims.C2E]
+    return np.sum(
+        horizontal_advection_of_w_at_edges_on_half_levels[c2e] * e_bln_c_s,
+        axis=1,
+    )
+
+
+def compute_extra_diffusion_for_w_numpy(
+    *,
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    area: np.ndarray,
+    geofac_n2s: np.ndarray,
+    w: np.ndarray,
+    scalfac_exdiff: ta.wpfloat,
+    cfl_w_limit: ta.wpfloat,
+    dtime: ta.wpfloat,
+) -> np.ndarray:
+    area = np.expand_dims(area, axis=-1)
+    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
+
+    difcoef = scalfac_exdiff * np.minimum(
+        0.85 - cfl_w_limit * dtime,
+        np.abs(contravariant_corrected_w_at_cells_on_half_levels) * dtime / ddqz_z_half
+        - cfl_w_limit * dtime,
+    )
+
+    c2e2cO = connectivities[dims.C2E2CO]
+    return (
+        difcoef
+        * area
+        * np.sum(
+            np.where(
+                (c2e2cO != -1)[:, :, np.newaxis],
+                w[c2e2cO] * geofac_n2s,
+                0,
+            ),
+            axis=1,
+        )
+    )
+
+
+class TestComputeInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
+    PROGRAM = _compute_interpolated_horizontal_advection_of_w
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        e_bln_c_s: np.ndarray,
+        horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        return dict(
+            out=compute_interpolated_horizontal_advection_of_w_numpy(
+                connectivities,
+                e_bln_c_s,
+                horizontal_advection_of_w_at_edges_on_half_levels,
+            )
+        )
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
+        horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.random_field(
+            dims.EdgeDim, dims.KHalfDim, dtype=ta.vpfloat
+        )
+        interpolated_horizontal_advection_of_w = data_alloc.random_field(
+            dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat
+        )
+
+        return dict(
+            e_bln_c_s=e_bln_c_s,
+            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
+            out=interpolated_horizontal_advection_of_w,
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KHalfDim: (0, gtx.int32(grid.num_levels + 1)),
+            },
+        )
+
+
+@pytest.mark.embedded_remap_error
+class TestComputeExtraDiffusionForW(stencil_tests.StencilTest):
+    PROGRAM = _compute_extra_diffusion_for_w
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
+        ddqz_z_half: np.ndarray,
+        area: np.ndarray,
+        geofac_n2s: np.ndarray,
+        w: np.ndarray,
+        scalfac_exdiff: ta.wpfloat,
+        cfl_w_limit: ta.wpfloat,
+        dtime: ta.wpfloat,
+        **kwargs: Any,
+    ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        return dict(
+            out=compute_extra_diffusion_for_w_numpy(
+                connectivities=connectivities,
+                contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
+                ddqz_z_half=ddqz_z_half,
+                area=area,
+                geofac_n2s=geofac_n2s,
+                w=w,
+                scalfac_exdiff=scalfac_exdiff,
+                cfl_w_limit=cfl_w_limit,
+                dtime=dtime,
+            )
+        )
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        contravariant_corrected_w_at_cells_on_half_levels = data_alloc.random_field(
+            dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
+        )
+        ddqz_z_half = data_alloc.random_field(
+            dims.CellDim, dims.KHalfDim, low=0.5, high=1.5, dtype=ta.vpfloat
+        )
+        area = data_alloc.random_field(dims.CellDim, dtype=ta.wpfloat)
+        geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=ta.wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        extra_diffusion = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+
+        return dict(
+            contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
+            ddqz_z_half=ddqz_z_half,
+            area=area,
+            geofac_n2s=geofac_n2s,
+            w=w,
+            scalfac_exdiff=ta.wpfloat("10.0"),
+            cfl_w_limit=ta.vpfloat("3.0"),
+            dtime=ta.wpfloat("2.0"),
+            out=extra_diffusion,
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KHalfDim: (0, gtx.int32(grid.num_levels + 1)),
+            },
+        )
 
 
 @pytest.mark.embedded_remap_error
