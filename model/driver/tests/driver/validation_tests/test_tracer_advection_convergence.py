@@ -159,11 +159,12 @@ def test_horizontal_tracer_advection_convergence(
         / vel_max,
         integration_time,
     )
+    dtime_microseconds = int(dtime * 1_000_000)
     # recompute the integration time to be a multiple of dtime, so that the model stops at a time that is consistent with the CFL condition
-    num_steps = int(integration_time / dtime)
+    num_steps = int(integration_time * 1_000_000 / dtime_microseconds)
     experiment_config = experiment_config.with_overrides(
         driver={
-            "dtime": time.RelativeTime(seconds=dtime),
+            "dtime": time.RelativeTime(microseconds=dtime_microseconds),
             "end_of_simulation": time.NumTimeSteps(num_steps),
         },
     )
@@ -270,12 +271,13 @@ def test_vertical_tracer_advection_convergence(
         / w_max,
         integration_time,
     )
-    num_steps = int(integration_time / dtime)
+    dtime_microseconds = int(dtime * 1_000_000)
+    num_steps = int(integration_time * 1_000_000 / dtime_microseconds)
 
     for num_lev in num_levels:
         experiment_config_local = experiment_config.with_overrides(
             driver={
-                "dtime": time.RelativeTime(seconds=dtime),
+                "dtime": time.RelativeTime(microseconds=dtime_microseconds),
                 "end_of_simulation": time.NumTimeSteps(num_steps),
             },
             vertical_grid={"num_levels": num_lev},

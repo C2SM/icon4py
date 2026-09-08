@@ -145,7 +145,7 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             id="abstime",
         ),
         pytest.param(
-            "300.0\n...\n", time.RelativeTime, time.RelativeTime(seconds=300.0), id="reltime"
+            "300 seconds\n...\n", time.RelativeTime, time.RelativeTime(seconds=300), id="reltime"
         ),
         pytest.param(
             "endtime:\n  type: absolute\n  value: '2026-07-30T14:41:46'\n",
@@ -156,9 +156,9 @@ def test_write_yaml_str_read_yaml_str_roundtrip() -> None:
             id="endtime-abs",
         ),
         pytest.param(
-            "endtime:\n  type: relative\n  value: 50.0\n",
+            "endtime:\n  type: relative\n  value: 50 seconds\n",
             EndtimeConfig,
-            EndtimeConfig(time.RelativeTime(seconds=50.0)),
+            EndtimeConfig(time.RelativeTime(seconds=50)),
             id="endtime-rel",
         ),
         pytest.param(
