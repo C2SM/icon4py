@@ -150,7 +150,7 @@ def unstructure_reltime(reltime: time.RelativeTime) -> str:
     seconds = reltime.total_seconds()
     if seconds == int(seconds):
         return f"{int(seconds)} seconds"
-    elif (milliseconds:= seconds * 1000) == int(milliseconds):
+    elif (milliseconds := seconds * 1000) == int(milliseconds):
         return f"{int(milliseconds)} milliseconds"
     else:
         return f"{int(seconds) * 1_000_000} microseconds"
