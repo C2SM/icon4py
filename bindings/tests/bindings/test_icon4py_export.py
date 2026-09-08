@@ -77,7 +77,7 @@ def fun_with_None(_: int | None):
     pass
 
 
-def fun_with_None_first(_: None | int):
+def fun_with_None_first(_: int | None):
     pass
 
 

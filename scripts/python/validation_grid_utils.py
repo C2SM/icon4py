@@ -30,9 +30,7 @@ cli = typer.Typer(
 
 def get_validation_grids() -> list[test_defs.GridDescription]:
     # Import here to reduce startup time of the CLI
-    from icon4py.model.testing import (  # noqa: PLC0415 [import-outside-top-level]
-        definitions as test_defs,
-    )
+    from icon4py.model.testing import definitions as test_defs  # noqa: PLC0415 [import-outside-top-level]
 
     return [
         test_defs.Grids.R01B01_GLOBAL,
@@ -47,10 +45,7 @@ def get_validation_grids() -> list[test_defs.GridDescription]:
 def cache_key() -> None:
     """Generate a cache key for the GitHub action cache based on grid file name and download URI."""
 
-    from icon4py.model.testing import (  # noqa: PLC0415 [import-outside-top-level]
-        datatest_utils as dt_utils,
-        definitions as test_defs,
-    )
+    from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs  # noqa: PLC0415 [import-outside-top-level]
 
     d = "_".join(
         grid.name + dt_utils.get_grid_archive_url(test_defs.TESTDATA_ROOT_URL, grid)

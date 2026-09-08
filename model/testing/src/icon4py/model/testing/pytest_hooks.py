@@ -31,9 +31,7 @@ _TEST_LEVELS = ("any", "unit", "integration", "validation")
 @pytest.fixture(autouse=True)
 def _clear_decomposition_cache():
     yield
-    from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
-        mpi_decomposition,
-    )
+    from icon4py.model.common.decomposition import mpi_decomposition  # noqa: PLC0415 [import-outside-top-level]
 
     mpi_decomposition.clear_caches()
 
@@ -303,19 +301,14 @@ def handle_mpi_options(config):
         )
 
     if with_mpi or only_mpi:
-        from icon4py.model.common.decomposition.mpi_decomposition import (  # noqa: PLC0415 [import-outside-top-level]
-            import_error,
-            mpi4py,
-        )
+        from icon4py.model.common.decomposition.mpi_decomposition import import_error, mpi4py  # noqa: PLC0415 [import-outside-top-level]
 
         if mpi4py is None:
             raise pytest.UsageError(
                 f"--with-mpi requires mpi4py and ghex, but import failed: {import_error}"
             )
 
-        from icon4py.model.common.decomposition.mpi_decomposition import (  # noqa: PLC0415 [import-outside-top-level]
-            init_mpi,
-        )
+        from icon4py.model.common.decomposition.mpi_decomposition import init_mpi  # noqa: PLC0415 [import-outside-top-level]
 
         init_mpi()
 
@@ -357,9 +350,7 @@ class MPISubcommScheduler:
         self.group_id = self.world_rank // self.subcomm_size
         self.subcomm = self.world.Split(self.group_id, self.world_rank)
 
-        from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
-            mpi_decomposition,
-        )
+        from icon4py.model.common.decomposition import mpi_decomposition  # noqa: PLC0415 [import-outside-top-level]
 
         self._original_get_props = mpi_decomposition._get_process_properties
 
@@ -404,9 +395,7 @@ class MPISubcommScheduler:
             if self.subcomm is not None and self.subcomm != self.world:
                 self.subcomm.Free()
         finally:
-            from icon4py.model.common.decomposition import (  # noqa: PLC0415 [import-outside-top-level]
-                mpi_decomposition,
-            )
+            from icon4py.model.common.decomposition import mpi_decomposition  # noqa: PLC0415 [import-outside-top-level]
 
             mpi_decomposition._get_process_properties = self._original_get_props
 

@@ -17,6 +17,7 @@ import cattrs.preconf.pyyaml
 import yaml
 
 from icon4py.model.common import time, type_alias as ta
+from icon4py.model.common.config import options as config_options
 
 
 ET = typing.TypeVar("ET", bound=enum.Enum)
@@ -65,7 +66,12 @@ def unstructure_shared_set(shared_set: SharedOptionSet) -> dict:
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class ConfigWithShared:
-    shared: list[SharedOptionSet] = dataclasses.field(default_factory=list)
+    shared: typing.Annotated[
+        list[SharedOptionSet],
+        config_options.ConfigOption(
+            description="Option - value pairs which are shared between sibling sections."
+        ),
+    ] = dataclasses.field(default_factory=list)
 
     def __init_subclass__(cls: type[typing.Self], **kwargs: typing.Any):
         super().__init_subclass__(**kwargs)

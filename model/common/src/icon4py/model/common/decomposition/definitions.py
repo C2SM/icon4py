@@ -415,7 +415,7 @@ class ExchangeRuntime(Protocol):
         dim: gtx.Dimension,
         full_exchange: bool = True,
         stream: StreamLike | BlockType = DEFAULT_STREAM,
-    ) -> None | ExchangeResult:
+    ) -> ExchangeResult | None:
         """Performs either a full exchange or a partial exchange.
 
         If `full_exchange` is `True` then this function is equivalent to
