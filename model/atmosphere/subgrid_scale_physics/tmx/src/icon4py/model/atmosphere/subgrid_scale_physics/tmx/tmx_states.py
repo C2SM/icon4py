@@ -48,23 +48,13 @@ class TmxMetricState:
     wgtfac_e: fa.EdgeKHalfField[ta.wpfloat]
     """Weighting factor for interpolation from full to half levels at edge midpoints (half levels)."""
     wgtfacq_c: fa.CellKField[ta.wpfloat]
-    """Extrapolation coefficients to the bottom surface half level at cell centers.
-
-    Three K rows aligned to the levels they multiply: the row at K index j is the
-    weight of full level j, so the field is defined on KDim in [nlev - 3, nlev).
-    This is what the metrics factory emits and what the dycore stencils consume."""
+    """Quadratic extrapolation coefficients to the surface level at cell centers."""
     wgtfacq1_c: fa.CellKField[ta.wpfloat]
-    """Extrapolation coefficients to the top half level at cell centers.
-
-    Three K rows aligned to the levels they multiply, i.e. KDim in [0, 3)."""
+    """Quadratic extrapolation coefficients to the model top level at cell centers."""
     wgtfacq_e: fa.EdgeKField[ta.wpfloat]
-    """Extrapolation coefficients to the bottom surface half level at edges.
-
-    Aligned to the levels they multiply, see :attr:`wgtfacq_c`."""
+    """Quadratic extrapolation coefficients to the surface level at edges."""
     wgtfacq1_e: fa.EdgeKField[ta.wpfloat]
-    """Extrapolation coefficients to the top half level at edges.
-
-    Aligned to the levels they multiply, see :attr:`wgtfacq1_c`."""
+    """Quadratic extrapolation coefficients to the model top level at edges."""
     geopot_agl_ifc: fa.CellKHalfField[ta.wpfloat]
     """Geopotential above ground level at cell centers on half levels [m^2/s^2]."""
     height_above_ground: fa.CellKField[ta.wpfloat]

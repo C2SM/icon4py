@@ -7,14 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import json
-import re
 import typing
 
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import TmxConfig
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.utils import fortran_config
+from icon4py.model.common.utils import fortran_config, time_utils
 from icon4py.model.testing import datatest_utils as dt_utils, definitions
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -66,22 +65,6 @@ def tmx_config(
     return TmxConfig.from_fortran_dict(atm_dict=atm_dict, input_dict=input_dict)
 
 
-# ISO 8601 duration, fixed-length components only (duplicated from
-# driver.config, which the tmx tests may not depend on)
-_ISO8601_DURATION = re.compile(
-    r"P(?:(?P<weeks>\d+)W)?(?:(?P<days>\d+)D)?"
-    r"(?:T(?=\d)(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?"
-)
-
-_SECONDS_PER = {
-    "weeks": 604800.0,
-    "days": 86400.0,
-    "hours": 3600.0,
-    "minutes": 60.0,
-    "seconds": 1.0,
-}
-
-
 @pytest.fixture
 def tmx_dtime(
     experiment_description: definitions.ExperimentDescription,
@@ -100,9 +83,4 @@ def tmx_dtime(
         fname=fortran_config.INPUT_DICT_FNAME,
     )
     dt_vdf = input_dict["aes_phy_nml"]["aes_phy_config"][0]["dt_vdf"]
-    match = _ISO8601_DURATION.fullmatch(dt_vdf)
-    if match is None or not any(match.groups()):
-        raise ValueError(f"Invalid ISO 8601 duration: '{dt_vdf}'.")
-    return sum(
-        _SECONDS_PER[name] * float(value) for name, value in match.groupdict().items() if value
-    )
+    return time_utils.relativetime_from_iso8601(dt_vdf).total_seconds()

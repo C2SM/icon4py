@@ -12,7 +12,6 @@ from gt4py.next.experimental import concat_where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.math.vertical_operations import with_boundaries_on_half_levels_on_cells
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @gtx.field_operator
@@ -49,15 +48,6 @@ def compute_wgtfac_c(  # noqa: PLR0917 [too-many-positional-arguments]
             dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
-
-
-def _compute_z1_z2_z3(
-    z_ifc: data_alloc.NDArray, i1: int, i2: int, i3: int, i4: int
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
-    z1 = 0.5 * (z_ifc[:, i2] - z_ifc[:, i1])
-    z2 = 0.5 * (z_ifc[:, i2] + z_ifc[:, i3]) - z_ifc[:, i1]
-    z3 = 0.5 * (z_ifc[:, i3] + z_ifc[:, i4]) - z_ifc[:, i1]
-    return z1, z2, z3
 
 
 @gtx.field_operator

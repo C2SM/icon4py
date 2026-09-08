@@ -2011,10 +2011,6 @@ class TmxEntrySavepoint(IconSavepoint):
     def ta(self):
         return self._get_field("ta", dims.CellDim, dims.KDim)
 
-    def ta_phy(self):
-        # Sanity twin of `ta`: prm_field%ta, must be identical to the tmx input temp_c.
-        return self._get_field("ta_phy", dims.CellDim, dims.KDim)
-
     def ua(self):
         return self._get_field("ua", dims.CellDim, dims.KDim)
 
