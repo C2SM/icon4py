@@ -171,14 +171,12 @@ class RecordingComponent:
 
 @dataclasses.dataclass
 class RecordingComponentState(ComponentState):
-    """Stub ComponentState: records collect_inputs calls; fixed dict from as_component_input."""
+    """Stub ComponentState: records the state handed to it; fixed input dict."""
 
-    collect_calls: list = dataclasses.field(default_factory=list)
+    input_calls: list = dataclasses.field(default_factory=list)
 
-    def collect_inputs(self, entry_state) -> None:
-        self.collect_calls.append(entry_state)
-
-    def as_component_input(self) -> dict:
+    def as_component_input(self, state) -> dict:
+        self.input_calls.append(state)
         return {"foo": "bar"}
 
 
@@ -273,8 +271,8 @@ def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
         ("accumulate", {"tend_temperature": "B", "kh": "KH"}),
         ("apply", 300.0),
     ]
-    # both processes were gathered on the same (frozen) entry state
-    assert state.collect_calls == [coupling, coupling]
+    # both processes translated the same (frozen) entry state
+    assert state.input_calls == [coupling, coupling]
     # the store holds the layer-allocated buffers the granule writes into, by process
     assert driver.diagnostics["B"] == {"kh": "BUF_kh"}
     assert driver.diagnostics["A"] == {}
@@ -304,7 +302,7 @@ def test_run_raises_for_non_multiple_interval() -> None:
     assert comp.call_count == 0
 
 
-def test_disabled_process_is_never_collected() -> None:
+def test_disabled_process_is_never_invoked() -> None:
     state = RecordingComponentState()
     comp = RecordingComponent(
         outputs={"tend_temperature": "X"},
@@ -329,7 +327,7 @@ def test_disabled_process_is_never_collected() -> None:
     )
 
     assert comp.call_count == 0
-    assert state.collect_calls == []
+    assert state.input_calls == []
     # entry diagnosis and the (empty) apply still frame the step
     assert coupling.events == [
         ("allocate", "disabled"),
@@ -360,7 +358,7 @@ def test_out_of_window_process_does_nothing() -> None:
     )
 
     assert comp.call_count == 0
-    assert state.collect_calls == []
+    assert state.input_calls == []
     assert coupling.events == [
         ("allocate", "future"),
         ("diagnose", "prog"),
@@ -392,6 +390,9 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
     )
 
     assert comp.call_count == 1
+    # The state is translated only on the firing step: a process that derives its own
+    # inputs must not compute them for the step that reuses the cached outputs.
+    assert state.input_calls == [coupling]
     accumulates = [e for e in coupling.events if e[0] == "accumulate"]
     assert accumulates == [
         ("accumulate", {"tend_temperature": "FRESH"}),

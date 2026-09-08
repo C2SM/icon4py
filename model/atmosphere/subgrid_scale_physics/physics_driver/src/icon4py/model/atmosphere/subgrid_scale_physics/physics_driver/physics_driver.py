@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_control import (
@@ -26,22 +26,41 @@ if TYPE_CHECKING:
     from icon4py.model.common.states import prognostic_state, tracer_states
 
 
+class PhysicsComponent(Component[Any, Any], Protocol):
+    """A ``Component`` that can adopt diagnostic output buffers owned by its caller.
+
+    The generic ``Component`` protocol is deliberately left untouched: writing
+    results into memory the caller owns is a physics-coupling concern, not a
+    property every model component should have to satisfy. Declaring the
+    extension here keeps that decision while still letting the driver call
+    ``bind_output_buffers`` under type checking rather than by duck typing.
+    """
+
+    def bind_output_buffers(self, buffers: dict[str, Any]) -> None:
+        """Adopt the layer-owned buffers for this component's diagnostic outputs.
+
+        Called once per process at driver construction. Implementations keep their
+        own allocations as the standalone default (e.g. the granule datatests) and
+        replace them with these, so the granule writes into the layer's memory in
+        place and the driver never copies a diagnostic.
+        """
+        ...
+
+
 @dataclasses.dataclass
 class PhysicsProcess:
     """A registered physics process: a component, its state adapter, and its time control.
 
-    The component is the per-process adapter (e.g. ``MuphysComponent``); it
-    implements the generic ``Component`` protocol, which is how the driver types it.
-    Physics components must additionally provide ``bind_output_buffers(buffers)``:
-    the driver hands them the layer-owned diagnostic buffers at construction, and
-    the granule writes its results directly into those (standalone use keeps the
-    component's self-allocated buffers). The state adapter is process-specific (it
-    maps the frozen entry state to *this* component's contract), so it is bundled
-    per process rather than shared.
+    The component is the per-process adapter (e.g. ``MuphysComponent``), typed as
+    a ``PhysicsComponent``: the generic ``Component`` contract plus the
+    ``bind_output_buffers`` hook the driver needs to hand it the layer-owned
+    diagnostic buffers. The state adapter is process-specific (it maps the frozen
+    entry state to *this* component's contract), so it is bundled per process
+    rather than shared.
     """
 
     name: str
-    component: Component
+    component: PhysicsComponent
     state: ComponentState
     time_control: ProcessTimeControl
 
@@ -97,11 +116,12 @@ class PhysicsDriver:
             tc.validate_interval(dtime)
             if not tc.enable_process or not tc.is_in_window(step_start_datetime):
                 continue
-            process.state.collect_inputs(self._entry)
             # Compute on a firing (active) step, and also on the first in-window step -- when
             # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
             if tc.is_active(step_start_datetime) or process.name not in self._recycle_cache:
-                outputs = process.component(process.state.as_component_input(), step_start_datetime)
+                outputs = process.component(
+                    process.state.as_component_input(self._entry), step_start_datetime
+                )
                 self._recycle_cache[process.name] = outputs
             else:
                 outputs = self._recycle_cache[process.name]

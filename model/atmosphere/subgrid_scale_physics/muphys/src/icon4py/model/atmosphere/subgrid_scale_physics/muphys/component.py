@@ -43,7 +43,23 @@ if TYPE_CHECKING:
 
 
 class MuphysComponent:
-    """Per-process adapter wrapping the muphys microphysics program."""
+    """Presents the muphys microphysics granule as a model component.
+
+    The granule and the component contract disagree in two ways, and this class
+    is where both are settled:
+
+    * The granule **overwrites the fields it is given** (its ``t_out``/``q_out``
+      arguments are the same buffers as its ``te``/``q_in`` inputs), whereas a
+      component has to report *tendencies*. So ``__call__`` runs it on private
+      copies and derives ``(new - old) / dt``, leaving the caller's fields alone.
+    * The granule also produces precipitation diagnostics. Those are not
+      tendencies and are never applied to the model state, so they are reported
+      as they come.
+
+    Every buffer the granule writes into is allocated once in ``__init__`` and
+    reused, so a timestep allocates nothing. The diagnostic buffers are the one
+    exception: a caller can swap in its own via ``bind_output_buffers``.
+    """
 
     # TODO (Yilu): inherit the Component protocol once it is formalized (deferred to a separate PR).
     inputs_properties = muphys_data.INPUTS_PROPERTIES
@@ -65,19 +81,16 @@ class MuphysComponent:
         self._qnc = qnc
         self._backend = model_options.customize_backend(program=None, backend=backend)
 
-        cell_domain = h_grid.domain(dims.CellDim)
-        # ICON applies physics on the prognostic cells only:
-        # grf_bdywidth_c+1 .. min_rlcell_int (NUDGING start .. LOCAL end).
-        cell_start = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        cell_end = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-
-        # Inputs are copied over the full range: the muphys step reads whole fields.
         full_horizontal_sizes = {
             "horizontal_start": gtx.int32(0),
             "horizontal_end": gtx.int32(self._ncells),
         }
-        # Tendencies only on the prognostic subdomain -- the tendency buffers stay
-        # zero outside, so scattering is a no-op on boundary/halo rows, as in ICON.
+
+        cell_domain = h_grid.domain(dims.CellDim)
+        cell_start = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        cell_end = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        # Tendencies only on the prognostic subdomain -- the tendency buffers stay zero outside
+
         prognostic_horizontal_sizes = {
             "horizontal_start": cell_start,
             "horizontal_end": cell_end,
@@ -114,7 +127,8 @@ class MuphysComponent:
         self._step = step
 
         cell_k_domain = gtx.domain({dims.CellDim: self._ncells, dims.KDim: self._nlev})
-        # standalone defaults — replaced by the layer's buffers via bind_output_buffers
+        # Diagnostic buffers. Used as they are when running standalone; a caller can
+        # replace them with its own through bind_output_buffers.
         self._pflx: fa.CellKField[ta.wpfloat] = gtx.zeros(
             cell_k_domain, dtype=ta.wpfloat, allocator=allocator
         )
@@ -157,23 +171,27 @@ class MuphysComponent:
     def __call__(
         self, state: dict[str, model.DataField], time_step: time.AbsoluteTime
     ) -> dict[str, model.DataField]:
-        """Run muphys, then convert its updated state into tendencies.
+        """Run the granule on private copies of the inputs and report tendencies.
 
-        muphys updates the state in place (t_out/q_out alias te/q_in); this boundary
-        converts it to tendencies ``(new - old) / dt``. Precip outputs are diagnostics,
-        passed straight through.
+        Three steps. Copy the caller's temperature and tracers into our own
+        buffers, because the granule overwrites whatever it is handed and the
+        original values are still needed afterwards. Run the granule, which
+        updates those copies in place and fills the precip diagnostics. Then
+        difference old against new to get ``(new - old) / dt`` per field.
+
+        The caller's fields are never written to. Layer thickness, pressure and
+        density go straight in without a copy, since the granule only reads them.
+
+        Returns the tendencies together with the precip diagnostics. After
+        ``bind_output_buffers`` those diagnostic entries are the caller's own
+        buffers, already filled in place.
         """
-        # cast from generic ``DataField`` to bare gt4py fields
         fields = cast("dict[str, fa.CellKField[ta.wpfloat]]", state)
 
         self._copy_field(field=fields["te"], output_field=self._te_in)
         for s in SPECIES:
             self._copy_field(field=fields[f"q{s}"], output_field=getattr(self._q_in, s))
 
-        # muphys must be invoked in place (the outputs alias the inputs), following
-        # the same convention as the muphys driver: the dace backend compiles the
-        # program with this aliasing baked in and leaves distinct output buffers
-        # unwritten.
         self._step(
             dz=fields["dz"],
             te=self._te_in,
@@ -218,11 +236,17 @@ class MuphysComponent:
         )
 
     def bind_output_buffers(self, buffers: dict[str, fa.CellKField[ta.wpfloat]]) -> None:
-        """Adopt the layer-owned diagnostic buffers (direct write).
+        """Redirect the precip diagnostics into buffers the caller owns.
 
-        The constructor's own allocations remain the standalone default, e.g. in
-        the granule datatests; when driven by the ``PhysicsDriver`` the layer's
-        ``DiagnosticsStore`` owns the buffers and the granule writes them in place.
+        Points the six precip attributes at the buffers passed in. ``__call__``
+        hands those same attributes to the granule as its output arguments on
+        every step, so redirecting them once here redirects every write that
+        follows: the driver never copies a diagnostic out of our results.
+
+        ``PhysicsDriver`` calls this once per process while it is being built,
+        passing the buffers its ``DiagnosticsStore`` owns. If nobody calls it the
+        allocations made in ``__init__`` stay in use, which is what lets the
+        component run on its own in the granule datatests.
         """
         self._pflx = buffers["pflx"]
         self._pr = buffers["pr"]

@@ -22,30 +22,24 @@ if TYPE_CHECKING:
 class State(ComponentState):
     """The muphys ComponentState adapter.
 
-    Maps the frozen ``EntryState`` facade of the PhysicsState layer to the muphys
-    Component contract. The layer already diagnoses everything muphys consumes
-    (T, p) and points at the rest (rho, tracers); the only process-owned input is
-    ``dz``, fetched once from the metrics source. Stateless beyond the bindings —
-    muphys's outputs (tendencies, precip diagnostics) are routed by the driver
-    into the PhysicsState layer's sinks.
+    Maps the frozen ``EntryState`` of the PhysicsState layer to the muphys component contract.
+    The layer already diagnoses everything muphys consumes
+    (T, p) and points at the rest (rho, tracers), so this is pure name
+    translation and muphys derives nothing of its own; the only process-owned
+    input is ``dz``, fetched once from the metrics source. Holds no state beyond
+    it — muphys's outputs (tendencies, precip diagnostics) are routed by the
+    driver into the PhysicsState layer's sinks.
     """
 
     def __init__(self, *, metrics: factory.FieldSource) -> None:
         self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
-        self._entry: Any = None
 
-    def collect_inputs(self, entry_state: Any) -> None:
-        self._entry = entry_state
-
-    def as_component_input(self) -> dict[str, Any]:
+    def as_component_input(self, state: Any) -> dict[str, Any]:
         """The 10 muphys input fields, mapped from the facade (no copies)."""
-        entry = self._entry
-        if entry is None:
-            raise RuntimeError("as_component_input called before collect_inputs")
         return {
             "dz": self.dz,
-            "te": entry.diagnostics.temperature,
-            "p": entry.diagnostics.pressure,
-            "rho": entry.rho,
-            **{f"q{s}": getattr(entry.tracers, f"q{s}") for s in SPECIES},
+            "te": state.diagnostics.temperature,
+            "p": state.diagnostics.pressure,
+            "rho": state.rho,
+            **{f"q{s}": getattr(state.tracers, f"q{s}") for s in SPECIES},
         }

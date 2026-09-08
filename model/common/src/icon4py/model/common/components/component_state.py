@@ -16,10 +16,12 @@ class ComponentState(Protocol):
 
     A driver owns the state its components share; each component consumes its own
     subset of that state, under its own argument names, plus any input only it
-    derives. This protocol is that translation: ``collect_inputs`` binds the
-    shared state, ``as_component_input`` returns the component's input mapping.
+    derives. ``as_component_input`` is that translation: it takes the shared state
+    and returns this component's input mapping, deriving on the way whatever only
+    this component needs.
 
+    The driver calls it once per step on which the component actually computes, so
+    a derivation placed here never runs for a step whose result is discarded.
     """
 
-    def collect_inputs(self, entry_state: Any) -> None: ...
-    def as_component_input(self) -> dict[str, Any]: ...
+    def as_component_input(self, state: Any) -> dict[str, Any]: ...

@@ -10,8 +10,6 @@
 
 import types
 
-import pytest
-
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     data as muphys_data,
     state as muphys_state,
@@ -37,8 +35,7 @@ def test_as_component_input_maps_the_facade_without_copies():
         tracers=tracers,
     )
 
-    state.collect_inputs(entry)
-    inputs = state.as_component_input()
+    inputs = state.as_component_input(entry)
 
     assert inputs == {
         "dz": dz,
@@ -53,12 +50,6 @@ def test_as_component_input_maps_the_facade_without_copies():
         "qg": "QG",
     }
     assert inputs["dz"] is dz  # the metrics field itself, not a copy
-
-
-def test_as_component_input_requires_collect_inputs_first():
-    state = muphys_state.State(metrics=_StubFieldSource({metrics_attributes.DDQZ_Z_FULL: object()}))
-    with pytest.raises(RuntimeError, match="collect_inputs"):
-        state.as_component_input()
 
 
 def test_diagnostic_outputs_declare_dims():
