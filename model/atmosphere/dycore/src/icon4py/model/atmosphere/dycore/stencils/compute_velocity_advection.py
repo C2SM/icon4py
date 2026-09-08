@@ -205,16 +205,12 @@ def _compute_extra_diffusion_for_w(
 
 
 @gtx.field_operator
-def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+def _compute_cfl(
     ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
-) -> tuple[
-    fa.CellKHalfField[ta.vpfloat],
-    fa.CellKHalfField[bool],
-    fa.CellKHalfField[ta.vpfloat],
-]:
+) -> tuple[fa.CellKHalfField[bool], fa.CellKHalfField[ta.vpfloat]]:
     contravariant_corrected_w_at_cells_on_half_levels_wp, ddqz_z_half_wp = astype(
         (contravariant_corrected_w_at_cells_on_half_levels, ddqz_z_half), wpfloat
     )
@@ -230,25 +226,35 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
         contravariant_corrected_w_at_cells_on_half_levels_wp * dtime / ddqz_z_half_wp,
         broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )
-    vertical_cfl_vp = astype(vertical_cfl, vpfloat)
+
+    return cfl_clipping, astype(vertical_cfl, vpfloat)
+
+
+@gtx.field_operator
+def _clip_contravariant_corrected_w(
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
+    cfl_clipping: fa.CellKHalfField[bool],
+    vertical_cfl: fa.CellKHalfField[ta.vpfloat],
+    ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
+    dtime: ta.wpfloat,
+) -> fa.CellKHalfField[ta.vpfloat]:
+    contravariant_corrected_w_at_cells_on_half_levels_wp = astype(
+        contravariant_corrected_w_at_cells_on_half_levels, wpfloat
+    )
 
     contravariant_corrected_w_at_cells_on_half_levels_wp = where(
-        (cfl_clipping) & (vertical_cfl_vp < -vpfloat("0.85")),
+        (cfl_clipping) & (vertical_cfl < -vpfloat("0.85")),
         astype(-vpfloat("0.85") * ddqz_z_half, wpfloat) / dtime,
         contravariant_corrected_w_at_cells_on_half_levels_wp,
     )
 
     contravariant_corrected_w_at_cells_on_half_levels_wp = where(
-        (cfl_clipping) & (vertical_cfl_vp > vpfloat("0.85")),
+        (cfl_clipping) & (vertical_cfl > vpfloat("0.85")),
         astype(vpfloat("0.85") * ddqz_z_half, wpfloat) / dtime,
         contravariant_corrected_w_at_cells_on_half_levels_wp,
     )
 
-    return (
-        astype(contravariant_corrected_w_at_cells_on_half_levels_wp, vpfloat),
-        cfl_clipping,
-        vertical_cfl_vp,
-    )
+    return astype(contravariant_corrected_w_at_cells_on_half_levels_wp, vpfloat)
 
 
 @gtx.field_operator
@@ -278,19 +284,26 @@ def _compute_contravariant_corrected_w_and_cfl(
         w, contravariant_correction_at_cells_on_half_levels
     )
 
-    (contravariant_corrected_w_at_cells_on_half_levels, cfl_clipping, vertical_cfl) = concat_where(
+    cfl_clipping, vertical_cfl = concat_where(
         (dims.KHalfDim >= maximum(2, end_index_of_damping_layer - 2)) & (dims.KHalfDim < nlev - 3),
-        _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+        _compute_cfl(
             ddqz_z_half=ddqz_z_half,
             contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
         ),
         (
-            contravariant_corrected_w_at_cells_on_half_levels,
             broadcast(False, (dims.CellDim, dims.KHalfDim)),
             broadcast(vpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
         ),
+    )
+
+    contravariant_corrected_w_at_cells_on_half_levels = _clip_contravariant_corrected_w(
+        contravariant_corrected_w_at_cells_on_half_levels,
+        cfl_clipping,
+        vertical_cfl,
+        ddqz_z_half,
+        dtime,
     )
 
     return contravariant_corrected_w_at_cells_on_half_levels, cfl_clipping, vertical_cfl
@@ -299,7 +312,12 @@ def _compute_contravariant_corrected_w_and_cfl(
 @gtx.field_operator
 def _compute_advective_vertical_wind_tendency(
     w: fa.CellKHalfField[ta.wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
+    tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.wpfloat],
+    vn_on_half_levels: fa.EdgeKHalfField[ta.vpfloat],
+    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], ta.wpfloat],
+    inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
+    inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
+    tangent_orientation: fa.EdgeField[ta.wpfloat],
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     cfl_clipping: fa.CellKHalfField[bool],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
@@ -317,6 +335,15 @@ def _compute_advective_vertical_wind_tendency(
     # but was that a deliberate decision on the Fortran side?
     vertical_advection_of_w = _compute_vertical_advection_of_w(
         contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
+    )
+    horizontal_advection_of_w_at_edges_on_half_levels = _compute_horizontal_advection_of_w(
+        w=w,
+        tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+        vn_on_half_levels=vn_on_half_levels,
+        c_intp=c_intp,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_primal_edge_length=inv_primal_edge_length,
+        tangent_orientation=tangent_orientation,
     )
     interpolated_horizontal_advection_of_w = _compute_interpolated_horizontal_advection_of_w(
         e_bln_c_s, horizontal_advection_of_w_at_edges_on_half_levels
@@ -373,17 +400,6 @@ def _compute_advection_in_corrector_vertical_momentum(
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
 ) -> tuple[fa.CellKHalfField[ta.vpfloat], fa.CellKField[ta.vpfloat], fa.CellKHalfField[ta.vpfloat]]:
-    #: intermediate variable horizontal_advection_of_w_at_edges_on_half_levels is originally declared as z_v_grad_w in ICON
-    horizontal_advection_of_w_at_edges_on_half_levels = _compute_horizontal_advection_of_w(
-        w=w,
-        tangential_wind_on_half_levels=tangential_wind_on_half_levels,
-        vn_on_half_levels=vn_on_half_levels,
-        c_intp=c_intp,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_primal_edge_length=inv_primal_edge_length,
-        tangent_orientation=tangent_orientation,
-    )
-
     (
         contravariant_corrected_w_at_cells_on_half_levels,
         cfl_clipping,
@@ -400,7 +416,12 @@ def _compute_advection_in_corrector_vertical_momentum(
 
     vertical_wind_advective_tendency = _compute_advective_vertical_wind_tendency(
         w=w,
-        horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
+        tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+        vn_on_half_levels=vn_on_half_levels,
+        c_intp=c_intp,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_primal_edge_length=inv_primal_edge_length,
+        tangent_orientation=tangent_orientation,
         contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
         cfl_clipping=cfl_clipping,
         coeff1_dwdz=coeff1_dwdz,
@@ -507,8 +528,7 @@ def _compute_advection_in_predictor_vertical_momentum(
     )
 
     if not skip_compute_predictor_vertical_advection:
-        #: intermediate variable horizontal_advection_of_w_at_edges_on_half_levels is originally declared as z_v_grad_w in ICON
-        horizontal_advection_of_w_at_edges_on_half_levels = _compute_horizontal_advection_of_w(
+        vertical_wind_advective_tendency = _compute_advective_vertical_wind_tendency(
             w=w,
             tangential_wind_on_half_levels=tangential_wind_on_half_levels,
             vn_on_half_levels=vn_on_half_levels,
@@ -516,10 +536,6 @@ def _compute_advection_in_predictor_vertical_momentum(
             inv_dual_edge_length=inv_dual_edge_length,
             inv_primal_edge_length=inv_primal_edge_length,
             tangent_orientation=tangent_orientation,
-        )
-        vertical_wind_advective_tendency = _compute_advective_vertical_wind_tendency(
-            w=w,
-            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
             contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
             cfl_clipping=cfl_clipping,
             coeff1_dwdz=coeff1_dwdz,
