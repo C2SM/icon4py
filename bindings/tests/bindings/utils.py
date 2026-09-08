@@ -7,6 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+import dataclasses
+import typing
+
 import numpy as np
 from gt4py.next.embedded.nd_array_field import NdArrayField
 
@@ -83,6 +86,19 @@ def compare_values_shallow(value1, value2, obj_name="value"):  # noqa: PLR0911, 
         return True, None
 
 
+def _optional_fields(obj) -> frozenset[str]:
+    """Dataclass fields whose annotation admits ``None``."""
+    if not dataclasses.is_dataclass(obj):
+        return frozenset()
+    # Deliberately not 'get_type_hints': it resolves forward references in the
+    # defining module's namespace and raises for classes whose annotations name
+    # something not imported there. A class using 'from __future__ import
+    # annotations' therefore reports no optional fields, and is compared strictly.
+    return frozenset(
+        field.name for field in dataclasses.fields(obj) if type(None) in typing.get_args(field.type)
+    )
+
+
 def compare_objects(obj1, obj2, obj_name="object"):  # noqa: PLR0911
     # Check if both objects are instances of numpy scalar types
     if isinstance(obj1, np.ScalarType) and isinstance(obj2, np.ScalarType):
@@ -107,9 +123,14 @@ def compare_objects(obj1, obj2, obj_name="object"):  # noqa: PLR0911
     if obj1.__class__ != obj2.__class__:
         return False, f"Class mismatch for {obj_name}: {obj1.__class__} != {obj2.__class__}"
 
-    # Shallowly compare the attributes of both objects
+    # Shallowly compare the attributes of both objects. A field annotated as
+    # optional may be unset on one side, because the construction path there
+    # cannot supply it; every other field must match.
+    optional = _optional_fields(obj1)
     for attr, value in vars(obj1).items():
         other_value = getattr(obj2, attr, None)
+        if attr in optional and (value is None or other_value is None):
+            continue
         result, error_message = compare_values_shallow(value, other_value, f"{obj_name}.{attr}")
         if not result:
             return False, error_message
