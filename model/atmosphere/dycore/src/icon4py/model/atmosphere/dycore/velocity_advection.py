@@ -12,8 +12,10 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.atmosphere.dycore.stencils.compute_velocity_advection import (
+from icon4py.model.atmosphere.dycore.stencils.velocity_advection_corrector import (
     compute_velocity_advection_in_corrector_step,
+)
+from icon4py.model.atmosphere.dycore.stencils.velocity_advection_predictor import (
     compute_velocity_advection_in_predictor_step,
 )
 from icon4py.model.common import (

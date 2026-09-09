@@ -23,12 +23,12 @@ from icon4py.model.testing import stencil_tests
 from .test_compute_avg_vn_and_graddiv_vn_and_vt import compute_avg_vn_and_graddiv_vn_and_vt_numpy
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_mass_flux import compute_mass_flux_numpy
-from .test_compute_velocity_advection import (
+from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
+from .test_velocity_advection_terms import (
     compute_horizontal_kinetic_energy_at_edges_numpy,
     extrapolate_to_surface_numpy,
     interpolate_vn_to_half_levels_numpy,
 )
-from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
 
 
 def interpolate_vn_to_half_levels_and_compute_kinetic_energy_numpy(
