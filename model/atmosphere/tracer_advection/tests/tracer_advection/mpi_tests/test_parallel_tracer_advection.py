@@ -120,15 +120,6 @@ def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
         pytest.xfail("ValueError: axes don't match array")
-    # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no tracer_advection because the horizontal flux is not zero. Further check required.
-    if (
-        even_timestep
-        and horizontal_advection_type == tracer_advection.HorizontalAdvectionType.NO_ADVECTION
-    ):
-        pytest.xfail(
-            "This test is skipped until the cause of nonzero horizontal tracer_advection if revealed."
-        )
-
     parallel_helpers.check_comm_size(process_props)
     parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
