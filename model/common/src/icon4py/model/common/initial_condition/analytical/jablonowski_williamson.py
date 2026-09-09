@@ -56,7 +56,7 @@ class JablonowskiWilliamsonConfig:
     p_sfc: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??", icon_equivalent=common_conf_opt.IconOption(name="zp_ape", path=())
+            description="Surface pressure (Pa)", icon_equivalent=common_conf_opt.IconOption(name="zp_ape", path=())
         ),
     ] = 100000.0
     baroclinic_amplitude: typing.Annotated[
@@ -75,29 +75,29 @@ class JablonowskiWilliamsonConfig:
     u0: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??", icon_equivalent=common_conf_opt.IconOption(name="jw_u0", path=())
+            description="Maximum zonal wind (m s$^{-1}$)", icon_equivalent=common_conf_opt.IconOption(name="jw_u0", path=())
         ),
     ] = 35.0
     temp0: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??", icon_equivalent=common_conf_opt.IconOption(name="jw_temp0", path=())
+            description="Horizontal mean surface temperature (K)", icon_equivalent=common_conf_opt.IconOption(name="jw_temp0", path=())
         ),
     ] = 288.0
     eta_0: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??",
+            description="Offset of eta vertical coordinate, which is a normalised pressure coordinate.",
         ),
     ] = 0.252
-    eta_t: typing.Annotated[float, common_conf_opt.ConfigOption(description="??")] = 0.2
-    gamma: typing.Annotated[float, common_conf_opt.ConfigOption(description="??")] = 0.005
-    dtemp: typing.Annotated[float, common_conf_opt.ConfigOption(description="??")] = 4.8e5
+    eta_t: typing.Annotated[float, common_conf_opt.ConfigOption(description="eta coordinate of the tropopause.")] = 0.2
+    gamma: typing.Annotated[float, common_conf_opt.ConfigOption(description="Temperature lapse rate (K m$^{-1}$)")] = 0.005
+    dtemp: typing.Annotated[float, common_conf_opt.ConfigOption(description="Coefficient of the quintic function of eta coordinate for the temperature profile above the tropopause.")] = 4.8e5
     lon_perturbation_center: typing.Annotated[
-        float, common_conf_opt.ConfigOption(description="??")
+        float, common_conf_opt.ConfigOption(description="Longitude (rad) of the perturbation center in the baroclinic Jablonowski-Williamson experiment.")
     ] = math.pi / 9.0
     lat_perturbation_center: typing.Annotated[
-        float, common_conf_opt.ConfigOption(description="??")
+        float, common_conf_opt.ConfigOption(description="Latitude (rad) of the perturbation center in the baroclinic Jablonowski-Williamson experiment.")
     ] = 2.0 * math.pi / 9.0
     # inwp tracers, see init_nh_inwp_tracers in mo_nh_jabw_exp.f90
     rh_at_1000hpa: typing.Annotated[
@@ -110,7 +110,7 @@ class JablonowskiWilliamsonConfig:
     qv_max: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??", icon_equivalent=common_conf_opt.IconOption(name="qv_max", path=())
+            description="Upper limit of the specific humidity (kg kg$^{-1}$) in the moist experiment", icon_equivalent=common_conf_opt.IconOption(name="qv_max", path=())
         ),
     ] = 20e-3
     # Fortran l_rediag=.TRUE. => 10 iterations
