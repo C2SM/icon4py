@@ -170,10 +170,6 @@ class EdgeParams:
     edge_cell_distances: gtx.Field[[dims.EdgeDim, dims.E2CDim], float] | None = None
     """
     Distance between the edge midpoint and the circumcenters of the two adjacent cells.
-
-    ICON's ``grid_init`` does not pass this field, so the Fortran bindings path
-    leaves it unset.
-
     defined in ICON in mo_model_domain.f90:t_grid_edges%edge_cell_length
     """
 
