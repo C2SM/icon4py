@@ -41,19 +41,19 @@ class Gauss3DConfig:
     u0: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??",
+            description="Zonal wind speed (m/s)",
         ),
     ] = 0.0
     t0: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??",
+            description="Surface potential temperature (K)",
         ),
     ] = 300.0
     brunt_vais: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
-            description="??",
+            description="Brunt-Väisälä frequency.",
         ),
     ] = 0.01
     # The default values are from mo_nh_testcases.f90 and mo_nh_testcases_nml.f90
