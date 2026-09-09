@@ -17,8 +17,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 class EdgeParams:
     """Edge geometry of the grid, from ICON's ``t_grid_edges``.
 
-    A member annotated ``| None`` is one that not every construction path can
-    supply; everything else must be provided by all of them.
+    An optional member is one that not every construction path can supply.
     """
 
     tangent_orientation: fa.EdgeField[float]
@@ -181,11 +180,33 @@ class EdgeParams:
 
 @dataclasses.dataclass(frozen=True)
 class CellParams:
-    #: Latitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
+    """Cell geometry of the grid, from ICON's ``t_grid_cells``.
+
+    An optional member is one that not every construction path can supply.
+    """
+
     cell_center_lat: fa.CellField[float]
-    #: Longitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
+    """
+    Latitude at the cell center. The cell center is defined to be the
+    circumcenter of a triangle.
+    """
+
     cell_center_lon: fa.CellField[float]
-    #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
+    """
+    Longitude at the cell center. The cell center is defined to be the
+    circumcenter of a triangle.
+    """
+
     area: fa.CellField[float]
-    #: Not supplied by every construction path.
+    """
+    Area of a cell.
+
+    defined in ICON in mo_model_domain.f90:t_grid_cells%area
+    """
+
     mean_cell_area: float | None = None
+    """
+    Mean area of the grid cells [m^2].
+
+    defined in ICON in mo_grid_geometry_info.f90:t_grid_geometry_info%mean_cell_area
+    """
