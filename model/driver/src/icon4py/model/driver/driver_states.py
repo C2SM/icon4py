@@ -258,9 +258,9 @@ class TimerCollection:
 
 
 def link_tracer_prep_adv_to_dycore(
-    grid: base_grid.Grid,
-    allocator: gtx_typing.Allocator | None,
     *,
+    grid: base_grid.Grid,
+    allocator: gtx_typing.Allocator,
     tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
     solve_nonhydro_enabled: bool,
 ) -> dycore_states.PrepAdvection | None:
