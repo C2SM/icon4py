@@ -74,28 +74,32 @@ def _quadratic_extrapolation_weights(
 def _compute_wgtfacq1_c(z_ifc: fa.CellKHalfField[wpfloat]) -> fa.CellKField[wpfloat]:
     """Top-boundary quadratic extrapolation weights at cell centres.
 
-    Full levels 0..2, each carrying one coefficient. All three are built from the
-    same four interface heights (0..3), so the shift differs per level: from full
-    level k, interface j sits at ``KDim + (j - k) - 0.5``.
+    Full levels 0..2 carry the weights of interfaces 0..3, one per level. The four
+    interfaces are the same for all three, so each is addressed relative to the
+    level being written: from full level k, interface j sits at
+    ``KDim + (j - k) - 0.5``.
     """
-    w1, _, _ = _quadratic_extrapolation_weights(
+    za = concat_where(
+        dims.KDim == 0,
         z_ifc(dims.KDim - 0.5),
+        concat_where(dims.KDim == 1, z_ifc(dims.KDim - 1.5), z_ifc(dims.KDim - 2.5)),
+    )
+    zb = concat_where(
+        dims.KDim == 0,
         z_ifc(dims.KDim + 0.5),
+        concat_where(dims.KDim == 1, z_ifc(dims.KDim - 0.5), z_ifc(dims.KDim - 1.5)),
+    )
+    zc = concat_where(
+        dims.KDim == 0,
         z_ifc(dims.KDim + 1.5),
+        concat_where(dims.KDim == 1, z_ifc(dims.KDim + 0.5), z_ifc(dims.KDim - 0.5)),
+    )
+    zd = concat_where(
+        dims.KDim == 0,
         z_ifc(dims.KDim + 2.5),
+        concat_where(dims.KDim == 1, z_ifc(dims.KDim + 1.5), z_ifc(dims.KDim + 0.5)),
     )
-    _, w2, _ = _quadratic_extrapolation_weights(
-        z_ifc(dims.KDim - 1.5),
-        z_ifc(dims.KDim - 0.5),
-        z_ifc(dims.KDim + 0.5),
-        z_ifc(dims.KDim + 1.5),
-    )
-    _, _, w3 = _quadratic_extrapolation_weights(
-        z_ifc(dims.KDim - 2.5),
-        z_ifc(dims.KDim - 1.5),
-        z_ifc(dims.KDim - 0.5),
-        z_ifc(dims.KDim + 0.5),
-    )
+    w1, w2, w3 = _quadratic_extrapolation_weights(za, zb, zc, zd)
     return concat_where(dims.KDim == 0, w1, concat_where(dims.KDim == 1, w2, w3))
 
 
@@ -124,28 +128,31 @@ def _compute_wgtfacq_c_dsl(
 ) -> fa.CellKField[wpfloat]:
     """Surface-boundary quadratic extrapolation weights at cell centres.
 
-    Full levels nlev-3..nlev-1, mirroring :func:`_compute_wgtfacq1_c` at the other
-    end of the column: the four interface heights are nlev..nlev-3, and the level
-    nearest the surface carries the first coefficient.
+    Mirrors :func:`_compute_wgtfacq1_c` at the other end of the column: full levels
+    nlev-3..nlev-1 carry the weights of interfaces nlev..nlev-3, and the level
+    nearest the surface carries the first one.
     """
-    w1, _, _ = _quadratic_extrapolation_weights(
+    za = concat_where(
+        dims.KDim == nlev - 1,
         z_ifc(dims.KDim + 0.5),
+        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim + 1.5), z_ifc(dims.KDim + 2.5)),
+    )
+    zb = concat_where(
+        dims.KDim == nlev - 1,
         z_ifc(dims.KDim - 0.5),
+        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim + 0.5), z_ifc(dims.KDim + 1.5)),
+    )
+    zc = concat_where(
+        dims.KDim == nlev - 1,
         z_ifc(dims.KDim - 1.5),
+        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim - 0.5), z_ifc(dims.KDim + 0.5)),
+    )
+    zd = concat_where(
+        dims.KDim == nlev - 1,
         z_ifc(dims.KDim - 2.5),
+        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim - 1.5), z_ifc(dims.KDim - 0.5)),
     )
-    _, w2, _ = _quadratic_extrapolation_weights(
-        z_ifc(dims.KDim + 1.5),
-        z_ifc(dims.KDim + 0.5),
-        z_ifc(dims.KDim - 0.5),
-        z_ifc(dims.KDim - 1.5),
-    )
-    _, _, w3 = _quadratic_extrapolation_weights(
-        z_ifc(dims.KDim + 2.5),
-        z_ifc(dims.KDim + 1.5),
-        z_ifc(dims.KDim + 0.5),
-        z_ifc(dims.KDim - 0.5),
-    )
+    w1, w2, w3 = _quadratic_extrapolation_weights(za, zb, zc, zd)
     return concat_where(dims.KDim == nlev - 1, w1, concat_where(dims.KDim == nlev - 2, w2, w3))
 
 
