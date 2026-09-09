@@ -210,20 +210,32 @@ def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        primal_normal_cell_x=primal_normal_cell_x,
-        primal_normal_cell_y=primal_normal_cell_y,
-        dual_normal_cell_x=dual_normal_cell_x,
-        dual_normal_cell_y=dual_normal_cell_y,
+        primal_normal_vert=(
+            primal_normal_vert_x,
+            primal_normal_vert_y,
+        ),
+        dual_normal_vert=(
+            dual_normal_vert_x,
+            dual_normal_vert_y,
+        ),
+        primal_normal_cell=(
+            primal_normal_cell_x,
+            primal_normal_cell_y,
+        ),
+        dual_normal_cell=(
+            dual_normal_cell_x,
+            dual_normal_cell_y,
+        ),
         edge_areas=edge_areas,
         coriolis_frequency=f_e,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
+        edge_center=(
+            edge_center_lat,
+            edge_center_lon,
+        ),
+        primal_normal=(
+            primal_normal_x,
+            primal_normal_y,
+        ),
     )
 
     # Cell geometry
