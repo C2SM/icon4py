@@ -276,19 +276,10 @@ def link_tracer_prep_adv_to_dycore(
             mass_flx_me=tracer_prep_adv_state.mass_flx_me,
             dynamical_vertical_mass_flux_at_cells_on_half_levels=tracer_prep_adv_state.mass_flx_ic,
             dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+                grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.wpfloat
             ),
         )
-    return dycore_states.PrepAdvection(
-        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
-    )
+    return dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
 
 
 def assemble_driver_states(
