@@ -215,7 +215,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def edge_vert_length(self):
         """length of edge midpoint to vertex"""
-        return self._get_field("edge_vert_length", dims.EdgeDim, dims.E2C2VDim)
+        return self._get_field("edge_vert_length", dims.EdgeDim, dims.E2VDim)
 
     def vct_a(self):
         return self._get_field("vct_a", dims.KHalfDim)
