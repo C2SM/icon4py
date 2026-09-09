@@ -61,12 +61,7 @@ from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import (
-    base as base_grid,
-    horizontal as h_grid,
-    icon as icon_grid,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -490,7 +485,12 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
     Args:
         func: GT4Py Program that computes the fields
-        domain: the compute domain used for the stencil computation
+        domain: the domain of the computed fields, and the compute domain of the program unless
+            `compute_domain` overrides it. It is the fields' extent only in the vertical:
+            horizontal dimensions are always allocated at full local size, because the halo
+            exchange fills entries outside the compute range and neighbor access indexes the
+            field by absolute local index. Vertical dimensions have neither, and a gt4py field
+            keeps its absolute level indices, so a vertical sub-range is a field on those levels.
         fields: dict[str, str], fields computed by this stencil:  the key is the variable name of
             the out arguments used in the program and the value the name the field is registered
             under and declared in the metadata.
@@ -498,6 +498,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
             the key is the variable name used in the `gtx.program` and the value the name
             of the field it depends on.
         params: scalar parameters used in the program
+        compute_domain: per-dimension override of the range the program computes, for fields
+            that exist on the whole `domain` but are computed only on part of it.
     """
 
     def __init__(
@@ -509,9 +511,16 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         deps: dict[str, str],
         do_exchange: bool,
         params: dict[str, state_utils.ScalarType] | None = None,
+        compute_domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | None = None,
     ):
+        compute_domain = compute_domain if compute_domain is not None else {}
+        if not compute_domain.keys() <= domain.keys():
+            raise ValueError(
+                f"compute_domain has dimensions not in domain: {compute_domain.keys() - domain.keys()}"
+            )
         self._func = func
-        self._compute_domain = domain
+        self._domain = domain
+        self._compute_domain = {**domain, **compute_domain}
         self._dims = domain.keys()
         self._dependencies = deps
         self._output = fields
@@ -522,14 +531,20 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         }
         self._do_exchange = do_exchange
 
+    def _extent(self, dim: gtx.Dimension, grid: GridProvider) -> tuple[int, int]:
+        if dim.kind == gtx.DimensionKind.VERTICAL:
+            start, end = self._domain[dim]
+            return grid.vertical_grid.index(start), grid.vertical_grid.index(end)
+        return 0, grid.grid.size[dim]
+
     def _allocate(
         self,
         backend: gtx_typing.Backend | None,
-        grid: base_grid.Grid,  # TODO @halungge: change to vertical grid
+        grid: GridProvider,
         dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
         allocate = gtx.constructors.zeros.partial(allocator=backend)
-        field_domain = {dim: (0, grid.size[dim]) for dim in self._dims}
+        field_domain = {dim: self._extent(dim, grid) for dim in self._dims}
         return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
     # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
@@ -555,26 +570,27 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
                 offset_providers.update(vertical_offsets)
         return offset_providers
 
-    def _domain_args(
-        self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid
-    ) -> dict[str : gtx.int32]:
+    def _domain_args(self, grid: GridProvider) -> dict[str, gtx.int32]:
         domain_args = {}
 
-        for dim in self._compute_domain:
+        for dim, (start, end) in self._compute_domain.items():
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 domain_args.update(
                     {
-                        "horizontal_start": grid.start_index(self._compute_domain[dim][0]),
-                        "horizontal_end": grid.end_index(self._compute_domain[dim][1]),
+                        "horizontal_start": grid.grid.start_index(start),
+                        "horizontal_end": grid.grid.end_index(end),
                     }
                 )
             elif dim.kind == gtx.DimensionKind.VERTICAL:
-                domain_args.update(
-                    {
-                        "vertical_start": vertical_grid.index(self._compute_domain[dim][0]),
-                        "vertical_end": vertical_grid.index(self._compute_domain[dim][1]),
-                    }
-                )
+                vertical_start = grid.vertical_grid.index(start)
+                vertical_end = grid.vertical_grid.index(end)
+                first, last = self._extent(dim, grid)
+                if vertical_start < first or vertical_end > last:
+                    raise ValueError(
+                        f"compute range [{vertical_start}, {vertical_end}) of {dim} exceeds "
+                        f"the field domain [{first}, {last})"
+                    )
+                domain_args.update({"vertical_start": vertical_start, "vertical_end": vertical_end})
             else:
                 raise ValueError(f"DimensionKind '{dim.kind}' not supported in Program Domain")
         return domain_args
@@ -609,12 +625,12 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         except (ValueError, KeyError):
             dtype = {v: ta.wpfloat for v in self._output.values()}
 
-        self._fields = self._allocate(backend, grid.grid, dtype=dtype)
+        self._fields = self._allocate(backend, grid, dtype=dtype)
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
         deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})
-        dims = self._domain_args(grid.grid, grid.vertical_grid)
+        dims = self._domain_args(grid)
         offset_providers = self._get_offset_providers(grid.grid)
         deps.update(dims)
         self._func.with_backend(backend)(**deps, offset_provider=offset_providers)

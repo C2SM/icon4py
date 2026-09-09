@@ -345,7 +345,13 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={"vct_a": "vct_a"},
             domain={
                 dims.KHalfDim: (
-                    vertical_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
+                )
+            },
+            compute_domain={
+                dims.KHalfDim: (
+                    vertical_half_domain(v_grid.Zone.TOP),
                     v_grid.Domain(dims.KHalfDim, v_grid.Zone.DAMPING, 1),
                 )
             },
@@ -372,6 +378,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LOCAL),
                     cell_domain(h_grid.Zone.END),
                 ),
+                dims.KDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            compute_domain={
                 dims.KDim: (
                     v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1),
                     vertical_domain(v_grid.Zone.BOTTOM),
