@@ -127,8 +127,6 @@ class MuphysComponent:
         self._step = step
 
         cell_k_domain = gtx.domain({dims.CellDim: self._ncells, dims.KDim: self._nlev})
-        # Diagnostic buffers. Used as they are when running standalone; a caller can
-        # replace them with its own through bind_output_buffers.
         self._pflx: fa.CellKField[ta.wpfloat] = gtx.zeros(
             cell_k_domain, dtype=ta.wpfloat, allocator=allocator
         )
