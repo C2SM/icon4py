@@ -15,10 +15,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class EdgeParams:
-    """Edge geometry of the grid, from ICON's ``t_grid_edges``.
-
-    An optional member is one that not every construction path can supply.
-    """
+    """Edge geometry of the grid, from ICON's ``t_grid_edges``."""
 
     tangent_orientation: fa.EdgeField[float]
     r"""
@@ -170,16 +167,14 @@ class EdgeParams:
     edge_cell_distances: gtx.Field[[dims.EdgeDim, dims.E2CDim], float] | None = None
     """
     Distance between the edge midpoint and the circumcenters of the two adjacent cells.
+
     defined in ICON in mo_model_domain.f90:t_grid_edges%edge_cell_length
     """
 
 
 @dataclasses.dataclass(frozen=True)
 class CellParams:
-    """Cell geometry of the grid, from ICON's ``t_grid_cells``.
-
-    An optional member is one that not every construction path can supply.
-    """
+    """Cell geometry of the grid, from ICON's ``t_grid_cells``."""
 
     cell_center_lat: fa.CellField[float]
     """

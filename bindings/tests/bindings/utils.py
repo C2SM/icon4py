@@ -90,10 +90,6 @@ def _optional_fields(obj) -> frozenset[str]:
     """Dataclass fields whose annotation admits ``None``."""
     if not dataclasses.is_dataclass(obj):
         return frozenset()
-    # Deliberately not 'get_type_hints': it resolves forward references in the
-    # defining module's namespace and raises for classes whose annotations name
-    # something not imported there. A class using 'from __future__ import
-    # annotations' therefore reports no optional fields, and is compared strictly.
     return frozenset(
         field.name for field in dataclasses.fields(obj) if type(None) in typing.get_args(field.type)
     )
@@ -123,9 +119,7 @@ def compare_objects(obj1, obj2, obj_name="object"):  # noqa: PLR0911
     if obj1.__class__ != obj2.__class__:
         return False, f"Class mismatch for {obj_name}: {obj1.__class__} != {obj2.__class__}"
 
-    # Shallowly compare the attributes of both objects. A field annotated as
-    # optional may be unset on one side, because the construction path there
-    # cannot supply it; every other field must match.
+    # Shallowly compare the attributes of both objects
     optional = _optional_fields(obj1)
     for attr, value in vars(obj1).items():
         other_value = getattr(obj2, attr, None)
