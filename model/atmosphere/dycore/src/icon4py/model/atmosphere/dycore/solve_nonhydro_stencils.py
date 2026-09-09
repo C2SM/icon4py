@@ -7,17 +7,34 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.dycore.dycore_utils import (
-    _broadcast_zero_to_three_edge_kdim_fields_2wp1vp,
-)
 from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
     _update_density_exner_wind,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.math.vertical_operations import _set_constant_on_model_levels_on_cells_vp
+from icon4py.model.common.math.vertical_operations import (
+    _set_constant_on_model_levels_on_cells_vp,
+    _set_constant_on_model_levels_on_edges_vp,
+    _set_constant_on_model_levels_on_edges_wp,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+
+@gtx.field_operator
+def _init_test_fields() -> tuple[
+    fa.EdgeKField[wpfloat],
+    fa.EdgeKField[wpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.CellKField[vpfloat],
+]:
+    zero_wp = wpfloat(0.0)
+    zero_vp = vpfloat(0.0)
+    return (
+        _set_constant_on_model_levels_on_edges_wp(zero_wp),
+        _set_constant_on_model_levels_on_edges_wp(zero_wp),
+        _set_constant_on_model_levels_on_edges_vp(zero_vp),
+        _set_constant_on_model_levels_on_cells_vp(zero_vp)
+    )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_test_fields(  # noqa: PLR0917 [too-many-positional-arguments]
@@ -32,15 +49,12 @@ def init_test_fields(  # noqa: PLR0917 [too-many-positional-arguments]
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _broadcast_zero_to_three_edge_kdim_fields_2wp1vp(
-        out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
-        domain={dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
-    )
-    _set_constant_on_model_levels_on_cells_vp(
-        0.0,
-        out=z_dwdz_dd,
-        domain={dims.CellDim: (cells_start, cells_end), dims.KDim: (vertical_start, vertical_end)},
-    )
+    _init_test_fields(
+        out=(z_rho_e, z_theta_v_e, z_graddiv_vn, z_dwdz_dd),
+        domain=({dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
+                {dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
+                {dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
+                {dims.CellDim: (cells_start, cells_end), dims.KDim: (vertical_start, vertical_end)},))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -49,11 +63,11 @@ def stencils_61_62(  # noqa: PLR0917 [too-many-positional-arguments]
     grf_tend_rho: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],
     grf_tend_thv: fa.CellKField[wpfloat],
-    w_now: fa.CellKField[wpfloat],
-    grf_tend_w: fa.CellKField[wpfloat],
+    w_now: fa.CellKHalfField[wpfloat],
+    grf_tend_w: fa.CellKHalfField[wpfloat],
     rho_new: fa.CellKField[wpfloat],
     exner_new: fa.CellKField[wpfloat],
-    w_new: fa.CellKField[wpfloat],
+    w_new: fa.CellKHalfField[wpfloat],
     dtime: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

@@ -23,19 +23,6 @@ def scale_k(field: fa.KField[wpfloat], factor: wpfloat, scaled_field: fa.KField[
 
 
 @gtx.field_operator
-def _broadcast_zero_to_three_edge_kdim_fields_2wp1vp() -> tuple[
-    fa.EdgeKField[wpfloat],
-    fa.EdgeKField[wpfloat],
-    fa.EdgeKField[vpfloat],
-]:
-    return (
-        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-        broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-        broadcast(vpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
-    )
-
-
-@gtx.field_operator
 def _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
     fourth_order_divdamp_scaling_coeff: fa.KField[wpfloat],
     max_nudging_coefficient: wpfloat,

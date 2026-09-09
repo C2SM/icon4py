@@ -264,12 +264,20 @@ def copy_half_level_below_to_model_levels_on_cells(  # noqa: PLR0917 [too-many-p
 
 
 @gtx.field_operator
-def _set_constant_on_model_levels_on_cells_wp(value: float) -> fa.CellKField[wpfloat]:
-    return broadcast(wpfloat(value), (dims.CellDim, dims.KDim))
+def _set_constant_on_model_levels_on_cells_wp(value: wpfloat) -> fa.CellKField[wpfloat]:
+    return broadcast(value, (dims.CellDim, dims.KDim))
 
 @gtx.field_operator
-def _set_constant_on_model_levels_on_cells_vp(value: float) -> fa.CellKField[vpfloat]:
-    return broadcast(vpfloat(value), (dims.CellDim, dims.KDim))
+def _set_constant_on_model_levels_on_cells_vp(value: vpfloat) -> fa.CellKField[vpfloat]:
+    return broadcast(value, (dims.CellDim, dims.KDim))
+
+@gtx.field_operator
+def _set_constant_on_model_levels_on_edges_wp(value: wpfloat) -> fa.EdgeKField[wpfloat]:
+    return broadcast(value, (dims.EdgeDim, dims.KDim))
+
+@gtx.field_operator
+def _set_constant_on_model_levels_on_edges_vp(value: vpfloat) -> fa.EdgeKField[vpfloat]:
+    return broadcast(value, (dims.EdgeDim, dims.KDim))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
