@@ -255,7 +255,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
             self._domain_id_gen(), data_alloc.as_numpy(all_global), data_alloc.as_numpy(local_halo)
         )
         log.debug(
-            f"domain descriptor for dim='{dim.value}' with properties {self._domain_descriptor_info(domain_desc)} created"
+            f"domain descriptor for dim='{dim.tag}' with properties {self._domain_descriptor_info(domain_desc)} created"
         )
         return domain_desc
 
@@ -266,14 +266,14 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
             horizontal_dim, decomp_defs.DecompositionInfo.EntryType.HALO
         )
         halo_generator = HaloGenerator.from_gids(data_alloc.as_numpy(global_halo_idx))
-        log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
+        log.debug(f"halo generator for dim='{horizontal_dim.tag}' created")
         pattern = make_pattern(
             self._context,
             halo_generator,
             [self._domain_descriptors[horizontal_dim]],
         )
         log.debug(
-            f"pattern for dim='{horizontal_dim.value}' and {self._domain_descriptor_info(self._domain_descriptors[horizontal_dim])} created"
+            f"pattern for dim='{horizontal_dim.tag}' and {self._domain_descriptor_info(self._domain_descriptors[horizontal_dim])} created"
         )
         return pattern
 
@@ -336,7 +336,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
                 patterns=applied_patterns,
                 stream=stream,
             )
-        log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
+        log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.tag}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
     def exchange(
@@ -347,7 +347,7 @@ class GHexMultiNodeExchange(decomp_defs.ExchangeRuntime):
     ) -> None:
         # Fall back to the default implementation provided by the protocol.
         super().exchange(dim, *fields, stream=stream)
-        log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
+        log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.tag}' done.")
 
 
 @dataclass

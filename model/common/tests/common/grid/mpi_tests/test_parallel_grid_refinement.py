@@ -44,10 +44,10 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         params = [
             (dim, zone) for dim in dims.horizontal_dims() for zone in h_grid._get_zones_for_dim(dim)
         ]
-        ids = [f"{dim.value}-{zone}" for dim, zone in params]
+        ids = [f"{dim.tag}-{zone}" for dim, zone in params]
         metafunc.parametrize("dim,zone", params, ids=ids)
     elif "dim" in metafunc.fixturenames:
-        ids = [dim.value for dim in dims.horizontal_dims()]
+        ids = [dim.tag for dim in dims.horizontal_dims()]
         metafunc.parametrize("dim", dims.horizontal_dims(), ids=ids)
 
 

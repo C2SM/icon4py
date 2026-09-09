@@ -50,7 +50,7 @@ _EDGE_GRF: Final[int] = 24
 _CELL_GRF: Final[int] = 14
 _VERTEX_GRF: Final[int] = 13
 
-_ICON_CONSTANTS_BOUNDS = {
+_ICON_CONSTANTS_BOUNDS: Final[dict[gtx.Dimension, tuple[int, int]]] = {
     dims.CellDim: (0, _CELL_GRF - 1),
     dims.EdgeDim: (0, _EDGE_GRF - 1),
     dims.VertexDim: (0, _VERTEX_GRF - 1),
@@ -61,27 +61,27 @@ _ICON_LATERAL_BOUNDARY: Final[dict[gtx.Dimension, int]] = {
     dims.EdgeDim: 14,
     dims.VertexDim: 8,
 }
-ICON_LOCAL = {
+ICON_LOCAL: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 4,
     dims.EdgeDim: 5,
     dims.VertexDim: 3,
 }
-_ICON_HALO = {
+_ICON_HALO: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 3,
     dims.EdgeDim: 4,
     dims.VertexDim: 2,
 }
-_ICON_INTERIOR = {
+_ICON_INTERIOR: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 8,
     dims.EdgeDim: 13,
     dims.VertexDim: 7,
 }
-_ICON_NUDGING = {
+_ICON_NUDGING: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 13,
     dims.EdgeDim: 22,
     dims.VertexDim: 12,
 }
-_ICON_END = {
+_ICON_END: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 0,
     dims.EdgeDim: 0,
     dims.VertexDim: 0,

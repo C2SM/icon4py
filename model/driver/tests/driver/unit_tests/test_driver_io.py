@@ -104,11 +104,12 @@ _UGRID_DIM_NAMES: dict[gtx.Dimension, str] = {
 
 
 def _horizontal_size(grid: base.Grid, dim: gtx.Dimension) -> int:
-    return {
+    sizes: dict[gtx.Dimension, int] = {
         dims.CellDim: grid.num_cells,
         dims.EdgeDim: grid.num_edges,
         dims.VertexDim: grid.num_vertices,
-    }[dim]
+    }
+    return sizes[dim]
 
 
 def test_assembles_all_default_variables(

@@ -780,7 +780,7 @@ def test_validate_skip_values_in_distributed_connectivities(
                 f"rank={process_props.rank} / {process_props.comm_size}: {k} - # of skip values found in table = {skip_values_in_table},  skip value is {c.skip_value}"
             )
             if skip_values_in_table > 0:
-                dim = gtx.Dimension(k, gtx.DimensionKind.LOCAL)
+                dim = gtx.dimension(k, gtx.DimensionKind.LOCAL)
                 assert (
                     dim in icon.CONNECTIVITIES_ON_BOUNDARIES
                     or dim in icon.CONNECTIVITIES_ON_PENTAGONS

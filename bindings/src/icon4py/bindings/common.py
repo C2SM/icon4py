@@ -217,14 +217,18 @@ def construct_icon_grid(
     log.debug("Offsetting Fortran connectivitity arrays by 1")
 
     xp = data_alloc.import_array_ns(allocator)
-    start_indices = {
+    start_indices: dict[gtx.Dimension, np.ndarray] = {
         # TODO(halungge): ICON Fortran has 0 values in these arrays in some places possibly where they don't use them.
         # We should investigate where we access these values.
         dims.CellDim: np.maximum(0, adjust_fortran_indices(cell_starts)),
         dims.EdgeDim: np.maximum(0, adjust_fortran_indices(edge_starts)),
         dims.VertexDim: np.maximum(0, adjust_fortran_indices(vertex_starts)),
     }
-    end_indices = {dims.CellDim: cell_ends, dims.EdgeDim: edge_ends, dims.VertexDim: vertex_ends}
+    end_indices: dict[gtx.Dimension, np.ndarray] = {
+        dims.CellDim: cell_ends,
+        dims.EdgeDim: edge_ends,
+        dims.VertexDim: vertex_ends,
+    }
 
     c2e = adjust_fortran_indices(c2e)
     c2v = adjust_fortran_indices(c2v)
