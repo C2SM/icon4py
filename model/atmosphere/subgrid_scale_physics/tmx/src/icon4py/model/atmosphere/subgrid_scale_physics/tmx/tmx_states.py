@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
 
@@ -63,21 +62,10 @@ class TmxMetricState:
     """Geometric height at cell centers on full levels [m]."""
     z_ifc: fa.CellKHalfField[ta.wpfloat]
     """Geometric height at cell centers on half levels [m]."""
-    edge_cell_length: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
-    """Distance between the edge midpoint and the circumcenters of the two
-    adjacent cells [m] (``t_grid_edges%edge_cell_length`` in mo_model_domain.f90).
-
-    A grid-geometry field carried here because it is not part of the common
-    ``grid_states.EdgeParams`` (used by the horizontal w diffusion)."""
 
     @classmethod
-    def from_sources(
-        cls,
-        *,
-        metrics: states_factory.FieldSource,
-        geometry: states_factory.FieldSource,
-    ) -> TmxMetricState:
-        """Build the state from the metrics and geometry field factories."""
+    def from_sources(cls, *, metrics: states_factory.FieldSource) -> TmxMetricState:
+        """Build the state from the metrics field factory."""
         return cls(
             ddqz_z_full=metrics.get(metrics_attributes.DDQZ_Z_FULL),
             inv_ddqz_z_full=metrics.get(metrics_attributes.INV_DDQZ_Z_FULL),
@@ -96,7 +84,6 @@ class TmxMetricState:
             height_above_ground=metrics.get(metrics_attributes.HEIGHT_ABOVE_GROUND),
             z_mc=metrics.get(metrics_attributes.Z_MC),
             z_ifc=metrics.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL),
-            edge_cell_length=geometry.get(geometry_attributes.EDGE_CELL_DISTANCE),
         )
 
 

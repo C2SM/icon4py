@@ -19,7 +19,6 @@ from __future__ import annotations
 import dataclasses
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
-from icon4py.model.common.grid import geometry_attributes
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
 
@@ -51,10 +50,6 @@ _METRICS_MEMBERS: dict[str, str] = {
     "z_ifc": metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL,
 }
 
-_GEOMETRY_MEMBERS: dict[str, str] = {
-    "edge_cell_length": geometry_attributes.EDGE_CELL_DISTANCE,
-}
-
 _INTERPOLATION_MEMBERS: dict[str, str] = {
     "c_lin_e": interpolation_attributes.C_LIN_E,
     "e_bln_c_s": interpolation_attributes.E_BLN_C_S,
@@ -69,13 +64,11 @@ _INTERPOLATION_MEMBERS: dict[str, str] = {
 
 
 def test_metric_state_members_come_from_the_expected_attributes() -> None:
-    expected = {**_METRICS_MEMBERS, **_GEOMETRY_MEMBERS}
     state = tmx_states.TmxMetricState.from_sources(
         metrics=_NamingSource(),  # type: ignore[arg-type]
-        geometry=_NamingSource(),  # type: ignore[arg-type]
     )
-    assert {field.name for field in dataclasses.fields(state)} == set(expected)
-    for member, attribute in expected.items():
+    assert {field.name for field in dataclasses.fields(state)} == set(_METRICS_MEMBERS)
+    for member, attribute in _METRICS_MEMBERS.items():
         assert getattr(state, member) == attribute, member
 
 
@@ -91,7 +84,5 @@ def test_interpolation_state_members_come_from_the_expected_attributes() -> None
 def test_requested_attributes_are_registered_in_the_common_metadata() -> None:
     for attribute in _METRICS_MEMBERS.values():
         assert attribute in metrics_attributes.attrs
-    for attribute in _GEOMETRY_MEMBERS.values():
-        assert attribute in geometry_attributes.attrs
     for attribute in _INTERPOLATION_MEMBERS.values():
         assert attribute in interpolation_attributes.attrs
