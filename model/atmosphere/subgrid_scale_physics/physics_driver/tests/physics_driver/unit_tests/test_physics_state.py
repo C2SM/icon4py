@@ -8,6 +8,7 @@
 
 """Tests of the PhysicsState layer (EntryState facade, accumulators, apply-once)."""
 
+import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
@@ -17,10 +18,25 @@ from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.states import (
     diagnostic_state,
+    model,
     prognostic_state as prognostics,
     tracer_states,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+def _meta(*field_dims: gtx.Dimension, kind: model.FieldKind | None = None) -> model.FieldMetaData:
+    """Output metadata for the routing tests: only ``kind`` and ``dims`` are read.
+
+    No ``kind`` is how a diagnostic output declares itself — the routing keys off
+    ``TENDENCY`` alone.
+    """
+    return model.FieldMetaData(
+        standard_name="test_field", units="1", kind=kind, dims=field_dims or None
+    )
+
+
+_TENDENCY = model.FieldKind.TENDENCY
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +155,7 @@ def test_diagnose_from_fills_working_fields_and_leaves_inputs_untouched():
 def test_accumulate_sums_tendencies_and_skips_diagnostics():
     grid = simple.simple_grid()
     acc = physics_state.TendencyAccumulators()
-    props = {"tend_qv": {"kind": "tendency"}, "km": {"kind": "diagnostic"}}
+    props = {"tend_qv": _meta(kind=_TENDENCY), "km": _meta()}
     out = {
         "tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim),
         "km": data_alloc.constant_field(grid, 5.0, dims.CellDim, dims.KDim),
@@ -156,7 +172,7 @@ def test_accumulate_sums_tendencies_and_skips_diagnostics():
 def test_zero_resets_between_steps():
     grid = simple.simple_grid()
     acc = physics_state.TendencyAccumulators()
-    props = {"tend_qv": {"kind": "tendency"}}
+    props = {"tend_qv": _meta(kind=_TENDENCY)}
     out = {"tend_qv": data_alloc.constant_field(grid, 1e-7, dims.CellDim, dims.KDim)}
 
     acc.zero()
@@ -200,7 +216,7 @@ def _apply_to_prognostic(grid) -> physics_state.ApplyToPrognostic:
 def _accumulated(grid, **tendencies) -> physics_state.TendencyAccumulators:
     """Accumulators pre-filled with the given constant tendencies (single process)."""
     acc = physics_state.TendencyAccumulators()
-    props = {name: {"kind": "tendency"} for name in tendencies}
+    props = {name: _meta(kind=_TENDENCY) for name in tendencies}
     acc.zero()
     acc.accumulate(tendencies, props)
     return acc
@@ -278,9 +294,9 @@ def test_diagnostics_store_allocates_from_metadata():
     grid = simple.simple_grid()
     store = physics_state.DiagnosticsStore(grid=grid)
     props = {
-        "tend_temperature": {"kind": "tendency", "dims": (dims.CellDim, dims.KDim)},
-        "kh": {"kind": "diagnostic", "dims": (dims.CellDim, dims.KDim)},
-        "cptgz_vi": {"kind": "diagnostic", "dims": (dims.CellDim,)},
+        "tend_temperature": _meta(dims.CellDim, dims.KDim, kind=_TENDENCY),
+        "kh": _meta(dims.CellDim, dims.KDim),
+        "cptgz_vi": _meta(dims.CellDim),
     }
     buffers = store.allocate("tmx", props)
     # tendencies are never layer-allocated; diagnostics get their declared shape

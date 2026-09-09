@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     state as muphys_state,
 )
 from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.states import model
 
 
 class _StubFieldSource:
@@ -55,6 +56,6 @@ def test_as_component_input_maps_the_facade_without_copies():
 def test_diagnostic_outputs_declare_dims():
     """Every non-tendency output must declare dims -- the DiagnosticsStore allocates from it."""
     for name, props in muphys_data.OUTPUTS_PROPERTIES.items():
-        if props.get("kind") == "tendency":
+        if props.kind == model.FieldKind.TENDENCY:
             continue
-        assert "dims" in props, f"diagnostic output '{name}' must declare dims"
+        assert props.dims is not None, f"diagnostic output '{name}' must declare dims"

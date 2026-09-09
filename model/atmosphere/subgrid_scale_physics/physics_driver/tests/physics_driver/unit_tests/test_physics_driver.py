@@ -19,16 +19,18 @@ from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver.process_time_
     ProcessTimeControl,
 )
 from icon4py.model.common.components.component_state import ComponentState
+from icon4py.model.common.states import model
 from icon4py.model.common.states.model import FieldMetaData
 
 
 def test_field_metadata_accepts_kind() -> None:
-    meta: FieldMetaData = {
-        "standard_name": "tend_temperature",
-        "units": "K s-1",
-        "kind": "tendency",
-    }
-    assert meta["kind"] == "tendency"
+    meta = FieldMetaData(
+        standard_name="tend_temperature", units="K s-1", kind=model.FieldKind.TENDENCY
+    )
+    assert meta.kind == model.FieldKind.TENDENCY
+    # unset optional entries read as None and are left out of the rendered attrs
+    assert meta.dims is None
+    assert "dims" not in meta.as_dict()
 
 
 _T0 = datetime.datetime(2024, 1, 1, 0, 0, 0)
@@ -136,12 +138,12 @@ def test_physics_process_construction() -> None:
 class RecordingComponent:
     """Stub Component: records calls, returns configured outputs.
 
-    `output_kinds` keys mirror `outputs` keys; values are 'tendency' or
-    'diagnostic'.
+    `output_kinds` keys mirror `outputs` keys; a value of `FieldKind.TENDENCY`
+    marks a tendency and `None` marks a diagnostic, as in production metadata.
     """
 
     outputs: dict[str, object]
-    output_kinds: dict[str, str]
+    output_kinds: dict[str, model.FieldKind | None]
     call_count: int = 0
     last_state: dict | None = None
     last_time: datetime.datetime | None = None
@@ -153,9 +155,9 @@ class RecordingComponent:
         return {}
 
     @property
-    def outputs_properties(self) -> dict:
+    def outputs_properties(self) -> dict[str, FieldMetaData]:
         return {
-            k: {"standard_name": k, "units": "1", "kind": self.output_kinds[k]}
+            k: FieldMetaData(standard_name=k, units="1", kind=self.output_kinds[k])
             for k in self.outputs
         }
 
@@ -213,7 +215,7 @@ class RecordingCoupling:
         buffers = {
             name: f"BUF_{name}"
             for name, props in outputs_properties.items()
-            if props.get("kind") != "tendency"
+            if props.kind != model.FieldKind.TENDENCY
         }
         self.store[process_name] = buffers
         return buffers
@@ -238,11 +240,11 @@ def test_run_diagnoses_once_accumulates_each_process_and_applies_once() -> None:
     state = RecordingComponentState()
     comp_a = RecordingComponent(
         outputs={"tend_temperature": "A"},
-        output_kinds={"tend_temperature": "tendency"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
     )
     comp_b = RecordingComponent(
         outputs={"tend_temperature": "B", "kh": "KH"},
-        output_kinds={"tend_temperature": "tendency", "kh": "diagnostic"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY, "kh": None},
     )
     driver, coupling = _driver(
         [
@@ -282,7 +284,7 @@ def test_run_raises_for_non_multiple_interval() -> None:
     state = RecordingComponentState()
     comp = RecordingComponent(
         outputs={"tend_temperature": "X"},
-        output_kinds={"tend_temperature": "tendency"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
     )
     driver, _ = _driver(
         [
@@ -306,7 +308,7 @@ def test_disabled_process_is_never_invoked() -> None:
     state = RecordingComponentState()
     comp = RecordingComponent(
         outputs={"tend_temperature": "X"},
-        output_kinds={"tend_temperature": "tendency"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
     )
     driver, coupling = _driver(
         [
@@ -341,7 +343,7 @@ def test_out_of_window_process_does_nothing() -> None:
     state = RecordingComponentState()
     comp = RecordingComponent(
         outputs={"tend_temperature": "X"},
-        output_kinds={"tend_temperature": "tendency"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
     )
     # Window starts in the future — the step being integrated is before it.
     future = _T0 + datetime.timedelta(days=1)
@@ -373,7 +375,7 @@ def test_inactive_in_window_recycles_cached_outputs() -> None:
     # cached tendencies accumulate again.
     comp = RecordingComponent(
         outputs={"tend_temperature": "FRESH"},
-        output_kinds={"tend_temperature": "tendency"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
     )
     # interval = 2 * dt → process fires every other step.
     driver, coupling = _driver(
@@ -409,7 +411,7 @@ def test_first_in_window_step_inactive_computes_without_keyerror() -> None:
     state = RecordingComponentState()
     comp = RecordingComponent(
         outputs={"tend_temperature": "FRESH"},
-        output_kinds={"tend_temperature": "tendency"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
     )
     driver, coupling = _driver(
         [PhysicsProcess(name="p", component=comp, state=state, time_control=_tc(interval=2 * _DT))]
@@ -428,7 +430,7 @@ def test_driver_allocates_and_binds_layer_buffers_at_construction() -> None:
     state = RecordingComponentState()
     comp = RecordingComponent(
         outputs={"tend_temperature": "T", "kh": "KH"},
-        output_kinds={"tend_temperature": "tendency", "kh": "diagnostic"},
+        output_kinds={"tend_temperature": model.FieldKind.TENDENCY, "kh": None},
     )
     driver, _ = _driver(
         [PhysicsProcess(name="tmx", component=comp, state=state, time_control=_tc())]

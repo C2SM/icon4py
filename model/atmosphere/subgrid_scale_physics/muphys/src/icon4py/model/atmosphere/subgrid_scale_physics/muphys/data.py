@@ -10,6 +10,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.states import data, model
@@ -39,8 +41,8 @@ OUTPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     # Dimensions are added where the field is used, keeping the shared registry
     # dimension-agnostic. DiagnosticsStore uses them to allocate output buffers.
     **{
-        port: model.FieldMetaData(
-            **data.PRECIPITATION_CF_ATTRIBUTES[key], dims=(dims.CellDim, dims.KDim)
+        port: dataclasses.replace(
+            data.PRECIPITATION_CF_ATTRIBUTES[key], dims=(dims.CellDim, dims.KDim)
         )
         for port, key in _PRECIP_KEY.items()
     },

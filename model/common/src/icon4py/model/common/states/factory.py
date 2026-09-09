@@ -605,7 +605,10 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
     ) -> None:
         try:
             metadata = {v: field_src.get(v, RetrievalType.METADATA) for v in self._output.values()}
-            dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
+            dtype = {
+                v: ta.wpfloat if metadata[v].dtype is None else metadata[v].dtype
+                for v in self._output.values()
+            }
         except (ValueError, KeyError):
             dtype = {v: ta.wpfloat for v in self._output.values()}
 
@@ -797,4 +800,5 @@ def _func_name(callable_: Callable[..., Any]) -> str:
 def dtype_or_default(
     field_name: str, metadata: dict[str, model.FieldMetaData]
 ) -> state_utils.ScalarType:
-    return metadata[field_name].get("dtype", ta.wpfloat)
+    dtype = metadata[field_name].dtype
+    return ta.wpfloat if dtype is None else dtype

@@ -37,7 +37,7 @@ from icon4py.model.common.physics.thermodynamics import (
     compute_temperature,
     compute_tendencies,
 )
-from icon4py.model.common.states import diagnostic_state
+from icon4py.model.common.states import diagnostic_state, model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -191,7 +191,7 @@ class TendencyAccumulators:
     """Per-variable tendency sums over the processes of one timestep (ICON ``tend%*_phy``).
 
     Buffers are keyed by output name (``tend_*``) and allocated lazily on first
-    contribution. Only outputs whose metadata carries ``kind == "tendency"``
+    contribution. Only outputs whose metadata carries ``kind`` ``TENDENCY``
     accumulate; the rest are diagnostics, written by the granules directly into
     the layer-owned buffers of the ``DiagnosticsStore``.
     """
@@ -205,14 +205,14 @@ class TendencyAccumulators:
         for buffer in self.acc.values():
             buffer.ndarray[...] = 0.0  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
-    def accumulate(self, outputs: dict, outputs_properties: dict) -> None:
+    def accumulate(self, outputs: dict, outputs_properties: dict[str, model.FieldMetaData]) -> None:
         """Add a process's tendency outputs to the per-variable sums.
 
         Element-wise sum with no neighbor access, so a plain array operation on
         the field buffers rather than a stencil.
         """
         for name, props in outputs_properties.items():
-            if props.get("kind") != "tendency":
+            if props.kind != model.FieldKind.TENDENCY:
                 continue
             field = outputs[name]
             if (buffer := self.acc.get(name)) is None:
@@ -408,20 +408,27 @@ class DiagnosticsStore:
         self._backend = backend
         self._store: dict[str, dict[str, gtx.Field]] = {}
 
-    def allocate(self, process_name: str, outputs_properties: dict) -> dict[str, gtx.Field]:
+    def allocate(
+        self, process_name: str, outputs_properties: dict[str, model.FieldMetaData]
+    ) -> dict[str, gtx.Field]:
         """Allocate the process's diagnostic buffers from their metadata and keep them.
 
-        Complement rule: everything whose metadata ``kind`` is NOT ``"tendency"``
+        Complement rule: everything whose metadata ``kind`` is NOT ``TENDENCY``
         is a diagnostic — tendencies stay component-owned (the accumulators sum
         across processes and recycling needs each process's last tendency).
         """
         buffers: dict[str, gtx.Field] = {}
         for name, props in outputs_properties.items():
-            if props.get("kind") == "tendency":
+            if props.kind == model.FieldKind.TENDENCY:
                 continue
-            extend = {dims.KDim: 1} if props.get("is_on_half_levels") else None
+            if props.dims is None:
+                raise ValueError(
+                    f"diagnostic output '{name}' of process '{process_name}' declares no dims; "
+                    "the store allocates its buffer from that metadata"
+                )
+            extend = {dims.KDim: 1} if props.is_on_half_levels else None
             buffers[name] = data_alloc.zero_field(
-                self._grid, *props["dims"], extend=extend, allocator=self._backend
+                self._grid, *props.dims, extend=extend, allocator=self._backend
             )
         self._store[process_name] = buffers
         return buffers

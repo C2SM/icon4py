@@ -36,11 +36,16 @@ def to_data_array(
         ``to_host=True`` is a copy only on GPU; on CPU it still references ``field``.
         Callers that keep the DataArray past the next mutation of ``field`` must copy it.
     """
-    attrs = {} if attrs is None else dict(attrs)
+    if attrs is None:
+        attrs = {}
+    elif isinstance(attrs, FieldMetaData):
+        attrs = attrs.as_dict()
+    else:
+        attrs = dict(attrs)
     dims = tuple(dimension_mapping(d, is_on_half_levels) for d in field.domain.dims)
     horizontal_dim = next(d for d in field.domain.dims if _is_horizontal(d))
     uxgrid_attrs = ugrid_attributes(horizontal_dim)
-    attrs.update(uxgrid_attrs)  # type: ignore [typeddict-item] # mypy does not accept the dict types flexibility
+    attrs.update(uxgrid_attrs)
     data = data_alloc.as_numpy(field) if to_host else field.ndarray
     return xa.DataArray(data=data, dims=dims, attrs=attrs)
 

@@ -112,19 +112,19 @@ def cell_coordinate_source(
     lat = grid_savepoint.lat(dims.CellDim)
     lon = grid_savepoint.lon(dims.CellDim)
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "lat": (lat, {"standard_name": "lat", "units": ""}),
-        "lon": (lon, {"standard_name": "lon", "units": ""}),
+        "lat": (lat, model.FieldMetaData(standard_name="lat", units="")),
+        "lon": (lon, model.FieldMetaData(standard_name="lon", units="")),
         "x": (
             data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-            {"standard_name": "x", "units": ""},
+            model.FieldMetaData(standard_name="x", units=""),
         ),
         "y": (
             data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-            {"standard_name": "y", "units": ""},
+            model.FieldMetaData(standard_name="y", units=""),
         ),
         "z": (
             data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-            {"standard_name": "z", "units": ""},
+            model.FieldMetaData(standard_name="z", units=""),
         ),
     }
 
@@ -145,7 +145,10 @@ def height_coordinate_source(
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})
+        "height_coordinate": (
+            z_ifc,
+            model.FieldMetaData(standard_name="height_coordinate", units=""),
+        )
     }
     vertical_grid = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=experiment.config.vertical_grid.num_levels),
@@ -235,8 +238,8 @@ def test_composite_field_source_contains_all_metadata(
     foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
     bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "foo": (foo, {"standard_name": "foo", "units": ""}),
-        "bar": (bar, {"standard_name": "bar", "units": ""}),
+        "foo": (foo, model.FieldMetaData(standard_name="foo", units="")),
+        "bar": (bar, model.FieldMetaData(standard_name="bar", units="")),
     }
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
@@ -260,8 +263,8 @@ def test_composite_field_source_get_all_fields(
     foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
     bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "foo": (foo, {"standard_name": "foo", "units": ""}),
-        "bar": (bar, {"standard_name": "bar", "units": ""}),
+        "foo": (foo, model.FieldMetaData(standard_name="foo", units="")),
+        "bar": (bar, model.FieldMetaData(standard_name="bar", units="")),
     }
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
@@ -297,8 +300,8 @@ def test_composite_field_source_raises_upon_get_unknown_field(
     foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
     bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "foo": (foo, {"standard_name": "foo", "units": ""}),
-        "bar": (bar, {"standard_name": "bar", "units": ""}),
+        "foo": (foo, model.FieldMetaData(standard_name="foo", units="")),
+        "bar": (bar, model.FieldMetaData(standard_name="bar", units="")),
     }
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)

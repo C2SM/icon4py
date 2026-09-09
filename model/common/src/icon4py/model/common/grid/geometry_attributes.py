@@ -80,35 +80,35 @@ MEAN_DUAL_AREA: Final[str] = "mean_dual_area"
 CHARACTERISTIC_LENGTH: Final[str] = "characteristic_length"
 
 attrs: dict[str, model.FieldMetaData] = {
-    CELL_LAT: dict(
+    CELL_LAT: model.FieldMetaData(
         standard_name=CELL_LAT,
         units="radian",
         dims=(dims.CellDim,),
         icon_var_name="t_grid_cells%center%lat",
         dtype=ta.wpfloat,
     ),
-    CELL_LON: dict(
+    CELL_LON: model.FieldMetaData(
         standard_name=CELL_LON,
         units="radian",
         dims=(dims.CellDim,),
         icon_var_name="t_grid_cells%center%lon",
         dtype=ta.wpfloat,
     ),
-    VERTEX_LAT: dict(
+    VERTEX_LAT: model.FieldMetaData(
         standard_name=VERTEX_LAT,
         units="radian",
         dims=(dims.VertexDim,),
         icon_var_name="t_grid_vertices%vertex%lat",
         dtype=ta.wpfloat,
     ),
-    VERTEX_LON: dict(
+    VERTEX_LON: model.FieldMetaData(
         standard_name=VERTEX_LON,
         units="radian",
         dims=(dims.VertexDim,),
         icon_var_name="t_grid_vertices%vertex%lon",
         dtype=ta.wpfloat,
     ),
-    VERTEX_X: dict(
+    VERTEX_X: model.FieldMetaData(
         standard_name=VERTEX_X,
         long_name="x component of cartesian coordinates of vertex",
         units="1",
@@ -116,7 +116,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_vertices%vertex%x(1)",
         dtype=ta.wpfloat,
     ),
-    VERTEX_Y: dict(
+    VERTEX_Y: model.FieldMetaData(
         standard_name=VERTEX_Y,
         long_name="y component of cartesian coordinates of vertex",
         units="1",
@@ -124,7 +124,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_vertices%vertex%x(2)",
         dtype=ta.wpfloat,
     ),
-    VERTEX_Z: dict(
+    VERTEX_Z: model.FieldMetaData(
         standard_name=VERTEX_Z,
         long_name="z component of cartesian coordinates of vertex",
         units="1",
@@ -132,21 +132,21 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_vertices%vertex%x(3)",
         dtype=ta.wpfloat,
     ),
-    EDGE_LAT: dict(
+    EDGE_LAT: model.FieldMetaData(
         standard_name=EDGE_LAT,
         units="radian",
         dims=(dims.EdgeDim,),
         icon_var_name="t_grid_edges%center%lat",
         dtype=ta.wpfloat,
     ),
-    EDGE_LON: dict(
+    EDGE_LON: model.FieldMetaData(
         standard_name=EDGE_LON,
         units="radian",
         dims=(dims.EdgeDim,),
         icon_var_name="t_grid_edges%center%lon",
         dtype=ta.wpfloat,
     ),
-    EDGE_LENGTH: dict(
+    EDGE_LENGTH: model.FieldMetaData(
         standard_name=EDGE_LENGTH,
         long_name="edge length",
         units="m",
@@ -154,14 +154,14 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%primal_edge_length",
         dtype=ta.wpfloat,
     ),
-    CELL_NORMAL_ORIENTATION: dict(
+    CELL_NORMAL_ORIENTATION: model.FieldMetaData(
         standard_name=CELL_NORMAL_ORIENTATION,
         units="",
         dims=(dims.CellDim, dims.C2EDim),
         icon_var_name="t_grid_cells%edge_orientation",
         dtype=gtx.int32,
     ),
-    EDGE_CELL_DISTANCE: dict(
+    EDGE_CELL_DISTANCE: model.FieldMetaData(
         standard_name=EDGE_CELL_DISTANCE,
         long_name="distances between edge midpoint and adjacent triangle midpoints",
         units="m",
@@ -169,7 +169,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%edge_cell_length",
         dtype=ta.wpfloat,
     ),
-    EDGE_VERTEX_DISTANCE: dict(
+    EDGE_VERTEX_DISTANCE: model.FieldMetaData(
         standard_name=EDGE_VERTEX_DISTANCE,
         long_name="distances between edge midpoint and adjacent vertices",
         units="m",
@@ -177,7 +177,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%edge_vert_length",
         dtype=ta.wpfloat,
     ),
-    DUAL_EDGE_LENGTH: dict(
+    DUAL_EDGE_LENGTH: model.FieldMetaData(
         standard_name=DUAL_EDGE_LENGTH,
         long_name="length of the dual edge",
         units="m",
@@ -185,7 +185,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%dual_edge_length",
         dtype=ta.wpfloat,
     ),
-    VERTEX_VERTEX_LENGTH: dict(
+    VERTEX_VERTEX_LENGTH: model.FieldMetaData(
         standard_name=VERTEX_VERTEX_LENGTH,
         long_name="distance between outer vertices of adjacent cells",
         units="m",
@@ -193,7 +193,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%vert_vert_length",
         dtype=ta.wpfloat,
     ),
-    EDGE_AREA: dict(
+    EDGE_AREA: model.FieldMetaData(
         standard_name=EDGE_AREA,
         long_name="area of quadrilateral spanned by edge and associated dual edge",
         units="m2",
@@ -201,7 +201,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%area_edge",
         dtype=ta.wpfloat,
     ),
-    CELL_AREA: dict(
+    CELL_AREA: model.FieldMetaData(
         standard_name=CELL_AREA,
         long_name="area of a triangular cell",
         units="m2",
@@ -209,7 +209,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_cells%area",
         dtype=ta.wpfloat,
     ),
-    CELL_CENTER_X: dict(
+    CELL_CENTER_X: model.FieldMetaData(
         standard_name=CELL_CENTER_X,
         long_name="x component of cartesian coordinates of cell center",
         units="",
@@ -217,7 +217,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_cells%%cartesian_center%x(1)",
         dtype=ta.wpfloat,
     ),
-    CELL_CENTER_Y: dict(
+    CELL_CENTER_Y: model.FieldMetaData(
         standard_name=CELL_CENTER_Y,
         long_name="y component of cartesian coordinates of cell center",
         units="",
@@ -225,7 +225,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_cells%%cartesian_center%x(2)",
         dtype=ta.wpfloat,
     ),
-    CELL_CENTER_Z: dict(
+    CELL_CENTER_Z: model.FieldMetaData(
         standard_name=CELL_CENTER_Z,
         long_name="z component of cartesian coordinates of cell center",
         units="",
@@ -233,7 +233,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_cells%%cartesian_center%x(3)",
         dtype=ta.wpfloat,
     ),
-    DUAL_AREA: dict(
+    DUAL_AREA: model.FieldMetaData(
         standard_name=DUAL_AREA,
         long_name="area of the dual grid cell (hexagon cell)",
         units="m2",
@@ -241,7 +241,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_verts%dual_area",
         dtype=ta.wpfloat,
     ),
-    CORIOLIS_PARAMETER: dict(
+    CORIOLIS_PARAMETER: model.FieldMetaData(
         standard_name=CORIOLIS_PARAMETER,
         long_name="coriolis parameter at cell edges",
         units="s-1",
@@ -249,7 +249,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%f_e",
         dtype=ta.wpfloat,
     ),
-    EDGE_TANGENT_X: dict(
+    EDGE_TANGENT_X: model.FieldMetaData(
         standard_name=EDGE_TANGENT_X,
         long_name=EDGE_TANGENT_X,
         units="m",
@@ -257,7 +257,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%dual_cart_normal%x(1)",
         dtype=ta.wpfloat,
     ),
-    EDGE_TANGENT_Y: dict(
+    EDGE_TANGENT_Y: model.FieldMetaData(
         standard_name=EDGE_TANGENT_Y,
         long_name=EDGE_TANGENT_Y,
         units="m",
@@ -265,7 +265,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%dual_cart_normal%x(2)",
         dtype=ta.wpfloat,
     ),
-    EDGE_TANGENT_Z: dict(
+    EDGE_TANGENT_Z: model.FieldMetaData(
         standard_name=EDGE_TANGENT_Z,
         long_name=EDGE_TANGENT_Z,
         units="m",
@@ -273,7 +273,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%dual_cart_normal%x(3)",
         dtype=ta.wpfloat,
     ),
-    EDGE_NORMAL_U: dict(
+    EDGE_NORMAL_U: model.FieldMetaData(
         standard_name=EDGE_NORMAL_U,
         long_name="eastward (zonal) component of edge normal",
         units="radian",
@@ -281,7 +281,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%primal_normal%v2",
         dtype=ta.wpfloat,
     ),
-    EDGE_NORMAL_V: dict(
+    EDGE_NORMAL_V: model.FieldMetaData(
         standard_name=EDGE_NORMAL_V,
         long_name="northward (meridional) component of edge normal",
         units="radian",
@@ -289,7 +289,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%primal_normal%v1",
         dtype=ta.wpfloat,
     ),
-    EDGE_NORMAL_X: dict(
+    EDGE_NORMAL_X: model.FieldMetaData(
         standard_name=EDGE_NORMAL_X,
         long_name=EDGE_NORMAL_X,
         units="m",
@@ -297,7 +297,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%primal_cart_normal%x(1)",
         dtype=ta.wpfloat,
     ),
-    EDGE_NORMAL_Y: dict(
+    EDGE_NORMAL_Y: model.FieldMetaData(
         standard_name=EDGE_NORMAL_Y,
         long_name=EDGE_NORMAL_Y,
         units="m",
@@ -305,7 +305,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%primal_cart_normal%x(2)",
         dtype=ta.wpfloat,
     ),
-    EDGE_NORMAL_Z: dict(
+    EDGE_NORMAL_Z: model.FieldMetaData(
         standard_name=EDGE_NORMAL_Z,
         long_name=EDGE_NORMAL_Z,
         units="m",
@@ -313,7 +313,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%primal_cart_normal%x(3)",
         dtype=ta.wpfloat,
     ),
-    EDGE_NORMAL_VERTEX_U: dict(
+    EDGE_NORMAL_VERTEX_U: model.FieldMetaData(
         standard_name=EDGE_NORMAL_VERTEX_U,
         long_name="eastward (zonal) component of edge normal projected to vertex locations",
         units="radian",
@@ -321,7 +321,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%primal_normal_vert%v1",
         dtype=ta.wpfloat,
     ),
-    EDGE_NORMAL_VERTEX_V: dict(
+    EDGE_NORMAL_VERTEX_V: model.FieldMetaData(
         standard_name=EDGE_NORMAL_VERTEX_V,
         long_name="northward (meridional) component of edge normal projected to vertex locations",
         units="radian",
@@ -329,7 +329,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%primal_normal_vert%v2",
         dtype=ta.wpfloat,
     ),
-    EDGE_NORMAL_CELL_U: dict(
+    EDGE_NORMAL_CELL_U: model.FieldMetaData(
         standard_name=EDGE_NORMAL_CELL_U,
         long_name="eastward (zonal) component of edge normal projected to neighbor cell centers",
         units="radian",
@@ -337,7 +337,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%primal_normal_cell%v1",
         dtype=ta.wpfloat,
     ),
-    EDGE_NORMAL_CELL_V: dict(
+    EDGE_NORMAL_CELL_V: model.FieldMetaData(
         standard_name=EDGE_NORMAL_CELL_V,
         long_name="northward (meridional) component of edge normal projected to neighbor cell centers",
         units="radian",
@@ -345,7 +345,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%primal_normal_cell%v2",
         dtype=ta.wpfloat,
     ),
-    EDGE_TANGENT_CELL_U: dict(
+    EDGE_TANGENT_CELL_U: model.FieldMetaData(
         standard_name=EDGE_TANGENT_CELL_U,
         long_name="eastward (zonal) component of edge tangent projected to neighbor cell centers",
         units="radian",
@@ -353,7 +353,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%dual_normal_cell%v1",
         dtype=ta.wpfloat,
     ),
-    EDGE_TANGENT_CELL_V: dict(
+    EDGE_TANGENT_CELL_V: model.FieldMetaData(
         standard_name=EDGE_TANGENT_CELL_V,
         long_name="northward (meridional) component of edge tangent projected to neighbor cell centers",
         units="radian",
@@ -361,7 +361,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%dual_normal_cell%v2",
         dtype=ta.wpfloat,
     ),
-    EDGE_TANGENT_VERTEX_U: dict(
+    EDGE_TANGENT_VERTEX_U: model.FieldMetaData(
         standard_name=EDGE_TANGENT_VERTEX_U,
         long_name="eastward (zonal) component of edge tangent projected to vertex locations",
         units="radian",
@@ -369,7 +369,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.EdgeDim, dims.E2C2VDim),
         dtype=ta.wpfloat,
     ),
-    EDGE_TANGENT_VERTEX_V: dict(
+    EDGE_TANGENT_VERTEX_V: model.FieldMetaData(
         standard_name=EDGE_TANGENT_VERTEX_V,
         long_name="northward (meridional) component of edge tangent projected to vertex locations",
         units="radian",
@@ -377,7 +377,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%dual_normal_vert%v2",
         dtype=ta.wpfloat,
     ),
-    TANGENT_ORIENTATION: dict(
+    TANGENT_ORIENTATION: model.FieldMetaData(
         standard_name=TANGENT_ORIENTATION,
         long_name="orientation of tangent vector",
         units="1",
@@ -385,7 +385,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name=f"t_grid_edges%{TANGENT_ORIENTATION}",
         dtype=ta.wpfloat,  # TODO(halungge): netcdf: int
     ),
-    VERTEX_EDGE_ORIENTATION: dict(
+    VERTEX_EDGE_ORIENTATION: model.FieldMetaData(
         standard_name=VERTEX_EDGE_ORIENTATION,
         long_name="orientation of tangent vector",
         units="1",
@@ -393,7 +393,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_vertex%edge_orientation",
         dtype=ta.wpfloat,
     ),
-    EDGE_DUAL_U: dict(
+    EDGE_DUAL_U: model.FieldMetaData(
         standard_name=EDGE_DUAL_U,
         long_name="eastward component of the dual edge (edge tangent)",
         units="",  # TODO(): add this
@@ -401,7 +401,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ptr_patch%edges%dual_normal%v1",
         dtype=ta.wpfloat,
     ),
-    EDGE_DUAL_V: dict(
+    EDGE_DUAL_V: model.FieldMetaData(
         standard_name="northward component of the dual edge (edge tangent)",
         long_name="ptr_patch%edges%dual_normal_vert_y",
         units="",  # TODO(): add this
@@ -409,7 +409,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="ptr_patch%edges%dual_normal%v2",
         dtype=ta.wpfloat,
     ),
-    EDGE_CENTER_X: dict(
+    EDGE_CENTER_X: model.FieldMetaData(
         standard_name=EDGE_CENTER_X,
         long_name="x component of cartesian coordinates of edge centers",
         units="1",
@@ -417,7 +417,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%cartesian_center%x(1)",
         dtype=ta.wpfloat,
     ),
-    EDGE_CENTER_Y: dict(
+    EDGE_CENTER_Y: model.FieldMetaData(
         standard_name=EDGE_CENTER_Y,
         long_name="y component of cartesian coordinates of edge centers",
         units="1",
@@ -425,7 +425,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%cartesian_center%x(2)",
         dtype=ta.wpfloat,
     ),
-    EDGE_CENTER_Z: dict(
+    EDGE_CENTER_Z: model.FieldMetaData(
         standard_name=EDGE_CENTER_Z,
         long_name="z component of cartesian coordinates of edge centers",
         units="1",
@@ -433,35 +433,35 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%cartesian_center%x(3)",
         dtype=ta.wpfloat,
     ),
-    MEAN_EDGE_LENGTH: dict(
+    MEAN_EDGE_LENGTH: model.FieldMetaData(
         standard_name=MEAN_EDGE_LENGTH,
         long_name="mean_edge_length",
         units="",
         icon_var_name="",
         dtype=ta.wpfloat,
     ),
-    MEAN_DUAL_EDGE_LENGTH: dict(
+    MEAN_DUAL_EDGE_LENGTH: model.FieldMetaData(
         standard_name=MEAN_DUAL_EDGE_LENGTH,
         long_name="mean_dual_edge_length",
         units="",
         icon_var_name="",
         dtype=ta.wpfloat,
     ),
-    MEAN_CELL_AREA: dict(
+    MEAN_CELL_AREA: model.FieldMetaData(
         standard_name=MEAN_CELL_AREA,
         long_name="mean_cell_area",
         units="",
         icon_var_name="",
         dtype=ta.wpfloat,
     ),
-    MEAN_DUAL_AREA: dict(
+    MEAN_DUAL_AREA: model.FieldMetaData(
         standard_name=MEAN_DUAL_AREA,
         long_name="mean_dual_area",
         units="",
         icon_var_name="",
         dtype=ta.wpfloat,
     ),
-    CHARACTERISTIC_LENGTH: dict(
+    CHARACTERISTIC_LENGTH: model.FieldMetaData(
         standard_name=CHARACTERISTIC_LENGTH,
         long_name="characteristic_length",
         units="",
@@ -477,16 +477,11 @@ def metadata_for_inverse(metadata: model.FieldMetaData) -> model.FieldMetaData:
         x[-1] = f"inv_{x[-1]}"
         return "%".join(x)
 
-    standard_name = f"inverse_of_{metadata['standard_name']}"
-    units = f"{metadata['units']}-1"
-    long_name = f"inverse of {metadata.get('long_name')}" if metadata.get("long_name") else ""
-    inverse_meta = dict(
-        standard_name=standard_name,
-        units=units,
-        dims=metadata.get("dims"),
-        dtype=metadata.get("dtype"),
-        long_name=long_name,
-        icon_var_name=inv_name(metadata.get("icon_var_name")),
+    return model.FieldMetaData(
+        standard_name=f"inverse_of_{metadata.standard_name}",
+        units=f"{metadata.units}-1",
+        dims=metadata.dims,
+        dtype=metadata.dtype,
+        long_name=f"inverse of {metadata.long_name}" if metadata.long_name else "",
+        icon_var_name=inv_name(metadata.icon_var_name),
     )
-
-    return inverse_meta
