@@ -177,8 +177,8 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     advection_granule.run(
         diagnostic_state=diagnostic_state,
         prep_adv=prep_adv,
-        p_tracer_now=p_tracer_now,
-        p_tracer_new=p_tracer_new,
+        p_tracers_now=(p_tracer_now,),
+        p_tracers_new=(p_tracer_new,),
         dtime=dtime,
     )
 
@@ -191,14 +191,14 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
     test_helpers.assert_dallclose(
-        diagnostic_state.hfl_tracer.asnumpy(),
-        diagnostic_state_ref.hfl_tracer.asnumpy(),
+        diagnostic_state.hfl_tracer[0].asnumpy(),
+        diagnostic_state_ref.hfl_tracer[0].asnumpy(),
         atol=1e-11,
     )
 
     test_utils.assert_dallclose(
-        diagnostic_state.vfl_tracer.asnumpy(),
-        diagnostic_state_ref.vfl_tracer.asnumpy(),
+        diagnostic_state.vfl_tracer[0].asnumpy(),
+        diagnostic_state_ref.vfl_tracer[0].asnumpy(),
         rtol=1e-10,
     )
 

@@ -72,9 +72,11 @@ def construct_diagnostic_init_state(
     return tracer_advection_states.AdvectionDiagnosticState(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
-        grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
-        hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend),
-        vfl_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend),
+        grf_tend_tracer=(savepoint.grf_tend_tracer(ntracer),),
+        hfl_tracer=(data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend),),
+        vfl_tracer=(
+            data_alloc.zero_field(icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend),
+        ),
     )
 
 
@@ -87,9 +89,9 @@ def construct_diagnostic_exit_state(
     return tracer_advection_states.AdvectionDiagnosticState(
         airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
         airmass_new=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend),
-        grf_tend_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
-        hfl_tracer=savepoint.hfl_tracer(ntracer),
-        vfl_tracer=savepoint.vfl_tracer(ntracer),
+        grf_tend_tracer=(data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),),
+        hfl_tracer=(savepoint.hfl_tracer(ntracer),),
+        vfl_tracer=(savepoint.vfl_tracer(ntracer),),
     )
 
 
@@ -115,7 +117,7 @@ def log_serialized(
 ):
     log_dbg(diagnostic_state.airmass_now.asnumpy(), "airmass_now")
     log_dbg(diagnostic_state.airmass_new.asnumpy(), "airmass_new")
-    log_dbg(diagnostic_state.grf_tend_tracer.asnumpy(), "grf_tend_tracer")
+    log_dbg(diagnostic_state.grf_tend_tracer[0].asnumpy(), "grf_tend_tracer")
     log_dbg(prep_adv.vn_traj.asnumpy(), "vn_traj")
     log_dbg(prep_adv.mass_flx_me.asnumpy(), "mass_flx_me")
     log_dbg(prep_adv.mass_flx_ic.asnumpy(), "mass_flx_ic")
@@ -158,23 +160,23 @@ def verify_advection_fields(
     p_tracer_new_range = np.arange(start_cell_lateral_boundary, end_cell_local)
 
     # log tracer_advection output fields
-    log_dbg(diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :], "hfl_tracer")
-    log_dbg(diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :], "hfl_tracer_ref")
-    log_dbg(diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :], "vfl_tracer")
-    log_dbg(diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :], "vfl_tracer_ref")
+    log_dbg(diagnostic_state.hfl_tracer[0].asnumpy()[hfl_tracer_range, :], "hfl_tracer")
+    log_dbg(diagnostic_state_ref.hfl_tracer[0].asnumpy()[hfl_tracer_range, :], "hfl_tracer_ref")
+    log_dbg(diagnostic_state.vfl_tracer[0].asnumpy()[vfl_tracer_range, :], "vfl_tracer")
+    log_dbg(diagnostic_state_ref.vfl_tracer[0].asnumpy()[vfl_tracer_range, :], "vfl_tracer_ref")
     log_dbg(p_tracer_new.asnumpy()[p_tracer_new_range, :], "p_tracer_new")
     log_dbg(p_tracer_new_ref.asnumpy()[p_tracer_new_range, :], "p_tracer_new_ref")
 
     # verify tracer_advection output fields
     assert test_utils.dallclose(
-        diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
-        diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
+        diagnostic_state.hfl_tracer[0].asnumpy()[hfl_tracer_range, :],
+        diagnostic_state_ref.hfl_tracer[0].asnumpy()[hfl_tracer_range, :],
         rtol=1e-10,
         atol=1e-11,
     )
     assert test_utils.dallclose(
-        diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
-        diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
+        diagnostic_state.vfl_tracer[0].asnumpy()[vfl_tracer_range, :],
+        diagnostic_state_ref.vfl_tracer[0].asnumpy()[vfl_tracer_range, :],
         rtol=1e-10,
     )
     assert test_utils.dallclose(

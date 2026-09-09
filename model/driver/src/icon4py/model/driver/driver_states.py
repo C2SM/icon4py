@@ -350,7 +350,9 @@ def assemble_driver_states(
     )
     tracer_advection_diagnostic_state = (
         tracer_advection_states.initialize_advection_diagnostic_state(
-            grid=grid, allocator=allocator
+            grid=grid,
+            allocator=allocator,
+            num_tracers=len(tuple(tracer_state_now.active_fields())),
         )
         if tracer_advection_enabled
         else None

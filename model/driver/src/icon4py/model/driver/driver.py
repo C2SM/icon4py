@@ -343,23 +343,24 @@ class Icon4pyDriver:
                         self.model_time_variables.dtime_in_seconds,
                     )
 
-        # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
-        # Precondition: passing data test with ntracer > 0
         if self.granules.tracer_advection is not None:
             assert tracer_advection_diagnostic_state is not None
             assert tracer_prep_adv is not None
+            p_tracers_now, p_tracers_new = [], []
             for tracer_current in tracers.current.active_fields():
                 tracer_next_field = getattr(tracers.next, tracer_current.name)
                 assert tracer_next_field is not None, (
                     f"tracer '{tracer_current.name}' active in current state but missing in next state"
                 )
-                self.granules.tracer_advection.run(
-                    diagnostic_state=tracer_advection_diagnostic_state,
-                    prep_adv=tracer_prep_adv,
-                    p_tracer_now=tracer_current.field,
-                    p_tracer_new=tracer_next_field,
-                    dtime=self.model_time_variables.dtime_in_seconds,
-                )
+                p_tracers_now.append(tracer_current.field)
+                p_tracers_new.append(tracer_next_field)
+            self.granules.tracer_advection.run(
+                diagnostic_state=tracer_advection_diagnostic_state,
+                prep_adv=tracer_prep_adv,
+                p_tracers_now=tuple(p_tracers_now),
+                p_tracers_new=tuple(p_tracers_new),
+                dtime=self.model_time_variables.dtime_in_seconds,
+            )
 
         if self.granules.physics is not None:
             self.granules.physics.run(

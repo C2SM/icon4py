@@ -136,7 +136,6 @@ class Advection(ABC):
     Runs one three-dimensional tracer advection step.
 
     Missing tracer advection-specific features:
-        -tracer loops: currently the `run` method only advects one type of tracer at once
         -optional tendency output: depending on the physics package, opt_ddt_tracer_adv might be needed
         -maximum tracer advection height: tracer-specific control over which levels are used for tracer_advection
     """
@@ -147,18 +146,19 @@ class Advection(ABC):
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_tracer_new: fa.CellKField[ta.wpfloat],
+        p_tracers_now: tuple[fa.CellKField[ta.wpfloat], ...],
+        p_tracers_new: tuple[fa.CellKField[ta.wpfloat], ...],
         dtime: ta.wpfloat,
     ) -> None:
         """
-        Run an tracer advection step.
+        Run an tracer advection step for all tracers.
 
         Args:
-            diagnostic_state: output argument, data class that contains diagnostic variables
+            diagnostic_state: output argument, data class that contains diagnostic variables,
+                the per-tracer fields in the same order as the tracers
             prep_adv: input argument, data class that contains precalculated fields for tracer advection
-            p_tracer_now: input argument, field that contains current tracer mass fraction
-            p_tracer_new: output argument, field that contains new tracer mass fraction
+            p_tracers_now: input argument, fields that contain the current tracer mass fractions
+            p_tracers_new: output argument, fields that contain the new tracer mass fractions
             dtime: input argument, the time step
 
         """
@@ -206,8 +206,8 @@ class NoAdvection(Advection):
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_tracer_new: fa.CellKField[ta.wpfloat],
+        p_tracers_now: tuple[fa.CellKField[ta.wpfloat], ...],
+        p_tracers_new: tuple[fa.CellKField[ta.wpfloat], ...],
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("tracer_advection run - start")
@@ -217,12 +217,13 @@ class NoAdvection(Advection):
         )
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
-        log.debug("running stencil copy_field_on_cell_k - start")
-        self._copy_field_on_cell_k(
-            field=p_tracer_now,
-            output_field=p_tracer_new,
-        )
-        log.debug("running stencil copy_field_on_cell_k - end")
+        for p_tracer_now, p_tracer_new in zip(p_tracers_now, p_tracers_new, strict=True):
+            log.debug("running stencil copy_field_on_cell_k - start")
+            self._copy_field_on_cell_k(
+                field=p_tracer_now,
+                output_field=p_tracer_new,
+            )
+            log.debug("running stencil copy_field_on_cell_k - end")
 
         log.debug("tracer_advection run - end")
 
@@ -315,8 +316,8 @@ class GodunovSplittingAdvection(Advection):
         *,
         diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_tracer_new: fa.CellKField[ta.wpfloat],
+        p_tracers_now: tuple[fa.CellKField[ta.wpfloat], ...],
+        p_tracers_new: tuple[fa.CellKField[ta.wpfloat], ...],
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("tracer_advection run - start")
@@ -347,6 +348,51 @@ class GodunovSplittingAdvection(Advection):
         )
         log.debug("running stencil apply_density_increment - end")
 
+        # tracer-independent part of the horizontal and vertical transport
+        self._horizontal_advection.prepare(prep_adv=prep_adv, dtime=dtime)
+        self._vertical_advection.prepare(
+            prep_adv=prep_adv,
+            rhodz_now=diagnostic_state.airmass_now if self._even_timestep else self._rhodz_ast2,
+            dtime=dtime,
+            even_timestep=self._even_timestep,
+        )
+
+        for p_tracer_now, p_tracer_new, hfl_tracer, vfl_tracer, grf_tend_tracer in zip(
+            p_tracers_now,
+            p_tracers_new,
+            diagnostic_state.hfl_tracer,
+            diagnostic_state.vfl_tracer,
+            diagnostic_state.grf_tend_tracer,
+            strict=True,
+        ):
+            self._advect_tracer(
+                diagnostic_state=diagnostic_state,
+                prep_adv=prep_adv,
+                p_tracer_now=p_tracer_now,
+                p_tracer_new=p_tracer_new,
+                hfl_tracer=hfl_tracer,
+                vfl_tracer=vfl_tracer,
+                grf_tend_tracer=grf_tend_tracer,
+                dtime=dtime,
+            )
+
+        # finalize step
+        self._even_timestep = not self._even_timestep
+
+        log.debug("tracer_advection run - end")
+
+    def _advect_tracer(
+        self,
+        *,
+        diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_tracer_new: fa.CellKField[ta.wpfloat],
+        hfl_tracer: fa.EdgeKField[ta.wpfloat],
+        vfl_tracer: fa.CellKHalfField[ta.wpfloat],
+        grf_tend_tracer: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
         # Godunov splitting
         if self._even_timestep:
             # vertical transport
@@ -356,7 +402,7 @@ class GodunovSplittingAdvection(Advection):
                 p_tracer_new=p_tracer_new,
                 rhodz_now=diagnostic_state.airmass_now,
                 rhodz_new=self._rhodz_ast2,
-                p_mflx_tracer_v=diagnostic_state.vfl_tracer,
+                p_mflx_tracer_v=vfl_tracer,
                 dtime=dtime,
                 even_timestep=self._even_timestep,
             )
@@ -368,7 +414,7 @@ class GodunovSplittingAdvection(Advection):
                 p_tracer_new=p_tracer_new,
                 rhodz_now=self._rhodz_ast2,
                 rhodz_new=diagnostic_state.airmass_new,
-                p_mflx_tracer_h=diagnostic_state.hfl_tracer,
+                p_mflx_tracer_h=hfl_tracer,
                 dtime=dtime,
             )
 
@@ -380,7 +426,7 @@ class GodunovSplittingAdvection(Advection):
                 p_tracer_new=p_tracer_new,
                 rhodz_now=diagnostic_state.airmass_now,
                 rhodz_new=self._rhodz_ast2,
-                p_mflx_tracer_h=diagnostic_state.hfl_tracer,
+                p_mflx_tracer_h=hfl_tracer,
                 dtime=dtime,
             )
 
@@ -391,7 +437,7 @@ class GodunovSplittingAdvection(Advection):
                 p_tracer_new=p_tracer_new,
                 rhodz_now=self._rhodz_ast2,
                 rhodz_new=diagnostic_state.airmass_new,
-                p_mflx_tracer_v=diagnostic_state.vfl_tracer,
+                p_mflx_tracer_v=vfl_tracer,
                 dtime=dtime,
                 even_timestep=self._even_timestep,
             )
@@ -401,7 +447,7 @@ class GodunovSplittingAdvection(Advection):
             log.debug("running stencil apply_interpolated_tracer_time_tendency - start")
             self._apply_interpolated_tracer_time_tendency(
                 p_tracer_now=p_tracer_now,
-                p_grf_tend_tracer=diagnostic_state.grf_tend_tracer,
+                p_grf_tend_tracer=grf_tend_tracer,
                 p_tracer_new=p_tracer_new,
                 p_dtime=dtime,
             )
@@ -415,11 +461,6 @@ class GodunovSplittingAdvection(Advection):
             stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication of tracer tracer_advection field: p_tracer_new - end")
-
-        # finalize step
-        self._even_timestep = not self._even_timestep
-
-        log.debug("tracer_advection run - end")
 
 
 def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]

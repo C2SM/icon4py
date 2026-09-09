@@ -335,6 +335,21 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
 class HorizontalAdvection(ABC):
     """Class that does one horizontal tracer_advection step."""
 
+    def prepare(  # noqa: B027 [empty-method-without-abstract-decorator] a no-op by default
+        self,
+        *,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        dtime: ta.wpfloat,
+    ) -> None:
+        """
+        Compute the tracer-independent part of a horizontal tracer_advection step, once per time step.
+
+        Args:
+            prep_adv: input argument, data class that contains precalculated tracer_advection fields
+            dtime: input argument, the time step
+
+        """
+
     @abstractmethod
     def run(
         self,
@@ -588,18 +603,13 @@ class SemiLagrangian(FiniteVolume):
 
         log.debug("horizontal tracer_advection class init - end")
 
-    def _compute_numerical_flux(
+    def prepare(
         self,
         *,
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        rhodz_now: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
-        log.debug("horizontal numerical flux computation - start")
-
-        ## tracer-independent part
+        log.debug("horizontal tracer_advection prepare - start")
 
         # compute tangential velocity
         log.debug("running stencil compute_tangential_wind_wp - start")
@@ -620,7 +630,18 @@ class SemiLagrangian(FiniteVolume):
         )
         log.debug("running stencil compute_barycentric_backtrajectory_alt - end")
 
-        ## tracer-specific part
+        log.debug("horizontal tracer_advection prepare - end")
+
+    def _compute_numerical_flux(
+        self,
+        *,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
+        log.debug("horizontal numerical flux computation - start")
 
         self._tracer_flux.compute_tracer_flux(
             prep_adv=prep_adv,

@@ -32,14 +32,14 @@ class AdvectionDiagnosticState:
     #: mass of air in layer at physics time step new [kg/m^2]
     airmass_new: fa.CellKField[ta.wpfloat]
 
-    #: tracer tendency field for use in grid refinement [kg/kg/s]
-    grf_tend_tracer: fa.CellKField[ta.wpfloat]
+    #: tracer tendency field for use in grid refinement, one per tracer [kg/kg/s]
+    grf_tend_tracer: tuple[fa.CellKField[ta.wpfloat], ...]
 
-    #: horizontal tracer flux at edges [kg/m/s]
-    hfl_tracer: fa.EdgeKField[ta.wpfloat]
+    #: horizontal tracer flux at edges, one per tracer [kg/m/s]
+    hfl_tracer: tuple[fa.EdgeKField[ta.wpfloat], ...]
 
-    #: vertical tracer flux at cells [kg/m/s]
-    vfl_tracer: fa.CellKHalfField[ta.wpfloat]
+    #: vertical tracer flux at cells, one per tracer [kg/m/s]
+    vfl_tracer: tuple[fa.CellKHalfField[ta.wpfloat], ...]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -110,7 +110,14 @@ class AdvectionMetricState:
 def initialize_advection_diagnostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
+    num_tracers: int,
 ) -> AdvectionDiagnosticState:
+    def _fields(*field_dims: gtx.Dimension) -> tuple[gtx.Field, ...]:
+        return tuple(
+            data_alloc.zero_field(grid, *field_dims, allocator=allocator, dtype=ta.wpfloat)
+            for _ in range(num_tracers)
+        )
+
     return AdvectionDiagnosticState(
         airmass_now=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
@@ -118,17 +125,7 @@ def initialize_advection_diagnostic_state(
         airmass_new=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
-        grf_tend_tracer=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-        ),
-        hfl_tracer=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
-        ),
-        vfl_tracer=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KHalfDim,
-            allocator=allocator,
-            dtype=ta.wpfloat,
-        ),
+        grf_tend_tracer=_fields(dims.CellDim, dims.KDim),
+        hfl_tracer=_fields(dims.EdgeDim, dims.KDim),
+        vfl_tracer=_fields(dims.CellDim, dims.KHalfDim),
     )

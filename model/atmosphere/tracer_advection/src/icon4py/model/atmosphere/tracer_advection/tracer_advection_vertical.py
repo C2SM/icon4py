@@ -353,6 +353,25 @@ class SemiMonotonicLimiter(VerticalLimiter):
 class VerticalAdvection(abc.ABC):
     """Class that does one vertical tracer_advection step."""
 
+    def prepare(  # noqa: B027 [empty-method-without-abstract-decorator] a no-op by default
+        self,
+        *,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+        even_timestep: bool = False,
+    ) -> None:
+        """
+        Compute the tracer-independent part of a vertical tracer_advection step, once per time step.
+
+        Args:
+            prep_adv: input argument, data class that contains precalculated tracer_advection fields
+            rhodz_now: input argument, field that contains current air mass in each layer
+            dtime: input argument, the time step
+            even_timestep: input argument, determines whether halo points are included
+
+        """
+
     @abc.abstractmethod
     def run(
         self,
@@ -884,17 +903,15 @@ class PiecewiseParabolicMethod(FiniteVolume):
 
         return horizontal_start, horizontal_end
 
-    def _compute_numerical_flux(
+    def prepare(
         self,
         *,
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
         dtime: ta.wpfloat,
-        even_timestep: bool,
+        even_timestep: bool = False,
     ) -> None:
-        log.debug("vertical numerical flux computation - start")
+        log.debug("vertical tracer_advection prepare - start")
 
         horizontal_start, horizontal_end = self._get_horizontal_start_end(
             even_timestep=even_timestep
@@ -920,6 +937,24 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_end=horizontal_end,
         )
         log.debug("running stencil compute_ppm4gpu_courant_number - end")
+
+        log.debug("vertical tracer_advection prepare - end")
+
+    def _compute_numerical_flux(
+        self,
+        *,
+        prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
+        dtime: ta.wpfloat,
+        even_timestep: bool,
+    ) -> None:
+        log.debug("vertical numerical flux computation - start")
+
+        horizontal_start, horizontal_end = self._get_horizontal_start_end(
+            even_timestep=even_timestep
+        )
 
         ## reconstruct face values
 
