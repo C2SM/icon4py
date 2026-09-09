@@ -74,9 +74,7 @@ def construct_diagnostic_init_state(
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
         hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend),
-        vfl_tracer=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
+        vfl_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend),
     )
 
 

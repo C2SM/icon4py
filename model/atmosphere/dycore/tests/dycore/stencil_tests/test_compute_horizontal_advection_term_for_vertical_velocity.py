@@ -89,14 +89,14 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(stencil_tests.Stenci
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vn_ie = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn_ie = data_alloc.random_field(dims.EdgeDim, dims.KHalfDim, dtype=vpfloat)
         inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
-        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-        z_vt_ie = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
+        z_vt_ie = data_alloc.random_field(dims.EdgeDim, dims.KHalfDim, dtype=vpfloat)
         inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
         tangent_orientation = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
-        z_w_v = data_alloc.random_field(dims.VertexDim, dims.KDim, dtype=vpfloat)
-        z_v_grad_w = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_w_v = data_alloc.random_field(dims.VertexDim, dims.KHalfDim, dtype=vpfloat)
+        z_v_grad_w = data_alloc.zero_field(dims.EdgeDim, dims.KHalfDim, dtype=vpfloat)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
@@ -114,5 +114,5 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(stencil_tests.Stenci
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

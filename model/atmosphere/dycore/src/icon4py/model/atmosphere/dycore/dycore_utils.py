@@ -114,13 +114,13 @@ def calculate_divdamp_fields(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @gtx.field_operator
 def _compute_rayleigh_damping_factor(
-    rayleigh_w: fa.KField[wpfloat], dtime: wpfloat
-) -> fa.KField[wpfloat]:
+    rayleigh_w: fa.KHalfField[wpfloat], dtime: wpfloat
+) -> fa.KHalfField[wpfloat]:
     return wpfloat(1.0) / (wpfloat(1.0) + dtime * rayleigh_w)
 
 
 @gtx.program
 def compute_rayleigh_damping_factor(
-    rayleigh_w: fa.KField[wpfloat], dtime: wpfloat, rayleigh_damping_factor: fa.KField[wpfloat]
+    rayleigh_w: fa.KHalfField[wpfloat], dtime: wpfloat, rayleigh_damping_factor: fa.KHalfField[wpfloat]
 ) -> None:
     _compute_rayleigh_damping_factor(rayleigh_w, dtime, out=rayleigh_damping_factor)

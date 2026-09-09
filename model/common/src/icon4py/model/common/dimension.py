@@ -11,7 +11,7 @@ import gt4py.next as gtx
 
 
 KDim = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
-KHalfDim = gtx.Dimension("KHalf", kind=gtx.DimensionKind.VERTICAL)
+KHalfDim = gtx.flip_staggered(KDim)
 EdgeDim = gtx.Dimension("Edge")
 CellDim = gtx.Dimension("Cell")
 VertexDim = gtx.Dimension("Vertex")
@@ -45,7 +45,6 @@ C2E2C2E = gtx.FieldOffset("C2E2C2E", source=EdgeDim, target=(CellDim, C2E2C2EDim
 C2E2C2E2C = gtx.FieldOffset("C2E2C2E2C", source=CellDim, target=(CellDim, C2E2C2E2CDim))
 V2E2V = gtx.FieldOffset("V2E2V", source=VertexDim, target=(VertexDim, V2E2VDim))
 Koff = gtx.FieldOffset("Koff", source=KDim, target=(KDim,))
-KHalfOff = gtx.FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
 
 
 def horizontal_dims() -> Iterator[gtx.Dimension]:

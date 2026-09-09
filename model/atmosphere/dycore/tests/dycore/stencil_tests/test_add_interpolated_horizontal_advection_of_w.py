@@ -61,9 +61,9 @@ class TestAddInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        z_v_grad_w = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_v_grad_w = data_alloc.random_field(dims.EdgeDim, dims.KHalfDim, dtype=ta.vpfloat)
         e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
-        ddt_w_adv = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        ddt_w_adv = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
 
         return dict(
             e_bln_c_s=e_bln_c_s,
@@ -72,5 +72,5 @@ class TestAddInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

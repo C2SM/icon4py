@@ -17,6 +17,13 @@ else
     exit 1
 fi
 
+# Under MPS GPUs are visible with indices 0..SLURM_GPUS_PER_NODE-1. Assign
+# ranks to GPUs round-robin.
+if (( ${SLURM_GPUS_PER_NODE:-1} > 1 )); then
+    export CUDA_VISIBLE_DEVICES="$(( rank % SLURM_GPUS_PER_NODE ))"
+    echo "Rank ${rank}/${SLURM_NTASKS:-?}: pinned to GPU ${CUDA_VISIBLE_DEVICES}"
+fi
+
 log_file="${CI_PROJECT_DIR:+${CI_PROJECT_DIR}/}pytest-log-rank-${rank}.txt"
 
 # If ICON4PY_TEST_MPI_SUBCOMM_SIZE is set, print output from the first rank in

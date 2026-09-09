@@ -13,13 +13,13 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO(dastrm): this stencil has no test
+# TODO(nfarabullini, OngChia): this stencil has no test
 
 
 @gtx.field_operator
 def _apply_density_increment(
     rhodz_in: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     p_dtime: ta.wpfloat,
@@ -27,7 +27,8 @@ def _apply_density_increment(
 ) -> fa.CellKField[ta.wpfloat]:
     even = broadcast(even_timestep, (dims.CellDim, dims.KDim))
     rhodz_incr = p_dtime * (
-        p_mflx_contra_v(dims.KDim + 1) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
+        p_mflx_contra_v(dims.KDim + 0.5) * deepatmo_divzl
+        - p_mflx_contra_v(dims.KDim - 0.5) * deepatmo_divzu
     )
     rhodz_out = where(
         even, rhodz_in + rhodz_incr, maximum(wpfloat(0.1) * rhodz_in, rhodz_in) - rhodz_incr
@@ -38,7 +39,7 @@ def _apply_density_increment(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_density_increment(
     rhodz_in: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_out: fa.CellKField[ta.wpfloat],

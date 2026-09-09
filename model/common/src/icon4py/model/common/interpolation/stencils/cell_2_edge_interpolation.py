@@ -28,6 +28,14 @@ def _cell_2_edge_interpolation(
     return neighbor_sum(in_field(E2C) * coeff, axis=dims.E2CDim)
 
 
+@gtx.field_operator
+def _cell_2_edge_interpolation_on_half_levels(
+    in_field: fa.CellKHalfField[gtx.float64],
+    coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+) -> fa.EdgeKHalfField[gtx.float64]:
+    return neighbor_sum(in_field(E2C) * coeff, axis=dims.E2CDim)
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def cell_2_edge_interpolation(
     in_field: fa.CellKField[gtx.float64],

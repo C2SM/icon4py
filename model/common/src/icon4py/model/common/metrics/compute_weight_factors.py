@@ -16,13 +16,14 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 @gtx.field_operator
 def _compute_wgtfac_c(
-    z_ifc: fa.CellKField[gtx.float64],
+    z_ifc: fa.CellKHalfField[gtx.float64],
     nlev: gtx.int32,
-) -> fa.CellKField[gtx.float64]:
+) -> fa.CellKHalfField[gtx.float64]:
     return with_boundaries_on_half_levels_on_cells(
-        top=(z_ifc(dims.KDim + 1) - z_ifc) / (z_ifc(dims.KDim + 2) - z_ifc),
-        interior=(z_ifc(dims.KDim - 1) - z_ifc) / (z_ifc(dims.KDim - 1) - z_ifc(dims.KDim + 1)),
-        bottom=(z_ifc(dims.KDim - 1) - z_ifc) / (z_ifc(dims.KDim - 2) - z_ifc),
+        top=(z_ifc(dims.KHalfDim + 1) - z_ifc) / (z_ifc(dims.KHalfDim + 2) - z_ifc),
+        interior=(z_ifc(dims.KHalfDim - 1) - z_ifc)
+        / (z_ifc(dims.KHalfDim - 1) - z_ifc(dims.KHalfDim + 1)),
+        bottom=(z_ifc(dims.KHalfDim - 1) - z_ifc) / (z_ifc(dims.KHalfDim - 2) - z_ifc),
         nlev=nlev,
     )
 
@@ -30,8 +31,8 @@ def _compute_wgtfac_c(
 # TODO(halungge): missing test?
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_wgtfac_c(  # noqa: PLR0917 [too-many-positional-arguments]
-    wgtfac_c: fa.CellKField[gtx.float64],
-    z_ifc: fa.CellKField[gtx.float64],
+    wgtfac_c: fa.CellKHalfField[gtx.float64],
+    z_ifc: fa.CellKHalfField[gtx.float64],
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -44,7 +45,7 @@ def compute_wgtfac_c(  # noqa: PLR0917 [too-many-positional-arguments]
         out=wgtfac_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
 

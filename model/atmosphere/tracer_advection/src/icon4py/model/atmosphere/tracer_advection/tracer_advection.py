@@ -29,9 +29,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_density_increment 
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_tracer_time_tendency import (
     apply_interpolated_tracer_time_tendency,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field import (
-    copy_cell_kdim_field,
-)
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
@@ -41,6 +38,7 @@ from icon4py.model.common import (
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc, fortran_config
 
@@ -189,9 +187,9 @@ class NoAdvection(Advection):
         self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         # stencils
-        self._copy_cell_kdim_field = setup_program(
+        self._copy_field_on_cell_k = setup_program(
             backend=self._backend,
-            program=copy_cell_kdim_field,
+            program=generic_math_operations.copy_field_on_cell_k,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_nudging,
                 "horizontal_end": self._end_cell_local,
@@ -219,12 +217,12 @@ class NoAdvection(Advection):
         )
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
-        log.debug("running stencil copy_cell_kdim_field - start")
-        self._copy_cell_kdim_field(
-            field_in=p_tracer_now,
-            field_out=p_tracer_new,
+        log.debug("running stencil copy_field_on_cell_k - start")
+        self._copy_field_on_cell_k(
+            field=p_tracer_now,
+            output_field=p_tracer_new,
         )
-        log.debug("running stencil copy_cell_kdim_field - end")
+        log.debug("running stencil copy_field_on_cell_k - end")
 
         log.debug("tracer_advection run - end")
 

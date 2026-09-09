@@ -91,6 +91,7 @@ class Grid:
     def size(self) -> dict[gtx.Dimension, int]:
         sizes = {
             dims.KDim: self.config.num_levels,
+            dims.KHalfDim: self.config.num_levels + 1,
             dims.CellDim: self.config.num_cells,
             dims.EdgeDim: self.config.num_edges,
             dims.VertexDim: self.config.num_vertices,

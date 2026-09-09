@@ -37,9 +37,7 @@ def model_state(grid: base.Grid) -> dict[str, xr.DataArray]:
     rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
     exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
     theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    w = data_alloc.random_field(
-        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=np.float32
-    )
+    w = data_alloc.random_field(grid, dims.CellDim, dims.KHalfDim, dtype=np.float32)
     vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=np.float32)
     return {
         "air_density": utils.to_data_array(rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]),

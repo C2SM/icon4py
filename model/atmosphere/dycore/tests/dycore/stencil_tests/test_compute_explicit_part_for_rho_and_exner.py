@@ -96,15 +96,11 @@ class TestComputeExplicitPartForRhoAndExner(stencil_tests.StencilTest):
         rho_nnow = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         inv_ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         z_flxdiv_mass = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_contr_w_fl_l = data_alloc.random_field(
-            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
-        )
+        z_contr_w_fl_l = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         exner_pr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         z_beta = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         z_flxdiv_theta = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        theta_v_ic = data_alloc.random_field(
-            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
-        )
+        theta_v_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         ddt_exner_phy = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         z_rho_expl = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)

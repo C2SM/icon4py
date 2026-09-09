@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-arguments]
-    vect_a: fa.KField[wpfloat],
+    vect_a: fa.KHalfField[wpfloat],
     hdiff_smag_fac: wpfloat,
     hdiff_smag_fac2: wpfloat,
     hdiff_smag_fac3: wpfloat,
@@ -33,7 +33,7 @@ def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-argument
 
     bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
     aqdr = df32 / dz32 - bqdr * dz32
-    zf = wpfloat(0.5) * (vect_a + vect_a(dims.KDim + 1))
+    zf = wpfloat(0.5) * (vect_a(dims.KDim - 0.5) + vect_a(dims.KDim + 0.5))
     zero = broadcast(wpfloat(0.0), (dims.KDim,))
 
     dzlin = minimum(broadcast(dz21, (dims.KDim,)), maximum(zero, zf - hdiff_smag_z))
@@ -44,7 +44,7 @@ def _en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-argument
 
 @gtx.program
 def en_smag_fac_for_zero_nshift(  # noqa: PLR0917 [too-many-positional-arguments]
-    vect_a: fa.KField[wpfloat],
+    vect_a: fa.KHalfField[wpfloat],
     hdiff_smag_fac: wpfloat,
     hdiff_smag_fac2: wpfloat,
     hdiff_smag_fac3: wpfloat,

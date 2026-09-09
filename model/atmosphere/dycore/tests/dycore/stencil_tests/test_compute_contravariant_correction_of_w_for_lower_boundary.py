@@ -74,9 +74,7 @@ class TestComputeContravariantCorrectionOfWForLowerBoundary(stencil_tests.Stenci
         e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=wpfloat)
         z_w_concorr_me = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         wgtfacq_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        w_concorr_c = data_alloc.zero_field(
-            dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
-        )
+        w_concorr_c = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
 
         return dict(
             e_bln_c_s=e_bln_c_s,

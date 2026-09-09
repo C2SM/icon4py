@@ -16,21 +16,6 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _identity_c_k(field: fa.CellKField[wpfloat]) -> fa.CellKField[wpfloat]:
-    return field
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def copy_field(old_f: fa.CellKField[wpfloat], new_f: fa.CellKField[wpfloat]) -> None:
-    _identity_c_k(old_f, out=new_f)
-
-
-@gtx.field_operator
-def _identity_e_k(field: fa.EdgeKField[wpfloat]) -> fa.EdgeKField[wpfloat]:
-    return field
-
-
-@gtx.field_operator
 def _scale_k(field: fa.KField[wpfloat], factor: wpfloat) -> fa.KField[wpfloat]:
     return field * factor
 
@@ -88,7 +73,7 @@ def _init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917 [too-man
     hdiff_smag_z2: wpfloat,
     hdiff_smag_z3: wpfloat,
     hdiff_smag_z4: wpfloat,
-    vect_a: fa.KField[wpfloat],
+    vect_a: fa.KHalfField[wpfloat],
 ) -> tuple[fa.KField[wpfloat], fa.KField[wpfloat], fa.KField[wpfloat]]:
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
@@ -122,7 +107,7 @@ def init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917 [too-many
     hdiff_smag_z2: wpfloat,
     hdiff_smag_z3: wpfloat,
     hdiff_smag_z4: wpfloat,
-    vect_a: fa.KField[wpfloat],
+    vect_a: fa.KHalfField[wpfloat],
     diff_multfac_vn: fa.KField[wpfloat],
     smag_limit: fa.KField[wpfloat],
     enh_smag_fac: fa.KField[wpfloat],
@@ -149,14 +134,15 @@ def init_diffusion_local_fields_for_regular_timestep(  # noqa: PLR0917 [too-many
 
 @gtx.field_operator
 def _init_nabla2_factor_in_upper_damping_zone(
-    physical_heights: fa.KField[wpfloat],
+    physical_heights: fa.KHalfField[wpfloat],
     end_index_of_damping_layer: gtx.int32,
     nshift: gtx.int32,
     heights_nrd_shift: wpfloat,
     heights_1: wpfloat,
-) -> fa.KField[wpfloat]:
+) -> fa.KHalfField[wpfloat]:
     height_sliced = concat_where(
-        ((1 + nshift) <= dims.KDim) & (dims.KDim < (nshift + end_index_of_damping_layer + 1)),
+        ((1 + nshift) <= dims.KHalfDim)
+        & (dims.KHalfDim < (nshift + end_index_of_damping_layer + 1)),
         physical_heights,
         wpfloat(0.0),
     )
@@ -170,8 +156,8 @@ def _init_nabla2_factor_in_upper_damping_zone(
 
 @gtx.program
 def init_nabla2_factor_in_upper_damping_zone(  # noqa: PLR0917 [too-many-positional-arguments]
-    physical_heights: fa.KField[wpfloat],
-    diff_multfac_n2w: fa.KField[wpfloat],
+    physical_heights: fa.KHalfField[wpfloat],
+    diff_multfac_n2w: fa.KHalfField[wpfloat],
     end_index_of_damping_layer: gtx.int32,
     nshift: gtx.int32,
     heights_nrd_shift: wpfloat,
@@ -201,5 +187,5 @@ def init_nabla2_factor_in_upper_damping_zone(  # noqa: PLR0917 [too-many-positio
         heights_nrd_shift=heights_nrd_shift,
         heights_1=heights_1,
         out=diff_multfac_n2w,
-        domain={dims.KDim: (vertical_start, vertical_end)},
+        domain={dims.KHalfDim: (vertical_start, vertical_end)},
     )

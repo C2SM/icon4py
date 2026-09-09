@@ -28,14 +28,18 @@ class DiffusionDiagnosticState:
     """Represents the diagnostic fields needed in diffusion."""
 
     # fields for 3D elements in turbdiff
-    hdef_ic: fa.CellKField[float]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
-    div_ic: fa.CellKField[
+    hdef_ic: fa.CellKHalfField[
+        float
+    ]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
+    div_ic: fa.CellKHalfField[
         float
     ]  # ! horizontal wind field deformation (nproma,nlevp1,nblks_c)     [1/s^2]
-    dwdx: fa.CellKField[
+    dwdx: fa.CellKHalfField[
         float
     ]  # zonal gradient of vertical wind speed (nproma,nlevp1,nblks_c)     [1/s]
-    dwdy: fa.CellKField[float]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
+    dwdy: fa.CellKHalfField[
+        float
+    ]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -43,7 +47,7 @@ class DiffusionMetricState:
     """Represents the metric state fields needed in diffusion."""
 
     theta_ref_mc: fa.CellKField[float]
-    wgtfac_c: fa.CellKField[
+    wgtfac_c: fa.CellKHalfField[
         float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32]
@@ -94,32 +98,28 @@ def initialize_diffusion_diagnostic_state(
     hdef_ic = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.vpfloat,
     )
     div_ic = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.vpfloat,
     )
     dwdx = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.vpfloat,
     )
     dwdy = data_alloc.zero_field(
         grid,
         dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
+        dims.KHalfDim,
         allocator=allocator,
         dtype=ta.vpfloat,
     )

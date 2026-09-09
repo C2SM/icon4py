@@ -14,18 +14,18 @@ from icon4py.model.common.dimension import V2C
 
 @gtx.field_operator
 def _compute_cell_2_vertex_interpolation(
-    cell_in: fa.CellKField[gtx.float64],
+    cell_in: fa.CellKHalfField[gtx.float64],
     c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
-) -> fa.VertexKField[gtx.float64]:
+) -> fa.VertexKHalfField[gtx.float64]:
     vert_out = neighbor_sum(c_int * cell_in(V2C), axis=dims.V2CDim)
     return vert_out
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cell_2_vertex_interpolation(
-    cell_in: fa.CellKField[gtx.float64],
+    cell_in: fa.CellKHalfField[gtx.float64],
     c_int: gtx.Field[[dims.VertexDim, dims.V2CDim], gtx.float64],
-    vert_out: fa.VertexKField[gtx.float64],
+    vert_out: fa.VertexKHalfField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -49,6 +49,6 @@ def compute_cell_2_vertex_interpolation(
         out=vert_out,
         domain={
             dims.VertexDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

@@ -39,7 +39,7 @@ class AdvectionDiagnosticState:
     hfl_tracer: fa.EdgeKField[ta.wpfloat]
 
     #: vertical tracer flux at cells [kg/m/s]
-    vfl_tracer: fa.CellKField[ta.wpfloat]  # TODO(dastrm): should be KHalfDim
+    vfl_tracer: fa.CellKHalfField[ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -53,7 +53,7 @@ class AdvectionPrepAdvState:
     mass_flx_me: fa.EdgeKField[ta.wpfloat]
 
     #: mass flux at half level centers averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_ic: fa.CellKField[ta.wpfloat]  # TODO(dastrm): should be KHalfDim
+    mass_flx_ic: fa.CellKHalfField[ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -124,12 +124,10 @@ def initialize_advection_diagnostic_state(
         hfl_tracer=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
         ),
-        # vertical flux at cell half levels: one more level than KDim
         vfl_tracer=data_alloc.zero_field(
             grid,
             dims.CellDim,
-            dims.KDim,
-            extend={dims.KDim: 1},
+            dims.KHalfDim,
             allocator=allocator,
             dtype=ta.wpfloat,
         ),

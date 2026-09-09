@@ -33,6 +33,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
+    _cell_2_edge_interpolation_on_half_levels,
 )
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     _compute_cell_2_vertex_interpolation,
@@ -45,27 +46,25 @@ from icon4py.model.common.math.vertical_operations import (
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-# TODO(nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
-# TODO(nfarabullini): change dimension type hint for ddqz_z_half to cell, khalf
 @gtx.field_operator
 def _compute_ddqz_z_half(
-    z_ifc: fa.CellKField[gtx.float64],
+    z_ifc: fa.CellKHalfField[gtx.float64],
     z_mc: fa.CellKField[gtx.float64],
     nlev: gtx.int32,
-) -> fa.CellKField[gtx.float64]:
+) -> fa.CellKHalfField[gtx.float64]:
     return with_boundaries_on_half_levels_on_cells(
-        top=2.0 * (z_ifc - z_mc),
-        interior=z_mc(dims.KDim - 1) - z_mc,
-        bottom=2.0 * (z_mc(dims.KDim - 1) - z_ifc),
+        top=2.0 * (z_ifc - z_mc(dims.KHalfDim + 0.5)),
+        interior=z_mc(dims.KHalfDim - 0.5) - z_mc(dims.KHalfDim + 0.5),
+        bottom=2.0 * (z_mc(dims.KHalfDim - 0.5) - z_ifc),
         nlev=nlev,
     )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=None)
 def compute_ddqz_z_half(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_ifc: fa.CellKField[gtx.float64],
+    z_ifc: fa.CellKHalfField[gtx.float64],
     z_mc: fa.CellKField[gtx.float64],
-    ddqz_z_half: fa.CellKField[gtx.float64],
+    ddqz_z_half: fa.CellKHalfField[gtx.float64],
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -95,14 +94,14 @@ def compute_ddqz_z_half(  # noqa: PLR0917 [too-many-positional-arguments]
         out=ddqz_z_half,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
 
 
 @gtx.field_operator
 def _compute_ddqz_z_full_and_inverse(
-    z_ifc: fa.CellKField[gtx.float64],
+    z_ifc: fa.CellKHalfField[gtx.float64],
 ) -> tuple[fa.CellKField[gtx.float64], fa.CellKField[gtx.float64]]:
     ddqz_z_full = difference_level_plus1_on_cells(z_ifc)
     inverse_ddqz_z_full = 1.0 / ddqz_z_full
@@ -111,7 +110,7 @@ def _compute_ddqz_z_full_and_inverse(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_ddqz_z_full_and_inverse(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_ifc: fa.CellKField[gtx.float64],
+    z_ifc: fa.CellKHalfField[gtx.float64],
     ddqz_z_full: fa.CellKField[gtx.float64],
     inv_ddqz_z_full: fa.CellKField[gtx.float64],
     horizontal_start: gtx.int32,
@@ -147,14 +146,16 @@ def compute_ddqz_z_full_and_inverse(  # noqa: PLR0917 [too-many-positional-argum
 
 @gtx.field_operator
 def _compute_scaling_factor_for_3d_divdamp(
-    vct_a: fa.KField[gtx.float64],
+    vct_a: fa.KHalfField[gtx.float64],
     divdamp_trans_start: gtx.float64,
     divdamp_trans_end: gtx.float64,
     divdamp_type: gtx.int32,
 ) -> fa.KField[gtx.float64]:
     scaling_factor_for_3d_divdamp = broadcast(1.0, (dims.KDim,))
     if divdamp_type == 32:
-        zf = 0.5 * (vct_a + vct_a(dims.KDim + 1))  # depends on nshift_total, assumed to be always 0
+        zf = 0.5 * (
+            vct_a(dims.KDim - 0.5) + vct_a(dims.KDim + 0.5)
+        )  # depends on nshift_total, assumed to be always 0
         scaling_factor_for_3d_divdamp = where(
             zf >= divdamp_trans_end, 0.0, scaling_factor_for_3d_divdamp
         )
@@ -168,7 +169,7 @@ def _compute_scaling_factor_for_3d_divdamp(
 
 @gtx.program
 def compute_scaling_factor_for_3d_divdamp(  # noqa: PLR0917 [too-many-positional-arguments]
-    vct_a: fa.KField[gtx.float64],
+    vct_a: fa.KHalfField[gtx.float64],
     scaling_factor_for_3d_divdamp: fa.KField[gtx.float64],
     divdamp_trans_start: gtx.float64,
     divdamp_trans_end: gtx.float64,
@@ -202,14 +203,14 @@ def compute_scaling_factor_for_3d_divdamp(  # noqa: PLR0917 [too-many-positional
 
 @gtx.field_operator
 def _compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
-    vct_a: fa.KField[gtx.float64],
+    vct_a: fa.KHalfField[gtx.float64],
     damping_height: gtx.float64,
     rayleigh_type: gtx.int32,
     rayleigh_coeff: gtx.float64,
     vct_a_1: gtx.float64,
     pi_const: gtx.float64,
-) -> fa.KField[gtx.float64]:
-    rayleigh_w = broadcast(0.0, (dims.KDim,))
+) -> fa.KHalfField[gtx.float64]:
+    rayleigh_w = broadcast(0.0, (dims.KHalfDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
     if rayleigh_type == 1:  # RayleighType.CLASSIC
@@ -227,8 +228,8 @@ def _compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @gtx.program
 def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
-    rayleigh_w: fa.KField[gtx.float64],
-    vct_a: fa.KField[gtx.float64],
+    rayleigh_w: fa.KHalfField[gtx.float64],
+    vct_a: fa.KHalfField[gtx.float64],
     damping_height: gtx.float64,
     rayleigh_type: gtx.int32,
     rayleigh_coeff: gtx.float64,
@@ -263,19 +264,19 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
         vct_a_1,
         pi_const,
         out=rayleigh_w,
-        domain={dims.KDim: (vertical_start, vertical_end)},
+        domain={dims.KHalfDim: (vertical_start, vertical_end)},
     )
 
 
 @gtx.field_operator
 def _compute_coeff_dwdz(
-    ddqz_z_full: fa.CellKField[gtx.float64], z_ifc: fa.CellKField[gtx.float64]
+    ddqz_z_full: fa.CellKField[gtx.float64], z_ifc: fa.CellKHalfField[gtx.float64]
 ) -> tuple[fa.CellKField[gtx.float64], fa.CellKField[gtx.float64]]:
     coeff1_dwdz = (
-        ddqz_z_full / ddqz_z_full(dims.KDim - 1) / (z_ifc(dims.KDim - 1) - z_ifc(dims.KDim + 1))
+        ddqz_z_full / ddqz_z_full(dims.KDim - 1) / (z_ifc(dims.KDim - 1.5) - z_ifc(dims.KDim + 0.5))
     )
     coeff2_dwdz = (
-        ddqz_z_full(dims.KDim - 1) / ddqz_z_full / (z_ifc(dims.KDim - 1) - z_ifc(dims.KDim + 1))
+        ddqz_z_full(dims.KDim - 1) / ddqz_z_full / (z_ifc(dims.KDim - 1.5) - z_ifc(dims.KDim + 0.5))
     )
 
     return coeff1_dwdz, coeff2_dwdz
@@ -284,7 +285,7 @@ def _compute_coeff_dwdz(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_coeff_dwdz(  # noqa: PLR0917 [too-many-positional-arguments]
     ddqz_z_full: fa.CellKField[gtx.float64],
-    z_ifc: fa.CellKField[gtx.float64],
+    z_ifc: fa.CellKHalfField[gtx.float64],
     coeff1_dwdz: fa.CellKField[gtx.float64],
     coeff2_dwdz: fa.CellKField[gtx.float64],
     horizontal_start: gtx.int32,
@@ -321,9 +322,9 @@ def compute_coeff_dwdz(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @gtx.program
 def compute_ddxn_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_ifc: fa.CellKField[gtx.float64],
+    z_ifc: fa.CellKHalfField[gtx.float64],
     inv_dual_edge_length: fa.EdgeField[gtx.float64],
-    ddxn_z_half_e: fa.EdgeKField[gtx.float64],
+    ddxn_z_half_e: fa.EdgeKHalfField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -335,14 +336,14 @@ def compute_ddxn_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
         out=ddxn_z_half_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
 
 
 @gtx.field_operator
 def _compute_ddxt_z_half_e(
-    cell_in: fa.CellKField[gtx.float64],
+    cell_in: fa.CellKHalfField[gtx.float64],
     c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     inv_primal_edge_length: fa.EdgeField[gtx.float64],
     tangent_orientation: fa.EdgeField[gtx.float64],
@@ -358,11 +359,11 @@ def _compute_ddxt_z_half_e(
 
 @gtx.program
 def compute_ddxt_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
-    cell_in: fa.CellKField[gtx.float64],
+    cell_in: fa.CellKHalfField[gtx.float64],
     c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     inv_primal_edge_length: fa.EdgeField[gtx.float64],
     tangent_orientation: fa.EdgeField[gtx.float64],
-    ddxt_z_half_e: fa.EdgeKField[gtx.float64],
+    ddxt_z_half_e: fa.EdgeKHalfField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -376,7 +377,7 @@ def compute_ddxt_z_half_e(  # noqa: PLR0917 [too-many-positional-arguments]
         out=ddxt_z_half_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
 
@@ -526,9 +527,9 @@ def compute_exner_exfac(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @gtx.program
 def compute_wgtfac_e(  # noqa: PLR0917 [too-many-positional-arguments]
-    wgtfac_c: fa.CellKField[gtx.float64],
+    wgtfac_c: fa.CellKHalfField[gtx.float64],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
-    wgtfac_e: fa.EdgeKField[gtx.float64],
+    wgtfac_e: fa.EdgeKHalfField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -549,13 +550,13 @@ def compute_wgtfac_e(  # noqa: PLR0917 [too-many-positional-arguments]
         vertical_end: vertical end index
     """
 
-    _cell_2_edge_interpolation(
+    _cell_2_edge_interpolation_on_half_levels(
         in_field=wgtfac_c,
         coeff=c_lin_e,
         out=wgtfac_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
 

@@ -202,7 +202,7 @@ def compute_reference_atmosphere_cell_fields(  # noqa: PLR0917 [too-many-positio
 
 @gtx.field_operator
 def _compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_ifc: fa.CellKField[gtx.float64],
+    z_ifc: fa.CellKHalfField[gtx.float64],
     t0sl_bg: gtx.float64,
     del_t_bg: gtx.float64,
     h_scal_bg: gtx.float64,
@@ -276,9 +276,9 @@ def _compute_d2dexdz2_fac_mc(  # noqa: PLR0917 [too-many-positional-arguments]
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-arguments]
-    z_ifc: fa.CellKField[gtx.float64],
-    d_exner_dz_ref_ic: fa.CellKField[gtx.float64],
-    theta_ref_ic: fa.CellKField[gtx.float64],
+    z_ifc: fa.CellKHalfField[gtx.float64],
+    d_exner_dz_ref_ic: fa.CellKHalfField[gtx.float64],
+    theta_ref_ic: fa.CellKHalfField[gtx.float64],
     t0sl_bg: gtx.float64,
     del_t_bg: gtx.float64,
     h_scal_bg: gtx.float64,
@@ -307,7 +307,7 @@ def compute_theta_d_exner_dz_ref_ic(  # noqa: PLR0917 [too-many-positional-argum
         out=(theta_ref_ic, d_exner_dz_ref_ic),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
 

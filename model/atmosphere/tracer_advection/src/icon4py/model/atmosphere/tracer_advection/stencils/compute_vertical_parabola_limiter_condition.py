@@ -15,11 +15,11 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _compute_vertical_parabola_limiter_condition(
-    p_face: fa.CellKField[ta.wpfloat],
+    p_face: fa.CellKHalfField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[gtx.int32]:
-    z_delta = p_face - p_face(dims.KDim + 1)
-    z_a6i = wpfloat(6.0) * (p_cc - wpfloat(0.5) * (p_face + p_face(dims.KDim + 1)))
+    z_delta = p_face(dims.KDim - 0.5) - p_face(dims.KDim + 0.5)
+    z_a6i = wpfloat(6.0) * (p_cc - wpfloat(0.5) * (p_face(dims.KDim - 0.5) + p_face(dims.KDim + 0.5)))
 
     l_limit = where(abs(z_delta) < wpfloat(-1.0) * z_a6i, 1, 0)
 
@@ -28,7 +28,7 @@ def _compute_vertical_parabola_limiter_condition(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_vertical_parabola_limiter_condition(
-    p_face: fa.CellKField[ta.wpfloat],
+    p_face: fa.CellKHalfField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
     l_limit: fa.CellKField[gtx.int32],
     horizontal_start: gtx.int32,
