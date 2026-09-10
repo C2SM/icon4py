@@ -119,7 +119,7 @@ def _patch_moments_diff(patch: TorusPatch) -> tuple[np.ndarray, np.ndarray, np.n
     return stencil, z_dist, moments_hat - moments[:, np.newaxis, :]
 
 
-def _patch_pseudoinverse(patch: TorusPatch) -> np.ndarray:
+def _patch_pseudoinverse(patch: TorusPatch, l_weights_s: np.ndarray | None = None) -> np.ndarray:
     return weno.compute_weno_pseudoinverse_quadratic(
         stencil_c9=weno.create_stencil_c9(patch.c2e2c, patch.c2v),
         lsq_moments=_patch_moments(patch),
@@ -127,6 +127,7 @@ def _patch_pseudoinverse(patch: TorusPatch) -> np.ndarray:
         cell_center_y=patch.cell_center_y,
         domain_length=patch.domain_length,
         domain_height=patch.domain_height,
+        l_weights_s=l_weights_s,
     )
 
 
@@ -382,8 +383,10 @@ def test_cubic_pseudoinverse_rejects_quadratic_moments(torus_patch):
 
 
 # 4. l_weights_s correction arithmetic identity
-def test_l_weights_correction_identity(torus_patch):
-    pseudoinv = _patch_pseudoinverse(torus_patch)
+@pytest.mark.parametrize("option", list(weno.WenoLinearWeights))
+def test_l_weights_correction_identity(torus_patch, option):
+    l_weights_s = weno.linear_weights(option)
+    pseudoinv = _patch_pseudoinverse(torus_patch, l_weights_s)
     reference_full = _full_stencil_pseudoinverse_reference(torus_patch)
 
     # undoing the correction loop must give back the pre-correction candidates
@@ -391,8 +394,113 @@ def test_l_weights_correction_identity(torus_patch):
     for k in range(3):
         reconstructed = pseudoinv[:, k].copy()
         for i in range(3, N_CAND, 3):
-            reconstructed += pseudoinv[:, i + k] * weno.L_WEIGHTS_S[i + k]
+            reconstructed += pseudoinv[:, i + k] * l_weights_s[i + k]
         np.testing.assert_allclose(reconstructed, reference_full, rtol=1e-12, atol=1e-13)
+
+
+# 4b. the two linear weight sets (f90 2590-2646) and the type-VI assembly (f90 2647-2660)
+#: the 27-slot vectors the Fortran fills from the per-type values, written out slot by slot
+#: (1-based slots 1-3 | 4-6 | 7-12 | 13-15 | 16-21 | 22-27)
+_DOCUMENTED_L_WEIGHTS_S = {
+    weno.WenoLinearWeights.OPTIMIZED: np.array(
+        [1.0, 1.0, 1.0]
+        + [0.0, 0.0, 0.0]
+        + [0.0] * 6
+        + [0.0, 0.0, 0.0]
+        + [0.0] * 6
+        + [2.991549980478795] * 6
+    ),
+    weno.WenoLinearWeights.UNITY: np.ones(27),
+    weno.WenoLinearWeights.HAND_TUNED: np.array(
+        [1.0, 1.0, 1.0] + [1.0, 1.0, 1.0] + [1.5] * 6 + [1.0, 1.0, 1.0] + [0.5] * 6 + [1.0] * 6
+    ),
+}
+
+
+@pytest.mark.parametrize("option", list(weno.WenoLinearWeights))
+def test_linear_weights_documented_slot_vectors(option):
+    np.testing.assert_array_equal(weno.linear_weights(option), _DOCUMENTED_L_WEIGHTS_S[option])
+    assert weno.linear_weights(option).shape == (N_CAND,)
+
+
+def test_linear_weights_sets_differ():
+    # the documented vectors agree on the type-VI slots and differ pairwise elsewhere
+    vectors = {option: weno.linear_weights(option) for option in weno.WenoLinearWeights}
+    for first in vectors:
+        for second in vectors:
+            np.testing.assert_array_equal(vectors[first][:3], vectors[second][:3])
+            if first != second:
+                assert np.any(vectors[first][3:] != vectors[second][3:])
+    # the hand-tuned set sums to one weight per candidate over the 24 fitted candidates,
+    # like the unity set
+    assert vectors[weno.WenoLinearWeights.HAND_TUNED][3:].sum() == 24.0
+    assert vectors[weno.WenoLinearWeights.UNITY][3:].sum() == 24.0
+
+
+def test_optimized_weights_unchanged():
+    # today's live set, bit for bit: slots 1-3 = 1, 4-21 = 0, 22-27 = 2.991549980478795
+    np.testing.assert_array_equal(
+        weno.L_WEIGHTS_S, np.array([1.0] * 3 + [0.0] * 18 + [2.991549980478795] * 6)
+    )
+    assert weno.L_WEIGHTS_S.dtype == np.float64
+    np.testing.assert_array_equal(
+        weno.linear_weights(weno.WenoLinearWeights.OPTIMIZED), weno.L_WEIGHTS_S
+    )
+
+
+def _type_vi_assembly_transcription(
+    candidates: np.ndarray, full: np.ndarray, l_weights_s: np.ndarray
+) -> np.ndarray:
+    """Direct transcription of f90 2586-2589 and 2647-2660 (1-based i, k in the comments)."""
+    pseudoinv_3 = candidates.copy()
+    # do i = 1, 3: lsq_pseudoinv_3(:,:,i) = lsq_pseudoinv
+    for k in range(3):
+        pseudoinv_3[:, k] = full
+    # do i = 4, 27, 3: lsq_pseudoinv_3(:,:,k) -= lsq_pseudoinv_3(:,:,i+k-1) * l_weights_s(i+k-1)
+    for i in range(4, 28, 3):
+        for k in range(1, 4):
+            pseudoinv_3[:, k - 1] = (
+                pseudoinv_3[:, k - 1] - pseudoinv_3[:, i + k - 2] * l_weights_s[i + k - 2]
+            )
+    return pseudoinv_3
+
+
+@pytest.mark.parametrize("option", list(weno.WenoLinearWeights))
+def test_type_vi_assembly_matches_fortran_transcription(torus_patch, option):
+    l_weights_s = weno.linear_weights(option)
+    pseudoinv = _patch_pseudoinverse(torus_patch, l_weights_s)
+    full = _full_stencil_pseudoinverse_reference(torus_patch)
+    # the fitted candidates 4-27 do not depend on the weights
+    np.testing.assert_array_equal(pseudoinv[:, 3:], _patch_pseudoinverse(torus_patch)[:, 3:])
+    expected = _type_vi_assembly_transcription(pseudoinv, full, l_weights_s)
+    np.testing.assert_allclose(pseudoinv[:, :3], expected[:, :3], rtol=1e-13, atol=1e-14)
+    # the assembled candidates genuinely differ from the plain full-stencil matrix
+    assert not np.allclose(pseudoinv[:, :3], full[:, np.newaxis], rtol=1e-6)
+
+
+def test_type_vi_assembly_transcription_detects_wrong_weights(torus_patch):
+    # mutation: assembling with the other set must not pass the same assertion
+    pseudoinv = _patch_pseudoinverse(
+        torus_patch, weno.linear_weights(weno.WenoLinearWeights.HAND_TUNED)
+    )
+    full = _full_stencil_pseudoinverse_reference(torus_patch)
+    wrong = _type_vi_assembly_transcription(
+        pseudoinv, full, weno.linear_weights(weno.WenoLinearWeights.OPTIMIZED)
+    )
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(pseudoinv[:, :3], wrong[:, :3], rtol=1e-13, atol=1e-14)
+
+
+def test_type_vi_assembly_default_is_optimized(torus_patch):
+    np.testing.assert_array_equal(
+        _patch_pseudoinverse(torus_patch),
+        _patch_pseudoinverse(torus_patch, weno.linear_weights(weno.WenoLinearWeights.OPTIMIZED)),
+    )
+
+
+def test_weno_pseudoinverse_rejects_wrong_weight_count(torus_patch):
+    with pytest.raises(ValueError, match="expected 27 candidate weights"):
+        _patch_pseudoinverse(torus_patch, np.ones(5))
 
 
 # 5. scatter round-trip through the connectivities
