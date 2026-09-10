@@ -20,7 +20,6 @@ import math
 import pathlib
 
 import gt4py.next.typing as gtx_typing
-import netCDF4 as nc
 import numpy as np
 import pytest
 
@@ -44,9 +43,10 @@ from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_states
 from icon4py.model.common.topography import config as topography_config
 from icon4py.model.common.topography.analytical import flat_topography as flat_topo
-from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
+from icon4py.model.driver import config as driver_config, driver, driver_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils
 
+from .. import utils as test_utils
 from ..fixtures import *  # noqa: F403
 
 
@@ -88,20 +88,6 @@ def _translated_disc(
     dy = (cell_y - blob_y + 0.5 * domain_height) % domain_height - 0.5 * domain_height
     # squared form (no hypot/sqrt) to match the 'tracer_blob' IC bit-for-bit at the disc boundary
     return np.where(np.less_equal(dx**2 + dy**2, radius**2), config.blob_amplitude, 0.0)
-
-
-def _read_qv_frames(output_dir: pathlib.Path) -> np.ndarray:
-    """qv from the driver output as (time, cell, level)."""
-    output_files = sorted(output_dir.rglob(f"{driver_io.DEFAULT_OUTPUT_FILENAME}_*.nc"))
-    assert output_files, f"no output file under {output_dir}"
-    frames = []
-    for output_file in output_files:
-        with nc.Dataset(output_file) as ds:
-            assert "qv" in ds.variables, "qv missing from driver output"
-            var = ds.variables["qv"]
-            axes = [var.dimensions.index(name) for name in ("time", "cell", "level")]
-            frames.append(np.transpose(np.asarray(var[:]), axes))
-    return np.concatenate(frames, axis=0)
 
 
 # Observed relative L2 errors vs the translated disc after 24 steps (CFL~0.3, blob
@@ -244,7 +230,7 @@ def test_tracer_blob_translation(
     airmass = ds.tracer_advection_diagnostic.airmass_now.asnumpy()
 
     # frame 0 is the initial state, one frame per step afterwards
-    qv_frames = _read_qv_frames(tmp_path)
+    qv_frames = test_utils.read_qv_frames(tmp_path)
     assert qv_frames.shape[0] == N_TIME_STEPS + 1
 
     # the initial frame must be the sampled disc (nothing moved yet)

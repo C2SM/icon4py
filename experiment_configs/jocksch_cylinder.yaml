@@ -1,0 +1,46 @@
+# Moving-cylinder tracer advection experiment (Jocksch, FFSL-WENO on a planar torus):
+# a tracer cylinder of radius 25 km in a uniform 1 m/s wind on the shared 20x22 torus
+# with 5 km edges (torus_20x22_res5000m.nc). With dt = CFL * edge_length = 1000 s the
+# 100 steps carry the cylinder exactly once around the domain. The columns are identical
+# (no vertical motion); the metrics factory needs at least three levels.
+geometry: {}
+metrics: {}
+interpolation: {}
+vertical_grid:
+  num_levels: 5
+  model_top_height: 1000.0
+  lowest_layer_thickness: 0.0
+topography:
+  config:
+    type: flat
+initial_condition:
+  config:
+    type: moving_cylinder
+    center_x:
+    center_y:
+    radius: 25000.0
+    wind_speed: 1.0
+    wind_angle: 0.0
+prescribed_tendencies:
+  data_path:
+driver:
+  experiment_name: jocksch_cylinder
+  profiling_options:
+  dtime: 1000
+  start_of_simulation: 0001-01-01T00:00:00
+  start_of_timestepping: 0001-01-01T00:00:00
+  end_of_simulation:
+    type: numsteps
+    value: 100
+  enable_output: true
+nonhydrostatic:
+diffusion:
+tracer_config:
+  qv: true
+tracer_advection:
+  horizontal_advection_type: quadratic_3rd_order_weno
+  horizontal_advection_limiter: no_limiter
+  vertical_advection_type: no_advection
+  vertical_advection_limiter: no_limiter
+graupel:
+muphys:

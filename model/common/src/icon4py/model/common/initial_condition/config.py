@@ -21,6 +21,7 @@ from icon4py.model.common.initial_condition.analytical import (
     jablonowski_williamson as jw_ic,
     linear_horizontal_advection as lin_hor_adv_ic,
     linear_vertical_advection as lin_ver_adv_ic,
+    moving_cylinder as moving_cylinder_ic,
     tracer_blob as tracer_blob_ic,
     weisman_klemp as wk_ic,
 )
@@ -52,6 +53,7 @@ type IC_CONFIG = (
     | tracer_blob_ic.TracerBlobConfig
     | lin_hor_adv_ic.LinearHorizontalAdvectionConfig
     | lin_ver_adv_ic.LinearVerticalAdvectionConfig
+    | moving_cylinder_ic.MovingCylinderConfig
     | from_file_ic.FromFileConfig
 )
 
@@ -65,6 +67,7 @@ config_io.register_config_union(
         "weissman_klemp": wk_ic.WeismanKlempConfig,
         "lin_hor_adv": lin_hor_adv_ic.LinearHorizontalAdvectionConfig,
         "lin_ver_adv": lin_ver_adv_ic.LinearVerticalAdvectionConfig,
+        "moving_cylinder": moving_cylinder_ic.MovingCylinderConfig,
         "from_file": from_file_ic.FromFileConfig,
     },
 )
@@ -236,6 +239,15 @@ def create(
                 config=config.config,
                 vertical_config=vertical_config,
                 metrics=static_fields.metrics,
+                prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
+                adv_prep_adv_state=_require_prep_adv_state(config.config, adv_prep_adv_state),
+            )
+        case moving_cylinder_ic.MovingCylinderConfig():
+            moving_cylinder_ic.moving_cylinder(
+                config=config.config,
+                grid=grid,
+                static_fields=static_fields,
                 prognostic_state_now=prognostic_state_now,
                 tracer_state_now=tracer_state_now,
                 adv_prep_adv_state=_require_prep_adv_state(config.config, adv_prep_adv_state),

@@ -247,6 +247,28 @@ def _construct_idealized_prep_adv(
         domain_length=domain_length,
         domain_height=domain_height,
     )
+    prescribe_uniform_wind(
+        prep_adv_state=prep_adv_state,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
+        u=u,
+        v=v,
+    )
+
+
+def prescribe_uniform_wind(
+    *,
+    prep_adv_state: adv_states.AdvectionPrepAdvState,
+    primal_normal_x: data_alloc.NDArray,
+    primal_normal_y: data_alloc.NDArray,
+    u: float,
+    v: float,
+) -> None:
+    """Prescribe a uniform horizontal wind ``(u, v)`` as the advection driving fields.
+
+    With unit air mass the edge mass flux equals the normal wind ``u n_x + v n_y``, which
+    also serves as the trajectory wind; the vertical mass flux is zero.
+    """
     vn = u * primal_normal_x + v * primal_normal_y
 
     vn_traj = prep_adv_state.vn_traj.ndarray
