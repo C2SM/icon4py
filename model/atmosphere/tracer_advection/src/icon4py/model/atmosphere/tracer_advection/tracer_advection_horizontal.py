@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 import gt4py.next as gtx
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.tracer_advection import tracer_advection_states, weno_least_squares
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.atmosphere.tracer_advection.stencils.accumulate_weno_candidate_flux_weights import (
     accumulate_weno_candidate_flux_weights,
 )
@@ -1200,22 +1200,14 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
             offset_provider=self._grid.connectivities,
         )
 
-    def compute_tracer_flux(
+    def _compute_departure_regions(
         self,
         *,
         prep_adv: adv_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-        p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
-        p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         p_vt: fa.EdgeKField[ta.wpfloat],
-        rhodz_now: fa.CellKField[ta.wpfloat],
-        rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
-        # p_distv_bary_* are unused: miura3 integrates over the full departure region
-        log.debug("horizontal tracer flux computation - start")
-
+        """The tracer-independent part: upwind cells, departure regions, quadrature vector."""
         # counterclockwise indicator (mo_advection_traj.f90 527-537)
         log.debug("running stencil compute_ffsl_backtrajectory_counterclockwise_indicator - start")
         self._compute_ffsl_backtrajectory_counterclockwise_indicator(
@@ -1250,6 +1242,13 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         )
         log.debug("running stencil prepare_gauss_quadrature_quadratic_miura3 - end")
 
+    def _accumulate_weno_candidates(
+        self,
+        *,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        l_weights_s: tuple[float, ...],
+    ) -> None:
+        """The 27-candidate loop into the per-edge accumulators, with the given d_j."""
         # zero the WENO accumulators (f90 2450-2451)
         for accumulator in (*self._z_lsq_weighted.values(), self._smooth_sum):
             self._init_constant_edge_kdim_field(field=accumulator, value=0.0)
@@ -1274,9 +1273,15 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
                 },
                 **self._z_lsq_weighted,
                 smooth_sum=self._smooth_sum,
-                l_weight_s=float(weno_least_squares.L_WEIGHTS_S[cand]),
+                l_weight_s=l_weights_s[cand],
             )
 
+    def _compute_weno_flux(
+        self,
+        *,
+        prep_adv: adv_states.AdvectionPrepAdvState,
+        p_out_e: fa.EdgeKField[ta.wpfloat],
+    ) -> None:
         # normalize and compute the flux (f90 2513-2521)
         log.debug("running stencil compute_horizontal_tracer_flux_from_weno_coefficients - start")
         self._compute_horizontal_tracer_flux_from_weno_coefficients(
@@ -1284,9 +1289,31 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
             smooth_sum=self._smooth_sum,
             **self._quad_vector_sums,
             p_mass_flx_e=prep_adv.mass_flx_me,
-            p_out_e=p_mflx_tracer_h,
+            p_out_e=p_out_e,
         )
         log.debug("running stencil compute_horizontal_tracer_flux_from_weno_coefficients - end")
+
+    def compute_tracer_flux(
+        self,
+        *,
+        prep_adv: adv_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
+        p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
+        p_vt: fa.EdgeKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
+        # p_distv_bary_* are unused: miura3 integrates over the full departure region
+        log.debug("horizontal tracer flux computation - start")
+
+        self._compute_departure_regions(prep_adv=prep_adv, p_vt=p_vt, dtime=dtime)
+        self._accumulate_weno_candidates(
+            p_tracer_now=p_tracer_now, l_weights_s=self._weno_quadratic_state.l_weights_s
+        )
+        self._compute_weno_flux(prep_adv=prep_adv, p_out_e=p_mflx_tracer_h)
 
         self._horizontal_limiter.apply_flux_limiter(
             p_tracer_now=p_tracer_now,

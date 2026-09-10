@@ -16,12 +16,14 @@ from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+import numpy as np
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.tracer_advection import (
     tracer_advection_horizontal,
     tracer_advection_states,
     tracer_advection_vertical,
+    weno_least_squares,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_density_increment import (
     apply_density_increment,
@@ -32,6 +34,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_trace
 from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field import (
     copy_cell_kdim_field,
 )
+from icon4py.model.atmosphere.tracer_advection.weno_least_squares import WenoLinearWeights
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
@@ -51,6 +54,10 @@ Advection module ported from ICON mo_advection_stepping.f90.
 """
 
 log = logging.getLogger(__name__)
+
+# the linear weight set of the quadratic WENO blend is defined next to the coefficient
+# machinery; registering it here makes it a config enum like the ones below
+config_io.register_enum(WenoLinearWeights)
 
 
 @config_io.register_enum
@@ -130,6 +137,10 @@ class AdvectionConfig:
     monotonic_limiter_boost_factor: float = 1.005
     #: substeps per advection step for the subcycled schemes, ICON's nadv_substeps
     n_advection_substeps: int = 3
+    #: linear weights d_j of the quadratic WENO schemes (paper Table 2 "WENO opt" /
+    #: "WENO d_j = 1", see 'weno_least_squares.WenoLinearWeights'); the init-time WENO
+    #: state must be built with the same set, 'weno_least_squares.linear_weights'
+    weno_linear_weights: WenoLinearWeights = WenoLinearWeights.OPTIMIZED
 
     def __post_init__(self) -> None:
         if not 1.0 <= self.monotonic_limiter_boost_factor < 2.0:
@@ -470,6 +481,51 @@ def _monotonic_limiter_beta_fct(config: AdvectionConfig) -> float:
     )
 
 
+def _check_weno_linear_weights(
+    config: AdvectionConfig,
+    weno_quadratic_state: tracer_advection_states.AdvectionWenoQuadraticState,
+) -> None:
+    """The state's assembly weights must be the configured set: the run-time blend uses them."""
+    expected = weno_least_squares.linear_weights(config.weno_linear_weights)
+    if not np.array_equal(np.asarray(weno_quadratic_state.l_weights_s), expected):
+        raise ValueError(
+            f"'weno_quadratic_state' was assembled with linear weights "
+            f"{weno_quadratic_state.l_weights_s}, but the configuration selects "
+            f"'{config.weno_linear_weights.name}' ({tuple(expected)}); build the state with "
+            "'weno_least_squares.linear_weights(config.weno_linear_weights)'."
+        )
+
+
+def _convert_config_to_horizontal_limiter(
+    *,
+    config: AdvectionConfig,
+    grid: icon_grid.IconGrid,
+    interpolation_state: tracer_advection_states.AdvectionInterpolationState,
+    backend: gtx_typing.Backend | None,
+    exchange: decomposition.ExchangeRuntime,
+) -> tracer_advection_horizontal.HorizontalFluxLimiter:
+    match config.horizontal_advection_limiter:
+        case HorizontalAdvectionLimiter.NO_LIMITER:
+            return tracer_advection_horizontal.NoLimiter()
+        case HorizontalAdvectionLimiter.MONOTONIC:
+            return tracer_advection_horizontal.Monotonic(
+                grid=grid,
+                interpolation_state=interpolation_state,
+                backend=backend,
+                exchange=exchange,
+                beta_fct=_monotonic_limiter_beta_fct(config),
+            )
+        case HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
+            return tracer_advection_horizontal.PositiveDefinite(
+                grid=grid,
+                interpolation_state=interpolation_state,
+                backend=backend,
+                exchange=exchange,
+            )
+        case _:
+            raise NotImplementedError("Unknown horizontal tracer advection limiter.")
+
+
 def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]
     *,
     config: AdvectionConfig,
@@ -488,27 +544,13 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     tracer_advection_horizontal.HorizontalAdvection, tracer_advection_vertical.VerticalAdvection
 ]:
     assert exchange is not None, "Exchange runtime must not be None."
-    horizontal_limiter: tracer_advection_horizontal.HorizontalFluxLimiter | None
-    match config.horizontal_advection_limiter:
-        case HorizontalAdvectionLimiter.NO_LIMITER:
-            horizontal_limiter = tracer_advection_horizontal.NoLimiter()
-        case HorizontalAdvectionLimiter.MONOTONIC:
-            horizontal_limiter = tracer_advection_horizontal.Monotonic(
-                grid=grid,
-                interpolation_state=interpolation_state,
-                backend=backend,
-                exchange=exchange,
-                beta_fct=_monotonic_limiter_beta_fct(config),
-            )
-        case HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
-            horizontal_limiter = tracer_advection_horizontal.PositiveDefinite(
-                grid=grid,
-                interpolation_state=interpolation_state,
-                backend=backend,
-                exchange=exchange,
-            )
-        case _:
-            raise NotImplementedError("Unknown horizontal tracer advection limiter.")
+    horizontal_limiter = _convert_config_to_horizontal_limiter(
+        config=config,
+        grid=grid,
+        interpolation_state=interpolation_state,
+        backend=backend,
+        exchange=exchange,
+    )
 
     horizontal_advection: tracer_advection_horizontal.HorizontalAdvection
     match config.horizontal_advection_type:
@@ -600,6 +642,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 raise ValueError(
                     "Horizontal advection type 'QUADRATIC_3RD_ORDER_WENO' requires 'weno_quadratic_state'."
                 )
+            _check_weno_linear_weights(config, weno_quadratic_state)
             tracer_flux = tracer_advection_horizontal.ThirdOrderMiuraWeno(
                 grid=grid,
                 weno_quadratic_state=weno_quadratic_state,

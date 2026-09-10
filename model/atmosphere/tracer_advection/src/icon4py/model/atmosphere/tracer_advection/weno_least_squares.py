@@ -19,6 +19,7 @@ Pure init-time numpy/cupy code (no gt4py); assumes a boundary-free torus grid
 on a single rank. Unknowns are ordered [x, y, x^2, y^2, xy] (f90 1986-1996).
 """
 
+import enum
 from typing import Final
 
 import numpy as np
@@ -74,11 +75,72 @@ CANDIDATE_ZERO_PATTERNS_QUADRATIC: Final[tuple[tuple[int, ...], ...]] = (
     (6, 7, 8, 4),  # cand 27: positions 7, 8, 9, 5
 )
 
-# Live l_weights_s values (f90 2590-2646): slots 1-3 = 1, slots 4-21 = 0,
-# slots 22-27 = 2.991549980478795 (1-based).
-L_WEIGHTS_S: Final[np.ndarray] = np.array(
-    [1.0] * 3 + [0.0] * 18 + [2.991549980478795] * 6, dtype=ta.wpfloat
+
+class WenoLinearWeights(enum.Enum):
+    """The linear weight sets d_j of the quadratic WENO blend (paper section 2.3, Table 2).
+
+    A set is one weight per stencil type I-V; the three type-VI candidates always get 1.
+    The weights enter twice: at run time as the candidate's d_j in the smoothness
+    weighting (mo_advection_hflux.f90 3008) and at init time in the assembly of the
+    type-VI candidates (f90 2647-2660), so a set is chosen once and used for both, see
+    'linear_weights'.
+
+    Which set the paper's "WENO d_j = 1" column is cannot be read off the code alone:
+    lsq_compute_coeff_cell_torus assigns (1, 1.5, 1, 0.5, 1) first and overwrites it with
+    the optimised set (f90 2590-2600), while the paper's text says all d_j are 1, which is
+    what the code did before the weights existed (commit 47ebf87c89: unweighted blend and
+    assembly) and what the hybrid's WENO branch still does at run time (f90 3666). Both
+    candidates are provided.
+    """
+
+    #: 0, 0, 0, 0, 2.991549980478795 for types I-V (f90 2596-2600, the live assignment):
+    #: the result of his gradient-descent optimisation on the moving cylinder,
+    #: "WENO opt" in Table 2
+    OPTIMIZED = "optimized"
+    #: every d_j = 1: the paper's literal "d_j = 1", the hybrid's run-time weighting
+    UNITY = "unity"
+    #: 1, 1.5, 1, 0.5, 1 for types I-V (f90 2590-2594, the first, overwritten assignment;
+    #: the "* 2" marks on the types with six members suggest per-120-degree-group values
+    #: 1, 3, 1, 1, 2); what the Fortran reference run selects with ICON_WENO_UNIT_WEIGHTS
+    HAND_TUNED = "hand_tuned"
+
+
+#: one weight per stencil type I-V (f90 2590-2600), see 'WenoLinearWeights'
+LINEAR_WEIGHTS_BY_STENCIL_TYPE: Final[dict[WenoLinearWeights, tuple[float, ...]]] = {
+    WenoLinearWeights.OPTIMIZED: (0.0, 0.0, 0.0, 0.0, 2.991549980478795),
+    WenoLinearWeights.UNITY: (1.0, 1.0, 1.0, 1.0, 1.0),
+    WenoLinearWeights.HAND_TUNED: (1.0, 1.5, 1.0, 0.5, 1.0),
+}
+
+#: 0-based candidate slots of the stencil types I-V (f90 2608-2635): 4-6, 7-12, 13-15,
+#: 16-21, 22-27 (1-based); slots 1-3 are the assembled type-VI candidates
+CANDIDATE_SLOTS_BY_STENCIL_TYPE: Final[tuple[tuple[int, ...], ...]] = (
+    (3, 4, 5),
+    (6, 7, 8, 9, 10, 11),
+    (12, 13, 14),
+    (15, 16, 17, 18, 19, 20),
+    (21, 22, 23, 24, 25, 26),
 )
+
+
+def linear_weights(option: WenoLinearWeights) -> np.ndarray:
+    """The 27-slot l_weights_s vector of a weight set (f90 2608-2646).
+
+    Slots 1-3 (type VI) are always 1 (f90 2646); the remaining 24 get the per-type value
+    of the set. Consumed by 'compute_weno_pseudoinverse_quadratic' (type-VI assembly)
+    and by the run-time candidate loop of the quadratic WENO scheme.
+    """
+    weights = np.ones(27, dtype=ta.wpfloat)
+    for slots, value in zip(
+        CANDIDATE_SLOTS_BY_STENCIL_TYPE, LINEAR_WEIGHTS_BY_STENCIL_TYPE[option], strict=True
+    ):
+        weights[list(slots)] = value
+    return weights
+
+
+# Live l_weights_s values (f90 2590-2646): slots 1-3 = 1, slots 4-21 = 0,
+# slots 22-27 = 2.991549980478795 (1-based), i.e. linear_weights(OPTIMIZED).
+L_WEIGHTS_S: Final[np.ndarray] = linear_weights(WenoLinearWeights.OPTIMIZED)
 
 
 def _plane_torus_closest_coordinates(
@@ -541,6 +603,7 @@ def compute_weno_pseudoinverse_quadratic(
     cell_center_y: data_alloc.NDArray,
     domain_length: float,
     domain_height: float,
+    l_weights_s: data_alloc.NDArray | None = None,
 ) -> data_alloc.NDArray:
     """The 27 candidate pseudoinverses for the quadratic reconstruction, (n_cells, 27, 5, 9).
 
@@ -548,8 +611,19 @@ def compute_weno_pseudoinverse_quadratic(
     candidate k >= 3 yields the derivative coefficients [x, y, x^2, y^2, xy] of
     the conservative quadratic fit on its active rows; candidates 0-2 are the
     full-stencil pseudoinverse subjected to the l_weights_s correction.
+
+    'l_weights_s' is the 27-slot linear weight vector the correction uses
+    ('linear_weights'); None means the live optimised set, L_WEIGHTS_S. The
+    run-time blend must use the same vector.
     """
     array_ns = data_alloc.array_namespace(lsq_moments)
+    if l_weights_s is None:
+        l_weights_s = L_WEIGHTS_S
+    if l_weights_s.shape != (27,):
+        raise ValueError(
+            f"Invalid argument 'l_weights_s': expected 27 candidate weights, got shape "
+            f"{l_weights_s.shape}."
+        )
     z_dist, diff = _moment_increments(
         stencil_c9=stencil_c9,
         lsq_moments=lsq_moments,
@@ -567,13 +641,13 @@ def compute_weno_pseudoinverse_quadratic(
     full_pseudoinv = _full_stencil_pseudoinverse_quadratic(z_dist, diff)
     pseudoinv[:, 0:3] = full_pseudoinv[:, array_ns.newaxis, :, :]
 
-    # f90 2646-2657: literal port of the interleaved correction loop
+    # f90 2647-2660: literal port of the interleaved correction loop
     # `do i = 4, 27, 3`; with the live L_WEIGHTS_S only i + k in
     # {21, 24}, {22, 25}, {23, 26} (0-based) contribute
     for i in range(3, 27, 3):
-        pseudoinv[:, 0] -= pseudoinv[:, i + 0] * L_WEIGHTS_S[i + 0]
-        pseudoinv[:, 1] -= pseudoinv[:, i + 1] * L_WEIGHTS_S[i + 1]
-        pseudoinv[:, 2] -= pseudoinv[:, i + 2] * L_WEIGHTS_S[i + 2]
+        pseudoinv[:, 0] -= pseudoinv[:, i + 0] * l_weights_s[i + 0]
+        pseudoinv[:, 1] -= pseudoinv[:, i + 1] * l_weights_s[i + 1]
+        pseudoinv[:, 2] -= pseudoinv[:, i + 2] * l_weights_s[i + 2]
 
     return pseudoinv
 

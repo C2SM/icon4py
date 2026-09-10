@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
+from icon4py.model.atmosphere.tracer_advection import weno_least_squares
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -182,6 +183,11 @@ class AdvectionWenoQuadraticState:
 
     # edge orientation, needed for the counterclockwise indicator lvn_sys_pos
     tangent_orientation: fa.EdgeField[ta.wpfloat]
+
+    # the 27 linear weights l_weights_s the type-VI candidates were assembled with
+    # (weno_least_squares.linear_weights); the run-time blend must use the same vector,
+    # which is why they travel with the pseudoinverses. Default: the live optimised set.
+    l_weights_s: tuple[float, ...] = tuple(float(w) for w in weno_least_squares.L_WEIGHTS_S)
 
 
 @dataclasses.dataclass(frozen=True)
