@@ -788,10 +788,4 @@ def _func_name(callable_: Callable[..., Any]) -> str:
 
 
 def output_dtype(field_src: FieldSource, field_name: str) -> state_utils.ScalarType:
-    try:
-        metadata = field_src.get(field_name, RetrievalType.METADATA)
-    except ValueError:
-        # a provider driven by another one (SparseFieldProviderWrapper) is not registered with the
-        # source, so its intermediate outputs have no metadata there
-        return ta.wpfloat
-    return metadata.get("dtype", ta.wpfloat)
+    return field_src.get(field_name, RetrievalType.METADATA).get("dtype", ta.wpfloat)
