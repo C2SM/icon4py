@@ -27,25 +27,40 @@ def date() -> str:
 
 
 @pytest.fixture
-def advection_init_savepoint(data_provider, date):
+def step() -> int | None:
+    """
+    The 'step' key of the tracer_advection savepoints, None if the savepoints have none.
+
+    Captures that call step_advection repeatedly at one model date (the Jocksch cylinder
+    runs) count the calls in this key; override it by a parametrized argument.
+    """
+    return None
+
+
+@pytest.fixture
+def advection_init_savepoint(data_provider, date, step):
     """
     Load data from tracer_advection init ICON savepoint.
 
     Date of the timestamp to be selected MUST be set separately by overriding the 'date'
-    fixture, passing 'date=<iso_string>'.
+    fixture, passing 'date=<iso_string>'; the call counter by overriding 'step'.
     """
-    return data_provider.from_advection_init_savepoint(size=data_provider.grid_size, date=date)
+    return data_provider.from_advection_init_savepoint(
+        size=data_provider.grid_size, date=date, step=step
+    )
 
 
 @pytest.fixture
-def advection_exit_savepoint(data_provider, date):
+def advection_exit_savepoint(data_provider, date, step):
     """
     Load data from tracer_advection exit ICON savepoint.
 
     Date of the timestamp to be selected MUST be set separately by overriding the 'date'
-    fixture, passing 'date=<iso_string>'.
+    fixture, passing 'date=<iso_string>'; the call counter by overriding 'step'.
     """
-    return data_provider.from_advection_exit_savepoint(size=data_provider.grid_size, date=date)
+    return data_provider.from_advection_exit_savepoint(
+        size=data_provider.grid_size, date=date, step=step
+    )
 
 
 @pytest.fixture

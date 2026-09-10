@@ -12,6 +12,7 @@ from typing import Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -41,6 +42,7 @@ class IconSavepoint:
         ser: serialbox.Serializer,
         size: dict,
         backend: gtx_typing.Backend | None,
+        unit_nproma: bool = False,
     ):
         self.savepoint = sp
         self.serializer = ser
@@ -48,6 +50,8 @@ class IconSavepoint:
         self.log = logging.getLogger(__name__)
         self.backend = backend
         self.xp = data_alloc.import_array_ns(self.backend)
+        #: the data was written with nproma == 1, i.e. one point per block (see '_unblock')
+        self.unit_nproma = unit_nproma
 
     def optionally_registered(*dims, dtype=type_alias.wpfloat):
         def decorator(func):
@@ -86,7 +90,9 @@ class IconSavepoint:
         transpose: None | Sequence[int] = None,
     ):
         # Note: slice is applied before transpose!
-        buffer = self.xp.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        buffer = self.xp.squeeze(
+            self._unblock(self.serializer.read(name, self.savepoint), dimensions).astype(dtype)
+        )
         if slice_ is not None:
             buffer = buffer[slice_]
         if transpose is not None:
@@ -97,7 +103,7 @@ class IconSavepoint:
         return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     def _get_field_component(self, name: str, level: int, dims: tuple[gtx.Dimension, gtx]):
-        buffer = self.serializer.read(name, self.savepoint).astype(float)
+        buffer = self._unblock(self.serializer.read(name, self.savepoint), dims).astype(float)
         buffer = self.xp.squeeze(buffer)[:, :, level]
         buffer = self._reduce_to_dim_size(buffer, dims)
         self.log.debug(f"{name} {buffer.shape}")
@@ -109,6 +115,31 @@ class IconSavepoint:
             for s, d in zip(buffer.shape, dimensions, strict=False)
         )
         return buffer[tuple(map(slice, buffer_size))]
+
+    def _unblock(self, buffer, dimensions):
+        """Move the horizontal axis to the leading (nproma) position for nproma == 1 data.
+
+        ICON blocks horizontal fields as (nproma, ..., nblks) [or (..., nproma, nblks)];
+        the readers assume the data was written with a single block (nproma >= number
+        of points), so that squeezing drops nblks and leaves the horizontal axis where
+        nproma was. With nproma == 1 (`unit_nproma`) the point count sits on the nblks
+        axis instead; for the layouts with a leading nproma axis it is moved to the
+        front here so the same readers apply. Layouts where nproma is not leading keep
+        nblks right behind it and squeeze correctly without help.
+        """
+        if not self.unit_nproma or buffer.ndim < 2 or buffer.shape[0] != 1:
+            return buffer
+        horizontal = [d for d in dimensions if d.kind is gtx.DimensionKind.HORIZONTAL]
+        if not horizontal:
+            return buffer
+        num_points = self.sizes[horizontal[0]]
+        block_axes = [ax for ax in range(1, buffer.ndim) if buffer.shape[ax] == num_points]
+        if len(block_axes) != 1:
+            raise ValueError(
+                f"Cannot locate the block axis of a field with shape {buffer.shape} for "
+                f"{num_points} points of dimension '{horizontal[0].value}'."
+            )
+        return np.moveaxis(buffer, block_axes[0], 0)
 
     def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
         ar = self._reduce_to_dim_size(ar, dimensions)
@@ -156,8 +187,9 @@ class IconGridSavepoint(IconSavepoint):
         size: dict,
         grid_params: icon.GridParams,
         backend: gtx_typing.Backend | None,
+        unit_nproma: bool = False,
     ):
-        super().__init__(sp, ser, size, backend)
+        super().__init__(sp, ser, size, backend, unit_nproma=unit_nproma)
         self._grid_id = grid_id
         self.grid_params = grid_params
 
@@ -994,6 +1026,125 @@ class AdvectionExitSavepoint(IconSavepoint):
 
     def tracer(self, ntracer: int):
         return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
+
+
+class LsqCoefficientsSavepoint(IconSavepoint):
+    """The least-squares reconstruction coefficients of ICON's 'lsq_lin' and 'lsq_high'.
+
+    Written by 'serialize_lsq_coefficients' (icon-exclaim, branch transport_ajocksch_capture,
+    src/serialization/mo_icon4py_verification.f90) at init time, one field per component of
+    't_lsq', named '<set>_<component>' with set in {'lsq_lin', 'lsq_high'}. Serialbox writes
+    at most 4-D arrays, so the 5-D candidate arrays 'lsq_pseudoinv_3' and 'lsq_inverse_3'
+    come as one slice per candidate stencil, suffixed by the 1-based candidate index.
+
+    The readers return plain arrays (not fields) with the cells unblocked into the leading
+    axis, followed by the candidate axis where present, in the layouts of
+    'icon4py.model.atmosphere.tracer_advection.weno_least_squares': stencil rows last.
+    Fortran layouts are quoted per reader (mo_intp_state.f90, allocate_int_state_lsq).
+    """
+
+    LINEAR: Literal["lsq_lin"] = "lsq_lin"
+    QUADRATIC: Literal["lsq_high"] = "lsq_high"
+
+    NUM_QUADRATIC_CANDIDATES: int = 27
+    NUM_LINEAR_CANDIDATES: int = 3
+    NUM_INVERSES: int = 24
+
+    def _read_blocked(
+        self, name: str, *, nproma_axis: int, nblks_axis: int, dtype=float
+    ) -> np.ndarray:
+        """Unblock (nproma, nblks) into one leading cell axis, keeping the other axes."""
+        buffer = np.asarray(self.serializer.read(name, self.savepoint))
+        buffer = np.moveaxis(buffer, (nblks_axis, nproma_axis), (0, 1))
+        cells = buffer.reshape(-1, *buffer.shape[2:])[: self.sizes[dims.CellDim]]
+        return cells.astype(dtype)
+
+    def stencil(self, lsq_set: str) -> np.ndarray:
+        """The stencil cells, (n_cells, dim_c), 0-based global cell indices.
+
+        lsq_idx_c / lsq_blk_c (nproma, nblks_c, dim_c) hold the (index, block) pairs.
+        """
+        idx = self._read_blocked(f"{lsq_set}_lsq_idx_c", nproma_axis=0, nblks_axis=1, dtype=int)
+        blk = self._read_blocked(f"{lsq_set}_lsq_blk_c", nproma_axis=0, nblks_axis=1, dtype=int)
+        nproma = self.serializer.read(f"{lsq_set}_lsq_idx_c", self.savepoint).shape[0]
+        return (blk - 1) * nproma + (idx - 1)
+
+    def weights_c(self, lsq_set: str) -> np.ndarray:
+        """The full-stencil row weights, (n_cells, dim_c); Fortran (nproma, dim_c, nblks_c)."""
+        return self._read_blocked(f"{lsq_set}_lsq_weights_c", nproma_axis=0, nblks_axis=2)
+
+    def pseudoinv(self, lsq_set: str) -> np.ndarray:
+        """The full-stencil pseudoinverse, (n_cells, dim_unk, dim_c).
+
+        Fortran (nproma, dim_unk, dim_c, nblks_c).
+        """
+        return self._read_blocked(f"{lsq_set}_lsq_pseudoinv", nproma_axis=0, nblks_axis=3)
+
+    def moments(self, lsq_set: str) -> np.ndarray:
+        """The cell moments, (n_cells, dim_unk); Fortran (nproma, nblks_c, dim_unk)."""
+        return self._read_blocked(f"{lsq_set}_lsq_moments", nproma_axis=0, nblks_axis=1)
+
+    def moments_hat(self, lsq_set: str) -> np.ndarray:
+        """The stencil cells' moments in the center cell frame, (n_cells, dim_c, dim_unk).
+
+        Fortran (nproma, nblks_c, dim_c, dim_unk).
+        """
+        return self._read_blocked(f"{lsq_set}_lsq_moments_hat", nproma_axis=0, nblks_axis=1)
+
+    def l_weights_s(self, lsq_set: str) -> np.ndarray:
+        """The linear candidate weights, (27,); no horizontal dimension."""
+        return np.asarray(self.serializer.read(f"{lsq_set}_l_weights_s", self.savepoint))
+
+    def weights_c_3(self, lsq_set: str) -> np.ndarray:
+        """The candidate row weights, (n_cells, 27, dim_c); Fortran (nproma, dim_c, nblks_c, 27)."""
+        weights = self._read_blocked(f"{lsq_set}_lsq_weights_c_3", nproma_axis=0, nblks_axis=2)
+        return np.swapaxes(weights, 1, 2)
+
+    def pseudoinv_3(self, lsq_set: str) -> np.ndarray:
+        """The candidate pseudoinverses, (n_cells, n_candidates, dim_unk, dim_c).
+
+        Fortran: lsq_lin (nproma, dim_c, dim_unk, 3, nblks_c), written as 3 slices
+        (nproma, dim_c, dim_unk, nblks_c); lsq_high (dim_c, dim_unk, 27, nproma, nblks_c),
+        written as 27 slices (dim_c, dim_unk, nproma, nblks_c).
+        """
+        if lsq_set == self.LINEAR:
+            num_candidates, nproma_axis, nblks_axis = self.NUM_LINEAR_CANDIDATES, 0, 3
+        else:
+            num_candidates, nproma_axis, nblks_axis = self.NUM_QUADRATIC_CANDIDATES, 2, 3
+        candidates = [
+            self._read_blocked(
+                f"{lsq_set}_lsq_pseudoinv_3_{cand}", nproma_axis=nproma_axis, nblks_axis=nblks_axis
+            )
+            for cand in range(1, num_candidates + 1)
+        ]
+        # the slices are (n_cells, dim_c, dim_unk)
+        return np.swapaxes(np.stack(candidates, axis=1), 2, 3)
+
+    def ind_inverse_3(self, lsq_set: str) -> np.ndarray:
+        """(n_cells, 24, dim_unk) int; Fortran (dim_unk, 24, nproma, nblks_c)."""
+        ind = self._read_blocked(
+            f"{lsq_set}_lsq_ind_inverse_3", nproma_axis=2, nblks_axis=3, dtype=int
+        )
+        return np.swapaxes(ind, 1, 2)
+
+    def inverse_3(self, lsq_set: str) -> np.ndarray:
+        """(n_cells, 24, dim_unk, dim_unk); Fortran (dim_unk, dim_unk, 24, nproma, nblks_c)."""
+        return np.stack(
+            [
+                self._read_blocked(f"{lsq_set}_lsq_inverse_3_{i}", nproma_axis=2, nblks_axis=3)
+                for i in range(1, self.NUM_INVERSES + 1)
+            ],
+            axis=1,
+        )
+
+    def error(self, lsq_set: str) -> np.ndarray:
+        """A A+ per candidate, (n_cells, dim_unk, dim_c), single precision in ICON.
+
+        Fortran (dim_unk, dim_c, nproma, nblks_c).
+        """
+        return self._read_blocked(
+            f"{lsq_set}_lsq_error", nproma_axis=2, nblks_axis=3, dtype=np.float32
+        )
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
@@ -2116,6 +2267,17 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
+    @functools.cached_property
+    def unit_nproma(self) -> bool:
+        """Whether the data was written with nproma == 1 (one point per block).
+
+        The readers assume a single block otherwise; see 'IconSavepoint._unblock'.
+        """
+        sp = self._get_icon_grid_savepoint()
+        # cell area is (nproma, nblks_c)
+        nproma = self.serializer.read("cell_areas", savepoint=sp).shape[0]
+        return nproma == 1 and self.grid_size[dims.CellDim] > 1
+
     def from_savepoint_grid(self, grid_id: str, grid_params: icon.GridParams) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
@@ -2125,6 +2287,7 @@ class IconSerialDataProvider:
             size=self.grid_size,
             grid_params=grid_params,
             backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def _get_icon_grid_savepoint(self):
@@ -2140,7 +2303,11 @@ class IconSerialDataProvider:
             self.serializer.savepoint["diffusion-init"].linit[linit].date[date].as_savepoint()
         )
         return IconDiffusionInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_velocity_init(
@@ -2154,7 +2321,11 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconVelocityInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_nonhydro_init(
@@ -2168,7 +2339,11 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconNonHydroInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
@@ -2182,7 +2357,11 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_vertically_implicit_dycore_solver_init(
@@ -2196,7 +2375,11 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return NonHydroInitVerticallyImplicitSolverSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_30_to_38_init(
@@ -2210,41 +2393,96 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconDycoreInit30To38Savepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
         savepoint = self.serializer.savepoint["interpolation-state"].as_savepoint()
         return InterpolationSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_metrics_savepoint(self) -> MetricSavepoint:
         savepoint = self.serializer.savepoint["metric-state"].as_savepoint()
         return MetricSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_topography_savepoint(self) -> TopographySavepoint:
         savepoint = self.serializer.savepoint["smooth-topo-savepoint"].as_savepoint()
         return TopographySavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
-    def from_advection_init_savepoint(self, size: dict, date: str) -> AdvectionInitSavepoint:
-        savepoint = self.serializer.savepoint["advection-init"].id[1].date[date].as_savepoint()
-        return AdvectionInitSavepoint(savepoint, self.serializer, size=size, backend=self.backend)
+    def _advection_savepoint(self, name: str, date: str, step: int | None):
+        # the 'step' key counts the calls of step_advection at one model date (a capture
+        # that loops over the advection step without advancing the clock); the standard
+        # experiments have one call per date and no such key
+        selection = self.serializer.savepoint[name].id[1].date[date]
+        if step is not None:
+            selection = selection.step[step]
+        return selection.as_savepoint()
 
-    def from_advection_exit_savepoint(self, size: dict, date: str) -> AdvectionExitSavepoint:
-        savepoint = self.serializer.savepoint["advection-exit"].id[1].date[date].as_savepoint()
-        return AdvectionExitSavepoint(savepoint, self.serializer, size=size, backend=self.backend)
+    def from_advection_init_savepoint(
+        self, size: dict, date: str, step: int | None = None
+    ) -> AdvectionInitSavepoint:
+        savepoint = self._advection_savepoint("advection-init", date, step)
+        return AdvectionInitSavepoint(
+            savepoint,
+            self.serializer,
+            size=size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
+        )
+
+    def from_advection_exit_savepoint(
+        self, size: dict, date: str, step: int | None = None
+    ) -> AdvectionExitSavepoint:
+        savepoint = self._advection_savepoint("advection-exit", date, step)
+        return AdvectionExitSavepoint(
+            savepoint,
+            self.serializer,
+            size=size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
+        )
+
+    def from_lsq_coefficients_savepoint(self) -> LsqCoefficientsSavepoint:
+        savepoint = self.serializer.savepoint["lsq-coefficients"].id[1].as_savepoint()
+        return LsqCoefficientsSavepoint(
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
+        )
 
     def from_savepoint_diffusion_exit(self, linit: bool, date: str) -> IconDiffusionExitSavepoint:
         savepoint = (
             self.serializer.savepoint["diffusion-exit"].linit[linit].date[date].as_savepoint()
         )
         return IconDiffusionExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_velocity_exit(
@@ -2258,7 +2496,11 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconVelocityExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_30_to_38_exit(
@@ -2272,7 +2514,11 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconDycoreExit30To38Savepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_nonhydro_exit(
@@ -2286,7 +2532,11 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconNonHydroExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
@@ -2300,7 +2550,11 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_nonhydro_step_final(
@@ -2313,13 +2567,21 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconNonHydroFinalSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_jabw_exit(self) -> IconJabwExitSavepoint:
         savepoint = self.serializer.savepoint["jabw-initial-state-exit"].id[1].as_savepoint()
         return IconJabwExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_prognostics_initial(self) -> IconPrognosticsInitSavepoint:
@@ -2327,7 +2589,11 @@ class IconSerialDataProvider:
             self.serializer.savepoint["prognostics"].id[1].location["initial-state"].as_savepoint()
         )
         return IconPrognosticsInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_diagnostics_initial(self) -> IconDiagnosticsInitSavepoint:
@@ -2335,19 +2601,31 @@ class IconSerialDataProvider:
             self.serializer.savepoint["diagnostics"].id[1].location["initial-state"].as_savepoint()
         )
         return IconDiagnosticsInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelSavepoint:
         savepoint = self.serializer.savepoint["microphysics-init"].date[date].as_savepoint()
         return IconGraupelSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelSavepoint:
         savepoint = self.serializer.savepoint["microphysics-exit"].date[date].as_savepoint()
         return IconGraupelSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_satad_init(self, location: str, date: str) -> IconSatadInitSavepoint:
@@ -2355,7 +2633,11 @@ class IconSerialDataProvider:
             self.serializer.savepoint["satad-init"].location[location].date[date].as_savepoint()
         )
         return IconSatadInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_satad_exit(self, location: str, date: str) -> IconSatadExitSavepoint:
@@ -2363,23 +2645,39 @@ class IconSerialDataProvider:
             self.serializer.savepoint["satad-exit"].date[date].location[location].as_savepoint()
         )
         return IconSatadExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_time_step_exit(self, date: str) -> IconTimeStepExitSavepoint:
         savepoint = self.serializer.savepoint["time-step-exit"].id[1].date[date].as_savepoint()
         return IconTimeStepExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_muphys_init(self, date: str) -> IconMuphysInitSavepoint:
         savepoint = self.serializer.savepoint["aes-graupel-init"].id[1].date[date].as_savepoint()
         return IconMuphysInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
 
     def from_savepoint_muphys_exit(self, date: str) -> IconMuphysExitSavepoint:
         savepoint = self.serializer.savepoint["aes-graupel-exit"].id[1].date[date].as_savepoint()
         return IconMuphysExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            savepoint,
+            self.serializer,
+            size=self.grid_size,
+            backend=self.backend,
+            unit_nproma=self.unit_nproma,
         )
