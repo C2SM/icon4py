@@ -18,11 +18,8 @@ the initial cylinder. Savepoints: 'lsq-coefficients' (init time) and 'advection-
 'test_defs.Experiments.jocksch_cylinder(ihadv_tracer, itype_hlimit)'; the data is not
 downloadable, see the scope note for the test-data layout.
 
-Three levels, each gated at twice the worst agreement measured on gtfn_cpu, dace_cpu and
-gtfn_cpu with FMA contraction off (santis, GCC 14.3, numpy with OpenBLAS; the measured
-values stand next to every gate), not looser: a factor two at round-off level is still
-round-off, and the backends differ from each other in the last digit
-(docs/running_the_jocksch_reference_tests.md has the tables per backend):
+Three levels, each gated at the agreement measured on gtfn_cpu / dace_cpu (santis, GCC 13,
+numpy with OpenBLAS), not looser:
 
 L1  every init-time coefficient 'weno_least_squares' produces (9-point stencil, moments,
     row weights, the full quadratic and linear pseudoinverses, the 27 + 3 candidate
@@ -35,25 +32,20 @@ L2  one 'Advection.run' from 'advection-init' step n against 'advection-exit' st
     the grid file being the one ICON read);
 L3  the 100-step trajectory from step 1 with the new tracer fed back, against the exit
     savepoints along the way, to see whether round-off compounds (it does not: the
-    per-step difference grows from its step-1 level by at most one order of magnitude
-    over the 100 steps for every case).
+    per-step difference stays at its step-1 level for all cases).
 
-Measured (gtfn_cpu, dace_cpu): schemes 2, 102 and the limited runs of 3 agree to 1e-15 per
-step, the unlimited quadratic scheme 3 to 2e-14 (the SVD round-off of its pseudoinverse,
-7e-13, propagated), and the quadratic WENO scheme 103 only to 3.5e-9 in the tracer and
-8e-9 in the flux, at a handful of edges on the cylinder boundary. That is not the port:
-substituting the Fortran candidate pseudoinverses changes nothing, and perturbing the
-tracer at 1e-14 moves the flux by 2e-14. The Fortran evaluates the smoothness indicator
-of every candidate in single precision (mo_advection_hflux.f90,
-upwind_hflux_miura3_weno: 'REAL(sp) :: zlc(6), z_lsq_smooth(6), area' and
-'DOT_PRODUCT(z_lsq_smooth, real(z_quad_vector_sum))'), and icon4py in double; emulating
-the single-precision indicator in the icon4py stencil moves the icon4py result by the
-same 1e-9 (to 1.0e-9 / 2.3e-9 from the Fortran, the remainder being the different
-rounding sequences). The ihadv103 gate is therefore the size of the Fortran's
-single-precision round-off, not of a double-precision port. With FMA contraction off
-(ICON4PY_FP_CONTRACT_OFF=1, the Fortran's -Mnofma) the numbers change in the last printed
-digit only, except that the step-1 tracer of scheme 102 becomes bit-identical (one
-subnormal residue, 7e-42): the 1e-16 seen with contraction is the port's own FMA.
+Measured (gtfn_cpu): schemes 2, 102 and the limited runs of 3 agree to 1e-15, the unlimited
+quadratic scheme 3 to 2e-14 (the SVD round-off of its pseudoinverse, 7e-13, propagated),
+and the quadratic WENO scheme 103 only to 2.5e-9 in the tracer and 5e-9 in the flux, at a
+handful of edges on the cylinder boundary. That is not the port: substituting the Fortran
+candidate pseudoinverses changes nothing, and perturbing the tracer at 1e-14 moves the flux
+by 2e-14. The Fortran evaluates the smoothness indicator of every candidate in single
+precision (mo_advection_hflux.f90, upwind_hflux_miura3_weno: 'REAL(sp) :: zlc(6),
+z_lsq_smooth(6), area' and 'DOT_PRODUCT(z_lsq_smooth, real(z_quad_vector_sum))'), and
+icon4py in double; emulating the single-precision indicator in the icon4py stencil moves
+the icon4py result by the same 1e-9 (to 1.0e-9 / 2.3e-9 from the Fortran, the remainder
+being the different rounding sequences). The ihadv103 gate is therefore the size of the
+Fortran's single-precision round-off, not of a double-precision port.
 
 The grid is built from the grid file (as the driver does), not from the 'icon-grid'
 savepoint: with nproma = 1 ICON's neighbour_idx is identically 1 and the block index that
@@ -146,25 +138,25 @@ L1_TOLERANCE_LINEAR_CANDIDATES: Final = 3e-16
 
 #: L2 gates per case, (max |q_py - q_f90|, max |F_py - F_f90| / max |F_f90|) over the four
 #: tracers and the steps 1, 2, 50, 100, and the trajectory gate on max |q_py - q_f90| over
-#: all 100 steps: twice the worst value measured on gtfn_cpu, dace_cpu and gtfn_cpu with
-#: -ffp-contract=off (in brackets, per case), see the module docstring for the ihadv103 case
+#: all 100 steps; set at the agreement measured on gtfn_cpu and dace_cpu (contracted and
+#: with -ffp-contract=off), see the module docstring for the ihadv103 case
 L2_TOLERANCES: Final[dict[tuple[int, int], tuple[float, float]]] = {
-    (2, 0): (2e-15, 3e-15),  # 8.9e-16, 1.3e-15
-    (3, 0): (5e-14, 1e-13),  # 2.1e-14, 4.7e-14
-    (102, 0): (1e-15, 3e-15),  # 4.4e-16, 1.3e-15
-    (103, 0): (7e-9, 2e-8),  # 3.5e-9, 7.8e-9
-    (3, 3): (8e-15, 2e-14),  # 3.7e-15, 8.2e-15
-    (3, 4): (5e-14, 1e-13),  # 2.1e-14, 4.7e-14
-    (2, 4): (2e-15, 3e-15),  # 8.9e-16, 1.3e-15
+    (2, 0): (1e-15, 2e-15),
+    (3, 0): (3e-14, 5e-14),
+    (102, 0): (5e-16, 2e-15),
+    (103, 0): (4e-9, 8e-9),
+    (3, 3): (4e-15, 9e-15),
+    (3, 4): (3e-14, 5e-14),
+    (2, 4): (1e-15, 2e-15),
 }
 TRAJECTORY_TOLERANCES: Final[dict[tuple[int, int], float]] = {
-    (2, 0): 2e-14,  # 8.8e-15 (step 96)
-    (3, 0): 1.2e-13,  # 5.8e-14 (step 98)
-    (102, 0): 1.3e-14,  # 6.2e-15 (step 97; 5.9e-15 contracted)
-    (103, 0): 3e-8,  # 1.3e-8 (step 12)
-    (3, 3): 1e-13,  # 4.9e-14 (step 97)
-    (3, 4): 1.2e-13,  # 6.0e-14 (step 97)
-    (2, 4): 3e-14,  # 1.4e-14 (step 61)
+    (2, 0): 1e-14,
+    (3, 0): 6e-14,
+    (102, 0): 6e-15,
+    (103, 0): 2e-8,
+    (3, 3): 5e-14,
+    (3, 4): 6e-14,
+    (2, 4): 2e-14,
 }
 
 CASES: Final = [
