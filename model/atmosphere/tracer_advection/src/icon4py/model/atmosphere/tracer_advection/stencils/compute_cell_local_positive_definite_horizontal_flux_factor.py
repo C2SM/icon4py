@@ -31,6 +31,7 @@ from gt4py.next import maximum, minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -41,14 +42,14 @@ def _clamped_outflow_contribution(
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     # the normal of this edge relative to the cell: +1 outward, -1 inward
-    orientation = where(geofac_div > 0.0, 1.0, -1.0)
+    orientation = where(geofac_div > wpfloat(0.0), wpfloat(1.0), wpfloat(-1.0))
     # the cell is the edge's upwind cell iff the wind leaves it through the edge, with the
     # backtrajectory's tie rule vn >= 0 -> E2C[0] (the outward-normal cell)
-    is_upwind = where(geofac_div > 0.0, p_vn >= 0.0, p_vn < 0.0)
+    is_upwind = where(geofac_div > wpfloat(0.0), p_vn >= wpfloat(0.0), p_vn < wpfloat(0.0))
     # f90 3030: z_b = MAX(z_b, 0), applied to the outflow
-    z_b = orientation * maximum(orientation * p_mflx_tracer_h, 0.0)
+    z_b = orientation * maximum(orientation * p_mflx_tracer_h, wpfloat(0.0))
     # f90 3031-3032: flux_out = flux_out + geofac_div * p_dtime * z_b
-    return where(is_upwind, geofac_div * p_dtime * z_b, 0.0)
+    return where(is_upwind, geofac_div * p_dtime * z_b, wpfloat(0.0))
 
 
 @gtx.field_operator
@@ -59,7 +60,7 @@ def _compute_cell_local_positive_definite_horizontal_flux_factor(
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     # f90 3023-3034: the cell's three edges in C2E order, only the upwind ones contribute
     flux_out = (
@@ -74,7 +75,7 @@ def _compute_cell_local_positive_definite_horizontal_flux_factor(
         )
     )
     # f90 3035-3036: r_m = MIN(1, (p_cc * rhodz_now) / (flux_out + dbl_eps))
-    r_m = minimum(1.0, (p_cc * p_rhodz_now) / (flux_out + dbl_eps))
+    r_m = minimum(wpfloat(1.0), (p_cc * p_rhodz_now) / (flux_out + wp_eps))
     return r_m
 
 
@@ -87,7 +88,7 @@ def compute_cell_local_positive_definite_horizontal_flux_factor(
     p_vn: fa.EdgeKField[ta.wpfloat],
     r_m: fa.CellKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -100,7 +101,7 @@ def compute_cell_local_positive_definite_horizontal_flux_factor(
         p_mflx_tracer_h=p_mflx_tracer_h,
         p_vn=p_vn,
         p_dtime=p_dtime,
-        dbl_eps=dbl_eps,
+        wp_eps=wp_eps,
         out=r_m,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

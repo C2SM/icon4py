@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
+from icon4py.model.atmosphere.tracer_advection import weno_least_squares as weno
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_weno_hybrid_stencil_selection import (
     compute_weno_hybrid_stencil_selection,
 )
@@ -56,7 +57,7 @@ class TestComputeWenoHybridStencilSelection(stencil_tests.StencilTest):
     ) -> dict:
         c2e2c = connectivities[dims.C2E2CDim]
         c2e2c2e2c = connectivities[dims.C2E2C2E2CDim]
-        f32 = np.float32
+        f32 = weno.fortran_sp_float  # the Fortran's REAL(sp), as the port resolves it
         zlc = [c.astype(f32) for c in (p_coeff_2, p_coeff_3, p_coeff_4, p_coeff_5, p_coeff_6)]
         zb_direct = (p_cc[c2e2c] - p_cc[:, np.newaxis]).astype(f32)  # (cells, 3, k)
         zb_butterfly = (p_cc[c2e2c2e2c] - p_cc[:, np.newaxis]).astype(f32) * lsq_butterfly_active[
@@ -106,12 +107,17 @@ class TestComputeWenoHybridStencilSelection(stencil_tests.StencilTest):
     def input_data(self, grid) -> dict:
         def direct(low=-1.0, high=1.0):
             return data_alloc.random_field(
-                grid, dims.CellDim, dims.C2E2CDim, low=low, high=high, dtype=np.float32
+                grid, dims.CellDim, dims.C2E2CDim, low=low, high=high, dtype=weno.fortran_sp_float
             )
 
         def butterfly(low=-1.0, high=1.0):
             return data_alloc.random_field(
-                grid, dims.CellDim, dims.C2E2C2E2CDim, low=low, high=high, dtype=np.float32
+                grid,
+                dims.CellDim,
+                dims.C2E2C2E2CDim,
+                low=low,
+                high=high,
+                dtype=weno.fortran_sp_float,
             )
 
         active = data_alloc.random_mask(grid, dims.CellDim, dims.C2E2C2E2CDim, dtype=np.int32)

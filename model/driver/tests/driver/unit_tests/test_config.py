@@ -225,7 +225,9 @@ def test_jocksch_cylinder_experiment_config_selects_the_jocksch_schemes() -> Non
             "horizontal_advection_limiter: cell_local_positive_definite",
         )
         .replace("weno_linear_weights: optimized", "weno_linear_weights: unity")
-        .replace("weno_hybrid_selection_threshold: 5.0e-5", "weno_hybrid_selection_threshold: 1.0e-3")
+        .replace(
+            "weno_hybrid_selection_threshold: 5.0e-5", "weno_hybrid_selection_threshold: 1.0e-3"
+        )
     )
     conf = config_io.read_yaml_str(yaml_str, driver_config.ExperimentConfig)
     assert conf.tracer_advection is not None

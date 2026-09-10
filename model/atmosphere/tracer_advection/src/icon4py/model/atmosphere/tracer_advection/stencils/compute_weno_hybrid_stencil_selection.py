@@ -20,7 +20,9 @@ weighted design matrix of the fit, stored in single precision; the residual is
 accumulated in single precision too, with the coefficients and z_b rounded to single
 precision first (``REAL(sp) :: zlc, lsqe``; ``real(z_b(is))``). Only the comparison is
 in double precision: the single-precision literals are promoted, so the threshold and
-epsilon passed in must be the double values of the single-precision constants.
+epsilon passed in must be the double values of the single-precision constants. That
+single precision is 'weno_least_squares.fortran_sp_float' here, which currently resolves
+to the working precision (double).
 
 Rows: the 9 stencil positions are split over the C2E2C and C2E2C2E2C offsets as the
 pseudoinverse is (weno_least_squares.scatter_to_offsets); ``lsq_butterfly_active`` (int32)
@@ -32,6 +34,7 @@ over the direct slots then the butterfly slots, not in the Fortran's stencil ord
 import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
+from icon4py.model.atmosphere.tracer_advection.weno_least_squares import fortran_sp_float
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E2C, C2E2C2E2C, C2E2C2E2CDim, C2E2CDim
 from icon4py.model.common.type_alias import wpfloat
@@ -45,32 +48,32 @@ def _compute_weno_hybrid_stencil_selection(
     p_coeff_4: fa.CellKField[ta.wpfloat],
     p_coeff_5: fa.CellKField[ta.wpfloat],
     p_coeff_6: fa.CellKField[ta.wpfloat],
-    lsq_error_direct_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32],
-    lsq_error_direct_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32],
-    lsq_error_direct_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32],
-    lsq_error_direct_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32],
-    lsq_error_direct_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32],
-    lsq_error_butterfly_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
-    lsq_error_butterfly_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
-    lsq_error_butterfly_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
-    lsq_error_butterfly_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
-    lsq_error_butterfly_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
+    lsq_error_direct_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], fortran_sp_float],
+    lsq_error_direct_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], fortran_sp_float],
+    lsq_error_direct_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], fortran_sp_float],
+    lsq_error_direct_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], fortran_sp_float],
+    lsq_error_direct_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], fortran_sp_float],
+    lsq_error_butterfly_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], fortran_sp_float],
+    lsq_error_butterfly_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], fortran_sp_float],
+    lsq_error_butterfly_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], fortran_sp_float],
+    lsq_error_butterfly_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], fortran_sp_float],
+    lsq_error_butterfly_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], fortran_sp_float],
     lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.int32],
     selection_threshold: ta.wpfloat,
     selection_eps: ta.wpfloat,
 ) -> fa.CellKField[bool]:
     # f90 3564: zlc(1:5) = z_lsq_coeff(2:6), single precision
-    zlc_1 = astype(p_coeff_2, gtx.float32)
-    zlc_2 = astype(p_coeff_3, gtx.float32)
-    zlc_3 = astype(p_coeff_4, gtx.float32)
-    zlc_4 = astype(p_coeff_5, gtx.float32)
-    zlc_5 = astype(p_coeff_6, gtx.float32)
+    zlc_1 = astype(p_coeff_2, fortran_sp_float)
+    zlc_2 = astype(p_coeff_3, fortran_sp_float)
+    zlc_3 = astype(p_coeff_4, fortran_sp_float)
+    zlc_4 = astype(p_coeff_5, fortran_sp_float)
+    zlc_5 = astype(p_coeff_6, fortran_sp_float)
 
     # f90 3547-3549: z_b = p_cc(stencil cell) - p_cc(center), rounded as real(z_b(is));
     # the padding slots of the butterfly offset are masked out
-    zb_direct = astype(p_cc(C2E2C) - p_cc, gtx.float32)
-    zb_butterfly = astype(p_cc(C2E2C2E2C) - p_cc, gtx.float32) * astype(
-        lsq_butterfly_active, gtx.float32
+    zb_direct = astype(p_cc(C2E2C) - p_cc, fortran_sp_float)
+    zb_butterfly = astype(p_cc(C2E2C2E2C) - p_cc, fortran_sp_float) * astype(
+        lsq_butterfly_active, fortran_sp_float
     )
 
     # f90 3565-3568: DOT_PRODUCT(lsq_error(1:5, is), zlc(1:5)) - real(z_b(is)), squared and
@@ -107,16 +110,16 @@ def compute_weno_hybrid_stencil_selection(
     p_coeff_4: fa.CellKField[ta.wpfloat],
     p_coeff_5: fa.CellKField[ta.wpfloat],
     p_coeff_6: fa.CellKField[ta.wpfloat],
-    lsq_error_direct_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32],
-    lsq_error_direct_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32],
-    lsq_error_direct_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32],
-    lsq_error_direct_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32],
-    lsq_error_direct_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32],
-    lsq_error_butterfly_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
-    lsq_error_butterfly_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
-    lsq_error_butterfly_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
-    lsq_error_butterfly_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
-    lsq_error_butterfly_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
+    lsq_error_direct_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], fortran_sp_float],
+    lsq_error_direct_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], fortran_sp_float],
+    lsq_error_direct_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], fortran_sp_float],
+    lsq_error_direct_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], fortran_sp_float],
+    lsq_error_direct_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], fortran_sp_float],
+    lsq_error_butterfly_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], fortran_sp_float],
+    lsq_error_butterfly_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], fortran_sp_float],
+    lsq_error_butterfly_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], fortran_sp_float],
+    lsq_error_butterfly_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], fortran_sp_float],
+    lsq_error_butterfly_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], fortran_sp_float],
     lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.int32],
     use_weno: fa.CellKField[bool],
     selection_threshold: ta.wpfloat,

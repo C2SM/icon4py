@@ -36,6 +36,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_horizontal
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_cell_local_positive_definite_horizontal_flux_factor import (
     apply_cell_local_positive_definite_horizontal_flux_factor,
 )
@@ -44,7 +45,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_cell_local_posit
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.testing.fixtures.datatest import backend
-from icon4py.model.atmosphere.tracer_advection import tracer_advection_horizontal
 
 from .. import utils
 

@@ -154,7 +154,7 @@ class AdvectionConfig:
     vertical_advection_limiter: VerticalAdvectionLimiter
     #: how far the monotonic limiter may over-/undershoot the local range, ICON's beta_fct;
     #: the namelist restricts it to [1, 2)
-    monotonic_limiter_boost_factor: float = 1.005
+    monotonic_limiter_boost_factor: ta.wpfloat = 1.005
     #: substeps per advection step for the subcycled schemes, ICON's nadv_substeps
     n_advection_substeps: int = 3
     #: linear weights d_j of the quadratic WENO schemes (Table 2 of Jocksch et al., PPAM
@@ -165,9 +165,12 @@ class AdvectionConfig:
     #: c_sel of the hybrid scheme (paper eq. 6): cells whose quadratic-fit residual exceeds
     #: this fraction of (q + 1e-10)^2 take the WENO blend; the Fortran literal is single
     #: precision, and the value is rounded to single precision before use
-    weno_hybrid_selection_threshold: float = 5e-5
+    weno_hybrid_selection_threshold: ta.wpfloat = 5e-5
 
     def __post_init__(self) -> None:
+        ta.dataclass_scalars_to_wp(
+            self, ["monotonic_limiter_boost_factor", "weno_hybrid_selection_threshold"]
+        )
         if not 1.0 <= self.monotonic_limiter_boost_factor < 2.0:
             raise ValueError(
                 "'monotonic_limiter_boost_factor' must be in [1, 2), but is "
@@ -505,7 +508,7 @@ class GodunovSplittingAdvection(Advection):
         log.debug("tracer_advection run - end")
 
 
-def _monotonic_limiter_beta_fct(config: AdvectionConfig) -> float:
+def _monotonic_limiter_beta_fct(config: AdvectionConfig) -> ta.wpfloat:
     """How far the monotonic limiter may overshoot the local range, per scheme.
 
     Fortran passes ``opt_beta_fct`` to ``hflx_limiter_mo`` only from the schemes built on
@@ -521,7 +524,7 @@ def _monotonic_limiter_beta_fct(config: AdvectionConfig) -> float:
     return (
         config.monotonic_limiter_boost_factor
         if config.horizontal_advection_type in quadratic_reconstruction
-        else 1.0
+        else ta.wpfloat(1.0)
     )
 
 

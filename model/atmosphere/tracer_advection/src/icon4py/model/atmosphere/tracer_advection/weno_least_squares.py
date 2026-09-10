@@ -23,11 +23,22 @@ on a single rank. Unknowns are ordered [x, y, x^2, y^2, xy] (f90 1991-2001).
 import enum
 from typing import Final
 
+import gt4py.next as gtx
 import numpy as np
 
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+#: Precision of the quantities the Fortran declares REAL(sp): ICON's 'lsq_error'
+#: (mo_intp_data_strc.f90 83), the WENO smoothness vector zlc/z_lsq_smooth
+#: (mo_advection_hflux.f90 2643, 3246) and the hybrid's fit residual lsqe (3246). Decision
+#: of 2026-09-10: working precision until icon4py's single-precision option (PR #970) is
+#: merged; set it to gtx.float32 to reproduce the Fortran's single-precision arithmetic.
+#: The init-time numpy code stays float64 regardless; the cast happens where the fields
+#: are built.
+fortran_sp_float = ta.wpfloat
 
 
 # quadratic lsq_high configuration (mo_interpol_config.f90, lsq_high_ord=2)
@@ -132,7 +143,7 @@ def linear_weights(option: WenoLinearWeights) -> np.ndarray:
     of the set. Consumed by 'compute_weno_pseudoinverse_quadratic' (type-VI assembly)
     and by the run-time candidate loop of the quadratic WENO scheme.
     """
-    weights = np.ones(27, dtype=ta.wpfloat)
+    weights = np.ones(27, dtype=gtx.float64)
     for slots, value in zip(
         CANDIDATE_SLOTS_BY_STENCIL_TYPE, LINEAR_WEIGHTS_BY_STENCIL_TYPE[option], strict=True
     ):
@@ -352,7 +363,7 @@ def compute_lsq_moments_torus(
     )
 
     # f90 2126-2138
-    moments = array_ns.empty((c2v.shape[0], 9 if cubic else 5), dtype=ta.wpfloat)
+    moments = array_ns.empty((c2v.shape[0], 9 if cubic else 5), dtype=gtx.float64)
     moments[:, 0] = z_rcarea / 6.0 * array_ns.sum(fx * dely, axis=1)
     moments[:, 1] = -z_rcarea / 6.0 * array_ns.sum(fy * delx, axis=1)
     moments[:, 2] = z_rcarea / 12.0 * array_ns.sum(fxx * dely, axis=1)
@@ -412,7 +423,7 @@ def compute_lsq_moments_hat(
     moments = lsq_moments[stencil_c9]  # (n_cells, 9, n_unknowns)
     dx = z_dist[..., 0]
     dy = z_dist[..., 1]
-    moments_hat = array_ns.empty(moments.shape, dtype=ta.wpfloat)
+    moments_hat = array_ns.empty(moments.shape, dtype=gtx.float64)
     moments_hat[..., 0] = moments[..., 0] + dx
     moments_hat[..., 1] = moments[..., 1] + dy
     moments_hat[..., 2] = moments[..., 2] + 2.0 * moments[..., 0] * dx + dx**2
@@ -578,7 +589,7 @@ def compute_lsq_pseudoinverse_cubic(
         domain_height=domain_height,
     )
     # wgt_exp = 0 means every row weight is 1, so the design matrix is 'diff' itself
-    weights = array_ns.ones(diff.shape[:2], dtype=ta.wpfloat)
+    weights = array_ns.ones(diff.shape[:2], dtype=gtx.float64)
     return _svd_pseudoinverse(diff, weights)
 
 
@@ -630,7 +641,6 @@ def compute_lsq_error_quadratic(
     coefficients; the cast to the run-time precision of the residual happens where the
     fields are built.
     """
-    array_ns = data_alloc.array_namespace(lsq_moments)
     z_dist, diff = _moment_increments(
         stencil_c9=stencil_c9,
         lsq_moments=lsq_moments,
@@ -750,7 +760,7 @@ def compute_weno_pseudoinverse_linear(
     )
     # candidate weights, (n_cells, 3 candidates, 3 rows); the per-candidate max
     # normalization (f90 1950-1954) is a no-op for unit weights
-    candidate_weights = array_ns.ones((n_cells, 3, 3), dtype=ta.wpfloat)
+    candidate_weights = array_ns.ones((n_cells, 3, 3), dtype=gtx.float64)
     for i in range(3):
         for js in range(3):
             candidate_weights[c2e2c[:, i] == c2e2c[:, js], i, js] = 0.0

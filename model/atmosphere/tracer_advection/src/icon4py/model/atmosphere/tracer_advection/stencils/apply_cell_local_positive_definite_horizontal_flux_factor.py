@@ -22,6 +22,7 @@ from gt4py.next import maximum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -30,11 +31,11 @@ def _apply_cell_local_positive_definite_horizontal_flux_factor(
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    lvn_pos = p_vn >= 0.0
+    lvn_pos = p_vn >= wpfloat(0.0)
     # orientation of the normal relative to the upwind cell
-    orientation = where(lvn_pos, 1.0, -1.0)
+    orientation = where(lvn_pos, wpfloat(1.0), wpfloat(-1.0))
     # f90 3030: z_b = MAX(z_b, 0) on the upwind cell's outflow
-    z_b = orientation * maximum(orientation * p_mflx_tracer_h, 0.0)
+    z_b = orientation * maximum(orientation * p_mflx_tracer_h, wpfloat(0.0))
     # f90 3039: p_out_e = r_m * z_b with the upwind cell's r_m
     return where(lvn_pos, r_m(E2C[0]), r_m(E2C[1])) * z_b
 

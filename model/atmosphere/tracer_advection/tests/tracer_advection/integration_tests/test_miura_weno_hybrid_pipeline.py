@@ -72,6 +72,8 @@ from .test_miura3_weno_pipeline import (
 #: the Fortran's single-precision literals (f90 3574) as the doubles they are promoted to
 THRESHOLD = float(np.float32(5e-5))
 EPS = float(np.float32(1e-10))
+#: the Fortran's REAL(sp) quantities of the residual path, as the port resolves them
+SP = weno.fortran_sp_float
 UNIT_WEIGHTS = np.ones(N_CAND)
 
 
@@ -131,20 +133,21 @@ def patch_coefficients(torus_patch) -> dict:
 
 def _fit_residual_reference(
     lsq_error: np.ndarray, coeff: np.ndarray, z_b: np.ndarray
-) -> np.float32:
-    """f90 3563-3568 for one cell: single-precision residual of the fit.
+) -> np.floating:
+    """f90 3564-3568 for one cell: the residual of the fit in the Fortran's REAL(sp).
 
-    lsq_error is (5, 9) float32, coeff the 6 double coefficients [c0, cx, cy, cxx, cyy, cxy],
-    z_b the 9 double increments in stencil order.
+    lsq_error is (5, 9), coeff the 6 double coefficients [c0, cx, cy, cxx, cyy, cxy], z_b
+    the 9 double increments in stencil order; every intermediate is rounded to SP.
     """
-    zlc = coeff[1:6].astype(np.float32)
-    lsqe = np.float32(0.0)
+    lsq_error = lsq_error.astype(SP)
+    zlc = coeff[1:6].astype(SP)
+    lsqe = SP(0.0)
     for js in range(9):
         # DOT_PRODUCT(lsq_error(1:5, is), zlc(1:5)) in single precision, u = 1..5
-        dot = np.float32(0.0)
+        dot = SP(0.0)
         for ju in range(5):
-            dot = np.float32(dot + lsq_error[ju, js] * zlc[ju])
-        lsqe = np.float32(lsqe + np.float32(dot - np.float32(z_b[js])) ** 2)
+            dot = SP(dot + lsq_error[ju, js] * zlc[ju])
+        lsqe = SP(lsqe + SP(dot - SP(z_b[js])) ** 2)
     return lsqe
 
 
@@ -153,7 +156,7 @@ def _upwind_hflux_miura_weno_hyb_reference(
     p_cc: np.ndarray,  # (n_cells, nlev)
     pseudoinv_full: np.ndarray,  # (n_cells, 5, 9), Fortran stencil order
     pseudoinv_weno: np.ndarray,  # (n_cells, 27, 5, 9)
-    lsq_error: np.ndarray,  # (n_cells, 5, 9) float32
+    lsq_error: np.ndarray,  # (n_cells, 5, 9)
     stencil_c9: np.ndarray,  # (n_cells, 9)
     lsq_moments: np.ndarray,  # (n_cells, 5)
     cell_area: np.ndarray,  # (n_cells,)
@@ -166,12 +169,12 @@ def _upwind_hflux_miura_weno_hyb_reference(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Literal port of the hybrid cell loop (f90 3547-3696), no limiter.
 
-    Returns (p_out_e, use_weno (n_cells, nlev), lsqe (n_cells, nlev) float32).
+    Returns (p_out_e, use_weno (n_cells, nlev), lsqe (n_cells, nlev) in SP).
     """
     n_cells, nlev = p_cc.shape
     p_out_e = np.zeros(p_mass_flx_e.shape)
     use_weno = np.zeros((n_cells, nlev), dtype=bool)
-    lsqe_out = np.zeros((n_cells, nlev), dtype=np.float32)
+    lsqe_out = np.zeros((n_cells, nlev), dtype=SP)
     # the WENO branch is the 103 loop with unit weights; take it from the 103 reference
     # (per edge, only the fluxes of the edges owned by the cell are written there too)
     p_out_weno = _upwind_hflux_miura3_weno_reference(
@@ -188,15 +191,15 @@ def _upwind_hflux_miura_weno_hyb_reference(
     )
     for jc in range(n_cells):
         for jk in range(nlev):
-            # f90 3552-3554
+            # f90 3547-3549
             z_b = np.empty(9)
             for js in range(9):
                 z_b[js] = p_cc[stencil_c9[jc, js], jk] - p_cc[jc, jk]
-            # f90 3558-3562: the full-stencil fit, coefficients 2..6
+            # f90 3553-3562: the full-stencil fit, coefficients 2..6
             coeff = np.empty(6)
             for ju in range(5):
                 coeff[1 + ju] = np.dot(pseudoinv_full[jc, ju, :], z_b)
-            # f90 3563-3568
+            # f90 3564-3568
             lsqe = _fit_residual_reference(lsq_error[jc], coeff, z_b)
             lsqe_out[jc, jk] = lsqe
             # f90 3569-3573
@@ -367,12 +370,12 @@ def test_reference_linear_field_residual_detects_unweighted_rows(torus_patch, pa
     ).copy()
     unweighted = patch_coefficients["lsq_error"] / _row_weights(torus_patch, stencil_c9)[
         :, np.newaxis, :
-    ].astype(np.float32)
+    ].astype(SP)
     _, use_weno, lsqe = _upwind_hflux_miura_weno_hyb_reference(
         **{
             **_reference_kwargs(torus_patch, patch_coefficients, inputs),
             "p_cc": p_cc,
-            "lsq_error": unweighted.astype(np.float32),
+            "lsq_error": unweighted.astype(SP),
         }
     )
     z_b = p_cc[stencil_c9, 0] - p_cc[:, 0, np.newaxis]

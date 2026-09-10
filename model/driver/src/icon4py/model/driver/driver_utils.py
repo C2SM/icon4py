@@ -266,6 +266,7 @@ def _construct_weno_linear_state(
         return gtx.as_field(
             (dims.CellDim, dims.C2E2CDim),
             pseudoinv[:, candidate, component, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            dtype=ta.wpfloat,
             allocator=backend,
         )
 
@@ -358,11 +359,12 @@ def _quadratic_reconstruction_inputs(
         domain_height=domain_height,
     )
 
+    # the init-time numpy stays float64; the cast to the working precision is here
     def cell_field(values: data_alloc.NDArray) -> gtx.Field:
-        return gtx.as_field((dims.CellDim,), values, allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+        return gtx.as_field((dims.CellDim,), values, dtype=ta.wpfloat, allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
     def edge_field(values: data_alloc.NDArray) -> gtx.Field:
-        return gtx.as_field((dims.EdgeDim,), values, allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+        return gtx.as_field((dims.EdgeDim,), values, dtype=ta.wpfloat, allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
     return _QuadraticReconstructionInputs(
         stencil_c9=stencil_c9,
@@ -439,13 +441,19 @@ def _quadratic_state_from_inputs(
 
     return tracer_advection_states.AdvectionQuadraticState(
         lsq_pseudoinv_direct=tuple(
-            gtx.as_field((dims.CellDim, dims.C2E2CDim), direct[:, 0, unk, :], allocator=backend)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            gtx.as_field(
+                (dims.CellDim, dims.C2E2CDim),
+                direct[:, 0, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+                dtype=ta.wpfloat,
+                allocator=backend,
+            )
             for unk in range(5)
         ),
         lsq_pseudoinv_butterfly=tuple(
             gtx.as_field(
                 (dims.CellDim, dims.C2E2C2E2CDim),
                 butterfly[:, 0, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+                dtype=ta.wpfloat,
                 allocator=backend,
             )
             for unk in range(5)
@@ -514,6 +522,7 @@ def _weno_quadratic_state_from_inputs(
                 gtx.as_field(
                     (dims.CellDim, dims.C2E2CDim),
                     direct[:, cand, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+                    dtype=ta.wpfloat,
                     allocator=backend,
                 )
                 for unk in range(5)
@@ -525,6 +534,7 @@ def _weno_quadratic_state_from_inputs(
                 gtx.as_field(
                     (dims.CellDim, dims.C2E2C2E2CDim),
                     butterfly[:, cand, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+                    dtype=ta.wpfloat,
                     allocator=backend,
                 )
                 for unk in range(5)
@@ -532,7 +542,7 @@ def _weno_quadratic_state_from_inputs(
             for cand in range(27)
         ),
         cell_area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        l_weights_s=tuple(float(w) for w in l_weights_s),
+        l_weights_s=tuple(ta.wpfloat(w) for w in l_weights_s),
         **inputs.state_kwargs,
     )
 
@@ -568,7 +578,8 @@ def _construct_weno_hybrid_state(
         linear_weights=linear_weights,
     )
 
-    # (n_cells, 5 unknowns, 9 stencil rows), Fortran stencil order
+    # (n_cells, 5 unknowns, 9 stencil rows), Fortran stencil order; REAL(sp) in the
+    # Fortran, cast to weno_least_squares.fortran_sp_float at the boundary below
     lsq_error = weno_least_squares.compute_lsq_error_quadratic(
         stencil_c9=inputs.stencil_c9,
         lsq_moments=inputs.lsq_moments,
@@ -596,6 +607,7 @@ def _construct_weno_hybrid_state(
             gtx.as_field(
                 (dims.CellDim, dims.C2E2CDim),
                 error_direct[:, 0, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+                dtype=weno_least_squares.fortran_sp_float,
                 allocator=backend,
             )
             for unk in range(5)
@@ -604,6 +616,7 @@ def _construct_weno_hybrid_state(
             gtx.as_field(
                 (dims.CellDim, dims.C2E2C2E2CDim),
                 error_butterfly[:, 0, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+                dtype=weno_least_squares.fortran_sp_float,
                 allocator=backend,
             )
             for unk in range(5)

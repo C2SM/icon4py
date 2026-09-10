@@ -375,7 +375,8 @@ class CellLocalPositiveDefinite(HorizontalFluxLimiter):
                 program=compute_cell_local_positive_definite_horizontal_flux_factor,
                 constant_args={
                     "geofac_div": self._interpolation_state.geofac_div,
-                    "dbl_eps": constants.DBL_EPS,
+                    # constants.WP_EPS once icon4py PR #970 is merged
+                    "wp_eps": constants.DBL_EPS,
                 },
                 horizontal_sizes={
                     "horizontal_start": self._start_cell_lateral_boundary_level_2,
@@ -550,7 +551,7 @@ class Monotonic(HorizontalFluxLimiter):
             program=compute_monotone_horizontal_multiplicative_flux_factors,
             constant_args={
                 "beta_fct": self._beta_fct,
-                "r_beta_fct": 1.0 / self._beta_fct,
+                "r_beta_fct": ta.wpfloat(1.0) / self._beta_fct,
                 "dbl_eps": constants.DBL_EPS,
             },
             horizontal_sizes={
@@ -1420,12 +1421,12 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         self,
         *,
         p_tracer_now: fa.CellKField[ta.wpfloat],
-        l_weights_s: tuple[float, ...],
+        l_weights_s: tuple[ta.wpfloat, ...],
     ) -> None:
         """The 27-candidate loop into the per-edge accumulators, with the given d_j."""
         # zero the WENO accumulators (f90 2949-2950)
         for accumulator in (*self._z_lsq_weighted.values(), self._smooth_sum):
-            self._init_constant_edge_kdim_field(field=accumulator, value=0.0)
+            self._init_constant_edge_kdim_field(field=accumulator, value=ta.wpfloat(0.0))
 
         # 27-candidate loop (f90 2957-3012); candidate reconstruction on cells,
         # then smoothness-weighted accumulation on edges
@@ -1504,7 +1505,7 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
 
 #: the Fortran's single-precision literals in the selection test (f90 3574), as the
 #: doubles they are promoted to
-_HYBRID_SELECTION_EPS: Final = float(np.float32(1e-10))
+_HYBRID_SELECTION_EPS: Final[ta.wpfloat] = ta.wpfloat(np.float32(1e-10))
 
 
 class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
@@ -1532,7 +1533,7 @@ class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
         weno_hybrid_state: tracer_advection_states.AdvectionWenoHybridState,
         backend: gtx.typing.Backend | None,
         horizontal_limiter: HorizontalFluxLimiter | None = None,
-        selection_threshold: float = 5e-5,
+        selection_threshold: ta.wpfloat = 5e-5,
     ):
         super().__init__(
             grid=grid,
@@ -1541,7 +1542,7 @@ class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
             horizontal_limiter=horizontal_limiter,
         )
         self._weno_hybrid_state = weno_hybrid_state
-        self._selection_threshold = float(np.float32(selection_threshold))
+        self._selection_threshold = ta.wpfloat(np.float32(selection_threshold))
 
         allocator = model_backends.get_allocator(self._backend)
         self._use_weno = data_alloc.zero_field(
@@ -1669,7 +1670,9 @@ class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
         )
 
         # the WENO branch (f90 3629-3692) with unit linear weights (f90 3684)
-        self._accumulate_weno_candidates(p_tracer_now=p_tracer_now, l_weights_s=(1.0,) * 27)
+        self._accumulate_weno_candidates(
+            p_tracer_now=p_tracer_now, l_weights_s=(ta.wpfloat(1.0),) * 27
+        )
         self._compute_weno_flux(prep_adv=prep_adv, p_out_e=self._p_flux_weno)
 
         # per edge, the branch its upwind cell chose

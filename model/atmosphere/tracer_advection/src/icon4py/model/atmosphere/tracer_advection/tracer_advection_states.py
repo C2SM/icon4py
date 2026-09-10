@@ -187,7 +187,9 @@ class AdvectionWenoQuadraticState:
     # the 27 linear weights l_weights_s the type-VI candidates were assembled with
     # (weno_least_squares.linear_weights); the run-time blend must use the same vector,
     # which is why they travel with the pseudoinverses. Default: the live optimised set.
-    l_weights_s: tuple[float, ...] = tuple(float(w) for w in weno_least_squares.L_WEIGHTS_S)
+    l_weights_s: tuple[ta.wpfloat, ...] = tuple(
+        ta.wpfloat(w) for w in weno_least_squares.L_WEIGHTS_S
+    )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -241,12 +243,17 @@ class AdvectionWenoHybridState:
                 f"objects: {', '.join(not_shared)}."
             )
 
-    # lsq_error rows on the direct neighbours, [5 unknowns]
-    lsq_error_direct: tuple[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32], ...]
+    # lsq_error rows on the direct neighbours, [5 unknowns]; REAL(sp) in the Fortran, see
+    # weno_least_squares.fortran_sp_float
+    lsq_error_direct: tuple[
+        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], weno_least_squares.fortran_sp_float],
+        ...,
+    ]
 
     # lsq_error rows on the butterfly slots, [5 unknowns]
     lsq_error_butterfly: tuple[
-        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32], ...
+        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], weno_least_squares.fortran_sp_float],
+        ...,
     ]
 
     # 1 on the butterfly slots holding an outer stencil cell, 0 on the padding slots

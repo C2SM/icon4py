@@ -11,6 +11,7 @@ from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E2C, C2E2CDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 # Linear WENO reconstruction (ihadv_tracer=102) over the 3-point C2E2C stencil
@@ -47,18 +48,18 @@ def _reconstruct_linear_coefficients_weno_svd(
     # smoothness weight s = 1 / ((cx**2 + cy**2) + 1e-20)**2
     cx_1 = neighbor_sum(lsq_pseudoinv_zonal_c1 * z_b, axis=C2E2CDim)
     cy_1 = neighbor_sum(lsq_pseudoinv_meridional_c1 * z_b, axis=C2E2CDim)
-    denom_1 = (cx_1 * cx_1 + cy_1 * cy_1) + 1.0e-20
-    s_1 = 1.0 / (denom_1 * denom_1)
+    denom_1 = (cx_1 * cx_1 + cy_1 * cy_1) + wpfloat(1.0e-20)
+    s_1 = wpfloat(1.0) / (denom_1 * denom_1)
 
     cx_2 = neighbor_sum(lsq_pseudoinv_zonal_c2 * z_b, axis=C2E2CDim)
     cy_2 = neighbor_sum(lsq_pseudoinv_meridional_c2 * z_b, axis=C2E2CDim)
-    denom_2 = (cx_2 * cx_2 + cy_2 * cy_2) + 1.0e-20
-    s_2 = 1.0 / (denom_2 * denom_2)
+    denom_2 = (cx_2 * cx_2 + cy_2 * cy_2) + wpfloat(1.0e-20)
+    s_2 = wpfloat(1.0) / (denom_2 * denom_2)
 
     cx_3 = neighbor_sum(lsq_pseudoinv_zonal_c3 * z_b, axis=C2E2CDim)
     cy_3 = neighbor_sum(lsq_pseudoinv_meridional_c3 * z_b, axis=C2E2CDim)
-    denom_3 = (cx_3 * cx_3 + cy_3 * cy_3) + 1.0e-20
-    s_3 = 1.0 / (denom_3 * denom_3)
+    denom_3 = (cx_3 * cx_3 + cy_3 * cy_3) + wpfloat(1.0e-20)
+    s_3 = wpfloat(1.0) / (denom_3 * denom_3)
 
     # f90 1520-1524: smoothness-weighted average over the 3 candidates
     smooth_sum = s_1 + s_2 + s_3

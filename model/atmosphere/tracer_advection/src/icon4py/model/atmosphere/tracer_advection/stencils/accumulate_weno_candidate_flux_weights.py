@@ -76,14 +76,14 @@ def _accumulate_weno_candidate_flux_weights(
     # smooth_2/3/6 use the raw c4/c5/c6, the rest use their squares (f90 squares zlc(4:6) in
     # place at 3000-3002, i.e. after smooth_2/3/6 and before smooth_4/5/1). zlc and
     # z_lsq_smooth are REAL(sp) in the Fortran (f90 2643); here they are working precision.
-    smooth_2 = 2.0 * (c2 * c4 + c3 * c6)
-    smooth_3 = 2.0 * (c2 * c6 + c3 * c5)
-    smooth_6 = 2.0 * c6 * (c4 + c5)
+    smooth_2 = wpfloat(2.0) * (c2 * c4 + c3 * c6)
+    smooth_3 = wpfloat(2.0) * (c2 * c6 + c3 * c5)
+    smooth_6 = wpfloat(2.0) * c6 * (c4 + c5)
     c4_sq = c4 * c4
     c5_sq = c5 * c5
     c6_sq = c6 * c6
-    smooth_4 = 2.0 * (c4_sq + c6_sq)
-    smooth_5 = 2.0 * (c5_sq + c6_sq)
+    smooth_4 = wpfloat(2.0) * (c4_sq + c6_sq)
+    smooth_5 = wpfloat(2.0) * (c5_sq + c6_sq)
     smooth_1 = c2 * c2 + c3 * c3 + area * (c4_sq + c5_sq + c6_sq)
 
     # f90 3007-3008: smoothness = l_weights_s / (z_lsq_smooth . z_quad_vector_sum + eps)^2
@@ -95,7 +95,8 @@ def _accumulate_weno_candidate_flux_weights(
         + smooth_5 * astype(z_quad_vector_sum_5, wpfloat)
         + smooth_6 * astype(z_quad_vector_sum_6, wpfloat)
     )
-    w = l_weight_s / ((beta + 1e-20) * (beta + 1e-20))  # 1e-20 == _WENO_EPS (see note above)
+    # 1e-20 == _WENO_EPS (see note above); wpfloat(...) folds in gtfn, a module symbol does not
+    w = l_weight_s / ((beta + wpfloat(1e-20)) * (beta + wpfloat(1e-20)))
 
     # f90 3009-3010: accumulate weighted coefficients and weights over the candidates
     return (

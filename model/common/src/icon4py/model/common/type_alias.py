@@ -40,3 +40,9 @@ def set_precision(new_precision: Literal["double", "mixed", "single"]) -> None:
 
 
 set_precision(precision)
+
+
+def dataclass_scalars_to_wp(self, attributes: list[str] | None = None):
+    for name in attributes or []:
+        if not isinstance(v := object.__getattribute__(self, name), wpfloat):
+            object.__setattr__(self, name, wpfloat(v))
