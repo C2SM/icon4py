@@ -33,6 +33,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import coordinate_transformations as coord_trans, utils as math_utils
 from icon4py.model.common.states import factory, model, utils as state_utils
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -218,7 +219,7 @@ class GridGeometry(factory.FieldSource):
                 # TODO(msimberg): Check if we can/should get it from the grid
                 # file directly instead (e.g. via
                 # MPIMPropertyName.MEAN_EDGE_LENGTH).
-                edge_length = self.get(attrs.EDGE_LENGTH).ndarray
+                edge_length = self.get_full_precision(attrs.EDGE_LENGTH).ndarray
                 if self._process_props.comm is not None:
                     assert edge_length.size > 0
                     send_buffer = np.empty(1, dtype=edge_length.dtype)
@@ -805,8 +806,8 @@ class GridGeometry(factory.FieldSource):
             f"{self.__class__.__name__} for geometry_type={geometry_name} (grid={self._grid.id!r})"
         )
 
-    def get_wpfloat(self, name: str) -> float:
-        return ta.wpfloat(self.get(name, type_=factory.RetrievalType.SCALAR))
+    def get_wpfloat(self, name: str) -> wpfloat:
+        return ta.wpfloat(self.get_scalar(name))
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:

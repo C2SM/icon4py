@@ -10,11 +10,11 @@
 Provides Protocols and default implementations for Fields factories, which can be used to compute static
 fields and manage their dependencies
 
-- `FieldSource`: allows to query for a field, by a `.get(field_name, retrieval_type)` method:
-
-Three `RetrievalMode` s are available:
-_ `FIELD`: return the buffer containing the computed values as a GT4Py `Field`
-- `METADATA`:  return metadata (`FieldMetaData`) such as units, CF standard_name or similar, dimensions...
+`FieldSource`: allows to query for a field, by the following methods:
+- `.get(field_name)`:  return computed values as a GT4Py `Field` with dtype according to metadata
+   #TODO(pstark): still named export_filed for know!
+- `.get_full_precision(field_name)`:  return computed values as a GT4Py `Field` with the dtype the computation returned
+- `.get_metadata(field_name)`:  return metadata such as units, CF standard_name or similar, dimensions...
 
 The factory can be used to "store" already computed fields or register functions and call arguments
 and only compute the fields lazily upon request. In order to do so the user registers the fields
@@ -31,7 +31,7 @@ factory.register_provider(foo_provider)
 factory.register_provider(bar_provider)
 (...)
 
-val = factory.get("foo", RetrievalType.FIELD)
+val = factory.get("foo")
 
 
 TODO: @halungge: allow to read configuration data
@@ -154,11 +154,6 @@ class FieldProvider(Protocol):
     def func(self) -> Callable: ...
 
 
-class RetrievalType(enum.Enum):
-    FIELD = 0
-    SCALAR = 3
-
-
 class FieldSource(GridProvider, Protocol):
     """
     Protocol for object that can be queried for fields and field metadata
@@ -189,54 +184,6 @@ class FieldSource(GridProvider, Protocol):
     def _backend_name(self) -> str:
         return "embedded" if self.backend is None else self.backend.name
 
-    @overload
-    def get(
-        self, field_name: str, type_: Literal[RetrievalType.FIELD] = RetrievalType.FIELD
-    ) -> state_utils.GTXFieldType: ...
-
-    @overload
-    def get(
-        self, field_name: str, type_: Literal[RetrievalType.SCALAR]
-    ) -> state_utils.ScalarType: ...
-
-    def get(
-        self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
-    ) -> state_utils.GTXFieldType |  state_utils.ScalarType:
-        """
-        Get a field or its metadata from the factory.
-
-        Fields are computed upon first call to `get`.
-        Args:
-            field_name:
-            type_: RetrievalType, determines whether only the field (databuffer) or Metadata or both will be returned
-
-        Returns:
-            gt4py field containing allocated using this factories backend, a fields metadata or a
-            dataarray containing both.
-
-        """
-        log.info(f" retrieving field {field_name} (mode = {type_})")
-        if field_name not in self._providers:
-            raise ValueError(f"Field '{field_name}' not provided by the source '{self.__class__}'")
-        match type_:
-            case RetrievalType.FIELD | RetrievalType.SCALAR:
-                provider = self._providers[field_name]
-                if field_name not in provider.fields:
-                    raise ValueError(
-                        f"Field {field_name} not provided by f{provider.func.__name__}."
-                    )
-
-                buffer = provider(
-                    field_name=field_name,
-                    field_src=self._sources,
-                    backend=self.backend,
-                    grid=self,
-                    exchange=self._exchange,
-                )
-                return buffer
-            case _:
-                raise ValueError(f"Invalid retrieval type {type_}")
-
     def check_field_in_provider(self, field_name: str) -> None:
         if field_name not in self._providers:
             raise ValueError(f"Field '{field_name}' not provided by the source '{self.__class__}'")
@@ -245,7 +192,7 @@ class FieldSource(GridProvider, Protocol):
         self.check_field_in_provider(field_name)
         return self.metadata[field_name]
 
-    def get_full_precision(self, field_name: str) -> state_utils.GTXFieldType:
+    def get_full_precision(self, field_name: str) -> state_utils.GTXFieldType |  state_utils.ScalarType:
         log.info(f" retrieving field {field_name}")
         self.check_field_in_provider(field_name)
         provider = self._providers[field_name]
@@ -262,12 +209,20 @@ class FieldSource(GridProvider, Protocol):
             exchange=self._exchange,
         )
 
+    def get_scalar(self, field_name: str) -> state_utils.ScalarType:
+        scalar = self.get_full_precision(field_name)
+        this_metadata = self.metadata[field_name]
+        if "dims" in this_metadata:
+            raise TypeError("This function is intended to return a Scalar. Field name {field_name!r} looks like a Field (contains 'dims' in metadata).")
+        return scalar
+
     def dtype_for_factory(self, field_name: str) -> state_utils.ScalarType:
         try:
             this_metadata = self.get_metadata(field_name)
-            dtype = this_metadata.get("dtype", gtx.float64)
         except (ValueError, KeyError):
             dtype = gtx.float64
+        else:
+            dtype = this_metadata["dtype"]
         return keep_floats_double(dtype)
 
     def dtypes_for_factory(self, field_names: Iterator[str]) -> dict[str, state_utils.ScalarType]:
@@ -279,9 +234,11 @@ class FieldSource(GridProvider, Protocol):
 
     def export_field(self, field_name: str) -> state_utils.GTXFieldType:  #TODO(pstark): rename to get?
         """Export a field from the factory in the dtype provided by the metadata."""
-        field = self.get(field_name, RetrievalType.FIELD)
-        # field = self.get_full_precision(field_name)   #TODO(pstark)
-        dtype_metadata = self.metadata[field_name].get("dtype", ta.wpfloat)
+        field = self.get_full_precision(field_name)
+        this_metadata = self.metadata[field_name]
+        if "dims" not in this_metadata:
+            raise TypeError("This function is intended to return a Field. Field name {field_name!r} looks like a Scalar ('dims' missing in metadata).")
+        dtype_metadata = this_metadata.get("dtype", ta.wpfloat)
         # `astype` is a `BuiltInFunction`, whose overloads are erased by the decorator.
         return cast("state_utils.GTXFieldType", gtx.astype(field, dtype_metadata))
 
@@ -436,7 +393,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
         deps = {
-            k: data_alloc.reallocate(factory.get(v), allocator=compute_backend)
+            k: data_alloc.reallocate(factory.get_full_precision(v), allocator=compute_backend)
             for k, v in self._dependencies.items()
         }
 
@@ -633,7 +590,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
         self._fields = self._allocate(backend, grid.grid, dtypes=dtypes)
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
-        deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
+        deps = {k: field_src.get_full_precision(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})
         dims = self._domain_args(grid.grid, grid.vertical_grid)
@@ -717,7 +674,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
     ) -> None:
         self._validate_dependencies()
         args = {
-            k: factory.get(v).ndarray if hasattr(factory.get(v), "ndarray") else factory.get(v)
+            k: buffer.ndarray if hasattr(buffer := factory.get_full_precision(v), "ndarray") else buffer
             for k, v in self._dependencies.items()
         }
         offsets = {

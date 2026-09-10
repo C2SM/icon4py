@@ -1014,7 +1014,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
 
     def get_int32(self, name: str) -> gtx.int32:
-        return gtx.int32(self.get(name, factory.RetrievalType.SCALAR))
+        return gtx.int32(self.get_scalar(name))
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
