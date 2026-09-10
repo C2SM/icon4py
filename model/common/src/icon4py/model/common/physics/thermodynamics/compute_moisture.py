@@ -6,44 +6,21 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Host-side thermodynamic helper functions.
+"""Host-side moisture helpers.
 
-NumPy/CuPy counterparts of the elemental functions in ICON's
-``mo_thdyn_functions.f90``. These operate on host arrays (e.g. during initial
-condition setup) and are not GT4Py field operators; the saturation-adjustment
-microphysics has its own GT4Py implementation in the muphys package.
+NumPy/CuPy functions on host arrays (e.g. during initial-condition setup), not
+GT4Py field operators; the saturation-adjustment microphysics has its own GT4Py
+implementation in the muphys package.
 """
 
 from __future__ import annotations
 
 from icon4py.model.common import constants as phy_const
+from icon4py.model.common.physics.thermodynamics.compute_pressure import (
+    sat_pres_ice,
+    sat_pres_water,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-def sat_pres_water(temperature: data_alloc.NDArray) -> data_alloc.NDArray:
-    """Saturation vapour pressure over liquid water [Pa] (Tetens formula).
-
-    Mirrors ``sat_pres_water`` in ``mo_thdyn_functions.f90`` (``ipsat <= 1``).
-    """
-    array_ns = data_alloc.array_namespace(temperature)
-    return phy_const.TETENS_P0 * array_ns.exp(
-        phy_const.TETENS_A_WATER
-        * (temperature - phy_const.MELTING_TEMPERATURE)
-        / (temperature - phy_const.TETENS_B_WATER)
-    )
-
-
-def sat_pres_ice(temperature: data_alloc.NDArray) -> data_alloc.NDArray:
-    """Saturation vapour pressure over ice [Pa] (Tetens formula).
-
-    Mirrors ``sat_pres_ice`` in ``mo_thdyn_functions.f90`` (``ipsat <= 1``).
-    """
-    array_ns = data_alloc.array_namespace(temperature)
-    return phy_const.TETENS_P0 * array_ns.exp(
-        phy_const.TETENS_A_ICE
-        * (temperature - phy_const.MELTING_TEMPERATURE)
-        / (temperature - phy_const.TETENS_B_ICE)
-    )
 
 
 def specific_humidity(
@@ -51,7 +28,6 @@ def specific_humidity(
 ) -> data_alloc.NDArray:
     """Specific humidity [kg/kg] from the water-vapour partial pressure and the total pressure.
 
-    Mirrors ``spec_humi`` in ``mo_thdyn_functions.f90``:
     ``rdv * pv / (p - (1 - rdv) * pv)`` with ``rdv = RD / RV``.
     """
     return (
@@ -67,8 +43,7 @@ def qv_from_relative_humidity(
 ) -> data_alloc.NDArray:
     """Specific humidity [kg/kg] from a relative-humidity field.
 
-    Mirrors the qsat/qv core of ICON's ``init_nh_inwp_tracers`` (saturation as in
-    ``mo_satad``'s ``qsat_rho``): the saturation vapour pressure (ice below the
+    The saturation vapour pressure (ice below the
     melting point, water above; the ice branch clamps the temperature at
     ``MINIMUM_TEMPERATURE_ICE_SATURATION``) is capped so the vapour pressure cannot
     exceed the total pressure, converted to a saturation specific humidity, and

@@ -20,6 +20,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
+from icon4py.model.testing.reference_funcs import interpolate_to_cell_center_numpy
 
 from .test_add_interpolated_horizontal_advection_of_w import (
     add_interpolated_horizontal_advection_of_w_numpy,
@@ -30,7 +31,6 @@ from .test_compute_horizontal_advection_term_for_vertical_velocity import (
 from .test_interpolate_cell_field_to_half_levels import (
     interpolate_cell_field_to_half_levels_vp_numpy,
 )
-from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )

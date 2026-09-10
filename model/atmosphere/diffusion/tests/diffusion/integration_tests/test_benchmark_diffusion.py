@@ -74,32 +74,44 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
     )
     edge_geometry = grid_states.EdgeParams(
-        edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
-        edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
         tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
-        coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
-        edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
-        primal_edge_lengths=geometry_field_source.get(geometry_meta.EDGE_LENGTH),
         inverse_primal_edge_lengths=geometry_field_source.get(
             f"inverse_of_{geometry_meta.EDGE_LENGTH}"
         ),
-        dual_edge_lengths=geometry_field_source.get(geometry_meta.DUAL_EDGE_LENGTH),
         inverse_dual_edge_lengths=geometry_field_source.get(
             f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
         ),
         inverse_vertex_vertex_lengths=geometry_field_source.get(
             f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
         ),
-        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
-        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
-        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
-        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-        primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
-        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
-        dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        primal_normal_vert=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        ),
+        dual_normal_vert=(
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+        ),
+        primal_normal_cell=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
+        ),
+        dual_normal_cell=(
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        ),
+        edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
+        coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
+        edge_center=(
+            geometry_field_source.get(geometry_meta.EDGE_LAT),
+            geometry_field_source.get(geometry_meta.EDGE_LON),
+        ),
+        primal_normal=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        ),
+        primal_edge_lengths=geometry_field_source.get(geometry_meta.EDGE_LENGTH),
+        dual_edge_lengths=geometry_field_source.get(geometry_meta.DUAL_EDGE_LENGTH),
     )
 
     vertical_config = v_grid.VerticalGridConfig(
