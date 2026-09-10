@@ -119,34 +119,22 @@ def _validate_tokens(name: str, tokens: list[str], valid: list[str]) -> None:
         sys.exit(1)
 
 
-def _resolve_filter(
-    cli_value: str | None,
-    env_var: str,
-    *,
-    all_values: list[str],
-    default: list[str] | None = None,
-) -> list[str]:
-    """Resolve a filter value from CLI arg, env var, or built-in default.
+def _resolve_filter(cli_value: str | None, env_var: str, *, all_values: list[str]) -> list[str]:
+    """Resolve a filter value from CLI arg, env var, or built-in all_values.
 
     When *cli_value* is provided (including empty string) it takes
     precedence.  Otherwise the environment variable is checked,
-    falling back to *default*.
+    falling back to *all_values*.
 
-    The token ``all`` expands to *all_values*.  It must not be combined with
-    other values.  *default* applies when nothing is requested and defaults to
-    *all_values*; pass it explicitly where the two differ.
+    The token ``all`` expands to the *all_values* list.  It must not be combined with
+    other values.
     """
-    if default is None:
-        default = all_values
-
     if cli_value is not None:
         tokens = _parse_list(cli_value)
+    elif env_parsed := _parse_list(os.environ.get(env_var)):
+        tokens = env_parsed
     else:
-        env_parsed = _parse_list(os.environ.get(env_var))
-        if env_parsed:
-            tokens = env_parsed
-        else:
-            return list(default)
+        return list(all_values)
 
     if "all" in tokens:
         if len(tokens) > 1:
@@ -620,12 +608,11 @@ def _generate_child_pipeline(
     _validate_tokens("TOOLS_SUBSETS", requested_tools_subsets, ALL_TOOLS_SUBSETS)
 
     requested_float_precisions = _resolve_filter(
-        float_precisions, "FLOAT_PRECISIONS", all_values=ALL_FLOAT_PRECISIONS, default=["double"]
+        float_precisions, "FLOAT_PRECISIONS", all_values=ALL_FLOAT_PRECISIONS
     )
     _validate_tokens("FLOAT_PRECISIONS", requested_float_precisions, ALL_FLOAT_PRECISIONS)
 
     cells: list[_MatrixCell] = []
-    selected_float_precisions = _intersect(requested_float_precisions, ALL_FLOAT_PRECISIONS)
 
     if "model" in requested_sessions:
         cells.extend(
@@ -635,7 +622,7 @@ def _generate_child_pipeline(
                 grids=_intersect(requested_grids, ALL_GRIDS),
                 levels=_intersect(requested_levels, ALL_LEVELS),
                 subsets=_intersect(requested_model_subsets, ALL_MODEL_SUBSETS),
-                float_precisions=selected_float_precisions,
+                float_precisions=_intersect(requested_float_precisions, ALL_FLOAT_PRECISIONS),
             )
         )
 
@@ -643,7 +630,7 @@ def _generate_child_pipeline(
         cells.extend(
             _tools_cells(
                 selections=_intersect(requested_tools_subsets, ALL_TOOLS_SUBSETS),
-                float_precisions=selected_float_precisions,
+                float_precisions=_intersect(requested_float_precisions, ALL_FLOAT_PRECISIONS),
             )
         )
 
@@ -654,7 +641,7 @@ def _generate_child_pipeline(
                 backends=_intersect(requested_backends, ALL_BACKENDS),
                 levels=_intersect(requested_levels, ALL_LEVELS),
                 subsets=_intersect(requested_model_mpi_subsets, ALL_MODEL_MPI_SUBSETS),
-                float_precisions=selected_float_precisions,
+                float_precisions=_intersect(requested_float_precisions, ALL_FLOAT_PRECISIONS),
             )
         )
 

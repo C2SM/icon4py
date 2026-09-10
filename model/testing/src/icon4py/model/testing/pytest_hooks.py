@@ -52,10 +52,8 @@ def pytest_configure(config):
     )
 
     # Handle datatest options: --datatest-only  and --datatest-skip
-    m_expr = config.getoption("-m", default="")
-    m_option = (
-        [f"({m_expr})"] if m_expr else []
-    )  # add parenthesis around original k_option just in case
+    if m_option := config.getoption("-m", []):
+        m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
     if config.getoption("--datatest-only"):
         m_option.append("datatest")
     if config.getoption("--datatest-skip"):
