@@ -29,7 +29,6 @@ from gt4py.next import (
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -565,17 +564,13 @@ def compute_wgtfac_e(  # noqa: PLR0917 [too-many-positional-arguments]
 def compute_flat_max_idx(
     *,
     e2c: data_alloc.NDArray,
-    z_mc: data_alloc.NDArray,
-    c_lin_e: data_alloc.NDArray,
+    z_me: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     k_lev: data_alloc.NDArray,
-    exchange: decomposition.ExchangeRuntime,
 ) -> data_alloc.NDArray:
     array_ns = data_alloc.array_namespace(e2c)
     k_lev_minus1 = k_lev[:-1]
-    coeff_ = array_ns.expand_dims(c_lin_e, axis=-1)
-    z_me = array_ns.sum(z_mc[e2c] * coeff_, axis=1)
-    exchange.exchange(dims.EdgeDim, z_me, stream=decomposition.BLOCK)
+
     z_ifc_e_0 = z_ifc[e2c[:, 0], :-1]
     z_ifc_e_k_0 = z_ifc[e2c[:, 0], 1:]
     z_ifc_e_1 = z_ifc[e2c[:, 1], :-1]
@@ -946,7 +941,7 @@ def compute_exner_w_implicit_weight_parameter(
 
     for jk in range(k_start, nlev):
         zdiff2_sliced = zdiff2[horizontal_start_cell:, jk]
-        index_for_k = array_ns.nonzero(zdiff2_sliced < 0.6)[0]
+        index_for_k = array_ns.where(zdiff2_sliced < 0.6)[0]
         max_value_k = array_ns.maximum(
             1.2 - zdiff2_sliced, exner_w_implicit_weight_parameter[horizontal_start_cell:]
         )
