@@ -124,7 +124,7 @@ class Icon4pyDriver:
 
     @functools.cached_property
     def do_prep_adv_in_dycore(self) -> bool:
-        return True if self.config.nonhydrostatic is not None and self.config.tracer_advection is not None else False
+        return self.config.nonhydrostatic is not None and self.config.tracer_advection is not None
 
     @functools.cached_property
     def _diagnostics_computer(self) -> driver_io.DiagnosticsComputer:

@@ -34,7 +34,9 @@ def _prep_advection(grid: base.Grid) -> dycore_states.PrepAdvection:
         vn_traj=_field(dims.EdgeDim, dims.KDim),
         mass_flx_me=_field(dims.EdgeDim, dims.KDim),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=_field(dims.CellDim, dims.KHalfDim),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=_field(dims.CellDim, dims.KHalfDim),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=_field(
+            dims.CellDim, dims.KHalfDim
+        ),
     )
 
 
