@@ -30,6 +30,8 @@ def _compute_ppm_all_face_values(
     elevp1: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     quadratic = _compute_ppm_quadratic_face_values(p_cc, p_cellhgt_mc_now)
+    # nested instead of `(KHalfDim == slevp1) | (KHalfDim == elev)`: the embedded backend
+    # cannot evaluate a `|` mask (gt4py 1.2.2)
     p_face = concat_where(
         dims.KHalfDim == slevp1,
         quadratic,
