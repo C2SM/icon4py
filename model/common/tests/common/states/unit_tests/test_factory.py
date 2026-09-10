@@ -196,6 +196,8 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     provider = factory.ProgramFieldProvider(
         func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
+    height_coordinate_source.with_metadata({"output_f": {"standard_name": "output_f", "units": ""}})
+    height_coordinate_source.register_provider(provider)
     provider(
         field_name="output_f",
         field_src=height_coordinate_source,
@@ -216,6 +218,8 @@ def _run_program_provider(source: SimpleFieldSource, domain: dict) -> gtx.Field:
         deps={"input_field": "height_coordinate"},
         do_exchange=False,
     )
+    source.with_metadata({"output_f": {"standard_name": "output_f", "units": ""}})
+    source.register_provider(provider)
     provider(
         field_name="output_f",
         field_src=source,
@@ -264,6 +268,8 @@ def test_field_operator_provider_vertical_extent_is_declared_domain(
         deps={"half_level_field": "height_coordinate"},
         do_exchange=False,
     )
+    height_coordinate_source.with_metadata({"output_f": {"standard_name": "output_f", "units": ""}})
+    height_coordinate_source.register_provider(provider)
     provider(
         field_name="output_f",
         field_src=height_coordinate_source,
@@ -299,6 +305,8 @@ def test_numpy_provider_vertical_extent_is_declared_domain(
         fields=("output_f",),
         deps={"z_ifc": "height_coordinate"},
     )
+    height_coordinate_source.with_metadata({"output_f": {"standard_name": "output_f", "units": ""}})
+    height_coordinate_source.register_provider(provider)
     provider(
         field_name="output_f",
         field_src=height_coordinate_source,

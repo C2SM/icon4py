@@ -411,11 +411,8 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             f"{data_alloc.backend_name(compute_backend)}, target backend is: "
             f"{data_alloc.backend_name(factory.backend)}"
         )
-        try:
-            metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields}
-        except (ValueError, KeyError):
-            metadata = {}
-        self._fields = self._allocate_fields(compute_backend, grid_provider, metadata)
+        dtype = {k: output_dtype(factory, k) for k in self._fields}
+        self._fields = self._allocate_fields(compute_backend, grid_provider, dtype)
         # call field operator
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
@@ -466,16 +463,14 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         self,
         backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
-        metadata: dict[str, model.FieldMetaData],
+        dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
         allocate = gtx.constructors.zeros.partial(allocator=backend)
         field_domain = {
             dim: _field_extent(dim, declared, grid_provider)
             for dim, declared in self._domain.items()
         }
-        return {
-            k: allocate(field_domain, dtype=dtype_or_default(k, metadata)) for k in self._fields
-        }
+        return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
 
 class ProgramFieldProvider(FieldProvider, NeedsExchange):
@@ -597,12 +592,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         grid: GridProvider,
         backend: gtx_typing.Backend | None,
     ) -> None:
-        try:
-            metadata = {v: field_src.get(v, RetrievalType.METADATA) for v in self._output.values()}
-            dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
-        except (ValueError, KeyError):
-            dtype = {v: ta.wpfloat for v in self._output.values()}
-
+        dtype = {v: output_dtype(field_src, v) for v in self._output.values()}
         self._fields = self._allocate(backend, grid, dtype=dtype)
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
         deps = {k: field_src.get(v) for k, v in self._dependencies.items()}
@@ -797,7 +787,5 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.__name__
 
 
-def dtype_or_default(
-    field_name: str, metadata: dict[str, model.FieldMetaData]
-) -> state_utils.ScalarType:
-    return metadata.get(field_name, {}).get("dtype", ta.wpfloat)
+def output_dtype(field_src: FieldSource, field_name: str) -> state_utils.ScalarType:
+    return field_src.get(field_name, RetrievalType.METADATA).get("dtype", ta.wpfloat)
