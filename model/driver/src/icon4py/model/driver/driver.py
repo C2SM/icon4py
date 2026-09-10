@@ -171,20 +171,20 @@ class Icon4pyDriver:
         for steps that discard them, and the output timers hold only real capture work.
         """
         assert self.io_monitor is not None
-        if not self.io_monitor.captures_next_store():
-            self.io_monitor.store({}, simulation_current_datetime)
-            return
-        with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
-            metrics = self.static_field_factories.metrics
-            interpolation = self.static_field_factories.interpolation
-            state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
-            diagnostic_fields = self._diagnostics_computer.compute(
-                prognostic_state,
-                ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
-                rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
-                rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
-            )
-            state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
+        if self.io_monitor.at_capture_time():
+            with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_ASSEMBLE.value]:
+                metrics = self.static_field_factories.metrics
+                interpolation = self.static_field_factories.interpolation
+                state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
+                diagnostic_fields = self._diagnostics_computer.compute(
+                    prognostic_state,
+                    ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
+                    rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
+                    rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
+                )
+                state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
+        else:
+            state_to_store = {}
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_STORE.value]:
             self.io_monitor.store(state_to_store, simulation_current_datetime)
 
