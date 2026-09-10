@@ -52,7 +52,7 @@ def test_geometry_raises_for_unknown_field(
 ) -> None:
     geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     with pytest.raises(ValueError, match="Field 'foo' not provided by the source"):
-        geometry.export_field("foo")
+        geometry.get("foo")
 
 
 @pytest.mark.parametrize(

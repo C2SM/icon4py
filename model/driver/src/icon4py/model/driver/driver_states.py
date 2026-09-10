@@ -317,10 +317,10 @@ def assemble_driver_states(
     )
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
-    rbf_vec_coeff_c1 = static_fields.interpolation.export_field(
+    rbf_vec_coeff_c1 = static_fields.interpolation.get(
         interpolation_attributes.RBF_VEC_COEFF_C1
     )
-    rbf_vec_coeff_c2 = static_fields.interpolation.export_field(
+    rbf_vec_coeff_c2 = static_fields.interpolation.get(
         interpolation_attributes.RBF_VEC_COEFF_C2
     )
 

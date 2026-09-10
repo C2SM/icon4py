@@ -12,7 +12,6 @@ fields and manage their dependencies
 
 `FieldSource`: allows to query for a field, by the following methods:
 - `.get(field_name)`:  return computed values as a GT4Py `Field` with dtype according to metadata
-   #TODO(pstark): still named export_filed for know!
 - `.get_full_precision(field_name)`:  return computed values as a GT4Py `Field` with the dtype the computation returned
 - `.get_metadata(field_name)`:  return metadata such as units, CF standard_name or similar, dimensions...
 
@@ -213,7 +212,7 @@ class FieldSource(GridProvider, Protocol):
         scalar = self.get_full_precision(field_name)
         this_metadata = self.metadata[field_name]
         if "dims" in this_metadata:
-            raise TypeError("This function is intended to return a Scalar. Field name {field_name!r} looks like a Field (contains 'dims' in metadata).")
+            raise TypeError(f"This function is intended to return a Scalar. Field name {field_name!r} looks like a Field (contains 'dims' in metadata).")
         return scalar
 
     def dtype_for_factory(self, field_name: str) -> state_utils.ScalarType:
@@ -232,12 +231,12 @@ class FieldSource(GridProvider, Protocol):
     def _provided_by_source(self, name) -> bool:
         return name in self._sources._providers or name in self._sources.metadata
 
-    def export_field(self, field_name: str) -> state_utils.GTXFieldType:  #TODO(pstark): rename to get?
+    def get(self, field_name: str) -> state_utils.GTXFieldType:
         """Export a field from the factory in the dtype provided by the metadata."""
         field = self.get_full_precision(field_name)
         this_metadata = self.metadata[field_name]
         if "dims" not in this_metadata:
-            raise TypeError("This function is intended to return a Field. Field name {field_name!r} looks like a Scalar ('dims' missing in metadata).")
+            raise TypeError(f"This function is intended to return a Field. Field name {field_name!r} looks like a Scalar ('dims' missing in metadata).")
         dtype_metadata = this_metadata.get("dtype", ta.wpfloat)
         # `astype` is a `BuiltInFunction`, whose overloads are erased by the decorator.
         return cast("state_utils.GTXFieldType", gtx.astype(field, dtype_metadata))

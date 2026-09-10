@@ -139,7 +139,7 @@ class Icon4pyDriver:
             program=compute_airmass.compute_airmass,
             backend=self.backend,
             constant_args={
-                "ddqz_z_full_in": self.static_field_factories.metrics.export_field(
+                "ddqz_z_full_in": self.static_field_factories.metrics.get(
                     metrics_attr.DDQZ_Z_FULL
                 ),
                 "deepatmo_t1mc_in": data_alloc.constant_field(
@@ -182,9 +182,9 @@ class Icon4pyDriver:
             state_to_store = driver_io.prognostic_state_to_dataarrays(prognostic_state)
             diagnostic_fields = self._diagnostics_computer.compute(
                 prognostic_state,
-                ddqz_z_full=metrics.export_field(metrics_attr.DDQZ_Z_FULL),
-                rbf_vec_coeff_c1=interpolation.export_field(intp_attr.RBF_VEC_COEFF_C1),
-                rbf_vec_coeff_c2=interpolation.export_field(intp_attr.RBF_VEC_COEFF_C2),
+                ddqz_z_full=metrics.get(metrics_attr.DDQZ_Z_FULL),
+                rbf_vec_coeff_c1=interpolation.get(intp_attr.RBF_VEC_COEFF_C1),
+                rbf_vec_coeff_c2=interpolation.get(intp_attr.RBF_VEC_COEFF_C2),
             )
             state_to_store.update(driver_io.diagnostic_fields_to_dataarrays(diagnostic_fields))
         with self.timer_collection.timers[driver_states.DriverTimers.OUTPUT_STORE.value]:
@@ -660,10 +660,10 @@ class Icon4pyDriver:
     ) -> None:
         if self.config.driver.enable_statistics_logging:
             rho_ndarray = prognostic_states.rho.ndarray
-            cell_area_ndarray = self.static_field_factories.geometry.export_field(
+            cell_area_ndarray = self.static_field_factories.geometry.get(
                 geom_attr.CELL_AREA
             ).ndarray
-            cell_thickness_ndarray = self.static_field_factories.metrics.export_field(
+            cell_thickness_ndarray = self.static_field_factories.metrics.get(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
             local_mass = (
