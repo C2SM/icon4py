@@ -38,9 +38,18 @@ diffusion:
 tracer_config:
   qv: true
 tracer_advection:
+  # schemes: linear_2nd_order (2), quadratic_3rd_order (3), linear_2nd_order_weno (102),
+  # quadratic_3rd_order_weno (103), quadratic_3rd_order_weno_hybrid (132); limiters:
+  # no_limiter, monotonic (3), positive_definite (4), cell_local_positive_definite
+  # (Jocksch's, inside 102/103/132 only)
   horizontal_advection_type: quadratic_3rd_order_weno
   horizontal_advection_limiter: no_limiter
   vertical_advection_type: no_advection
   vertical_advection_limiter: no_limiter
+  # linear weight set of the quadratic WENO blend: optimized (paper "WENO opt"),
+  # unity (paper "d_j = 1"), hand_tuned (the Fortran's literal 1, 1.5, 1, 0.5, 1)
+  weno_linear_weights: optimized
+  # c_sel of the hybrid scheme (paper eq. 6), the Fortran's single-precision literal
+  weno_hybrid_selection_threshold: 5.0e-5
 graupel:
 muphys:

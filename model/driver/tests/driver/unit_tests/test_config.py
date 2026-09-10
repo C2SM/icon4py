@@ -15,8 +15,10 @@ import textwrap
 
 import pytest
 
+from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common.config import config_io
 from icon4py.model.driver import config as driver_config, driver_states
+from icon4py.model.testing import config as test_config
 
 
 def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
@@ -188,3 +190,52 @@ def test_io_roundtrip_str_str() -> None:
         config_io.read_yaml_str(config_str, driver_config.ExperimentConfig)
     )
     assert roundtrip_str == config_str
+
+
+def _jocksch_cylinder_yaml() -> str:
+    return (test_config.EXPERIMENT_CONFIG_PATH / "jocksch_cylinder.yaml").read_text()
+
+
+def test_jocksch_cylinder_experiment_config_defaults() -> None:
+    conf = config_io.read_yaml_str(_jocksch_cylinder_yaml(), driver_config.ExperimentConfig)
+    assert conf.tracer_advection is not None
+    assert (
+        conf.tracer_advection.horizontal_advection_type
+        == tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO
+    )
+    assert (
+        conf.tracer_advection.horizontal_advection_limiter
+        == tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER
+    )
+    assert conf.tracer_advection.weno_linear_weights == tracer_advection.WenoLinearWeights.OPTIMIZED
+    assert conf.tracer_advection.weno_hybrid_selection_threshold == 5e-5
+
+
+def test_jocksch_cylinder_experiment_config_selects_the_jocksch_schemes() -> None:
+    # the hybrid scheme, Jocksch's cell-local limiter and the paper's d_j = 1 weight set are
+    # selectable from the experiment file by their enum names
+    yaml_str = (
+        _jocksch_cylinder_yaml()
+        .replace(
+            "horizontal_advection_type: quadratic_3rd_order_weno",
+            "horizontal_advection_type: quadratic_3rd_order_weno_hybrid",
+        )
+        .replace(
+            "horizontal_advection_limiter: no_limiter",
+            "horizontal_advection_limiter: cell_local_positive_definite",
+        )
+        .replace("weno_linear_weights: optimized", "weno_linear_weights: unity")
+        .replace("weno_hybrid_selection_threshold: 5.0e-5", "weno_hybrid_selection_threshold: 1.0e-3")
+    )
+    conf = config_io.read_yaml_str(yaml_str, driver_config.ExperimentConfig)
+    assert conf.tracer_advection is not None
+    assert (
+        conf.tracer_advection.horizontal_advection_type
+        == tracer_advection.HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO_HYBRID
+    )
+    assert (
+        conf.tracer_advection.horizontal_advection_limiter
+        == tracer_advection.HorizontalAdvectionLimiter.CELL_LOCAL_POSITIVE_DEFINITE
+    )
+    assert conf.tracer_advection.weno_linear_weights == tracer_advection.WenoLinearWeights.UNITY
+    assert conf.tracer_advection.weno_hybrid_selection_threshold == 1e-3
