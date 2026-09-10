@@ -29,10 +29,17 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
 - **Scheme gaps ported** (commits `92a4cb3d8`, `6dbaa6496`, `84d71fc7f`, `f50ae5db1`,
   reviewed, no number-changing defects): weight sets `OPTIMIZED/HAND_TUNED/UNITY`, hybrid
   132, cell-local PD limiter (value 104, orientation-correct). Not yet wired into the driver.
-- **Tests vs capture (W5, in progress when this was written):** serialbox `step` key and
-  lsq-coefficients reader, capture registered as a local experiment, L1/L2/trajectory test
-  module (`c07baf6a4`); FMA conftest, Table 2 gates and the GPU sbatch script were
-  uncommitted in the working tree.
+- **Tests vs capture (W5, W5b).** Serialbox `step` key and lsq-coefficients reader, capture
+  registered as a local experiment, L1/L2/trajectory test module (`c07baf6a4`), FMA
+  conftest, Table 2 / Fortran gates, GPU sbatch script (`e49fdbd0b`, verified by W5b).
+  Measured on gtfn_cpu and dace_cpu (identical to the printed digits): L1 bit-identical
+  except the SVD pseudoinverses (7e-13 / 2.5e-12); L2 per step 1e-15 for 2 and 102, 2e-14
+  for 3, 2.5e-9 .. 3.5e-9 for 103 (the Fortran's `REAL(sp)` smoothness indicator);
+  trajectories stay within one order of magnitude of the step-1 level. FMA off changes the
+  last digit only (and makes the 102 step-1 tracer bit-identical); kept as tooling, not
+  default. All eight cylinder gates pass (1e-11 .. 3e-10 to the Fortran pair sum, 3.5e-9
+  for 103). Tables and recipes: `docs/running_the_jocksch_reference_tests.md`. GPU
+  backends: see that note.
 
 ## Decisions
 
