@@ -261,7 +261,7 @@ class FieldSource(GridProvider, Protocol):
             dtype = this_metadata.get("dtype", gtx.float64)
         except (ValueError, KeyError):
             dtype = gtx.float64
-        return keep_floats_double(dtype)
+        return store_allfloats_as_double(dtype)
 
     def dtypes_for_factory(self, field_names: Iterator[str]) -> dict[str, state_utils.ScalarType]:
         dtypes = {field_name: self.dtype_for_factory(field_name) for field_name in field_names}
@@ -810,7 +810,7 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.__name__
 
 
-def keep_floats_double(dtype_metadata: state_utils.ScalarType) -> state_utils.ScalarType:
+def store_allfloats_as_double(dtype_metadata: state_utils.ScalarType) -> state_utils.ScalarType:
     if dtype_metadata in [gtx.int32, bool]:
         return dtype_metadata
     else:
