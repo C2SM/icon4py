@@ -16,15 +16,15 @@ work is `git diff exclaim/icon-dsl...dacecf46aa` — 15 files under `src/`, noth
 
 `hor_upwind_flux`, `src/advection/mo_advection_hflux.f90:301-425`:
 
-| `ihadv_tracer` | Fortran routine | paper name | icon4py (`HorizontalAdvectionType`) |
-|---|---|---|---|
-| 2 | `upwind_hflux_miura` (f90:1642) | linear lsq | `LINEAR_2ND_ORDER` |
-| 3 | `upwind_hflux_miura3` (f90:4378) | quadratic lsq | `QUADRATIC_3RD_ORDER` |
-| 102 | `upwind_hflux_miura_weno` (f90:1165) | linear WENO, 3 three-point sub-stencils | `LINEAR_2ND_ORDER_WENO` |
-| 103 | `upwind_hflux_miura3_weno` (f90:2532) | quadratic WENO, 27 six-point sub-stencils | `QUADRATIC_3RD_ORDER_WENO` |
-| 132 | `upwind_hflux_miura_weno_hyb` (f90:3136) | hybrid, `c_sel` = 5e-5 (paper eq. 6) | **missing** |
-| 202 | `upwind_hflux_miura_cell` (f90:702) | linear lsq, cell-based kernel | not planned (schedule variant) |
-| 203 | `upwind_hflux_miura3_cell` (f90:3815) | quadratic lsq, cell-based kernel | not planned (schedule variant) |
+| `ihadv_tracer` | Fortran routine                          | paper name                                | icon4py (`HorizontalAdvectionType`) |
+| -------------- | ---------------------------------------- | ----------------------------------------- | ----------------------------------- |
+| 2              | `upwind_hflux_miura` (f90:1642)          | linear lsq                                | `LINEAR_2ND_ORDER`                  |
+| 3              | `upwind_hflux_miura3` (f90:4378)         | quadratic lsq                             | `QUADRATIC_3RD_ORDER`               |
+| 102            | `upwind_hflux_miura_weno` (f90:1165)     | linear WENO, 3 three-point sub-stencils   | `LINEAR_2ND_ORDER_WENO`             |
+| 103            | `upwind_hflux_miura3_weno` (f90:2532)    | quadratic WENO, 27 six-point sub-stencils | `QUADRATIC_3RD_ORDER_WENO`          |
+| 132            | `upwind_hflux_miura_weno_hyb` (f90:3136) | hybrid, `c_sel` = 5e-5 (paper eq. 6)      | **missing**                         |
+| 202            | `upwind_hflux_miura_cell` (f90:702)      | linear lsq, cell-based kernel             | not planned (schedule variant)      |
+| 203            | `upwind_hflux_miura3_cell` (f90:3815)    | quadratic lsq, cell-based kernel          | not planned (schedule variant)      |
 
 Table 2 of the paper also distinguishes "WENO d_j = 1" from "WENO opt". Both are `103`;
 they differ only in the linear weights `l_weights_s` set at init
@@ -38,8 +38,7 @@ f90:2647). icon4py has only the optimised set (`weno_least_squares.py`, `L_WEIGH
 - In the WENO and cell-based routines, `itype_hlimit = 4` (`ifluxl_sm`) selects **Andreas'
   cell-local positive-definite limiter**, applied inside the reconstruction/flux kernel
   (`f90:1056-1073` for 202, `f90:1533-1550` for 102): a reconstruction clamp
-  (`flux = max(flux, 0)`) followed by a per-cell outflow scaling `rfac = min(1, q·ρ/(Σ
-  outflow + ε))` (paper Alg. 1). ICON's standard `hflx_limiter_pd` call is commented out
+  (`flux = max(flux, 0)`) followed by a per-cell outflow scaling `rfac = min(1, q·ρ/(Σ outflow + ε))` (paper Alg. 1). ICON's standard `hflx_limiter_pd` call is commented out
   there (`f90:1138`, `f90:1615`). So every "limiter" row of Table 2 uses his limiter, and
   `itype_hlimit = 4` does **not** mean the same thing in 102/103/132/202/203 as in 2/3.
 - `itype_hlimit = 3` (`ifluxl_m`) still calls ICON's `hflx_limiter_mo` (`f90:1129`,
@@ -77,6 +76,7 @@ quadratic scheme (paper §2.3 says it does for `d_j = 1`) is exactly what the to
 study must measure rather than assume.
 
 ## The cylinder experiment (live block, `mo_nh_stepping.f90`, hunk after the
+
 `serialize_all("step_advection", .TRUE.)` line, `if (.true.)` block)
 
 - Mesh: 880 cells / 1320 edges, edge length a = 5000 m (`nblks_e = 1320` with
@@ -121,3 +121,55 @@ Stability limit CFL ≈ 0.42 (Fig. 7). Planned as W4; needs no Fortran reference
    study (W5). 103 currently launches 2 stencils × 27 candidates per step; fine at 880
    cells, restructure later.
 5. Dispersion relation (W4).
+
+## Testing against the Fortran capture (W5)
+
+The capture (`../icon-ajocksch/CAPTURE_NOTES.md`) lives in
+`weno_data/reference/<case>/ser/` and is not downloadable. It is registered as
+`test_defs.Experiments.jocksch_cylinder(ihadv_tracer, itype_hlimit, tag)` and the grid file
+as `test_defs.Grids.TORUS_20X22_5000M` (`_CENTRED` for the shifted copy); the datatest
+fixtures find both through `ICON4PY_TEST_DATA_PATH` once the expected layout is linked
+(symlinks, nothing is copied; the `.extraction_complete` markers keep the download logic
+from touching the directories):
+
+```bash
+W=/capstor/scratch/cscs/cmueller/tracer_advection_port/icon-exclaim/weno_data
+T=$W/testdata
+for g in torus_20x22_res5000m torus_20x22_res5000m_centred; do
+  mkdir -p $T/grids/$g && ln -sfn ../../../grids/$g.nc $T/grids/$g/$g.nc && touch $T/grids/$g/.extraction_complete
+done
+for c in $W/reference/*/; do c=$(basename $c)
+  [ -f $W/reference/$c/ser/.extraction_complete ] || continue
+  d=$T/ser_icondata/mpitask1_jocksch_cylinder_${c}_v01
+  mkdir -p $d && ln -sfn ../../../reference/$c/ser $d/ser_data && touch $d/.extraction_complete
+done
+```
+
+The capture was written with `nproma = 1`, so the serialized arrays carry the point count
+on the block axis; `IconSerialDataProvider.unit_nproma` detects that and the readers
+unblock it (`IconSavepoint._unblock`). The advection savepoints are selected by the new
+`step` key (`from_advection_init_savepoint(..., step=n)`), the coefficients by
+`from_lsq_coefficients_savepoint()` (`LsqCoefficientsSavepoint`). The `icon-grid`
+savepoint of this capture is not usable for the topology (`neighbor_idx` is identically 1
+with `nproma = 1` and the block index is not serialized), so the tests build the grid from
+the grid file as the driver does.
+
+Tests: `tests/tracer_advection/integration_tests/test_jocksch_reference.py` (L1
+coefficients, L2 one step per savepoint, the 100-step trajectory), and the Table 2 /
+Fortran gates in `model/driver/tests/driver/integration_tests/test_jocksch_cylinder.py`.
+One backend at a time, one cache directory per backend and per flag set:
+
+```bash
+W=/capstor/scratch/cscs/cmueller/tracer_advection_port/icon-exclaim/weno_data
+ICON4PY_TEST_DATA_PATH=$W/testdata GT4PY_BUILD_CACHE_LIFETIME=persistent \
+GT4PY_BUILD_CACHE_DIR=$W/gt4py_cache/gtfn_cpu \
+uv run --group test --frozen pytest -n0 -v -s --backend=gtfn_cpu \
+  model/atmosphere/tracer_advection/tests/tracer_advection/integration_tests/test_jocksch_reference.py
+# contraction off (the Fortran was built with -Kieee -Mnofma -gpu=nofma):
+ICON4PY_FP_CONTRACT_OFF=1 GT4PY_BUILD_CACHE_DIR=$W/gt4py_cache/gtfn_cpu_nofma ...
+```
+
+`ICON4PY_FP_CONTRACT_OFF=1` (`tests/tracer_advection/conftest.py`) exports
+`CXXFLAGS=-ffp-contract=off` and `NVCC_APPEND_FLAGS=--fmad=false`, the variables
+`ci/base.yml` uses for the bit-reproducibility jobs. On santis the GPU backends run through
+`docs/run_jocksch_reference_gpu.sbatch` (one backend per job).
