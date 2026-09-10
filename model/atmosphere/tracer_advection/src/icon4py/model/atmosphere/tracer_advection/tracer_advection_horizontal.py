@@ -17,6 +17,9 @@ from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.atmosphere.tracer_advection.stencils.accumulate_weno_candidate_flux_weights import (
     accumulate_weno_candidate_flux_weights,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.apply_cell_local_positive_definite_horizontal_flux_factor import (
+    apply_cell_local_positive_definite_horizontal_flux_factor,
+)
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_monotone_horizontal_multiplicative_flux_factors import (
     apply_monotone_horizontal_multiplicative_flux_factors,
 )
@@ -37,6 +40,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_back
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_backtrajectory_alt import (
     compute_barycentric_backtrajectory_alt,
+)
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_cell_local_positive_definite_horizontal_flux_factor import (
+    compute_cell_local_positive_definite_horizontal_flux_factor,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_edge_tangential import (
     compute_edge_tangential,
@@ -121,7 +127,11 @@ log = logging.getLogger(__name__)
 
 
 class HorizontalFluxLimiter(ABC):
-    """Class that limits the horizontal finite volume numerical flux."""
+    """Class that limits the horizontal finite volume numerical flux.
+
+    'p_vn' is the normal velocity the scheme selected its upwind cells with (vn_traj);
+    only 'CellLocalPositiveDefinite' consumes it.
+    """
 
     @abstractmethod
     def apply_flux_limiter(
@@ -130,6 +140,7 @@ class HorizontalFluxLimiter(ABC):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
+        p_vn: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -145,6 +156,7 @@ class NoLimiter(HorizontalFluxLimiter):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
+        p_vn: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -231,6 +243,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
+        p_vn: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -265,6 +278,125 @@ class PositiveDefinite(HorizontalFluxLimiter):
         log.debug(
             "running stencil apply_positive_definite_horizontal_multiplicative_flux_factor - end"
         )
+
+
+class CellLocalPositiveDefinite(HorizontalFluxLimiter):
+    """Jocksch's cell-local positive-definite limiter (his itype_hlimit=4 inside 102/103/132).
+
+    Paper Algorithm 1, mo_advection_hflux.f90 3013-3040 (and the same lines in the other
+    routines of his scheme family): the reconstructed flux of every edge is clamped to a
+    non-negative outflow of its upwind cell, and the upwind cell's outflow is scaled by
+    ``r_m = min(1, q rho / (sum of the clamped outflow * dt + eps))``. ICON's
+    'PositiveDefinite' does the second step only, and on the fluxes of all three edges.
+    The Fortran evaluates both steps inside the reconstruction kernel; here they follow
+    it as two stencils on the finished edge fluxes, which is the same arithmetic. The
+    factor lives on the cells of the flux's own upwind side, so unlike 'PositiveDefinite'
+    there is nothing to exchange.
+
+    See the cell stencil for the orientation of the clamp.
+    """
+
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        interpolation_state: tracer_advection_states.AdvectionInterpolationState,
+        backend: gtx.typing.Backend | None,
+    ):
+        self._grid = grid
+        self._interpolation_state = interpolation_state
+        self._backend = backend
+
+        # cell indices: r_m is needed on every cell whose edges carry a flux, halos included
+        cell_domain = h_grid.domain(dims.CellDim)
+        self._start_cell_lateral_boundary_level_2 = self._grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
+
+        # edge indices, the flux stencils' range
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
+
+        self._r_m = data_alloc.zero_field(
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            allocator=model_backends.get_allocator(self._backend),
+        )
+
+        vertical_sizes = {
+            "vertical_start": gtx.int32(0),
+            "vertical_end": gtx.int32(self._grid.num_levels),
+        }
+        self._compute_cell_local_positive_definite_horizontal_flux_factor = (
+            model_options.setup_program(
+                backend=self._backend,
+                program=compute_cell_local_positive_definite_horizontal_flux_factor,
+                constant_args={
+                    "geofac_div": self._interpolation_state.geofac_div,
+                    "dbl_eps": constants.DBL_EPS,
+                },
+                horizontal_sizes={
+                    "horizontal_start": self._start_cell_lateral_boundary_level_2,
+                    "horizontal_end": self._end_cell_end,
+                },
+                vertical_sizes=vertical_sizes,
+                offset_provider=self._grid.connectivities,
+            )
+        )
+        self._apply_cell_local_positive_definite_horizontal_flux_factor = (
+            model_options.setup_program(
+                backend=self._backend,
+                program=apply_cell_local_positive_definite_horizontal_flux_factor,
+                horizontal_sizes={
+                    "horizontal_start": self._start_edge_lateral_boundary_level_5,
+                    "horizontal_end": self._end_edge_halo,
+                },
+                vertical_sizes=vertical_sizes,
+                offset_provider=self._grid.connectivities,
+            )
+        )
+
+    def apply_flux_limiter(
+        self,
+        *,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
+        p_vn: fa.EdgeKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
+        # per cell: clamped outflow of the owned edges and the scaling factor (f90 3016-3027)
+        log.debug(
+            "running stencil compute_cell_local_positive_definite_horizontal_flux_factor - start"
+        )
+        self._compute_cell_local_positive_definite_horizontal_flux_factor(
+            p_cc=p_tracer_now,
+            p_rhodz_now=rhodz_now,
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            p_vn=p_vn,
+            r_m=self._r_m,
+            p_dtime=dtime,
+        )
+        log.debug(
+            "running stencil compute_cell_local_positive_definite_horizontal_flux_factor - end"
+        )
+
+        # per edge: clamp and scale with the upwind cell's factor (f90 3021, 3028-3032)
+        log.debug(
+            "running stencil apply_cell_local_positive_definite_horizontal_flux_factor - start"
+        )
+        self._apply_cell_local_positive_definite_horizontal_flux_factor(
+            r_m=self._r_m,
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            p_vn=p_vn,
+        )
+        log.debug("running stencil apply_cell_local_positive_definite_horizontal_flux_factor - end")
 
 
 class Monotonic(HorizontalFluxLimiter):
@@ -411,6 +543,7 @@ class Monotonic(HorizontalFluxLimiter):
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
+        p_vn: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
@@ -590,6 +723,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             p_tracer_now=p_tracer_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
             p_mass_flx_e=prep_adv.mass_flx_me,
+            p_vn=prep_adv.vn_traj,
             rhodz_now=rhodz_now,
             rhodz_new=rhodz_new,
             dtime=dtime,
@@ -722,6 +856,7 @@ class SecondOrderMiuraWeno(SemiLagrangianTracerFlux):
             p_tracer_now=p_tracer_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
             p_mass_flx_e=prep_adv.mass_flx_me,
+            p_vn=prep_adv.vn_traj,
             rhodz_now=rhodz_now,
             rhodz_new=rhodz_new,
             dtime=dtime,
@@ -996,6 +1131,7 @@ class ThirdOrderMiura(SemiLagrangianTracerFlux):
             p_tracer_now=p_tracer_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
             p_mass_flx_e=prep_adv.mass_flx_me,
+            p_vn=prep_adv.vn_traj,
             rhodz_now=rhodz_now,
             rhodz_new=rhodz_new,
             dtime=dtime,
@@ -1319,6 +1455,7 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
             p_tracer_now=p_tracer_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
             p_mass_flx_e=prep_adv.mass_flx_me,
+            p_vn=prep_adv.vn_traj,
             rhodz_now=rhodz_now,
             rhodz_new=rhodz_new,
             dtime=dtime,
@@ -1867,6 +2004,7 @@ class SubcycledSecondOrderMiura(FiniteVolume):
                 p_tracer_now=self._z_tracer[now],
                 p_mflx_tracer_h=self._z_tracer_mflx[substep],
                 p_mass_flx_e=prep_adv.mass_flx_me,
+                p_vn=prep_adv.vn_traj,
                 rhodz_now=self._z_rho[now],
                 rhodz_new=self._z_rho[new],
                 dtime=dtsub,

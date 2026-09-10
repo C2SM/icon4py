@@ -12,7 +12,7 @@ import dataclasses
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any
+from typing import Any, Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -94,6 +94,21 @@ class HorizontalAdvectionLimiter(Enum):
     MONOTONIC = 3
     #: positive definite horizontal limiter
     POSITIVE_DEFINITE = 4
+    #: Jocksch's cell-local positive definite limiter (reconstruction clamp plus outflow
+    #: scaling inside the flux kernel, paper Algorithm 1). In his Fortran this is what
+    #: itype_hlimit=4 means inside the schemes 102/103/132/202/203, where the call of
+    #: ICON's hflx_limiter_pd is commented out; the value here is icon4py's own, chosen
+    #: not to collide with any ICON itype_hlimit
+    CELL_LOCAL_POSITIVE_DEFINITE = 104
+
+
+#: the schemes in which the Fortran's itype_hlimit=4 is Jocksch's cell-local limiter
+_JOCKSCH_SCHEMES: Final = frozenset(
+    {
+        HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO,
+        HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO,
+    }
+)
 
 
 @config_io.register_enum
@@ -148,17 +163,35 @@ class AdvectionConfig:
                 "'monotonic_limiter_boost_factor' must be in [1, 2), but is "
                 f"{self.monotonic_limiter_boost_factor}."
             )
+        if (
+            self.horizontal_advection_limiter
+            == HorizontalAdvectionLimiter.CELL_LOCAL_POSITIVE_DEFINITE
+            and self.horizontal_advection_type not in _JOCKSCH_SCHEMES
+        ):
+            raise ValueError(
+                "'CELL_LOCAL_POSITIVE_DEFINITE' exists only inside Jocksch's schemes "
+                f"({', '.join(sorted(s.name for s in _JOCKSCH_SCHEMES))}), not in "
+                f"'{self.horizontal_advection_type.name}'."
+            )
 
     @classmethod
     def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> AdvectionConfig:
         transport_nml = atmo_dict["transport_nml"]
+        horizontal_advection_type = HorizontalAdvectionType(
+            fortran_config.list_to_value(transport_nml["ihadv_tracer"])
+        )
+        itype_hlimit = fortran_config.list_to_value(transport_nml["itype_hlimit"])
+        # inside his schemes itype_hlimit=4 (ifluxl_sm) is his cell-local limiter, not
+        # ICON's hflx_limiter_pd (mo_advection_hflux.f90 3092, call commented out)
+        horizontal_advection_limiter = (
+            HorizontalAdvectionLimiter.CELL_LOCAL_POSITIVE_DEFINITE
+            if itype_hlimit == HorizontalAdvectionLimiter.POSITIVE_DEFINITE.value
+            and horizontal_advection_type in _JOCKSCH_SCHEMES
+            else HorizontalAdvectionLimiter(itype_hlimit)
+        )
         return cls(
-            horizontal_advection_type=HorizontalAdvectionType(
-                fortran_config.list_to_value(transport_nml["ihadv_tracer"])
-            ),
-            horizontal_advection_limiter=HorizontalAdvectionLimiter(
-                fortran_config.list_to_value(transport_nml["itype_hlimit"])
-            ),
+            horizontal_advection_type=horizontal_advection_type,
+            horizontal_advection_limiter=horizontal_advection_limiter,
             vertical_advection_type=VerticalAdvectionType(
                 fortran_config.list_to_value(transport_nml["ivadv_tracer"])
             ),
@@ -521,6 +554,13 @@ def _convert_config_to_horizontal_limiter(
                 interpolation_state=interpolation_state,
                 backend=backend,
                 exchange=exchange,
+            )
+        case HorizontalAdvectionLimiter.CELL_LOCAL_POSITIVE_DEFINITE:
+            # AdvectionConfig.__post_init__ restricts this limiter to Jocksch's schemes
+            return tracer_advection_horizontal.CellLocalPositiveDefinite(
+                grid=grid,
+                interpolation_state=interpolation_state,
+                backend=backend,
             )
         case _:
             raise NotImplementedError("Unknown horizontal tracer advection limiter.")
