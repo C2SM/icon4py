@@ -506,6 +506,19 @@ def _moment_increments(
     return z_dist, moments_hat - lsq_moments[:, array_ns.newaxis, :]
 
 
+def _full_stencil_design_quadratic(
+    z_dist: data_alloc.NDArray, diff: data_alloc.NDArray
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    """(row weights, weighted design matrix) of the full 9-row fit, (n_cells, 9) / (n_cells, 9, 5).
+
+    f90 2294-2300: z_lsq_mat_c[js, ju] = lsq_weights_c[js] * (moments_hat[js, ju] -
+    moments[ju]), with the max-normalised 1/dist**5 weights.
+    """
+    array_ns = data_alloc.array_namespace(diff)
+    full_weights = interpolation_fields.compute_lsq_weights_c(z_dist, LSQ_WGT_EXP_QUADRATIC)
+    return full_weights, full_weights[:, :, array_ns.newaxis] * diff
+
+
 def _full_stencil_pseudoinverse_quadratic(
     z_dist: data_alloc.NDArray, diff: data_alloc.NDArray
 ) -> data_alloc.NDArray:
@@ -516,8 +529,7 @@ def _full_stencil_pseudoinverse_quadratic(
     """
     array_ns = data_alloc.array_namespace(diff)
     n_cells = diff.shape[0]
-    full_weights = interpolation_fields.compute_lsq_weights_c(z_dist, LSQ_WGT_EXP_QUADRATIC)
-    full_design = full_weights[:, :, array_ns.newaxis] * diff
+    full_weights, full_design = _full_stencil_design_quadratic(z_dist, diff)
     return interpolation_fields.compute_lsq_pseudoinv(
         cell_owner_mask=array_ns.ones(n_cells, dtype=bool),
         z_lsq_mat_c=full_design,
@@ -593,6 +605,61 @@ def compute_lsq_pseudoinverse_quadratic(
         domain_height=domain_height,
     )
     return _full_stencil_pseudoinverse_quadratic(z_dist, diff)
+
+
+def compute_lsq_error_quadratic(
+    *,
+    stencil_c9: data_alloc.NDArray,
+    lsq_moments: data_alloc.NDArray,
+    cell_center_x: data_alloc.NDArray,
+    cell_center_y: data_alloc.NDArray,
+    domain_length: float,
+    domain_height: float,
+) -> data_alloc.NDArray:
+    """ICON's 'lsq_error' of the full-stencil quadratic fit, (n_cells, 5, 9), single precision.
+
+    Despite its name it is the transposed, distance-weighted design matrix of the fit,
+    A_w^T with A_w[js, ju] = w[js] * (moments_hat[js, ju] - moments[ju]), stored as
+    REAL(sp) (f90 2459 with 2294-2300; mo_intp_data_strc.f90 83). The hybrid scheme
+    (ihadv_tracer=132) uses it for the residual of the fit, sum_js (A_w[js] . c - z_b[js])^2
+    (mo_advection_hflux.f90 3565-3568), against the *unweighted* increments z_b: that
+    mismatch is the Fortran's, kept as is. Same layout as 'compute_lsq_pseudoinverse_
+    quadratic', so 'scatter_to_offsets' applies.
+    """
+    array_ns = data_alloc.array_namespace(lsq_moments)
+    z_dist, diff = _moment_increments(
+        stencil_c9=stencil_c9,
+        lsq_moments=lsq_moments,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    _, full_design = _full_stencil_design_quadratic(z_dist, diff)
+    return full_design.swapaxes(1, 2).astype(array_ns.float32)
+
+
+def compute_butterfly_slot_mask(
+    *,
+    stencil_c9: data_alloc.NDArray,
+    c2e2c: data_alloc.NDArray,
+    c2e2c2e2c: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    """1 on the C2E2C2E2C slots that carry an outer stencil cell, 0 elsewhere, (n_cells, 9).
+
+    The complement of the zero padding 'scatter_to_offsets' puts on the slots holding the
+    centre cell or a duplicated direct neighbour; a residual over the butterfly rows must
+    drop those slots, whereas a coefficient contraction is blind to them.
+    """
+    array_ns = data_alloc.array_namespace(stencil_c9)
+    n_cells = stencil_c9.shape[0]
+    _, butterfly = scatter_to_offsets(
+        values_fortran_order=array_ns.ones((n_cells, 1, 1, 9), dtype=ta.wpfloat),
+        stencil_c9=stencil_c9,
+        c2e2c=c2e2c,
+        c2e2c2e2c=c2e2c2e2c,
+    )
+    return butterfly[:, 0, 0, :]
 
 
 def compute_weno_pseudoinverse_quadratic(

@@ -191,6 +191,34 @@ class AdvectionWenoQuadraticState:
 
 
 @dataclasses.dataclass(frozen=True)
+class AdvectionWenoHybridState:
+    """Represents the hybrid quadratic / quadratic-WENO state (ihadv_tracer=132).
+
+    The hybrid reconstructs every cell with the full 9-point pseudoinverse of miura3 and
+    decides from the residual of that fit whether to keep it or to blend the 27 WENO
+    candidates, so it carries both states plus ICON's 'lsq_error' (the transposed weighted
+    design matrix, single precision, weno_least_squares.compute_lsq_error_quadratic)
+    scattered onto the C2E2C / C2E2C2E2C rows like the pseudoinverses, and the mask of the
+    butterfly slots that carry a stencil cell (compute_butterfly_slot_mask). The geometry
+    fields of the two states are the same data.
+    """
+
+    weno_quadratic_state: AdvectionWenoQuadraticState
+    quadratic_state: AdvectionQuadraticState
+
+    # lsq_error rows on the direct neighbours, [5 unknowns]
+    lsq_error_direct: tuple[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32], ...]
+
+    # lsq_error rows on the butterfly slots, [5 unknowns]
+    lsq_error_butterfly: tuple[
+        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32], ...
+    ]
+
+    # 1 on the butterfly slots holding an outer stencil cell, 0 on the padding slots
+    lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32]
+
+
+@dataclasses.dataclass(frozen=True)
 class AdvectionMetricState:
     """Represents the metric fields needed in tracer_advection.
 

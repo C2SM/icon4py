@@ -9,8 +9,10 @@
 import logging
 import math
 from abc import ABC, abstractmethod
+from typing import Final
 
 import gt4py.next as gtx
+import numpy as np
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
@@ -77,6 +79,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definit
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_upwind_and_antidiffusive_flux import (
     compute_upwind_and_antidiffusive_flux,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_weno_hybrid_stencil_selection import (
+    compute_weno_hybrid_stencil_selection,
+)
 from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field import (
     copy_cell_kdim_field,
 )
@@ -106,6 +111,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coeff
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_quadratic_coefficients_svd import (
     reconstruct_quadratic_coefficients_svd,
+)
+from icon4py.model.atmosphere.tracer_advection.stencils.select_horizontal_tracer_flux_by_upwind_cell import (
+    select_horizontal_tracer_flux_by_upwind_cell,
 )
 from icon4py.model.common import (
     constants,
@@ -1450,6 +1458,199 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
             p_tracer_now=p_tracer_now, l_weights_s=self._weno_quadratic_state.l_weights_s
         )
         self._compute_weno_flux(prep_adv=prep_adv, p_out_e=p_mflx_tracer_h)
+
+        self._horizontal_limiter.apply_flux_limiter(
+            p_tracer_now=p_tracer_now,
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            p_mass_flx_e=prep_adv.mass_flx_me,
+            p_vn=prep_adv.vn_traj,
+            rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
+            dtime=dtime,
+        )
+
+        log.debug("horizontal tracer flux computation - end")
+
+
+#: the Fortran's single-precision literals in the selection test (f90 3574), as the
+#: doubles they are promoted to
+_HYBRID_SELECTION_EPS: Final = float(np.float32(1e-10))
+
+
+class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
+    """Hybrid of the quadratic reconstruction and its 27-candidate WENO blend (ihadv_tracer=132).
+
+    Port of upwind_hflux_miura_weno_hyb (mo_advection_hflux.f90 3136-3798), live path:
+    every cell gets the full 9-point quadratic fit of miura3; where the fit's residual
+    (paper eq. 6; 'compute_weno_hybrid_stencil_selection') exceeds the threshold, the
+    edges of that (upwind) cell take the WENO flux instead. The WENO branch is the
+    103 kernel except for its linear weights: the hybrid weights every candidate with
+    ``1.0_wp / (smoothness + 1d-20)**2`` (f90 3666), i.e. d_j = 1 at run time, while
+    the candidate pseudoinverses keep whichever set they were assembled with. Both
+    fluxes are computed on all edges here and selected per edge by the upwind cell's
+    mask; the Fortran computes one or the other.
+
+    The residual test in the Fortran mixes kinds: the residual is single precision and
+    the constants are single-precision literals promoted to double, so the configured
+    threshold is rounded to single precision before use.
+    """
+
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        weno_hybrid_state: tracer_advection_states.AdvectionWenoHybridState,
+        backend: gtx.typing.Backend | None,
+        horizontal_limiter: HorizontalFluxLimiter | None = None,
+        selection_threshold: float = 5e-5,
+    ):
+        super().__init__(
+            grid=grid,
+            weno_quadratic_state=weno_hybrid_state.weno_quadratic_state,
+            backend=backend,
+            horizontal_limiter=horizontal_limiter,
+        )
+        self._weno_hybrid_state = weno_hybrid_state
+        self._selection_threshold = float(np.float32(selection_threshold))
+
+        allocator = model_backends.get_allocator(self._backend)
+        self._use_weno = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, dtype=bool, allocator=allocator
+        )
+        self._p_flux_weno = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
+        )
+
+        cell_sizes = {
+            "horizontal_start": self._start_cell_lateral_boundary_level_2,
+            "horizontal_end": self._end_cell_halo,
+        }
+        edge_sizes = {
+            "horizontal_start": self._start_edge_lateral_boundary_level_5,
+            "horizontal_end": self._end_edge_halo,
+        }
+        vertical_sizes = {
+            "vertical_start": gtx.int32(0),
+            "vertical_end": gtx.int32(self._grid.num_levels),
+        }
+        quadratic_state = weno_hybrid_state.quadratic_state
+        self._reconstruct_full_quadratic_coefficients_svd = model_options.setup_program(
+            backend=self._backend,
+            program=reconstruct_quadratic_coefficients_svd,
+            constant_args={
+                "lsq_moments_1": quadratic_state.lsq_moments_1,
+                "lsq_moments_2": quadratic_state.lsq_moments_2,
+                "lsq_moments_3": quadratic_state.lsq_moments_3,
+                "lsq_moments_4": quadratic_state.lsq_moments_4,
+                "lsq_moments_5": quadratic_state.lsq_moments_5,
+                **{
+                    f"lsq_pseudoinv_direct_{u + 1}": quadratic_state.lsq_pseudoinv_direct[u]
+                    for u in range(5)
+                },
+                **{
+                    f"lsq_pseudoinv_butterfly_{u + 1}": quadratic_state.lsq_pseudoinv_butterfly[u]
+                    for u in range(5)
+                },
+            },
+            horizontal_sizes=cell_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_weno_hybrid_stencil_selection = model_options.setup_program(
+            backend=self._backend,
+            program=compute_weno_hybrid_stencil_selection,
+            constant_args={
+                **{
+                    f"lsq_error_direct_{u + 1}": weno_hybrid_state.lsq_error_direct[u]
+                    for u in range(5)
+                },
+                **{
+                    f"lsq_error_butterfly_{u + 1}": weno_hybrid_state.lsq_error_butterfly[u]
+                    for u in range(5)
+                },
+                "lsq_butterfly_active": weno_hybrid_state.lsq_butterfly_active,
+                "selection_threshold": self._selection_threshold,
+                "selection_eps": _HYBRID_SELECTION_EPS,
+            },
+            horizontal_sizes=cell_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_horizontal_tracer_flux_from_quadratic_coefficients = (
+            model_options.setup_program(
+                backend=self._backend,
+                program=compute_horizontal_tracer_flux_from_quadratic_coefficients,
+                horizontal_sizes=edge_sizes,
+                vertical_sizes=vertical_sizes,
+                offset_provider=self._grid.connectivities,
+            )
+        )
+        self._select_horizontal_tracer_flux_by_upwind_cell = model_options.setup_program(
+            backend=self._backend,
+            program=select_horizontal_tracer_flux_by_upwind_cell,
+            horizontal_sizes=edge_sizes,
+            vertical_sizes=vertical_sizes,
+            offset_provider=self._grid.connectivities,
+        )
+
+    def compute_tracer_flux(
+        self,
+        *,
+        prep_adv: adv_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
+        p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
+        p_vt: fa.EdgeKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None:
+        # p_distv_bary_* are unused: miura3 integrates over the full departure region
+        log.debug("horizontal tracer flux computation - start")
+
+        self._compute_departure_regions(prep_adv=prep_adv, p_vt=p_vt, dtime=dtime)
+
+        # the full-stencil fit (f90 3548-3562) and its residual test (f90 3563-3574)
+        log.debug("running stencil reconstruct_quadratic_coefficients_svd - start")
+        self._reconstruct_full_quadratic_coefficients_svd(p_cc=p_tracer_now, **self._p_coeffs)
+        log.debug("running stencil reconstruct_quadratic_coefficients_svd - end")
+        log.debug("running stencil compute_weno_hybrid_stencil_selection - start")
+        self._compute_weno_hybrid_stencil_selection(
+            p_cc=p_tracer_now,
+            **{f"p_coeff_{c}": self._p_coeffs[f"p_coeff_{c}_dsl"] for c in (2, 3, 4, 5, 6)},
+            use_weno=self._use_weno,
+        )
+        log.debug("running stencil compute_weno_hybrid_stencil_selection - end")
+
+        # the plain branch (f90 3575-3582, 3690-3696): the fit itself on all three edges
+        log.debug(
+            "running stencil compute_horizontal_tracer_flux_from_quadratic_coefficients - start"
+        )
+        self._compute_horizontal_tracer_flux_from_quadratic_coefficients(
+            **{f"p_coeff_{c}": self._p_coeffs[f"p_coeff_{c}_dsl"] for c in (1, 2, 3, 4, 5, 6)},
+            p_cell_rel_idx_dsl=self._p_cell_rel_idx_dsl,
+            **self._quad_vector_sums,
+            p_mass_flx_e=prep_adv.mass_flx_me,
+            p_out_e=p_mflx_tracer_h,
+        )
+        log.debug(
+            "running stencil compute_horizontal_tracer_flux_from_quadratic_coefficients - end"
+        )
+
+        # the WENO branch (f90 3625-3688) with unit linear weights (f90 3666)
+        self._accumulate_weno_candidates(p_tracer_now=p_tracer_now, l_weights_s=(1.0,) * 27)
+        self._compute_weno_flux(prep_adv=prep_adv, p_out_e=self._p_flux_weno)
+
+        # per edge, the branch its upwind cell chose
+        log.debug("running stencil select_horizontal_tracer_flux_by_upwind_cell - start")
+        self._select_horizontal_tracer_flux_by_upwind_cell(
+            use_first=self._use_weno,
+            p_cell_rel_idx_dsl=self._p_cell_rel_idx_dsl,
+            p_flux_first=self._p_flux_weno,
+            p_flux_second=p_mflx_tracer_h,
+            p_out_e=p_mflx_tracer_h,
+        )
+        log.debug("running stencil select_horizontal_tracer_flux_by_upwind_cell - end")
 
         self._horizontal_limiter.apply_flux_limiter(
             p_tracer_now=p_tracer_now,

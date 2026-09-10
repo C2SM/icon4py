@@ -80,6 +80,9 @@ class HorizontalAdvectionType(Enum):
     LINEAR_2ND_ORDER_WENO = 102
     #: 3rd order MIURA with quadratic reconstruction and WENO candidate blending
     QUADRATIC_3RD_ORDER_WENO = 103
+    #: 3rd order MIURA with quadratic reconstruction, switching per cell to the WENO
+    #: candidate blending where the residual of the quadratic fit is large
+    QUADRATIC_3RD_ORDER_WENO_HYBRID = 132
 
 
 @config_io.register_enum
@@ -107,6 +110,7 @@ _JOCKSCH_SCHEMES: Final = frozenset(
     {
         HorizontalAdvectionType.LINEAR_2ND_ORDER_WENO,
         HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO,
+        HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO_HYBRID,
     }
 )
 
@@ -156,6 +160,10 @@ class AdvectionConfig:
     #: "WENO d_j = 1", see 'weno_least_squares.WenoLinearWeights'); the init-time WENO
     #: state must be built with the same set, 'weno_least_squares.linear_weights'
     weno_linear_weights: WenoLinearWeights = WenoLinearWeights.OPTIMIZED
+    #: c_sel of the hybrid scheme (paper eq. 6): cells whose quadratic-fit residual exceeds
+    #: this fraction of (q + 1e-10)^2 take the WENO blend; the Fortran literal is single
+    #: precision, and the value is rounded to single precision before use
+    weno_hybrid_selection_threshold: float = 5e-5
 
     def __post_init__(self) -> None:
         if not 1.0 <= self.monotonic_limiter_boost_factor < 2.0:
@@ -499,13 +507,14 @@ def _monotonic_limiter_beta_fct(config: AdvectionConfig) -> float:
     """How far the monotonic limiter may overshoot the local range, per scheme.
 
     Fortran passes ``opt_beta_fct`` to ``hflx_limiter_mo`` only from the schemes built on
-    the quadratic reconstruction (mo_advection_hflux.f90:3083 and :4810); the ones built on
+    the quadratic reconstruction (mo_advection_hflux.f90:3083, :3765 and :4810); the ones built on
     the linear reconstruction (:1606 and :1990) leave it at the routine's own default of 1,
     which is a strictly monotonic limiter.
     """
     quadratic_reconstruction = {
         HorizontalAdvectionType.QUADRATIC_3RD_ORDER,
         HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO,
+        HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO_HYBRID,
     }
     return (
         config.monotonic_limiter_boost_factor
@@ -580,6 +589,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     quadratic_state: tracer_advection_states.AdvectionQuadraticState | None = None,
     weno_linear_state: tracer_advection_states.AdvectionWenoLinearState | None = None,
     weno_quadratic_state: tracer_advection_states.AdvectionWenoQuadraticState | None = None,
+    weno_hybrid_state: tracer_advection_states.AdvectionWenoHybridState | None = None,
 ) -> tuple[
     tracer_advection_horizontal.HorizontalAdvection, tracer_advection_vertical.VerticalAdvection
 ]:
@@ -698,6 +708,29 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 cell_params=cell_params,
                 backend=backend,
             )
+        case HorizontalAdvectionType.QUADRATIC_3RD_ORDER_WENO_HYBRID:
+            if weno_hybrid_state is None:
+                raise ValueError(
+                    "Horizontal advection type 'QUADRATIC_3RD_ORDER_WENO_HYBRID' requires "
+                    "'weno_hybrid_state'."
+                )
+            _check_weno_linear_weights(config, weno_hybrid_state.weno_quadratic_state)
+            tracer_flux = tracer_advection_horizontal.ThirdOrderMiuraWenoHybrid(
+                grid=grid,
+                weno_hybrid_state=weno_hybrid_state,
+                horizontal_limiter=horizontal_limiter,
+                backend=backend,
+                selection_threshold=config.weno_hybrid_selection_threshold,
+            )
+            horizontal_advection = tracer_advection_horizontal.SemiLagrangian(
+                tracer_flux=tracer_flux,
+                grid=grid,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                cell_params=cell_params,
+                backend=backend,
+            )
         case _:
             raise NotImplementedError("Unknown horizontal tracer_advection type.")
 
@@ -758,6 +791,7 @@ def convert_config_to_advection(
     quadratic_state: tracer_advection_states.AdvectionQuadraticState | None = None,
     weno_linear_state: tracer_advection_states.AdvectionWenoLinearState | None = None,
     weno_quadratic_state: tracer_advection_states.AdvectionWenoQuadraticState | None = None,
+    weno_hybrid_state: tracer_advection_states.AdvectionWenoHybridState | None = None,
 ) -> Advection:
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
@@ -779,6 +813,7 @@ def convert_config_to_advection(
         quadratic_state=quadratic_state,
         weno_linear_state=weno_linear_state,
         weno_quadratic_state=weno_quadratic_state,
+        weno_hybrid_state=weno_hybrid_state,
     )
 
     advection = GodunovSplittingAdvection(
