@@ -210,19 +210,6 @@ class DriverConfig:
             ),
         ),
     ] = False
-    do_prep_adv: typing.Annotated[
-        bool,
-        common_conf_opt.ConfigOption(
-            description="No description available yet.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="ltransport",
-                path=(
-                    "model_cfg",
-                    "run_nml",
-                ),
-            ),
-        ),
-    ] = False  # lprep_adv in fortran
     diffuse_before_time_loop: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(

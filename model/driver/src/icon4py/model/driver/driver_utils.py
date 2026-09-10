@@ -618,7 +618,6 @@ def display_driver_setup_in_log_file(
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
-    log.info(f"Prepare advection      : {config.do_prep_adv}")
     log.info(f"Initial diffusion      : {config.diffuse_before_time_loop}")
     log.info(f"Statistics enabled     : {config.enable_statistics_logging}")
     log.info(f"Active tracers         : {tracer_config}")
