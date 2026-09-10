@@ -67,3 +67,22 @@ backend; pre-commit needs `GIT_HTTP_PROXY_AUTHMETHOD=basic PRE_COMMIT_HOME=<writ
 git identity via `GIT_AUTHOR_*`/`GIT_COMMITTER_*`; `source env.sh`/`setup.sh` die on
 seccomp (`set +o privileged`) — use `icon-ajocksch/build_serialize/build.sh`; SLURM only
 `--partition=debug`, env set inside job scripts; one pytest at a time.
+
+## Experiment details worth knowing (established 2026-09-10)
+
+- Normal convention: icon4py's `EDGE_NORMAL_U/V` (primal normal, cell 1 → cell 2) has dot
+  product +1 with Andreas' edge-vector construction `(-Δy, Δx)/|e|` on all 1320 edges of the
+  generated grid, so `mass_flx_me = u·n_x + v·n_y` is his flux.
+- dt is exactly 1000 s in Python; his `(a/2)·1.9999999999·CFL` is 999.99999995 s (5 µm of
+  displacement over 100 steps).
+- His pair sum excludes pairs whose raw centre distance is ≥ 5000 m (i.e. across the periodic
+  wrap); the Python test prints both that and the all-pairs sum (= 3·Σe²); they differ at 1e-4.
+- Five vertical levels (the metrics factory fails below three); columns are identical.
+- On Andreas' grid `mass_flx_me ≥ 0` on every edge (8800 positive, 4400 zero) — the condition
+  his cell-local PD limiter needs. On the generated grid 440 slanted edges have `vn < 0`.
+- The paper's Table 2 numbers are `sqrt(Σe²)`; his printed `#` number is the pair sum (3·Σe²);
+  the paper truncates rather than rounds.
+- Fortran reference sets: `weno_data/reference/<case>/` (generated grid; `_centred` = cylinder
+  at (L/2, H/2), which is what the Python default centre reproduces) and
+  `weno_data/reference/jocksch_grid/<case>/` (his grid, definitive; includes `_dj1` =
+  hand-tuned weights and `_ones` = paper's d_j = 1).
