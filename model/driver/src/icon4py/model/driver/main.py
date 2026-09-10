@@ -31,7 +31,16 @@ app = typer.Typer(no_args_is_help=True)
 def main(
     *,
     grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
-    config_file_path: Annotated[pathlib.Path, typer.Option(help="Configuration file path.")],
+    config_file_path: Annotated[
+        pathlib.Path,
+        typer.Option(
+            help=(
+                "YAML configuration file path. Please use "
+                "'scripts/python/convert_fortran_config_to_yaml.py' to generate one from a "
+                "directory of Fortran namelists if you need to convert from Fortran namelists."
+            )
+        ),
+    ],
     output_path: Annotated[
         pathlib.Path | None,
         typer.Option(help="Optional override output path. Normally read from config."),
@@ -81,9 +90,9 @@ def main(
     """
     CLI entry point that runs the icon4py driver.
 
-    The configuration is read from ``config_file_path``, the driver is
-    initialized, an initial condition is generated, and the time integration is
-    run.
+    The configuration is read from the YAML file at ``config_file_path``, the
+    driver is initialized, an initial condition is generated, and the time
+    integration is run.
     """
 
     backend = model_options.customize_backend(
@@ -100,7 +109,7 @@ def main(
         process_props=process_props,
     )
 
-    config = driver_config.read_experiment_config_from_fortran(config_file_path)
+    config = driver_config.read_experiment_config_from_yaml(config_file_path)
     driver_overrides: dict[str, object] = {
         "enable_output": enable_output,
         "output_backend": output_backend,

@@ -496,6 +496,10 @@ def read_experiment_config_from_fortran(
     )
 
 
+def read_experiment_config_from_yaml(config_file_path: pathlib.Path) -> ExperimentConfig:
+    return config_io.read_yaml_str(config_file_path.read_text(), ExperimentConfig)
+
+
 def prepare_output_directory(
     config_output_path: pathlib.Path,
     cli_output_path: pathlib.Path | None,
