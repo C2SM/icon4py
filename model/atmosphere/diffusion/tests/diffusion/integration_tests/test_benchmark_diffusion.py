@@ -70,37 +70,37 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     mesh = grid_manager.grid
 
     cell_geometry = grid_states.CellParams(
-        cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
-        cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
-        area=geometry_field_source.get(geometry_meta.CELL_AREA),
+        cell_center_lat=geometry_field_source.export_field(geometry_meta.CELL_LAT),
+        cell_center_lon=geometry_field_source.export_field(geometry_meta.CELL_LON),
+        area=geometry_field_source.export_field(geometry_meta.CELL_AREA),
     )
     edge_geometry = grid_states.EdgeParams(
-        edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
-        edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
-        tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
-        coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
-        edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
-        primal_edge_lengths=geometry_field_source.get(geometry_meta.EDGE_LENGTH),
-        inverse_primal_edge_lengths=geometry_field_source.get(
+        edge_center_lat=geometry_field_source.export_field(geometry_meta.EDGE_LAT),
+        edge_center_lon=geometry_field_source.export_field(geometry_meta.EDGE_LON),
+        tangent_orientation=geometry_field_source.export_field(geometry_meta.TANGENT_ORIENTATION),
+        coriolis_frequency=geometry_field_source.export_field(geometry_meta.CORIOLIS_PARAMETER),
+        edge_areas=geometry_field_source.export_field(geometry_meta.EDGE_AREA),
+        primal_edge_lengths=geometry_field_source.export_field(geometry_meta.EDGE_LENGTH),
+        inverse_primal_edge_lengths=geometry_field_source.export_field(
             f"inverse_of_{geometry_meta.EDGE_LENGTH}"
         ),
-        dual_edge_lengths=geometry_field_source.get(geometry_meta.DUAL_EDGE_LENGTH),
-        inverse_dual_edge_lengths=geometry_field_source.get(
+        dual_edge_lengths=geometry_field_source.export_field(geometry_meta.DUAL_EDGE_LENGTH),
+        inverse_dual_edge_lengths=geometry_field_source.export_field(
             f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
         ),
-        inverse_vertex_vertex_lengths=geometry_field_source.get(
+        inverse_vertex_vertex_lengths=geometry_field_source.export_field(
             f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
         ),
-        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
-        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
-        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
-        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-        primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
-        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
-        dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        primal_normal_x=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_U),
+        primal_normal_y=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_V),
+        primal_normal_cell_x=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_CELL_U),
+        primal_normal_cell_y=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_CELL_V),
+        primal_normal_vert_x=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_VERTEX_U),
+        primal_normal_vert_y=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        dual_normal_cell_x=geometry_field_source.export_field(geometry_meta.EDGE_TANGENT_CELL_U),
+        dual_normal_cell_y=geometry_field_source.export_field(geometry_meta.EDGE_TANGENT_CELL_V),
+        dual_normal_vert_x=geometry_field_source.export_field(geometry_meta.EDGE_TANGENT_VERTEX_U),
+        dual_normal_vert_y=geometry_field_source.export_field(geometry_meta.EDGE_NORMAL_VERTEX_V),
     )
 
     vertical_config = v_grid.VerticalGridConfig(
@@ -119,22 +119,22 @@ def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     )
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
-        rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
-        rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V2),
-        geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-        geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
-        geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
-        geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
-        nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
+        e_bln_c_s=interpolation_field_source.export_field(interpolation_attributes.E_BLN_C_S),
+        rbf_coeff_1=interpolation_field_source.export_field(interpolation_attributes.RBF_VEC_COEFF_V1),
+        rbf_coeff_2=interpolation_field_source.export_field(interpolation_attributes.RBF_VEC_COEFF_V2),
+        geofac_div=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_DIV),
+        geofac_n2s=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_N2S),
+        geofac_grg_x=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_GRG_X),
+        geofac_grg_y=interpolation_field_source.export_field(interpolation_attributes.GEOFAC_GRG_Y),
+        nudgecoeff_e=interpolation_field_source.export_field(interpolation_attributes.NUDGECOEFFS_E),
     )
 
     metric_state = diffusion_states.DiffusionMetricState(
-        theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
-        wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF),
-        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET),
-        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF),
+        theta_ref_mc=metrics_field_source.export_field(metrics_attributes.THETA_REF_MC),
+        wgtfac_c=metrics_field_source.export_field(metrics_attributes.WGTFAC_C),
+        zd_intcoef=metrics_field_source.export_field(metrics_attributes.ZD_INTCOEF),
+        zd_vertoffset=metrics_field_source.export_field(metrics_attributes.ZD_VERTOFFSET),
+        zd_diffcoef=metrics_field_source.export_field(metrics_attributes.ZD_DIFFCOEF),
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(

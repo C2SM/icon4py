@@ -52,7 +52,7 @@ def test_geometry_raises_for_unknown_field(
 ) -> None:
     geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     with pytest.raises(ValueError, match="Field 'foo' not provided by the source"):
-        geometry.get("foo")
+        geometry.export_field("foo")
 
 
 @pytest.mark.parametrize(
@@ -72,7 +72,7 @@ def test_edge_control_area(
 ) -> None:
     expected = grid_savepoint.edge_areas()
     geometry_source = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
-    result = geometry_source.get(attrs.EDGE_AREA)
+    result = geometry_source.get_full_precision(attrs.EDGE_AREA)
     assert test_utils.dallclose(expected.asnumpy(), result.asnumpy(), rtol=rtol)
 
 
@@ -85,7 +85,7 @@ def test_coriolis_parameter(
     geometry_source = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     expected = grid_savepoint.f_e()
 
-    result = geometry_source.get(attrs.CORIOLIS_PARAMETER)
+    result = geometry_source.get_full_precision(attrs.CORIOLIS_PARAMETER)
     assert test_utils.dallclose(expected.asnumpy(), result.asnumpy())
 
 
@@ -97,7 +97,7 @@ def test_compute_edge_length(
 ) -> None:
     geometry_source = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     expected = grid_savepoint.primal_edge_length()
-    result = geometry_source.get(attrs.EDGE_LENGTH)
+    result = geometry_source.get_full_precision(attrs.EDGE_LENGTH)
     assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
 
 
@@ -109,7 +109,7 @@ def test_compute_inverse_edge_length(
 ) -> None:
     expected = grid_savepoint.inverse_primal_edge_lengths()
     geometry_source = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
-    computed = geometry_source.get(f"inverse_of_{attrs.EDGE_LENGTH}")
+    computed = geometry_source.get_full_precision(f"inverse_of_{attrs.EDGE_LENGTH}")
 
     assert test_utils.dallclose(computed.asnumpy(), expected.asnumpy())
 
@@ -123,7 +123,7 @@ def test_compute_dual_edge_length(
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
 
     expected = grid_savepoint.dual_edge_length()
-    result = grid_geometry.get(attrs.DUAL_EDGE_LENGTH)
+    result = grid_geometry.get_full_precision(attrs.DUAL_EDGE_LENGTH)
     assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
 
 
@@ -135,7 +135,7 @@ def test_compute_inverse_dual_edge_length(
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     expected = grid_savepoint.inv_dual_edge_length()
-    result = grid_geometry.get(f"inverse_of_{attrs.DUAL_EDGE_LENGTH}")
+    result = grid_geometry.get_full_precision(f"inverse_of_{attrs.DUAL_EDGE_LENGTH}")
 
     # compared to ICON we overcompute, so we only compare the values from LATERAL_BOUNDARY_LEVEL_2
     level = h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -161,7 +161,7 @@ def test_compute_inverse_vertex_vertex_length(
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
 
     expected = grid_savepoint.inv_vert_vert_length().asnumpy()
-    result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH).asnumpy()
+    result = grid_geometry.get_full_precision(attrs.INVERSE_VERTEX_VERTEX_LENGTH).asnumpy()
     assert test_utils.dallclose(result, expected, rtol=rtol)
 
 
@@ -172,12 +172,12 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     experiment: test_defs.Experiment,
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
-    x_normal = grid_geometry.get(attrs.EDGE_NORMAL_X)
-    y_normal = grid_geometry.get(attrs.EDGE_NORMAL_Y)
-    z_normal = grid_geometry.get(attrs.EDGE_NORMAL_Z)
-    x_tangent = grid_geometry.get(attrs.EDGE_TANGENT_X)
-    y_tangent = grid_geometry.get(attrs.EDGE_TANGENT_Y)
-    z_tangent = grid_geometry.get(attrs.EDGE_TANGENT_Z)
+    x_normal = grid_geometry.get_full_precision(attrs.EDGE_NORMAL_X)
+    y_normal = grid_geometry.get_full_precision(attrs.EDGE_NORMAL_Y)
+    z_normal = grid_geometry.get_full_precision(attrs.EDGE_NORMAL_Z)
+    x_tangent = grid_geometry.get_full_precision(attrs.EDGE_TANGENT_X)
+    y_tangent = grid_geometry.get_full_precision(attrs.EDGE_TANGENT_Y)
+    z_tangent = grid_geometry.get_full_precision(attrs.EDGE_TANGENT_Z)
 
     x_normal_ref = grid_savepoint.primal_cart_normal_x()
     y_normal_ref = grid_savepoint.primal_cart_normal_y()
@@ -200,8 +200,8 @@ def test_compute_primal_normals(
     experiment: test_defs.Experiment,
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
-    primal_normal_u = grid_geometry.get(attrs.EDGE_NORMAL_U)
-    primal_normal_v = grid_geometry.get(attrs.EDGE_NORMAL_V)
+    primal_normal_u = grid_geometry.get_full_precision(attrs.EDGE_NORMAL_U)
+    primal_normal_v = grid_geometry.get_full_precision(attrs.EDGE_NORMAL_V)
 
     primal_normal_u_ref = grid_savepoint.primal_normal_v1()
     primal_normal_v_ref = grid_savepoint.primal_normal_v2()
@@ -221,7 +221,7 @@ def test_tangent_orientation(
     experiment: test_defs.Experiment,
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
-    result = grid_geometry.get(attrs.TANGENT_ORIENTATION)
+    result = grid_geometry.get_full_precision(attrs.TANGENT_ORIENTATION)
     expected = grid_savepoint.tangent_orientation()
 
     assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
@@ -234,7 +234,7 @@ def test_cell_area(
     experiment: test_defs.Experiment,
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
-    result = grid_geometry.get(attrs.CELL_AREA)
+    result = grid_geometry.get_full_precision(attrs.CELL_AREA)
     expected = grid_savepoint.cell_areas()
 
     assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
@@ -249,8 +249,8 @@ def test_primal_normal_cell(
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     primal_normal_cell_u_ref = grid_savepoint.primal_normal_cell_x().asnumpy()
     primal_normal_cell_v_ref = grid_savepoint.primal_normal_cell_y().asnumpy()
-    primal_normal_cell_u = grid_geometry.get(attrs.EDGE_NORMAL_CELL_U)
-    primal_normal_cell_v = grid_geometry.get(attrs.EDGE_NORMAL_CELL_V)
+    primal_normal_cell_u = grid_geometry.get_full_precision(attrs.EDGE_NORMAL_CELL_U)
+    primal_normal_cell_v = grid_geometry.get_full_precision(attrs.EDGE_NORMAL_CELL_V)
 
     assert test_utils.dallclose(
         primal_normal_cell_u.asnumpy(),
@@ -273,8 +273,8 @@ def test_dual_normal_cell(
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     dual_normal_cell_u_ref = grid_savepoint.dual_normal_cell_x().asnumpy()
     dual_normal_cell_v_ref = grid_savepoint.dual_normal_cell_y().asnumpy()
-    dual_normal_cell_u = grid_geometry.get(attrs.EDGE_TANGENT_CELL_U)
-    dual_normal_cell_v = grid_geometry.get(attrs.EDGE_TANGENT_CELL_V)
+    dual_normal_cell_u = grid_geometry.get_full_precision(attrs.EDGE_TANGENT_CELL_U)
+    dual_normal_cell_v = grid_geometry.get_full_precision(attrs.EDGE_TANGENT_CELL_V)
 
     assert test_utils.dallclose(dual_normal_cell_u.asnumpy(), dual_normal_cell_u_ref, atol=1e-12)
     assert test_utils.dallclose(dual_normal_cell_v.asnumpy(), dual_normal_cell_v_ref, atol=1e-12)
@@ -289,8 +289,8 @@ def test_primal_normal_vert(
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     primal_normal_vert_u_ref = grid_savepoint.primal_normal_vert_x().asnumpy()
     primal_normal_vert_v_ref = grid_savepoint.primal_normal_vert_y().asnumpy()
-    primal_normal_vert_u = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_U)
-    primal_normal_vert_v = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_V)
+    primal_normal_vert_u = grid_geometry.get_full_precision(attrs.EDGE_NORMAL_VERTEX_U)
+    primal_normal_vert_v = grid_geometry.get_full_precision(attrs.EDGE_NORMAL_VERTEX_V)
 
     assert test_utils.dallclose(
         primal_normal_vert_u.asnumpy(), primal_normal_vert_u_ref, atol=1e-12
@@ -309,8 +309,8 @@ def test_dual_normal_vert(
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     dual_normal_vert_u_ref = grid_savepoint.dual_normal_vert_x().asnumpy()
     dual_normal_vert_v_ref = grid_savepoint.dual_normal_vert_y().asnumpy()
-    dual_normal_vert_u = grid_geometry.get(attrs.EDGE_TANGENT_VERTEX_U)
-    dual_normal_vert_v = grid_geometry.get(attrs.EDGE_TANGENT_VERTEX_V)
+    dual_normal_vert_u = grid_geometry.get_full_precision(attrs.EDGE_TANGENT_VERTEX_U)
+    dual_normal_vert_v = grid_geometry.get_full_precision(attrs.EDGE_TANGENT_VERTEX_V)
 
     assert test_utils.dallclose(dual_normal_vert_u.asnumpy(), dual_normal_vert_u_ref, atol=1e-12)
     assert test_utils.dallclose(dual_normal_vert_v.asnumpy(), dual_normal_vert_v_ref, atol=1e-12)
@@ -324,9 +324,9 @@ def test_cartesian_centers_edge(
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = grid_geometry.grid
-    x = grid_geometry.get(attrs.EDGE_CENTER_X)
-    y = grid_geometry.get(attrs.EDGE_CENTER_Y)
-    z = grid_geometry.get(attrs.EDGE_CENTER_Z)
+    x = grid_geometry.get_full_precision(attrs.EDGE_CENTER_X)
+    y = grid_geometry.get_full_precision(attrs.EDGE_CENTER_Y)
+    z = grid_geometry.get_full_precision(attrs.EDGE_CENTER_Z)
 
     ser_x = grid_savepoint.edges_center_cart_x()
     ser_y = grid_savepoint.edges_center_cart_y()
@@ -363,9 +363,9 @@ def test_cartesian_centers_cell(
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = grid_geometry.grid
-    x = grid_geometry.get(attrs.CELL_CENTER_X)
-    y = grid_geometry.get(attrs.CELL_CENTER_Y)
-    z = grid_geometry.get(attrs.CELL_CENTER_Z)
+    x = grid_geometry.get_full_precision(attrs.CELL_CENTER_X)
+    y = grid_geometry.get_full_precision(attrs.CELL_CENTER_Y)
+    z = grid_geometry.get_full_precision(attrs.CELL_CENTER_Z)
 
     ser_x = grid_savepoint.cell_center_cart_x()
     ser_y = grid_savepoint.cell_center_cart_y()
@@ -402,9 +402,9 @@ def test_vertex(
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     grid = grid_geometry.grid
-    x = grid_geometry.get(attrs.VERTEX_X)
-    y = grid_geometry.get(attrs.VERTEX_Y)
-    z = grid_geometry.get(attrs.VERTEX_Z)
+    x = grid_geometry.get_full_precision(attrs.VERTEX_X)
+    y = grid_geometry.get_full_precision(attrs.VERTEX_Y)
+    z = grid_geometry.get_full_precision(attrs.VERTEX_Z)
 
     ser_x = grid_savepoint.verts_vertex_cart_x()
     ser_y = grid_savepoint.verts_vertex_cart_y()
@@ -525,7 +525,7 @@ def test_geometry_mean_fields(
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     value_ref = utils.GRID_REFERENCE_VALUES[experiment.grid.name][attr_name]
-    value = grid_geometry.get(attr_name)
+    value = grid_geometry.get_full_precision(attr_name)
     assert value == pytest.approx(value_ref)
 
 
@@ -552,8 +552,8 @@ def test_analytical_and_global_reduction_mean_fields_agree(
     )
     analytical_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, analytical_config)
     reduction_geometry = grid_utils.get_grid_geometry(backend, experiment.grid, reduction_config)
-    analytical_value = analytical_geometry.get(attr_name)
-    reduction_value = reduction_geometry.get(attr_name)
+    analytical_value = analytical_geometry.get_full_precision(attr_name)
+    reduction_value = reduction_geometry.get_full_precision(attr_name)
     match experiment.grid.params.geometry_type:
         case icon_grid.GeometryType.TORUS:
             rtol = 1e-15

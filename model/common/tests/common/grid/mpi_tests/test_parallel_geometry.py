@@ -82,7 +82,7 @@ def test_distributed_geometry_attrs(  # noqa: PLR0917 [too-many-positional-argum
     parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
-    field = geometry_from_savepoint.get(attrs_name).asnumpy()
+    field = geometry_from_savepoint.get_full_precision(attrs_name).asnumpy()
     lb = geometry_from_savepoint.grid.start_index(lb_domain)
     assert test_utils.dallclose(field[lb:], field_ref[lb:], atol=1e-12)
 
@@ -112,7 +112,7 @@ def test_distributed_geometry_attrs_for_inverse(  # noqa: PLR0917 [too-many-posi
     parallel_helpers.log_local_field_size(decomposition_info)
     grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
-    field = grid_geometry.get(attrs_name).asnumpy()
+    field = grid_geometry.get_full_precision(attrs_name).asnumpy()
     lb = grid_geometry.grid.start_index(lb_domain)
     assert test_utils.dallclose(field[lb:], field_ref[lb:], rtol=5e-10)
 
@@ -145,7 +145,7 @@ def test_geometry_attr_no_halos(  # noqa: PLR0917 [too-many-positional-arguments
     parallel_helpers.log_local_field_size(decomposition_info)
     grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
-    field = grid_geometry.get(attrs_name).asnumpy()
+    field = grid_geometry.get_full_precision(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, equal_nan=True, atol=1e-12)
 
 
@@ -175,9 +175,9 @@ def test_cartesian_geometry_attr_no_halos(  # noqa: PLR0917 [too-many-positional
     parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     grid_geometry = geometry_from_savepoint
-    x_field = grid_geometry.get(x)
-    y_field = grid_geometry.get(y)
-    z_field = grid_geometry.get(z)
+    x_field = grid_geometry.get_full_precision(x)
+    y_field = grid_geometry.get_full_precision(y)
+    z_field = grid_geometry.get_full_precision(z)
     match grid_geometry.grid.geometry_type:
         case icon_grid.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
@@ -215,5 +215,5 @@ def test_distributed_geometry_mean_fields(
     parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     value_ref = utils.GRID_REFERENCE_VALUES[experiment.grid.name][attr_name]
-    value = geometry_from_savepoint.get(attr_name)
+    value = geometry_from_savepoint.get_full_precision(attr_name)
     assert value == pytest.approx(value_ref)

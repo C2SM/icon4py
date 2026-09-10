@@ -118,7 +118,8 @@ class State(PhysicsState):
             offset_provider={},
         )
 
-        self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
+        #TODO(pstark): Probably dz (or it + others wrapped in a MuphysMetricState) should be an arg in State.__init__
+        self.dz = metrics.export_field(metrics_attributes.DDQZ_Z_FULL)
         self.rho: fa.CellKField[ta.wpfloat] | None = None
         self._tracers: tracer_states.TracerState | None = None
         self.te = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)

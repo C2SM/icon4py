@@ -126,10 +126,10 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
     geometry = gridtest_utils.get_grid_geometry(backend, experiment.grid, experiment.config)
     least_squares_coeffs = compute_lsq_coeffs(
-        cell_center_x=geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy(),
-        cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy(),
-        cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
-        cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
+        cell_center_x=geometry.get_full_precision(geometry_attrs.CELL_CENTER_X).asnumpy(),
+        cell_center_y=geometry.get_full_precision(geometry_attrs.CELL_CENTER_Y).asnumpy(),
+        cell_lat=geometry.get_full_precision(geometry_attrs.CELL_LAT).asnumpy(),
+        cell_lon=geometry.get_full_precision(geometry_attrs.CELL_LON).asnumpy(),
         c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
         cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
         domain_length=geometry.grid.grid_params.domain_length,

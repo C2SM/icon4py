@@ -104,7 +104,7 @@ def test_factory_nflat_gradp(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    value = factory.get(attrs.NFLAT_GRADP)
+    value = factory.get_full_precision(attrs.NFLAT_GRADP)
     assert value_ref == value
 
 
@@ -125,7 +125,7 @@ def test_factory_z_mc(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.Z_MC)
+    field = factory.get_full_precision(attrs.Z_MC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-10)
 
 
@@ -147,8 +147,8 @@ def test_factory_ddqz_z_and_inverse(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    inverse_field = factory.get(attrs.INV_DDQZ_Z_FULL)
-    field = factory.get(attrs.DDQZ_Z_FULL)
+    inverse_field = factory.get_full_precision(attrs.INV_DDQZ_Z_FULL)
+    field = factory.get_full_precision(attrs.DDQZ_Z_FULL)
     assert test_helpers.dallclose(inverse_field_ref.asnumpy(), inverse_field.asnumpy(), atol=1e-10)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-7)
 
@@ -169,7 +169,7 @@ def test_factory_ddqz_full_e(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.DDQZ_Z_FULL_E)
+    field = factory.get_full_precision(attrs.DDQZ_Z_FULL_E)
     assert test_helpers.dallclose(field_ref, field.asnumpy(), rtol=1e-8)
 
 
@@ -191,7 +191,7 @@ def test_factory_ddqz_z_half(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.DDQZ_Z_HALF)
+    field = factory.get_full_precision(attrs.DDQZ_Z_HALF)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
@@ -212,7 +212,7 @@ def test_factory_scaling_factor_for_3d_divdamp(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.SCALING_FACTOR_FOR_3D_DIVDAMP)
+    field = factory.get_full_precision(attrs.SCALING_FACTOR_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
@@ -233,7 +233,7 @@ def test_factory_rayleigh_w(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.RAYLEIGH_W)
+    field = factory.get_full_precision(attrs.RAYLEIGH_W)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
@@ -255,8 +255,8 @@ def test_factory_coeffs_dwdz(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field_1 = factory.get(attrs.COEFF1_DWDZ)
-    field_2 = factory.get(attrs.COEFF2_DWDZ)
+    field_1 = factory.get_full_precision(attrs.COEFF1_DWDZ)
+    field_2 = factory.get_full_precision(attrs.COEFF2_DWDZ)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1e-11)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-11)
 
@@ -279,8 +279,8 @@ def test_factory_ref_mc(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field_1 = factory.get(attrs.THETA_REF_MC)
-    field_2 = factory.get(attrs.EXNER_REF_MC)
+    field_1 = factory.get_full_precision(attrs.THETA_REF_MC)
+    field_2 = factory.get_full_precision(attrs.EXNER_REF_MC)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1e-9)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-10)
 
@@ -303,8 +303,8 @@ def test_factory_d2dexdz2_facs_mc(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field_1 = factory.get(attrs.D2DEXDZ2_FAC1_MC)
-    field_2 = factory.get(attrs.D2DEXDZ2_FAC2_MC)
+    field_1 = factory.get_full_precision(attrs.D2DEXDZ2_FAC1_MC)
+    field_2 = factory.get_full_precision(attrs.D2DEXDZ2_FAC2_MC)
     assert test_helpers.dallclose(field_1.asnumpy(), field_ref_1.asnumpy(), atol=1e-12)
     assert test_helpers.dallclose(field_2.asnumpy(), field_ref_2.asnumpy(), atol=1e-12)
 
@@ -325,7 +325,7 @@ def test_factory_ddxn_z_full(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.DDXN_Z_FULL)
+    field = factory.get_full_precision(attrs.DDXN_Z_FULL)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1e-8)
 
 
@@ -346,7 +346,7 @@ def test_factory_ddxt_z_full(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.DDXT_Z_FULL)
+    field = factory.get_full_precision(attrs.DDXT_Z_FULL)
     # TODO(halungge): these are the np.allclose default values: single precision
     assert test_helpers.dallclose(field.asnumpy(), field_ref, rtol=1.0e-5, atol=1.0e-8)
 
@@ -368,7 +368,7 @@ def test_factory_exner_w_implicit_weight_parameter(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER)
+    field = factory.get_full_precision(attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
@@ -389,7 +389,7 @@ def test_factory_exner_w_explicit_weight_parameter(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER)
+    field = factory.get_full_precision(attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
 
@@ -411,7 +411,7 @@ def test_factory_exner_exfac(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.EXNER_EXFAC)
+    field = factory.get_full_precision(attrs.EXNER_EXFAC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1e-8)
 
 
@@ -433,7 +433,7 @@ def test_factory_pressure_gradient_fields(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field_1 = factory.get(attrs.PG_EXDIST_DSL)
+    field_1 = factory.get_full_precision(attrs.PG_EXDIST_DSL)
     assert test_helpers.dallclose(field_1_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
 
 
@@ -453,7 +453,7 @@ def test_factory_mask_prog_halo_c(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.MASK_PROG_HALO_C)
+    field = factory.get_full_precision(attrs.MASK_PROG_HALO_C)
     assert (field_ref.asnumpy() == field.asnumpy()).all()
 
 
@@ -474,7 +474,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP)
+    field = factory.get_full_precision(attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
@@ -498,8 +498,8 @@ def test_factory_zdiff_gradp(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field_1 = factory.get(attrs.ZDIFF_GRADP)
-    field_2 = factory.get(attrs.VERTOFFSET_GRADP)
+    field_1 = factory.get_full_precision(attrs.ZDIFF_GRADP)
+    field_2 = factory.get_full_precision(attrs.VERTOFFSET_GRADP)
 
     # on the Fortran side, the vertidx_gradp is not initialized below start_lat_level2
     start_lat_level2 = factory._grid.start_index(
@@ -535,7 +535,7 @@ def test_factory_coeff_gradekin(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.COEFF_GRADEKIN)
+    field = factory.get_full_precision(attrs.COEFF_GRADEKIN)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
 
 
@@ -555,7 +555,7 @@ def test_factory_wgtfacq_c(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.WGTFACQ_C)
+    field = factory.get_full_precision(attrs.WGTFACQ_C)
     field_ref = metrics_savepoint.wgtfacq_c()
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
@@ -576,7 +576,7 @@ def test_factory_wgtfacq_e(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.WGTFACQ_E)
+    field = factory.get_full_precision(attrs.WGTFACQ_E)
     field_ref = metrics_savepoint.wgtfacq_e()
     # TODO: upgrade the dallclose such that it verifies the domain ranges.
     # This field is defined on k (nlev-3, nlev) an converting to numpy
@@ -600,7 +600,7 @@ def test_vertical_coordinates_on_half_levels(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.CELL_HEIGHT_ON_HALF_LEVEL)
+    field = factory.get_full_precision(attrs.CELL_HEIGHT_ON_HALF_LEVEL)
     field_ref = metrics_savepoint.z_ifc()
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
@@ -622,7 +622,7 @@ def test_compute_wgtfac_c(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.WGTFAC_C)
+    field = factory.get_full_precision(attrs.WGTFAC_C)
     field_ref = metrics_savepoint.wgtfac_c()
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
@@ -645,7 +645,7 @@ def test_factory_compute_diffusion_mask_and_coef(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field = factory.get(attrs.ZD_DIFFCOEF)
+    field = factory.get_full_precision(attrs.ZD_DIFFCOEF)
 
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-10)
 
@@ -669,7 +669,7 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    field_1 = factory.get(attrs.ZD_INTCOEF)
-    field_2 = factory.get(attrs.ZD_VERTOFFSET)
+    field_1 = factory.get_full_precision(attrs.ZD_INTCOEF)
+    field_2 = factory.get_full_precision(attrs.ZD_VERTOFFSET)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())

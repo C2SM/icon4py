@@ -343,8 +343,8 @@ def init_bubble(
             # ICON's plane_torus_distance does not actually wrap the warm bubble (its
             # periodic threshold is never met), so the distance is non-periodic here.
             horizontal_distance = distance_array_ns.horizontal_distance_to_point(
-                x=geometry.get(geometry_meta.CELL_CENTER_X).ndarray,
-                y=geometry.get(geometry_meta.CELL_CENTER_Y).ndarray,
+                x=geometry.get_full_precision(geometry_meta.CELL_CENTER_X).ndarray,
+                y=geometry.get_full_precision(geometry_meta.CELL_CENTER_Y).ndarray,
                 point_x=center_x,
                 point_y=center_y,
                 wrap=False,
@@ -353,8 +353,8 @@ def init_bubble(
             horizontal_distance = phy_const.EARTH_RADIUS * distance_array_ns.central_angle(
                 lon_center=math.radians(center_x),
                 lat_center=math.radians(center_y),
-                lon=geometry.get(geometry_meta.CELL_LON).ndarray,
-                lat=geometry.get(geometry_meta.CELL_LAT).ndarray,
+                lon=geometry.get_full_precision(geometry_meta.CELL_LON).ndarray,
+                lat=geometry.get_full_precision(geometry_meta.CELL_LAT).ndarray,
             )
         case _:
             raise NotImplementedError(

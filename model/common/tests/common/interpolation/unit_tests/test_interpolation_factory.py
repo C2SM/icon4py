@@ -115,7 +115,7 @@ def test_get_c_lin_e(
     field_ref = interpolation_savepoint.c_lin_e()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.C_LIN_E)
+    field = factory.get_full_precision(attrs.C_LIN_E)
     assert field.shape == (grid.num_edges, E2C_SIZE)
     assert test_helpers.dallclose(field.asnumpy(), field_ref.asnumpy())
 
@@ -130,7 +130,7 @@ def test_get_geofac_div(
     field_ref = interpolation_savepoint.geofac_div()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.GEOFAC_DIV)
+    field = factory.get_full_precision(attrs.GEOFAC_DIV)
     assert field.shape == (grid.num_cells, C2E_SIZE)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
@@ -144,7 +144,7 @@ def test_get_geofac_grdiv(
     field_ref = interpolation_savepoint.geofac_grdiv()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.GEOFAC_GRDIV).asnumpy()
+    field = factory.get_full_precision(attrs.GEOFAC_GRDIV).asnumpy()
     assert field.shape == (grid.num_edges, 5)
     assert test_helpers.dallclose(field, field_ref.asnumpy())
 
@@ -158,7 +158,7 @@ def test_get_geofac_rot(
     field_ref = interpolation_savepoint.geofac_rot()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.GEOFAC_ROT).asnumpy()
+    field = factory.get_full_precision(attrs.GEOFAC_ROT).asnumpy()
     horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     assert field.shape == (grid.num_vertices, V2E_SIZE)
     assert test_helpers.dallclose(
@@ -176,7 +176,7 @@ def test_get_geofac_n2s(
     field_ref = interpolation_savepoint.geofac_n2s()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.GEOFAC_N2S).asnumpy()
+    field = factory.get_full_precision(attrs.GEOFAC_N2S).asnumpy()
     assert field.shape == (grid.num_cells, 4)
     assert test_helpers.dallclose(field_ref.asnumpy(), field)
 
@@ -191,9 +191,9 @@ def test_get_geofac_grg(
     field_ref = interpolation_savepoint.geofac_grg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field_x = factory.get(attrs.GEOFAC_GRG_X).asnumpy()
+    field_x = factory.get_full_precision(attrs.GEOFAC_GRG_X).asnumpy()
     assert field_x.shape == (grid.num_cells, 4)
-    field_y = factory.get(attrs.GEOFAC_GRG_Y).asnumpy()
+    field_y = factory.get_full_precision(attrs.GEOFAC_GRG_Y).asnumpy()
     assert field_y.shape == (grid.num_cells, 4)
     # less than 1.1e-16 does not pass on mac for mch_ch_r04b09_dsl (but still passes on CI)
     assert test_helpers.dallclose(field_ref[0].asnumpy(), field_x, rtol=1e-11, atol=1.1e-16)
@@ -210,7 +210,7 @@ def test_get_mass_conserving_cell_average_weight(
     field_ref = interpolation_savepoint.c_bln_avg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.C_BLN_AVG).asnumpy()
+    field = factory.get_full_precision(attrs.C_BLN_AVG).asnumpy()
 
     assert field.shape == (grid.num_cells, 4)
     assert test_helpers.dallclose(field_ref.asnumpy(), field, rtol=1e-11)
@@ -226,7 +226,7 @@ def test_e_flx_avg(
     field_ref = interpolation_savepoint.e_flx_avg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.E_FLX_AVG).asnumpy()
+    field = factory.get_full_precision(attrs.E_FLX_AVG).asnumpy()
     assert field.shape == (grid.num_edges, grid.get_connectivity(dims.E2C2EO).shape[1])
     assert test_helpers.dallclose(field, field_ref.asnumpy(), atol=1e-12)
 
@@ -250,7 +250,7 @@ def test_e_bln_c_s(
     field_ref = interpolation_savepoint.e_bln_c_s()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.E_BLN_C_S).asnumpy()
+    field = factory.get_full_precision(attrs.E_BLN_C_S).asnumpy()
     assert field.shape == (grid.num_cells, C2E_SIZE)
     test_helpers.assert_dallclose(field, field_ref.asnumpy(), rtol=rtol)
 
@@ -265,8 +265,8 @@ def test_pos_on_tplane_e_x_y(
     field_ref_1 = interpolation_savepoint.pos_on_tplane_e_x()
     field_ref_2 = interpolation_savepoint.pos_on_tplane_e_y()
     factory = _get_interpolation_factory(backend, experiment)
-    field_1 = factory.get(attrs.POS_ON_TPLANE_E_X)
-    field_2 = factory.get(attrs.POS_ON_TPLANE_E_Y)
+    field_1 = factory.get_full_precision(attrs.POS_ON_TPLANE_E_X)
+    field_2 = factory.get_full_precision(attrs.POS_ON_TPLANE_E_Y)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1e-8, rtol=1e-9)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-8, rtol=1e-9)
 
@@ -281,7 +281,7 @@ def test_cells_aw_verts(
     field_ref = interpolation_savepoint.c_intp()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.CELL_AW_VERTS).asnumpy()
+    field = factory.get_full_precision(attrs.CELL_AW_VERTS).asnumpy()
 
     assert field.shape == (grid.num_vertices, 6)
     assert test_helpers.dallclose(field_ref.asnumpy(), field)
@@ -296,7 +296,7 @@ def test_nudgecoeffs(
 ) -> None:
     field_ref = interpolation_savepoint.nudgecoeff_e()
     factory = _get_interpolation_factory(backend, experiment)
-    field = factory.get(attrs.NUDGECOEFFS_E)
+    field = factory.get_full_precision(attrs.NUDGECOEFFS_E)
 
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
@@ -312,8 +312,8 @@ def test_rbf_interpolation_coeffs_cell(
     field_ref_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field_c1 = factory.get(attrs.RBF_VEC_COEFF_C1).asnumpy()
-    field_c2 = factory.get(attrs.RBF_VEC_COEFF_C2).asnumpy()
+    field_c1 = factory.get_full_precision(attrs.RBF_VEC_COEFF_C1).asnumpy()
+    field_c2 = factory.get_full_precision(attrs.RBF_VEC_COEFF_C2).asnumpy()
     horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     assert field_c1.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
@@ -340,7 +340,7 @@ def test_rbf_interpolation_coeffs_edge(
     field_ref_e = interpolation_savepoint.rbf_vec_coeff_e()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field_e = factory.get(attrs.RBF_VEC_COEFF_E).asnumpy()
+    field_e = factory.get_full_precision(attrs.RBF_VEC_COEFF_E).asnumpy()
     horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     assert field_e.shape == (grid.num_edges, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE])
@@ -362,8 +362,8 @@ def test_rbf_interpolation_coeffs_vertex(
     field_ref_v2 = interpolation_savepoint.rbf_vec_coeff_v2()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field_v1 = factory.get(attrs.RBF_VEC_COEFF_V1).asnumpy()
-    field_v2 = factory.get(attrs.RBF_VEC_COEFF_V2).asnumpy()
+    field_v1 = factory.get_full_precision(attrs.RBF_VEC_COEFF_V1).asnumpy()
+    field_v2 = factory.get_full_precision(attrs.RBF_VEC_COEFF_V2).asnumpy()
     horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     assert field_v1.shape == (grid.num_vertices, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX])
@@ -390,6 +390,6 @@ def test_lsq_pseudoinv(
     field_ref_1 = interpolation_savepoint.lsq_pseudoinv_1().asnumpy()
     field_ref_2 = interpolation_savepoint.lsq_pseudoinv_2().asnumpy()
     factory = _get_interpolation_factory(backend, experiment)
-    field = factory.get(attrs.LSQ_PSEUDOINV).asnumpy()
+    field = factory.get_full_precision(attrs.LSQ_PSEUDOINV).asnumpy()
     assert test_helpers.dallclose(field_ref_1, field[:, 0, :], atol=1e-15)
     assert test_helpers.dallclose(field_ref_2, field[:, 1, :], atol=1e-15)

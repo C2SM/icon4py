@@ -86,7 +86,7 @@ def test_distributed_interpolation_with_custom_tolerance(  # noqa: PLR0917 [too-
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field_ref = field_ref.asnumpy()
-    field = intp_factory.get(attrs_name).asnumpy()
+    field = intp_factory.get_full_precision(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, atol=atol, rtol=rtol), (
         f"comparison of {attrs_name} failed"
     )
@@ -123,7 +123,7 @@ def test_distributed_interpolation_fields(  # noqa: PLR0917 [too-many-positional
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field_ref = field_ref.asnumpy()
-    field = intp_factory.get(attrs_name).asnumpy()
+    field = intp_factory.get_full_precision(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref), f"comparison of {attrs_name} failed"
 
 
@@ -145,8 +145,8 @@ def test_distributed_interpolation_grg(  # noqa: PLR0917 [too-many-positional-ar
     field_ref = interpolation_savepoint.geofac_grg()
     ref_x = field_ref[0].asnumpy()
     ref_y = field_ref[1].asnumpy()
-    field_x = intp_factory.get(attrs.GEOFAC_GRG_X).asnumpy()
-    field_y = intp_factory.get(attrs.GEOFAC_GRG_Y).asnumpy()
+    field_x = intp_factory.get_full_precision(attrs.GEOFAC_GRG_X).asnumpy()
+    field_y = intp_factory.get_full_precision(attrs.GEOFAC_GRG_Y).asnumpy()
 
     assert test_utils.dallclose(
         field_x,
@@ -182,7 +182,7 @@ def test_distributed_interpolation_geofac_rot(  # noqa: PLR0917 [too-many-positi
         h_grid.vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     field_ref = interpolation_savepoint.geofac_rot().asnumpy()
-    field = factory.get(attrs.GEOFAC_ROT).asnumpy()
+    field = factory.get_full_precision(attrs.GEOFAC_ROT).asnumpy()
     assert test_utils.dallclose(field[horizontal_start:, :], field_ref[horizontal_start:, :]), (
         f"comparison of {attrs.GEOFAC_ROT} failed"
     )
@@ -217,7 +217,7 @@ def test_distributed_interpolation_rbf(  # noqa: PLR0917 [too-many-positional-ar
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
-    field = factory.get(attrs_name)
+    field = factory.get_full_precision(attrs_name)
     dim = field.domain.dims[0]
     assert test_utils.dallclose(
         field.asnumpy(), field_ref.asnumpy(), atol=RBF_TOLERANCES[dim][experiment.description]
@@ -242,7 +242,7 @@ def test_distributed_interpolation_lsq_pseudoinv(  # noqa: PLR0917 [too-many-pos
     factory = interpolation_factory_from_savepoint
     field_ref_1 = interpolation_savepoint.lsq_pseudoinv_1().asnumpy()
     field_ref_2 = interpolation_savepoint.lsq_pseudoinv_2().asnumpy()
-    field = factory.get(attrs.LSQ_PSEUDOINV).asnumpy()
+    field = factory.get_full_precision(attrs.LSQ_PSEUDOINV).asnumpy()
     assert test_utils.dallclose(field[:, 0, :], field_ref_1, atol=1e-15)
     assert test_utils.dallclose(field[:, 1, :], field_ref_2, atol=1e-15)
 
@@ -278,11 +278,11 @@ def test_distributed_interpolation_rbf_scales(  # noqa: PLR0917 [too-many-positi
     )
     expected = compute_rbf_scale(
         geometry_type=geometry_type.value,
-        mean_characteristic_length=geometry_from_savepoint.get(
+        mean_characteristic_length=geometry_from_savepoint.get_full_precision(
             geometry_attributes.CHARACTERISTIC_LENGTH
         ),
-        mean_dual_edge_length=geometry_from_savepoint.get(
+        mean_dual_edge_length=geometry_from_savepoint.get_full_precision(
             geometry_attributes.MEAN_DUAL_EDGE_LENGTH
         ),
     )
-    assert factory.get(attrs_name) == pytest.approx(expected)
+    assert factory.get_full_precision(attrs_name) == pytest.approx(expected)
