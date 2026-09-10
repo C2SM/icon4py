@@ -485,8 +485,8 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
 
     Args:
         func: GT4Py Program that computes the fields
-        domain: the domain of the computed fields, and the compute domain of the program unless
-            `compute_domain` overrides it. It is the fields' extent only in the vertical:
+        domain: the domain of the computed fields and the compute domain of the program. It is
+            the fields' extent only in the vertical:
             horizontal dimensions are always allocated at full local size, because the halo
             exchange fills entries outside the compute range and neighbor access indexes the
             field by absolute local index. Vertical dimensions have neither, and a gt4py field
@@ -498,8 +498,6 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
             the key is the variable name used in the `gtx.program` and the value the name
             of the field it depends on.
         params: scalar parameters used in the program
-        compute_domain: per-dimension override of the range the program computes, for fields
-            that exist on the whole `domain` but are computed only on part of it.
     """
 
     def __init__(
@@ -511,16 +509,9 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         deps: dict[str, str],
         do_exchange: bool,
         params: dict[str, state_utils.ScalarType] | None = None,
-        compute_domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | None = None,
     ):
-        compute_domain = compute_domain if compute_domain is not None else {}
-        if not compute_domain.keys() <= domain.keys():
-            raise ValueError(
-                f"compute_domain has dimensions not in domain: {compute_domain.keys() - domain.keys()}"
-            )
         self._func = func
         self._domain = domain
-        self._compute_domain = {**domain, **compute_domain}
         self._dims = domain.keys()
         self._dependencies = deps
         self._output = fields
@@ -551,7 +542,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
     def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
         offset_providers = {}
-        for dim in self._compute_domain:
+        for dim in self._domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 horizontal_offsets = {
                     k: v
@@ -573,23 +564,16 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
     def _domain_args(self, grid: GridProvider) -> dict[str, gtx.int32]:
         domain_args = {}
 
-        for dim, (start, end) in self._compute_domain.items():
+        for dim in self._domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 domain_args.update(
                     {
-                        "horizontal_start": grid.grid.start_index(start),
-                        "horizontal_end": grid.grid.end_index(end),
+                        "horizontal_start": grid.grid.start_index(self._domain[dim][0]),
+                        "horizontal_end": grid.grid.end_index(self._domain[dim][1]),
                     }
                 )
             elif dim.kind == gtx.DimensionKind.VERTICAL:
-                vertical_start = grid.vertical_grid.index(start)
-                vertical_end = grid.vertical_grid.index(end)
-                first, last = self._extent(dim, grid)
-                if vertical_start < first or vertical_end > last:
-                    raise ValueError(
-                        f"compute range [{vertical_start}, {vertical_end}) of {dim} exceeds "
-                        f"the field domain [{first}, {last})"
-                    )
+                vertical_start, vertical_end = self._extent(dim, grid)
                 domain_args.update({"vertical_start": vertical_start, "vertical_end": vertical_end})
             else:
                 raise ValueError(f"DimensionKind '{dim.kind}' not supported in Program Domain")

@@ -349,12 +349,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_half_domain(v_grid.Zone.BOTTOM),
                 )
             },
-            compute_domain={
-                dims.KHalfDim: (
-                    vertical_half_domain(v_grid.Zone.TOP),
-                    v_grid.Domain(dims.KHalfDim, v_grid.Zone.DAMPING, 1),
-                )
-            },
             fields={"rayleigh_w": attrs.RAYLEIGH_W},
             params={
                 "damping_height": self._damping_height,
@@ -362,6 +356,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "rayleigh_coeff": self._config.rayleigh_coeff,
                 "vct_a_1": self._vct_a_1,
                 "pi_const": math.pi,
+                "end_index_of_damping_layer": self._vertical_grid.end_index_of_damping_layer,
             },
             do_exchange=False,
         )
@@ -380,12 +375,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
                 dims.KDim: (
                     vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
-                ),
-            },
-            compute_domain={
-                dims.KDim: (
-                    v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },

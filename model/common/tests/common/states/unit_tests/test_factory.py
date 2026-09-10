@@ -208,13 +208,10 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     assert dims.CellDim in x.domain.dims
 
 
-def _run_program_provider(
-    source: SimpleFieldSource, domain: dict, compute_domain: dict | None = None
-) -> gtx.Field:
+def _run_program_provider(source: SimpleFieldSource, domain: dict) -> gtx.Field:
     provider = factory.ProgramFieldProvider(
         func=vertical_ops.average_two_vertical_levels_downwards_on_cells,
         domain=domain,
-        compute_domain=compute_domain,
         fields={"average": "output_f"},
         deps={"input_field": "height_coordinate"},
         do_exchange=False,
@@ -226,13 +223,16 @@ def _run_program_provider(
         grid=source,
         exchange=decomposition.SingleNodeExchange(),
     )
-    return provider.fields["output_f"]
+    x = provider.fields["output_f"]
+    assert isinstance(x, gtx.Field)
+    return x
 
 
 @pytest.mark.datatest
 def test_program_provider_vertical_extent_is_declared_domain(
     height_coordinate_source: SimpleFieldSource,
 ) -> None:
+    assert height_coordinate_source.vertical_grid is not None
     num_levels = height_coordinate_source.vertical_grid.num_levels
     x = _run_program_provider(
         height_coordinate_source,
@@ -246,56 +246,6 @@ def test_program_provider_vertical_extent_is_declared_domain(
     )
     assert x.domain[dims.KDim].unit_range == gtx.common.UnitRange(1, num_levels)
     assert np.all(x.asnumpy() != 0.0)
-
-
-@pytest.mark.datatest
-def test_program_provider_compute_domain_narrows_only_the_computation(
-    height_coordinate_source: SimpleFieldSource,
-) -> None:
-    num_levels = height_coordinate_source.vertical_grid.num_levels
-    x = _run_program_provider(
-        height_coordinate_source,
-        domain={
-            dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
-            dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
-        },
-        compute_domain={
-            dims.KDim: (v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1), k_domain(v_grid.Zone.BOTTOM))
-        },
-    )
-    assert x.domain[dims.KDim].unit_range == gtx.common.UnitRange(0, num_levels)
-    assert np.all(x.asnumpy()[:, 0] == 0.0)
-    assert np.all(x.asnumpy()[:, 1:] != 0.0)
-
-
-@pytest.mark.datatest
-def test_program_provider_compute_domain_outside_domain_raises(
-    height_coordinate_source: SimpleFieldSource,
-) -> None:
-    with pytest.raises(ValueError, match="exceeds"):
-        _run_program_provider(
-            height_coordinate_source,
-            domain={
-                dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
-                dims.KDim: (
-                    v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1),
-                    k_domain(v_grid.Zone.BOTTOM),
-                ),
-            },
-            compute_domain={dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM))},
-        )
-
-
-def test_program_provider_compute_domain_unknown_dimension_raises() -> None:
-    with pytest.raises(ValueError, match="not in domain"):
-        factory.ProgramFieldProvider(
-            func=vertical_ops.average_two_vertical_levels_downwards_on_cells,
-            domain={dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))},
-            compute_domain={dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM))},
-            fields={"average": "output_f"},
-            deps={"input_field": "height_coordinate"},
-            do_exchange=False,
-        )
 
 
 @pytest.mark.datatest
