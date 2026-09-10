@@ -404,14 +404,14 @@ class IOMonitor(monitor.Monitor):
         for m in self._group_monitors:
             m.close()
 
-    def captures_next_store(self) -> bool:
-        """Whether any field group captures at the next ``store`` call.
+    def at_capture_time(self) -> bool:
+        """Whether any field group captures at the current ``store`` call.
 
         A pure predicate (no counter changes), identical on all ranks: callers may
         skip assembling the output state for steps nobody captures -- ``store`` must
         still be called every step (it advances the schedule counters).
         """
-        return any(m.captures_next_store() for m in self._group_monitors)
+        return any(m.at_capture_time() for m in self._group_monitors)
 
     def report_timings(self) -> None:
         """Log the accumulated output overhead of this rank, per field group and phase.
@@ -588,7 +588,7 @@ class FieldGroupMonitor(monitor.Monitor):
             model_time: the current time step of the simulation
         """
         self._step_counter += 1
-        if not self._at_capture_time():
+        if not self.at_capture_time():
             return
         # TODO(halungge): this should do a deep copy of the data once IO becomes
         #   asynchronous (the gather/halo-strip paths already copy, the single-node
@@ -636,13 +636,9 @@ class FieldGroupMonitor(monitor.Monitor):
         assert self._dataset is not None
         self._dataset.append(state_to_store, model_time)
 
-    def _at_capture_time(self) -> bool:
+    def at_capture_time(self) -> bool:
         # fire every N model steps
         return self._step_counter % self._output_interval_steps == 0
-
-    def captures_next_store(self) -> bool:
-        """Whether the next ``store`` call falls on a capture step (pure predicate)."""
-        return (self._step_counter + 1) % self._output_interval_steps == 0
 
     @property
     def phase_seconds(self) -> dict[str, list[float]]:
