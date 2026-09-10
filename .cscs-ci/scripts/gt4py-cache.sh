@@ -23,7 +23,9 @@ flags_hash=$(echo -n "CXXFLAGS=${CXXFLAGS:-} NVCC_APPEND_FLAGS=${NVCC_APPEND_FLA
 
 # Then set the cache directory for this run based on the backend and current date.
 DATE=$(date +%Y-%W)
-export GT4PY_BUILD_CACHE_DIR="${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache/base-${base_image_hash}-uv-lock-${uv_lock_hash}-flags-${flags_hash}-job-${job_name_hash}-${DATE}"
+# TODO: remove before merging
+CACHE_BUST=$(date +%s)
+export GT4PY_BUILD_CACHE_DIR="${ICON4PY_CI_GT4PY_BUILD_CACHE_BASE_DIR}/icon4py/gt4py-cache/base-${base_image_hash}-uv-lock-${uv_lock_hash}-flags-${flags_hash}-job-${job_name_hash}-${DATE}-${CACHE_BUST}"
 mkdir -p "${GT4PY_BUILD_CACHE_DIR}"
 
 echo "Using GT4PY_BUILD_CACHE_DIR=${GT4PY_BUILD_CACHE_DIR}"
