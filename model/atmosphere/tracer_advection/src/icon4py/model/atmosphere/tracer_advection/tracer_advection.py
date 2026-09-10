@@ -98,7 +98,8 @@ class HorizontalAdvectionLimiter(Enum):
     #: positive definite horizontal limiter
     POSITIVE_DEFINITE = 4
     #: Jocksch's cell-local positive definite limiter (reconstruction clamp plus outflow
-    #: scaling inside the flux kernel, paper Algorithm 1). In his Fortran this is what
+    #: scaling inside the flux kernel, Algorithm 1 of Jocksch et al., PPAM 2026). In his
+    #: Fortran this is what
     #: itype_hlimit=4 means inside the schemes 102/103/132/202/203, where the call of
     #: ICON's hflx_limiter_pd is commented out; the value here is icon4py's own, chosen
     #: not to collide with any ICON itype_hlimit
@@ -156,8 +157,9 @@ class AdvectionConfig:
     monotonic_limiter_boost_factor: float = 1.005
     #: substeps per advection step for the subcycled schemes, ICON's nadv_substeps
     n_advection_substeps: int = 3
-    #: linear weights d_j of the quadratic WENO schemes (paper Table 2 "WENO opt" /
-    #: "WENO d_j = 1", see 'weno_least_squares.WenoLinearWeights'); the init-time WENO
+    #: linear weights d_j of the quadratic WENO schemes (Table 2 of Jocksch et al., PPAM
+    #: 2026, "WENO opt" / "WENO d_j = 1", see 'weno_least_squares.WenoLinearWeights'); the
+    #: init-time WENO
     #: state must be built with the same set, 'weno_least_squares.linear_weights'
     weno_linear_weights: WenoLinearWeights = WenoLinearWeights.OPTIMIZED
     #: c_sel of the hybrid scheme (paper eq. 6): cells whose quadratic-fit residual exceeds

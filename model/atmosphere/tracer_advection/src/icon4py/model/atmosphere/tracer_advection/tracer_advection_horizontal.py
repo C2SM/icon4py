@@ -288,20 +288,44 @@ class PositiveDefinite(HorizontalFluxLimiter):
         )
 
 
+def check_cell_edge_orientation_convention(
+    *, geofac_div: np.ndarray, c2e: np.ndarray, e2c: np.ndarray
+) -> None:
+    """Raise unless the normal of every edge points out of its E2C[0] cell.
+
+    The cell-local limiter takes the orientation of an edge's normal relative to a cell
+    from ``sign(geofac_div)`` and the upwind cell from the backtrajectory rule ``vn >= 0
+    -> E2C[0]``; the two agree only if ``geofac_div(c, e) > 0`` exactly when ``c`` is
+    ``E2C[0]`` of ``e``, ICON's convention (the primal normal points from cell 1 to cell
+    2). Jocksch's inline limiter assumes it implicitly, this port checks it once per grid.
+    """
+    n_cells = c2e.shape[0]
+    outward = geofac_div > 0.0
+    is_first_cell = e2c[c2e][..., 0] == np.arange(n_cells)[:, np.newaxis]
+    if not np.array_equal(outward, is_first_cell):
+        n_bad = int(np.sum(outward != is_first_cell))
+        raise ValueError(
+            "The cell-local positive-definite limiter needs ICON's edge orientation "
+            "convention (geofac_div > 0 exactly on the E2C[0] side of every edge), which "
+            f"this grid violates on {n_bad} of {outward.size} cell-edge slots."
+        )
+
+
 class CellLocalPositiveDefinite(HorizontalFluxLimiter):
     """Jocksch's cell-local positive-definite limiter (his itype_hlimit=4 inside 102/103/132).
 
-    Paper Algorithm 1, mo_advection_hflux.f90 3013-3040 (and the same lines in the other
-    routines of his scheme family): the reconstructed flux of every edge is clamped to a
-    non-negative outflow of its upwind cell, and the upwind cell's outflow is scaled by
-    ``r_m = min(1, q rho / (sum of the clamped outflow * dt + eps))``. ICON's
-    'PositiveDefinite' does the second step only, and on the fluxes of all three edges.
-    The Fortran evaluates both steps inside the reconstruction kernel; here they follow
-    it as two stencils on the finished edge fluxes, which is the same arithmetic. The
-    factor lives on the cells of the flux's own upwind side, so unlike 'PositiveDefinite'
-    there is nothing to exchange.
+    Algorithm 1 of the paper (Jocksch et al., PPAM 2026); mo_advection_hflux.f90 3022-3042
+    in upwind_hflux_miura3_weno (1538-1560 in 102, 3702-3722 in 132): the reconstructed
+    flux of every edge is clamped to a non-negative outflow of its upwind cell, and the
+    upwind cell's outflow is scaled by ``r_m = min(1, q rho / (sum of the clamped outflow
+    * dt + eps))``. ICON's 'PositiveDefinite' does the second step only, and on the fluxes
+    of all three edges. The Fortran evaluates both steps inside the reconstruction
+    kernel; here they follow it as two stencils on the finished edge fluxes, which is the
+    same arithmetic. The factor lives on the cells of the flux's own upwind side, so
+    unlike 'PositiveDefinite' there is nothing to exchange.
 
-    See the cell stencil for the orientation of the clamp.
+    See the cell stencil for the orientation of the clamp; the convention it relies on is
+    checked once at construction ('check_cell_edge_orientation_convention').
     """
 
     def __init__(
@@ -313,6 +337,12 @@ class CellLocalPositiveDefinite(HorizontalFluxLimiter):
         self._grid = grid
         self._interpolation_state = interpolation_state
         self._backend = backend
+
+        check_cell_edge_orientation_convention(
+            geofac_div=self._interpolation_state.geofac_div.asnumpy(),
+            c2e=self._grid.get_connectivity(dims.C2E).asnumpy(),
+            e2c=self._grid.get_connectivity(dims.E2C).asnumpy(),
+        )
 
         # cell indices: r_m is needed on every cell whose edges carry a flux, halos included
         cell_domain = h_grid.domain(dims.CellDim)
@@ -379,7 +409,7 @@ class CellLocalPositiveDefinite(HorizontalFluxLimiter):
         rhodz_new: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
-        # per cell: clamped outflow of the owned edges and the scaling factor (f90 3016-3027)
+        # per cell: clamped outflow of the owned edges and the scaling factor (f90 3023-3036)
         log.debug(
             "running stencil compute_cell_local_positive_definite_horizontal_flux_factor - start"
         )
@@ -395,7 +425,7 @@ class CellLocalPositiveDefinite(HorizontalFluxLimiter):
             "running stencil compute_cell_local_positive_definite_horizontal_flux_factor - end"
         )
 
-        # per edge: clamp and scale with the upwind cell's factor (f90 3021, 3028-3032)
+        # per edge: clamp and scale with the upwind cell's factor (f90 3030, 3037-3041)
         log.debug(
             "running stencil apply_cell_local_positive_definite_horizontal_flux_factor - start"
         )
@@ -1151,7 +1181,7 @@ class ThirdOrderMiura(SemiLagrangianTracerFlux):
 class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
     """Miura-based third-order tracer flux with quadratic 27-candidate WENO blending (ihadv_tracer=103).
 
-    Port of upwind_hflux_miura3_weno (mo_advection_hflux.f90 2033-2620), live
+    Port of upwind_hflux_miura3_weno (mo_advection_hflux.f90 2532-3119), live
     path only: quadratic reconstruction, SVD, l_out_edgeval=.FALSE. The
     departure regions and the quadrature vector are recomputed on every call;
     ICON shares them across tracers under ld_compute.
@@ -1172,7 +1202,7 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         self._horizontal_limiter = horizontal_limiter or NoLimiter()
 
         # cell indices; the Fortran reconstructs from start_blk(3,1) to min_rlcell_int
-        # (f90 2367-2368), here the SecondOrderMiuraWeno zones are kept: on the
+        # (f90 2866-2867), here the SecondOrderMiuraWeno zones are kept: on the
         # boundary-free single-rank torus (the only supported configuration, see
         # the driver state construction) all cell zones coincide anyway
         cell_domain = h_grid.domain(dims.CellDim)
@@ -1181,7 +1211,7 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         )
         self._end_cell_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
 
-        # edge indices (i_rlstart=5, f90 2194-2198)
+        # edge indices (i_rlstart=5, f90 2692-2700)
         edge_domain = h_grid.domain(dims.EdgeDim)
         self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
@@ -1264,7 +1294,7 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
             program=compute_ffsl_backtrajectory_counterclockwise_indicator,
             constant_args={
                 "tangent_orientation": self._weno_quadratic_state.tangent_orientation,
-                # miura3 calls btraj_dreg with lcounterclock=.TRUE. (f90 2260-2265)
+                # miura3 calls btraj_dreg with lcounterclock=.TRUE. (f90 2759-2764)
                 "lcounterclock": True,
             },
             horizontal_sizes=edge_sizes,
@@ -1360,7 +1390,7 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         )
         log.debug("running stencil compute_ffsl_backtrajectory_counterclockwise_indicator - end")
 
-        # departure regions swept over the full time step (btraj_dreg, f90 2260-2265)
+        # departure regions swept over the full time step (btraj_dreg, f90 2759-2764)
         log.debug("running stencil compute_ffsl_backtrajectory - start")
         self._compute_ffsl_backtrajectory(
             p_vn=prep_adv.vn_traj,
@@ -1393,11 +1423,11 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         l_weights_s: tuple[float, ...],
     ) -> None:
         """The 27-candidate loop into the per-edge accumulators, with the given d_j."""
-        # zero the WENO accumulators (f90 2450-2451)
+        # zero the WENO accumulators (f90 2949-2950)
         for accumulator in (*self._z_lsq_weighted.values(), self._smooth_sum):
             self._init_constant_edge_kdim_field(field=accumulator, value=0.0)
 
-        # 27-candidate loop (f90 2458-2512); candidate reconstruction on cells,
+        # 27-candidate loop (f90 2957-3012); candidate reconstruction on cells,
         # then smoothness-weighted accumulation on edges
         for cand in range(27):
             direct = self._weno_quadratic_state.lsq_pseudoinv_direct[cand]
@@ -1426,7 +1456,7 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         prep_adv: adv_states.AdvectionPrepAdvState,
         p_out_e: fa.EdgeKField[ta.wpfloat],
     ) -> None:
-        # normalize and compute the flux (f90 2513-2521)
+        # normalize and compute the flux (f90 3013-3021)
         log.debug("running stencil compute_horizontal_tracer_flux_from_weno_coefficients - start")
         self._compute_horizontal_tracer_flux_from_weno_coefficients(
             **self._z_lsq_weighted,
@@ -1482,10 +1512,11 @@ class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
 
     Port of upwind_hflux_miura_weno_hyb (mo_advection_hflux.f90 3136-3798), live path:
     every cell gets the full 9-point quadratic fit of miura3; where the fit's residual
-    (paper eq. 6; 'compute_weno_hybrid_stencil_selection') exceeds the threshold, the
-    edges of that (upwind) cell take the WENO flux instead. The WENO branch is the
-    103 kernel except for its linear weights: the hybrid weights every candidate with
-    ``1.0_wp / (smoothness + 1d-20)**2`` (f90 3666), i.e. d_j = 1 at run time, while
+    (eq. 6 of the paper, Jocksch et al., PPAM 2026; 'compute_weno_hybrid_stencil_selection')
+    exceeds the threshold, the edges of that (upwind) cell take the WENO flux instead.
+    The WENO branch is the 103 kernel except for its linear weights: the hybrid weights
+    every candidate with ``1.0_wp / (smoothness + 1d-20)**2`` (f90 3684), i.e. d_j = 1
+    at run time, while
     the candidate pseudoinverses keep whichever set they were assembled with. Both
     fluxes are computed on all edges here and selected per edge by the upwind cell's
     mask; the Fortran computes one or the other.
@@ -1610,7 +1641,7 @@ class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
 
         self._compute_departure_regions(prep_adv=prep_adv, p_vt=p_vt, dtime=dtime)
 
-        # the full-stencil fit (f90 3548-3562) and its residual test (f90 3563-3574)
+        # the full-stencil fit (f90 3547-3562) and its residual test (f90 3564-3574)
         log.debug("running stencil reconstruct_quadratic_coefficients_svd - start")
         self._reconstruct_full_quadratic_coefficients_svd(p_cc=p_tracer_now, **self._p_coeffs)
         log.debug("running stencil reconstruct_quadratic_coefficients_svd - end")
@@ -1622,7 +1653,7 @@ class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
         )
         log.debug("running stencil compute_weno_hybrid_stencil_selection - end")
 
-        # the plain branch (f90 3575-3582, 3690-3696): the fit itself on all three edges
+        # the plain branch (f90 3575-3582, 3697-3699): the fit itself on all three edges
         log.debug(
             "running stencil compute_horizontal_tracer_flux_from_quadratic_coefficients - start"
         )
@@ -1637,7 +1668,7 @@ class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
             "running stencil compute_horizontal_tracer_flux_from_quadratic_coefficients - end"
         )
 
-        # the WENO branch (f90 3625-3688) with unit linear weights (f90 3666)
+        # the WENO branch (f90 3629-3692) with unit linear weights (f90 3684)
         self._accumulate_weno_candidates(p_tracer_now=p_tracer_now, l_weights_s=(1.0,) * 27)
         self._compute_weno_flux(prep_adv=prep_adv, p_out_e=self._p_flux_weno)
 

@@ -14,7 +14,7 @@ from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import wpfloat
 
 
-# f90 2509: literal `1d-20` regularization added to the smoothness before squaring. The gtfn
+# f90 3008: literal `1d-20` regularization added to the smoothness before squaring. The gtfn
 # backend does not fold a module-level constant referenced inside a field operator into the IR
 # ("Symbols not found"), so the field operator inlines this literal; the tests import _WENO_EPS
 # so both use one value.
@@ -22,7 +22,8 @@ _WENO_EPS = 1e-20
 
 
 # WENO smoothness weighting for one of the 27 candidate stencils (mo_advection_hflux.f90
-# 2497-2512). The Fortran loops over cells and scatters to the three edges owned by the upwind
+# 2996-3011, upwind_hflux_miura3_weno; the hybrid's WENO branch, 3672-3687, is the same with
+# l_weights_s = 1). The Fortran loops over cells and scatters to the three edges owned by the upwind
 # cell; here each edge gathers the candidate coefficients (and the area) of its upwind cell,
 # selected by p_cell_rel_idx_dsl (0 or 1) into E2C. The weighted sums z_lsq_weighted and
 # smooth_sum are accumulated over the 27 candidates, so the accumulators are read and written.
@@ -71,9 +72,10 @@ def _accumulate_weno_candidate_flux_weights(
     c6 = where(p_cell_rel_idx_dsl == 1, p_coeff_6(E2C[1]), p_coeff_6(E2C[0]))
     area = where(p_cell_rel_idx_dsl == 1, cell_area(E2C[1]), cell_area(E2C[0]))
 
-    # smoothness vector (f90 2497-2506); zlc == z_lsq_coeff, unknowns [c0, x, y, x^2, y^2, xy].
+    # smoothness vector (f90 2996-3005); zlc == z_lsq_coeff, unknowns [c0, x, y, x^2, y^2, xy].
     # smooth_2/3/6 use the raw c4/c5/c6, the rest use their squares (f90 squares zlc(4:6) in
-    # place at 2501-2503, i.e. after smooth_2/3/6 and before smooth_4/5/1).
+    # place at 3000-3002, i.e. after smooth_2/3/6 and before smooth_4/5/1). zlc and
+    # z_lsq_smooth are REAL(sp) in the Fortran (f90 2643); here they are working precision.
     smooth_2 = 2.0 * (c2 * c4 + c3 * c6)
     smooth_3 = 2.0 * (c2 * c6 + c3 * c5)
     smooth_6 = 2.0 * c6 * (c4 + c5)
@@ -84,7 +86,7 @@ def _accumulate_weno_candidate_flux_weights(
     smooth_5 = 2.0 * (c5_sq + c6_sq)
     smooth_1 = c2 * c2 + c3 * c3 + area * (c4_sq + c5_sq + c6_sq)
 
-    # f90 2508-2509: smoothness = l_weights_s / (z_lsq_smooth . z_quad_vector_sum + eps)^2
+    # f90 3007-3008: smoothness = l_weights_s / (z_lsq_smooth . z_quad_vector_sum + eps)^2
     beta = (
         smooth_1 * astype(z_quad_vector_sum_1, wpfloat)
         + smooth_2 * astype(z_quad_vector_sum_2, wpfloat)
@@ -95,7 +97,7 @@ def _accumulate_weno_candidate_flux_weights(
     )
     w = l_weight_s / ((beta + 1e-20) * (beta + 1e-20))  # 1e-20 == _WENO_EPS (see note above)
 
-    # f90 2510-2511: accumulate weighted coefficients and weights over the candidates
+    # f90 3009-3010: accumulate weighted coefficients and weights over the candidates
     return (
         z_lsq_weighted_1 + c1 * w,
         z_lsq_weighted_2 + c2 * w,

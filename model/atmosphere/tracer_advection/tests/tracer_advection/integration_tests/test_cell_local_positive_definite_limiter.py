@@ -44,6 +44,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_cell_local_posit
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.testing.fixtures.datatest import backend
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_horizontal
 
 from .. import utils
 
@@ -302,3 +303,20 @@ def test_stencils_match_his_code_where_normals_point_his_way(torus_patch, backen
     actual, r_m = _run_gt4py_limiter(torus_patch, backend, inputs)
     np.testing.assert_allclose(r_m, r_m_expected, rtol=1e-14, atol=0.0)
     np.testing.assert_allclose(actual, expected, rtol=1e-14, atol=1e-16)
+
+
+def test_orientation_convention_check_accepts_the_oriented_geofac_div(torus_patch):
+    # _geofac_div is built with ICON's convention: positive exactly on the E2C[0] side
+    tracer_advection_horizontal.check_cell_edge_orientation_convention(
+        geofac_div=_geofac_div(torus_patch), c2e=torus_patch.c2e, e2c=torus_patch.e2c
+    )
+
+
+def test_orientation_convention_check_rejects_a_flipped_edge(torus_patch):
+    geofac_div = _geofac_div(torus_patch)
+    e2c = torus_patch.e2c.copy()
+    e2c[7] = e2c[7, ::-1]  # one edge with its normal pointing into E2C[0]
+    with pytest.raises(ValueError, match="edge orientation convention"):
+        tracer_advection_horizontal.check_cell_edge_orientation_convention(
+            geofac_div=geofac_div, c2e=torus_patch.c2e, e2c=e2c
+        )

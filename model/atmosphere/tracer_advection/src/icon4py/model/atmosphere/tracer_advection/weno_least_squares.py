@@ -9,14 +9,15 @@
 """Init-time WENO least-squares coefficient machinery for the miura_weno schemes.
 
 Port of the torus branch of the candidate least-squares setup from ICON
-(mo_intp_coeffs_lsq_bln.f90, icon-exclaim branch transport_ajocksch): 9-point
-stencil construction, torus moments, and the 27 (quadratic) / 3 (linear)
-candidate pseudoinverses. All Fortran line references below are to that file
-unless stated otherwise. Also hosts the init-time torus geometry consumed by
+(mo_intp_coeffs_lsq_bln.f90 of A. Jocksch's icon-exclaim branch, as captured on
+transport_ajocksch_capture): 9-point stencil construction, torus moments, and the
+27 (quadratic) / 3 (linear) candidate pseudoinverses. All Fortran line references
+below are to that file on that branch unless stated otherwise; "the paper" is
+Jocksch et al., PPAM 2026. Also hosts the init-time torus geometry consumed by
 the miura3 FFSL backtrajectory ('compute_ffsl_backtrajectory').
 
 Pure init-time numpy/cupy code (no gt4py); assumes a boundary-free torus grid
-on a single rank. Unknowns are ordered [x, y, x^2, y^2, xy] (f90 1986-1996).
+on a single rank. Unknowns are ordered [x, y, x^2, y^2, xy] (f90 1991-2001).
 """
 
 import enum
@@ -40,9 +41,9 @@ LSQ_DIM_C_CUBIC: Final[int] = 9
 LSQ_DIM_UNK_CUBIC: Final[int] = 9
 LSQ_WGT_EXP_CUBIC: Final[int] = 0
 
-# Zero patterns of the 27 quadratic candidate weight sets (f90 1719-1835): after
-# the `do i = 1, 27` reset to the full distance weights (1719-1721), candidates
-# 4-27 (1-based) zero exactly 4 of the 9 stencil positions (1735-1835);
+# Zero patterns of the 27 quadratic candidate weight sets (f90 1724-1840): after
+# the `do i = 1, 27` reset to the full distance weights (1724-1726), candidates
+# 4-27 (1-based) zero exactly 4 of the 9 stencil positions (1740-1840);
 # candidates 1-3 keep the full weights. 0-based candidate and position indices;
 # position order within each tuple follows the Fortran statement order.
 CANDIDATE_ZERO_PATTERNS_QUADRATIC: Final[tuple[tuple[int, ...], ...]] = (
@@ -82,37 +83,38 @@ class WenoLinearWeights(enum.Enum):
     A set is one weight per stencil type I-V; the three type-VI candidates always get 1.
     The weights enter twice: at run time as the candidate's d_j in the smoothness
     weighting (mo_advection_hflux.f90 3008) and at init time in the assembly of the
-    type-VI candidates (f90 2647-2660), so a set is chosen once and used for both, see
+    type-VI candidates (f90 2670-2680), so a set is chosen once and used for both, see
     'linear_weights'.
 
     Which set the paper's "WENO d_j = 1" column is cannot be read off the code alone:
     lsq_compute_coeff_cell_torus assigns (1, 1.5, 1, 0.5, 1) first and overwrites it with
-    the optimised set (f90 2590-2600), while the paper's text says all d_j are 1, which is
+    the optimised set (f90 2609-2622), while the paper's text says all d_j are 1, which is
     what the code did before the weights existed (commit 47ebf87c89: unweighted blend and
-    assembly) and what the hybrid's WENO branch still does at run time (f90 3666). Both
-    candidates are provided.
+    assembly) and what the hybrid's WENO branch still does at run time (f90 3684). The
+    Fortran reference runs on Jocksch's grid settle it: the paper's "d_j = 1" column is
+    UNITY (3.3108 vs the printed 3.310), HAND_TUNED gives 3.278 (CAPTURE_NOTES.md).
     """
 
-    #: 0, 0, 0, 0, 2.991549980478795 for types I-V (f90 2596-2600, the live assignment):
+    #: 0, 0, 0, 0, 2.991549980478795 for types I-V (f90 2618-2622, the live assignment):
     #: the result of his gradient-descent optimisation on the moving cylinder,
     #: "WENO opt" in Table 2
     OPTIMIZED = "optimized"
     #: every d_j = 1: the paper's literal "d_j = 1", the hybrid's run-time weighting
     UNITY = "unity"
-    #: 1, 1.5, 1, 0.5, 1 for types I-V (f90 2590-2594, the first, overwritten assignment;
+    #: 1, 1.5, 1, 0.5, 1 for types I-V (f90 2609-2613, the first, overwritten assignment;
     #: the "* 2" marks on the types with six members suggest per-120-degree-group values
     #: 1, 3, 1, 1, 2); what the Fortran reference run selects with ICON_WENO_UNIT_WEIGHTS
     HAND_TUNED = "hand_tuned"
 
 
-#: one weight per stencil type I-V (f90 2590-2600), see 'WenoLinearWeights'
+#: one weight per stencil type I-V (f90 2609-2622), see 'WenoLinearWeights'
 LINEAR_WEIGHTS_BY_STENCIL_TYPE: Final[dict[WenoLinearWeights, tuple[float, ...]]] = {
     WenoLinearWeights.OPTIMIZED: (0.0, 0.0, 0.0, 0.0, 2.991549980478795),
     WenoLinearWeights.UNITY: (1.0, 1.0, 1.0, 1.0, 1.0),
     WenoLinearWeights.HAND_TUNED: (1.0, 1.5, 1.0, 0.5, 1.0),
 }
 
-#: 0-based candidate slots of the stencil types I-V (f90 2608-2635): 4-6, 7-12, 13-15,
+#: 0-based candidate slots of the stencil types I-V (f90 2631-2658): 4-6, 7-12, 13-15,
 #: 16-21, 22-27 (1-based); slots 1-3 are the assembled type-VI candidates
 CANDIDATE_SLOTS_BY_STENCIL_TYPE: Final[tuple[tuple[int, ...], ...]] = (
     (3, 4, 5),
@@ -124,9 +126,9 @@ CANDIDATE_SLOTS_BY_STENCIL_TYPE: Final[tuple[tuple[int, ...], ...]] = (
 
 
 def linear_weights(option: WenoLinearWeights) -> np.ndarray:
-    """The 27-slot l_weights_s vector of a weight set (f90 2608-2646).
+    """The 27-slot l_weights_s vector of a weight set (f90 2631-2669).
 
-    Slots 1-3 (type VI) are always 1 (f90 2646); the remaining 24 get the per-type value
+    Slots 1-3 (type VI) are always 1 (f90 2669); the remaining 24 get the per-type value
     of the set. Consumed by 'compute_weno_pseudoinverse_quadratic' (type-VI assembly)
     and by the run-time candidate loop of the quadratic WENO scheme.
     """
@@ -138,7 +140,7 @@ def linear_weights(option: WenoLinearWeights) -> np.ndarray:
     return weights
 
 
-# Live l_weights_s values (f90 2590-2646): slots 1-3 = 1, slots 4-21 = 0,
+# Live l_weights_s values (f90 2609-2669): slots 1-3 = 1, slots 4-21 = 0,
 # slots 22-27 = 2.991549980478795 (1-based), i.e. linear_weights(OPTIMIZED).
 L_WEIGHTS_S: Final[np.ndarray] = linear_weights(WenoLinearWeights.OPTIMIZED)
 
@@ -164,7 +166,7 @@ def compute_torus_distance_vectors(
 ) -> data_alloc.NDArray:
     """Distance vectors from each cell center to its neighbors' centers, (n_cells, k, 2).
 
-    Port of f90 1599-1607: the neighbor centers are moved to their closest
+    Port of f90 1604-1612: the neighbor centers are moved to their closest
     periodic image before taking the difference.
     """
     array_ns = data_alloc.array_namespace(cell_center_x)
@@ -317,12 +319,12 @@ def compute_lsq_moments_torus(
 
         [x, y, x^2, y^2, xy]  +  [x^3, y^3, x^2 y, x y^2]
 
-    Port of the torus moments block (f90 1957-2133): analytic polygon line
+    Port of the torus moments block (f90 1962-2138): analytic polygon line
     integrals over the cell vertices, with the vertices moved to their closest
     periodic image relative to the cell center.
     """
     array_ns = data_alloc.array_namespace(cell_center_x)
-    # f90 1962-1972: distance vectors between cell center and vertices
+    # f90 1967-1977: distance vectors between cell center and vertices
     vert_x = _plane_torus_closest_coordinates(
         cell_center_x[:, array_ns.newaxis], vertex_x[c2v], domain_length
     )
@@ -337,10 +339,10 @@ def compute_lsq_moments_torus(
     delx = dxp - dx
     dely = dyp - dy
 
-    # reciprocal control volume area (f90 2015-2023)
+    # reciprocal control volume area (f90 2020-2028)
     z_rcarea = 2.0 / array_ns.sum((dxp + dx) * dely, axis=1)
 
-    # integrands for each edge (f90 2031-2055)
+    # integrands for each edge (f90 2036-2060)
     fx = dxp**2 + dxp * dx + dx**2
     fy = dyp**2 + dyp * dy + dy**2
     fxx = (dxp + dx) * (dxp**2 + dx**2)
@@ -349,7 +351,7 @@ def compute_lsq_moments_torus(
         dxp**2 + 2.0 * dxp * dx + 3.0 * dx**2
     )
 
-    # f90 2121-2133
+    # f90 2126-2138
     moments = array_ns.empty((c2v.shape[0], 9 if cubic else 5), dtype=ta.wpfloat)
     moments[:, 0] = z_rcarea / 6.0 * array_ns.sum(fx * dely, axis=1)
     moments[:, 1] = -z_rcarea / 6.0 * array_ns.sum(fy * delx, axis=1)
@@ -401,7 +403,7 @@ def compute_lsq_moments_hat(
 ) -> data_alloc.NDArray:
     """Stencil cell moments translated to the center cell frame, (n_cells, 9, n_unknowns).
 
-    Port of f90 2217-2241 for the quadratic set and of mo_intp_coeffs_lsq_bln.f90:1111-1170
+    Port of f90 2236-2260 for the quadratic set and of mo_intp_coeffs_lsq_bln.f90:1111-1170
     for the cubic one; the unknown count is taken from 'lsq_moments', so passing the cubic
     moments yields the cubic shifts. Each stencil cell's own moments are shifted by the
     torus-periodic distance vector z_dist from the center cell to that cell.
@@ -447,16 +449,16 @@ def compute_lsq_moments_hat(
 def compute_candidate_weights_quadratic(z_dist: data_alloc.NDArray) -> data_alloc.NDArray:
     """The 27 candidate row-weight sets for the 9-point stencil, (n_cells, 27, 9)."""
     array_ns = data_alloc.array_namespace(z_dist)
-    # f90 1614-1622: 1/dist**wgt_exp
+    # f90 1619-1627: 1/dist**wgt_exp
     z_norm = array_ns.sqrt(array_ns.sum(z_dist**2, axis=2))
     weights = 1.0 / z_norm**LSQ_WGT_EXP_QUADRATIC
-    # f90 1719-1721: every candidate starts from the full distance weights
+    # f90 1724-1726: every candidate starts from the full distance weights
     candidate_weights = array_ns.repeat(weights[:, array_ns.newaxis, :], 27, axis=1)
-    # f90 1735-1835: hard-coded zero patterns
+    # f90 1740-1840: hard-coded zero patterns
     for cand, positions in enumerate(CANDIDATE_ZERO_PATTERNS_QUADRATIC):
         for pos in positions:
             candidate_weights[:, cand, pos] = 0.0
-    # f90 1945-1949: per-candidate max normalization
+    # f90 1950-1954: per-candidate max normalization
     candidate_weights /= array_ns.max(candidate_weights, axis=2, keepdims=True)
     return candidate_weights
 
@@ -464,7 +466,7 @@ def compute_candidate_weights_quadratic(z_dist: data_alloc.NDArray) -> data_allo
 def _svd_pseudoinverse(
     design: data_alloc.NDArray, weights: data_alloc.NDArray
 ) -> data_alloc.NDArray:
-    # f90 2476-2581: Moore-Penrose inverse V * 1/S * U^T of the weighted design
+    # f90 2495-2600: Moore-Penrose inverse V * 1/S * U^T of the weighted design
     # matrix; the row weights multiply the pseudoinverse columns so that it
     # applies to unweighted z_b vectors at runtime
     array_ns = data_alloc.array_namespace(design)
@@ -487,7 +489,7 @@ def _moment_increments(
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """The stencil offsets and the unweighted design matrix of the fit.
 
-    f90 2294-2308: A[js, ju] = w[js] * (moments_hat[js, ju] - moments[ju]); the returned
+    f90 2313-2327: A[js, ju] = w[js] * (moments_hat[js, ju] - moments[ju]); the returned
     'diff' is that difference, without the row weights, which differ per candidate and per
     reconstruction order. Works for either order: the unknown count comes from
     'lsq_moments'.
@@ -511,7 +513,7 @@ def _full_stencil_design_quadratic(
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """(row weights, weighted design matrix) of the full 9-row fit, (n_cells, 9) / (n_cells, 9, 5).
 
-    f90 2294-2300: z_lsq_mat_c[js, ju] = lsq_weights_c[js] * (moments_hat[js, ju] -
+    f90 2313-2320: z_lsq_mat_c[js, ju] = lsq_weights_c[js] * (moments_hat[js, ju] -
     moments[ju]), with the max-normalised 1/dist**5 weights.
     """
     array_ns = data_alloc.array_namespace(diff)
@@ -524,7 +526,7 @@ def _full_stencil_pseudoinverse_quadratic(
 ) -> data_alloc.NDArray:
     """The standard pseudoinverse over all 9 stencil rows, (n_cells, 5, 9).
 
-    f90 2582-2589 for the WENO scheme; the same matrix miura3 (ihadv_tracer=3 with
+    f90 2601-2608 for the WENO scheme; the same matrix miura3 (ihadv_tracer=3 with
     lsq_high_ord=2) reconstructs from, since it has no candidate sub-stencils.
     """
     array_ns = data_alloc.array_namespace(diff)
@@ -620,11 +622,13 @@ def compute_lsq_error_quadratic(
 
     Despite its name it is the transposed, distance-weighted design matrix of the fit,
     A_w^T with A_w[js, ju] = w[js] * (moments_hat[js, ju] - moments[ju]), stored as
-    REAL(sp) (f90 2459 with 2294-2300; mo_intp_data_strc.f90 83). The hybrid scheme
+    REAL(sp) (f90 2465 with 2313-2320; mo_intp_data_strc.f90 83). The hybrid scheme
     (ihadv_tracer=132) uses it for the residual of the fit, sum_js (A_w[js] . c - z_b[js])^2
     (mo_advection_hflux.f90 3565-3568), against the *unweighted* increments z_b: that
     mismatch is the Fortran's, kept as is. Same layout as 'compute_lsq_pseudoinverse_
-    quadratic', so 'scatter_to_offsets' applies.
+    quadratic', so 'scatter_to_offsets' applies. Init-time numpy: double, like the other
+    coefficients; the cast to the run-time precision of the residual happens where the
+    fields are built.
     """
     array_ns = data_alloc.array_namespace(lsq_moments)
     z_dist, diff = _moment_increments(
@@ -636,7 +640,7 @@ def compute_lsq_error_quadratic(
         domain_height=domain_height,
     )
     _, full_design = _full_stencil_design_quadratic(z_dist, diff)
-    return full_design.swapaxes(1, 2).astype(array_ns.float32)
+    return full_design.swapaxes(1, 2)
 
 
 def compute_butterfly_slot_mask(
@@ -645,21 +649,22 @@ def compute_butterfly_slot_mask(
     c2e2c: data_alloc.NDArray,
     c2e2c2e2c: data_alloc.NDArray,
 ) -> data_alloc.NDArray:
-    """1 on the C2E2C2E2C slots that carry an outer stencil cell, 0 elsewhere, (n_cells, 9).
+    """True on the C2E2C2E2C slots that carry an outer stencil cell, (n_cells, 9) bool.
 
     The complement of the zero padding 'scatter_to_offsets' puts on the slots holding the
     centre cell or a duplicated direct neighbour; a residual over the butterfly rows must
-    drop those slots, whereas a coefficient contraction is blind to them.
+    drop those slots, whereas a coefficient contraction is blind to them. Exactly six
+    slots per cell are active.
     """
     array_ns = data_alloc.array_namespace(stencil_c9)
     n_cells = stencil_c9.shape[0]
     _, butterfly = scatter_to_offsets(
-        values_fortran_order=array_ns.ones((n_cells, 1, 1, 9), dtype=ta.wpfloat),
+        values_fortran_order=array_ns.ones((n_cells, 1, 1, 9), dtype=array_ns.int32),
         stencil_c9=stencil_c9,
         c2e2c=c2e2c,
         c2e2c2e2c=c2e2c2e2c,
     )
-    return butterfly[:, 0, 0, :]
+    return butterfly[:, 0, 0, :] == 1
 
 
 def compute_weno_pseudoinverse_quadratic(
@@ -703,12 +708,12 @@ def compute_weno_pseudoinverse_quadratic(
     design = candidate_weights[:, :, :, array_ns.newaxis] * diff[:, array_ns.newaxis, :, :]
     pseudoinv = _svd_pseudoinverse(design, candidate_weights)
 
-    # f90 2582-2589: candidates 1-3 are overwritten with the standard
+    # f90 2601-2608: candidates 1-3 are overwritten with the standard
     # full-stencil pseudoinverse (all 9 rows active, full distance weights)
     full_pseudoinv = _full_stencil_pseudoinverse_quadratic(z_dist, diff)
     pseudoinv[:, 0:3] = full_pseudoinv[:, array_ns.newaxis, :, :]
 
-    # f90 2647-2660: literal port of the interleaved correction loop
+    # f90 2670-2680: literal port of the interleaved correction loop
     # `do i = 4, 27, 3`; with the live L_WEIGHTS_S only i + k in
     # {21, 24}, {22, 25}, {23, 26} (0-based) contribute
     for i in range(3, 27, 3):
@@ -730,9 +735,9 @@ def compute_weno_pseudoinverse_linear(
     """The 3 candidate pseudoinverses for the linear reconstruction, (n_cells, 3, 2, 3).
 
     Unknowns are [x, y]. Unit row weights; candidate i zeroes the row of direct
-    neighbor i (f90 1625-1634). With llsq_lin_consv=.FALSE. the moments vanish
+    neighbor i (f90 1630-1639). With llsq_lin_consv=.FALSE. the moments vanish
     and the design matrix rows are the plain torus-periodic distance vectors
-    (f90 2217-2308). No l_weights_s correction (f90 2582 guards on dim_c > 3).
+    (f90 2236-2327). No l_weights_s correction (f90 2601 guards on dim_c > 3).
     """
     array_ns = data_alloc.array_namespace(cell_center_x)
     n_cells = c2e2c.shape[0]
@@ -744,7 +749,7 @@ def compute_weno_pseudoinverse_linear(
         domain_height=domain_height,
     )
     # candidate weights, (n_cells, 3 candidates, 3 rows); the per-candidate max
-    # normalization (f90 1945-1949) is a no-op for unit weights
+    # normalization (f90 1950-1954) is a no-op for unit weights
     candidate_weights = array_ns.ones((n_cells, 3, 3), dtype=ta.wpfloat)
     for i in range(3):
         for js in range(3):

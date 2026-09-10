@@ -8,8 +8,9 @@
 
 """Cell-local positive-definite limiter of Jocksch's FFSL-WENO schemes, edge part.
 
-The clamp and the scaling ``p_out_e = r_m * z_b`` of mo_advection_hflux.f90 3021 and
-3028-3032, written on the edges: the upwind cell is E2C[0] for vn >= 0 and E2C[1]
+The clamp and the scaling ``p_out_e = r_m * z_b`` of mo_advection_hflux.f90 3030 and
+3037-3041 (upwind_hflux_miura3_weno), written on the edges: the upwind cell is E2C[0] for
+vn >= 0 and E2C[1]
 otherwise (the backtrajectory rule), and the normal points out of E2C[0] (ICON's
 convention, which the upwind rule itself relies on), so the upwind cell's outflow is
 ``+flux`` for vn >= 0 and ``-flux`` for vn < 0. See the cell part for the orientation
@@ -32,9 +33,9 @@ def _apply_cell_local_positive_definite_horizontal_flux_factor(
     lvn_pos = p_vn >= 0.0
     # orientation of the normal relative to the upwind cell
     orientation = where(lvn_pos, 1.0, -1.0)
-    # f90 3021: z_b = MAX(z_b, 0) on the upwind cell's outflow
+    # f90 3030: z_b = MAX(z_b, 0) on the upwind cell's outflow
     z_b = orientation * maximum(orientation * p_mflx_tracer_h, 0.0)
-    # f90 3030: p_out_e = r_m * z_b with the upwind cell's r_m
+    # f90 3039: p_out_e = r_m * z_b with the upwind cell's r_m
     return where(lvn_pos, r_m(E2C[0]), r_m(E2C[1])) * z_b
 
 

@@ -541,7 +541,7 @@ def _run_gt4py_hybrid_pipeline(
             for u in range(5)
         },
         lsq_butterfly_active=butterfly_field(
-            patch_coefficients["butterfly_active"].astype(np.float32)
+            patch_coefficients["butterfly_active"].astype(np.int32)
         ),
         use_weno=use_weno,
         selection_threshold=float(np.float32(threshold)),

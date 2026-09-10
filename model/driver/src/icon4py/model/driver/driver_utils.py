@@ -610,7 +610,7 @@ def _construct_weno_hybrid_state(
         ),
         lsq_butterfly_active=gtx.as_field(
             (dims.CellDim, dims.C2E2C2E2CDim),
-            butterfly_active.astype(gtx.float32),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+            butterfly_active.astype(gtx.int32),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
             allocator=backend,
         ),
     )

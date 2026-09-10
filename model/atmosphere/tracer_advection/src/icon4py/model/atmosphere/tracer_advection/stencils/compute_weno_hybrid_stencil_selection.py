@@ -8,7 +8,7 @@
 
 """Stencil selection of the hybrid quadratic scheme (ihadv_tracer=132).
 
-Port of mo_advection_hflux.f90 3564-3574 (upwind_hflux_miura_weno_hyb): per cell and
+Port of mo_advection_hflux.f90 3547-3574 (upwind_hflux_miura_weno_hyb): per cell and
 level, the residual of the full 9-point quadratic fit
 
     lsqe = sum_is (lsq_error(1:5, is) . c(2:6) - z_b(is))**2
@@ -23,8 +23,8 @@ in double precision: the single-precision literals are promoted, so the threshol
 epsilon passed in must be the double values of the single-precision constants.
 
 Rows: the 9 stencil positions are split over the C2E2C and C2E2C2E2C offsets as the
-pseudoinverse is (weno_least_squares.scatter_to_offsets); ``lsq_butterfly_active`` is 1
-on the six claimed butterfly slots and 0 on the three that hold the centre cell or a
+pseudoinverse is (weno_least_squares.scatter_to_offsets); ``lsq_butterfly_active`` (int32)
+is 1 on the six claimed butterfly slots and 0 on the three that hold the centre cell or a
 duplicated direct neighbour, whose z_b must not enter the residual. The summation runs
 over the direct slots then the butterfly slots, not in the Fortran's stencil order.
 """
@@ -55,20 +55,23 @@ def _compute_weno_hybrid_stencil_selection(
     lsq_error_butterfly_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
     lsq_error_butterfly_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
     lsq_error_butterfly_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
-    lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
+    lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.int32],
     selection_threshold: ta.wpfloat,
     selection_eps: ta.wpfloat,
 ) -> fa.CellKField[bool]:
-    # f90 3563: zlc(1:5) = z_lsq_coeff(2:6), single precision
+    # f90 3564: zlc(1:5) = z_lsq_coeff(2:6), single precision
     zlc_1 = astype(p_coeff_2, gtx.float32)
     zlc_2 = astype(p_coeff_3, gtx.float32)
     zlc_3 = astype(p_coeff_4, gtx.float32)
     zlc_4 = astype(p_coeff_5, gtx.float32)
     zlc_5 = astype(p_coeff_6, gtx.float32)
 
-    # f90 3552-3554: z_b = p_cc(stencil cell) - p_cc(center), rounded as real(z_b(is))
+    # f90 3547-3549: z_b = p_cc(stencil cell) - p_cc(center), rounded as real(z_b(is));
+    # the padding slots of the butterfly offset are masked out
     zb_direct = astype(p_cc(C2E2C) - p_cc, gtx.float32)
-    zb_butterfly = astype(p_cc(C2E2C2E2C) - p_cc, gtx.float32) * lsq_butterfly_active
+    zb_butterfly = astype(p_cc(C2E2C2E2C) - p_cc, gtx.float32) * astype(
+        lsq_butterfly_active, gtx.float32
+    )
 
     # f90 3565-3568: DOT_PRODUCT(lsq_error(1:5, is), zlc(1:5)) - real(z_b(is)), squared and
     # summed over the stencil rows
@@ -114,7 +117,7 @@ def compute_weno_hybrid_stencil_selection(
     lsq_error_butterfly_3: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
     lsq_error_butterfly_4: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
     lsq_error_butterfly_5: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
-    lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32],
+    lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.int32],
     use_weno: fa.CellKField[bool],
     selection_threshold: ta.wpfloat,
     selection_eps: ta.wpfloat,

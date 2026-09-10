@@ -722,3 +722,17 @@ def test_ffsl_backtrajectory_geometry_torus(torus_patch):
     np.testing.assert_allclose(
         verts_y[:, 1] - verts_y[:, 0], torus_patch.tangent_orientation * a, rtol=1e-12
     )
+
+
+def test_butterfly_slot_mask_is_bool_with_six_active_slots(torus_patch):
+    stencil_c9 = weno.create_stencil_c9(torus_patch.c2e2c, torus_patch.c2v)
+    mask = weno.compute_butterfly_slot_mask(
+        stencil_c9=stencil_c9, c2e2c=torus_patch.c2e2c, c2e2c2e2c=torus_patch.c2e2c2e2c
+    )
+    assert mask.dtype == np.bool_
+    assert mask.shape == torus_patch.c2e2c2e2c.shape
+    np.testing.assert_array_equal(mask.sum(axis=1), 6)
+    # the active slots are exactly the ones carrying an outer stencil cell
+    outer = np.sort(stencil_c9[:, [1, 2, 4, 5, 7, 8]], axis=1)
+    active_cells = np.sort(torus_patch.c2e2c2e2c[mask].reshape(-1, 6), axis=1)
+    np.testing.assert_array_equal(active_cells, outer)

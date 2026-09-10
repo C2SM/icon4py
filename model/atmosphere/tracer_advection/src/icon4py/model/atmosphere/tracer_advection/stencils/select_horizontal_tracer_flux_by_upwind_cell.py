@@ -8,7 +8,7 @@
 
 """Per-edge choice between two candidate fluxes by a mask on the edge's upwind cell.
 
-The hybrid scheme (ihadv_tracer=132, mo_advection_hflux.f90 3574-3688) decides per
+The hybrid scheme (ihadv_tracer=132, mo_advection_hflux.f90 3574-3693) decides per
 upwind cell whether its edges get the plain quadratic flux or the WENO flux; both are
 computed on all edges here and this stencil picks per edge.
 """

@@ -197,14 +197,49 @@ class AdvectionWenoHybridState:
     The hybrid reconstructs every cell with the full 9-point pseudoinverse of miura3 and
     decides from the residual of that fit whether to keep it or to blend the 27 WENO
     candidates, so it carries both states plus ICON's 'lsq_error' (the transposed weighted
-    design matrix, single precision, weno_least_squares.compute_lsq_error_quadratic)
+    design matrix, REAL(sp) in the Fortran, weno_least_squares.compute_lsq_error_quadratic)
     scattered onto the C2E2C / C2E2C2E2C rows like the pseudoinverses, and the mask of the
-    butterfly slots that carry a stencil cell (compute_butterfly_slot_mask). The geometry
-    fields of the two states are the same data.
+    butterfly slots that carry a stencil cell (compute_butterfly_slot_mask).
+
+    Both states must come from one least-squares setup (the same 9-point stencil, moments
+    and geometry, see driver_utils._construct_weno_hybrid_state): the full-stencil
+    pseudoinverse of 'quadratic_state' is the matrix the type-VI candidates 1-3 of
+    'weno_quadratic_state' are assembled from (with its l_weights_s), and 'lsq_error' is
+    the design matrix of that same fit. '__post_init__' checks the part of this that is
+    cheap to check: the moment and geometry fields of the two states are the same objects.
     """
 
     weno_quadratic_state: AdvectionWenoQuadraticState
     quadratic_state: AdvectionQuadraticState
+
+    def __post_init__(self) -> None:
+        shared = (
+            "lsq_moments_1",
+            "lsq_moments_2",
+            "lsq_moments_3",
+            "lsq_moments_4",
+            "lsq_moments_5",
+            "pos_on_tplane_e_1_x",
+            "pos_on_tplane_e_2_x",
+            "pos_on_tplane_e_1_y",
+            "pos_on_tplane_e_2_y",
+            "edge_verts_1_x",
+            "edge_verts_2_x",
+            "edge_verts_1_y",
+            "edge_verts_2_y",
+            "tangent_orientation",
+        )
+        not_shared = [
+            name
+            for name in shared
+            if getattr(self.quadratic_state, name) is not getattr(self.weno_quadratic_state, name)
+        ]
+        if not_shared:
+            raise ValueError(
+                "'AdvectionWenoHybridState' needs the quadratic and the quadratic-WENO state "
+                "built from one least-squares setup, but these fields are not the same "
+                f"objects: {', '.join(not_shared)}."
+            )
 
     # lsq_error rows on the direct neighbours, [5 unknowns]
     lsq_error_direct: tuple[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.float32], ...]
@@ -215,7 +250,8 @@ class AdvectionWenoHybridState:
     ]
 
     # 1 on the butterfly slots holding an outer stencil cell, 0 on the padding slots
-    lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.float32]
+    # (weno_least_squares.compute_butterfly_slot_mask as an int32 field)
+    lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.int32]
 
 
 @dataclasses.dataclass(frozen=True)

@@ -114,7 +114,7 @@ class TestComputeWenoHybridStencilSelection(stencil_tests.StencilTest):
                 grid, dims.CellDim, dims.C2E2C2E2CDim, low=low, high=high, dtype=np.float32
             )
 
-        active = data_alloc.random_mask(grid, dims.CellDim, dims.C2E2C2E2CDim, dtype=np.float32)
+        active = data_alloc.random_mask(grid, dims.CellDim, dims.C2E2C2E2CDim, dtype=np.int32)
         return dict(
             p_cc=data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=0.5, high=1.5),
             **{

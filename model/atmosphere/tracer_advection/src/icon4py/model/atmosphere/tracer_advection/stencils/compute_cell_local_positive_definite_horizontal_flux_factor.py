@@ -9,8 +9,9 @@
 """Cell-local positive-definite limiter of Jocksch's FFSL-WENO schemes, cell part.
 
 Port of the ``p_itype_hlimit == ifluxl_sm`` branch inside his reconstruction-and-flux
-kernels (mo_advection_hflux.f90 3013-3040 in upwind_hflux_miura3_weno; the same lines
-in 102/132/202/203), paper Algorithm 1: per cell, the reconstructed fluxes of the edges
+kernels (mo_advection_hflux.f90 3022-3042 in upwind_hflux_miura3_weno, 1538-1560 in 102,
+3702-3722 in 132), Algorithm 1 of the paper (Jocksch et al., PPAM 2026): per cell, the
+reconstructed fluxes of the edges
 whose upwind cell it is are clamped to non-negative outflow (the reconstruction limiter)
 and summed into ``flux_out``, and the outflow scaling ``r_m = min(1, q rho / (flux_out
 + eps))`` follows. The edge part, 'apply_cell_local_positive_definite_horizontal_flux_
@@ -44,9 +45,9 @@ def _clamped_outflow_contribution(
     # the cell is the edge's upwind cell iff the wind leaves it through the edge, with the
     # backtrajectory's tie rule vn >= 0 -> E2C[0] (the outward-normal cell)
     is_upwind = where(geofac_div > 0.0, p_vn >= 0.0, p_vn < 0.0)
-    # f90 3021: z_b = MAX(z_b, 0), applied to the outflow
+    # f90 3030: z_b = MAX(z_b, 0), applied to the outflow
     z_b = orientation * maximum(orientation * p_mflx_tracer_h, 0.0)
-    # f90 3022-3023: flux_out = flux_out + geofac_div * p_dtime * z_b
+    # f90 3031-3032: flux_out = flux_out + geofac_div * p_dtime * z_b
     return where(is_upwind, geofac_div * p_dtime * z_b, 0.0)
 
 
@@ -60,7 +61,7 @@ def _compute_cell_local_positive_definite_horizontal_flux_factor(
     p_dtime: ta.wpfloat,
     dbl_eps: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    # f90 3016-3025: the cell's three edges in C2E order, only the upwind ones contribute
+    # f90 3023-3034: the cell's three edges in C2E order, only the upwind ones contribute
     flux_out = (
         _clamped_outflow_contribution(
             p_mflx_tracer_h(C2E[0]), p_vn(C2E[0]), geofac_div[dims.C2EDim(0)], p_dtime
@@ -72,7 +73,7 @@ def _compute_cell_local_positive_definite_horizontal_flux_factor(
             p_mflx_tracer_h(C2E[2]), p_vn(C2E[2]), geofac_div[dims.C2EDim(2)], p_dtime
         )
     )
-    # f90 3026-3027: r_m = MIN(1, (p_cc * rhodz_now) / (flux_out + dbl_eps))
+    # f90 3035-3036: r_m = MIN(1, (p_cc * rhodz_now) / (flux_out + dbl_eps))
     r_m = minimum(1.0, (p_cc * p_rhodz_now) / (flux_out + dbl_eps))
     return r_m
 

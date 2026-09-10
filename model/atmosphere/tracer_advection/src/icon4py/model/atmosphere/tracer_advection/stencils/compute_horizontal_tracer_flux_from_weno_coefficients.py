@@ -13,7 +13,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import wpfloat
 
 
-# Final flux of the miura3 WENO scheme (mo_advection_hflux.f90 2514-2521): the candidate
+# Final flux of the miura3 WENO scheme (mo_advection_hflux.f90 3013-3021, upwind_hflux_miura3_weno): the candidate
 # coefficients accumulated by accumulate_weno_candidate_flux_weights are normalized by the
 # accumulated smoothness weights and dotted with the quadrature vector, then multiplied by the
 # mass flux. The quadrature vector holds the departure-region AREA AVERAGES of the monomials
@@ -37,7 +37,7 @@ def _compute_horizontal_tracer_flux_from_weno_coefficients(
     p_quad_vector_sum_6: fa.EdgeKField[ta.vpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    # f90 2514: z_lsq_weighted(1:6,ie) = z_lsq_weighted(1:6,ie) / smooth_sum(ie); the division
+    # f90 3016: z_lsq_weighted(1:6,ie) = z_lsq_weighted(1:6,ie) / smooth_sum(ie); the division
     # happens on the coefficients, before the dot product
     c_1 = z_lsq_weighted_1 / smooth_sum
     c_2 = z_lsq_weighted_2 / smooth_sum
@@ -46,7 +46,7 @@ def _compute_horizontal_tracer_flux_from_weno_coefficients(
     c_5 = z_lsq_weighted_5 / smooth_sum
     c_6 = z_lsq_weighted_6 / smooth_sum
 
-    # f90 2516-2518: DOT_PRODUCT(z_lsq_weighted(1:6), z_quad_vector_sum(1:6)) * p_mass_flx_e
+    # f90 3017-3019: DOT_PRODUCT(z_lsq_weighted(1:6), z_quad_vector_sum(1:6)) * p_mass_flx_e
     p_out_e = (
         c_1 * astype(p_quad_vector_sum_1, wpfloat)
         + c_2 * astype(p_quad_vector_sum_2, wpfloat)
