@@ -15,7 +15,6 @@ fields and manage their dependencies
 Three `RetrievalMode` s are available:
 _ `FIELD`: return the buffer containing the computed values as a GT4Py `Field`
 - `METADATA`:  return metadata (`FieldMetaData`) such as units, CF standard_name or similar, dimensions...
-- `DATA_ARRAY`: combination of the two above in the form of `xarray.dataarray`
 
 The factory can be used to "store" already computed fields or register functions and call arguments
 and only compute the fields lazily upon request. In order to do so the user registers the fields
@@ -32,7 +31,7 @@ factory.register_provider(foo_provider)
 factory.register_provider(bar_provider)
 (...)
 
-val = factory.get("foo", RetrievalType.DATA_ARRAY)
+val = factory.get("foo", RetrievalType.FIELD)
 
 
 TODO: @halungge: allow to read configuration data
@@ -56,7 +55,6 @@ from typing import Any, Literal, Protocol, TypeVar, cast, overload
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
-import xarray as xa
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -158,8 +156,6 @@ class FieldProvider(Protocol):
 
 class RetrievalType(enum.Enum):
     FIELD = 0
-    DATA_ARRAY = 1
-    METADATA = 2
     SCALAR = 3
 
 
@@ -203,17 +199,9 @@ class FieldSource(GridProvider, Protocol):
         self, field_name: str, type_: Literal[RetrievalType.SCALAR]
     ) -> state_utils.ScalarType: ...
 
-    @overload
-    def get(self, field_name: str, type_: Literal[RetrievalType.DATA_ARRAY]) -> xa.DataArray: ...
-
-    @overload
-    def get(
-        self, field_name: str, type_: Literal[RetrievalType.METADATA]
-    ) -> model.FieldMetaData: ...
-
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
-    ) -> state_utils.GTXFieldType | xa.DataArray | model.FieldMetaData | state_utils.ScalarType:
+    ) -> state_utils.GTXFieldType |  state_utils.ScalarType:
         """
         Get a field or its metadata from the factory.
 
@@ -231,9 +219,7 @@ class FieldSource(GridProvider, Protocol):
         if field_name not in self._providers:
             raise ValueError(f"Field '{field_name}' not provided by the source '{self.__class__}'")
         match type_:
-            case RetrievalType.METADATA:
-                return self.metadata[field_name]
-            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY | RetrievalType.SCALAR:
+            case RetrievalType.FIELD | RetrievalType.SCALAR:
                 provider = self._providers[field_name]
                 if field_name not in provider.fields:
                     raise ValueError(
@@ -247,17 +233,38 @@ class FieldSource(GridProvider, Protocol):
                     grid=self,
                     exchange=self._exchange,
                 )
-                return (
-                    buffer
-                    if type_ in (RetrievalType.FIELD, RetrievalType.SCALAR)
-                    else xa.DataArray(data_alloc.as_numpy(buffer), attrs=self.metadata[field_name])
-                )
+                return buffer
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
 
+    def check_field_in_provider(self, field_name: str) -> None:
+        if field_name not in self._providers:
+            raise ValueError(f"Field '{field_name}' not provided by the source '{self.__class__}'")
+
+    def get_metadata(self, field_name: str) -> model.FieldMetaData:
+        self.check_field_in_provider(field_name)
+        return self.metadata[field_name]
+
+    def get_full_precision(self, field_name: str) -> state_utils.GTXFieldType:
+        log.info(f" retrieving field {field_name}")
+        self.check_field_in_provider(field_name)
+        provider = self._providers[field_name]
+        if field_name not in provider.fields:
+            raise ValueError(
+                f"Field {field_name} not provided by f{provider.func.__name__}."
+            )
+
+        return provider(
+            field_name=field_name,
+            field_src=self._sources,
+            backend=self.backend,
+            grid=self,
+            exchange=self._exchange,
+        )
+
     def dtype_for_factory(self, field_name: str) -> state_utils.ScalarType:
         try:
-            this_metadata = self.get(field_name, RetrievalType.METADATA)
+            this_metadata = self.get_metadata(field_name)
             dtype = this_metadata.get("dtype", gtx.float64)
         except (ValueError, KeyError):
             dtype = gtx.float64
@@ -270,9 +277,10 @@ class FieldSource(GridProvider, Protocol):
     def _provided_by_source(self, name) -> bool:
         return name in self._sources._providers or name in self._sources.metadata
 
-    def export_field(self, field_name: str) -> state_utils.GTXFieldType:
+    def export_field(self, field_name: str) -> state_utils.GTXFieldType:  #TODO(pstark): rename to get?
         """Export a field from the factory in the dtype provided by the metadata."""
         field = self.get(field_name, RetrievalType.FIELD)
+        # field = self.get_full_precision(field_name)   #TODO(pstark)
         dtype_metadata = self.metadata[field_name].get("dtype", ta.wpfloat)
         # `astype` is a `BuiltInFunction`, whose overloads are erased by the decorator.
         return cast("state_utils.GTXFieldType", gtx.astype(field, dtype_metadata))

@@ -62,24 +62,13 @@ class GridGeometry(factory.FieldSource):
         GridGeometry for geometry_type=SPHERE grid=f2e06839-694a-cca1-a3d5-028e0ff326e0 : R9B4
         >>> geometry.get("edge_length")
         NumPyArrayField(_domain=Domain(dims=(Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),), ranges=(UnitRange(0, 31558),)), _ndarray=array([3746.2669054 , 3746.2669066 , 3746.33418138, ..., 3736.61622936, 3792.41317057]))
-        >>> geometry.get("edge_length", RetrievalType.METADATA)
+        >>> geometry.get_metadata("edge_length")
         {'standard_name': 'edge_length',
         'long_name': 'edge length',
         'units': 'm',
         'dims': (Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),),
         'icon_var_name': 't_grid_edges%primal_edge_length',
         'dtype': numpy.float64}
-        >>> geometry.get("edge_length", RetrievalType.DATA_ARRAY)
-        <xarray.DataArray (dim_0: 31558)> Size: 252kB
-        array([3746.2669054 , 3746.2669066 , 3746.33418138, ..., 3889.53098062, 3736.61622936, 3792.41317057])
-        Dimensions without coordinates: dim_0
-        .Attributes:
-        standard_name:  edge_length
-        long_name:      edge length
-        units:          m
-        dims:           (Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: ...
-        icon_var_name:  t_grid_edges%primal_edge_length
-        dtype:          <class 'numpy.float64'>
 
 
     """

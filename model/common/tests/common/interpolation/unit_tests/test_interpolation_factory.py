@@ -102,7 +102,7 @@ def test_factory_raises_error_on_unknown_field(
         process_props=SingleNodeProcessProperties(),
     )
     with pytest.raises(ValueError, match="Field 'foo' not provided by the source"):
-        interpolation_source.get("foo", factory.RetrievalType.METADATA)
+        interpolation_source.get_metadata("foo")
 
 
 @pytest.mark.level("integration")
