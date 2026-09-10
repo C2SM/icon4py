@@ -281,6 +281,41 @@ def test_field_operator_provider_vertical_extent_is_declared_domain(
 
 
 @pytest.mark.datatest
+def test_numpy_provider_vertical_extent_is_declared_domain(
+    height_coordinate_source: SimpleFieldSource,
+) -> None:
+    assert height_coordinate_source.vertical_grid is not None
+    num_levels = height_coordinate_source.vertical_grid.num_levels
+
+    def average_downwards(z_ifc: data_alloc.NDArray) -> data_alloc.NDArray:
+        return 0.5 * (z_ifc[:, 1:-1] + z_ifc[:, 2:])
+
+    provider = factory.NumpyDataProvider(
+        func=average_downwards,
+        domain={
+            dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
+            dims.KDim: (v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1), k_domain(v_grid.Zone.BOTTOM)),
+        },
+        fields=("output_f",),
+        deps={"z_ifc": "height_coordinate"},
+    )
+    provider(
+        field_name="output_f",
+        field_src=height_coordinate_source,
+        backend=height_coordinate_source.backend,
+        grid=height_coordinate_source,
+        exchange=decomposition.SingleNodeExchange(),
+    )
+    x = provider.fields["output_f"]
+    assert isinstance(x, gtx.Field)
+    assert x.domain[dims.CellDim].unit_range == gtx.common.UnitRange(
+        0, height_coordinate_source.grid.num_cells
+    )
+    assert x.domain[dims.KDim].unit_range == gtx.common.UnitRange(1, num_levels)
+    assert np.all(x.asnumpy() != 0.0)
+
+
+@pytest.mark.datatest
 def test_field_source_raise_error_on_register(cell_coordinate_source: SimpleFieldSource) -> None:
     program = vertical_ops.average_two_vertical_levels_downwards_on_cells
     domain = {

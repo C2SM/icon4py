@@ -411,7 +411,10 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             f"{data_alloc.backend_name(compute_backend)}, target backend is: "
             f"{data_alloc.backend_name(factory.backend)}"
         )
-        metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields}
+        try:
+            metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields}
+        except (ValueError, KeyError):
+            metadata = {}
         self._fields = self._allocate_fields(compute_backend, grid_provider, metadata)
         # call field operator
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
@@ -629,7 +632,10 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
 
     Args:
         func: numpy function that computes the fields
-        domain: the compute domain used for the stencil computation
+        domain: the domain of the computed fields, following `_field_extent` when given with
+            ranges; as a bare tuple of dimensions the returned arrays' shapes are the extent, which
+            is how a field on a dimension without a grid size (e.g. `LsqUnkDim`) is labelled.
+            Empty for a scalar result.
         fields: Seq[str] names under which the results fo the function will be registered
         deps: dict[str, str] input fields used for computing this stencil: the key is the variable name
             used in the function and the value the name of the field it depends on.
@@ -643,7 +649,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         self,
         *,
         func: Callable,
-        domain: Sequence[gtx.Dimension],
+        domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
         fields: Sequence[str],
         deps: dict[str, str],
         connectivities: dict[str, gtx.Dimension] | None = None,
@@ -651,6 +657,7 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         do_exchange: bool = False,
     ):
         self._func = func
+        self._domain = domain if isinstance(domain, dict) else None
         self._dims = tuple(domain)
         self._fields: dict[str, state_utils.ScalarType | state_utils.FieldType | None] = {
             name: None for name in fields
@@ -699,14 +706,19 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         # convert to tuple
         results = (results,) if not isinstance(results, tuple) else results
         self._fields = {
-            k: self._as_field(backend, results[i]) if self._dims else results[i]
+            k: self._as_field(backend, results[i], grid_provider) if self._dims else results[i]
             for i, k in enumerate(self.fields)
         }
 
     def _as_field(
-        self, backend: gtx_typing.Backend | None, value: data_alloc.NDArray
+        self, backend: gtx_typing.Backend | None, value: data_alloc.NDArray, grid: GridProvider
     ) -> state_utils.GTXFieldType:
-        return gtx.as_field(tuple(self._dims), value, allocator=backend)
+        if self._domain is None:
+            return gtx.as_field(self._dims, value, allocator=backend)
+        field_domain = gtx.domain(
+            {dim: _field_extent(dim, declared, grid) for dim, declared in self._domain.items()}
+        )
+        return gtx.as_field(field_domain, value, allocator=backend)
 
     def _validate_dependencies(self) -> None:
         # TODO(egparedes): dealing with type annotations at run-time is error prone
@@ -788,4 +800,4 @@ def _func_name(callable_: Callable[..., Any]) -> str:
 def dtype_or_default(
     field_name: str, metadata: dict[str, model.FieldMetaData]
 ) -> state_utils.ScalarType:
-    return metadata[field_name].get("dtype", ta.wpfloat)
+    return metadata.get(field_name, {}).get("dtype", ta.wpfloat)
