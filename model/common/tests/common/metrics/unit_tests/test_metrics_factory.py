@@ -175,7 +175,6 @@ def test_factory_ddqz_full_e(
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest
-@pytest.mark.uses_concat_where
 def test_factory_ddqz_z_half(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
@@ -394,7 +393,6 @@ def test_factory_exner_w_explicit_weight_parameter(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 def test_factory_exner_exfac(
     grid_savepoint: serialbox.IconGridSavepoint,

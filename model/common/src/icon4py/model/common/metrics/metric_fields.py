@@ -39,6 +39,10 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
     _compute_cell_2_vertex_interpolation,
 )
 from icon4py.model.common.math.gradient import _grad_fd_tang, grad_fd_norm
+from icon4py.model.common.math.value_of_size import (
+    value_of_size_on_cells_on_model_levels_wp,
+    value_of_size_on_edges_wp,
+)
 from icon4py.model.common.math.vertical_operations import (
     difference_level_plus1_on_cells,
     with_boundaries_on_half_levels_on_cells,
@@ -477,7 +481,7 @@ def _compute_exner_exfac(
     exner_exfac = concat_where(
         dims.CellDim >= lateral_boundary_level_2,
         exner_expol * minimum(1.0 - (4.0 * maxslp) ** 2, 1.0 - (0.002 * maxhgtd) ** 2),
-        exner_expol,
+        value_of_size_on_cells_on_model_levels_wp(exner_expol, maxslp),
     )
     exner_exfac = maximum(0.0, exner_exfac)
     exner_exfac = where(maxslp > 1.5, maximum(-1.0 / 6.0, 1.0 / 9.0 * (1.5 - maxslp)), exner_exfac)
@@ -660,7 +664,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(  # noqa: PL
     extrapolation_distance = concat_where(
         (horizontal_start_distance <= dims.EdgeDim) & (dims.EdgeDim < horizontal_end_distance),
         downward_distance,
-        0.0,
+        value_of_size_on_edges_wp(0.0, downward_distance),
     )
 
     pg_exdist_dsl = where(

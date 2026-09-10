@@ -214,7 +214,6 @@ def test_compute_exner_w_explicit_weight_parameter(
 
 
 @pytest.mark.level("unit")
-@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 def test_compute_exner_exfac(
     grid_savepoint: sb.IconGridSavepoint,

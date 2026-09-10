@@ -146,7 +146,6 @@ def test_smagorinski_factor_diffusion_type_5():
     assert all(p >= 0 for p in params.smagorinski_factor)
 
 
-@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 # TODO(havogt): Remove custom `experiment` parametrization
 @pytest.mark.parametrize(
@@ -271,7 +270,6 @@ def _verify_init_values_against_savepoint(
     )
 
 
-@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description,step_date_init",
@@ -338,6 +336,12 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
         ),
     ],
 )
+# `embedded_remap_error`: `_calculate_nabla2_of_theta` gathers `z_nabla2_e(C2E)` from a
+# `theta_v(E2C)` intermediate whose edge domain excludes the boundary edges (E2C skip values),
+# so the second gather's inverse image over cells is not contiguous.
+# The APE case fails earlier: the savepoint carries no dwdx/dwdy, the state holds 1x1
+# placeholders, and the w program writes them over the full domain (gtfn does so silently).
+@pytest.mark.embedded_remap_error
 def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     step_date_init,
@@ -400,6 +404,10 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
+# `embedded_remap_error`: `_calculate_nabla2_of_theta` gathers `z_nabla2_e(C2E)` from a
+# `theta_v(E2C)` intermediate whose edge domain excludes the boundary edges (E2C skip values),
+# so the second gather's inverse image over cells is not contiguous.
+@pytest.mark.embedded_remap_error
 def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     linit,

@@ -538,7 +538,6 @@ def test_compute_diagnostics_from_normal_wind(  # noqa: PLR0917 [too-many-positi
 
 
 @pytest.mark.datatest
-@pytest.mark.uses_concat_where
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
     [

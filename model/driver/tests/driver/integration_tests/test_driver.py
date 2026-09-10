@@ -120,6 +120,13 @@ def timeloop_diffusion_linit_exit() -> bool:
         ),
     ],
 )
+# `uses_concat_where`: the dycore's vertically implicit solver programs write their outputs with
+# a per-output tuple `domain=`, which the embedded scan cannot resolve (icon4py-f27).
+# `embedded_remap_error`: on the limited-area grid, diffusion's `_calculate_nabla2_of_theta`
+# gathers `z_nabla2_e(C2E)` from a `theta_v(E2C)` intermediate whose edge domain excludes the
+# boundary edges (E2C skip values); the second gather's inverse image is not contiguous.
+@pytest.mark.uses_concat_where
+@pytest.mark.embedded_remap_error
 def test_driver(
     experiment_description: test_defs.ExperimentDescription,
     timeloop_date_init: str,

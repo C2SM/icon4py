@@ -49,6 +49,9 @@ def _open_output(path: pathlib.Path, output_backend: common_io.OutputBackend) ->
 @pytest.mark.parametrize(
     "output_backend", [common_io.OutputBackend.NETCDF, common_io.OutputBackend.ZARR]
 )
+# `uses_concat_where`: the dycore's vertically implicit solver programs write their outputs with a
+# per-output tuple `domain=`, which the embedded scan cannot resolve (icon4py-f27).
+@pytest.mark.uses_concat_where
 def test_driver_writes_output(
     experiment_description: test_defs.ExperimentDescription,
     output_backend: common_io.OutputBackend,

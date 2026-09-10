@@ -155,6 +155,9 @@ def test_time_step_flags(
         ),
     ],
 )
+# `uses_concat_where`: the vertically implicit solver programs write their outputs with a
+# per-output tuple `domain=`, which the embedded scan cannot resolve (icon4py-f27).
+@pytest.mark.uses_concat_where
 def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
     substep_init,
     step_date_init,
@@ -456,6 +459,9 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         ),
     ],
 )
+# `uses_concat_where`: the vertically implicit solver programs write their outputs with a
+# per-output tuple `domain=`, which the embedded scan cannot resolve (icon4py-f27).
+@pytest.mark.uses_concat_where
 def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
@@ -646,6 +652,9 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         ),
     ],
 )
+# `uses_concat_where`: the vertically implicit solver programs write their outputs with a
+# per-output tuple `domain=`, which the embedded scan cannot resolve (icon4py-f27).
+@pytest.mark.uses_concat_where
 def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
@@ -770,6 +779,9 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         (1, 1, "2021-06-20T12:00:20.000", 2, 2, "2021-06-20T12:00:20.000", False),
     ],
 )
+# `uses_concat_where`: the vertically implicit solver programs write their outputs with a
+# per-output tuple `domain=`, which the embedded scan cannot resolve (icon4py-f27).
+@pytest.mark.uses_concat_where
 def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
     istep_init,
@@ -1241,9 +1253,6 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     )
 
 
-# `uses_concat_where`: stencil masks `concat_where` on an Edge window and falls back to
-# `broadcast(scalar, ...)`; embedded needs a bounded fill on both sides of the window.
-@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
@@ -1871,6 +1880,9 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
         ),
     ],
 )
+# `uses_concat_where`: the vertically implicit solver programs write their outputs with a
+# per-output tuple `domain=`, which the embedded scan cannot resolve (icon4py-f27).
+@pytest.mark.uses_concat_where
 def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-many-positional-arguments]
     at_initial_timestep,
     substep_init,
@@ -2056,6 +2068,9 @@ def test_vertically_implicit_solver_at_predictor_step(  # noqa: PLR0917 [too-man
         ),
     ],
 )
+# `uses_concat_where`: the vertically implicit solver programs write their outputs with a
+# per-output tuple `domain=`, which the embedded scan cannot resolve (icon4py-f27).
+@pytest.mark.uses_concat_where
 def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-many-positional-arguments]
     istep_init,
     substep_init,
