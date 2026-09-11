@@ -31,10 +31,6 @@ class TmxMetricState:
     """Inverse vertical distance between full levels, at cell centers on half levels [1/m]."""
     inv_ddqz_z_full_e: fa.EdgeKField[ta.wpfloat]
     """Inverse layer thickness at edge midpoints on full levels [1/m]."""
-    inv_ddqz_z_half_e: fa.EdgeKHalfField[ta.wpfloat]
-    """Inverse vertical distance between full levels, at edge midpoints on half levels [1/m]."""
-    inv_ddqz_z_half_v: fa.VertexKHalfField[ta.wpfloat]
-    """Inverse vertical distance between full levels, at vertices on half levels [1/m]."""
     wgtfac_c: fa.CellKHalfField[ta.wpfloat]
     """Weighting factor for interpolation from full to half levels at cell centers (half levels)."""
     wgtfac_e: fa.EdgeKHalfField[ta.wpfloat]
@@ -51,10 +47,6 @@ class TmxMetricState:
     """Geopotential above ground level at cell centers on half levels [m^2/s^2]."""
     height_above_ground: fa.CellKField[ta.wpfloat]
     """Geometric height of the full levels above the surface [m] (``ghf``)."""
-    z_mc: fa.CellKField[ta.wpfloat]
-    """Geometric height at cell centers on full levels [m]."""
-    z_ifc: fa.CellKHalfField[ta.wpfloat]
-    """Geometric height at cell centers on half levels [m]."""
 
 
 @dataclasses.dataclass(frozen=True)

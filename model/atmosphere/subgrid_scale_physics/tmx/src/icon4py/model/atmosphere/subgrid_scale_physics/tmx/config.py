@@ -16,14 +16,10 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import logging
 import typing
 from typing import Any
 
 from icon4py.model.common.config import config_io, options as common_conf_opt
-
-
-log = logging.getLogger(__name__)
 
 
 @config_io.register_enum

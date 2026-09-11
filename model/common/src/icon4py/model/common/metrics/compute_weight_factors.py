@@ -51,7 +51,7 @@ def compute_wgtfac_c(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.field_operator
-def _quadratic_extrapolation_weights(
+def _compute_quadratic_extrapolation_weights(
     za: fa.CellKField[wpfloat],
     zb: fa.CellKField[wpfloat],
     zc: fa.CellKField[wpfloat],
@@ -99,7 +99,7 @@ def _compute_wgtfacq1_c(z_ifc: fa.CellKHalfField[wpfloat]) -> fa.CellKField[wpfl
         z_ifc(dims.KDim + 2.5),
         concat_where(dims.KDim == 1, z_ifc(dims.KDim + 1.5), z_ifc(dims.KDim + 0.5)),
     )
-    w1, w2, w3 = _quadratic_extrapolation_weights(za, zb, zc, zd)
+    w1, w2, w3 = _compute_quadratic_extrapolation_weights(za, zb, zc, zd)
     return concat_where(dims.KDim == 0, w1, concat_where(dims.KDim == 1, w2, w3))
 
 
@@ -123,7 +123,7 @@ def compute_wgtfacq1_c(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.field_operator
-def _compute_wgtfacq_c_dsl(
+def _compute_wgtfacq_c(
     z_ifc: fa.CellKHalfField[wpfloat], nlev: gtx.int32
 ) -> fa.CellKField[wpfloat]:
     """Surface-boundary quadratic extrapolation weights at cell centres.
@@ -152,12 +152,12 @@ def _compute_wgtfacq_c_dsl(
         z_ifc(dims.KDim - 2.5),
         concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim - 1.5), z_ifc(dims.KDim - 0.5)),
     )
-    w1, w2, w3 = _quadratic_extrapolation_weights(za, zb, zc, zd)
+    w1, w2, w3 = _compute_quadratic_extrapolation_weights(za, zb, zc, zd)
     return concat_where(dims.KDim == nlev - 1, w1, concat_where(dims.KDim == nlev - 2, w2, w3))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_wgtfacq_c_dsl(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_wgtfacq_c(  # noqa: PLR0917 [too-many-positional-arguments]
     z_ifc: fa.CellKHalfField[wpfloat],
     wgtfacq_c: fa.CellKField[wpfloat],
     nlev: gtx.int32,
@@ -166,7 +166,7 @@ def compute_wgtfacq_c_dsl(  # noqa: PLR0917 [too-many-positional-arguments]
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_wgtfacq_c_dsl(
+    _compute_wgtfacq_c(
         z_ifc,
         nlev,
         out=wgtfacq_c,

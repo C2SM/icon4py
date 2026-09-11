@@ -1986,12 +1986,6 @@ class TmxInitSavepoint(IconSavepoint):
     def inv_ddqz_z_half(self):
         return self._get_field("inv_ddqz_z_half", dims.CellDim, dims.KHalfDim)
 
-    def inv_ddqz_z_half_e(self):
-        return self._get_field("inv_ddqz_z_half_e", dims.EdgeDim, dims.KHalfDim)
-
-    def inv_ddqz_z_half_v(self):
-        return self._get_field("inv_ddqz_z_half_v", dims.VertexDim, dims.KHalfDim)
-
     def inv_ddqz_z_full_e(self):
         return self._get_field("inv_ddqz_z_full_e", dims.EdgeDim, dims.KDim)
 

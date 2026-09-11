@@ -969,37 +969,20 @@ def compute_exner_w_implicit_weight_parameter(
     return exner_w_implicit_weight_parameter
 
 
-def compute_geopotential_above_ground_on_half_levels(
-    z_ifc: data_alloc.NDArray,
-) -> data_alloc.NDArray:
-    """Geopotential above ground level at cell interface levels [m2 s-2].
-
-    ``grav * (z_ifc - z_sfc)`` with the surface height taken from the bottom
-    interface row (``z_ifc[:, -1]``).
-    """
-    return constants.GRAV * (z_ifc - z_ifc[:, -1:])
-
-
-def compute_height_above_ground(
-    *,
-    z_mc: data_alloc.NDArray,
-    z_ifc: data_alloc.NDArray,
+def compute_height_above_surface(
+    *, z: data_alloc.NDArray, z_ifc: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     """
-    Geometric height of the full levels above the surface.
-
-    Port of ``compute_geopotential_height_above_ground`` (mo_vdf_atmo.f90):
-
-        height_above_ground = z_mc - z_ifc[nlevp1]
+    Height of ``z`` above the surface, which is the bottom row of ``z_ifc``.
 
     Computed with numpy because GT4Py offsets are relative and cannot address
     the fixed absolute surface row of ``z_ifc``.
-
-    Args:
-        z_mc: geometric height of the full levels [m]
-        z_ifc: geometric height of the half levels [m], surface at the last row
-
-    Returns:
-        height_above_ground: height of the full levels above the surface [m]
     """
-    return z_mc - z_ifc[:, -1:]
+    return z - z_ifc[:, -1:]
+
+
+def compute_geopotential_above_ground_on_half_levels(
+    z_ifc: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    """Geopotential above ground level at cell interface levels [m2 s-2]."""
+    return constants.GRAV * compute_height_above_surface(z=z_ifc, z_ifc=z_ifc)
