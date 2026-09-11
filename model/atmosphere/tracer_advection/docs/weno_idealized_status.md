@@ -81,19 +81,27 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
 - **Dispersion relation θ = 0, schemes 2 and 3 (W4a;
   `tests/tracer_advection/integration_tests/test_jocksch_dispersion.py`, wave helper
   `common/initial_condition/analytical/plane_wave.py`).** Paper §4 / Figs. 5-6 and the
-  θ = 0 half of Fig. 7 on Andreas' grid, mirroring his live block
-  `icon-ajocksch/src/atm_dyn_iconam/mo_nh_stepping.f90:3344-3488` (wave `:3427-3437`,
-  `dt = (a/2)·1.9999999999·CFL` `:3440`, `ω̃ = -ln(q_new/q_now)·i·(a/2)/dt` and `diff`
-  `:3469-3478` at his cell 883/3 = 294 (0-based 293), raw principal branch — the older
+  θ = 0 half of Fig. 7 on Andreas' grid, mirroring his block (lines of the capture branch
+  at `icon-ajocksch` commit `db7a1f149d`, `src/atm_dyn_iconam/mo_nh_stepping.f90:3397-3550`;
+  pristine `dacecf46aa:3322-3466`: wave `:3488-3495`, `dt = (a/2)·1.9999999999·CFL`
+  `:3498`, `ω̃ = -ln(q_new/q_now)·i·(a/2)/dt` and `diff` `:3534-3543` at his cell 883/3 =
+  294 `:3528` (0-based 293), raw principal branch — the older
   `MO_NH_STEPPING/mo_nh_stepping.f90_dispersion:2183` printed `Re ω̃ + 2π`, his tables do
   not). One α per level (51 levels, columns asserted independent bit-exactly), so the
-  51 CFL × 51 α table is 102 `Advection.run` per scheme (0.01-0.05 s each once compiled,
-  ~20 s granule setup; full table ~25 s per scheme on gtfn_cpu). Against
+  51 CFL × 51 α table is 102 `Advection.run` per scheme. Granule setup: 136-213 s for the
+  first scheme of a pytest process on the login node (the programs compiled or loaded
+  from the cache: gtfn_cpu 180 / 213 s, dace_cpu 136 s), 12-17 s for the second; the full
+  table then takes 5 s (scheme 2) / 6 s (scheme 3) of runs (W4a's summaries: total 185 s /
+  23 s). Against
   `dispersion_linear.txt` / `dispersion_quadratic.txt`: scheme 2 max |Δ Re ω̃| 1.5e-14,
   |Δ Im ω̃| 4.9e-14 (gates 5e-14 / 1.5e-13); scheme 3 1.2e-11 / 6.3e-11 (gates 4e-11 /
   2e-10; the L1 SVD round-off 7e-13 amplified by the logarithm, worst at CFL 0.48);
   dace_cpu (CFL 0.2) gives the same digits (scheme 2 bit-identical to gtfn_cpu on every
-  cell, scheme 3 within 2.5e-16 in the tracer). Parity: cell 294 is tip-up; cells of one
+  cell, scheme 3 within 2.5e-16 in the tracer); since W4c the `single` set asserts its
+  table at cell 294 against the saved gtfn_cpu full table at 3e-15 (dace_cpu, job 859997:
+  5.6e-17 / 5.6e-17 for scheme 2 — the F20.16 print — and 4.4e-16 / 1.1e-15 for scheme 3),
+  and fig. 7's colormap is centred at zero. The θ = 0 tables of the W4c rerun (job 860014)
+  are byte-identical to W4a's. Parity: cell 294 is tip-up; cells of one
   parity ≥ 3 edge lengths from the periodic seam agree to 5e-13 / 2e-13 (scheme 2, Re
   modulo the aliasing period `2π(a/2)/dt` — the principal branch flips by round-off near
   `2·CFL·α = π` — / Im) and 1.4e-11 / 8e-11 (scheme 3), the two parities' means to
@@ -109,6 +117,115 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
   growth boundary), `fig5/6/7_*.png` (icon4py solid, Fortran dashed, exact black). The
   `_setup` there (granule from `driver.initialize_driver` on the grid file, unit air
   mass, `prescribe_uniform_wind`) is the harness W4c (θ = 30°) extends.
+
+## W4c — dispersion relation θ = 30°, schemes 2 and 3 (paper Fig. 7, 2026-09-11)
+
+`tests/tracer_advection/integration_tests/test_jocksch_dispersion.py::test_dispersion_relation_theta30`
+(sets `paper`: CFL 0.01, 0.1, …, 0.5, gated against his tables; `stability`: 0.42 / 0.44;
+`env`: job-script lists), helpers `plane_wave.chequerboard_phase_factor` /
+`reimpose_chequerboard_wave`. Mirrors Andreas' chequerboard block, lines of
+`icon-ajocksch` `db7a1f149d:src/atm_dyn_iconam/mo_nh_stepping.f90` (pristine
+`dacecf46aa:3467-3678`; this block produced his `linear_oblique.txt_new` = scheme 2 and
+`quadratic_oblique5.txt` = scheme 3 and our build's `dispersion_ihadv{2,3}_theta30_full`):
+
+- wind at `angle = dble(30)/180d0*acos(-1d0)` `:3567-3572` as his edge-vector mass flux
+  `-y_comp/length_ref·u_x + x_comp/length_ref·u_y` `:3573-3641` (vertex 2 − vertex 1 with the
+  periodic-wrap replacements, the `0.1`/`1.1` default-real literals kept; `length_ref` =
+  edge 695 = 5000.0 exactly), computed from icon4py's vertex coordinates and E2V and used
+  for `mass_flx_me` and `vn_traj` on all levels `:3643`; it equals `u·n` of the geometry to
+  8.9e-16 (asserted at 1e-15, which fixes the vertex order); air mass 1 `:3646-3647`;
+- α = ireal/100·π, ireal = 0, 2, …, 116, one per level (59) `:3569-3570`; the wave
+  `exp(-iα(x u_x + y u_y)·2/a)` once per CFL `:3651-3672`;
+- 1000 iterations `:3678` of {`Advection.run` on the real and on the imaginary tracer with
+  `dt = (a/2)·1.9999999999·CFL` `:3679`; the capture's convergence record at cell 695
+  `:3703-3713` (`n_last` = last iteration with |Δω| ≥ 1e-12, 1 at the first; `resid` = |Δω|
+  after the last); except in the last iteration `:3718`, the wave re-imposed from the
+  advected field `:3731-3751`: cell j (1-based) gets `tracer_ref(mod(j,2)+1)·exp(-i((x_j −
+  x_ref)u_x + (y_j − y_ref)u_y)·2/a·α)`, real and imaginary part each divided by
+  `|tracer_ref(1)|`, reference 2 = q_new(695), reference 1 = q_new(696)}; then ω at 695 and
+  ω₂ at 696 `:3770-3779` from the last imposed wave and the last advected field. 0-based
+  cells 694 / 695; on his grid the index parity is the triangle orientation for all 880
+  cells (694 tip-down, 695 tip-up; asserted). The complex product of the re-imposition is
+  written out as `(ac − bd, ad + bc)` (the `-Mnofma` build's product; numpy's complex
+  multiply is FMA-contracted on aarch64 and differs in the last bit); the vectorised
+  re-imposition is bit-identical to a literal loop transcription of `:3714-3753`.
+- outputs in `weno_data/dispersion/`: `ihadv{2,3}_theta30.txt` (six CFLs) and
+  `ihadv{2,3}_theta30_full.txt` in his layout (`6F25.16`, blank line between CFL blocks,
+  `:3780-3783`), `…_conv.txt` (the `#conv` lines `(a,F25.16,F25.16,i8,es14.3)` `:3784-3787`,
+  plus `#first` = first iteration with |Δω| < 1e-12, per-CFL wall), `…_summary.txt` (per-CFL
+  comparison and statistics), per-CFL `theta30_parts/<set>_<backend>/ihadv<s>_cfl<c>.npz`
+  (ω, conv record, early-stop value, final `q_now`/`q_new` on all cells),
+  `fig7_ihadv{2,3}_theta30_full_run_gtfn_cpu.png` and `fig7_ihadv{2,3}_theta0_theta30_…png`
+  (θ = 0 and θ = 30 panels side by side; −Im ω̃ over (α, CFL), diverging map centred at 0,
+  zero contour, θ = 30 non-converged rows grey).
+
+Runs (gtfn_cpu, compute node, debug jobs owning the lock, `weno_data/slurm/w4c_dispersion.sbatch`):
+job 859994 `paper` + `stability` (both schemes, 232 s pytest), job 859995 the full 51 CFL ×
+59 α tables for both schemes (799 s pytest; 3.7 s / 9.4 s per CFL for scheme 2 / 3, i.e.
+2000 `Advection.run` at 1.5 / 4.4 ms each, setup 22 / 15 s), 859996 its continuation (found
+all CFLs saved, rewrote the outputs), 860014 the final check (θ = 0 six tests, θ = 30
+gated sets: 10 passed). The paper and stability CFLs of jobs 859994, 859995 and 860014 are
+bit-identical (ω, conv record, early-stop values, final fields; the first run's parts kept
+in `theta30_parts/*_job859994/`).
+
+Comparison ("converged" = resid ≤ 1e-8; max |Δ| over the four ω columns):
+
+| scheme | vs his, converged | vs his, all 3009 rows | vs our build, converged in both | vs our build, all rows |
+|---|---|---|---|---|
+| 2 | 1.9e-14 (CFL 0.01; 2.0e-15-3.5e-15 at 0.1-0.5) | 2.3e-12 | 1.7e-14 | 3.4 (the two α = 0 rows at CFL 0.46/0.48, below; else ≤ 2.2e-12) |
+| 3 | 1.8e-14 (CFL 0.01; 2.2e-15-2.7e-15 at 0.1-0.5) | 3.4e-12 | 1.8e-14 | 2.2e-12 |
+
+Paper gates 6e-14 (3×). Stability limit: identical to our build and to his tables — no growth
+(Im ω < −1e-14 on converged rows, either cell) through CFL 0.42, growth from 0.44: scheme 2
+32 of 33 converged α, min Im ω −3.609e-2 at α 3.644 (0.50: 56/56, −0.2696); scheme 3 15 of
+58, −1.381e-5 at α 3.267 (0.46: −3.452e-4 at 0.628; 0.50: 40/57, −3.547e-3 at 2.639); the
+minima agree with our build's to all printed digits. Convergence after 1000 iterations
+(rows with resid > 1e-12 / 1e-8 / 1e-4): scheme 2 222 / 154 / 89 (our build 224 / 156 / 91),
+scheme 3 153 / 100 / 57 (identical); `n_last` identical in 2996 / 2992 of 3009 rows, ±1
+elsewhere among rows converged in both; medians 589 / 74 / 46 / 58 (CFL 0.01 / 0.1 / 0.2 /
+0.3) and 913 at 0.44 for scheme 2, 859 / 98 / 44 / 35 for scheme 3. The only different
+branch: scheme 2 α = 0 at CFL 0.46 and 0.48 stays at ω = 0 in icon4py (resid 0, the
+constant is kept exactly) like in his table, while our build flips to the chequerboard mode
+q_new ≈ −q_now (Re ω = π/(1.9999999999·CFL)); all three flip at 0.50. Parity spread on
+converged rows, max |ω(695) − ω(696)|: 5.8e-8 (scheme 2) / 4.0e-7 (scheme 3), at CFL 0.01,
+as our build's; ≤ 7.2e-9 / 1.0e-7 from CFL 0.1.
+
+Early stop: stopping a level at the first |Δω| < 1e-12 would change ω by up to 2.0e-11 /
+3.8e-11 at CFL 0.01 and 5e-13-2.3e-12 at CFL 0.1-0.5 (bit-identical only for α = 0), and at
+CFL 1.0 scheme 3 α = 0 by 0.22 (the constant converges at iteration 2, the growing mode
+takes over later) — so every level runs his 1000 iterations; the non-converged symmetry
+level α = 1.822 needs them anyway.
+
+**Sensitivity to the pseudoinverse (hypothesis test for findings #8).** At θ = 0, icon4py
+and our build differ in scheme 3 by |Δω|·2·CFL·|q_new/q_now| (the round-off of the one-step
+ratio; |q_new/q_now| = exp(−1.9999999999·CFL·Im ω̃)) = 9.8e-15 / 1.3e-13 / 3.1e-13 / 5.0e-13 /
+6.8e-13 / 8.1e-13 at CFL 0.01 / 0.1 / 0.2 / 0.3 / 0.4 / 0.5, attributed to the SVD
+pseudoinverses (L1: 7.2e-13 relative). The same two implementations at θ = 30, converged
+rows, max over both cells: 3.6e-16 / 5.0e-16 / 9.4e-16 / 1.1e-15 / 1.6e-15 / 2.6e-15 —
+27-470× smaller, and at the level of scheme 2 (3.3e-16-1.9e-15, whose pseudoinverses
+differ by 3.5e-16); max over all converged rows with CFL ≤ 0.5: 4.3e-15 (component) /
+5.5e-15 (modulus), 3.7e-15 on rows with resid < 1e-12 in both. Our build vs his
+`quadratic_oblique5.txt` on the same rows: ≤ 4.7e-15. So the θ = 30 eigenvalue does not
+register the difference that the θ = 0 step shows: a single pair of implementations
+reproduces the whole θ = 0 / θ = 30 contrast of his two quadratic tables, and that contrast
+is no evidence that they came from different builds. (Why the θ = 30 eigenvalue is
+insensitive is not established; nor is the SVD attribution at θ = 0 — both would be
+settled by injecting the capture's pseudoinverse into the icon4py granule.)
+
+Rerun (from the workspace root; each job waits ≤ 1500 s for the lock):
+
+```
+sbatch --parsable weno_data/slurm/w4c_dispersion.sbatch gtfn_cpu 1500 paper - \
+    "validation::theta30 and (paper or stability)"                 # gated sets, ~7 min
+sbatch --parsable [--dependency=afterany:<id>] weno_data/slurm/w4c_dispersion.sbatch \
+    gtfn_cpu 1500 full full "validation::theta30 and env"          # full tables, ~17 min
+icon4py/.venv/bin/python weno_data/slurm/w4c_analysis.py          # numpy comparison tables
+```
+
+The `env` set resumes from `theta30_parts/full_<backend>/` and starts no CFL after
+`ICON4PY_DISPERSION_DEADLINE` (the job sets it to its start + 26 min), so chained jobs
+complete a list that does not fit one; `ICON4PY_DISPERSION_REUSE_PARTS=1` re-checks the gated
+sets from their saved parts without the iteration.
 
 ## W6 — convergence order of the quadratic WENO schemes (torus patch, 2026-09-11)
 
@@ -321,10 +438,11 @@ Tables: `weno_data/slurm/w6s_analysis.py <gtfn_cpu json> <dace_gpu json>` (numpy
    limiter rows; compare with `reference/jocksch_grid/`.
 3. W5 follow-ups: gates on all backends (`dace_gpu` > `dace_cpu` > `gtfn_gpu`), 103 order
    study on the torus patch.
-4. Dispersion relation: W4b (capture of the θ = 0 block from our build, L2 per (CFL, α))
-   and W4c (θ = 30°, the chequerboard re-imposition loop of `mo_nh_stepping.f90:3489-3700`,
-   `dispersion_ffsl_30.txt`); his variants are in
-   `/capstor/scratch/cscs/ajocksch/dispersion_relation/MO_NH_STEPPING/`.
+4. Dispersion relation: done at θ = 0 (W4a, W4b capture) and θ = 30° (W4c, section
+   above). Open: the provenance of his `dispersion_ffsl_{0,30}[_inexact].txt` (none of
+   schemes 2, 3, 5; question for Andreas), and whether the θ = 0 icon4py-vs-build gap of
+   scheme 3 is the SVD pseudoinverse (test: inject the capture's `lsq-coefficients`
+   pseudoinverse into the icon4py granule and rerun θ = 0).
 5. Milestone 2: FFSL (4/5/22/32/42/52), PSM, vlimit 2/3.
 
 ## Sandbox notes (husk)

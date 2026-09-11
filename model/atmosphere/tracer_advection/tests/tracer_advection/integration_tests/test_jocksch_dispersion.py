@@ -108,8 +108,9 @@ linear_oblique.txt_new (scheme 2) and quadratic_oblique5.txt (scheme 3), 51 CFL 
 The per-CFL results are saved as soon as a CFL is done (``theta30_parts/``), so the full
 table runs as a chain of 30-minute jobs (ICON4PY_DISPERSION_THETA30_CFLS, a deadline in
 ICON4PY_DISPERSION_DEADLINE, done CFLs are skipped); the gated sets are the paper's six
-CFLs and the stability pair 0.42 / 0.44 (validation level, about two minutes per CFL on
-gtfn_cpu). The measured numbers are in the status note (docs/weno_idealized_status.md).
+CFLs and the stability pair 0.42 / 0.44 (validation level; 4 s / 9 s per CFL for scheme
+2 / 3 on gtfn_cpu on a compute node, the full tables 4 / 8 minutes). The measured numbers
+are in the status note (docs/weno_idealized_status.md).
 """
 
 from __future__ import annotations
@@ -221,8 +222,9 @@ TRANSLATION_TOLERANCE: Final = 0.1
 #: cells at least this many edge lengths from the periodic seam in x count as interior
 SEAM_MARGIN: Final = 3
 #: the single-CFL set on another backend against the gtfn_cpu full table at his cell
-#: (max |d Re omega|, |d Im omega|; measured dace_cpu: scheme 2 0 / 0, scheme 3 4.4e-16 /
-#: 1.1e-15, the tracer within 2.5e-16 amplified by the logarithm)
+#: (max |d Re omega|, |d Im omega| against the F20.16 print; measured dace_cpu: scheme 2
+#: 5.6e-17 / 5.6e-17, scheme 3 4.4e-16 / 1.1e-15, the tracer within 2.5e-16 amplified by
+#: the logarithm)
 BACKEND_TOLERANCE: Final = 3e-15
 BACKEND_REFERENCE_TAG: Final = "full_run_gtfn_cpu"
 
@@ -390,7 +392,7 @@ def _setup(
         u_dot_n = math.cos(WIND_ANGLE_30) * data_alloc.as_numpy(normal_x) + math.sin(
             WIND_ANGLE_30
         ) * data_alloc.as_numpy(normal_y)
-        # the same wind as the geometry's normals (and so the same vertex order)
+        # the same wind as the geometry's normals (and so the same vertex order); 8.9e-16
         print(f"theta = 30 wind: max |edge-vector flux - u.n| {np.abs(flux - u_dot_n).max():.3e}")
         np.testing.assert_allclose(flux, u_dot_n, rtol=0.0, atol=1e-15)
         xp = data_alloc.array_namespace(prep_adv.mass_flx_me.ndarray)
