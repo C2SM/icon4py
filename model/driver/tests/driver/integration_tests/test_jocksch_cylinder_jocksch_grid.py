@@ -26,35 +26,17 @@ test_jocksch_cylinder.py); the results table is in icon-ajocksch/CAPTURE_NOTES.m
 
 import math
 import pathlib
-import time as wall_time
 from typing import Final
 
 import gt4py.next.typing as gtx_typing
-import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, weno_least_squares
-from icon4py.model.common import dimension as dims, model_backends, time
-from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.common.grid import geometry_attributes as geom_attr, gridfile
-from icon4py.model.common.initial_condition.analytical import moving_cylinder
-from icon4py.model.driver import config as driver_config, driver, driver_utils
 
 from .. import utils as test_utils
 from ..fixtures import *  # noqa: F403
-from .test_jocksch_cylinder import (
-    _MASS_CONSERVATION_RTOL,
-    CFL,
-    CYLINDER_RADIUS,
-    EXPECTED_GRID_SIZES,
-    EXPERIMENT_CONFIG,
-    N_TIME_STEPS,
-    PAPER_TRUNCATION,
-    WIND_ANGLE,
-    WIND_SPEED,
-    _neighbour_pair_error_sums,
-)
+from .test_jocksch_cylinder import PAPER_TRUNCATION
 
 
 #: Andreas Jocksch's own torus (a copy of his dispersion_relation/icon/grids/
@@ -183,134 +165,6 @@ FORTRAN_ERROR_RTOL: Final[dict[_Case, float]] = {
 }
 
 
-def _run_one_period(
-    *,
-    horizontal_advection_type: _HADV,
-    horizontal_advection_limiter: _HLIM,
-    weno_linear_weights: _WEIGHTS,
-    tmp_path: pathlib.Path,
-    process_props: decomp_defs.ProcessProperties,
-    backend: gtx_typing.Backend,
-) -> dict[str, float]:
-    """One period of the cylinder on Jocksch's grid; the error measures of the final state."""
-    allocator = model_backends.get_allocator(backend)
-
-    ic_config = moving_cylinder.MovingCylinderConfig(
-        center_x=CYLINDER_CENTER[0],
-        center_y=CYLINDER_CENTER[1],
-        radius=CYLINDER_RADIUS,
-        wind_speed=WIND_SPEED,
-        wind_angle=WIND_ANGLE,
-    )
-    experiment_config = config_io.read_yaml_str(
-        EXPERIMENT_CONFIG.read_text(), driver_config.ExperimentConfig
-    ).with_overrides(initial_condition={"config": ic_config})
-
-    grid_manager = driver_utils.create_grid_manager(
-        grid_file_path=GRID_FILE,
-        vertical_grid_config=experiment_config.vertical_grid,
-        allocator=allocator,
-        process_props=process_props,
-    )
-    grid = grid_manager.grid
-    for dim, expected_size in EXPECTED_GRID_SIZES.items():
-        assert grid.size[dim] == expected_size, f"{dim.value}: {grid.size[dim]} != {expected_size}"
-    domain_length = grid.grid_params.domain_length
-    domain_height = grid.grid_params.domain_height
-    assert domain_length is not None and domain_height is not None
-    for offset in (dims.C2E2C, dims.E2C):
-        table = grid.get_connectivity(offset).asnumpy()
-        assert (table >= 0).all(), f"skip values in {offset.value}: grid is not fully periodic"
-
-    edge_length = float(
-        grid_manager.geometry_fields[gridfile.GeometryName.EDGE_LENGTH].asnumpy().mean()
-    )
-    dtime_seconds = CFL * edge_length / WIND_SPEED
-    experiment_config = experiment_config.with_overrides(
-        driver={
-            "output_path": tmp_path / "driver_output",
-            "dtime": time.RelativeTime(seconds=dtime_seconds),
-            "end_of_simulation": time.NumTimeSteps(N_TIME_STEPS),
-        },
-        tracer_advection={
-            "horizontal_advection_type": horizontal_advection_type,
-            "horizontal_advection_limiter": horizontal_advection_limiter,
-            "weno_linear_weights": weno_linear_weights,
-        },
-    )
-
-    start = wall_time.perf_counter()
-    ds, icon4py_driver = driver.run_driver(
-        config=experiment_config,
-        grid_manager=grid_manager,
-        process_props=process_props,
-        backend=backend,
-    )
-    elapsed_wall_time = wall_time.perf_counter() - start
-
-    geometry = icon4py_driver.static_field_factories.geometry
-    cell_x = geometry.get(geom_attr.CELL_CENTER_X).asnumpy()
-    cell_y = geometry.get(geom_attr.CELL_CENTER_Y).asnumpy()
-    cell_area = geometry.get(geom_attr.CELL_AREA).asnumpy()
-    assert ds.tracer_advection_diagnostic is not None
-    airmass = ds.tracer_advection_diagnostic.airmass_now.asnumpy()
-    np.testing.assert_allclose(airmass, 1.0, rtol=1e-14)
-
-    # the cylinder is a full disc of 176 cells at the origin, and his +x wind gives a
-    # non-negative normal mass flux on every edge of this grid (n_x >= 0 everywhere)
-    cylinder = moving_cylinder.sample_cylinder(
-        config=ic_config,
-        cell_center_x=cell_x,
-        cell_center_y=cell_y,
-        domain_length=domain_length,
-        domain_height=domain_height,
-    )
-    assert int(cylinder.sum()) == 176
-    # mass_flx_me = u * n_x with u > 0, so n_x >= 0 on every edge is that condition
-    edge_normal_x = geometry.get(geom_attr.EDGE_NORMAL_U).asnumpy()
-    assert (edge_normal_x >= 0.0).all(), "his cell-local limiter needs mass_flx_me >= 0"
-
-    qv_frames = test_utils.read_qv_frames(tmp_path)
-    num_levels = experiment_config.vertical_grid.num_levels
-    assert qv_frames.shape == (N_TIME_STEPS + 1, grid.num_cells, num_levels)
-    assert np.isfinite(qv_frames).all()
-    np.testing.assert_array_equal(qv_frames, np.broadcast_to(qv_frames[:, :, :1], qv_frames.shape))
-    np.testing.assert_array_equal(qv_frames[0, :, 0], cylinder)
-
-    # 100 steps of 1000 s at 1 m/s are exactly one period in x: the reference is the cylinder
-    u, _ = moving_cylinder.compute_wind_components(ic_config)
-    assert math.isclose(u * N_TIME_STEPS * dtime_seconds % domain_length, 0.0, abs_tol=1e-6)
-
-    mass = np.einsum("tck,ck,c->t", qv_frames, airmass, cell_area)
-    assert mass[0] > 0.0
-    np.testing.assert_allclose(mass, mass[0], rtol=_MASS_CONSERVATION_RTOL)
-
-    q_final = qv_frames[-1, :, 0]
-    error = q_final - cylinder
-    sum_squared_error = float(np.sum(error**2))
-    jocksch_measure, all_pairs_measure = _neighbour_pair_error_sums(
-        error=error,
-        c2e2c=grid.get_connectivity(dims.C2E2C).asnumpy(),
-        cell_x=cell_x,
-        cell_y=cell_y,
-        edge_length=edge_length,
-    )
-    np.testing.assert_allclose(all_pairs_measure, 3.0 * sum_squared_error, rtol=1e-12)
-    return {
-        "jocksch_measure": jocksch_measure,
-        "all_pairs_measure": all_pairs_measure,
-        "sum_squared_error": sum_squared_error,
-        "overshoot_final": float(q_final.max() - 1.0),
-        "undershoot_final": float(-q_final.min()),
-        "overshoot_run": float(qv_frames.max() - 1.0),
-        "undershoot_run": float(-qv_frames.min()),
-        "relative_mass_change": float((mass[-1] - mass[0]) / mass[0]),
-        "dtime_seconds": dtime_seconds,
-        "num_levels": num_levels,
-        "elapsed_wall_time": elapsed_wall_time,
-    }
-
-
 def _param(hadv: _HADV, hlim: _HLIM, weights: _WEIGHTS = _WEIGHTS.OPTIMIZED) -> object:
     weight_tag = (
         ""
@@ -365,15 +219,25 @@ def test_jocksch_cylinder_one_period_on_jocksch_grid(
     backend: gtx_typing.Backend,
 ) -> None:
     case: _Case = (horizontal_advection_type, horizontal_advection_limiter, weno_linear_weights)
-    result = _run_one_period(
-        horizontal_advection_type=horizontal_advection_type,
-        horizontal_advection_limiter=horizontal_advection_limiter,
-        weno_linear_weights=weno_linear_weights,
+    run = test_utils.run_cylinder_one_period(
+        grid_file=GRID_FILE,
+        cylinder_center=CYLINDER_CENTER,
+        tracer_advection={
+            "horizontal_advection_type": horizontal_advection_type,
+            "horizontal_advection_limiter": horizontal_advection_limiter,
+            "weno_linear_weights": weno_linear_weights,
+        },
         tmp_path=tmp_path,
         process_props=process_props,
         backend=backend,
     )
-    jocksch_measure = result["jocksch_measure"]
+    # the cylinder is a full disc of 176 cells at the origin, and his +x wind gives a
+    # non-negative normal mass flux on every edge of this grid (n_x >= 0 everywhere), the
+    # condition his cell-local limiter needs (mass_flx_me = u * n_x with u > 0)
+    assert int(run.cylinder.sum()) == 176
+    assert (run.edge_normal_x >= 0.0).all(), "his cell-local limiter needs mass_flx_me >= 0"
+
+    jocksch_measure = run.jocksch_measure
     fortran_value = FORTRAN_ERROR_SUM[case]
     relative_difference = abs(jocksch_measure - fortran_value) / fortran_value
     paper_value = PAPER_TABLE_2.get(case)
@@ -381,18 +245,18 @@ def test_jocksch_cylinder_one_period_on_jocksch_grid(
     print(
         f"\n{horizontal_advection_type.name} ({horizontal_advection_type.value}) + "
         f"{horizontal_advection_limiter.name} ({horizontal_advection_limiter.value}), "
-        f"weights {weno_linear_weights.name}: {N_TIME_STEPS} steps of "
-        f"dt = {result['dtime_seconds']} s, {result['num_levels']} level(s), "
-        f"wall time {result['elapsed_wall_time']:.1f} s\n"
+        f"weights {weno_linear_weights.name}: {test_utils.CYLINDER_N_TIME_STEPS} steps of "
+        f"dt = {run.dtime_seconds} s, {run.num_levels} level(s), "
+        f"wall time {run.elapsed_wall_time:.1f} s\n"
         f"  Jocksch measure (pairs within an edge length)  = {jocksch_measure:.6f}"
         f"  sqrt(/3) = {math.sqrt(jocksch_measure / 3.0):.6f}\n"
-        f"  all neighbour pairs (= 3 sum e^2)              = {result['all_pairs_measure']:.6f}\n"
-        f"  sum e^2                                        = {result['sum_squared_error']:.6f}\n"
-        f"  overshoot (max q - 1) final / run              = {result['overshoot_final']:.6e} / "
-        f"{result['overshoot_run']:.6e}\n"
-        f"  undershoot (-min q) final / run                = {result['undershoot_final']:.6e} / "
-        f"{result['undershoot_run']:.6e}\n"
-        f"  relative mass change                           = {result['relative_mass_change']:.6e}\n"
+        f"  all neighbour pairs (= 3 sum e^2)              = {run.all_pairs_measure:.6f}\n"
+        f"  sum e^2                                        = {run.sum_squared_error:.6f}\n"
+        f"  overshoot (max q - 1) final / run              = {run.overshoot_final:.6e} / "
+        f"{run.overshoot_run:.6e}\n"
+        f"  undershoot (-min q) final / run                = {run.undershoot_final:.6e} / "
+        f"{run.undershoot_run:.6e}\n"
+        f"  relative mass change                           = {run.relative_mass_change:.6e}\n"
         f"  Fortran reference (his grid)                   = {fortran_value}"
         f"  sqrt(/3) = {math.sqrt(fortran_value / 3.0):.6f}\n"
         f"  relative difference to the Fortran pair sum    = {relative_difference:.3e}\n"
