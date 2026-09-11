@@ -49,7 +49,6 @@ from .test_update_dynamical_exner_time_increment import update_dynamical_exner_t
 from .test_update_mass_volume_flux import update_mass_volume_flux_numpy
 
 
-@pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_corrector_step

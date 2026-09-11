@@ -52,7 +52,6 @@ from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
 )
 
 
-@pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_predictor_step
