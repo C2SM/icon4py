@@ -37,7 +37,7 @@ RBF_SCALE_VERTEX: Final[str] = "rbf_scale_vertex"
 LSQ_PSEUDOINV: Final[str] = "lsq_interpolation_coefficient"
 
 attrs: dict[str, model.FieldMetaData] = {
-    C_LIN_E: dict(
+    C_LIN_E: model.FieldMetaData(
         standard_name=C_LIN_E,
         long_name="interpolation coefficient from cell to edges",
         units="",  # TODO(halungge): check or confirm
@@ -45,7 +45,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="c_lin_e",
         dtype=ta.wpfloat,
     ),
-    NUDGECOEFFS_E: dict(
+    NUDGECOEFFS_E: model.FieldMetaData(
         standard_name=NUDGECOEFFS_E,
         long_name="nudging_coefficients_for_edges",
         units="",  # TODO(yiluchen1066): : need to check unit
@@ -53,7 +53,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="nudgecoeff_e",
         dtype=ta.wpfloat,
     ),
-    C_BLN_AVG: dict(
+    C_BLN_AVG: model.FieldMetaData(
         standard_name=C_BLN_AVG,
         long_name="mass conserving bilinear cell average weight",
         units="",  # TODO(halungge): check or confirm
@@ -61,7 +61,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="c_bln_avg",
         dtype=ta.wpfloat,
     ),
-    E_BLN_C_S: dict(
+    E_BLN_C_S: model.FieldMetaData(
         standard_name=E_BLN_C_S,
         long_name="mass conserving bilinear edge cell weight",
         units="",  # TODO(): check or confirm
@@ -69,7 +69,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="e_bln_c_s",
         dtype=ta.wpfloat,
     ),
-    GEOFAC_DIV: dict(
+    GEOFAC_DIV: model.FieldMetaData(
         standard_name=GEOFAC_DIV,
         long_name="geometrical factor for divergence",  # TODO(halungge): find proper description
         units="",  # TODO(halungge): check or confirm
@@ -77,7 +77,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geofac_div",
         dtype=ta.wpfloat,
     ),
-    GEOFAC_ROT: dict(
+    GEOFAC_ROT: model.FieldMetaData(
         standard_name=GEOFAC_ROT,
         long_name="geometrical factor for curl",
         units="",  # TODO(halungge): check or confirm
@@ -85,7 +85,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geofac_rot",
         dtype=ta.wpfloat,
     ),
-    GEOFAC_N2S: dict(
+    GEOFAC_N2S: model.FieldMetaData(
         standard_name=GEOFAC_N2S,
         long_name="geometrical factor nabla-2 scalar",
         units="",  # TODO(halungge): check or confirm
@@ -93,7 +93,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geofac_n2s",
         dtype=ta.wpfloat,
     ),
-    GEOFAC_GRDIV: dict(
+    GEOFAC_GRDIV: model.FieldMetaData(
         standard_name=GEOFAC_GRDIV,
         long_name="geometrical factor for gradient of divergence",
         units="",  # TODO(halungge): check or confirm
@@ -101,7 +101,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geofac_grdiv",
         dtype=ta.wpfloat,
     ),
-    GEOFAC_GRG_X: dict(
+    GEOFAC_GRG_X: model.FieldMetaData(
         standard_name=GEOFAC_GRG_X,
         long_name="geometrical factor for Green Gauss gradient (first component)",
         units="",  # TODO(halungge): check or confirm
@@ -109,7 +109,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geofac_grg",
         dtype=ta.wpfloat,
     ),
-    GEOFAC_GRG_Y: dict(
+    GEOFAC_GRG_Y: model.FieldMetaData(
         standard_name=GEOFAC_GRG_Y,
         long_name="geometrical factor for Green Gauss gradient (second component)",
         units="",  # TODO(halungge): check or confirm
@@ -117,7 +117,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geofac_grg",
         dtype=ta.wpfloat,
     ),
-    E_FLX_AVG: dict(
+    E_FLX_AVG: model.FieldMetaData(
         standard_name=E_FLX_AVG,
         long_name="e flux average",
         units="",  # TODO(): check or confirm
@@ -125,7 +125,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="e_flx_avg",
         dtype=ta.wpfloat,
     ),
-    POS_ON_TPLANE_E_X: dict(
+    POS_ON_TPLANE_E_X: model.FieldMetaData(
         standard_name=POS_ON_TPLANE_E_X,
         long_name="position on tplane x",
         units="",  # TODO(): check or confirm
@@ -133,7 +133,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="pos_on_tplane_e_x",
         dtype=ta.wpfloat,
     ),
-    POS_ON_TPLANE_E_Y: dict(
+    POS_ON_TPLANE_E_Y: model.FieldMetaData(
         standard_name=POS_ON_TPLANE_E_Y,
         long_name="position on tplane y",
         units="",  # TODO(): check or confirm
@@ -141,7 +141,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="pos_on_tplane_e_y",
         dtype=ta.wpfloat,
     ),
-    CELL_AW_VERTS: dict(
+    CELL_AW_VERTS: model.FieldMetaData(
         standard_name=CELL_AW_VERTS,
         long_name="coefficient for interpolation from cells to verts by area weighting",
         units="",
@@ -149,7 +149,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="cells_aw_verts",
         dtype=ta.wpfloat,
     ),
-    RBF_VEC_COEFF_C1: dict(
+    RBF_VEC_COEFF_C1: model.FieldMetaData(
         standard_name=RBF_VEC_COEFF_C1,
         long_name="rbf interpolation coefficient from cells to edges 1",
         units="",
@@ -157,7 +157,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rbf_vec_coeff_c1",
         dtype=ta.wpfloat,
     ),
-    RBF_VEC_COEFF_C2: dict(
+    RBF_VEC_COEFF_C2: model.FieldMetaData(
         standard_name=RBF_VEC_COEFF_C2,
         long_name="rbf interpolation coefficient from cells to edges 2",
         units="",
@@ -165,7 +165,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rbf_vec_coeff_c2",
         dtype=ta.wpfloat,
     ),
-    RBF_VEC_COEFF_E: dict(
+    RBF_VEC_COEFF_E: model.FieldMetaData(
         standard_name=RBF_VEC_COEFF_E,
         long_name="rbf interpolation coefficient from edges to edges",
         units="",
@@ -173,7 +173,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rbf_vec_coeff_e",
         dtype=ta.wpfloat,
     ),
-    RBF_VEC_COEFF_V1: dict(
+    RBF_VEC_COEFF_V1: model.FieldMetaData(
         standard_name=RBF_VEC_COEFF_V1,
         long_name="rbf interpolation coefficient from vertices to edges 1",
         units="",
@@ -181,7 +181,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rbf_vec_coeff_v1",
         dtype=ta.wpfloat,
     ),
-    RBF_VEC_COEFF_V2: dict(
+    RBF_VEC_COEFF_V2: model.FieldMetaData(
         standard_name=RBF_VEC_COEFF_V2,
         long_name="rbf interpolation coefficient from vertices to edges 2",
         units="",
@@ -189,7 +189,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rbf_vec_coeff_v2",
         dtype=ta.wpfloat,
     ),
-    RBF_SCALE_CELL: dict(
+    RBF_SCALE_CELL: model.FieldMetaData(
         standard_name=RBF_SCALE_CELL,
         long_name="rbf_scale_cell",
         units="",
@@ -197,7 +197,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rbf_vec_scale_c",
         dtype=ta.wpfloat,
     ),
-    RBF_SCALE_EDGE: dict(
+    RBF_SCALE_EDGE: model.FieldMetaData(
         standard_name=RBF_SCALE_EDGE,
         long_name="rbf_scale_edge",
         units="",
@@ -205,7 +205,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rbf_vec_scale_e",
         dtype=ta.wpfloat,
     ),
-    RBF_SCALE_VERTEX: dict(
+    RBF_SCALE_VERTEX: model.FieldMetaData(
         standard_name=RBF_SCALE_VERTEX,
         long_name="rbf_scale_vertex",
         units="",
@@ -213,7 +213,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="rbf_vec_scale_v",
         dtype=ta.wpfloat,
     ),
-    LSQ_PSEUDOINV: dict(
+    LSQ_PSEUDOINV: model.FieldMetaData(
         standard_name=LSQ_PSEUDOINV,
         long_name="pseudo (or Moore-Penrose) inverse of least squares matrix A",
         units="",

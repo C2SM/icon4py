@@ -2107,6 +2107,7 @@ requires-dist = [
 
 [[package]]
 dependencies = [
+  {name = "gt4py"},
   {name = "icon4py-common"},
   {name = "packaging"}
 ]
@@ -2116,6 +2117,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
+  {name = "gt4py", specifier = "==1.2.1"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]

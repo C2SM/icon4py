@@ -76,11 +76,14 @@ def prognostic_state_to_dataarrays(
                 f"Unknown prognostic output variable '{name}'. "
                 f"Known variables are: {PROGNOSTIC_VARIABLES}."
             ) from err
-        field = getattr(prognostic_state, metadata["icon_var_name"])
+        assert metadata.icon_var_name is not None, (
+            f"prognostic output '{name}' must declare icon_var_name to be read from the state"
+        )
+        field = getattr(prognostic_state, metadata.icon_var_name)
         state[name] = io_utils.to_data_array(
             field,
             metadata,
-            is_on_half_levels=metadata.get("is_on_half_levels", False),
+            is_on_half_levels=bool(metadata.is_on_half_levels),
             to_host=True,
         )
     return state
@@ -239,7 +242,7 @@ def diagnostic_fields_to_dataarrays(
         state[name] = io_utils.to_data_array(
             field,
             metadata,
-            is_on_half_levels=metadata.get("is_on_half_levels", False),
+            is_on_half_levels=bool(metadata.is_on_half_levels),
             to_host=True,
         )
     return state

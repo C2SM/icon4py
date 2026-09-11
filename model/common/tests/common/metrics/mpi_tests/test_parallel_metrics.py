@@ -111,8 +111,10 @@ def test_distributed_metrics_attrs(  # noqa: PLR0917 [too-many-positional-argume
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
     if horizontal_range is not None:
         # We assume that the horizontal dimension exists and is the first one.
+        field_dims = attrs.attrs[attrs_name].dims
+        assert field_dims is not None
         slicer = _get_slice_tuple_from_horizontal_range(
-            factory.grid, attrs.attrs[attrs_name]["dims"][0], horizontal_range
+            factory.grid, field_dims[0], horizontal_range
         )
         field = field[slicer]
         field_ref = field_ref[slicer]

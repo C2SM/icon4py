@@ -27,6 +27,7 @@ dependencies = [
   # workspace members
   "icon4py-common~=0.4.1",
   # external dependencies
+  "gt4py==1.2.1",
   "packaging>=20.0"
 ]
 description = "The physics driver (PhysicsDriver) and its process registry for ICON4Py."

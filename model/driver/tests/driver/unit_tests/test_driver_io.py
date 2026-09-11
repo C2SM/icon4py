@@ -13,6 +13,7 @@ These tests are data-free: they use the ``simple_grid`` and a zero-initialised
 """
 
 import copy
+import dataclasses
 import datetime
 import pathlib
 import uuid
@@ -79,11 +80,11 @@ def _expected(
     placement. ``standard_name``/``units`` come from the shared table rather than being
     re-spelled here; ``dims`` and ``is_on_half_levels`` are stated independently of the
     production code so the assertions stay a genuine check."""
-    return {
-        **state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_key],
-        "dims": (horizontal_dim, dims.KDim),
-        "is_on_half_levels": is_on_half_levels,
-    }
+    return dataclasses.replace(
+        state_data.PROGNOSTIC_CF_ATTRIBUTES[cf_key],
+        dims=(horizontal_dim, dims.KDim),
+        is_on_half_levels=is_on_half_levels,
+    )
 
 
 #: Expected output metadata per output variable (keyed by CF name).
@@ -120,8 +121,9 @@ def test_assembles_all_default_variables(
     for name, da in state.items():
         assert isinstance(da, xr.DataArray)
         expected = _EXPECTED[name]
-        horizontal_dim = next(d for d in expected["dims"] if d.kind == gtx.DimensionKind.HORIZONTAL)
-        on_half_levels = expected["is_on_half_levels"]
+        assert expected.dims is not None
+        horizontal_dim = next(d for d in expected.dims if d.kind == gtx.DimensionKind.HORIZONTAL)
+        on_half_levels = expected.is_on_half_levels
 
         vertical_name = "half_level" if on_half_levels else "level"
         assert da.dims == (_UGRID_DIM_NAMES[horizontal_dim], vertical_name)
@@ -158,11 +160,12 @@ def test_does_not_mutate_shared_cf_attributes(
     driver_io.prognostic_state_to_dataarrays(prognostic_state)
 
     assert before == state_data.PROGNOSTIC_CF_ATTRIBUTES
-    # specifically, no UGRID keys leaked into the shared table
+    # specifically, no UGRID keys reach the attrs the shared table renders
     for entry in state_data.PROGNOSTIC_CF_ATTRIBUTES.values():
-        assert "location" not in entry
-        assert "mesh" not in entry
-        assert "coordinates" not in entry
+        rendered = entry.as_dict()
+        assert "location" not in rendered
+        assert "mesh" not in rendered
+        assert "coordinates" not in rendered
 
 
 def test_variables_subset(prognostic_state: prognostics.PrognosticState) -> None:
