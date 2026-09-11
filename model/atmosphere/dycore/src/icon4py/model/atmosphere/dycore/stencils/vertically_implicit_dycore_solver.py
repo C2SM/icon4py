@@ -80,6 +80,11 @@ def _set_surface_boundary_condition_for_computation_of_w(
 
 
 @gtx.field_operator
+def _set_top_boundary_condition_for_computation_of_w() -> fa.CellKHalfField[ta.wpfloat]:
+    return broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim))
+
+
+@gtx.field_operator
 def _compute_w_explicit_term_with_predictor_advective_tendency(
     current_w: fa.CellKHalfField[wpfloat],
     predictor_vertical_wind_advective_tendency: fa.CellKHalfField[vpfloat],
@@ -591,6 +596,16 @@ def vertically_implicit_solver_at_predictor_step(
             ),
         },
     )
+    _set_top_boundary_condition_for_computation_of_w(
+        out=next_w,
+        domain={
+            dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+            dims.KHalfDim: (
+                vertical_start_index_model_top,
+                vertical_start_index_model_top + 1,
+            ),
+        },
+    )
     _solve_w_at_predictor_step(
         next_w=next_w,
         geofac_div=geofac_div,
@@ -624,7 +639,7 @@ def vertically_implicit_solver_at_predictor_step(
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
             dims.KHalfDim: (
-                vertical_start_index_model_top,
+                vertical_start_index_model_top + 1,
                 vertical_end_index_model_surface - 1,
             ),
         },
@@ -985,6 +1000,16 @@ def vertically_implicit_solver_at_corrector_step(
             ),
         },
     )
+    _set_top_boundary_condition_for_computation_of_w(
+        out=next_w,
+        domain={
+            dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
+            dims.KHalfDim: (
+                vertical_start_index_model_top,
+                vertical_start_index_model_top + 1,
+            ),
+        },
+    )
     _solve_w_and_update_vertical_fluxes_at_corrector_step(
         next_w=next_w,
         dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
@@ -1030,7 +1055,7 @@ def vertically_implicit_solver_at_corrector_step(
         domain={
             dims.CellDim: (start_cell_index_nudging, end_cell_index_local),
             dims.KHalfDim: (
-                vertical_start_index_model_top,
+                vertical_start_index_model_top + 1,
                 vertical_end_index_model_surface - 1,
             ),
         },
