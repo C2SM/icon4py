@@ -58,6 +58,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.select_horizontal_tracer
     select_horizontal_tracer_flux_by_upwind_cell,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.initial_condition.analytical import moving_cylinder
 from icon4py.model.testing.fixtures.datatest import backend
 
 from .. import utils
@@ -432,6 +433,101 @@ def test_reference_constant_selection_detects_a_wrong_threshold(torus_patch, pat
     )
     with pytest.raises(AssertionError):
         assert not use_weno.any()
+
+
+# --- the selection mask's sensitivity to the residual's precision -----------------------
+
+
+def _selection_mask(
+    *,
+    p_cc: np.ndarray,  # (n_cells,)
+    lsq_error: np.ndarray,  # (n_cells, 5, 9)
+    pseudoinv_full: np.ndarray,  # (n_cells, 5, 9)
+    stencil_c9: np.ndarray,  # (n_cells, 9)
+    sp: type,
+) -> np.ndarray:
+    """f90 3547-3574 on one level, vectorised, with the residual path in the kind ``sp``.
+
+    The fit (3553-3562) is double; lsq_error, zlc and every partial sum of the residual
+    (3564-3568) are rounded to ``sp`` in the Fortran's order; the comparison is double.
+    """
+    z_b = p_cc[stencil_c9] - p_cc[:, np.newaxis]
+    coeff = np.einsum("nus,ns->nu", pseudoinv_full, z_b)
+    lsq_error_sp = lsq_error.astype(sp)
+    zlc = coeff.astype(sp)
+    dot = np.zeros(z_b.shape, dtype=sp)
+    for ju in range(5):
+        dot = (dot + lsq_error_sp[:, ju, :] * zlc[:, ju : ju + 1]).astype(sp)
+    residual = (dot - z_b.astype(sp)).astype(sp)
+    lsqe = np.zeros(p_cc.shape, dtype=sp)
+    for js in range(9):
+        lsqe = (lsqe + residual[:, js] * residual[:, js]).astype(sp)
+    return lsqe.astype(np.float64) > THRESHOLD * (p_cc + EPS) ** 2
+
+
+@pytest.mark.level("integration")
+@pytest.mark.parametrize(
+    "cylinder_center", [(None, None), (0.0, 0.0)], ids=["domain_centre", "origin"]
+)
+def test_cylinder_selection_mask_is_the_same_in_single_and_double_precision(cylinder_center):
+    """The residual's precision does not change the hybrid's mask on the cylinder's initial state.
+
+    The port evaluates the residual in ta.fortran_sp_float, currently double, where the
+    Fortran uses REAL(sp). On the moving-cylinder experiment of the driver tests (the 20 x 22
+    torus with 5 km edges, the cylinder of radius 25 km at the domain centre or, as on
+    Jocksch's grid, at the origin) the mask is identical either way: cells whose stencil is
+    constant have a residual of exactly zero in both kinds, and cells that see the cylinder's
+    edge have a residual of O(1) against a threshold of 5e-5, so nothing lands within
+    single-precision round-off of the threshold. Measured 2026-09-11: 0 of 880 cells differ
+    for both centres, hence the zero-count assertion.
+    """
+    patch = utils.build_torus_patch(nx=20, ny=22, edge_length=5000.0)
+    stencil_c9 = weno.create_stencil_c9(patch.c2e2c, patch.c2v)
+    geometry = dict(
+        stencil_c9=stencil_c9,
+        cell_center_x=patch.cell_center_x,
+        cell_center_y=patch.cell_center_y,
+        domain_length=patch.domain_length,
+        domain_height=patch.domain_height,
+    )
+    lsq_moments = weno.compute_lsq_moments_torus(
+        cell_center_x=patch.cell_center_x,
+        cell_center_y=patch.cell_center_y,
+        vertex_x=patch.vertex_x,
+        vertex_y=patch.vertex_y,
+        c2v=patch.c2v,
+        domain_length=patch.domain_length,
+        domain_height=patch.domain_height,
+    )
+    coefficients = dict(
+        lsq_error=weno.compute_lsq_error_quadratic(lsq_moments=lsq_moments, **geometry),
+        pseudoinv_full=weno.compute_lsq_pseudoinverse_quadratic(
+            lsq_moments=lsq_moments, **geometry
+        ),
+        stencil_c9=stencil_c9,
+    )
+    cylinder = moving_cylinder.sample_cylinder(
+        config=moving_cylinder.MovingCylinderConfig(
+            center_x=cylinder_center[0], center_y=cylinder_center[1], radius=25000.0
+        ),
+        cell_center_x=patch.cell_center_x,
+        cell_center_y=patch.cell_center_y,
+        domain_length=patch.domain_length,
+        domain_height=patch.domain_height,
+    )
+    # a disc of ~176 cells (the exact count depends on where the centroids fall)
+    assert 150 < int(cylinder.sum()) < 200
+
+    mask_single = _selection_mask(p_cc=cylinder, sp=np.float32, **coefficients)
+    mask_double = _selection_mask(p_cc=cylinder, sp=np.float64, **coefficients)
+    n_differ = int(np.sum(mask_single != mask_double))
+    print(
+        f"\nhybrid selection on the cylinder ({cylinder_center}): WENO on "
+        f"{int(mask_double.sum())} of {mask_double.size} cells in double, "
+        f"{int(mask_single.sum())} in single, {n_differ} cells differ"
+    )
+    assert mask_double.any() and not mask_double.all(), "vacuous: one branch only"
+    assert n_differ == 0
 
 
 # --- the gt4py pipeline -----------------------------------------------------------------
