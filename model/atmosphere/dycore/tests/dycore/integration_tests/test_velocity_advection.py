@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 from gt4py.next import typing as gtx_typing
 
-from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -81,7 +81,7 @@ def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917 [too-many-posi
     vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    velocity_advection = advection.VelocityAdvection(
+    velocity_advection = solve_nonhydro.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -121,7 +121,7 @@ def test_scale_factors_by_dtime(  # noqa: PLR0917 [too-many-positional-arguments
     vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    velocity_advection = advection.VelocityAdvection(
+    velocity_advection = solve_nonhydro.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -214,7 +214,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    velocity_advection = advection.VelocityAdvection(
+    velocity_advection = solve_nonhydro.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -401,7 +401,7 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    velocity_advection = advection.VelocityAdvection(
+    velocity_advection = solve_nonhydro.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
