@@ -412,7 +412,8 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             f"{data_alloc.backend_name(factory.backend)}"
         )
         dtype = {k: output_dtype(factory, k) for k in self._fields}
-        self._fields = self._allocate_fields(compute_backend, grid_provider, dtype)
+        # the outputs live on the target backend's device: embedded computes in place on them
+        self._fields = self._allocate_fields(factory.backend, grid_provider, dtype)
         # call field operator
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
