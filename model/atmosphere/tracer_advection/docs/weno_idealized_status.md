@@ -238,10 +238,13 @@ the open question of `weno_idealized_scope.md` ("Open question for the order stu
 (3344 / 13376 / 53504 cells for factors 1 / 2 / 4, 214016 / 856064 for the 8x / 16x
 members; one 17.6 × 13.2 km domain), 3 identical levels, `gaussian_2d` at the domain centre with
 `decay_radius 0.35`, constant diagonal wind, a quarter period, no limiter, each member at
-the yaml's CFL 0.11 (124 / 249 / 499 / 999 / 1998 steps). On the coarsest member the e-folding
+the yaml's CFL 0.11 (124 / 249 / 499 / 999 / 1998 steps). The members stop short of the
+quarter period: the step count is the floor of 0.25 s / Δt, and `RelativeTime` rounds Δt to
+microseconds (2002 / 1001 / 500 / 250 / 125 µs, 0.1 % short from 4x on), so they end at
+0.2482 / 0.2492 / 0.2495 / 0.24975 / 0.24975 s. On the coarsest member the e-folding
 radius is 1753 m = 4.4 edge lengths = 5.1 cell rows; 139 cells lie inside it, 963 of 3344
 inside the 1e-3 radius. Errors are relative L1 / L2 / Linf against the translated analytic
-Gaussian (evaluated at the time the driver integrated to); the distance is
+Gaussian, evaluated at the time the driver integrated to (steps × rounded Δt); the distance is
 `‖q_row − q_3‖/‖q_3‖` from the saved final tracers. Differences from
 `linear_advection_tests.py::test_horizontal_advection_convergence`: the family, the yaml
 (`decay_radius` 0.35 instead of 0.25, 3 levels, quarter period, no limiter), the L2 norm and
@@ -254,10 +257,11 @@ per (row, factor) into `weno_data/slurm/w6s_results_<backend>.json`, tracers nex
 factors 1 / 2 / 4 on gtfn_cpu (compute node, 16 cores, `ulimit -t` unlimited; jobs 859589,
 859590, 859598, 859640), 1 / 2 / 4 / 8 on dace_gpu (859600, 859641, 859682, 859683) and a
 16x member (856064 cells, 1998 steps) for 3 / 103 OPT / 103 UNITY (859780).
-Backend agreement on every common (row, factor): final tracers within 1.6e-15
-(max |Δq|), relative errors within 1.7e-12; gtfn_cpu on the compute node reproduces W6's
-login-node runs bit for bit (miura tracers; the errors of 2 / 3 / 102 / 103 OPT / UNITY of
-the killed first attempt).
+Backend agreement was checked on the common members only, x1 / x2 / x4 of 3, 103 OPT,
+103 UNITY and 132 (2 and 102 ran on gtfn_cpu only, the x8 and x16 members on dace_gpu only):
+final tracers within 1.55e-15 (max |Δq|), relative errors within 1.72e-12. gtfn_cpu on the
+compute node reproduces W6's login-node runs bit for bit (miura tracers; the errors of 2 / 3
+/ 102 / 103 OPT / UNITY of the killed first attempt).
 
 Relative errors (x1-x4 gtfn_cpu, x8/x16 dace_gpu) and wall time of the driver run in s (gtfn_cpu, warm cache / dace_gpu, including the per-grid-size build):
 
@@ -358,14 +362,24 @@ turns towards first order (local rates 0.31 → 0.77 OPT, 0.34 → 0.80 UNITY), 
 schemes' own errors follow: 103 OPTIMIZED is first order below 200 m edge length (local
 rates 1.14, 1.03, 1.01; 17.6x the error of 3 at x16), 103 UNITY drops from 2.9 to 1.43
 (5x the error of 3 at x16), the hybrid to 1.57 at x8. Scheme 3 itself stays at 3.00 to the
-16x member, and the 3 / 103 tracers agree across gtfn_cpu and dace_gpu to 1.6e-15, so
-this is the scheme, not the grid, the time step or a backend. Only the direction of the
-claim holds on the coarse members: UNITY up to x4 (≤ 18 % of scheme 3's error) and the
-hybrid up to x2 (≤ 16 %) are close to 3, OPTIMIZED is not.
+16x member, and the 3 / 103 tracers agree across gtfn_cpu and dace_gpu to 1.55e-15 on the
+x1-x4 members (x8 and x16 ran on dace_gpu only), so this is the scheme, not the grid, the
+time step or a backend. Only the direction of the claim holds on the coarse members: UNITY
+up to x4 (≤ 18 % of scheme 3's error) and the hybrid up to x2 (≤ 16 %) are close to 3,
+OPTIMIZED is not.
 
-**Likely mechanism (a finding for Andreas; arithmetic from the code, consistent with the
-103 numbers above, not yet instrumented; the port matches the Fortran per step to 3.5e-9,
-W5, so this is the Fortran's behaviour).** The type-VI candidates are assembled as
+**Mechanism (a finding for Andreas; the port matches the Fortran per step to 3.5e-9, W5, so
+this is the Fortran's behaviour).** Checked at coefficient level by the W6 review (δ =
+−1.6213e-3 on the study's own 25 m grid) and pinned by the numpy unit test
+`tests/tracer_advection/unit_tests/test_weno_type_vi_bias.py` (the port's coefficient
+functions on a torus patch at edge lengths 1 and 1/2: the type-VI candidates return (1 − S)
+times the derivatives of a quadratic to 3.5e-14, asserted to 1e-8; δ on a Gaussian core
+−1.6132e-3 / −1.6191e-3 OPTIMIZED and −4.1627e-4 / −4.1638e-4 UNITY at h/r_e = 1/6 / 1/12,
+asserted within 1 % of −1.6214e-3 / −4.1647e-4 and of each other; the test fails if the
+assembly is changed, on purpose). Fortran-side confirmation, pending review: icon-ajocksch
+commit `3b86566381`, `CAPTURE_NOTES.md` "WENO dispersion (W6-F)": in his Fortran the one-step
+α² damping coefficient of 103 at CFL 0.01 is 7.83e-4 (optimised) / 1.98e-4 (all ones) against
+~1e-8 for scheme 3. The type-VI candidates are assembled as
 `A⁺_full − Σ_{i∈group} d_i A⁺_i` (`weno_least_squares.compute_weno_pseudoinverse_quadratic`,
 f90 2670-2680). For smooth data every fitted candidate reproduces the derivatives, so a
 type-VI candidate returns `(1 − S)` times them, with `S` the group's weight sum
@@ -386,9 +400,17 @@ open question; on smooth data the weights never reach that limit, which is what 
 scheme consistent up to δ.) The hybrid assembles
 with OPTIMIZED and blends with unit weights (δ = −1.21e-3) outside its plain core.
 
-**Gates.** Bands on the (1, 2, 4) fit in `_ROWS` (measured values in comments): 3 at
-3 ± 0.1, the others at `linear_advection_tests._measured` width (± 0.5) around the gtfn_cpu
-slopes; both results files pass `ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY=1` without a rerun.
+**Gates** (`_ROWS`, measured values in comments). 3: 3 ± 0.1 on the (1, 2, 4) fit and on
+the local rate between the last two members in the results file. 2 and 102: regression
+guards on the (1, 2, 4) fit at `linear_advection_tests._measured` width (± 0.5) around the
+gtfn_cpu slopes. 103 OPT, 103 UNITY and 132 document the deficiency of the type-VI
+construction above rather than an order of accuracy: they are gated on the local rate
+between the last two members in the results file, ± 0.1 around the rate measured for that
+member pair (x2-x4, x4-x8, x8-x16), every band below the third-order one, so the gate tells
+first from third order; their (1, 2, 4) fit is printed only. `ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY=1`
+passes on both results files without a rerun (gtfn_cpu all rows, last pair x2-x4; dace_gpu
+with `ICON4PY_WENO_ORDER_STUDY_ROWS=miura3,miura3_weno_opt,miura3_weno_unity,miura3_weno_hybrid`,
+last pair x8-x16, x4-x8 for 132; logs `weno_data/slurm/w6fix_checkonly_<backend>.log`).
 
 **Rerun** (santis, husk; one debug job per row, chained; each job takes and releases
 `weno_data/pytest.lock` itself, so it survives the submitting agent). Workspace script
