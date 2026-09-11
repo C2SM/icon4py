@@ -78,6 +78,38 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
   not). "Arithmetic unchanged" in that commit message means the same operations in the
   same kinds, not the same contraction.
 
+- **Dispersion relation θ = 0, schemes 2 and 3 (W4a;
+  `tests/tracer_advection/integration_tests/test_jocksch_dispersion.py`, wave helper
+  `common/initial_condition/analytical/plane_wave.py`).** Paper §4 / Figs. 5-6 and the
+  θ = 0 half of Fig. 7 on Andreas' grid, mirroring his live block
+  `icon-ajocksch/src/atm_dyn_iconam/mo_nh_stepping.f90:3344-3488` (wave `:3427-3437`,
+  `dt = (a/2)·1.9999999999·CFL` `:3440`, `ω̃ = -ln(q_new/q_now)·i·(a/2)/dt` and `diff`
+  `:3469-3478` at his cell 883/3 = 294 (0-based 293), raw principal branch — the older
+  `MO_NH_STEPPING/mo_nh_stepping.f90_dispersion:2183` printed `Re ω̃ + 2π`, his tables do
+  not). One α per level (51 levels, columns asserted independent bit-exactly), so the
+  51 CFL × 51 α table is 102 `Advection.run` per scheme (0.01-0.05 s each once compiled,
+  ~20 s granule setup; full table ~25 s per scheme on gtfn_cpu). Against
+  `dispersion_linear.txt` / `dispersion_quadratic.txt`: scheme 2 max |Δ Re ω̃| 1.5e-14,
+  |Δ Im ω̃| 4.9e-14 (gates 5e-14 / 1.5e-13); scheme 3 1.2e-11 / 6.3e-11 (gates 4e-11 /
+  2e-10; the L1 SVD round-off 7e-13 amplified by the logarithm, worst at CFL 0.48);
+  dace_cpu (CFL 0.2) gives the same digits (scheme 2 bit-identical to gtfn_cpu on every
+  cell, scheme 3 within 2.5e-16 in the tracer). Parity: cell 294 is tip-up; cells of one
+  parity ≥ 3 edge lengths from the periodic seam agree to 5e-13 / 2e-13 (scheme 2, Re
+  modulo the aliasing period `2π(a/2)/dt` — the principal branch flips by round-off near
+  `2·CFL·α = π` — / Im) and 1.4e-11 / 8e-11 (scheme 3), the two parities' means to
+  9e-16 / 4e-16 and 5e-14 / 2.4e-13 — the sampling cell does not matter at θ = 0. The
+  wave is periodic on the torus only for ireal a multiple of 10, so the seam at
+  x = 47.5 ↔ −52.5 km contaminates the cells within stencil reach: 66 cells (3 columns)
+  for scheme 2, 110 (5 columns) for scheme 3; his cell is 7 cells away.
+  Growth (−Im ω̃ > 0): scheme 2 from CFL 0.70 (α ∈ (0, 1.27), all α from CFL 0.76, max
+  rate 0.35 at CFL 1), scheme 3 from CFL 0.62 (α ∈ (0, 0.38) → (0, 1.80) at CFL 1, rates
+  < 4.4e-3); nothing grows for the six CFLs of the paper. Outputs in
+  `weno_data/dispersion/`: `ihadv{2,3}_theta0.txt` (his 4-column F20.16 format), per-cell
+  `_cells.npz`, `_summary.txt` (per-CFL Δ vs Fortran, parity spread, seam cell count,
+  growth boundary), `fig5/6/7_*.png` (icon4py solid, Fortran dashed, exact black). The
+  `_setup` there (granule from `driver.initialize_driver` on the grid file, unit air
+  mass, `prescribe_uniform_wind`) is the harness W4c (θ = 30°) extends.
+
 ## Decisions
 
 - Everything in **double** for now; single/mixed precision after icon4py PR #970 merges,
@@ -98,7 +130,9 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
    limiter rows; compare with `reference/jocksch_grid/`.
 3. W5 follow-ups: gates on all backends (`dace_gpu` > `dace_cpu` > `gtfn_gpu`), 103 order
    study on the torus patch.
-4. Dispersion relation (W4): his variants are in
+4. Dispersion relation: W4b (capture of the θ = 0 block from our build, L2 per (CFL, α))
+   and W4c (θ = 30°, the chequerboard re-imposition loop of `mo_nh_stepping.f90:3489-3700`,
+   `dispersion_ffsl_30.txt`); his variants are in
    `/capstor/scratch/cscs/ajocksch/dispersion_relation/MO_NH_STEPPING/`.
 5. Milestone 2: FFSL (4/5/22/32/42/52), PSM, vlimit 2/3.
 
