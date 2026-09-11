@@ -41,9 +41,12 @@ batch job each; the final tracer of every run is saved next to the file) and
 which is then required, for all rows or the selected ones). The distances to the pure row
 are recomputed from the saved tracers whenever the results are evaluated, so the order in
 which the rows ran does not matter. The slopes are fitted over the factors
-'_REFINEMENT_FACTORS' and, if the file holds more (an 8x member), also over all of them;
-the bands are checked on the '_REFINEMENT_FACTORS' fit of every evaluated row whose
-records hold those factors (in check-only mode every evaluated row must hold them).
+'_REFINEMENT_FACTORS' and, if the file holds more (an 8x member), also over all of them, and
+printed for every row. The gates (see '_ROWS') are checked on every evaluated row whose
+records hold '_REFINEMENT_FACTORS' (in check-only mode every evaluated row must hold them):
+the '_REFINEMENT_FACTORS' fit for 2, 3 and 102, the local rate between the last two members
+in the file for 3 and for the quadratic WENO rows, whose gates document a known deficiency
+of the published type-VI construction rather than an order of accuracy.
 """
 
 import dataclasses
@@ -53,7 +56,7 @@ import os
 import pathlib
 import socket
 import time as wall_time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Final
 
 import gt4py.next.typing as gtx_typing
@@ -101,15 +104,20 @@ _ERROR_KEYS: Final = ("error_l1", "error_l2", "error_linf")
 _DISTANCE_KEYS: Final = ("distance_to_miura3_l2", "distance_to_miura3_linf")
 
 
+#: acceptable ranges of the (L1, L2, Linf) rates
+type _Bands = tuple[list[float], list[float], list[float]]
+
+
 @dataclasses.dataclass(frozen=True)
 class _Row:
     id: str
     advection_type: tracer_advection.HorizontalAdvectionType
     linear_weights: weno_least_squares.WenoLinearWeights
-    #: acceptable slope bands (L1, L2, Linf) of the fit over _REFINEMENT_FACTORS
-    l1_band: list[float]
-    l2_band: list[float]
-    linf_band: list[float]
+    #: acceptable slopes of the fit over _REFINEMENT_FACTORS; None: the fit is not gated
+    fit_bands: _Bands | None
+    #: acceptable local rates between the last two members in the results file, keyed by
+    #: their factors; empty: the local rate is not gated
+    last_rate_bands: Mapping[tuple[int, int], _Bands] = dataclasses.field(default_factory=dict)
 
 
 #: the formal order of the pure quadratic scheme, which it meets on this family
@@ -118,65 +126,109 @@ _THIRD_ORDER_BAND: Final = [
     harness._THIRD_ORDER + harness._TOL,
 ]
 
-#: Bands on the fit over _REFINEMENT_FACTORS, measured on gtfn_cpu (W6s, 2026-09-11; dace_gpu
-#: gives the same errors to 1e-13 relative, see docs/weno_idealized_status.md, "W6"). Apart
-#: from miura3 they are regression guards centred on the measurement at the harness's
-#: measured-rate width (harness._measured), not order statements: the quadratic WENO rows
-#: are pre-asymptotic on this family and lose order on its 8x and 16x members (dace_gpu, the
-#: longer fits quoted per row).
+#: the member pairs the study has run: consecutive factors of 1, 2, 4, 8, 16
+_MEMBER_PAIRS: Final = ((2, 4), (4, 8), (8, 16))
+
+
+def _measured_local_rates(l1: float, l2: float, linf: float) -> _Bands:
+    """Bands at the formal-order tolerance around local rates measured between two members."""
+
+    def band(rate: float) -> list[float]:
+        return [rate - harness._TOL, rate + harness._TOL]
+
+    return band(l1), band(l2), band(linf)
+
+
+#: Gates, measured in W6s (2026-09-11): 1x-4x on gtfn_cpu, 8x and 16x on dace_gpu. Backend
+#: agreement was checked on the common members 1x-4x only (relative errors within 1.72e-12,
+#: final tracers within 1.55e-15); the 8x and 16x members exist on dace_gpu only.
+#:
+#: - miura3 is gated on its formal order, 3 +- 0.1, on the (1, 2, 4) fit and on the local rate
+#:   between the last two members.
+#: - miura and miura_weno are regression guards on the (1, 2, 4) fit, centred on the gtfn_cpu
+#:   measurement at the harness's measured-rate width (harness._measured), not order
+#:   statements.
+#: - The quadratic WENO rows (103 OPTIMIZED, 103 UNITY, 132) document a known deficiency of
+#:   the published type-VI construction, not a pre-asymptotic range: the type-VI candidates
+#:   A+_full - sum d_i A+_i (mo_intp_coeffs_lsq_bln.f90 2669-2680 on
+#:   transport_ajocksch_capture, ported literally in
+#:   weno_least_squares.compute_weno_pseudoinverse_quadratic) return (1 - S) times the
+#:   derivatives of smooth data, so the blend returns them short by a constant delta
+#:   (-1.6214e-3 OPTIMIZED, -4.1647e-4 UNITY, -1.2127e-3 hybrid), a first-order diffusion
+#:   that takes over as the grid is refined. They are gated on the local rate between the
+#:   last two members in the results file, at +- 0.1 around the rate measured for that pair,
+#:   every band below the third-order one, so the gate tells first from third order and
+#:   fails if the construction changes; their (1, 2, 4) fit, whose curvature is that
+#:   transition, is printed only. The sharp check of the mechanism is the numpy unit test
+#:   model/atmosphere/tracer_advection/tests/tracer_advection/unit_tests/
+#:   test_weno_type_vi_bias.py; the finding: docs/weno_idealized_status.md, "W6".
 _ROWS: Final[tuple[_Row, ...]] = (
     # measured L1 2.182 +- 0.048, L2 2.225 +- 0.058, Linf 2.319 +- 0.085
     _Row(
         "miura",
         _MIURA,
         _OPTIMIZED,
-        harness._measured(2.18),
-        harness._measured(2.23),
-        harness._measured(2.32),
+        (harness._measured(2.18), harness._measured(2.23), harness._measured(2.32)),
     ),
-    # measured L1 2.977 +- 0.009, L2 2.967 +- 0.013, Linf 2.960 +- 0.016
-    # (x1,2,4,8,16: 2.989, 2.985, 2.984, last local rates 3.00, 3.00)
-    _Row("miura3", _MIURA3, _OPTIMIZED, _THIRD_ORDER_BAND, _THIRD_ORDER_BAND, _THIRD_ORDER_BAND),
+    # measured L1 2.977 +- 0.009, L2 2.967 +- 0.013, Linf 2.960 +- 0.016;
+    # local rates (L1, L2, Linf) x2-x4 2.99, 2.99, 2.99; x4-x8 3.00, 3.00, 3.00;
+    # x8-x16 3.00, 3.00, 3.00 (x1,2,4,8,16 fit: 2.989, 2.985, 2.984)
+    _Row(
+        "miura3",
+        _MIURA3,
+        _OPTIMIZED,
+        (_THIRD_ORDER_BAND, _THIRD_ORDER_BAND, _THIRD_ORDER_BAND),
+        {pair: (_THIRD_ORDER_BAND, _THIRD_ORDER_BAND, _THIRD_ORDER_BAND) for pair in _MEMBER_PAIRS},
+    ),
     # measured L1 2.409 +- 0.030, L2 1.966 +- 0.046, Linf 1.298 +- 0.034
     _Row(
         "miura_weno",
         _MIURA_WENO,
         _OPTIMIZED,
-        harness._measured(2.41),
-        harness._measured(1.97),
-        harness._measured(1.30),
+        (harness._measured(2.41), harness._measured(1.97), harness._measured(1.30)),
     ),
-    # measured L1 1.610 +- 0.271, L2 1.665 +- 0.267, Linf 1.754 +- 0.288, local rates 2.08 / 1.14
-    # (x1,2,4,8,16: 1.267, 1.299, 1.344, last local rates 1.03, 1.01)
+    # first order below 200 m edges; fit x1,2,4: L1 1.610 +- 0.271, L2 1.665 +- 0.267, Linf
+    # 1.754 +- 0.288; x1,2,4,8,16: 1.267, 1.299, 1.344; local rates (L1, L2, Linf) x1-x2 2.08,
+    # 2.13, 2.25, and the gated ones below
     _Row(
         "miura3_weno_opt",
         _MIURA3_WENO,
         _OPTIMIZED,
-        harness._measured(1.61),
-        harness._measured(1.67),
-        harness._measured(1.75),
+        None,
+        {
+            (2, 4): _measured_local_rates(1.14, 1.20, 1.26),
+            (4, 8): _measured_local_rates(1.03, 1.04, 1.05),
+            (8, 16): _measured_local_rates(1.01, 1.01, 1.01),
+        },
     ),
-    # measured L1 2.827 +- 0.039, L2 2.815 +- 0.057, Linf 2.820 +- 0.053
-    # (x1,2,4,8,16: 2.354, 2.357, 2.393, last local rates 2.20, 1.43)
+    # losing order later than OPTIMIZED (its delta is 3.9x smaller); fit x1,2,4: L1 2.827 +-
+    # 0.039, L2 2.815 +- 0.057, Linf 2.820 +- 0.053; x1,2,4,8,16: 2.354, 2.357, 2.393; local
+    # rates x1-x2 2.90, 2.91, 2.91, and the gated ones below
     _Row(
         "miura3_weno_unity",
         _MIURA3_WENO,
         _UNITY,
-        harness._measured(2.83),
-        harness._measured(2.82),
-        harness._measured(2.82),
+        None,
+        {
+            (2, 4): _measured_local_rates(2.76, 2.72, 2.73),
+            (4, 8): _measured_local_rates(2.20, 2.18, 2.24),
+            (8, 16): _measured_local_rates(1.43, 1.52, 1.60),
+        },
     ),
-    # measured L1 2.577 +- 0.120, L2 2.556 +- 0.128, Linf 2.580 +- 0.116, local rates 2.78 / 2.37
-    # (x1,2,4,8: 2.254, 2.262, 2.260, last local rate 1.57);
-    # the WENO branch blends with unit weights at run time (f90 3684) on candidates assembled
-    # with this row's (optimised) set
+    # losing order (delta -1.2127e-3 in its WENO branch); fit x1,2,4: L1 2.577 +- 0.120, L2
+    # 2.556 +- 0.128, Linf 2.580 +- 0.116; x1,2,4,8: 2.254, 2.262, 2.260; local rates x1-x2
+    # 2.78, 2.78, 2.78, and the gated ones below (no 16x member); the WENO branch blends with
+    # unit weights at run time (f90 3684) on candidates assembled with this row's (optimised)
+    # set
     _Row(
         "miura3_weno_hybrid",
         _MIURA3_WENO_HYBRID,
         _OPTIMIZED,
-        harness._measured(2.58),
-        harness._measured(2.56),
-        harness._measured(2.58),
+        None,
+        {
+            (2, 4): _measured_local_rates(2.37, 2.34, 2.38),
+            (4, 8): _measured_local_rates(1.57, 1.65, 1.58),
+        },
     ),
 )
 
@@ -414,13 +466,39 @@ def _fits(per_factor: dict[str, dict], factors: tuple[int, ...]) -> dict[str, di
     }
 
 
+def _check_last_local_rates(row: _Row, per_factor: dict[str, dict]) -> None:
+    """Gate the (L1, L2, Linf) local rates between the last two members in the records."""
+    factor_pair = tuple(sorted(int(factor) for factor in per_factor)[-2:])
+    bands = row.last_rate_bands.get(factor_pair)
+    assert bands is not None, (
+        f"{row.id}: no local-rate bands for the members {factor_pair}; "
+        f"recorded for {sorted(row.last_rate_bands)}"
+    )
+    if row.id != _PURE_ROW:
+        # the point of these gates: every band stays clear of the formal third order
+        assert all(band[1] < _THIRD_ORDER_BAND[0] for band in bands), (
+            f"{row.id}: a band of {factor_pair} reaches the third-order band"
+        )
+    records = [per_factor[str(factor)] for factor in factor_pair]
+    grid_spacing = [record["mean_edge_length"] for record in records]
+    for key, band in zip(_ERROR_KEYS, bands, strict=True):
+        (rate,) = _local_rates(grid_spacing, [record[key] for record in records])
+        print(f"{row.id} x{factor_pair[0]}-x{factor_pair[1]} local {key} rate {rate:.4f}")
+        assert band[0] <= rate <= band[1], (
+            f"{row.id}: local {key} rate {rate:.4f} between x{factor_pair[0]} and "
+            f"x{factor_pair[1]} outside {band}"
+        )
+
+
 def _evaluate(
     results_path: pathlib.Path, rows: tuple[_Row, ...], *, require_all: bool, write: bool
 ) -> None:
-    """Print the slopes of every row in the results file, then check the bands of 'rows'.
+    """Print the slopes of every row in the results file, then check the gates of 'rows'.
 
-    A row is gated on its '_REFINEMENT_FACTORS' fit when its records hold those factors; with
-    'require_all' a row of 'rows' without them fails the test instead of being skipped.
+    A row is gated when its records hold '_REFINEMENT_FACTORS': on that fit if it has
+    'fit_bands', on the local rate between its last two members if it has 'last_rate_bands'
+    (a pair without bands fails). With 'require_all' a row of 'rows' without those factors
+    fails the test instead of being skipped.
     """
     records = _load_records(results_path)
     _refresh_distances(results_path, records)
@@ -458,19 +536,23 @@ def _evaluate(
             assert not require_all, message
             print(f"\nnot gated, {message}", flush=True)
             continue
-        per_factor = [records[row.id][str(factor)] for factor in _REFINEMENT_FACTORS]
-        harness._check_convergence(
-            l1_acceptable_range=row.l1_band,
-            linf_acceptable_range=row.linf_band,
-            error_l1=[record["error_l1"] for record in per_factor],
-            error_linf=[record["error_linf"] for record in per_factor],
-            grid_spacing=[record["mean_edge_length"] for record in per_factor],
-        )
-        slope_l2, stderr_l2 = slopes[row.id][refinement_label]["error_l2"]["slope"]
-        assert row.l2_band[0] <= slope_l2 <= row.l2_band[1], (
-            f"{row.id}: L2 rate {slope_l2:.4f} outside {row.l2_band}"
-        )
-        assert stderr_l2 <= harness._STD_TOL
+        if row.fit_bands is not None:
+            l1_band, l2_band, linf_band = row.fit_bands
+            per_factor = [records[row.id][str(factor)] for factor in _REFINEMENT_FACTORS]
+            harness._check_convergence(
+                l1_acceptable_range=l1_band,
+                linf_acceptable_range=linf_band,
+                error_l1=[record["error_l1"] for record in per_factor],
+                error_linf=[record["error_linf"] for record in per_factor],
+                grid_spacing=[record["mean_edge_length"] for record in per_factor],
+            )
+            slope_l2, stderr_l2 = slopes[row.id][refinement_label]["error_l2"]["slope"]
+            assert l2_band[0] <= slope_l2 <= l2_band[1], (
+                f"{row.id}: L2 rate {slope_l2:.4f} outside {l2_band}"
+            )
+            assert stderr_l2 <= harness._STD_TOL
+        if row.last_rate_bands:
+            _check_last_local_rates(row, records[row.id])
 
 
 @pytest.mark.level("validation")
