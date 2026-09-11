@@ -562,8 +562,11 @@ GRID_VARIANTS = [pytest.param("", id="quarter_disc"), pytest.param("_centred", i
 
 @pytest.fixture
 def grid_variant(request: pytest.FixtureRequest) -> str:
-    """The capture's grid-file tag ('' or '_centred'); set by parametrization."""
-    return request.param
+    """The capture's grid-file tag ('' or '_centred'); set by parametrization.
+
+    A test that does not parametrise it gets the quarter-disc capture ('').
+    """
+    return getattr(request, "param", "")
 
 
 @pytest.fixture
@@ -609,7 +612,8 @@ def test_evolved_selection_mask_is_the_same_in_single_and_double_precision(
     everywhere, together with the zero count of differing cells. The two global numbers
     are not comparable with each other: outside the disc p_cc = 0 makes the threshold
     5e-25 while a neighbour's O(1) jump perturbs the residual by ~1e-7, so the largest
-    relative perturbation is ~1e17 at every step, on cells whose margin is larger still.
+    relative perturbation is 1e16-1e19 at every step (2.9e16 to 1.7e19 over the steps and
+    captures below), on cells whose margin is larger still.
 
     Measured 2026-09-11 (WENO-selected cells in single / double precision, cells that
     differ, of 880; then the largest per-cell perturbation-to-margin ratio and the smallest

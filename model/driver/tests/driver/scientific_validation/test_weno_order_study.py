@@ -45,8 +45,10 @@ which the rows ran does not matter. The slopes are fitted over the factors
 printed for every row. The gates (see '_ROWS') are checked on every evaluated row whose
 records hold '_REFINEMENT_FACTORS' (in check-only mode every evaluated row must hold them):
 the '_REFINEMENT_FACTORS' fit for 2, 3 and 102, the local rate between the last two members
-in the file for 3 and for the quadratic WENO rows, whose gates document a known deficiency
-of the published type-VI construction rather than an order of accuracy.
+in the file for 3 and for the quadratic WENO rows, and for the latter also the ratio of the
+last member's L2 error to that of 3 at the same factor; the quadratic WENO rows' gates
+document a known deficiency of the published type-VI construction rather than an order of
+accuracy.
 """
 
 import dataclasses
@@ -118,6 +120,9 @@ class _Row:
     #: acceptable local rates between the last two members in the results file, keyed by
     #: their factors; empty: the local rate is not gated
     last_rate_bands: Mapping[tuple[int, int], _Bands] = dataclasses.field(default_factory=dict)
+    #: measured ratio of the last member's L2 error to the pure row's at the same factor, keyed
+    #: by that factor and gated at +- _L2_RATIO_TOL (relative); empty: the ratio is not gated
+    last_l2_ratio_to_pure: Mapping[int, float] = dataclasses.field(default_factory=dict)
 
 
 #: the formal order of the pure quadratic scheme, which it meets on this family
@@ -128,6 +133,9 @@ _THIRD_ORDER_BAND: Final = [
 
 #: the member pairs the study has run: consecutive factors of 1, 2, 4, 8, 16
 _MEMBER_PAIRS: Final = ((2, 4), (4, 8), (8, 16))
+
+#: relative half-width of the gate on the last member's L2 error ratio to the pure row
+_L2_RATIO_TOL: Final = 0.05
 
 
 def _measured_local_rates(l1: float, l2: float, linf: float) -> _Bands:
@@ -157,10 +165,13 @@ def _measured_local_rates(l1: float, l2: float, linf: float) -> _Bands:
 #:   (-1.6214e-3 OPTIMIZED, -4.1647e-4 UNITY, -1.2127e-3 hybrid), a first-order diffusion
 #:   that takes over as the grid is refined. They are gated on the local rate between the
 #:   last two members in the results file, at +- 0.1 around the rate measured for that pair,
-#:   every band below the third-order one, so the gate tells first from third order and
-#:   fails if the construction changes; their (1, 2, 4) fit, whose curvature is that
-#:   transition, is printed only. The sharp check of the mechanism is the numpy unit test
-#:   model/atmosphere/tracer_advection/tests/tracer_advection/unit_tests/
+#:   every band below the third-order one: that gate catches a return to third order or a
+#:   transition shifted to other members, not the value of delta. Next to it, the ratio of
+#:   the last member's L2 error to scheme 3's at the same factor is gated at +- 5 % around
+#:   the measured one (_L2_RATIO_TOL); on the finest members that error is the delta
+#:   diffusion, so the ratio follows its size. Their (1, 2, 4) fit, whose curvature is the
+#:   transition, is printed only. The first-order constant delta itself is pinned by the
+#:   numpy unit test model/atmosphere/tracer_advection/tests/tracer_advection/unit_tests/
 #:   test_weno_type_vi_bias.py; the finding: docs/weno_idealized_status.md, "W6".
 _ROWS: Final[tuple[_Row, ...]] = (
     # measured L1 2.182 +- 0.048, L2 2.225 +- 0.058, Linf 2.319 +- 0.085
@@ -189,7 +200,8 @@ _ROWS: Final[tuple[_Row, ...]] = (
     ),
     # first order below 200 m edges; fit x1,2,4: L1 1.610 +- 0.271, L2 1.665 +- 0.267, Linf
     # 1.754 +- 0.288; x1,2,4,8,16: 1.267, 1.299, 1.344; local rates (L1, L2, Linf) x1-x2 2.08,
-    # 2.13, 2.25, and the gated ones below
+    # 2.13, 2.25; L2 error / scheme 3's x1 0.182, x2 0.320; the gated local rates and ratios
+    # below
     _Row(
         "miura3_weno_opt",
         _MIURA3_WENO,
@@ -200,10 +212,12 @@ _ROWS: Final[tuple[_Row, ...]] = (
             (4, 8): _measured_local_rates(1.03, 1.04, 1.05),
             (8, 16): _measured_local_rates(1.01, 1.01, 1.01),
         },
+        {4: 1.105, 8: 4.299, 16: 17.09},
     ),
     # losing order later than OPTIMIZED (its delta is 3.9x smaller); fit x1,2,4: L1 2.827 +-
     # 0.039, L2 2.815 +- 0.057, Linf 2.820 +- 0.053; x1,2,4,8,16: 2.354, 2.357, 2.393; local
-    # rates x1-x2 2.90, 2.91, 2.91, and the gated ones below
+    # rates x1-x2 2.90, 2.91, 2.91; L2 error / scheme 3's x1 0.832, x2 0.849; the gated local
+    # rates and ratios below
     _Row(
         "miura3_weno_unity",
         _MIURA3_WENO,
@@ -214,12 +228,13 @@ _ROWS: Final[tuple[_Row, ...]] = (
             (4, 8): _measured_local_rates(2.20, 2.18, 2.24),
             (8, 16): _measured_local_rates(1.43, 1.52, 1.60),
         },
+        {4: 1.027, 8: 1.805, 16: 5.038},
     ),
     # losing order (delta -1.2127e-3 in its WENO branch); fit x1,2,4: L1 2.577 +- 0.120, L2
     # 2.556 +- 0.128, Linf 2.580 +- 0.116; x1,2,4,8: 2.254, 2.262, 2.260; local rates x1-x2
-    # 2.78, 2.78, 2.78, and the gated ones below (no 16x member); the WENO branch blends with
-    # unit weights at run time (f90 3684) on candidates assembled with this row's (optimised)
-    # set
+    # 2.78, 2.78, 2.78; L2 error / scheme 3's x1 0.859, x2 0.964; the gated local rates and
+    # ratios below (no 16x member); the WENO branch blends with unit weights at run time
+    # (f90 3684) on candidates assembled with this row's (optimised) set
     _Row(
         "miura3_weno_hybrid",
         _MIURA3_WENO_HYBRID,
@@ -229,6 +244,7 @@ _ROWS: Final[tuple[_Row, ...]] = (
             (2, 4): _measured_local_rates(2.37, 2.34, 2.38),
             (4, 8): _measured_local_rates(1.57, 1.65, 1.58),
         },
+        {4: 1.518, 8: 3.862},
     ),
 )
 
@@ -490,6 +506,30 @@ def _check_last_local_rates(row: _Row, per_factor: dict[str, dict]) -> None:
         )
 
 
+def _check_last_l2_ratio_to_pure(
+    row: _Row, records: dict[str, dict[str, dict]], *, require_all: bool
+) -> None:
+    """Gate the last member's L2 error relative to the pure row's at the same factor."""
+    factor = max(int(key) for key in records[row.id])
+    measured = row.last_l2_ratio_to_pure.get(factor)
+    assert measured is not None, (
+        f"{row.id}: no L2 ratio to {_PURE_ROW} for the member x{factor}; "
+        f"recorded for {sorted(row.last_l2_ratio_to_pure)}"
+    )
+    pure_record = records.get(_PURE_ROW, {}).get(str(factor))
+    if pure_record is None:
+        message = f"{row.id}: no {_PURE_ROW} record for x{factor}, the L2 ratio is not formed"
+        assert not require_all, message
+        print(f"\nnot gated, {message}", flush=True)
+        return
+    ratio = records[row.id][str(factor)]["error_l2"] / pure_record["error_l2"]
+    band = [measured * (1.0 - _L2_RATIO_TOL), measured * (1.0 + _L2_RATIO_TOL)]
+    print(f"{row.id} x{factor} L2 error / {_PURE_ROW}'s {ratio:.4f} (measured {measured})")
+    assert band[0] <= ratio <= band[1], (
+        f"{row.id}: L2 error ratio to {_PURE_ROW} {ratio:.4f} at x{factor} outside {band}"
+    )
+
+
 def _evaluate(
     results_path: pathlib.Path, rows: tuple[_Row, ...], *, require_all: bool, write: bool
 ) -> None:
@@ -497,8 +537,10 @@ def _evaluate(
 
     A row is gated when its records hold '_REFINEMENT_FACTORS': on that fit if it has
     'fit_bands', on the local rate between its last two members if it has 'last_rate_bands'
-    (a pair without bands fails). With 'require_all' a row of 'rows' without those factors
-    fails the test instead of being skipped.
+    (a pair without bands fails), on its last member's L2 error ratio to the pure row if it
+    has 'last_l2_ratio_to_pure' (a member without a ratio fails). With 'require_all' a row of
+    'rows' without those factors, or without a pure-row record of its last member to form
+    the ratio, fails the test instead of being skipped.
     """
     records = _load_records(results_path)
     _refresh_distances(results_path, records)
@@ -553,6 +595,8 @@ def _evaluate(
             assert stderr_l2 <= harness._STD_TOL
         if row.last_rate_bands:
             _check_last_local_rates(row, records[row.id])
+        if row.last_l2_ratio_to_pure:
+            _check_last_l2_ratio_to_pure(row, records, require_all=require_all)
 
 
 @pytest.mark.level("validation")
