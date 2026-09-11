@@ -210,6 +210,7 @@ def _compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
     rayleigh_coeff: wpfloat,
     vct_a_1: wpfloat,
     pi_const: wpfloat,
+    end_index_of_damping_layer: gtx.int32,
 ) -> fa.KHalfField[wpfloat]:
     rayleigh_w = broadcast(0.0, (dims.KHalfDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
@@ -224,7 +225,8 @@ def _compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
         rayleigh_w = rayleigh_coeff * (
             1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
         )
-    return rayleigh_w
+    # embedded rejects a scalar branch on an unbounded region, so the zeros are a field
+    return concat_where(dims.KHalfDim <= end_index_of_damping_layer, rayleigh_w, 0.0 * rayleigh_w)
 
 
 @gtx.program
@@ -236,6 +238,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
     rayleigh_coeff: wpfloat,
     vct_a_1: wpfloat,
     pi_const: wpfloat,
+    end_index_of_damping_layer: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
@@ -254,6 +257,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
         rayleigh_klemp: Klemp (2008) type Rayleigh damping
         rayleigh_coeff: Rayleigh damping coefficient in w-equation
         pi_const: pi constant
+        end_index_of_damping_layer: last level index with damping, rayleigh_w is zero below
         vertical_start: vertical start index
         vertical_end: vertical end index
     """
@@ -264,6 +268,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
         rayleigh_coeff,
         vct_a_1,
         pi_const,
+        end_index_of_damping_layer,
         out=rayleigh_w,
         domain={dims.KHalfDim: (vertical_start, vertical_end)},
     )
@@ -280,7 +285,14 @@ def _compute_coeff_dwdz(
         ddqz_z_full(dims.KDim - 1) / ddqz_z_full / (z_ifc(dims.KDim - 1.5) - z_ifc(dims.KDim + 0.5))
     )
 
-    return coeff1_dwdz, coeff2_dwdz
+    # TODO(havogt): This is a workaround for 2 things:
+    # a) with a plain `0.0` embedded will not work because of the infinite range
+    # b) for `concat_where(dims.KDim == 0, 0.0, ...)` the domain inference is broken in GT4Py,
+    #    see https://github.com/gridTools/gt4py/issues/2205.
+    return (
+        concat_where(dims.KDim >= 1, coeff1_dwdz, 0.0 * ddqz_z_full),
+        concat_where(dims.KDim >= 1, coeff2_dwdz, 0.0 * ddqz_z_full),
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -302,8 +314,8 @@ def compute_coeff_dwdz(  # noqa: PLR0917 [too-many-positional-arguments]
     Args:
         ddqz_z_full: functional determinant of the metrics (is positive), full levels
         z_ifc: geometric height of half levels
-        coeff1_dwdz: coefficient for second-order acurate dw/dz term
-        coeff2_dwdz: coefficient for second-order acurate dw/dz term
+        coeff1_dwdz: coefficient for second-order acurate dw/dz term, zero on the top level
+        coeff2_dwdz: coefficient for second-order acurate dw/dz term, zero on the top level
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
         vertical_start: vertical start index
