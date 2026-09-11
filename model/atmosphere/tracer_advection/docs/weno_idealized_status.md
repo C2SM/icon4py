@@ -236,8 +236,9 @@ strip-free value (the median over the same-orientation interior cells outside th
 normalised as above, max over α) its strip cells deviate by up to 2.8e-13, our build's by up
 to 5.3e-13 at CFL 0.5, and at cell 293 the two deviate in opposite directions (Im ω̃ +1.1e-11
 vs −2.1e-11 at α = π, where |q_new/q_now| = 0.025). So the 14.43 km strip is where both SVDs
-round off (the −37.5 km strip is mainly icon4py's: 1.2e-13 against our build's 4.4e-14 at CFL
-0.5), and the θ = 0 gap is their difference (`weno_data/w4c_review/polish2_strips.py`).
+round off (the −37.5 km strip is icon4py's: 1.2e-13 at CFL 0.5, while our build's 4.4e-14 there
+is below its own non-strip maximum 6.7e-14), and the θ = 0 gap is their difference
+(`weno_data/w4c_review/polish2_strips.py`).
 icon4py's own θ = 30 field has the same strips: at CFL 0.5 the one-step ω of the strip cells
 ≥ 4 edge lengths from both seams deviates from that of the same-orientation cell 694 / 695
 (normalised as above, max over the 59 α) by 1.5e-13 (median), that of the cells whose θ = 0
@@ -422,10 +423,8 @@ numpy replica that reproduces our Fortran build's 103 table on his grid to 4.3e-
 at every cell, the phase average A = −(δ/2)(1 − 2 CFL) to 0.1 % (optimised) / 0.3 % (ones)
 over CFL 0.01-0.4, and an optimised / ones ratio 3.903 against δ's 3.898. The single-cell rows
 with Im ω̃ < 0 in that table are a phase artefact (the phase-averaged one-step Im ω̃ is
-positive in all rows). Growth over many steps is a separate matter: the numpy replica and the
-Fortran (W6-G, `icon-ajocksch` commit `96e64fe27a`, `CAPTURE_NOTES.md` "WENO multi-step
-stability (W6-G)") show a multi-step grid-scale instability of 103 at θ = 0; limits and cause
-are under review. The type-VI candidates are assembled as
+positive in all rows). Growth over many steps is a separate matter (**Multi-step instability**
+below). The type-VI candidates are assembled as
 `A⁺_full − Σ_{i∈group} d_i A⁺_i` (`weno_least_squares.compute_weno_pseudoinverse_quadratic`,
 `mo_intp_coeffs_lsq_bln.f90:2646-2657` at `dacecf46aa`). For smooth data every fitted candidate
 reproduces the derivatives, so a type-VI candidate returns `(1 − S)` times them, with `S` the
@@ -446,6 +445,32 @@ ratio of that term, 0.257, is what the distances show at x8 (0.261 L2, 0.264 Lin
 open question; on smooth data the weights never reach that limit, which is what keeps the
 scheme consistent up to δ.) The hybrid assembles with OPTIMIZED and blends with unit weights
 (δ = −1.21e-3) outside its plain core.
+
+**Multi-step instability of 103 OPTIMIZED (W6-G, W6-H, W6-I; reviewed, findings #9 for
+Andreas).** Separate from the one-step damping above: over long runs (smooth plane waves, no
+limiter, no re-imposition) 103 with the optimised set grows. Fortran-confirmed in our build of
+`transport_ajocksch` (`icon-ajocksch` commits `96e64fe27a` and `8c6b470887`, the θ = 0 and θ = 30
+multi-step switches; `27351f49e3`, run script and torus recipe; `58fd4bcc93`, the d_j = 1 run at
+θ = 30; `CAPTURE_NOTES.md` "WENO multi-step stability (W6-G)" and "WENO multi-step stability:
+long runs and theta = 30 (W6-H)"): at θ = 0 on his grid the optimised set grows from CFL 0.38
+within 2000 steps and from 0.30 within 6000 steps (a localised grid-scale residual), while d_j = 1
+(UNITY) shows no growth up to CFL 0.42 within 2000 steps and scheme 3 is stable at 0.50. At
+θ = 30 on a doubly periodic 20 × 40 torus with his 5 km edges
+(`weno_data/grids/torus_20x40_res5000m.nc`) the optimised set blows up at CFL 0.20 (L2 ×3.2 after
+100 steps, > 1e12 after 2350), bursts at 0.15 and is clean at 0.10, while d_j = 1 (same grid,
+waves and CFL, only the weight set changed) is clean at 0.20 over 3000 steps and scheme 3 at 0.43.
+So it comes from the optimised weight set. A one-step test does not show it: a pure wave is damped in its
+first step. Replica only (numpy; it reproduces the θ = 30 Fortran trajectories to < 1e-6 in L2):
+over 40,000 steps at θ = 0 the growth starts at CFL ≈ 0.22; at θ = 30 the growing mode has two
+components, the wave plus a 7-10 % companion that alternates between the two triangle
+orientations; frozen linear weights remove the growth, while the (1 + S) type-VI assembly (which
+removes the δ bias above) and a double-precision β do not, i.e. it comes from the optimised set's
+nonlinear weighting. The paper's 100-step θ = 0 cylinder test cannot show it. **Consequence for
+icon4py users:** `AdvectionConfig.weno_linear_weights` defaults to `WenoLinearWeights.OPTIMIZED`
+(the paper's "WENO opt"), and 103 OPTIMIZED is not safe for long runs above CFL ≈ 0.2, at oblique
+flow not even at 0.2. Until this is resolved, prefer `UNITY` (d_j = 1, the set tested here;
+`HAND_TUNED` and the hybrid 132 were not part of these runs) or scheme 3 (`miura3`) for anything
+longer than the paper's tests.
 
 **Gates** (`_ROWS`, measured values in comments). 3: 3 ± 0.1 on the (1, 2, 4) fit and on
 the local rate between the last two members in the results file. 2 and 102: regression
@@ -491,9 +516,9 @@ one variant of every program per grid size (4-5 min per new size for the driver'
 factories, about 1 min for the 103 stencils); once built, 0.5-2.5 min per member up to 8x,
 5-7 min per 16x member including its build. Check a results file without running: the same
 pytest, `--level=validation` included, with `ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY=1` (and
-`ICON4PY_WENO_ORDER_STUDY_ROWS` for a subset). Without `--level=validation` pytest skips the
-test ("Validation tests must be explicitly requested", it shows only as `1 skipped`) and checks
-nothing.
+`ICON4PY_WENO_ORDER_STUDY_ROWS` for a subset). Without `--level=validation` (the default
+`--level=any`) pytest skips the test ("Validation tests must be explicitly requested", it shows
+only as `1 skipped`; other levels deselect it) and checks nothing.
 Tables: `weno_data/slurm/w6s_analysis.py <gtfn_cpu json> <dace_gpu json>` (numpy).
 
 ## Decisions
@@ -515,11 +540,12 @@ Tables: `weno_data/slurm/w6s_analysis.py <gtfn_cpu json> <dace_gpu json>` (numpy
 2. Python cylinder on Andreas' grid for all Table 2 rows incl. hybrid, UNITY, the four
    limiter rows; compare with `reference/jocksch_grid/`.
 3. W5 / W6 follow-ups: gates on all backends (`dace_gpu` > `dace_cpu` > `gtfn_gpu`). The 103
-   order study is done (W6, section above), and so is the Fortran confirmation of the
-   multi-step instability seen in the numpy replica of 103 (W6-G, committed on the Fortran
-   tree, `icon-ajocksch` `96e64fe27a`; its review is running). Open: the pseudoinverse
-   injection test (item 4); the 103 launch-count restructuring (27 candidates × 2 launches)
-   before any performance claim.
+   order study is done (W6, section above), and the multi-step instability of 103 OPTIMIZED
+   is confirmed in the Fortran and reviewed (W6-G, W6-H, W6-I; **Multi-step instability** in
+   the W6 section). Open: whether icon4py should guard the optimised set (e.g. refuse or warn
+   above CFL 0.2), and the report to the author (findings #9); the pseudoinverse injection
+   test (item 4); the 103 launch-count restructuring (27 candidates × 2 launches) before any
+   performance claim.
 4. Dispersion relation: done at θ = 0 (W4a, W4b capture) and θ = 30° (W4c, section
    above). Open: the provenance of his `dispersion_ffsl_{0,30}[_inexact].txt` (none of
    schemes 2, 3, 5; question for Andreas), and the direct test that the θ = 0
