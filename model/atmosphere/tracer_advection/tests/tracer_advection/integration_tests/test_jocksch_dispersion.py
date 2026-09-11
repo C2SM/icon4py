@@ -277,8 +277,8 @@ FORTRAN_BUILD_DIRS_30: Final[dict[int, pathlib.Path]] = {
 #: max |d omega| (the four columns) against his table over the rows converged here
 #: (resid <= CONVERGED_RESID_30), per scheme, about three times the gtfn_cpu measurement
 FORTRAN_TOLERANCE_30: Final[dict[int, float]] = {
-    2: 1e-12,  # provisional
-    3: 1e-12,  # provisional
+    2: 6e-14,  # 1.9e-14 (CFL 0.01; 2.3e-15 .. 3.5e-15 at 0.1 .. 0.5)
+    3: 6e-14,  # 1.8e-14 (CFL 0.01; 2.2e-15 .. 2.7e-15 at 0.1 .. 0.5)
 }
 PARTS_DIR: Final = OUTPUT_DIR / "theta30_parts"
 
@@ -497,13 +497,19 @@ def _dispersion(setup: _Setup, cfls: tuple[float, ...]) -> _Table:
 
 
 def _read_fortran_table(path: pathlib.Path) -> np.ndarray:
-    """(rows, 4 or 6) of his table, the blank block separators and '#' lines dropped."""
+    """(rows, 4 or 6) of a table, the blank block separators, '#' lines and ``diff`` lines dropped.
+
+    Our build's theta = 0 tables carry the fifth printed item, ``diff``, on a line of its
+    own (the four-descriptor format, :3544); only the rows of the table's column count
+    (that of its first row) are kept.
+    """
     rows = [
-        [float(item) for item in line.split()]
+        line.split()
         for line in path.read_text().splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     ]
-    return np.asarray(rows)
+    width = max(len(row) for row in rows)
+    return np.asarray([[float(item) for item in row] for row in rows if len(row) == width])
 
 
 def _fortran_block(table: np.ndarray, cfl: float, alphas: tuple[float, ...] = ALPHA) -> np.ndarray:
