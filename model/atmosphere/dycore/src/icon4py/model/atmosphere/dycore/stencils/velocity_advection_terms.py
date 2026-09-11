@@ -270,8 +270,9 @@ def _compute_advective_vertical_wind_tendency(
     cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.vpfloat]:
-    # TODO(havogt): the wp-vp roundtrips are here to be faithful to ICON's mixed precision,
-    # but was that a deliberate decision on the Fortran side?
+    # TODO(havogt): the wp-vp roundtrips are here to be faithful to ICON's mixed precision.
+    # We assume it was not a deliberate decision in ICON and plan to drop the extra conversions
+    # in a separate PR.
     vertical_advection_of_w = _compute_vertical_advection_of_w(
         contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
     )
