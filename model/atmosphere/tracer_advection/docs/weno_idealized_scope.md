@@ -86,7 +86,7 @@ keeps them in one alias, `icon4py.model.common.type_alias.fortran_sp_float` (nex
 | Fortran | icon4py |
 | ------- | ------- |
 | `upwind_hflux_miura3_weno`, f90:2643 `REAL(sp) :: zlc(6), z_lsq_smooth(6), area`; f90:2996-3008 smoothness vector, `DOT_PRODUCT(z_lsq_smooth, real(z_quad_vector_sum))`, `1d-20` and the square in `wp` | `stencils/accumulate_weno_candidate_flux_weights.py`: `astype(…, fortran_sp_float)` of the coefficients, the area and the quadrature sums, β formed in that kind, widened to `wpfloat` for the `1e-20` and the square (103 and the WENO branch of 132) |
-| `upwind_hflux_miura_weno_hyb`, f90:3547-3574 fit residual `lsqe` against `lsq_error` (`REAL(sp)`, `mo_intp_data_strc.f90:83`), threshold literals `5e-5`, `1e-10` | `stencils/compute_weno_hybrid_stencil_selection.py` (`fortran_sp_float` for the residual path, `fortran_sp_literal` for the literals); numpy replica `_selection_residual` in `tests/…/test_miura_weno_hybrid_pipeline.py` |
+| `upwind_hflux_miura_weno_hyb`, f90:3547-3574 fit residual `lsqe` against `lsq_error` (`REAL(sp)`, `mo_intp_data_strc.f90:83`), threshold literals `5e-5`, `1e-10` | `stencils/compute_weno_hybrid_stencil_selection.py` (`fortran_sp_float` for the residual path; the threshold literals arrive as `wpfloat` scalars, `fortran_sp_literal(5e-5)` / `fortran_sp_literal(1e-10)` promoted in `tracer_advection_horizontal.py:1513-1515,1553`, not inside the stencil); numpy replica `_selection_residual` in `tests/…/test_miura_weno_hybrid_pipeline.py` |
 
 ## The cylinder experiment (live block, `mo_nh_stepping.f90`, hunk after the
 

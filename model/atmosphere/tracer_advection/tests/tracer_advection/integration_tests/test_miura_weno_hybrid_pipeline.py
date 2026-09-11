@@ -73,13 +73,7 @@ from icon4py.model.testing.fixtures.datatest import (
 
 from .. import utils
 from ..fixtures import advection_init_savepoint
-from .test_jocksch_reference import (
-    NUM_LEVELS as CAPTURE_NUM_LEVELS,
-    case,
-    date,
-    experiment,
-    experiment_description,
-)
+from .test_jocksch_reference import NUM_LEVELS as CAPTURE_NUM_LEVELS, case, date, experiment
 from .test_miura3_weno_pipeline import (
     N_CAND,
     NLEV,
@@ -556,18 +550,37 @@ def test_cylinder_selection_mask_is_the_same_in_single_and_double_precision(cyli
     assert n_differ == 0
 
 
-#: the steps of the ihadv132 capture whose 'advection-init' tracer the mask is evaluated on
-#: (step 1 carries the initial cylinder, the later ones the Fortran's evolved field)
+#: the steps of the ihadv132 captures whose 'advection-init' tracer the mask is evaluated on
+#: (step 1 carries the initial condition, the later ones the Fortran's evolved field)
 EVOLVED_STEPS = [1, 2, 10, 50, 100]
-#: a residual within this relative distance of the threshold counts as 'at the boundary'
-BOUNDARY_BAND = 10.0 * float(np.finfo(np.float32).eps)
+#: the 'tag' of test_defs.Experiments.jocksch_cylinder: the capture on the original
+#: generated grid file, where the Fortran's cylinder around the origin is the 48-cell
+#: quarter-disc in the corner, and the one on the '_centred' file (the same grid shifted
+#: to the origin), where it is the full 176-cell disc of the paper
+GRID_VARIANTS = [pytest.param("", id="quarter_disc"), pytest.param("_centred", id="full_disc")]
+
+
+@pytest.fixture
+def grid_variant(request: pytest.FixtureRequest) -> str:
+    """The capture's grid-file tag ('' or '_centred'); set by parametrization."""
+    return request.param
+
+
+@pytest.fixture
+def experiment_description(
+    case: tuple[int, int], grid_variant: str
+) -> test_defs.ExperimentDescription:
+    """Overrides test_jocksch_reference's fixture: the same (ihadv, hlim) case with the tag."""
+    return test_defs.Experiments.jocksch_cylinder(*case, grid_variant)
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("case", [pytest.param((132, 0), id="ihadv132_hlim0")], indirect=True)
+@pytest.mark.parametrize("grid_variant", GRID_VARIANTS, indirect=True)
 @pytest.mark.parametrize("step", EVOLVED_STEPS)
 def test_evolved_selection_mask_is_the_same_in_single_and_double_precision(
     case: tuple[int, int],
+    grid_variant: str,
     step: int,
     *,
     experiment: test_defs.Experiment,
@@ -578,19 +591,36 @@ def test_evolved_selection_mask_is_the_same_in_single_and_double_precision(
     The check above is decided by construction: on the initial cylinder every stencil is
     either constant (residual exactly 0 in both kinds) or O(1) against the 5e-5 threshold.
     Here the same numpy selection runs on the tracer of the 'advection-init' savepoints
-    of the ihadv132_hlim0 capture (test_jocksch_reference.py), i.e. on the Fortran's own
-    hybrid solution after step - 1 steps, whose cells behind the cylinder carry the
-    scheme's ripples at every magnitude. The coefficients are the port's (lsq_error and
-    the full quadratic pseudoinverse of weno_least_squares on the grid file the capture
-    used), the field one level of the savepoint (the ten levels are asserted identical).
+    of the two ihadv132_hlim0 captures (test_jocksch_reference.py): on the original
+    generated grid file the Fortran's cylinder around the origin is the 48-cell
+    quarter-disc in the corner (icon-ajocksch/CAPTURE_NOTES.md, 'Grid'), on the '_centred'
+    file the full 176-cell disc of the paper; step 1 is that initial condition, the later
+    steps the Fortran's own hybrid solution after step - 1 steps, whose cells behind the
+    disc carry the scheme's ripples at every magnitude. The coefficients are the port's
+    (lsq_error and the full quadratic pseudoinverse of weno_least_squares on the grid file
+    the capture used), the field one level of the savepoint (the ten levels are asserted
+    identical).
+
+    The assertion is measured, not banded: single precision moves the residual by
+    ``|lsqe_sp - lsqe_wp|`` and the double residual is ``|lsqe_wp - threshold|`` away from
+    the threshold, so the mask cannot flip where the first is smaller than the second.
+    Both are printed relative to the cell's threshold (the largest perturbation and the
+    smallest margin over the cells) and their per-cell ratio is asserted below 1
+    everywhere, together with the zero count of differing cells. The two global numbers
+    are not comparable with each other: outside the disc p_cc = 0 makes the threshold
+    5e-25 while a neighbour's O(1) jump perturbs the residual by ~1e-7, so the largest
+    relative perturbation is ~1e17 at every step, on cells whose margin is larger still.
+
     Measured 2026-09-11 (WENO-selected cells in single / double precision, cells that
-    differ, of 880): step 1: 78 / 78, 0; step 2: 89 / 89, 0; step 10: 227 / 227, 0;
-    step 50: 624 / 624, 0; step 100: 666 / 666, 0, hence the zero-count assertion. The
-    boundary band (a residual within 10 float32 eps, 1.2e-6 relative, of the threshold) is
-    empty at every step and asserted so: the residual nearest to the threshold is 1.3e-1
-    away at step 10, 8.7e-3 at step 50 and 3.8e-3 at step 100 (relative), three orders
-    of magnitude more than single precision can move it, so the selection of the evolved
-    field is not a round-off decision either.
+    differ, of 880; then the largest per-cell perturbation-to-margin ratio and the smallest
+    margin relative to the threshold). Quarter-disc: step 1: 78 / 78, 0, 1.5e-7, 1.0;
+    step 2: 89 / 89, 0, 2.4e-7, 1.0; step 10: 227 / 227, 0, 6.5e-7, 1.3e-1; step 50:
+    624 / 624, 0, 9.3e-6, 8.7e-3; step 100: 666 / 666, 0, 2.3e-6, 3.8e-3. Full disc:
+    step 1: 136 / 136, 0, 1.5e-7, 1.0; step 2: 168 / 168, 0, 2.4e-7, 1.0; step 10:
+    456 / 456, 0, 1.0e-6, 2.0e-1; step 50: 820 / 820, 0, 2.4e-6, 4.6e-2; step 100:
+    852 / 852, 0, 5.5e-6, 2.8e-2. Single precision moves no residual by more than 1e-5
+    of its distance to the threshold, so the selection of the evolved field is not a
+    round-off decision either.
     """
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
         experiment.grid,
@@ -634,25 +664,30 @@ def test_evolved_selection_mask_is_the_same_in_single_and_double_precision(
     assert tracer.shape == (stencil_c9.shape[0], CAPTURE_NUM_LEVELS)
     assert (tracer == tracer[:, :1]).all(), "the capture's ten levels are identical columns"
     p_cc = tracer[:, 0]
+    if step == 1:
+        n_disc = int(np.sum(p_cc == 1.0))
+        assert n_disc == (176 if grid_variant == "_centred" else 48), "not the expected IC"
 
     lsqe_single, threshold = _selection_residual(p_cc=p_cc, sp=np.float32, **coefficients)
     lsqe_double, _ = _selection_residual(p_cc=p_cc, sp=np.float64, **coefficients)
     mask_single = lsqe_single > threshold
     mask_double = lsqe_double > threshold
     n_differ = int(np.sum(mask_single != mask_double))
-    boundary = np.abs(lsqe_double - threshold) <= BOUNDARY_BAND * threshold
+    perturbation = np.abs(lsqe_single - lsqe_double)
+    margin = np.abs(lsqe_double - threshold)
     print(
-        f"\nhybrid selection on the ihadv132 capture, step {step:3d}: WENO on "
-        f"{int(mask_single.sum())} of {mask_single.size} cells in single, "
-        f"{int(mask_double.sum())} in double, {n_differ} cells differ, "
-        f"{int(boundary.sum())} within 10 eps_sp of the threshold; "
-        f"min |lsqe - threshold| / threshold = "
-        f"{float((np.abs(lsqe_double - threshold) / threshold).min()):.3e}"
+        f"\nhybrid selection on the ihadv132_hlim0{grid_variant} capture, step {step:3d}: "
+        f"WENO on {int(mask_single.sum())} of {mask_single.size} cells in single, "
+        f"{int(mask_double.sum())} in double, {n_differ} cells differ; "
+        f"max |lsqe_sp - lsqe_wp| / threshold = {float((perturbation / threshold).max()):.3e}, "
+        f"min |lsqe_wp - threshold| / threshold = {float((margin / threshold).min()):.3e}, "
+        f"max |lsqe_sp - lsqe_wp| / |lsqe_wp - threshold| = "
+        f"{float((perturbation / margin).max()):.3e}"
     )
     if step == 1:
         assert mask_double.any() and not mask_double.all(), "vacuous: one branch only"
     assert n_differ == 0
-    assert not boundary.any()
+    assert (perturbation < margin).all()
 
 
 # --- the gt4py pipeline -----------------------------------------------------------------

@@ -59,9 +59,16 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
   Hybrid selection mask with the residual in sp vs wp (`test_miura_weno_hybrid_pipeline.py`):
   0 of 880 cells differ on the initial cylinder (step 0, both centres — decided by
   construction, every stencil there is constant or O(1)) and 0 at every step on the
-  Fortran's evolved `advection-init` fields of `ihadv132_hlim0` (WENO-selected cells
-  78 / 89 / 227 / 624 / 666 of 880 at steps 1 / 2 / 10 / 50 / 100; the residual nearest to
-  the threshold is 3.8e-3 away in relative terms, no cell within 10 float32 eps). FMA
+  Fortran's evolved `advection-init` fields of both `ihadv132_hlim0` captures, steps
+  1 / 2 / 10 / 50 / 100: on the original generated grid file, where the Fortran's
+  cylinder around the origin is the 48-cell quarter-disc in the corner
+  (`icon-ajocksch/CAPTURE_NOTES.md`, 'Grid'), WENO-selected cells 78 / 89 / 227 / 624 / 666
+  of 880; on the `_centred` file (the paper's full 176-cell disc) 136 / 168 / 456 / 820 / 852.
+  The assertion is measured per cell: single precision moves the residual by at most
+  9.3e-6 of the cell's margin `|lsqe_wp − threshold|` (the 10-eps band of W3d was
+  decorative — the residual `dot − z_b` cancels, so its perturbation scales with
+  `eps_sp·|z_b|`, not with the residual; the smallest margin relative to the threshold is
+  3.8e-3 on the quarter-disc at step 100 and 2.8e-2 on the full disc). FMA
   observation: `553924346` left every printed error digit of the reference and cylinder
   runs unchanged on gtfn_cpu but moved the last bit of the ~1e-14 relative mass change of
   the 103/132 cylinder rows (103: 8.209e-15 → 8.009e-15), because gcc contracts the new
