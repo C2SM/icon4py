@@ -209,11 +209,15 @@ class FieldSource(GridProvider, Protocol):
             raise TypeError(f"This function is intended to return a Scalar. Field name {field_name!r} looks like a Field (contains 'dims' in metadata).")
         return scalar
 
-    def dtype_for_factory(self, field_name: str) -> state_utils.ScalarType:
-        return keep_floats_double(self.get_metadata(field_name)["dtype"])
+
+    def output_dtype(self, field_name: str) -> state_utils.ScalarType:
+        return self.get_metadata(field_name)["dtype"]
+
+    def internal_dtype(self, field_name: str) -> state_utils.ScalarType:
+        return keep_floats_double(self.output_dtype(field_name))
 
     def dtypes_for_factory(self, field_names: Iterator[str]) -> dict[str, state_utils.ScalarType]:
-        dtypes = {field_name: self.dtype_for_factory(field_name) for field_name in field_names}
+        dtypes = {field_name: self.internal_dtype(field_name) for field_name in field_names}
         return dtypes
 
     def _provided_by_source(self, name) -> bool:
@@ -389,7 +393,6 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
             f"{data_alloc.backend_name(factory.backend)}"
         )
         dtypes = factory.dtypes_for_factory(self._fields)
-        # dtype = {k: output_dtype(factory, k) for k in self._fields}  #TODO(pstark): check if use output_dtype
         # the outputs live on the target backend's device: embedded computes in place on them
         self._fields = self._allocate_fields(factory.backend, grid_provider, dtypes)
         # call field operator
@@ -572,7 +575,6 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         backend: gtx_typing.Backend | None,
     ) -> None:
         dtypes = field_src.dtypes_for_factory(self._output.values())
-        # dtypes = {v: output_dtype(field_src, v) for v in self._output.values()} #TODO(pstark): use output_dtype()?
         self._fields = self._allocate(backend, grid.grid, dtypes=dtypes)
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
         deps = {k: field_src.get_full_precision(v) for k, v in self._dependencies.items()}
@@ -768,9 +770,6 @@ def _func_name(callable_: Callable[..., Any]) -> str:
     else:
         return callable_.__name__
 
-
-def output_dtype(field_src: FieldSource, field_name: str) -> state_utils.ScalarType:
-    return field_src.get_metadata(field_name)["dtype"]
 
 def keep_floats_double(dtype_metadata: state_utils.ScalarType) -> state_utils.ScalarType:
     if dtype_metadata in [gtx.int32, bool]:
