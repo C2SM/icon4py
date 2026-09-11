@@ -285,9 +285,13 @@ def _compute_coeff_dwdz(
         ddqz_z_full(dims.KDim - 1) / ddqz_z_full / (z_ifc(dims.KDim - 1.5) - z_ifc(dims.KDim + 0.5))
     )
 
+    # TODO(havogt): This is a workaround for 2 things:
+    # a) with a plain `0.0` embedded will not work because of the infinite range
+    # b) for `concat_where(dims.KDim == 0, 0.0, ...)` the domain inference is broken in GT4Py,
+    #    see https://github.com/gridTools/gt4py/issues/2205.
     return (
-        concat_where(dims.KDim == 0, 0.0, coeff1_dwdz),
-        concat_where(dims.KDim == 0, 0.0, coeff2_dwdz),
+        concat_where(dims.KDim >= 1, coeff1_dwdz, 0.0 * ddqz_z_full),
+        concat_where(dims.KDim >= 1, coeff2_dwdz, 0.0 * ddqz_z_full),
     )
 
 
