@@ -87,7 +87,7 @@ linear_oblique.txt_new (scheme 2) and quadratic_oblique5.txt (scheme 3), 51 CFL 
   flux ``-y_comp/length u_x + x_comp/length u_y`` on every level (:3573-3643: edge vector
   vertex 2 - vertex 1 with the periodic-wrap corrections, divided by ``length_ref``, the
   length of edge 695), here computed from the grid's vertex coordinates and E2V (asserted
-  equal to ``u . n`` of the geometry within 1e-15, which fixes the vertex order);
+  equal to ``u . n`` of the geometry within 1e-12, which fixes the vertex order);
 - alpha = ireal / 100 pi for ireal = 0, 2, ..., 116 on level 1 + ireal / 2 (59 levels),
   the wave ``exp(-i alpha (x u_x + y u_y) 2 / a)`` set once per CFL (:3651-3672);
 - 1000 iterations (:3678) of {one step (dt :3679, step_advection :3680-3700); the
@@ -108,8 +108,8 @@ linear_oblique.txt_new (scheme 2) and quadratic_oblique5.txt (scheme 3), 51 CFL 
 The per-CFL results are saved as soon as a CFL is done (``theta30_parts/``), so the full
 table runs as a chain of 30-minute jobs (ICON4PY_DISPERSION_THETA30_CFLS, a deadline in
 ICON4PY_DISPERSION_DEADLINE, done CFLs are skipped); the gated sets are the paper's six
-CFLs and the stability pair 0.42 / 0.44 (validation level; 4 s / 9 s per CFL for scheme
-2 / 3 on gtfn_cpu on a compute node, the full tables 4 / 8 minutes). The measured numbers
+CFLs and the stability pair 0.42 / 0.44 (validation level; 3.7 s / 9.4 s per CFL for
+scheme 2 / 3 on gtfn_cpu on a compute node, the full tables 3.1 / 8.0 min). The measured numbers
 are in the status note (docs/weno_idealized_status.md).
 """
 
@@ -224,7 +224,7 @@ SEAM_MARGIN: Final = 3
 #: the single-CFL set on another backend against the gtfn_cpu full table at his cell
 #: (max |d Re omega|, |d Im omega| against the F20.16 print; measured dace_cpu: scheme 2
 #: 5.6e-17 / 5.6e-17, scheme 3 4.4e-16 / 1.1e-15, the tracer within 2.5e-16 amplified by
-#: the logarithm)
+#: the logarithm; measured on dace_cpu only, untested on the GPU backends)
 BACKEND_TOLERANCE: Final = 3e-15
 BACKEND_REFERENCE_TAG: Final = "full_run_gtfn_cpu"
 
@@ -277,10 +277,13 @@ FORTRAN_BUILD_DIRS_30: Final[dict[int, pathlib.Path]] = {
     for scheme in (2, 3)
 }
 #: max |d omega| (the four columns) against his table over the rows converged here
-#: (resid <= CONVERGED_RESID_30), per scheme, about three times the gtfn_cpu measurement
+#: (resid <= CONVERGED_RESID_30) and all CFLs of the 'paper' or the 'stability' set, per
+#: scheme; measured on gtfn_cpu only. The paper-set maximum is the CFL 0.01 block, so the
+#: gate is 3x that and 17x (scheme 2) / 23x (scheme 3) the CFL 0.5 block; the stability set
+#: measures 4.4e-15 / 3.0e-15 (CFL 0.44)
 FORTRAN_TOLERANCE_30: Final[dict[int, float]] = {
-    2: 6e-14,  # 1.9e-14 (CFL 0.01; 2.3e-15 .. 3.5e-15 at 0.1 .. 0.5)
-    3: 6e-14,  # 1.8e-14 (CFL 0.01; 2.2e-15 .. 2.7e-15 at 0.1 .. 0.5)
+    2: 6e-14,  # 1.9e-14 (CFL 0.01; 2.0e-15 .. 3.5e-15 at 0.1 .. 0.5, 3.5e-15 at 0.5)
+    3: 6e-14,  # 1.8e-14 (CFL 0.01; 2.2e-15 .. 2.7e-15 at 0.1 .. 0.5, 2.7e-15 at 0.5)
 }
 PARTS_DIR: Final = OUTPUT_DIR / "theta30_parts"
 
@@ -392,9 +395,10 @@ def _setup(
         u_dot_n = math.cos(WIND_ANGLE_30) * data_alloc.as_numpy(normal_x) + math.sin(
             WIND_ANGLE_30
         ) * data_alloc.as_numpy(normal_y)
-        # the same wind as the geometry's normals (and so the same vertex order); 8.9e-16
+        # the same wind as the geometry's normals (and so the same vertex order); measured
+        # 8.9e-16, a reversed vertex order gives O(1)
         print(f"theta = 30 wind: max |edge-vector flux - u.n| {np.abs(flux - u_dot_n).max():.3e}")
-        np.testing.assert_allclose(flux, u_dot_n, rtol=0.0, atol=1e-15)
+        np.testing.assert_allclose(flux, u_dot_n, rtol=0.0, atol=1e-12)
         xp = data_alloc.array_namespace(prep_adv.mass_flx_me.ndarray)
         prep_adv.mass_flx_me.ndarray[:, :] = xp.asarray(flux)[:, None]
         prep_adv.vn_traj.ndarray[:, :] = xp.asarray(flux)[:, None]
@@ -503,7 +507,7 @@ def _read_fortran_table(path: pathlib.Path) -> np.ndarray:
 
     Our build's theta = 0 tables carry the fifth printed item, ``diff``, on a line of its
     own (the four-descriptor format, :3544); only the rows of the table's column count
-    (that of its first row) are kept.
+    (that of its widest row) are kept.
     """
     rows = [
         line.split()
@@ -1351,7 +1355,7 @@ def test_dispersion_relation_theta30(
     """His chequerboard iteration at theta = 30 degrees (figure 7's stability limit).
 
     'paper': the six CFLs of figures 5 and 6, against his tables; 'stability': no growth at
-    CFL 0.42, growth at 0.44 (converged rows); 'env': the CFLs of
+    CFL 0.42, growth at 0.44 (converged rows), and against his tables; 'env': the CFLs of
     ICON4PY_DISPERSION_THETA30_CFLS for the job scripts (skipped when unset), which keep
     the CFLs already saved under theta30_parts/full_<backend>/ and stop starting new ones
     after ICON4PY_DISPERSION_DEADLINE (epoch seconds); with every CFL of the full list
@@ -1450,6 +1454,8 @@ def test_dispersion_relation_theta30(
         min_im_044, _, n_grow_044, _ = stats.stability[0.44]
         assert n_grow_042 == 0, f"growth at CFL 0.42: min Im omega {min_im_042:.3e}"
         assert n_grow_044 > 0, f"no growth at CFL 0.44: min Im omega {min_im_044:.3e}"
+        if reference is not None:
+            assert stats.his_converged <= FORTRAN_TOLERANCE_30[scheme], stats.his_converged
     if cfl_set == "paper":
         if reference is None:
             pytest.skip(f"Fortran reference table {reference_path} not available")
