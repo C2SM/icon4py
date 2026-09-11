@@ -19,8 +19,10 @@ bisection coarser than that harness's '_COARSE_TORUS_FAMILY' (the 27-candidate l
 analytic reference, the slope of every norm with its standard error, the direct distance
 between the WENO schemes and the pure quadratic scheme (3) in L2 and L-infinity with its
 slope, and for the hybrid the fraction of cells that took the WENO branch. All rows share
-one test so that the distances can be formed; the bands are checked after every row has
-been measured and printed.
+one test so that the distances can be formed; the slopes of every row are printed before
+any band is checked. The measurements, the 8x member and the verdict on the claim are in
+model/atmosphere/tracer_advection/docs/weno_idealized_status.md, section "W6"; the whole
+study (six rows, factors 1, 2, 4) takes about 20 min on gtfn_cpu.
 
 Differences from 'test_horizontal_advection_convergence': the family, the yaml (wider
 Gaussian, 3 levels, quarter period, no limiter), the L2 norm, and the time step: here every
@@ -104,60 +106,76 @@ class _Row:
     id: str
     advection_type: tracer_advection.HorizontalAdvectionType
     linear_weights: weno_least_squares.WenoLinearWeights
-    #: acceptable slope bands (L1, L2, Linf); _MEASURE_ONLY until measured
+    #: acceptable slope bands (L1, L2, Linf) of the fit over _REFINEMENT_FACTORS
     l1_band: list[float]
     l2_band: list[float]
     linf_band: list[float]
 
 
+#: the formal order of the pure quadratic scheme, which it meets on this family
+_THIRD_ORDER_BAND: Final = [
+    harness._THIRD_ORDER - harness._TOL,
+    harness._THIRD_ORDER + harness._TOL,
+]
+
+#: Bands on the fit over _REFINEMENT_FACTORS, measured on gtfn_cpu (W6s, 2026-09-11; dace_gpu
+#: gives the same errors to 1e-13 relative, see docs/weno_idealized_status.md, "W6"). Apart
+#: from miura3 they are regression guards centred on the measurement at the harness's
+#: measured-rate width (harness._measured), not order statements: the quadratic WENO rows
+#: are pre-asymptotic on this family and lose order on its 8x member (dace_gpu, 1,2,4,8 fits
+#: quoted per row).
 _ROWS: Final[tuple[_Row, ...]] = (
+    # measured L1 2.182 +- 0.048, L2 2.225 +- 0.058, Linf 2.319 +- 0.085
     _Row(
         "miura",
         _MIURA,
         _OPTIMIZED,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
+        harness._measured(2.18),
+        harness._measured(2.23),
+        harness._measured(2.32),
     ),
-    _Row(
-        "miura3",
-        _MIURA3,
-        _OPTIMIZED,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
-    ),
+    # measured L1 2.977 +- 0.009, L2 2.967 +- 0.013, Linf 2.960 +- 0.016
+    # (x1,2,4,8: 2.985, 2.979, 2.975, last local rate 3.00)
+    _Row("miura3", _MIURA3, _OPTIMIZED, _THIRD_ORDER_BAND, _THIRD_ORDER_BAND, _THIRD_ORDER_BAND),
+    # measured L1 2.409 +- 0.030, L2 1.966 +- 0.046, Linf 1.298 +- 0.034
     _Row(
         "miura_weno",
         _MIURA_WENO,
         _OPTIMIZED,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
+        harness._measured(2.41),
+        harness._measured(1.97),
+        harness._measured(1.30),
     ),
+    # measured L1 1.610 +- 0.271, L2 1.665 +- 0.267, Linf 1.754 +- 0.288, local rates 2.08 / 1.14
+    # (x1,2,4,8: 1.388, 1.430, 1.492, last local rate 1.03)
     _Row(
         "miura3_weno_opt",
         _MIURA3_WENO,
         _OPTIMIZED,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
+        harness._measured(1.61),
+        harness._measured(1.67),
+        harness._measured(1.75),
     ),
+    # measured L1 2.827 +- 0.039, L2 2.815 +- 0.057, Linf 2.820 +- 0.053
+    # (x1,2,4,8: 2.634, 2.616, 2.637, last local rate 2.20)
     _Row(
         "miura3_weno_unity",
         _MIURA3_WENO,
         _UNITY,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
+        harness._measured(2.83),
+        harness._measured(2.82),
+        harness._measured(2.82),
     ),
+    # measured L1 2.577 +- 0.120, L2 2.556 +- 0.128, Linf 2.580 +- 0.116, local rates 2.78 / 2.37;
+    # the WENO branch blends with unit weights at run time (f90 3684) on candidates assembled
+    # with this row's (optimised) set
     _Row(
         "miura3_weno_hybrid",
         _MIURA3_WENO_HYBRID,
         _OPTIMIZED,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
-        harness._MEASURE_ONLY,
+        harness._measured(2.58),
+        harness._measured(2.56),
+        harness._measured(2.58),
     ),
 )
 
