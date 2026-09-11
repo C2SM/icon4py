@@ -141,12 +141,19 @@ def unstructure_abstime(abstime: time.AbsoluteTime) -> str:
 def structure_reltime(reltime_val: str, _: typing.Any) -> time.RelativeTime:
     if isinstance(reltime_val, time.RelativeTime):
         return reltime_val
-    return time.RelativeTime(seconds=int(reltime_val))
+    num, unit = reltime_val.split(" ")
+    return time.RelativeTime(**{unit: int(num)})
 
 
 @CONV.register_unstructure_hook
-def unstructure_reltime(reltime: time.RelativeTime) -> int:
-    return int(reltime.total_seconds())
+def unstructure_reltime(reltime: time.RelativeTime) -> str:
+    seconds = reltime.total_seconds()
+    if seconds == int(seconds):
+        return f"{int(seconds)} seconds"
+    elif (milliseconds := seconds * 1000) == int(milliseconds):
+        return f"{int(milliseconds)} milliseconds"
+    else:
+        return f"{int(seconds * 1_000_000)} microseconds"
 
 
 @CONV.register_structure_hook

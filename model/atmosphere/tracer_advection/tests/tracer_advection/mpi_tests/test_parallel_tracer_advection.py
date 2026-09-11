@@ -62,7 +62,7 @@ from ..utils import (
             "2021-06-20T12:00:10.000",
             False,
             1,
-            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
             tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             tracer_advection.VerticalAdvectionType.NO_ADVECTION,
             tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
@@ -71,7 +71,7 @@ from ..utils import (
             "2021-06-20T12:00:20.000",
             True,
             1,
-            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            tracer_advection.HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
             tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             tracer_advection.VerticalAdvectionType.NO_ADVECTION,
             tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
@@ -82,7 +82,7 @@ from ..utils import (
             4,
             tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
             tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            tracer_advection.VerticalAdvectionType.THIRD_ORDER_PPM,
             tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
         (
@@ -91,13 +91,13 @@ from ..utils import (
             4,
             tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
             tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            tracer_advection.VerticalAdvectionType.THIRD_ORDER_PPM,
             tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
     ],
 )
 @pytest.mark.mpi
-def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_tracer_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     date,
     even_timestep,
     ntracer,
@@ -120,15 +120,6 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
         pytest.xfail("ValueError: axes don't match array")
-    # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no tracer_advection because the horizontal flux is not zero. Further check required.
-    if (
-        even_timestep
-        and horizontal_advection_type == tracer_advection.HorizontalAdvectionType.NO_ADVECTION
-    ):
-        pytest.xfail(
-            "This test is skipped until the cause of nonzero horizontal tracer_advection if revealed."
-        )
-
     parallel_helpers.check_comm_size(process_props)
     parallel_helpers.log_process_properties(process_props)
     parallel_helpers.log_local_field_size(decomposition_info)

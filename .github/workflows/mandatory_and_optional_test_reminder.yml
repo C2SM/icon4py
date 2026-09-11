@@ -18,6 +18,7 @@ jobs:
 
             * `cscs-ci run default;BACKENDS=gtfn_cpu;LEVELS=unit`
             * `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSIONS=model`
+
             **Avoid running the pipeline for all tests when you are developing.**
 
             Available options are:
@@ -31,6 +32,8 @@ jobs:
             * `FLOAT_PRECISIONS`: `single` or `double`
 
             For each option, `all` can be used as a shorthand for all possible values of that variable, e.g. `LEVELS=all`.
+
+            Multiple values can be given to each option with `:` used as the separator (`;` separates options and `,` separates pipelines).
 
             See `scripts/python/generate_ci_pipeline.py` and `noxfile.py` for available values for each option.
 
