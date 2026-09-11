@@ -122,8 +122,8 @@ _THIRD_ORDER_BAND: Final = [
 #: gives the same errors to 1e-13 relative, see docs/weno_idealized_status.md, "W6"). Apart
 #: from miura3 they are regression guards centred on the measurement at the harness's
 #: measured-rate width (harness._measured), not order statements: the quadratic WENO rows
-#: are pre-asymptotic on this family and lose order on its 8x member (dace_gpu, 1,2,4,8 fits
-#: quoted per row).
+#: are pre-asymptotic on this family and lose order on its 8x and 16x members (dace_gpu, the
+#: longer fits quoted per row).
 _ROWS: Final[tuple[_Row, ...]] = (
     # measured L1 2.182 +- 0.048, L2 2.225 +- 0.058, Linf 2.319 +- 0.085
     _Row(
@@ -135,7 +135,7 @@ _ROWS: Final[tuple[_Row, ...]] = (
         harness._measured(2.32),
     ),
     # measured L1 2.977 +- 0.009, L2 2.967 +- 0.013, Linf 2.960 +- 0.016
-    # (x1,2,4,8: 2.985, 2.979, 2.975, last local rate 3.00)
+    # (x1,2,4,8,16: 2.989, 2.985, 2.984, last local rates 3.00, 3.00)
     _Row("miura3", _MIURA3, _OPTIMIZED, _THIRD_ORDER_BAND, _THIRD_ORDER_BAND, _THIRD_ORDER_BAND),
     # measured L1 2.409 +- 0.030, L2 1.966 +- 0.046, Linf 1.298 +- 0.034
     _Row(
@@ -147,7 +147,7 @@ _ROWS: Final[tuple[_Row, ...]] = (
         harness._measured(1.30),
     ),
     # measured L1 1.610 +- 0.271, L2 1.665 +- 0.267, Linf 1.754 +- 0.288, local rates 2.08 / 1.14
-    # (x1,2,4,8: 1.388, 1.430, 1.492, last local rate 1.03)
+    # (x1,2,4,8,16: 1.267, 1.299, 1.344, last local rates 1.03, 1.01)
     _Row(
         "miura3_weno_opt",
         _MIURA3_WENO,
@@ -157,7 +157,7 @@ _ROWS: Final[tuple[_Row, ...]] = (
         harness._measured(1.75),
     ),
     # measured L1 2.827 +- 0.039, L2 2.815 +- 0.057, Linf 2.820 +- 0.053
-    # (x1,2,4,8: 2.634, 2.616, 2.637, last local rate 2.20)
+    # (x1,2,4,8,16: 2.354, 2.357, 2.393, last local rates 2.20, 1.43)
     _Row(
         "miura3_weno_unity",
         _MIURA3_WENO,
@@ -166,7 +166,8 @@ _ROWS: Final[tuple[_Row, ...]] = (
         harness._measured(2.82),
         harness._measured(2.82),
     ),
-    # measured L1 2.577 +- 0.120, L2 2.556 +- 0.128, Linf 2.580 +- 0.116, local rates 2.78 / 2.37;
+    # measured L1 2.577 +- 0.120, L2 2.556 +- 0.128, Linf 2.580 +- 0.116, local rates 2.78 / 2.37
+    # (x1,2,4,8: 2.254, 2.262, 2.260, last local rate 1.57);
     # the WENO branch blends with unit weights at run time (f90 3684) on candidates assembled
     # with this row's (optimised) set
     _Row(
