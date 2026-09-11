@@ -299,6 +299,12 @@ def check_cell_edge_orientation_convention(
     ``E2C[0]`` of ``e``, ICON's convention (the primal normal points from cell 1 to cell
     2). Jocksch's inline limiter assumes it implicitly, this port checks it once per grid.
     """
+    if (c2e < 0).any() or (e2c < 0).any():
+        # a skip value (-1) would silently index the last edge / cell of the tables
+        raise ValueError(
+            "check_cell_edge_orientation_convention needs complete C2E and E2C tables; this "
+            "grid has skip values (limited-area grid or incomplete halo)."
+        )
     n_cells = c2e.shape[0]
     outward = geofac_div > 0.0
     is_first_cell = e2c[c2e][..., 0] == np.arange(n_cells)[:, np.newaxis]
@@ -1503,9 +1509,10 @@ class ThirdOrderMiuraWeno(SemiLagrangianTracerFlux):
         log.debug("horizontal tracer flux computation - end")
 
 
-#: the Fortran's single-precision literals in the selection test (f90 3574), as the
-#: doubles they are promoted to
-_HYBRID_SELECTION_EPS: Final[ta.wpfloat] = ta.wpfloat(np.float32(1e-10))
+#: the Fortran's unsuffixed (single-precision) literal 1e-10 of the selection test (f90
+#: 3574), as the double it is promoted to; ta.fortran_sp_literal is the literal's kind, not the
+#: kind of the REAL(sp) variables (ta.fortran_sp_float)
+_HYBRID_SELECTION_EPS: Final[ta.wpfloat] = ta.wpfloat(ta.fortran_sp_literal(1e-10))
 
 
 class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
@@ -1542,7 +1549,8 @@ class ThirdOrderMiuraWenoHybrid(ThirdOrderMiuraWeno):
             horizontal_limiter=horizontal_limiter,
         )
         self._weno_hybrid_state = weno_hybrid_state
-        self._selection_threshold = ta.wpfloat(np.float32(selection_threshold))
+        # the 5e-5 of f90 3574 is a single-precision literal promoted to double
+        self._selection_threshold = ta.wpfloat(ta.fortran_sp_literal(selection_threshold))
 
         allocator = model_backends.get_allocator(self._backend)
         self._use_weno = data_alloc.zero_field(

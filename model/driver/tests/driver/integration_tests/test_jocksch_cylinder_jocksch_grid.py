@@ -30,6 +30,7 @@ from typing import Final
 
 import gt4py.next.typing as gtx_typing
 import pytest
+from _pytest.mark import ParameterSet  # what pytest.param returns; pytest 9 does not re-export it
 
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, weno_least_squares
 from icon4py.model.common.decomposition import definitions as decomp_defs
@@ -45,6 +46,8 @@ GRID_FILE: Final = pathlib.Path(
     "/capstor/scratch/cscs/cmueller/tracer_advection_port/icon-exclaim/weno_data/grids/"
     "jocksch_torus_grid_r4_c200_elen100.nc"
 )
+#: the Fortran reference runs on this grid, <case>/error.txt with his printed '#' error
+REFERENCE_DIR: Final = GRID_FILE.parents[1] / "reference" / "jocksch_grid"
 #: his cylinder is centred at the origin (the cell nearest to it is at (0, -1443.4) m)
 CYLINDER_CENTER: Final[tuple[float, float]] = (0.0, 0.0)
 
@@ -165,7 +168,7 @@ FORTRAN_ERROR_RTOL: Final[dict[_Case, float]] = {
 }
 
 
-def _param(hadv: _HADV, hlim: _HLIM, weights: _WEIGHTS = _WEIGHTS.OPTIMIZED) -> object:
+def _param(hadv: _HADV, hlim: _HLIM, weights: _WEIGHTS = _WEIGHTS.OPTIMIZED) -> ParameterSet:
     weight_tag = (
         ""
         if hadv not in (_HADV.QUADRATIC_3RD_ORDER_WENO, _HADV.QUADRATIC_3RD_ORDER_WENO_HYBRID)
@@ -174,40 +177,81 @@ def _param(hadv: _HADV, hlim: _HLIM, weights: _WEIGHTS = _WEIGHTS.OPTIMIZED) -> 
     return pytest.param(hadv, hlim, weights, id=f"ihadv{hadv.value}-hlim{hlim.value}{weight_tag}")
 
 
+CASES: Final[list[ParameterSet]] = [
+    # regression rows: the schemes the generated grid already gates
+    _param(_HADV.LINEAR_2ND_ORDER, _HLIM.NO_LIMITER),
+    _param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.NO_LIMITER),
+    _param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.NO_LIMITER),
+    _param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.MONOTONIC),
+    _param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.POSITIVE_DEFINITE),
+    _param(_HADV.LINEAR_2ND_ORDER, _HLIM.MONOTONIC),
+    # the weight sets of the quadratic WENO scheme
+    _param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, _WEIGHTS.OPTIMIZED),
+    _param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, _WEIGHTS.UNITY),
+    _param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, _WEIGHTS.HAND_TUNED),
+    # the hybrid scheme
+    _param(_HADV.QUADRATIC_3RD_ORDER_WENO_HYBRID, _HLIM.NO_LIMITER, _WEIGHTS.UNITY),
+    _param(_HADV.QUADRATIC_3RD_ORDER_WENO_HYBRID, _HLIM.NO_LIMITER, _WEIGHTS.OPTIMIZED),
+    # Jocksch's cell-local positive-definite limiter
+    _param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.CELL_LOCAL_POSITIVE_DEFINITE),
+    _param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.CELL_LOCAL_POSITIVE_DEFINITE, _WEIGHTS.UNITY),
+    _param(
+        _HADV.QUADRATIC_3RD_ORDER_WENO_HYBRID,
+        _HLIM.CELL_LOCAL_POSITIVE_DEFINITE,
+        _WEIGHTS.UNITY,
+    ),
+    _param(
+        _HADV.QUADRATIC_3RD_ORDER_WENO,
+        _HLIM.CELL_LOCAL_POSITIVE_DEFINITE,
+        _WEIGHTS.OPTIMIZED,
+    ),
+]
+
+
+def _reference_case_name(case: _Case) -> str:
+    """The case directory of the Fortran run: ihadv<scheme>_hlim<limiter>[_dj1|_ones].
+
+    Jocksch's cell-local limiter is his itype_hlimit=4 inside the WENO schemes (hlim4, the
+    positive-definite limiter's number); the weight-set suffix exists for 103 and 132 only.
+    """
+    hadv, hlim, weights = case
+    itype_hlimit = {
+        _HLIM.NO_LIMITER: 0,
+        _HLIM.MONOTONIC: 3,
+        _HLIM.POSITIVE_DEFINITE: 4,
+        _HLIM.CELL_LOCAL_POSITIVE_DEFINITE: 4,
+    }[hlim]
+    suffix = ""
+    if hadv in (_HADV.QUADRATIC_3RD_ORDER_WENO, _HADV.QUADRATIC_3RD_ORDER_WENO_HYBRID):
+        suffix = {_WEIGHTS.OPTIMIZED: "", _WEIGHTS.UNITY: "_ones", _WEIGHTS.HAND_TUNED: "_dj1"}[
+            weights
+        ]
+    return f"ihadv{hadv.value}_hlim{itype_hlimit}{suffix}"
+
+
+@pytest.mark.parametrize(
+    "horizontal_advection_type, horizontal_advection_limiter, weno_linear_weights", CASES
+)
+def test_fortran_error_sum_matches_reference_file(
+    horizontal_advection_type: _HADV,
+    horizontal_advection_limiter: _HLIM,
+    weno_linear_weights: _WEIGHTS,
+) -> None:
+    """The typed-in FORTRAN_ERROR_SUM is the number in the reference run's error.txt."""
+    case: _Case = (horizontal_advection_type, horizontal_advection_limiter, weno_linear_weights)
+    error_file = REFERENCE_DIR / _reference_case_name(case) / "error.txt"
+    if not error_file.exists():
+        pytest.skip(f"Fortran reference output {error_file} not available")
+    # the file holds one line, " #    <pair sum>"
+    printed = float(error_file.read_text().strip().lstrip("#").strip())
+    assert printed == FORTRAN_ERROR_SUM[case]
+
+
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.skipif(not GRID_FILE.exists(), reason=f"Jocksch's grid file {GRID_FILE} not found")
 @pytest.mark.parametrize(
-    "horizontal_advection_type, horizontal_advection_limiter, weno_linear_weights",
-    [
-        # regression rows: the schemes the generated grid already gates
-        _param(_HADV.LINEAR_2ND_ORDER, _HLIM.NO_LIMITER),
-        _param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.NO_LIMITER),
-        _param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.NO_LIMITER),
-        _param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.MONOTONIC),
-        _param(_HADV.QUADRATIC_3RD_ORDER, _HLIM.POSITIVE_DEFINITE),
-        _param(_HADV.LINEAR_2ND_ORDER, _HLIM.MONOTONIC),
-        # the weight sets of the quadratic WENO scheme
-        _param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, _WEIGHTS.OPTIMIZED),
-        _param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, _WEIGHTS.UNITY),
-        _param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.NO_LIMITER, _WEIGHTS.HAND_TUNED),
-        # the hybrid scheme
-        _param(_HADV.QUADRATIC_3RD_ORDER_WENO_HYBRID, _HLIM.NO_LIMITER, _WEIGHTS.UNITY),
-        _param(_HADV.QUADRATIC_3RD_ORDER_WENO_HYBRID, _HLIM.NO_LIMITER, _WEIGHTS.OPTIMIZED),
-        # Jocksch's cell-local positive-definite limiter
-        _param(_HADV.LINEAR_2ND_ORDER_WENO, _HLIM.CELL_LOCAL_POSITIVE_DEFINITE),
-        _param(_HADV.QUADRATIC_3RD_ORDER_WENO, _HLIM.CELL_LOCAL_POSITIVE_DEFINITE, _WEIGHTS.UNITY),
-        _param(
-            _HADV.QUADRATIC_3RD_ORDER_WENO_HYBRID,
-            _HLIM.CELL_LOCAL_POSITIVE_DEFINITE,
-            _WEIGHTS.UNITY,
-        ),
-        _param(
-            _HADV.QUADRATIC_3RD_ORDER_WENO,
-            _HLIM.CELL_LOCAL_POSITIVE_DEFINITE,
-            _WEIGHTS.OPTIMIZED,
-        ),
-    ],
+    "horizontal_advection_type, horizontal_advection_limiter, weno_linear_weights", CASES
 )
 def test_jocksch_cylinder_one_period_on_jocksch_grid(
     horizontal_advection_type: _HADV,

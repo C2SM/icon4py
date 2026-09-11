@@ -210,10 +210,29 @@ class AdvectionWenoHybridState:
     'weno_quadratic_state' are assembled from (with its l_weights_s), and 'lsq_error' is
     the design matrix of that same fit. '__post_init__' checks the part of this that is
     cheap to check: the moment and geometry fields of the two states are the same objects.
+    That check is by identity, not by value: two states built separately from the same
+    data (e.g. both read from savepoints) are rejected even if their fields are equal.
     """
 
     weno_quadratic_state: AdvectionWenoQuadraticState
     quadratic_state: AdvectionQuadraticState
+
+    # lsq_error rows on the direct neighbours, [5 unknowns]; REAL(sp) in the Fortran, see
+    # type_alias.fortran_sp_float
+    lsq_error_direct: tuple[
+        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.fortran_sp_float],
+        ...,
+    ]
+
+    # lsq_error rows on the butterfly slots, [5 unknowns]
+    lsq_error_butterfly: tuple[
+        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.fortran_sp_float],
+        ...,
+    ]
+
+    # 1 on the butterfly slots holding an outer stencil cell, 0 on the padding slots
+    # (weno_least_squares.compute_butterfly_slot_mask as an int32 field)
+    lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.int32]
 
     def __post_init__(self) -> None:
         shared = (
@@ -243,23 +262,6 @@ class AdvectionWenoHybridState:
                 "built from one least-squares setup, but these fields are not the same "
                 f"objects: {', '.join(not_shared)}."
             )
-
-    # lsq_error rows on the direct neighbours, [5 unknowns]; REAL(sp) in the Fortran, see
-    # type_alias.fortran_sp_float
-    lsq_error_direct: tuple[
-        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.fortran_sp_float],
-        ...,
-    ]
-
-    # lsq_error rows on the butterfly slots, [5 unknowns]
-    lsq_error_butterfly: tuple[
-        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.fortran_sp_float],
-        ...,
-    ]
-
-    # 1 on the butterfly slots holding an outer stencil cell, 0 on the padding slots
-    # (weno_least_squares.compute_butterfly_slot_mask as an int32 field)
-    lsq_butterfly_active: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], gtx.int32]
 
 
 @dataclasses.dataclass(frozen=True)

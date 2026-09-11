@@ -101,7 +101,7 @@ class TestComputeWenoHybridStencilSelection(stencil_tests.StencilTest):
             residual_butterfly * residual_butterfly, axis=1
         )
         threshold = selection_threshold * ((p_cc + selection_eps) * (p_cc + selection_eps))
-        return dict(use_weno=lsqe.astype(np.float64) > threshold)
+        return dict(use_weno=lsqe.astype(ta.wpfloat) > threshold)
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
@@ -131,8 +131,8 @@ class TestComputeWenoHybridStencilSelection(stencil_tests.StencilTest):
             **{f"lsq_error_butterfly_{u}": butterfly() for u in (1, 2, 3, 4, 5)},
             lsq_butterfly_active=active,
             use_weno=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=bool),
-            selection_threshold=np.float64(2.0),
-            selection_eps=np.float64(float(np.float32(1e-10))),
+            selection_threshold=ta.wpfloat(2.0),
+            selection_eps=ta.wpfloat(ta.fortran_sp_literal(1e-10)),
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
