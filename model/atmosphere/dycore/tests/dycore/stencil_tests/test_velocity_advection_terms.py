@@ -13,8 +13,13 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import (
+    _clip_contravariant_corrected_w,
+    _compute_cfl,
+    _compute_extra_diffusion,
     _compute_extra_diffusion_for_w,
     _compute_interpolated_horizontal_advection_of_w,
+    _compute_vertical_advection_of_w,
+    _interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
@@ -694,5 +699,245 @@ class TestComputeExtraDiffusionForW(stencil_tests.StencilTest):
             domain={
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
                 dims.KHalfDim: (0, gtx.int32(grid.num_levels + 1)),
+            },
+        )
+
+
+class TestComputeCfl(stencil_tests.StencilTest):
+    PROGRAM = _compute_cfl
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        ddqz_z_half: np.ndarray,
+        contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
+        cfl_w_limit: float,
+        dtime: ta.wpfloat,
+        **kwargs: Any,
+    ) -> dict:
+        cfl_clipping = (
+            np.abs(contravariant_corrected_w_at_cells_on_half_levels) > cfl_w_limit * ddqz_z_half
+        )
+        vertical_cfl = np.where(
+            cfl_clipping,
+            contravariant_corrected_w_at_cells_on_half_levels * dtime / ddqz_z_half,
+            0.0,
+        )
+        return dict(out=(cfl_clipping, vertical_cfl))
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        return dict(
+            ddqz_z_half=data_alloc.random_field(
+                dims.CellDim, dims.KHalfDim, low=0.5, high=1.5, dtype=ta.vpfloat
+            ),
+            contravariant_corrected_w_at_cells_on_half_levels=data_alloc.random_field(
+                dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
+            ),
+            cfl_w_limit=ta.vpfloat("0.5"),
+            dtime=ta.wpfloat("2.0"),
+            out=(
+                data_alloc.random_mask(dims.CellDim, dims.KHalfDim),
+                data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat),
+            ),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KHalfDim: (0, gtx.int32(grid.num_levels + 1)),
+            },
+        )
+
+
+class TestClipContravariantCorrectedW(stencil_tests.StencilTest):
+    PROGRAM = _clip_contravariant_corrected_w
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
+        cfl_clipping: np.ndarray,
+        vertical_cfl: np.ndarray,
+        ddqz_z_half: np.ndarray,
+        dtime: ta.wpfloat,
+        **kwargs: Any,
+    ) -> dict:
+        clipped = np.where(
+            cfl_clipping & (vertical_cfl < -0.85),
+            -0.85 * ddqz_z_half / dtime,
+            contravariant_corrected_w_at_cells_on_half_levels,
+        )
+        clipped = np.where(
+            cfl_clipping & (vertical_cfl > 0.85), 0.85 * ddqz_z_half / dtime, clipped
+        )
+        return dict(out=clipped)
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        return dict(
+            contravariant_corrected_w_at_cells_on_half_levels=data_alloc.random_field(
+                dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
+            ),
+            cfl_clipping=data_alloc.random_mask(dims.CellDim, dims.KHalfDim),
+            vertical_cfl=data_alloc.random_field(
+                dims.CellDim, dims.KHalfDim, low=-2.0, high=2.0, dtype=ta.vpfloat
+            ),
+            ddqz_z_half=data_alloc.random_field(
+                dims.CellDim, dims.KHalfDim, low=0.5, high=1.5, dtype=ta.vpfloat
+            ),
+            dtime=ta.wpfloat("2.0"),
+            out=data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KHalfDim: (0, gtx.int32(grid.num_levels + 1)),
+            },
+        )
+
+
+class TestComputeExtraDiffusion(stencil_tests.StencilTest):
+    PROGRAM = _compute_extra_diffusion
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        vn: np.ndarray,
+        upward_vorticity_at_vertices_on_model_levels: np.ndarray,
+        difcoef: np.ndarray,
+        area_edge: np.ndarray,
+        geofac_grdiv: np.ndarray,
+        tangent_orientation: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        e2c2eo = connectivities[dims.E2C2EO]
+        e2v = connectivities[dims.E2V]
+        gradient_of_divergence_of_vn = np.sum(
+            np.where(
+                (e2c2eo != -1)[:, :, np.newaxis],
+                vn[e2c2eo] * np.expand_dims(geofac_grdiv, axis=-1),
+                0.0,
+            ),
+            axis=1,
+        )
+        gradient_of_vorticity = np.expand_dims(
+            tangent_orientation * inv_primal_edge_length, axis=-1
+        ) * (
+            upward_vorticity_at_vertices_on_model_levels[e2v[:, 1]]
+            - upward_vorticity_at_vertices_on_model_levels[e2v[:, 0]]
+        )
+        return dict(
+            out=difcoef
+            * np.expand_dims(area_edge, axis=-1)
+            * (gradient_of_divergence_of_vn + gradient_of_vorticity)
+        )
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        return dict(
+            vn=data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat),
+            upward_vorticity_at_vertices_on_model_levels=data_alloc.random_field(
+                dims.VertexDim, dims.KDim, dtype=ta.vpfloat
+            ),
+            difcoef=data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat),
+            area_edge=data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat),
+            geofac_grdiv=data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=ta.wpfloat),
+            tangent_orientation=data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat),
+            inv_primal_edge_length=data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat),
+            out=data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat),
+            domain={
+                dims.EdgeDim: (0, gtx.int32(grid.num_edges)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+        )
+
+
+class TestComputeVerticalAdvectionOfW(stencil_tests.StencilTest):
+    PROGRAM = _compute_vertical_advection_of_w
+    # the operator reads w at K-1 and K+1, so it is only defined on the interior half levels
+    OUTPUTS = (
+        stencil_tests.Output(
+            "out", refslice=(slice(None), slice(1, -1)), gtslice=(slice(None), slice(1, -1))
+        ),
+    )
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
+        w: np.ndarray,
+        coeff1_dwdz: np.ndarray,
+        coeff2_dwdz: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
+        return dict(
+            out=compute_advective_vertical_wind_tendency_numpy(
+                z_w_con_c=contravariant_corrected_w_at_cells_on_half_levels,
+                w=w,
+                coeff1_dwdz=coeff1_dwdz,
+                coeff2_dwdz=coeff2_dwdz,
+            )
+        )
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        return dict(
+            contravariant_corrected_w_at_cells_on_half_levels=data_alloc.random_field(
+                dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
+            ),
+            w=data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat),
+            coeff1_dwdz=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat),
+            coeff2_dwdz=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat),
+            out=data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KHalfDim: (1, gtx.int32(grid.num_levels)),
+            },
+        )
+
+
+class TestInterpolateContravariantVerticalVelocityToFullLevels(stencil_tests.StencilTest):
+    PROGRAM = _interpolate_contravariant_vertical_velocity_to_full_levels
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
+        return dict(
+            out=interpolate_contravariant_vertical_velocity_to_full_levels_numpy(
+                contravariant_corrected_w_at_cells_on_half_levels[:, : grid.num_levels]
+            )
+        )
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        return dict(
+            contravariant_corrected_w_at_cells_on_half_levels=data_alloc.random_field(
+                dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
+            ),
+            nlev=gtx.int32(grid.num_levels),
+            out=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
             },
         )

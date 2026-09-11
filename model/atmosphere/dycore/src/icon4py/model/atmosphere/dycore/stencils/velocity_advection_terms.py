@@ -34,7 +34,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp i
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _interpolate_contravariant_vertical_velocity_to_full_levels(
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[vpfloat],
     nlev: gtx.int32,
@@ -80,7 +80,7 @@ def _compute_horizontal_advection_of_w(
     return astype(horizontal_advection_of_w_at_edges_on_half_levels, vpfloat)
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _compute_vertical_advection_of_w(
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[vpfloat],
     w: fa.CellKHalfField[wpfloat],
@@ -143,7 +143,7 @@ def _compute_extra_diffusion_for_w(
     return difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=dims.C2E2CODim)
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _compute_cfl(
     ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
@@ -169,7 +169,7 @@ def _compute_cfl(
     return cfl_clipping, astype(vertical_cfl, vpfloat)
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _clip_contravariant_corrected_w(
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
     cfl_clipping: fa.CellKHalfField[bool],

@@ -13,7 +13,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _interpolate_to_half_levels(
     wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     x: fa.EdgeKField[ta.wpfloat],
