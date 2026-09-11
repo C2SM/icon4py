@@ -188,12 +188,12 @@ class EntryState:
 
 
 class TendencyAccumulators:
-    """Per-variable tendency sums over the processes of one timestep (ICON ``tend%*_phy``).
+    """Per-variable tendency sums over the processes of one timestep.
 
     Buffers are keyed by output name (``tend_*``) and allocated lazily on first
     contribution. Only outputs whose metadata carries ``kind`` ``TENDENCY``
-    accumulate; the rest are diagnostics, written by the granules directly into
-    the layer-owned buffers of the ``DiagnosticsStore``.
+    accumulate; the rest are diagnostics, written by the components directly into
+    the buffers of the ``DiagnosticsStore``.
     """
 
     def __init__(self, *, backend: gtx_typing.Backend | None = None) -> None:
@@ -225,12 +225,12 @@ class TendencyAccumulators:
 class ApplyToPrognostic:
     """The single application of the accumulated tendencies to the model state.
 
-    The phy2dyn conversion of ``mo_interface_iconam_aes`` (``:513`` and following),
-    executed once per timestep — previously each process's ``scatter_to_prognostic``
-    repeated the exner/theta_v EOS update. Order: tracers first (the EOS update uses
-    the final moisture), then temperature -> exner/theta_v, then the winds.
-    Tendencies absent from the accumulators are skipped (e.g. no ``tend_u/v/w`` in a
-    muphys-only configuration).
+    Runs once per timestep. The order matters: the tracers are updated first,
+    because the exner/theta_v update uses the final moisture, then the
+    temperature, then the winds.
+
+    Which tendencies exist depends on which processes are enabled, so a tendency
+    that no enabled process produced is simply not applied.
     """
 
     def __init__(
@@ -393,14 +393,13 @@ class ApplyToPrognostic:
 
 
 class DiagnosticsStore:
-    """Layer-owned storage of the process output diagnostics (ICON ``field%`` spirit).
+    """Storage for the diagnostic (non-tendency) outputs of the processes.
 
-    Allocates every non-tendency output from its declared metadata (``dims``,
-    optionally ``is_on_half_levels``) at driver construction and hands the
-    buffers to the component (direct write): one buffer per field, owned here,
-    written by the granule. Keyed per process for order-independence and
-    collision-safety. Values are the last computed step's; zeros before a
-    process first fires.
+    Allocates one buffer per output from its declared metadata at driver
+    construction and hands it to the component, which writes into it directly.
+    The buffers are keyed per process, so two processes may declare the same
+    output name. A buffer holds the values of the last computed step, and zeros
+    before its process has run.
     """
 
     def __init__(self, *, grid: base_grid.Grid, backend: gtx_typing.Backend | None = None) -> None:

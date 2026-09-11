@@ -37,26 +37,20 @@ class PhysicsComponent(Component[Any, Any], Protocol):
     """
 
     def bind_output_buffers(self, buffers: dict[str, Any]) -> None:
-        """Adopt the layer-owned buffers for this component's diagnostic outputs.
+        """Adopt caller-owned buffers for this component's diagnostic outputs.
 
-        Called once per process at driver construction. Implementations keep their
-        own allocations as the standalone default (e.g. the granule datatests) and
-        replace them with these, so the granule writes into the layer's memory in
-        place and the driver never copies a diagnostic.
+        Implementations keep their own allocations as the default and replace
+        them with these, so the results are written in place, without a copy.
         """
         ...
 
 
 @dataclasses.dataclass
 class PhysicsProcess:
-    """A registered physics process: a component, its state adapter, and its time control.
+    """One physics process: its component, its state adapter and its time control.
 
-    The component is the per-process adapter (e.g. ``MuphysComponent``), typed as
-    a ``PhysicsComponent``: the generic ``Component`` contract plus the
-    ``bind_output_buffers`` hook the driver needs to hand it the layer-owned
-    diagnostic buffers. The state adapter is process-specific (it maps the frozen
-    entry state to *this* component's contract), so it is bundled per process
-    rather than shared.
+    The state adapter belongs to the process rather than being shared, because it
+    maps the entry state to the input names of this one component.
     """
 
     name: str
@@ -68,14 +62,13 @@ class PhysicsProcess:
 class PhysicsDriver:
     """Runs the physics processes under parallel coupling.
 
-    One timestep (``run``): the ``EntryState`` binds the model state and
-    diagnoses the physics fields once (dyn2phy); every enabled process reads that
-    same frozen state and computes; outputs tagged ``kind == "tendency"`` are
-    accumulated, while the diagnostic outputs are written by the granules directly
-    into the layer-owned ``diagnostics`` store buffers bound at construction; the
-    accumulated tendencies are applied to the model state exactly once at the end.
-    Processes never see the raw PrognosticState/TracerState and never
-    write it — the PhysicsState layer owns both conversion boundaries.
+    In one timestep (``run``) the entry state is diagnosed once from the model
+    state, and every enabled process reads that same frozen state. Tendency
+    outputs are summed over the processes; diagnostic outputs are written by the
+    components into the buffers bound at construction. The summed tendencies are
+    applied to the model state once, at the end.
+
+    The processes never read or write the prognostic and tracer states directly.
     """
 
     def __init__(
@@ -104,9 +97,6 @@ class PhysicsDriver:
         dtime: datetime.timedelta,
         simulation_current_datetime: datetime.datetime,
     ) -> None:
-        # 'simulation_current_datetime' is the end of the step being integrated (ICON's 'datetime_new');
-        # processes are scheduled on the step-start date, per 'datetime = datetime_new - dt'
-        # in mo_interface_iconam_aes.f90.
         step_start_datetime = simulation_current_datetime - dtime
         self._entry.diagnose_from(prognostic, tracers)
         self._accumulators.zero()

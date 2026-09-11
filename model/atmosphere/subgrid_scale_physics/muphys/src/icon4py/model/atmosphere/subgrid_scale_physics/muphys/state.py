@@ -20,15 +20,10 @@ if TYPE_CHECKING:
 
 
 class State(ComponentState):
-    """The muphys ComponentState adapter.
+    """Maps the entry state to the input names of the muphys component.
 
-    Maps the frozen ``EntryState`` of the PhysicsState layer to the muphys component contract.
-    The layer already diagnoses everything muphys consumes
-    (T, p) and points at the rest (rho, tracers), so this is pure name
-    translation and muphys derives nothing of its own; the only process-owned
-    input is ``dz``, fetched once from the metrics source. Holds no state beyond
-    it — muphys's outputs (tendencies, precip diagnostics) are routed by the
-    driver into the PhysicsState layer's sinks.
+    Every non-static input is taken from the entry state; ``dz`` is the only
+    field this adapter owns. It derives nothing and holds nothing else.
     """
 
     def __init__(self, *, metrics: factory.FieldSource) -> None:
