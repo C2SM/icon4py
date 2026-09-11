@@ -52,10 +52,11 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
   `wpfloat`; `fortran_sp_literal` = `gtx.float32` beside it for the unsuffixed real
   literals; bound at import, `set_precision()` does not rebind it — to be handled at the
   #970 merge). The 103/132 smoothness β path runs in it
-  (`stencils/accumulate_weno_candidate_flux_weights.py`, f90 2643/2996-3008: `zlc`, `area`,
-  the `2e0` literal and the dot product with `real(z_quad_vector_sum)` in the sp kind, the
-  `1d-20` and the square in wp). Both cylinder modules (`test_jocksch_cylinder.py`,
-  `test_jocksch_cylinder_jocksch_grid.py`) share `tests/driver/utils.run_cylinder_one_period`.
+  (`stencils/accumulate_weno_candidate_flux_weights.py`, `mo_advection_hflux.f90:2643` and
+  `:2996-3008` at `dacecf46aa`: `zlc`, `area`, the `2e0` literal and the dot product with
+  `real(z_quad_vector_sum)` in the sp kind, the `1d-20` and the square in wp). Both cylinder
+  modules (`test_jocksch_cylinder.py`, `test_jocksch_cylinder_jocksch_grid.py`) share
+  `tests/driver/utils.run_cylinder_one_period`.
   Hybrid selection mask with the residual in sp vs wp (`test_miura_weno_hybrid_pipeline.py`):
   0 of 880 cells differ on the initial cylinder (step 0, both centres — decided by
   construction, every stencil there is constant or O(1)) and 0 at every step on the
@@ -178,12 +179,14 @@ Comparison ("converged" = resid ≤ 1e-8; max |Δ| over the four ω columns):
 | 3 | 1.8e-14 (CFL 0.01; 2.2e-15-2.7e-15 at 0.1-0.5) | 3.4e-12 | 1.8e-14 | 2.2e-12 |
 
 Gates against his tables, converged rows, max over the set: 6e-14 on the `paper` set (3× its
-CFL 0.01 block, 17× / 22× the CFL 0.5 block for scheme 2 / 3) and on the `stability` set
-(measured 4.4e-15 / 3.0e-15 at CFL 0.44); gtfn_cpu measurements only. Without his tables (his
-scratch is purgeable) both sets skip with the reason, the `stability` set after its growth
-asserts, and the summaries print n/a. Stability limit:
-identical to our build and to his tables — no growth (Im ω < −1e-14 on converged rows,
-either cell) through CFL 0.42, growth from 0.44: scheme 2
+CFL 0.01 block, 17× / 22.5× the CFL 0.5 block for scheme 2 / 3) and on the `stability` set
+(measured 4.4e-15 / 3.0e-15 at CFL 0.44); gtfn_cpu measurements only. Each CFL of both sets
+needs ≥ 30 converged rows (of 59; measured minimum 33, scheme 2 at CFL 0.44; the `paper` sets
+≥ 40), so neither these maxima nor the no-growth count at 0.42 can pass on an empty set.
+Without his tables (his scratch is purgeable) both sets skip with the reason after the
+converged-row assert (the `stability` set also after its growth asserts), and the summaries
+print n/a. Stability limit: identical to our build and to his tables — no growth
+(Im ω < −1e-14 on converged rows, either cell) through CFL 0.42, growth from 0.44: scheme 2
 32 of 33 converged α, min Im ω −3.609e-2 at α 3.644 (0.50: 56/56, −0.2696); scheme 3 15 of
 58, −1.381e-5 at α 3.267 (0.46: −3.452e-4 at 0.628; 0.50: 40/57, −3.547e-3 at 2.639); the
 minima agree with our build's to all printed digits. Convergence after 1000 iterations
@@ -223,17 +226,18 @@ from CFL 0.1); cells 694 / 695 (his θ = 30 cells 695 / 696) stay at the θ = 30
 2.2e-16 … 1.05e-15 over CFL 0.01 … 0.5; the median cell 2.2e-16 … 2.1e-15. Only whole strips
 exceed 1e-13: the rows at y = 14.43 / 15.88 km (all 40 cells, containing 293) from CFL 0.1,
 and y = −37.5 / −36.1 km from CFL 0.4 (29 of the 638 cells to CFL 0.3, 58 from 0.4). The
-−37.5 / −36.1 km rows are a strip at every CFL, uniform along the row (6.0e-14 at CFL 0.2,
-9.98e-14 at 0.3, 1.36e-13 at 0.4; within 0.9 % over their 29 interior cells from CFL 0.1),
-that crosses 1e-13 at 0.4. Our build's own `lsq_high_lsq_pseudoinv` (capture) deviates from
+−37.5 / −36.1 km rows are a strip from CFL 0.1, uniform along the row (within 0.9 % over their
+29 interior cells; median 6.00e-14 at CFL 0.2, 9.995e-14 at 0.3, 1.363e-13 at 0.4), that
+crosses 1e-13 at 0.4. Our build's own `lsq_high_lsq_pseudoinv` (capture) deviates from
 the median over its triangle orientation, relative to the largest entry, by 7.4e-13 (tip-up) /
 3.6e-13 (tip-down) in the strip of 293 and by ~2e-15 / 4e-15 in the rows of 695 / 694 (median
 cell 1.8e-15 / 2.6e-15). icon4py's own θ = 0 field shows the 14.43 km strip too: against the
 strip-free value (the median over the same-orientation interior cells outside the two strips;
 normalised as above, max over α) its strip cells deviate by up to 2.8e-13, our build's by up
 to 5.3e-13 at CFL 0.5, and at cell 293 the two deviate in opposite directions (Im ω̃ +1.1e-11
-vs −2.1e-11 at α = π, where |q_new/q_now| = 0.025). So the strips are where both SVDs round
-off, and the θ = 0 gap is their difference (`weno_data/w4c_review/polish2_strips.py`).
+vs −2.1e-11 at α = π, where |q_new/q_now| = 0.025). So the 14.43 km strip is where both SVDs
+round off (the −37.5 km strip is mainly icon4py's: 1.2e-13 against our build's 4.4e-14 at CFL
+0.5), and the θ = 0 gap is their difference (`weno_data/w4c_review/polish2_strips.py`).
 icon4py's own θ = 30 field has the same strips: at CFL 0.5 the one-step ω of the strip cells
 ≥ 4 edge lengths from both seams deviates from that of the same-orientation cell 694 / 695
 (normalised as above, max over the 59 α) by 1.5e-13 (median), that of the cells whose θ = 0
@@ -282,7 +286,8 @@ Gaussian, evaluated at the time the driver integrated to (steps × rounded Δt);
 (`decay_radius` 0.35 instead of 0.25, 3 levels, quarter period, no limiter), the L2 norm and
 the distance, and one time step per member (constant CFL) instead of the finest member's
 step for all. The 132 row uses the optimised set for the type-VI assembly and unit weights
-in its WENO branch at run time (f90 3684), as the Fortran does.
+in its WENO branch at run time (`mo_advection_hflux.f90:3684` at `dacecf46aa`), as the
+Fortran does.
 
 **Runs** (debug-partition jobs that own the pytest lock, one pytest per row; results merged
 per (row, factor) into `weno_data/slurm/w6s_results_<backend>.json`, tracers next to it):
@@ -422,10 +427,11 @@ Fortran (W6-G, `icon-ajocksch` commit `96e64fe27a`, `CAPTURE_NOTES.md` "WENO mul
 stability (W6-G)") show a multi-step grid-scale instability of 103 at θ = 0; limits and cause
 are under review. The type-VI candidates are assembled as
 `A⁺_full − Σ_{i∈group} d_i A⁺_i` (`weno_least_squares.compute_weno_pseudoinverse_quadratic`,
-f90 2670-2680). For smooth data every fitted candidate reproduces the derivatives, so a
-type-VI candidate returns `(1 − S)` times them, with `S` the group's weight sum
-(OPTIMIZED: 2 × 2.9915 = 5.983; UNITY: 8). Its smoothness indicator is quadratic in the
-coefficients (`accumulate_weno_candidate_flux_weights.py`, f90 2996-3008), hence
+`mo_intp_coeffs_lsq_bln.f90:2646-2657` at `dacecf46aa`). For smooth data every fitted candidate
+reproduces the derivatives, so a type-VI candidate returns `(1 − S)` times them, with `S` the
+group's weight sum (OPTIMIZED: 2 × 2.9915 = 5.983; UNITY: 8). Its smoothness indicator is
+quadratic in the coefficients (`accumulate_weno_candidate_flux_weights.py`,
+`mo_advection_hflux.f90:2996-3008` at `dacecf46aa`), hence
 `(1 − S)²` = 24.8 / 49 times that of the fitted candidates, and its weight
 `d/(β + ε)²` is `(1 − S)⁴` = 617 / 2401 times smaller than the linear weights assume — for
 every resolution, so the nonlinear weights never tend to the linear ones. The normalised
@@ -438,8 +444,8 @@ ratio of that term, 0.257, is what the distances show at x8 (0.261 L2, 0.264 Lin
 (0.256 L2, 0.257 Linf). (With exactly linear weights the same assembly would return
 `3/Σ_j d_j` of the derivatives, 1/9 for UNITY and 0.14 for OPTIMIZED — the scope note's
 open question; on smooth data the weights never reach that limit, which is what keeps the
-scheme consistent up to δ.) The hybrid assembles
-with OPTIMIZED and blends with unit weights (δ = −1.21e-3) outside its plain core.
+scheme consistent up to δ.) The hybrid assembles with OPTIMIZED and blends with unit weights
+(δ = −1.21e-3) outside its plain core.
 
 **Gates** (`_ROWS`, measured values in comments). 3: 3 ± 0.1 on the (1, 2, 4) fit and on
 the local rate between the last two members in the results file. 2 and 102: regression
@@ -453,9 +459,10 @@ value of δ); and on the ratio of the last member's L2 error to scheme 3's at th
 ± 5 % around the measured one (x4 / x8 / x16: OPT 1.105 / 4.299 / 17.09, UNITY 1.027 / 1.805 /
 5.038; 132 1.518 / 3.862 at x4 / x8), which on the finest members follows the size of the δ
 diffusion (a 6 % larger x16 OPT error fails it). δ itself is pinned by the unit test. Their
-(1, 2, 4) fit is printed only. `ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY=1`
-passes on both results files without a rerun (gtfn_cpu all rows, last pair x2-x4; dace_gpu
-with `ICON4PY_WENO_ORDER_STUDY_ROWS=miura3,miura3_weno_opt,miura3_weno_unity,miura3_weno_hybrid`,
+(1, 2, 4) fit is printed only. `ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY=1` with
+`--level=validation` (see Rerun) passes on both results files without a rerun (gtfn_cpu all
+rows, last pair x2-x4; dace_gpu with
+`ICON4PY_WENO_ORDER_STUDY_ROWS=miura3,miura3_weno_opt,miura3_weno_unity,miura3_weno_hybrid`,
 last pair x8-x16, x4-x8 for 132; logs `weno_data/slurm/w6fix_checkonly_<backend>.log`, with
 the ratio gate `weno_data/slurm/polish_checkonly_<backend>.log`).
 
@@ -482,9 +489,11 @@ success is pytest's "passed" line in `weno_data/slurm/w6s_<row>_<backend>.log` (
 collected in `w6s_exit_codes`). Cost: gtfn_cpu 1.5-7 min per row (1 / 2 / 4); dace_gpu builds
 one variant of every program per grid size (4-5 min per new size for the driver's
 factories, about 1 min for the 103 stencils); once built, 0.5-2.5 min per member up to 8x,
-5-7 min per 16x member including its build. Check a
-results file without running: the same pytest with
-`ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY=1` (and `ICON4PY_WENO_ORDER_STUDY_ROWS` for a subset).
+5-7 min per 16x member including its build. Check a results file without running: the same
+pytest, `--level=validation` included, with `ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY=1` (and
+`ICON4PY_WENO_ORDER_STUDY_ROWS` for a subset). Without `--level=validation` pytest skips the
+test ("Validation tests must be explicitly requested", it shows only as `1 skipped`) and checks
+nothing.
 Tables: `weno_data/slurm/w6s_analysis.py <gtfn_cpu json> <dace_gpu json>` (numpy).
 
 ## Decisions
