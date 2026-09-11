@@ -10,7 +10,7 @@
 
 ICON stores the absolute cell index and selects it with
 MERGE(butterfly_idx(je,jb,1,p), butterfly_idx(je,jb,2,p), lvn_pos)
-(mo_advection_geometry.f90:799-803). Since the E2C2E2C slot is 2 * side + vertex, and patch 1
+(mo_advection_geometry.f90:799-804). Since the E2C2E2C slot is 2 * side + vertex, and patch 1
 is the vertex-0 wing while patch 2 is the vertex-1 wing, that MERGE reduces to a choice of
 side. This pins that reduction, which is the whole substitution: if the sign convention were
 backwards, or the patch-to-vertex mapping swapped, FFSL would gather the wrong cell and still
@@ -47,7 +47,7 @@ _DREG_ARGS = tuple(
         # vn < 0: side = 1
         (1, -1.0, 2, 3),
         # vn == 0 goes to side 0: Fortran's lvn_pos is p_vn >= 0, not > 0
-        # (mo_advection_geometry.f90:768)
+        # (mo_advection_geometry.f90:767)
         (1, 0.0, 0, 1),
         # no flux area: no patch, whatever the sign
         (0, 1.0, _NO_PATCH, _NO_PATCH),

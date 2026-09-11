@@ -517,7 +517,7 @@ def _full_stencil_design_quadratic(
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """(row weights, weighted design matrix) of the full 9-row fit, (n_cells, 9) / (n_cells, 9, 5).
 
-    f90 2294-2301: z_lsq_mat_c[js, ju] = lsq_weights_c[js] * (moments_hat[js, ju] -
+    f90 2280-2292: z_lsq_mat_c[js, ju] = lsq_weights_c[js] * (moments_hat[js, ju] -
     moments[ju]), with the max-normalised 1/dist**5 weights.
     """
     array_ns = data_alloc.array_namespace(diff)
@@ -626,7 +626,7 @@ def compute_lsq_error_quadratic(
 
     Despite its name it is the transposed, distance-weighted design matrix of the fit,
     A_w^T with A_w[js, ju] = w[js] * (moments_hat[js, ju] - moments[ju]), stored as
-    REAL(sp) (f90 2446 with 2294-2301; mo_intp_data_strc.f90 83). The hybrid scheme
+    REAL(sp) (f90 2446 with 2392 and 2280-2292; mo_intp_data_strc.f90 83). The hybrid scheme
     (ihadv_tracer=132) uses it for the residual of the fit, sum_js (A_w[js] . c - z_b[js])^2
     (mo_advection_hflux.f90 3565-3568), against the *unweighted* increments z_b: that
     mismatch is the Fortran's, kept as is. Same layout as 'compute_lsq_pseudoinverse_
