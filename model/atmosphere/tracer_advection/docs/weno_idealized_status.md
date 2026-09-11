@@ -454,27 +454,32 @@ scheme consistent up to δ.) The hybrid assembles with OPTIMIZED and blends with
 Andreas).** Separate from the one-step damping above: over long runs (smooth plane waves, no
 limiter, no re-imposition) 103 with the optimised set grows. Fortran-confirmed in our build of
 `transport_ajocksch` (`icon-ajocksch` commits `96e64fe27a` and `8c6b470887`, the θ = 0 and θ = 30
-multi-step switches; `27351f49e3`, run script and torus recipe; `58fd4bcc93`, the d_j = 1 run at
-θ = 30; `CAPTURE_NOTES.md` "WENO multi-step stability (W6-G)" and "WENO multi-step stability:
-long runs and theta = 30 (W6-H)"): at θ = 0 on his grid the optimised set grows from CFL 0.38
-within 2000 steps and from 0.30 within 6000 steps (a localised grid-scale residual), while d_j = 1
-(UNITY) shows no growth up to CFL 0.42 within 2000 steps and scheme 3 is stable at 0.50. At
-θ = 30 on a doubly periodic 20 × 40 torus with his 5 km edges
+multi-step switches; `27351f49e3`, run script and torus recipe; `58fd4bcc93`, notes of the d_j = 1
+run (binary `8c6b470887`); `CAPTURE_NOTES.md` at `9c0883a427`, "WENO multi-step stability (W6-G)"
+and "WENO multi-step stability: long runs and theta = 30 (W6-H)"): at θ = 0 on his grid the
+largest L2 exceeds its initial value within 2000 steps from CFL 0.36 (×2.9; ×655 at 0.38) and
+within 6000 steps at 0.30 and 0.34, the lowest CFLs run (L2 up to ×22 at 0.30; ×457 with max|q|
+×3.6e3 at 0.34), as a localised grid-scale residual; scheme 3 is stable at 0.50 within 2000
+steps. At θ = 30 on a doubly periodic 20 × 40 torus with his 5 km edges
 (`weno_data/grids/torus_20x40_res5000m.nc`) the optimised set blows up at CFL 0.20 (L2 ×3.2 after
-100 steps, > 1e12 after 2350), bursts at 0.15 and is clean at 0.10, while d_j = 1 (same grid,
-waves and CFL, only the weight set changed) is clean at 0.20 over 3000 steps and scheme 3 at 0.43.
-So it comes from the optimised weight set. A one-step test does not show it: a pure wave is damped in its
-first step. Replica only (numpy; it reproduces the θ = 30 Fortran trajectories to < 1e-6 in L2):
-over 40,000 steps at θ = 0 the growth starts at CFL ≈ 0.22; at θ = 30 the growing mode has two
-components, the wave plus a 7-10 % companion that alternates between the two triangle
-orientations; frozen linear weights remove the growth, while the (1 + S) type-VI assembly (which
-removes the δ bias above) and a double-precision β do not, i.e. it comes from the optimised set's
-nonlinear weighting. The paper's 100-step θ = 0 cylinder test cannot show it. **Consequence for
-icon4py users:** `AdvectionConfig.weno_linear_weights` defaults to `WenoLinearWeights.OPTIMIZED`
-(the paper's "WENO opt"), and 103 OPTIMIZED is not safe for long runs above CFL ≈ 0.2, at oblique
-flow not even at 0.2. Until this is resolved, prefer `UNITY` (d_j = 1, the set tested here;
-`HAND_TUNED` and the hybrid 132 were not part of these runs) or scheme 3 (`miura3`) for anything
-longer than the paper's tests.
+100 steps, > 1e12 after 2350), bursts and grows slowly at 0.15, is clean at 0.10 (4500 steps);
+scheme 3 is clean at 0.43 over 3000 steps. d_j = 1 (UNITY; only the weight set changed) shows no
+growth within 2000 steps up to CFL 0.42 at θ = 0 (one wave ×2.2 at 0.45; blows up at 0.50) and
+within 3000 steps at CFL 0.2 at θ = 30 (same grid and waves as the optimised set's blow-up). So
+it comes from the optimised weight set. A one-step test does not show it: a pure wave is damped
+in its first step (Fortran, θ = 30); the growing mode (replica only, at θ = 30) is the wave plus
+a 7-10 % companion that alternates between the two triangle orientations. Replica only (numpy; it
+reproduces the θ = 30 Fortran trajectories to < 1e-6 in L2: 2000 steps at 0.20, 3000 at 0.15,
+4500 at 0.10): over 40,000 steps at θ = 0 the growth starts at CFL ≈ 0.22; frozen linear weights
+remove the growth, while the (1 + S) type-VI assembly (which removes the δ bias above) and a
+double-precision β do not, i.e. it comes from the optimised set's nonlinear weighting. The
+paper's 100-step θ = 0 cylinder test cannot show it. **Consequence for icon4py users:** 103
+OPTIMIZED (the default of `AdvectionConfig.weno_linear_weights`) grows at θ = 0 within 6000
+steps from CFL 0.30, the lowest CFL run (from ≈ 0.22 over 40,000 steps, replica only), and at
+θ = 30 blows up at 0.20 and bursts at 0.15 (only 0.10 was clean). Prefer `UNITY` (no growth at
+θ = 0 up to 0.42 within 2000 steps, blows up at 0.50; at θ = 30 tested only at 0.20 over 3000
+steps) or scheme 3 (`HorizontalAdvectionType.QUADRATIC_3RD_ORDER`) for runs longer than the
+paper's tests; `HAND_TUNED` and 132 were not run.
 
 **Gates** (`_ROWS`, measured values in comments). 3: 3 ± 0.1 on the (1, 2, 4) fit and on
 the local rate between the last two members in the results file. 2 and 102: regression

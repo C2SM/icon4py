@@ -30,8 +30,11 @@ Table 2 of the paper also distinguishes "WENO d_j = 1" from "WENO opt". Both are
 they differ only in the linear weights `l_weights_s` set at init
 (`src/shr_horizontal/mo_intp_coeffs_lsq_bln.f90:2590-2600`: the live set is the optimised
 one, `0, 0, 0, 0, 2.991549980478795` for stencil types I–IV / V; type VI is fixed to 1 at
-f90:2647). icon4py has only the optimised set (`weno_least_squares.py`, `L_WEIGHTS_S`).
-**Missing: `d_j = 1` as a configuration option.**
+f90:2646). icon4py has three presets, `weno_least_squares.WenoLinearWeights`, selected with
+`AdvectionConfig.weno_linear_weights` (default `OPTIMIZED`): `OPTIMIZED` (the live set,
+"WENO opt"), `HAND_TUNED` (`1, 1.5, 1, 0.5, 1`, the first, overwritten assignment at
+f90:2590-2594) and `UNITY` (every d_j = 1, the paper's "WENO d_j = 1" column); the
+init-time WENO state must be built with the same set (`weno_least_squares.linear_weights`).
 
 ## Limiters
 
