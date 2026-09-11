@@ -12,7 +12,6 @@ from gt4py.next.experimental import concat_where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.math.vertical_operations import with_boundaries_on_half_levels_on_cells
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @gtx.field_operator
@@ -51,17 +50,8 @@ def compute_wgtfac_c(  # noqa: PLR0917 [too-many-positional-arguments]
     )
 
 
-def _compute_z1_z2_z3(
-    z_ifc: data_alloc.NDArray, i1: int, i2: int, i3: int, i4: int
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
-    z1 = 0.5 * (z_ifc[:, i2] - z_ifc[:, i1])
-    z2 = 0.5 * (z_ifc[:, i2] + z_ifc[:, i3]) - z_ifc[:, i1]
-    z3 = 0.5 * (z_ifc[:, i3] + z_ifc[:, i4]) - z_ifc[:, i1]
-    return z1, z2, z3
-
-
 @gtx.field_operator
-def _quadratic_extrapolation_weights(
+def _compute_quadratic_extrapolation_weights(
     za: fa.CellKField[wpfloat],
     zb: fa.CellKField[wpfloat],
     zc: fa.CellKField[wpfloat],
@@ -84,28 +74,32 @@ def _quadratic_extrapolation_weights(
 def _compute_wgtfacq1_c(z_ifc: fa.CellKHalfField[wpfloat]) -> fa.CellKField[wpfloat]:
     """Top-boundary quadratic extrapolation weights at cell centres.
 
-    Full levels 0..2, each carrying one coefficient. All three are built from the
-    same four interface heights (0..3), so the shift differs per level: from full
-    level k, interface j sits at ``KDim + (j - k) - 0.5``.
+    Full levels 0..2 carry the weights of interfaces 0..3, one per level. The four
+    interfaces are the same for all three, so each is addressed relative to the
+    level being written: from full level k, interface j sits at
+    ``KDim + (j - k) - 0.5``.
     """
-    w1, _, _ = _quadratic_extrapolation_weights(
+    za = concat_where(
+        dims.KDim == 0,
         z_ifc(dims.KDim - 0.5),
+        concat_where(dims.KDim == 1, z_ifc(dims.KDim - 1.5), z_ifc(dims.KDim - 2.5)),
+    )
+    zb = concat_where(
+        dims.KDim == 0,
         z_ifc(dims.KDim + 0.5),
+        concat_where(dims.KDim == 1, z_ifc(dims.KDim - 0.5), z_ifc(dims.KDim - 1.5)),
+    )
+    zc = concat_where(
+        dims.KDim == 0,
         z_ifc(dims.KDim + 1.5),
+        concat_where(dims.KDim == 1, z_ifc(dims.KDim + 0.5), z_ifc(dims.KDim - 0.5)),
+    )
+    zd = concat_where(
+        dims.KDim == 0,
         z_ifc(dims.KDim + 2.5),
+        concat_where(dims.KDim == 1, z_ifc(dims.KDim + 1.5), z_ifc(dims.KDim + 0.5)),
     )
-    _, w2, _ = _quadratic_extrapolation_weights(
-        z_ifc(dims.KDim - 1.5),
-        z_ifc(dims.KDim - 0.5),
-        z_ifc(dims.KDim + 0.5),
-        z_ifc(dims.KDim + 1.5),
-    )
-    _, _, w3 = _quadratic_extrapolation_weights(
-        z_ifc(dims.KDim - 2.5),
-        z_ifc(dims.KDim - 1.5),
-        z_ifc(dims.KDim - 0.5),
-        z_ifc(dims.KDim + 0.5),
-    )
+    w1, w2, w3 = _compute_quadratic_extrapolation_weights(za, zb, zc, zd)
     return concat_where(dims.KDim == 0, w1, concat_where(dims.KDim == 1, w2, w3))
 
 
@@ -129,38 +123,41 @@ def compute_wgtfacq1_c(  # noqa: PLR0917 [too-many-positional-arguments]
 
 
 @gtx.field_operator
-def _compute_wgtfacq_c_dsl(
+def _compute_wgtfacq_c(
     z_ifc: fa.CellKHalfField[wpfloat], nlev: gtx.int32
 ) -> fa.CellKField[wpfloat]:
     """Surface-boundary quadratic extrapolation weights at cell centres.
 
-    Full levels nlev-3..nlev-1, mirroring :func:`_compute_wgtfacq1_c` at the other
-    end of the column: the four interface heights are nlev..nlev-3, and the level
-    nearest the surface carries the first coefficient.
+    Mirrors :func:`_compute_wgtfacq1_c` at the other end of the column: full levels
+    nlev-3..nlev-1 carry the weights of interfaces nlev..nlev-3, and the level
+    nearest the surface carries the first one.
     """
-    w1, _, _ = _quadratic_extrapolation_weights(
+    za = concat_where(
+        dims.KDim == nlev - 1,
         z_ifc(dims.KDim + 0.5),
+        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim + 1.5), z_ifc(dims.KDim + 2.5)),
+    )
+    zb = concat_where(
+        dims.KDim == nlev - 1,
         z_ifc(dims.KDim - 0.5),
+        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim + 0.5), z_ifc(dims.KDim + 1.5)),
+    )
+    zc = concat_where(
+        dims.KDim == nlev - 1,
         z_ifc(dims.KDim - 1.5),
+        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim - 0.5), z_ifc(dims.KDim + 0.5)),
+    )
+    zd = concat_where(
+        dims.KDim == nlev - 1,
         z_ifc(dims.KDim - 2.5),
+        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim - 1.5), z_ifc(dims.KDim - 0.5)),
     )
-    _, w2, _ = _quadratic_extrapolation_weights(
-        z_ifc(dims.KDim + 1.5),
-        z_ifc(dims.KDim + 0.5),
-        z_ifc(dims.KDim - 0.5),
-        z_ifc(dims.KDim - 1.5),
-    )
-    _, _, w3 = _quadratic_extrapolation_weights(
-        z_ifc(dims.KDim + 2.5),
-        z_ifc(dims.KDim + 1.5),
-        z_ifc(dims.KDim + 0.5),
-        z_ifc(dims.KDim - 0.5),
-    )
+    w1, w2, w3 = _compute_quadratic_extrapolation_weights(za, zb, zc, zd)
     return concat_where(dims.KDim == nlev - 1, w1, concat_where(dims.KDim == nlev - 2, w2, w3))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_wgtfacq_c_dsl(  # noqa: PLR0917 [too-many-positional-arguments]
+def compute_wgtfacq_c(  # noqa: PLR0917 [too-many-positional-arguments]
     z_ifc: fa.CellKHalfField[wpfloat],
     wgtfacq_c: fa.CellKField[wpfloat],
     nlev: gtx.int32,
@@ -169,7 +166,7 @@ def compute_wgtfacq_c_dsl(  # noqa: PLR0917 [too-many-positional-arguments]
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_wgtfacq_c_dsl(
+    _compute_wgtfacq_c(
         z_ifc,
         nlev,
         out=wgtfacq_c,

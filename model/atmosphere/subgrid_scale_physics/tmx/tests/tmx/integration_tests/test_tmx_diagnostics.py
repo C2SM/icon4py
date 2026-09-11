@@ -66,7 +66,6 @@ def test_tmx_init_and_run_diagnostics_single_step(
     metric_state = construct_metric_state(
         metrics_savepoint=metrics_savepoint,
         init_savepoint=init_savepoint,
-        grid_savepoint=grid_savepoint,
         allocator=allocator,
     )
     granule = diagnostics.Diagnostics(

@@ -65,22 +65,6 @@ def _copy_field_on_cell_k(field: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.
 
 
 @gtx.field_operator
-def _compute_reciprocal_on_cell_khalf(
-    input_field: fa.CellKHalfField[ta.wpfloat],
-) -> fa.CellKHalfField[ta.wpfloat]:
-    """Compute the elementwise reciprocal ``1 / input_field``."""
-    return wpfloat("1.0") / input_field
-
-
-@gtx.field_operator
-def _compute_reciprocal_on_edge_k(
-    input_field: fa.EdgeKField[ta.wpfloat],
-) -> fa.EdgeKField[ta.wpfloat]:
-    """Compute the elementwise reciprocal ``1 / input_field``."""
-    return wpfloat("1.0") / input_field
-
-
-@gtx.field_operator
 def _broadcast_value_on_cell_k(
     value: ta.wpfloat,
     like: fa.CellKField[ta.wpfloat],

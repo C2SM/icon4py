@@ -210,6 +210,7 @@ def _compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
     rayleigh_coeff: wpfloat,
     vct_a_1: wpfloat,
     pi_const: wpfloat,
+    end_index_of_damping_layer: gtx.int32,
 ) -> fa.KHalfField[wpfloat]:
     rayleigh_w = broadcast(0.0, (dims.KHalfDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
@@ -224,7 +225,8 @@ def _compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
         rayleigh_w = rayleigh_coeff * (
             1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
         )
-    return rayleigh_w
+    # embedded rejects a scalar branch on an unbounded region, so the zeros are a field
+    return concat_where(dims.KHalfDim <= end_index_of_damping_layer, rayleigh_w, 0.0 * rayleigh_w)
 
 
 @gtx.program
@@ -236,6 +238,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
     rayleigh_coeff: wpfloat,
     vct_a_1: wpfloat,
     pi_const: wpfloat,
+    end_index_of_damping_layer: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
@@ -254,6 +257,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
         rayleigh_klemp: Klemp (2008) type Rayleigh damping
         rayleigh_coeff: Rayleigh damping coefficient in w-equation
         pi_const: pi constant
+        end_index_of_damping_layer: last level index with damping, rayleigh_w is zero below
         vertical_start: vertical start index
         vertical_end: vertical end index
     """
@@ -264,6 +268,7 @@ def compute_rayleigh_w(  # noqa: PLR0917 [too-many-positional-arguments]
         rayleigh_coeff,
         vct_a_1,
         pi_const,
+        end_index_of_damping_layer,
         out=rayleigh_w,
         domain={dims.KHalfDim: (vertical_start, vertical_end)},
     )
@@ -280,7 +285,14 @@ def _compute_coeff_dwdz(
         ddqz_z_full(dims.KDim - 1) / ddqz_z_full / (z_ifc(dims.KDim - 1.5) - z_ifc(dims.KDim + 0.5))
     )
 
-    return coeff1_dwdz, coeff2_dwdz
+    # TODO(havogt): This is a workaround for 2 things:
+    # a) with a plain `0.0` embedded will not work because of the infinite range
+    # b) for `concat_where(dims.KDim == 0, 0.0, ...)` the domain inference is broken in GT4Py,
+    #    see https://github.com/gridTools/gt4py/issues/2205.
+    return (
+        concat_where(dims.KDim >= 1, coeff1_dwdz, 0.0 * ddqz_z_full),
+        concat_where(dims.KDim >= 1, coeff2_dwdz, 0.0 * ddqz_z_full),
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -302,8 +314,8 @@ def compute_coeff_dwdz(  # noqa: PLR0917 [too-many-positional-arguments]
     Args:
         ddqz_z_full: functional determinant of the metrics (is positive), full levels
         z_ifc: geometric height of half levels
-        coeff1_dwdz: coefficient for second-order acurate dw/dz term
-        coeff2_dwdz: coefficient for second-order acurate dw/dz term
+        coeff1_dwdz: coefficient for second-order accurate dw/dz term, zero on the top level
+        coeff2_dwdz: coefficient for second-order accurate dw/dz term, zero on the top level
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
         vertical_start: vertical start index
@@ -957,37 +969,20 @@ def compute_exner_w_implicit_weight_parameter(
     return exner_w_implicit_weight_parameter
 
 
-def compute_geopot_agl_ifc(z_ifc: data_alloc.NDArray) -> data_alloc.NDArray:
-    """Geopotential above ground level at cell interface levels [m2 s-2].
-
-    ``grav * (z_ifc - z_sfc)`` with the surface height taken from the bottom
-    interface row (``z_ifc[:, -1]``).
-    """
-    return constants.GRAV * (z_ifc - z_ifc[:, -1:])
-
-
-def compute_height_above_ground(
-    *,
-    z_mc: data_alloc.NDArray,
-    z_ifc: data_alloc.NDArray,
+def compute_height_above_surface(
+    *, z: data_alloc.NDArray, z_ifc: data_alloc.NDArray
 ) -> data_alloc.NDArray:
     """
-    Geometric height of the full levels above the surface.
+    Height of ``z`` above the surface, which is the bottom row of ``z_ifc``.
 
-    Port of ``compute_geopotential_height_above_ground`` (mo_vdf_atmo.f90):
-
-        ghf(jk) = z_mc(jk) - z_ifc(nlevp1)
-
-    Despite the Fortran name the result is a geometric height in meters;
-    gravity is only applied by the users of the field (e.g.
-    ``compute_dry_static_energy``). Computed with numpy because GT4Py offsets
-    are relative and cannot address the fixed absolute surface row of ``z_ifc``.
-
-    Args:
-        z_mc: geometric height of the full levels [m]
-        z_ifc: geometric height of the half levels [m], surface at the last row
-
-    Returns:
-        height of the full levels above the surface [m]
+    Computed with numpy because GT4Py offsets are relative and cannot address
+    the fixed absolute surface row of ``z_ifc``.
     """
-    return z_mc - z_ifc[:, -1:]
+    return z - z_ifc[:, -1:]
+
+
+def compute_geopotential_above_ground_on_half_levels(
+    z_ifc: data_alloc.NDArray,
+) -> data_alloc.NDArray:
+    """Geopotential above ground level at cell interface levels [m2 s-2]."""
+    return constants.GRAV * compute_height_above_surface(z=z_ifc, z_ifc=z_ifc)

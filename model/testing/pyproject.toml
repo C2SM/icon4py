@@ -85,7 +85,7 @@ known-third-party = ['gt4py']
 
 # -- setuptools --
 [tool.setuptools.package-data]
-'*' = ['*.in', '*.md', '*.rst', '*.txt', 'LICENSE', 'py.typed']
+'*' = ['*.in', '*.md', '*.rst', '*.txt', '*.yaml', 'LICENSE', 'py.typed']
 
 [tool.setuptools.packages]
 find = {namespaces = true, where = ['src']}

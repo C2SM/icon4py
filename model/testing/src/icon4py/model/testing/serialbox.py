@@ -215,7 +215,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def edge_vert_length(self):
         """length of edge midpoint to vertex"""
-        return self._get_field("edge_vert_length", dims.EdgeDim, dims.E2C2VDim)
+        return self._get_field("edge_vert_length", dims.EdgeDim, dims.E2VDim)
 
     def vct_a(self):
         return self._get_field("vct_a", dims.KHalfDim)
@@ -608,20 +608,33 @@ class IconGridSavepoint(IconSavepoint):
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
             inverse_vertex_vertex_lengths=self.inv_vert_vert_length(),
-            primal_normal_vert_x=self.primal_normal_vert_x(),
-            primal_normal_vert_y=self.primal_normal_vert_y(),
-            dual_normal_vert_x=self.dual_normal_vert_x(),
-            dual_normal_vert_y=self.dual_normal_vert_y(),
-            primal_normal_cell_x=self.primal_normal_cell_x(),
-            dual_normal_cell_x=self.dual_normal_cell_x(),
-            primal_normal_cell_y=self.primal_normal_cell_y(),
-            dual_normal_cell_y=self.dual_normal_cell_y(),
+            primal_normal_vert=(
+                self.primal_normal_vert_x(),
+                self.primal_normal_vert_y(),
+            ),
+            dual_normal_vert=(
+                self.dual_normal_vert_x(),
+                self.dual_normal_vert_y(),
+            ),
+            primal_normal_cell=(
+                self.primal_normal_cell_x(),
+                self.primal_normal_cell_y(),
+            ),
+            dual_normal_cell=(
+                self.dual_normal_cell_x(),
+                self.dual_normal_cell_y(),
+            ),
             edge_areas=self.edge_areas(),
             coriolis_frequency=self.f_e(),
-            edge_center_lat=self.edge_center_lat(),
-            edge_center_lon=self.edge_center_lon(),
-            primal_normal_x=self.primal_normal_v1(),
-            primal_normal_y=self.primal_normal_v2(),
+            edge_center=(
+                self.edge_center_lat(),
+                self.edge_center_lon(),
+            ),
+            primal_normal=(
+                self.primal_normal_v1(),
+                self.primal_normal_v2(),
+            ),
+            edge_cell_distances=self.edge_cell_length(),
         )
 
     def construct_cell_geometry(self) -> grid_states.CellParams:
@@ -1973,12 +1986,6 @@ class TmxInitSavepoint(IconSavepoint):
     def inv_ddqz_z_half(self):
         return self._get_field("inv_ddqz_z_half", dims.CellDim, dims.KHalfDim)
 
-    def inv_ddqz_z_half_e(self):
-        return self._get_field("inv_ddqz_z_half_e", dims.EdgeDim, dims.KHalfDim)
-
-    def inv_ddqz_z_half_v(self):
-        return self._get_field("inv_ddqz_z_half_v", dims.VertexDim, dims.KHalfDim)
-
     def inv_ddqz_z_full_e(self):
         return self._get_field("inv_ddqz_z_full_e", dims.EdgeDim, dims.KDim)
 
@@ -2010,10 +2017,6 @@ class TmxEntrySavepoint(IconSavepoint):
 
     def ta(self):
         return self._get_field("ta", dims.CellDim, dims.KDim)
-
-    def ta_phy(self):
-        # Sanity twin of `ta`: prm_field%ta, must be identical to the tmx input temp_c.
-        return self._get_field("ta_phy", dims.CellDim, dims.KDim)
 
     def ua(self):
         return self._get_field("ua", dims.CellDim, dims.KDim)
