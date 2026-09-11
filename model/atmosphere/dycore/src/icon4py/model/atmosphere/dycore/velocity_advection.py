@@ -44,6 +44,7 @@ class VelocityAdvection:
         interpolation_state: dycore_states.InterpolationState,
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
+        cell_params: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
         backend: gtx_typing.Backend
         | model_backends.DeviceType
@@ -55,6 +56,7 @@ class VelocityAdvection:
         self._interpolation_state: dycore_states.InterpolationState = interpolation_state
         self._vertical_params: v_grid.VerticalGrid = vertical_params
         self._edge_params: grid_states.EdgeParams = edge_params
+        self._cell_params: grid_states.CellParams = cell_params
         self._c_owner_mask: fa.CellField[bool] = owner_mask
 
         self._cfl_w_limit: float = 0.65
@@ -85,6 +87,7 @@ class VelocityAdvection:
             "c_lin_e": self._interpolation_state.c_lin_e,
             "ddqz_z_full_e": self._metric_state.ddqz_z_full_e,
             "area_edge": self._edge_params.edge_areas,
+            "area": self._cell_params.area,
             "geofac_grdiv": self._interpolation_state.geofac_grdiv,
         }
 
@@ -167,7 +170,6 @@ class VelocityAdvection:
         horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
         tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.anyfloat],
         dtime: ta.wpfloat,
-        cell_areas: fa.CellField[ta.wpfloat],
     ) -> None:
         """
         Compute some diagnostic variables that are used in the predictor step
@@ -181,7 +183,6 @@ class VelocityAdvection:
             horizontal_kinetic_energy_at_edges_on_model_levels: Horizontal kinetic energy at edge [m^2 s-2]
             tangential_wind_on_half_levels: tangential wind at edge on k-half levels [m s-1]
             dtime: time step [m s-1]
-            cell_areas: cell area [m^2]
         """
 
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
@@ -204,7 +205,6 @@ class VelocityAdvection:
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
             vn=prognostic_state.vn,
             w=prognostic_state.w,
-            area=cell_areas,
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
@@ -241,7 +241,6 @@ class VelocityAdvection:
         horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
         tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.anyfloat],
         dtime: ta.wpfloat,
-        cell_areas: fa.CellField[ta.wpfloat],
     ) -> None:
         """
         Compute some diagnostic variables that are used in the corrector step
@@ -253,7 +252,6 @@ class VelocityAdvection:
             horizontal_kinetic_energy_at_edges_on_model_levels: Horizontal kinetic energy at edge [m^2 s-2]
             tangential_wind_on_half_levels: tangential wind at edge on k-half levels [m s-1]
             dtime: time step [m s-1]
-            cell_areas: cell area [m^2]
         """
 
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
@@ -274,7 +272,6 @@ class VelocityAdvection:
             vn_on_half_levels=diagnostic_state.vn_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
-            area=cell_areas,
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,

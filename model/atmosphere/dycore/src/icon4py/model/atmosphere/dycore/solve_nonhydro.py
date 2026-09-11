@@ -892,6 +892,7 @@ class SolveNonhydro:
             interpolation_state=interpolation_state,
             vertical_params=vertical_params,
             edge_params=edge_geometry,
+            cell_params=cell_geometry,
             owner_mask=owner_mask,
             backend=backend,
         )
@@ -1180,8 +1181,6 @@ class SolveNonhydro:
                 and not (at_initial_timestep and at_first_substep)
             )
 
-            assert self._cell_params.area is not None
-
             self.velocity_advection.run_predictor_step(
                 skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
                 diagnostic_state=diagnostic_state_nh,
@@ -1190,7 +1189,6 @@ class SolveNonhydro:
                 horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
                 tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
                 dtime=dtime,
-                cell_areas=self._cell_params.area,
             )
 
         self._compute_perturbed_quantities_and_interpolation(
@@ -1356,7 +1354,6 @@ class SolveNonhydro:
         # scaling factor for second-order divergence damping: second_order_divdamp_factor_from_sfc_to_divdamp_z*delta_x**2
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
-        assert self._cell_params.area is not None
         assert self._cell_params.mean_cell_area is not None
         second_order_divdamp_scaling_coeff = (
             second_order_divdamp_factor * self._cell_params.mean_cell_area
@@ -1369,7 +1366,6 @@ class SolveNonhydro:
             horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
             tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
             dtime=dtime,
-            cell_areas=self._cell_params.area,
         )
 
         self._compute_interpolation_and_nonhydro_buoy(

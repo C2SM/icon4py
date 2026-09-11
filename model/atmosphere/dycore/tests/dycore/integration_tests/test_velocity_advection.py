@@ -87,6 +87,7 @@ def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917 [too-many-posi
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_params=grid_savepoint.construct_edge_geometry(),
+        cell_params=grid_savepoint.construct_cell_geometry(),
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
@@ -126,6 +127,7 @@ def test_scale_factors_by_dtime(  # noqa: PLR0917 [too-many-positional-arguments
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_params=grid_savepoint.construct_edge_geometry(),
+        cell_params=grid_savepoint.construct_cell_geometry(),
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
@@ -218,6 +220,7 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_params=edge_geometry,
+        cell_params=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
@@ -234,7 +237,6 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
         tangential_wind_on_half_levels=tangential_wind_on_half_levels,
         dtime=dtime,
-        cell_areas=cell_geometry.area,
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(0).asnumpy()
@@ -405,6 +407,7 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_params=edge_geometry,
+        cell_params=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
@@ -415,7 +418,6 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         horizontal_kinetic_energy_at_edges_on_model_levels=init_savepoint.z_kin_hor_e(),
         tangential_wind_on_half_levels=init_savepoint.z_vt_ie(),
         dtime=dtime,
-        cell_areas=cell_geometry.area,
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(1).asnumpy()
