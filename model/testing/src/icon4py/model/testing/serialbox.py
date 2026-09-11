@@ -2011,64 +2011,6 @@ class TmxInitSavepoint(IconSavepoint):
     def geopot_agl_ifc(self):
         return self._get_field("geopot_agl_ifc", dims.CellDim, dims.KHalfDim)
 
-    def mix_len_sq(self):
-        return self._get_field("mix_len_sq", dims.CellDim, dims.KHalfDim)
-
-    def scaling_factor_louis(self):
-        return self._get_field("scaling_factor_louis", dims.CellDim)
-
-
-class TmxEntrySavepoint(IconSavepoint):
-    """Savepoint at entry of vdf Compute in mo_vdf.f90 (inputs of the TMX scheme)."""
-
-    def ta(self):
-        return self._get_field("ta", dims.CellDim, dims.KDim)
-
-    def ua(self):
-        return self._get_field("ua", dims.CellDim, dims.KDim)
-
-    def va(self):
-        return self._get_field("va", dims.CellDim, dims.KDim)
-
-    def wa(self):
-        return self._get_field("wa", dims.CellDim, dims.KHalfDim)
-
-    def qv(self):
-        return self._get_field("qv", dims.CellDim, dims.KDim)
-
-    def qc(self):
-        return self._get_field("qc", dims.CellDim, dims.KDim)
-
-    def qi(self):
-        return self._get_field("qi", dims.CellDim, dims.KDim)
-
-    def qr(self):
-        return self._get_field("qr", dims.CellDim, dims.KDim)
-
-    def qs(self):
-        return self._get_field("qs", dims.CellDim, dims.KDim)
-
-    def qg(self):
-        return self._get_field("qg", dims.CellDim, dims.KDim)
-
-    def rho(self):
-        return self._get_field("rho", dims.CellDim, dims.KDim)
-
-    def tempv(self):
-        return self._get_field("tempv", dims.CellDim, dims.KDim)
-
-    def pres(self):
-        return self._get_field("pres", dims.CellDim, dims.KDim)
-
-    def pres_ifc(self):
-        return self._get_field("pres_ifc", dims.CellDim, dims.KHalfDim)
-
-    def mair(self):
-        return self._get_field("mair", dims.CellDim, dims.KDim)
-
-    def cvair(self):
-        return self._get_field("cvair", dims.CellDim, dims.KDim)
-
 
 class IconTimeStepExitSavepoint(IconSavepoint):
     """End-of-timestep prognostic state, written in perform_nh_timeloop right after
@@ -2495,11 +2437,5 @@ class IconSerialDataProvider:
     def from_savepoint_tmx_init(self) -> TmxInitSavepoint:
         savepoint = self.serializer.savepoint["tmx-init"].id[1].as_savepoint()
         return TmxInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_tmx_entry(self, date: str) -> TmxEntrySavepoint:
-        savepoint = self.serializer.savepoint["tmx-entry"].id[1].date[date].as_savepoint()
-        return TmxEntrySavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )

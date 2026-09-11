@@ -969,7 +969,9 @@ def compute_exner_w_implicit_weight_parameter(
     return exner_w_implicit_weight_parameter
 
 
-def compute_geopot_agl_ifc(z_ifc: data_alloc.NDArray) -> data_alloc.NDArray:
+def compute_geopotential_above_ground_on_half_levels(
+    z_ifc: data_alloc.NDArray,
+) -> data_alloc.NDArray:
     """Geopotential above ground level at cell interface levels [m2 s-2].
 
     ``grav * (z_ifc - z_sfc)`` with the surface height taken from the bottom

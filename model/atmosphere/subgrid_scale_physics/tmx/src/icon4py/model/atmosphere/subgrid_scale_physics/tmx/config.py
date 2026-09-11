@@ -18,13 +18,9 @@ import dataclasses
 import enum
 import logging
 import typing
-from typing import Any, NamedTuple
+from typing import Any
 
 from icon4py.model.common.config import config_io, options as common_conf_opt
-
-
-if typing.TYPE_CHECKING:
-    from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 
 log = logging.getLogger(__name__)
@@ -52,28 +48,6 @@ class EnergyType(int, enum.Enum):
 
     DRY_STATIC = 1  # dry static energy cp*T + g*z
     INTERNAL = 2  # internal energy cv*T
-
-
-@config_io.register_enum
-class SurfaceType(int, enum.Enum):
-    """
-    Treatment of the surface fluxes.
-
-    Note: called ``isrfc_type`` in ``mo_nh_testcases_nml.f90``.
-    """
-
-    INTERACTIVE = 0  # fluxes from the surface scheme
-    FIXED_HEAT_FLUXES = 1  # fixed kinematic surface heat fluxes
-
-
-class _DiffusedTracer(NamedTuple):
-    """One hydrometeor of the scalar diffusion loop, with its per-step buffers."""
-
-    name: str
-    state: fa.CellKField[ta.wpfloat]
-    tendency: fa.CellKField[ta.wpfloat]
-    new_state: fa.CellKField[ta.wpfloat]
-    surface_flux: fa.CellField[ta.wpfloat]
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -238,40 +212,9 @@ class TmxConfig:
         ),
     ] = 300.0
 
-    surface_type: typing.Annotated[
-        SurfaceType,
-        common_conf_opt.ConfigOption(
-            description="Treatment of the surface fluxes (interactive or fixed heat fluxes).",
-            icon_equivalent=common_conf_opt.IconOption(
-                "isrfc_type", ("nh_testcase_nml",), read_from_icon=False
-            ),
-        ),
-    ] = SurfaceType.INTERACTIVE
-
-    shflx: typing.Annotated[
-        float,
-        common_conf_opt.ConfigOption(
-            description="Fixed kinematic sensible heat flux at the surface [K m/s].",
-            icon_equivalent=common_conf_opt.IconOption(
-                "shflx", ("nh_testcase_nml",), read_from_icon=False
-            ),
-        ),
-    ] = 0.1
-
-    lhflx: typing.Annotated[
-        float,
-        common_conf_opt.ConfigOption(
-            description="Fixed kinematic latent heat flux at the surface [m/s].",
-            icon_equivalent=common_conf_opt.IconOption(
-                "lhflx", ("nh_testcase_nml",), read_from_icon=False
-            ),
-        ),
-    ] = 0.0
-
     def __post_init__(self) -> None:
         self.solver_type = TurbulenceSolverType(self.solver_type)
         self.energy_type = EnergyType(self.energy_type)
-        self.surface_type = SurfaceType(self.surface_type)
 
         if self.turb_prandtl <= 0.0:
             raise ValueError(
@@ -283,11 +226,9 @@ class TmxConfig:
             )
 
     @classmethod
-    def from_fortran_dict(
-        cls, *, atm_dict: dict[str, Any], input_dict: dict[str, Any], **overrides: Any
-    ) -> TmxConfig:
+    def from_fortran_dict(cls, *, atm_dict: dict[str, Any], **overrides: Any) -> TmxConfig:
         """
-        Construct the configuration from the echoed ICON namelists.
+        Construct the configuration from the echoed ICON namelist.
 
         ``aes_vdf_nml`` is a derived-type namelist (``t_vdiff_config``), which
         ICON echoes as an anonymous positional array of the member values in
@@ -295,11 +236,6 @@ class TmxConfig:
         (pinned to mo_turb_vdiff_config.f90) instead of by name. Only the
         first domain is read. The guards below make a change of the Fortran
         type fail loudly instead of silently mis-assigning values.
-
-        The surface-flux options come from the *input* namelist dict instead,
-        which holds only the members the experiment sets explicitly, so absent
-        ones are left out and keep the class default rather than being indexed
-        strictly.
         """
         # number of members of the Fortran t_vdiff_config derived type
         # (mo_turb_vdiff_config.f90); the echoed aes_vdf_nml namelist holds this
@@ -323,19 +259,4 @@ class TmxConfig:
                 f"'aes_vdf_config', found {use_tmx!r}: either the run does not use tmx or "
                 "the t_vdiff_config member order changed."
             )
-        testcase = input_dict.get("nh_testcase_nml", {})
-        # 'nh_testcase_nml' member -> (TmxConfig field, converter); members
-        # absent from the namelist keep the TmxConfig default
-        surface_options = {
-            "isrfc_type": ("surface_type", SurfaceType),
-            "shflx": ("shflx", float),
-            "lhflx": ("lhflx", float),
-        }
-        surface_fluxes = {
-            field: convert(testcase[name])
-            for name, (field, convert) in surface_options.items()
-            if name in testcase
-        }
-        return common_conf_opt.construct_config_from_icon(
-            cls, atm_dict, **(surface_fluxes | overrides)
-        )
+        return common_conf_opt.construct_config_from_icon(cls, atm_dict, **overrides)

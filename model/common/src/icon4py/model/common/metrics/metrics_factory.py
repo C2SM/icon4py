@@ -1031,7 +1031,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(inv_ddqz_z_half_v)
 
         geopot_agl_ifc = factory.NumpyDataProvider(
-            func=mf.compute_geopot_agl_ifc,
+            func=mf.compute_geopotential_above_ground_on_half_levels,
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
             domain=(dims.CellDim, dims.KHalfDim),
             fields=(attrs.GEOPOT_AGL_IFC,),

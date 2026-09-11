@@ -60,12 +60,7 @@ def test_tmx_config_cross_checks_input_namelist_and_defaults(
 
     defaults = TmxConfig()
     checked_by_name = 0
-    for field_name, option in common_conf_opt.ConfigOption.iter_from_config_class(TmxConfig):
-        icon_option = option.icon_equivalent
-        if icon_option is None or icon_option.path != ("aes_vdf_nml", "aes_vdf_config"):
-            # read from another namelist (the surface fluxes come from
-            # 'nh_testcase_nml'), so not part of this order pin
-            continue
+    for field_name, _ in common_conf_opt.ConfigOption.iter_from_config_class(TmxConfig):
         config_value = getattr(tmx_config, field_name)
         if field_name in input_members:
             # explicitly set in the input namelist: the named input value must

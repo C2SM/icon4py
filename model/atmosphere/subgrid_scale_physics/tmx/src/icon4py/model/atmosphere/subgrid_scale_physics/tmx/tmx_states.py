@@ -11,17 +11,10 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.interpolation import interpolation_attributes
-from icon4py.model.common.metrics import metrics_attributes
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.states import factory as states_factory
 
 
 @dataclasses.dataclass(frozen=True)
@@ -63,29 +56,6 @@ class TmxMetricState:
     z_ifc: fa.CellKHalfField[ta.wpfloat]
     """Geometric height at cell centers on half levels [m]."""
 
-    @classmethod
-    def from_sources(cls, *, metrics: states_factory.FieldSource) -> TmxMetricState:
-        """Build the state from the metrics field factory."""
-        return cls(
-            ddqz_z_full=metrics.get(metrics_attributes.DDQZ_Z_FULL),
-            inv_ddqz_z_full=metrics.get(metrics_attributes.INV_DDQZ_Z_FULL),
-            ddqz_z_half=metrics.get(metrics_attributes.DDQZ_Z_HALF),
-            inv_ddqz_z_half=metrics.get(metrics_attributes.INV_DDQZ_Z_HALF),
-            inv_ddqz_z_full_e=metrics.get(metrics_attributes.INV_DDQZ_Z_FULL_E),
-            inv_ddqz_z_half_e=metrics.get(metrics_attributes.INV_DDQZ_Z_HALF_E),
-            inv_ddqz_z_half_v=metrics.get(metrics_attributes.INV_DDQZ_Z_HALF_V),
-            wgtfac_c=metrics.get(metrics_attributes.WGTFAC_C),
-            wgtfac_e=metrics.get(metrics_attributes.WGTFAC_E),
-            wgtfacq_c=metrics.get(metrics_attributes.WGTFACQ_C),
-            wgtfacq1_c=metrics.get(metrics_attributes.WGTFACQ1_C),
-            wgtfacq_e=metrics.get(metrics_attributes.WGTFACQ_E),
-            wgtfacq1_e=metrics.get(metrics_attributes.WGTFACQ1_E),
-            geopot_agl_ifc=metrics.get(metrics_attributes.GEOPOT_AGL_IFC),
-            height_above_ground=metrics.get(metrics_attributes.HEIGHT_ABOVE_GROUND),
-            z_mc=metrics.get(metrics_attributes.Z_MC),
-            z_ifc=metrics.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL),
-        )
-
 
 @dataclasses.dataclass(frozen=True)
 class TmxInterpolationState:
@@ -109,18 +79,3 @@ class TmxInterpolationState:
     """RBF coefficients for the zonal wind component at cell centers (rbf_vec_coeff_c_1)."""
     rbf_coeff_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
     """RBF coefficients for the meridional wind component at cell centers (rbf_vec_coeff_c_2)."""
-
-    @classmethod
-    def from_sources(cls, *, interpolation: states_factory.FieldSource) -> TmxInterpolationState:
-        """Build the state from the interpolation field factory."""
-        return cls(
-            c_lin_e=interpolation.get(interpolation_attributes.C_LIN_E),
-            e_bln_c_s=interpolation.get(interpolation_attributes.E_BLN_C_S),
-            geofac_div=interpolation.get(interpolation_attributes.GEOFAC_DIV),
-            cells_aw_verts=interpolation.get(interpolation_attributes.CELL_AW_VERTS),
-            rbf_coeff_v1=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_V1),
-            rbf_coeff_v2=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_V2),
-            rbf_coeff_e=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_E),
-            rbf_coeff_c1=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C1),
-            rbf_coeff_c2=interpolation.get(interpolation_attributes.RBF_VEC_COEFF_C2),
-        )
