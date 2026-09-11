@@ -357,8 +357,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={"vct_a": "vct_a"},
             domain={
                 dims.KHalfDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    v_grid.Domain(dims.KHalfDim, v_grid.Zone.DAMPING, 1),
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
                 )
             },
             fields={"rayleigh_w": attrs.RAYLEIGH_W},
@@ -368,6 +368,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "rayleigh_coeff": self._config.rayleigh_coeff,
                 "vct_a_1": self._vct_a_1,
                 "pi_const": math.pi,
+                "end_index_of_damping_layer": self._vertical_grid.end_index_of_damping_layer,
             },
             do_exchange=False,
         )
@@ -385,7 +386,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
-                    v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1),
+                    vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
@@ -890,7 +891,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={"wgtfacq_c": attrs.WGTFACQ_C},
             params={"nlev": self._grid.num_levels},
             do_exchange=False,
-            vertically_bounded_by_domain=True,
         )
 
         self.register_provider(compute_wgtfacq_c)
@@ -910,7 +910,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"out_field": attrs.WGTFACQ_E},
             do_exchange=True,
-            vertically_bounded_by_domain=True,
         )
         self.register_provider(compute_wgtfacq_e)
 
@@ -926,7 +925,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"wgtfacq1_c": attrs.WGTFACQ1_C},
             do_exchange=False,
-            vertically_bounded_by_domain=True,
         )
         self.register_provider(compute_wgtfacq1_c)
 
@@ -945,7 +943,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"out_field": attrs.WGTFACQ1_E},
             do_exchange=True,
-            vertically_bounded_by_domain=True,
         )
         self.register_provider(compute_wgtfacq1_e)
 
@@ -1036,12 +1033,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         geopot_agl_ifc = factory.NumpyDataProvider(
             func=mf.compute_geopot_agl_ifc,
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
-            domain=gtx.domain(
-                {
-                    dims.CellDim: (0, self._grid.num_cells),
-                    dims.KHalfDim: (0, self._grid.num_levels + 1),
-                }
-            ),
+            domain=(dims.CellDim, dims.KHalfDim),
             fields=(attrs.GEOPOT_AGL_IFC,),
         )
         self.register_provider(geopot_agl_ifc)
