@@ -41,6 +41,18 @@ def set_precision(new_precision: Literal["double", "mixed", "single"]) -> None:
 
 set_precision(precision)
 
+#: Precision of the quantities the ICON Fortran declares REAL(sp) while the rest of the
+#: computation is REAL(wp): ICON's 'lsq_error' (mo_intp_data_strc.f90 83) and, in the WENO
+#: schemes of A. Jocksch's icon-exclaim branch (mo_advection_hflux.f90), the smoothness path
+#: `zlc, z_lsq_smooth, area` (2643, 3246, 3925) and the hybrid's fit residual `lsqe` (3246).
+#: Decision of 2026-09-10: the working precision until the single-precision option (PR #970)
+#: is merged; set it to gtx.float32 to reproduce the Fortran's single-precision arithmetic.
+#: Init-time numpy code stays float64 regardless; the cast happens where the fields are built.
+fortran_sp_float: type[gtx.float32] | type[gtx.float64] = wpfloat
+#: Kind of the Fortran's unsuffixed real literals (e.g. `5e-5`, `1e-10` at mo_advection_hflux.f90
+#: 3574): always REAL(sp), independent of the REAL(sp) *variables* fortran_sp_float stands in for.
+fortran_sp_literal: type[gtx.float32] = gtx.float32
+
 
 def dataclass_scalars_to_wp(self, attributes: list[str] | None = None):
     for name in attributes or []:

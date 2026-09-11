@@ -12,6 +12,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.type_alias as ta
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.tracer_advection.stencils.accumulate_weno_candidate_flux_weights import (
     _WENO_EPS,
@@ -86,29 +87,34 @@ class TestAccumulateWenoCandidateFluxWeights(stencil_tests.StencilTest):
         area_e2c = cell_area[e2c]
         area = np.where(p_cell_rel_idx_dsl == 1, area_e2c[:, 1:2], area_e2c[:, 0:1])
 
-        # smoothness vector (f90 2497-2506): smooth_2/3/6 use raw c4/c5/c6, the rest their squares
-        smooth_2 = 2.0 * (c2 * c4 + c3 * c6)
-        smooth_3 = 2.0 * (c2 * c6 + c3 * c5)
-        smooth_6 = 2.0 * c6 * (c4 + c5)
-        c4_sq = c4 * c4
-        c5_sq = c5 * c5
-        c6_sq = c6 * c6
-        smooth_4 = 2.0 * (c4_sq + c6_sq)
-        smooth_5 = 2.0 * (c5_sq + c6_sq)
-        smooth_1 = c2 * c2 + c3 * c3 + area * (c4_sq + c5_sq + c6_sq)
+        # smoothness vector (f90 2996-3005) in the Fortran's REAL(sp) (zlc, area, the 2e0
+        # literal): smooth_2/3/6 use raw c4/c5/c6, the rest their squares
+        sp = ta.fortran_sp_float
+        zlc_2, zlc_3, zlc_4, zlc_5, zlc_6 = (c.astype(sp) for c in (c2, c3, c4, c5, c6))
+        area_sp = area.astype(sp)
+        smooth_2 = sp(2.0) * (zlc_2 * zlc_4 + zlc_3 * zlc_6)
+        smooth_3 = sp(2.0) * (zlc_2 * zlc_6 + zlc_3 * zlc_5)
+        smooth_6 = sp(2.0) * zlc_6 * (zlc_4 + zlc_5)
+        zlc_4_sq = zlc_4 * zlc_4
+        zlc_5_sq = zlc_5 * zlc_5
+        zlc_6_sq = zlc_6 * zlc_6
+        smooth_4 = sp(2.0) * (zlc_4_sq + zlc_6_sq)
+        smooth_5 = sp(2.0) * (zlc_5_sq + zlc_6_sq)
+        smooth_1 = zlc_2 * zlc_2 + zlc_3 * zlc_3 + area_sp * (zlc_4_sq + zlc_5_sq + zlc_6_sq)
 
-        # f90 2508-2509: w = l_weights_s / (z_lsq_smooth . z_quad_vector_sum + eps)^2
+        # f90 3007-3008: the dot product with real(z_quad_vector_sum) in single precision,
+        # then w = l_weights_s / (smoothness + 1d-20)**2 in double
         beta = (
-            smooth_1 * z_quad_vector_sum_1
-            + smooth_2 * z_quad_vector_sum_2
-            + smooth_3 * z_quad_vector_sum_3
-            + smooth_4 * z_quad_vector_sum_4
-            + smooth_5 * z_quad_vector_sum_5
-            + smooth_6 * z_quad_vector_sum_6
-        )
+            smooth_1 * z_quad_vector_sum_1.astype(sp)
+            + smooth_2 * z_quad_vector_sum_2.astype(sp)
+            + smooth_3 * z_quad_vector_sum_3.astype(sp)
+            + smooth_4 * z_quad_vector_sum_4.astype(sp)
+            + smooth_5 * z_quad_vector_sum_5.astype(sp)
+            + smooth_6 * z_quad_vector_sum_6.astype(sp)
+        ).astype(np.float64)
         w = l_weight_s / (beta + _WENO_EPS) ** 2
 
-        # f90 2510-2511: accumulate onto the incoming weighted sums and weight sum
+        # f90 3009-3010: accumulate onto the incoming weighted sums and weight sum
         z_lsq_weighted_1 = z_lsq_weighted_1 + c1 * w
         z_lsq_weighted_2 = z_lsq_weighted_2 + c2 * w
         z_lsq_weighted_3 = z_lsq_weighted_3 + c3 * w

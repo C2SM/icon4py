@@ -533,7 +533,8 @@ def _check_weno_linear_weights(
     weno_quadratic_state: tracer_advection_states.AdvectionWenoQuadraticState,
 ) -> None:
     """The state's assembly weights must be the configured set: the run-time blend uses them."""
-    expected = weno_least_squares.linear_weights(config.weno_linear_weights)
+    # the state carries the weights in working precision (tracer_advection_states)
+    expected = weno_least_squares.linear_weights(config.weno_linear_weights).astype(ta.wpfloat)
     if not np.array_equal(np.asarray(weno_quadratic_state.l_weights_s), expected):
         raise ValueError(
             f"'weno_quadratic_state' was assembled with linear weights "

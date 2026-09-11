@@ -199,7 +199,8 @@ class AdvectionWenoHybridState:
     The hybrid reconstructs every cell with the full 9-point pseudoinverse of miura3 and
     decides from the residual of that fit whether to keep it or to blend the 27 WENO
     candidates, so it carries both states plus ICON's 'lsq_error' (the transposed weighted
-    design matrix, REAL(sp) in the Fortran, weno_least_squares.compute_lsq_error_quadratic)
+    design matrix, REAL(sp) in the Fortran, i.e. ta.fortran_sp_float here;
+    weno_least_squares.compute_lsq_error_quadratic)
     scattered onto the C2E2C / C2E2C2E2C rows like the pseudoinverses, and the mask of the
     butterfly slots that carry a stencil cell (compute_butterfly_slot_mask).
 
@@ -244,15 +245,15 @@ class AdvectionWenoHybridState:
             )
 
     # lsq_error rows on the direct neighbours, [5 unknowns]; REAL(sp) in the Fortran, see
-    # weno_least_squares.fortran_sp_float
+    # type_alias.fortran_sp_float
     lsq_error_direct: tuple[
-        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], weno_least_squares.fortran_sp_float],
+        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.fortran_sp_float],
         ...,
     ]
 
     # lsq_error rows on the butterfly slots, [5 unknowns]
     lsq_error_butterfly: tuple[
-        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], weno_least_squares.fortran_sp_float],
+        gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2E2CDim], ta.fortran_sp_float],
         ...,
     ]
 

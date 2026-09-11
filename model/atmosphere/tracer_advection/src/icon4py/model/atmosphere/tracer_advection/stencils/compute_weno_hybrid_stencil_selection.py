@@ -21,7 +21,7 @@ accumulated in single precision too, with the coefficients and z_b rounded to si
 precision first (``REAL(sp) :: zlc, lsqe``; ``real(z_b(is))``). Only the comparison is
 in double precision: the single-precision literals are promoted, so the threshold and
 epsilon passed in must be the double values of the single-precision constants. That
-single precision is 'weno_least_squares.fortran_sp_float' here, which currently resolves
+single precision is 'type_alias.fortran_sp_float' here, which currently resolves
 to the working precision (double).
 
 Rows: the 9 stencil positions are split over the C2E2C and C2E2C2E2C offsets as the
@@ -34,10 +34,9 @@ over the direct slots then the butterfly slots, not in the Fortran's stencil ord
 import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
-from icon4py.model.atmosphere.tracer_advection.weno_least_squares import fortran_sp_float
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E2C, C2E2C2E2C, C2E2C2E2CDim, C2E2CDim
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import fortran_sp_float, wpfloat
 
 
 @gtx.field_operator

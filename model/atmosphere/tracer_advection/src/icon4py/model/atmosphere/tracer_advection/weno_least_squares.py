@@ -26,19 +26,8 @@ from typing import Final
 import gt4py.next as gtx
 import numpy as np
 
-import icon4py.model.common.type_alias as ta
 from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-#: Precision of the quantities the Fortran declares REAL(sp): ICON's 'lsq_error'
-#: (mo_intp_data_strc.f90 83), the WENO smoothness vector zlc/z_lsq_smooth
-#: (mo_advection_hflux.f90 2643, 3246) and the hybrid's fit residual lsqe (3246). Decision
-#: of 2026-09-10: working precision until icon4py's single-precision option (PR #970) is
-#: merged; set it to gtx.float32 to reproduce the Fortran's single-precision arithmetic.
-#: The init-time numpy code stays float64 regardless; the cast happens where the fields
-#: are built.
-fortran_sp_float = ta.wpfloat
 
 
 # quadratic lsq_high configuration (mo_interpol_config.f90, lsq_high_ord=2)

@@ -579,7 +579,7 @@ def _construct_weno_hybrid_state(
     )
 
     # (n_cells, 5 unknowns, 9 stencil rows), Fortran stencil order; REAL(sp) in the
-    # Fortran, cast to weno_least_squares.fortran_sp_float at the boundary below
+    # Fortran, cast to type_alias.fortran_sp_float at the boundary below
     lsq_error = weno_least_squares.compute_lsq_error_quadratic(
         stencil_c9=inputs.stencil_c9,
         lsq_moments=inputs.lsq_moments,
@@ -607,7 +607,7 @@ def _construct_weno_hybrid_state(
             gtx.as_field(
                 (dims.CellDim, dims.C2E2CDim),
                 error_direct[:, 0, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
-                dtype=weno_least_squares.fortran_sp_float,
+                dtype=ta.fortran_sp_float,
                 allocator=backend,
             )
             for unk in range(5)
@@ -616,7 +616,7 @@ def _construct_weno_hybrid_state(
             gtx.as_field(
                 (dims.CellDim, dims.C2E2C2E2CDim),
                 error_butterfly[:, 0, unk, :],  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
-                dtype=weno_least_squares.fortran_sp_float,
+                dtype=ta.fortran_sp_float,
                 allocator=backend,
             )
             for unk in range(5)

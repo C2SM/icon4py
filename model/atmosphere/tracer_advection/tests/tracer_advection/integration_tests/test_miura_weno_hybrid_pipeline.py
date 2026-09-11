@@ -57,7 +57,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_quadratic_co
 from icon4py.model.atmosphere.tracer_advection.stencils.select_horizontal_tracer_flux_by_upwind_cell import (
     select_horizontal_tracer_flux_by_upwind_cell,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.testing.fixtures.datatest import backend
 
 from .. import utils
@@ -73,7 +73,7 @@ from .test_miura3_weno_pipeline import (
 THRESHOLD = float(np.float32(5e-5))
 EPS = float(np.float32(1e-10))
 #: the Fortran's REAL(sp) quantities of the residual path, as the port resolves them
-SP = weno.fortran_sp_float
+SP = ta.fortran_sp_float
 UNIT_WEIGHTS = np.ones(N_CAND)
 
 
