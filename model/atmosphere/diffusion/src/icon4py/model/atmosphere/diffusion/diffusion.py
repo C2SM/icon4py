@@ -542,6 +542,14 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
 
+        # See calculate_nabla2_and_smag_coefficients_for_vn: E2C2V neighbors 0,1 carry
+        # the primal_edge_length**2 weight, neighbors 2,3 the vert_vert_length**2 one.
+        primal_edge_mask = data_alloc.field_from_values(
+            dims.E2C2VDim, [1.0, 1.0, 0.0, 0.0], allocator=self._allocator
+        )
+        vert_vert_mask = data_alloc.field_from_values(
+            dims.E2C2VDim, [0.0, 0.0, 1.0, 1.0], allocator=self._allocator
+        )
         self.calculate_nabla2_and_smag_coefficients_for_vn = setup_program(
             backend=backend,
             program=calculate_nabla2_and_smag_coefficients_for_vn,
@@ -553,6 +561,8 @@ class Diffusion:
                 "primal_normal_vert_y": self._edge_params.primal_normal_vert[1],
                 "dual_normal_vert_x": self._edge_params.dual_normal_vert[0],
                 "dual_normal_vert_y": self._edge_params.dual_normal_vert[1],
+                "primal_edge_mask": primal_edge_mask,
+                "vert_vert_mask": vert_vert_mask,
             },
             horizontal_sizes={
                 "horizontal_start": self._edge_start_lateral_boundary_level_5,
