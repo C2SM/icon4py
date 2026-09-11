@@ -153,7 +153,7 @@ def unstructure_reltime(reltime: time.RelativeTime) -> str:
     elif (milliseconds := seconds * 1000) == int(milliseconds):
         return f"{int(milliseconds)} milliseconds"
     else:
-        return f"{int(seconds) * 1_000_000} microseconds"
+        return f"{int(seconds * 1_000_000)} microseconds"
 
 
 @CONV.register_structure_hook
