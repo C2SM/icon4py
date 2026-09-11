@@ -17,7 +17,10 @@
 # warnings) to <workspace>/slurm-<jobid>.err. Inside the compute cage the home directory
 # is hidden and everything but the workspace is read-only, so the job uses a copy of the
 # 'uv' binary staged in weno_data/bin/ (cp -L ~/.local/bin/uv weno_data/bin/) and a
-# TMPDIR inside weno_data if the node's /tmp is not writable.
+# TMPDIR inside weno_data if the node's /tmp is not writable. The venv must carry the
+# cupy of the uenv's CUDA (13.1: 'uv sync ... --extra cuda13', not the 'cuda12' default
+# of install_dependencies.sh; 'ImportError: libcublas.so.12' otherwise), see
+# <workspace>/notes/sandbox.md, "GPU jobs".
 #
 # The job is a pytest run, so the submitter holds the workspace's pytest lock for the job's
 # whole lifetime (notes/workflow.md: one pytest / GT4Py execution at a time), not just for

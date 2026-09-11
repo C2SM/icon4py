@@ -12,15 +12,18 @@ Reference: one ICON run per (ihadv_tracer, itype_hlimit) of A. Jocksch's live cy
 block (icon-exclaim branch transport_ajocksch_capture, built with -Kieee -Mnofma
 -gpu=nofma, nproma = 1, 10 identical levels) on the shared 20 x 22 torus with 5 km
 edges: 100 calls of step_advection at one model date with a uniform 1 m/s wind, air mass 1
-and dt = 999.99999995 s, tracers 1-4 advected with the case's scheme and tracer 5 kept as
-the initial cylinder. Savepoints: 'lsq-coefficients' (init time) and 'advection-init' /
+and dt = 999.99999995 s, tracers 0-3 advected with the case's scheme and tracer 4 kept as
+the initial cylinder (tracers are numbered from 0 here, as in icon4py; the Fortran's
+tracers 1-5 are icon4py's 0-4). Savepoints: 'lsq-coefficients' (init time) and 'advection-init' /
 'advection-exit' with a 'step' key. Registered as
 'test_defs.Experiments.jocksch_cylinder(ihadv_tracer, itype_hlimit)'; the data is not
 downloadable, see the scope note for the test-data layout.
 
 Three levels, each gated at twice the worst agreement measured on gtfn_cpu, dace_cpu,
 gtfn_cpu with FMA contraction off, gtfn_gpu and dace_gpu (santis, GCC 14.3, numpy with
-OpenBLAS, cupy 14 on CUDA 13; the measured values stand next to every gate), not looser:
+OpenBLAS, cupy 14 on CUDA 13; the measured values stand next to every gate; the hybrid
+scheme 132, added after the sweep, was measured on gtfn_cpu, dace_cpu, gtfn_gpu and
+dace_gpu, not with FMA contraction off), not looser:
 a factor two at round-off level is still round-off, and the backends differ from each
 other in the last digit (docs/running_the_jocksch_reference_tests.md has the tables per
 backend):
@@ -33,20 +36,22 @@ L1  every init-time coefficient 'weno_least_squares' produces (9-point stencil, 
 L2  one 'Advection.run' from 'advection-init' step n against 'advection-exit' step n, for
     steps 1, 2, 50, 100, on the granule the driver builds (grid, geometry, interpolation
     and reconstruction coefficients all from icon4py, the grid file being the one ICON
-    read). Tracers 1-4 of the capture are identical by construction (the same initial
+    read). Tracers 0-3 of the capture are identical by construction (the same initial
     cylinder advected with the same scheme, icon-ajocksch/CAPTURE_NOTES.md, 'tracers 1..5
-    = 1 where ...'), so the step is run for tracer 0 only and the exit savepoint's tracers
-    1-3 (tracer and flux) are asserted bit-equal to its tracer 0;
+    = 1 where ...' in the Fortran's numbering), so the step is run for tracer 0 only and
+    the exit savepoint's tracers 1-3 (tracer and flux) are asserted bit-equal to its
+    tracer 0;
 L3  the 100-step trajectory from step 1 with the new tracer fed back, against the exit
     savepoints along the way, to see how round-off compounds: the per-step difference
     grows over the first tens of steps and then saturates. Step 1 -> worst step
     (gtfn_cpu): (2,0) 8.9e-16 -> 8.7e-15 (96), (3,0) 2.1e-14 -> 5.8e-14 (98), (102,0)
     1.1e-16 -> 5.9e-15 (97), (103,0) 2.5e-9 -> 1.3e-8 (12), (3,3) 2.2e-16 -> 4.9e-14
-    (97), (3,4) 2.1e-14 -> 5.9e-14 (97), (2,4) 8.9e-16 -> 1.4e-14 (61); so up to 220x
-    the step-1 level where step 1 is at 1e-16, but the maximum over the 100 steps stays
-    within 2x of the trajectory's own value at step 100 for every case (1.0x .. 1.4x;
-    2.2x for 103, whose worst step is early) and within 2x of its step-50 value except
-    for 103 (3.7x).
+    (97), (3,4) 2.1e-14 -> 5.9e-14 (97), (2,4) 8.9e-16 -> 1.4e-14 (61), (132,0) 2.9e-10
+    -> 7.0e-9 (3); so up to 220x the step-1 level where step 1 is at 1e-16 (24x for
+    132), but the maximum over the 100 steps stays within 2x of the trajectory's own
+    value at step 100 for every case (1.0x .. 1.4x) except 103 (2.2x) and 132 (2.4x),
+    whose worst steps are early, and within 2x of its step-50 value except for 103
+    (3.7x) and 132 (3.8x).
 
 Measured (gtfn_cpu, dace_cpu): schemes 2, 102 and the limited runs of 3 agree to 1e-15 per
 step, the unlimited quadratic scheme 3 to 2e-14 (the SVD round-off of its pseudoinverse,
@@ -88,6 +93,7 @@ import pytest
 
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, weno_least_squares as weno
 from icon4py.model.common import (
+    constants,
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
@@ -95,13 +101,13 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.config import config_io
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry_attributes as geometry_attrs
+from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes,
     interpolation_factory,
     interpolation_fields,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.driver import config as driver_config, driver
 from icon4py.model.testing import (
     config as test_config,
@@ -123,6 +129,7 @@ from ..utils import construct_diagnostic_init_state, construct_prep_adv
 
 _HADV = tracer_advection.HorizontalAdvectionType
 _HLIM = tracer_advection.HorizontalAdvectionLimiter
+_CELL_DOMAIN = h_grid.domain(dims.CellDim)
 
 #: ihadv_tracer -> icon4py scheme (weno_idealized_scope.md, scheme numbering)
 SCHEMES: Final[dict[int, _HADV]] = {
@@ -146,7 +153,7 @@ DATE: Final = "2001-01-01T00:16:40.000"
 NUM_STEPS: Final = 100
 #: the levels of the capture; the columns are identical
 NUM_LEVELS: Final = 10
-#: tracers 1-4 (0-based 0-3) are advected, tracer 5 is the initial cylinder
+#: tracers 0-3 (the Fortran's 1-4) are advected, tracer 4 (the Fortran's 5) is the initial cylinder
 ADVECTED_TRACERS: Final = (0, 1, 2, 3)
 EXPERIMENT_CONFIG: Final = test_config.EXPERIMENT_CONFIG_PATH / "jocksch_cylinder.yaml"
 
@@ -159,16 +166,21 @@ EXPERIMENT_CONFIG: Final = test_config.EXPERIMENT_CONFIG_PATH / "jocksch_cylinde
 #: computed on the backend's array namespace (see its gate).
 L1_TOLERANCE_QUADRATIC_PSEUDOINV: Final = 8e-13
 L1_TOLERANCE_QUADRATIC_CANDIDATES: Final = 3e-12
-#: 3.5e-16 on CPU; this SVD is `interpolation_fields.py` `array_ns.linalg.svd`, cupy on GPU:
-#: 7.4e-15 on gtfn_gpu and dace_gpu (cusolver's SVD against LAPACK's; the scheme-2 flux
-#: built from it agrees with the Fortran to 1.3e-15 on every backend, see L2), gate 2x that
-L1_TOLERANCE_LINEAR_PSEUDOINV: Final = 1.5e-14
+#: per device, 2x the measured value each: 3.5e-16 on CPU (LAPACK's SVD), 7.4e-15 on
+#: gtfn_gpu and dace_gpu (cusolver's: this SVD is `interpolation_fields.py`
+#: `array_ns.linalg.svd`, cupy when the backend allocates on the GPU). One gate for both
+#: would blind the CPU path by 40x. The scheme-2 flux built from the pseudoinverse agrees
+#: with the Fortran to 1.3e-15 on every backend (see L2), so the GPU difference does not
+#: propagate. Provenance: the test recomputes the pseudoinverse with numpy from the same
+#: inputs brought to the host, which is at the CPU value, so the inputs are not the source.
+L1_TOLERANCE_LINEAR_PSEUDOINV: Final[dict[str, float]] = {"cpu": 8e-16, "gpu": 2e-14}
 L1_TOLERANCE_LINEAR_CANDIDATES: Final = 3e-16
 
 #: L2 gates per case, (max |q_py - q_f90|, max |F_py - F_f90| / max |F_f90|) for tracer 0
 #: over the steps 1, 2, 50, 100, and the trajectory gate on max |q_py - q_f90| over all
-#: 100 steps: twice the worst value measured on gtfn_cpu, dace_cpu and gtfn_cpu with
-#: -ffp-contract=off (in brackets, per case), see the module docstring for the ihadv103 case
+#: 100 steps: twice the worst value measured on the five backends gtfn_cpu, dace_cpu,
+#: gtfn_cpu with -ffp-contract=off, gtfn_gpu and dace_gpu (in brackets, per case; 132 was
+#: not run with -ffp-contract=off), see the module docstring for the ihadv103 case
 L2_TOLERANCES: Final[dict[tuple[int, int], tuple[float, float]]] = {
     (2, 0): (2e-15, 3e-15),  # 8.9e-16, 1.3e-15
     (3, 0): (5e-14, 1e-13),  # 2.1e-14, 4.7e-14
@@ -417,12 +429,39 @@ def test_lsq_coefficients_match_reference(
         metadata=interpolation_attributes.attrs,
         exchange=decomposition.single_node_exchange,
     )
-    difference = scale_relative_difference(
-        interpolation.get(interpolation_attributes.LSQ_PSEUDOINV).asnumpy(),
-        reference.pseudoinv(linear),
+    factory_pseudoinv = interpolation.get(interpolation_attributes.LSQ_PSEUDOINV).asnumpy()
+    difference = scale_relative_difference(factory_pseudoinv, reference.pseudoinv(linear))
+    device = "gpu" if device_utils.is_cupy_device(backend) else "cpu"
+    print(f"L1 linear pseudoinverse ({device}): {difference:.3e}")
+    assert difference <= L1_TOLERANCE_LINEAR_PSEUDOINV[device]
+    # provenance of the GPU number: the factory's computation with numpy on the same inputs
+    # (brought to the host) is at the CPU level, so it is cusolver's SVD, not the inputs;
+    # on CPU this is the factory's own computation and must be bit-identical
+    numpy_pseudoinv = interpolation_fields.compute_lsq_coeffs(
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
+        cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
+        c2e2c=c2e2c,
+        cell_owner_mask=data_alloc.as_numpy(
+            grid_manager.decomposition_info.owner_mask(dims.CellDim)
+        ),
+        domain_length=domain_length,
+        domain_height=domain_height,
+        grid_sphere_radius=constants.EARTH_RADIUS,
+        lsq_dim_unk=experiment.config.interpolation.lsq_dim_unk,
+        lsq_dim_c=experiment.config.interpolation.lsq_dim_c,
+        lsq_wgt_exp=experiment.config.interpolation.lsq_wgt_exp,
+        start_idx=grid.start_index(_CELL_DOMAIN(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
+        min_rlcell_int=grid.end_index(_CELL_DOMAIN(h_grid.Zone.HALO_LEVEL_2)),
+        geometry_type=grid.grid_params.geometry_type.value,
+        exchange=decomposition.single_node_exchange,
     )
-    print(f"L1 linear pseudoinverse: {difference:.3e}")
-    assert difference <= L1_TOLERANCE_LINEAR_PSEUDOINV
+    numpy_difference = scale_relative_difference(numpy_pseudoinv, reference.pseudoinv(linear))
+    print(f"L1 linear pseudoinverse, numpy on the same inputs: {numpy_difference:.3e}")
+    assert numpy_difference <= L1_TOLERANCE_LINEAR_PSEUDOINV["cpu"]
+    if device == "cpu":
+        np.testing.assert_array_equal(numpy_pseudoinv, factory_pseudoinv)
 
 
 # ---- L2 ----

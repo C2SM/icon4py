@@ -11,7 +11,7 @@ to `weno_idealized_scope.md` (what is ported, Fortran <-> Python map) and
 
 | module | what it compares | data |
 |---|---|---|
-| `model/atmosphere/tracer_advection/tests/tracer_advection/integration_tests/test_jocksch_reference.py` | **L1** init-time least-squares coefficients, **L2** one `Advection.run` per savepoint (steps 1, 2, 50, 100, tracer 1; tracers 2-4 of the capture are asserted bit-equal to tracer 1, they are the same cylinder advected with the same scheme), **L3** the 100-step trajectory with the new tracer fed back | the serialbox capture, `datatest` mark |
+| `model/atmosphere/tracer_advection/tests/tracer_advection/integration_tests/test_jocksch_reference.py` | **L1** init-time least-squares coefficients, **L2** one `Advection.run` per savepoint (steps 1, 2, 50, 100, tracer 0; tracers 1-3 of the capture are asserted bit-equal to tracer 0, they are the same cylinder advected with the same scheme; tracers are numbered from 0 as in icon4py, so the Fortran's tracers 1-5 are icon4py's 0-4, the last one the initial cylinder), **L3** the 100-step trajectory with the new tracer fed back | the serialbox capture, `datatest` mark |
 | `model/driver/tests/driver/integration_tests/test_jocksch_cylinder.py` | the full Python experiment (driver, 100 steps) against the paper's Table 2 (truncation interval) and the Fortran's printed pair-sum error (relative tolerance) | the grid file only |
 
 The reference test compares fields to the Fortran to round-off; the cylinder test compares
@@ -33,9 +33,9 @@ against the Fortran capture"):
   `testdata/grids/<name>/<name>.nc`; the cylinder test reads the original one directly.
 - `weno_data/gt4py_cache/<backend>[_nofma]/` -- one GT4Py build cache per backend and per
   contraction mode (the cache key ignores both).
-- `weno_data/slurm/` -- logs (`w5b_<backend>_<what>.log` and `w5c_gtfn_cpu_reference.log`
-  from the runs below, `<jobid>.out` from the GPU jobs; their stderr is
-  `<workspace>/slurm-<jobid>.err`).
+- `weno_data/slurm/` -- logs (`w5b_<backend>_<what>.log`, `w5c_gtfn_cpu_reference.log`
+  `w5d_gtfn_cpu_reference.log` and `w5d_dace_cpu_ihadv132.log` from the runs below, `<jobid>.out` from the GPU jobs;
+  their stderr is `<workspace>/slurm-<jobid>.err`).
 - `weno_data/bin/uv` -- a copy of the `uv` binary for the GPU jobs (the compute cage hides
   the home directory, see below).
 
@@ -63,9 +63,12 @@ uv run --group test --frozen pytest -n0 -v -s --backend=gtfn_cpu --benchmark-dis
 
 Wall times with a warm cache: reference test 3:44 (gtfn_cpu), 1:31 (dace_cpu); a cold
 gtfn_cpu build of the reference test 5:47; the cylinder test about 40 min for its eight
-cases on gtfn_cpu. GPU jobs (debug partition): gtfn_gpu 10:43 of pytest with a warm
-stencil cache (job 14:43 from start to leaving the queue), dace_gpu 13:27 cold (job
-17:49); a first-time build fits the 30 min.
+cases on gtfn_cpu. GPU jobs (debug partition): gtfn_gpu 10:43 of pytest from a cold
+stencil cache (job 858221, 14:43 from start to leaving the queue; the cache held only the
+four geometry stencils and the compile-commands entry of the aborted job 858037, which
+had died on the venv's `cupy-cuda12x`, after job 858036 had died on `uv: command not
+found`), 6:57 warm (job 858330, 10:45); dace_gpu 13:27 cold (job 17:49), 3:54 warm (job
+8:53); a first-time build fits the 30 min.
 
 ## Running on a GPU backend
 
@@ -124,8 +127,8 @@ default: it costs a second build cache and does not change any verdict.
 
 ## Measured agreement, reference test
 
-Notation: L2 = (max |q_py - q_f90|, max |F_py - F_f90| / max |F_f90|) of tracer 1 (the
-four advected tracers of the capture are identical, the test checks that);
+Notation: L2 = (max |q_py - q_f90|, max |F_py - F_f90| / max |F_f90|) of tracer 0 (the
+four advected tracers 0-3 of the capture are identical, the test checks that);
 trajectory = max |q_py - q_f90| over the 100 steps (worst step in brackets). The three CPU
 columns agree to the printed digits except where shown; the gates in the module are twice
 the worst value over the five backends (CPU below, GPU in the section after).
@@ -136,14 +139,20 @@ The stencil, moments, row weights, candidate weights, weight set and the
 `weno_least_squares` pseudoinverses are pure numpy, hence the same on every backend. The
 linear full pseudoinverse is the interpolation factory's and its SVD runs on the backend's
 array namespace (`interpolation_fields.py`, `array_ns.linalg.svd`: numpy on CPU, cupy on
-GPU), so its number is per backend.
+GPU), so its number is per backend, and so is its gate (selected by whether the backend
+allocates on the GPU; one gate for both would blind the CPU path by 40x). The test also
+recomputes this pseudoinverse with numpy from the same inputs brought to the host
+(`compute_lsq_coeffs` on the `.asnumpy()` of the geometry fields and the owner mask):
+that value is asserted at the CPU gate on every backend, so the GPU number comes from
+cusolver's SVD, not from the cupy inputs; on CPU it is asserted bit-identical to the
+factory's.
 
 | array | max rel. diff. | gate |
 |---|---|---|
 | stencil_c9, moments, moments_hat, row weights, candidate weights, l_weights_s | 0 (bit-identical) | equality |
 | quadratic pseudoinverse (SVD) | 7.226e-13 | 8e-13 |
 | 27 quadratic candidate pseudoinverses (worst) | 2.5e-12 | 3e-12 |
-| linear pseudoinverse (interpolation factory) | 3.521e-16 (CPU), 7.394e-15 (gtfn_gpu and dace_gpu: cusolver's SVD against LAPACK's) | 1.5e-14 |
+| linear pseudoinverse (interpolation factory) | 3.521e-16 (CPU), 7.394e-15 (gtfn_gpu and dace_gpu: cusolver's SVD against LAPACK's) | 8e-16 (CPU), 2e-14 (GPU) |
 | 3 linear candidate pseudoinverses | 2.711e-16 | 3e-16 |
 
 ### L2 per step, gtfn_cpu = dace_cpu = gtfn_cpu nofma (last digit apart)
@@ -157,7 +166,7 @@ GPU), so its number is per backend.
 | ihadv3_hlim3 | 2.2e-16, 1.9e-16 .. 2.4e-16 | 2.2e-16 .. 4.4e-16, 5.0e-16 .. 7.5e-16 | 3.7e-15, 8.2e-15 | 3.3e-15, 7.5e-15 | 8e-15, 2e-14 |
 | ihadv3_hlim4 | 2.1e-14, 4.7e-14 | 1.8e-14, 4.0e-14 | 3.7e-15, 8.1e-15 | 3.3e-15, 7.3e-15 | 5e-14, 1e-13 |
 | ihadv2_hlim4 | 8.9e-16, 1.3e-15 | 8.9e-16, 1.0e-15 | 4.4e-16, 8.7e-16 | 6.7e-16, 7.0e-16 | 2e-15, 3e-15 |
-| ihadv132_hlim0 (gtfn_cpu only) | 2.9e-10, 6.4e-10 | 2.4e-09, 4.2e-09 | 8.1e-10, 1.3e-09 | 9.2e-10, 2.0e-09 | 5e-9, 9e-9 |
+| ihadv132_hlim0 (gtfn_cpu = dace_cpu; no FMA-off run) | 2.9e-10, 6.4e-10 | 2.4e-09, 4.2e-09 | 8.1e-10, 1.3e-09 | 9.2e-10, 2.0e-09 | 5e-9, 9e-9 |
 
 ### Trajectory (max over 100 steps, worst step)
 
@@ -170,15 +179,17 @@ GPU), so its number is per backend.
 | ihadv3_hlim3 | 4.89e-14 (97) | 4.90e-14 (97) | 4.92e-14 (97) | 1e-13 |
 | ihadv3_hlim4 | 5.94e-14 (97) | 5.93e-14 (97) | 5.95e-14 (97) | 1.2e-13 |
 | ihadv2_hlim4 | 1.40e-14 (61) | 1.39e-14 (61) | 1.44e-14 (61) | 3e-14 |
-| ihadv132_hlim0 | 6.96e-09 (3) | -- | -- | 1.4e-8 |
+| ihadv132_hlim0 | 6.96e-09 (3) | 6.96e-09 (3) | -- | 1.4e-8 |
 
 The per-step difference of the trajectory grows over the first tens of steps and then
 saturates: from the step-1 level it reaches 10x for (2,0), (2,4), (3,0) and (3,4), 56x
 for (102,0) and 220x for (3,3) (the two cases whose step-1 difference is a single ulp,
 1.1e-16 / 2.2e-16), but the maximum over the 100 steps is within 2x of the trajectory's
-own value at step 100 in every case (1.0x .. 1.4x; 2.2x for 103, whose worst step is 12 and
-which does not grow afterwards). The one-step differences (L2) stay at their level, so this
-is round-off accumulation, not a drifting scheme.
+own value at step 100 in every case (1.0x .. 1.4x) except 103 (2.2x, worst step 12) and
+132 (worst 6.96e-9 at step 3: 2.4x its step-100 value, 3.8x its step-50 value, 24x its
+step-1 value 2.9e-10), which do not grow after their early worst step. The one-step
+differences (L2) stay at their level, so this is round-off accumulation, not a drifting
+scheme.
 
 What the numbers mean: 2 and 102 are bit-level agreement (a few ulp of q ~ 1); 3 (and 3 with
 the PD limiter, which passes the unlimited flux through here) carries the 7e-13 SVD
@@ -187,17 +198,20 @@ step because the limiter clips the reconstructed values; 103 is limited by the F
 `REAL(sp)` smoothness indicator (`mo_advection_hflux.f90:2643,3007`), see the module
 docstring, and is the one case where a double-precision port cannot get closer.
 
-The hybrid scheme 132 (added to the test after the CPU sweep; gtfn_cpu, then the two GPU
-backends) sits at the 103 level for the same reason: its WENO branch is the 103 blend with
+The hybrid scheme 132 (added to the test after the CPU sweep: gtfn_cpu, the two GPU
+backends, then dace_cpu for its case alone, `w5d_dace_cpu_ihadv132.log`, 5 passed in
+1:49 with the same digits as gtfn_cpu; not run with FMA contraction off) sits at the 103
+level for the same reason: its WENO branch is the 103 blend with
 the Fortran's `REAL(sp)` smoothness indicator, and its quadratic branch is scheme 3.
 
-### GPU backends (jobs 858221 gtfn_gpu, 858312 dace_gpu)
+### GPU backends (jobs 858221 and 858330 gtfn_gpu, 858312 and 858316 dace_gpu)
 
 The two GPU backends give the same numbers as each other and as the CPU backends to the
 printed digits, with two exceptions, both round-off: the linear pseudoinverse of the
 interpolation factory comes from cupy's (cusolver's) SVD instead of LAPACK's, 7.394e-15
-against 3.5e-16 on CPU (L1 gate raised to 2x that; the scheme-2 flux built from it still
-agrees to 1.3e-15, so the pseudoinverse difference does not propagate); and nvcc's
+against 3.5e-16 on CPU (its own gate, 2e-14, 2x that, the CPU gate staying 8e-16; the
+scheme-2 flux built from it still agrees to 1.3e-15, so the pseudoinverse difference does
+not propagate); and nvcc's
 contraction makes the step-1 tracer of scheme 102 bit-identical to the Fortran (7.5e-42,
 as the CPU build with `-ffp-contract=off`), where GCC's contracted build shows 1.1e-16.
 
@@ -228,17 +242,22 @@ Trajectory (max over 100 steps, worst step):
 | ihadv2_hlim4 | 1.44e-14 (61) | 1.37e-14 (61) | 3e-14 |
 | ihadv132_hlim0 | 6.96e-09 (3) | 6.96e-09 (3) | 1.4e-8 |
 
-Both jobs: 40 passed and the L1 test failed at the old 8e-16 linear-pseudoinverse gate
-(the only gate any GPU number exceeded); with the gate at 1.5e-14 the module passes on
-dace_gpu: job 858316, 41 passed, 3:54 of pytest with the warm cache (job 8:53). What the
-GPU jobs needed beyond the sbatch
-script as first written: the venv had been synced with the `cuda12` extra
-(`cupy-cuda12x`, `ImportError: libcublas.so.12`), while the uenv `icon/26.7:v1` ships
-CUDA 13.1, so the venv was re-synced with `uv sync --frozen --group test --group dev
+Both jobs: 40 passed and the L1 test failed at the then single 8e-16 linear-pseudoinverse
+gate (the only gate any GPU number exceeded); with the per-device gate the module passes
+on dace_gpu (job 858316, 41 passed, 3:54 of pytest with the warm cache, job 8:53) and on
+gtfn_gpu (job 858330, 41 passed, 6:57 of pytest with the warm cache, job 10:45; its L1 line
+prints cusolver's 7.394e-15 next to 3.521e-16 for the numpy recompute on the same inputs). Before 858221, two gtfn_gpu submissions aborted:
+858036 with `uv: command not found` (the compute cage hides the home directory; hence the
+copy in `weno_data/bin/`) and 858037 with `ImportError: libcublas.so.12` (the venv had
+been synced with the `cuda12` extra, `cupy-cuda12x`, while the uenv `icon/26.7:v1` ships
+CUDA 13.1); 858037 left five entries in the gtfn_gpu build cache, the rest of 858221's
+build was cold. The venv was re-synced with `uv sync --frozen --group test --group dev
 --extra all --extra cuda13` (the one-package delta `cupy-cuda12x -> cupy-cuda13x`,
-nothing else changed); the `uv` copy in `weno_data/bin/`; submission from the workspace
-root. The FMA-off GPU variant (`nofma`) was not run: the contracted GPU build already
-reproduces the CPU nofma result where it differs from the contracted CPU one.
+nothing else changed); this changed the shared venv, `install_dependencies.sh` would put
+`cuda12` back, and `--extra cuda12` reverts it: see `notes/sandbox.md`, section "GPU
+jobs", for these three points and the submission from the workspace root. The FMA-off
+GPU variant (`nofma`) was not run: the contracted GPU build already reproduces the CPU
+nofma result where it differs from the contracted CPU one.
 
 ## Measured agreement, cylinder gates (gtfn_cpu)
 
