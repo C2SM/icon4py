@@ -1,4 +1,4 @@
-# WENO idealized experiments — status (2026-09-10 evening)
+# WENO idealized experiments — status (2026-09-11)
 
 Companion to `weno_idealized_scope.md`. Branch `weno_idealized` (icon4py), capture branch
 `transport_ajocksch_capture` (worktree `icon-ajocksch/`). Data under
@@ -46,6 +46,30 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
   Tables, recipes and the GPU-job prerequisites (venv `cuda13` extra for the uenv's CUDA
   13, `uv` copy in `weno_data/bin/`, submit from the workspace root):
   `docs/running_the_jocksch_reference_tests.md`.
+- **`REAL(sp)` shaping and the W3 review fixes (W3b–W3d: `a1fbc5fbb`, `553924346`,
+  `e4f0f57c9`, `7fe68923e`, `0ef828663` and the W3d commits).** The Fortran's `REAL(sp)`
+  quantities resolve to one alias, `common.type_alias.fortran_sp_float` (currently
+  `wpfloat`; `fortran_sp_literal` = `gtx.float32` beside it for the unsuffixed real
+  literals; bound at import, `set_precision()` does not rebind it — to be handled at the
+  #970 merge). The 103/132 smoothness β path runs in it
+  (`stencils/accumulate_weno_candidate_flux_weights.py`, f90 2643/2996-3008: `zlc`, `area`,
+  the `2e0` literal and the dot product with `real(z_quad_vector_sum)` in the sp kind, the
+  `1d-20` and the square in wp). Both cylinder modules (`test_jocksch_cylinder.py`,
+  `test_jocksch_cylinder_jocksch_grid.py`) share `tests/driver/utils.run_cylinder_one_period`.
+  Hybrid selection mask with the residual in sp vs wp (`test_miura_weno_hybrid_pipeline.py`):
+  0 of 880 cells differ on the initial cylinder (step 0, both centres — decided by
+  construction, every stencil there is constant or O(1)) and 0 at every step on the
+  Fortran's evolved `advection-init` fields of `ihadv132_hlim0` (WENO-selected cells
+  78 / 89 / 227 / 624 / 666 of 880 at steps 1 / 2 / 10 / 50 / 100; the residual nearest to
+  the threshold is 3.8e-3 away in relative terms, no cell within 10 float32 eps). FMA
+  observation: `553924346` left every printed error digit of the reference and cylinder
+  runs unchanged on gtfn_cpu but moved the last bit of the ~1e-14 relative mass change of
+  the 103/132 cylinder rows (103: 8.209e-15 → 8.009e-15), because gcc contracts the new
+  expression graph differently; with `-ffp-contract=off` the old and the new stencil are
+  bit-identical end to end (7.208e-15 both; `weno_data/slurm/w3c_row103_{head,oldstencil}[_nofma].log`,
+  `w3c_compare_accumulate.log`: 0 differing elements in every stencil output, contracted or
+  not). "Arithmetic unchanged" in that commit message means the same operations in the
+  same kinds, not the same contraction.
 
 ## Decisions
 
@@ -53,8 +77,8 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
   in its spirit. Shape the code like #970 now (init-time numpy `float64`, boundary cast at
   state construction, config scalars `wpfloat` via `dataclass_scalars_to_wp`, `WP_EPS`,
   literals wrapped) — checklist in the session notes; apply in the driver-integration pass.
-  Fortran `REAL(sp)` quantities (β in 103/132, hybrid residual) go behind one alias that
-  currently resolves to working precision.
+  Fortran `REAL(sp)` quantities (β in 103/132, hybrid residual) sit behind one alias,
+  `type_alias.fortran_sp_float`, that currently resolves to working precision.
 - Milestone 1 = idealized experiments in Python; no granule/binding (that is milestone 3,
   after FFSL).
 

@@ -19,7 +19,8 @@ tracers 1-5 are icon4py's 0-4). Savepoints: 'lsq-coefficients' (init time) and '
 'test_defs.Experiments.jocksch_cylinder(ihadv_tracer, itype_hlimit)'; the data is not
 downloadable, see the scope note for the test-data layout.
 
-Three levels, each gated at twice the worst agreement measured on gtfn_cpu, dace_cpu,
+Three levels, each gated above the worst agreement measured (at least 1.1x for the three
+numpy L1 quantities, 2x for everything backend-dependent) on gtfn_cpu, dace_cpu,
 gtfn_cpu with FMA contraction off, gtfn_gpu and dace_gpu (santis, GCC 14.3, numpy with
 OpenBLAS, cupy 14 on CUDA 13; the measured values stand next to every gate; the hybrid
 scheme 132, added after the sweep, was measured on gtfn_cpu, dace_cpu, gtfn_gpu and
@@ -443,6 +444,8 @@ def test_lsq_coefficients_match_reference(
         cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
         cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
         c2e2c=c2e2c,
+        # the second grid manager's owner mask; the factory takes the geometry's (same on one
+        # node, covered by the CPU equality assertion below)
         cell_owner_mask=data_alloc.as_numpy(
             grid_manager.decomposition_info.owner_mask(dims.CellDim)
         ),

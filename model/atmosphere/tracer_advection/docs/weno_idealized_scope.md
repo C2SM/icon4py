@@ -22,7 +22,7 @@ work is `git diff exclaim/icon-dsl...dacecf46aa` — 15 files under `src/`, noth
 | 3              | `upwind_hflux_miura3` (f90:4378)         | quadratic lsq                             | `QUADRATIC_3RD_ORDER`               |
 | 102            | `upwind_hflux_miura_weno` (f90:1165)     | linear WENO, 3 three-point sub-stencils   | `LINEAR_2ND_ORDER_WENO`             |
 | 103            | `upwind_hflux_miura3_weno` (f90:2532)    | quadratic WENO, 27 six-point sub-stencils | `QUADRATIC_3RD_ORDER_WENO`          |
-| 132            | `upwind_hflux_miura_weno_hyb` (f90:3136) | hybrid, `c_sel` = 5e-5 (paper eq. 6)      | **missing**                         |
+| 132            | `upwind_hflux_miura_weno_hyb` (f90:3136) | hybrid, `c_sel` = 5e-5 (paper eq. 6)      | `QUADRATIC_3RD_ORDER_WENO_HYBRID`   |
 | 202            | `upwind_hflux_miura_cell` (f90:702)      | linear lsq, cell-based kernel             | not planned (schedule variant)      |
 | 203            | `upwind_hflux_miura3_cell` (f90:3815)    | quadratic lsq, cell-based kernel          | not planned (schedule variant)      |
 
@@ -74,6 +74,19 @@ Open question for the order study (W5): with this assembly, uniform smoothness g
 `Σ_j d_j A⁺_j = 3·A⁺_full`, normalised by `Σ_j d_j`; whether that reduces to the plain
 quadratic scheme (paper §2.3 says it does for `d_j = 1`) is exactly what the torus-patch
 study must measure rather than assume.
+
+## Fortran `REAL(sp)` quantities
+
+The Fortran evaluates parts of the WENO schemes in single precision by declaration. The port
+keeps them in one alias, `icon4py.model.common.type_alias.fortran_sp_float` (next to
+`wpfloat`/`vpfloat`; currently `wpfloat`, i.e. double, see the status note's decisions), with
+`fortran_sp_literal` (`gtx.float32`, the kind of unsuffixed real literals such as `5e-5`,
+`1e-10` at f90:3574) beside it:
+
+| Fortran | icon4py |
+| ------- | ------- |
+| `upwind_hflux_miura3_weno`, f90:2643 `REAL(sp) :: zlc(6), z_lsq_smooth(6), area`; f90:2996-3008 smoothness vector, `DOT_PRODUCT(z_lsq_smooth, real(z_quad_vector_sum))`, `1d-20` and the square in `wp` | `stencils/accumulate_weno_candidate_flux_weights.py`: `astype(…, fortran_sp_float)` of the coefficients, the area and the quadrature sums, β formed in that kind, widened to `wpfloat` for the `1e-20` and the square (103 and the WENO branch of 132) |
+| `upwind_hflux_miura_weno_hyb`, f90:3547-3574 fit residual `lsqe` against `lsq_error` (`REAL(sp)`, `mo_intp_data_strc.f90:83`), threshold literals `5e-5`, `1e-10` | `stencils/compute_weno_hybrid_stencil_selection.py` (`fortran_sp_float` for the residual path, `fortran_sp_literal` for the literals); numpy replica `_selection_residual` in `tests/…/test_miura_weno_hybrid_pipeline.py` |
 
 ## The cylinder experiment (live block, `mo_nh_stepping.f90`, hunk after the
 

@@ -32,10 +32,11 @@ against the Fortran capture"):
 - `weno_data/grids/torus_20x22_res5000m[_centred].nc` -- the grid files, linked as
   `testdata/grids/<name>/<name>.nc`; the cylinder test reads the original one directly.
 - `weno_data/gt4py_cache/<backend>[_nofma]/` -- one GT4Py build cache per backend and per
-  contraction mode (the cache key ignores both).
-- `weno_data/slurm/` -- logs (`w5b_<backend>_<what>.log`, `w5c_gtfn_cpu_reference.log`
-  `w5d_gtfn_cpu_reference.log` and `w5d_dace_cpu_ihadv132.log` from the runs below, `<jobid>.out` from the GPU jobs;
-  their stderr is `<workspace>/slurm-<jobid>.err`).
+  contraction mode (the cache key ignores both); the builds live in the hidden
+  `.gt4py_cache/` subdirectory of it, so a plain `ls` shows the directory empty.
+- `weno_data/slurm/` -- logs (`w5b_<backend>_<what>.log`, `w5c_gtfn_cpu_reference.log`,
+  `w5d_gtfn_cpu_reference.log`, `w5d_dace_cpu_ihadv132.log` and `w3d_<what>.log` from the
+  runs below, `<jobid>.out` from the GPU jobs; their stderr is `<workspace>/slurm-<jobid>.err`).
 - `weno_data/bin/uv` -- a copy of the `uv` binary for the GPU jobs (the compute cage hides
   the home directory, see below).
 
@@ -63,12 +64,12 @@ uv run --group test --frozen pytest -n0 -v -s --backend=gtfn_cpu --benchmark-dis
 
 Wall times with a warm cache: reference test 3:44 (gtfn_cpu), 1:31 (dace_cpu); a cold
 gtfn_cpu build of the reference test 5:47; the cylinder test about 40 min for its eight
-cases on gtfn_cpu. GPU jobs (debug partition): gtfn_gpu 10:43 of pytest from a cold
-stencil cache (job 858221, 14:43 from start to leaving the queue; the cache held only the
-four geometry stencils and the compile-commands entry of the aborted job 858037, which
-had died on the venv's `cupy-cuda12x`, after job 858036 had died on `uv: command not
-found`), 6:57 warm (job 858330, 10:45); dace_gpu 13:27 cold (job 17:49), 3:54 warm (job
-8:53); a first-time build fits the 30 min.
+cases on gtfn_cpu. GPU jobs (debug partition; "job" = the job's `sacct` Elapsed, here and
+below): gtfn_gpu 10:43 of pytest from a cold stencil cache (job 858221, 14:43; the cache
+held only the four geometry stencils and the compile-commands entry of the aborted job
+858037, which had died on the venv's `cupy-cuda12x`, after job 858036 had died on `uv:
+command not found`), 6:57 warm (job 858330, 10:11); dace_gpu 13:27 cold (job 858312,
+17:26), 3:54 warm (job 858316, 9:00); a first-time build fits the 30 min.
 
 ## Running on a GPU backend
 
@@ -145,7 +146,8 @@ recomputes this pseudoinverse with numpy from the same inputs brought to the hos
 (`compute_lsq_coeffs` on the `.asnumpy()` of the geometry fields and the owner mask):
 that value is asserted at the CPU gate on every backend, so the GPU number comes from
 cusolver's SVD, not from the cupy inputs; on CPU it is asserted bit-identical to the
-factory's.
+factory's (this equality assertion has run on gtfn_cpu only; the full dace_cpu run of the
+module predates it).
 
 | array | max rel. diff. | gate |
 |---|---|---|
@@ -244,8 +246,8 @@ Trajectory (max over 100 steps, worst step):
 
 Both jobs: 40 passed and the L1 test failed at the then single 8e-16 linear-pseudoinverse
 gate (the only gate any GPU number exceeded); with the per-device gate the module passes
-on dace_gpu (job 858316, 41 passed, 3:54 of pytest with the warm cache, job 8:53) and on
-gtfn_gpu (job 858330, 41 passed, 6:57 of pytest with the warm cache, job 10:45; its L1 line
+on dace_gpu (job 858316, 41 passed, 3:54 of pytest with the warm cache, job 9:00) and on
+gtfn_gpu (job 858330, 41 passed, 6:57 of pytest with the warm cache, job 10:11; its L1 line
 prints cusolver's 7.394e-15 next to 3.521e-16 for the numpy recompute on the same inputs). Before 858221, two gtfn_gpu submissions aborted:
 858036 with `uv: command not found` (the compute cage hides the home directory; hence the
 copy in `weno_data/bin/`) and 858037 with `ImportError: libcublas.so.12` (the venv had
