@@ -17,6 +17,7 @@ from ._common import (
     named_property,
 )
 from .fortran_config import NAMELIST_ATM_FNAME, NAMELIST_MASTER_FNAME, list_to_value
+from .time_utils import relativetime_from_iso8601
 
 
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     "chainable",
     "list_to_value",
     "named_property",
+    "relativetime_from_iso8601",
 ]

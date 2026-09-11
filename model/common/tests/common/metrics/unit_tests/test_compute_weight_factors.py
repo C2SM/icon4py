@@ -9,10 +9,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.metrics import compute_weight_factors as weight_factors
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
@@ -81,17 +83,23 @@ def test_compute_wgtfacq_e_dsl(
     wgtfacq_e_ref = metrics_savepoint.wgtfacq_e()
     wgtfacq_c_ref = metrics_savepoint.wgtfacq_c()
 
-    wgtfacq_e_dsl = weight_factors.compute_wgtfacq_e_dsl(
-        e2c=icon_grid.get_connectivity("E2C").ndarray,
-        z_ifc=metrics_savepoint.z_ifc().ndarray,
-        wgtfacq_c_dsl=wgtfacq_c_ref.ndarray,
-        c_lin_e=interpolation_savepoint.c_lin_e().ndarray,
-        n_edges=icon_grid.num_edges,
-        nlev=icon_grid.num_levels,
-        exchange=decomposition.SingleNodeExchange(),
+    nlev = icon_grid.num_levels
+    wgtfacq_e = gtx.constructors.zeros(
+        gtx.domain({dims.EdgeDim: (0, icon_grid.num_edges), dims.KDim: (nlev - 3, nlev)}),
+        allocator=backend,
+    )
+    cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
+        in_field=wgtfacq_c_ref,
+        coeff=interpolation_savepoint.c_lin_e(),
+        out_field=wgtfacq_e,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_edges,
+        vertical_start=nlev - 3,
+        vertical_end=nlev,
+        offset_provider={"E2C": icon_grid.get_connectivity("E2C")},
     )
 
-    assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_e_dsl), wgtfacq_e_ref.asnumpy())
+    assert test_utils.dallclose(wgtfacq_e.asnumpy(), wgtfacq_e_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -102,8 +110,19 @@ def test_compute_wgtfacq_c_dsl(
 ) -> None:
     wgtfacq_c_ref = metrics_savepoint.wgtfacq_c()
 
-    wgtfacq_c_dsl = weight_factors.compute_wgtfacq_c_dsl(
-        z_ifc=metrics_savepoint.z_ifc().ndarray,
-        nlev=icon_grid.num_levels,
+    nlev = icon_grid.num_levels
+    wgtfacq_c = gtx.constructors.zeros(
+        gtx.domain({dims.CellDim: (0, icon_grid.num_cells), dims.KDim: (nlev - 3, nlev)}),
+        allocator=backend,
     )
-    assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_c_dsl), wgtfacq_c_ref.asnumpy())
+    weight_factors.compute_wgtfacq_c_dsl.with_backend(backend)(
+        z_ifc=metrics_savepoint.z_ifc(),
+        wgtfacq_c=wgtfacq_c,
+        nlev=nlev,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=nlev - 3,
+        vertical_end=nlev,
+        offset_provider={},
+    )
+    assert test_utils.dallclose(wgtfacq_c.asnumpy(), wgtfacq_c_ref.asnumpy())

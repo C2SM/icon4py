@@ -13,7 +13,6 @@ import datetime
 import json
 import logging
 import pathlib
-import re
 import typing
 from typing import Any
 
@@ -42,6 +41,7 @@ from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_states
 from icon4py.model.common.utils import fortran_config
+from icon4py.model.common.utils.time_utils import relativetime_from_iso8601
 
 
 log = logging.getLogger(__name__)
@@ -64,29 +64,6 @@ class ProfilingConfig:
     gt4py_metrics_level: int = gtx_metrics.ALL
     gt4py_metrics_output_file: str = "gt4py_metrics.json"
     skip_first_timestep: bool = True
-
-
-# ISO 8601 duration, restricted to the fixed-length components (weeks, days,
-# hours, minutes, seconds). Years and months are intentionally not matched since
-# their length is not fixed, and this is currently only used for dtime.
-_ISO8601_DURATION = re.compile(
-    r"P(?:(?P<weeks>\d+)W)?(?:(?P<days>\d+)D)?"
-    r"(?:T(?=\d)(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?"
-)
-
-
-def relativetime_from_iso8601(duration: str) -> time.RelativeTime:
-    """
-    Parse an ISO 8601 duration such as 'PT300S' into a 'time.RelativeTime'.
-
-    Only the components convertible to a fixed duration are supported (weeks,
-    days, hours, minutes, seconds).
-    """
-    match = _ISO8601_DURATION.fullmatch(duration)
-    if match is None or not any(match.groups()):
-        raise ValueError(f"Invalid ISO 8601 duration: '{duration}'.")
-    components = {name: float(value) for name, value in match.groupdict().items() if value}
-    return time.RelativeTime(**components)
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
