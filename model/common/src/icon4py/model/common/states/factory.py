@@ -575,7 +575,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
         backend: gtx_typing.Backend | None,
     ) -> None:
         dtypes = field_src.dtypes_for_factory(self._output.values())
-        self._fields = self._allocate(backend, grid.grid, dtypes=dtypes)
+        self._fields = self._allocate(backend, grid, dtypes=dtypes)
         log.debug(f" getting dependencies {self._dependencies.values()} from {field_src}")
         deps = {k: field_src.get_full_precision(v) for k, v in self._dependencies.items()}
         deps.update(self._params)

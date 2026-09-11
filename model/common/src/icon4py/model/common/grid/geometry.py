@@ -870,7 +870,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
             intermediates = _IntermediateFields(
                 self._wrapped_provider,
                 {
-                    name: field_src.get(target, factory.RetrievalType.METADATA)
+                    name: field_src.get_metadata(target)
                     for target, pair in zip(self.fields, self._pairs, strict=True)
                     for name in pair
                 },
