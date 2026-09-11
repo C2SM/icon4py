@@ -228,11 +228,7 @@ def _compute_explicit_terms_and_solver_coefficients(
     theta_v_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
-    rho_iau_increment: fa.CellKField[ta.vpfloat],
-    exner_iau_increment: fa.CellKField[ta.vpfloat],
-    iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
-    is_iau_active: bool,
     n_lev: gtx.int32,
 ) -> tuple[
     fa.CellKHalfField[ta.wpfloat],
@@ -289,15 +285,6 @@ def _compute_explicit_terms_and_solver_coefficients(
         dtime=dtime,
     )
 
-    if is_iau_active:
-        rho_explicit_term, exner_explicit_term = _add_analysis_increments_from_data_assimilation(
-            z_rho_expl=rho_explicit_term,
-            z_exner_expl=exner_explicit_term,
-            rho_incr=rho_iau_increment,
-            exner_incr=exner_iau_increment,
-            iau_wgt_dyn=iau_wgt_dyn,
-        )
-
     return (
         vertical_mass_flux_at_cells_on_half_levels,
         tridiagonal_beta_coeff_at_cells_on_model_levels,
@@ -329,7 +316,6 @@ def _solve_w_at_predictor_step(
     theta_v_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
-    rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     rayleigh_damping_factor: fa.KHalfField[ta.wpfloat],
@@ -362,13 +348,14 @@ def _solve_w_at_predictor_step(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
-        rho_iau_increment=rho_iau_increment,
-        exner_iau_increment=exner_iau_increment,
-        iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
-        is_iau_active=is_iau_active,
         n_lev=n_lev,
     )
+
+    if is_iau_active:
+        exner_explicit_term = exner_explicit_term + iau_wgt_dyn * astype(
+            exner_iau_increment, wpfloat
+        )
 
     w_explicit_term = concat_where(
         1 <= dims.KHalfDim,
@@ -467,13 +454,18 @@ def _compute_thermodynamic_variables_at_predictor_step(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
-        rho_iau_increment=rho_iau_increment,
-        exner_iau_increment=exner_iau_increment,
-        iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
-        is_iau_active=is_iau_active,
         n_lev=n_lev,
     )
+
+    if is_iau_active:
+        rho_explicit_term, exner_explicit_term = _add_analysis_increments_from_data_assimilation(
+            z_rho_expl=rho_explicit_term,
+            z_exner_expl=exner_explicit_term,
+            rho_incr=rho_iau_increment,
+            exner_incr=exner_iau_increment,
+            iau_wgt_dyn=iau_wgt_dyn,
+        )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
@@ -625,7 +617,6 @@ def vertically_implicit_solver_at_predictor_step(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
-        rho_iau_increment=rho_iau_increment,
         exner_iau_increment=exner_iau_increment,
         ddqz_z_half=ddqz_z_half,
         rayleigh_damping_factor=rayleigh_damping_factor,
@@ -712,7 +703,6 @@ def _solve_w_and_update_vertical_fluxes_at_corrector_step(
     theta_v_at_cells_on_half_levels: fa.CellKHalfField[ta.wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     exner_tendency_due_to_slow_physics: fa.CellKField[ta.vpfloat],
-    rho_iau_increment: fa.CellKField[ta.vpfloat],
     exner_iau_increment: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     rayleigh_damping_factor: fa.KHalfField[ta.wpfloat],
@@ -754,13 +744,14 @@ def _solve_w_and_update_vertical_fluxes_at_corrector_step(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
-        rho_iau_increment=rho_iau_increment,
-        exner_iau_increment=exner_iau_increment,
-        iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
-        is_iau_active=is_iau_active,
         n_lev=n_lev,
     )
+
+    if is_iau_active:
+        exner_explicit_term = exner_explicit_term + iau_wgt_dyn * astype(
+            exner_iau_increment, wpfloat
+        )
 
     w_explicit_term = concat_where(
         1 <= dims.KHalfDim,
@@ -894,13 +885,18 @@ def _compute_thermodynamic_variables_at_corrector_step(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
-        rho_iau_increment=rho_iau_increment,
-        exner_iau_increment=exner_iau_increment,
-        iau_wgt_dyn=iau_wgt_dyn,
         dtime=dtime,
-        is_iau_active=is_iau_active,
         n_lev=n_lev,
     )
+
+    if is_iau_active:
+        rho_explicit_term, exner_explicit_term = _add_analysis_increments_from_data_assimilation(
+            z_rho_expl=rho_explicit_term,
+            z_exner_expl=exner_explicit_term,
+            rho_incr=rho_iau_increment,
+            exner_incr=exner_iau_increment,
+            iau_wgt_dyn=iau_wgt_dyn,
+        )
 
     next_rho, next_exner, next_theta_v = _compute_results_for_thermodynamic_variables(
         z_rho_expl=rho_explicit_term,
@@ -1032,7 +1028,6 @@ def vertically_implicit_solver_at_corrector_step(
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
-        rho_iau_increment=rho_iau_increment,
         exner_iau_increment=exner_iau_increment,
         ddqz_z_half=ddqz_z_half,
         rayleigh_damping_factor=rayleigh_damping_factor,
