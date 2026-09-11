@@ -1975,6 +1975,37 @@ class TopographySavepoint(IconSavepoint):
         return self._get_field("smooth_topography", dims.CellDim)
 
 
+class TmxInitSavepoint(IconSavepoint):
+    """
+    Static savepoint of the TMX (AES turbulent mixing) scheme.
+
+    Written once at the initial time step of vdf Compute_diagnostics in mo_vdf_atmo.f90,
+    after Smagorinsky_init has filled mix_len_sq and the Louis scaling factor.
+    """
+
+    def inv_ddqz_z_half(self):
+        return self._get_field("inv_ddqz_z_half", dims.CellDim, dims.KHalfDim)
+
+    def inv_ddqz_z_full_e(self):
+        return self._get_field("inv_ddqz_z_full_e", dims.EdgeDim, dims.KDim)
+
+    def wgtfacq1_c(self):
+        # Top-extrapolation coefficients: unlike `wgtfacq_c` (bottom extrapolation, stored
+        # surface-first, i.e. reversed w.r.t. increasing k, hence flipped in its accessor),
+        # `wgtfacq1_c(jc,k,jb)` with k=1..3 multiplies the full level k counted from the model
+        # top (mo_vertical_grid.f90 ll. 955-968), which already matches icon4py's top-down KDim
+        # orientation. No flip needed.
+        return self._get_field("wgtfacq1_c", dims.CellDim, dims.KDim)
+
+    def wgtfacq1_e(self):
+        # No flip, see `wgtfacq1_c`. Usage in mo_vdf_atmo.f90 (interpolate_normal_velocity_
+        # edge_interface, ll. 1247-1250): vn_ie(je,1,jb) = sum_k wgtfacq1_e(je,k,jb)*vn(je,k,jb).
+        return self._get_field("wgtfacq1_e", dims.EdgeDim, dims.KDim)
+
+    def geopot_agl_ifc(self):
+        return self._get_field("geopot_agl_ifc", dims.CellDim, dims.KHalfDim)
+
+
 class IconTimeStepExitSavepoint(IconSavepoint):
     """End-of-timestep prognostic state, written in perform_nh_timeloop right after
     integrate_nh returns: all physics tendencies applied, time levels swapped."""
@@ -2394,5 +2425,11 @@ class IconSerialDataProvider:
     def from_savepoint_muphys_exit(self, date: str) -> IconMuphysExitSavepoint:
         savepoint = self.serializer.savepoint["aes-graupel-exit"].id[1].date[date].as_savepoint()
         return IconMuphysExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_init(self) -> TmxInitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-init"].id[1].as_savepoint()
+        return TmxInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
