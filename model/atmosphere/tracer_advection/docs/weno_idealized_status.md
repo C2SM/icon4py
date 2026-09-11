@@ -178,8 +178,10 @@ Comparison ("converged" = resid ≤ 1e-8; max |Δ| over the four ω columns):
 | 3 | 1.8e-14 (CFL 0.01; 2.2e-15-2.7e-15 at 0.1-0.5) | 3.4e-12 | 1.8e-14 | 2.2e-12 |
 
 Gates against his tables, converged rows, max over the set: 6e-14 on the `paper` set (3× its
-CFL 0.01 block, 17× / 23× the CFL 0.5 block for scheme 2 / 3) and on the `stability` set
-(measured 4.4e-15 / 3.0e-15 at CFL 0.44); gtfn_cpu measurements only. Stability limit:
+CFL 0.01 block, 17× / 22× the CFL 0.5 block for scheme 2 / 3) and on the `stability` set
+(measured 4.4e-15 / 3.0e-15 at CFL 0.44); gtfn_cpu measurements only. Without his tables (his
+scratch is purgeable) both sets skip with the reason, the `stability` set after its growth
+asserts, and the summaries print n/a. Stability limit:
 identical to our build and to his tables — no growth (Im ω < −1e-14 on converged rows,
 either cell) through CFL 0.42, growth from 0.44: scheme 2
 32 of 33 converged α, min Im ω −3.609e-2 at α 3.644 (0.50: 56/56, −0.2696); scheme 3 15 of
@@ -220,18 +222,27 @@ strip at every CFL (9.8e-15 … 8.1e-13; within 1.1 % of the maximum at CFL 0.01
 from CFL 0.1); cells 694 / 695 (his θ = 30 cells 695 / 696) stay at the θ = 30 level,
 2.2e-16 … 1.05e-15 over CFL 0.01 … 0.5; the median cell 2.2e-16 … 2.1e-15. Only whole strips
 exceed 1e-13: the rows at y = 14.43 / 15.88 km (all 40 cells, containing 293) from CFL 0.1,
-and y = −37.5 / −36.1 km from CFL 0.4 (29 of the 638 cells to CFL 0.3, 58 from 0.4). Our
-build's own `lsq_high_lsq_pseudoinv` (capture) deviates from the median over its triangle
-orientation, relative to the largest entry, by 7.4e-13 (tip-up) / 3.6e-13 (tip-down) in that
-strip and by ~2e-15 / 4e-15 in the rows of 695 / 694 (median cell 1.8e-15 / 2.6e-15).
-icon4py's own θ = 30 field has the same strips: at CFL 0.5 the one-step ω of the strip cells ≥ 4 edge lengths from both seams
-deviates from that of the same-orientation cell 694 / 695 by 1.5e-13 (median), that of the
-cells whose θ = 0 difference is below 3e-15 by 6.5e-15. So his θ = 0 cell sits in the worst
-strip and his θ = 30 cells where the pseudoinverses agree to round-off: one pair of
-implementations reproduces the whole θ = 0 / θ = 30 contrast, and his θ = 0 and θ = 30
-quadratic tables fit one build. The strip pattern, a per-cell property of the
-pseudoinverse, supports the SVD attribution of the θ = 0 gap; the direct test (injecting the
-capture's pseudoinverse into the icon4py granule, Next item 4) is still open.
+and y = −37.5 / −36.1 km from CFL 0.4 (29 of the 638 cells to CFL 0.3, 58 from 0.4). The
+−37.5 / −36.1 km rows are a strip at every CFL, uniform along the row (6.0e-14 at CFL 0.2,
+9.98e-14 at 0.3, 1.36e-13 at 0.4; within 0.9 % over their 29 interior cells from CFL 0.1),
+that crosses 1e-13 at 0.4. Our build's own `lsq_high_lsq_pseudoinv` (capture) deviates from
+the median over its triangle orientation, relative to the largest entry, by 7.4e-13 (tip-up) /
+3.6e-13 (tip-down) in the strip of 293 and by ~2e-15 / 4e-15 in the rows of 695 / 694 (median
+cell 1.8e-15 / 2.6e-15). icon4py's own θ = 0 field shows the 14.43 km strip too: against the
+strip-free value (the median over the same-orientation interior cells outside the two strips;
+normalised as above, max over α) its strip cells deviate by up to 2.8e-13, our build's by up
+to 5.3e-13 at CFL 0.5, and at cell 293 the two deviate in opposite directions (Im ω̃ +1.1e-11
+vs −2.1e-11 at α = π, where |q_new/q_now| = 0.025). So the strips are where both SVDs round
+off, and the θ = 0 gap is their difference (`weno_data/w4c_review/polish2_strips.py`).
+icon4py's own θ = 30 field has the same strips: at CFL 0.5 the one-step ω of the strip cells
+≥ 4 edge lengths from both seams deviates from that of the same-orientation cell 694 / 695
+(normalised as above, max over the 59 α) by 1.5e-13 (median), that of the cells whose θ = 0
+difference is below 3e-15 by 6.5e-15. So his θ = 0 cell sits in the worst strip and his θ = 30
+cells where the pseudoinverses agree to round-off: one pair of implementations reproduces the
+whole θ = 0 / θ = 30 contrast, and his θ = 0 and θ = 30 quadratic tables fit one build. The
+strip pattern, a per-cell property of the pseudoinverse, supports the SVD attribution of the
+θ = 0 gap; the direct test (injecting the capture's pseudoinverse into the icon4py granule,
+Next item 4) is still open.
 
 Rerun (from the workspace root; each job waits ≤ 1500 s for the lock):
 
@@ -406,7 +417,10 @@ numpy replica that reproduces our Fortran build's 103 table on his grid to 4.3e-
 at every cell, the phase average A = −(δ/2)(1 − 2 CFL) to 0.1 % (optimised) / 0.3 % (ones)
 over CFL 0.01-0.4, and an optimised / ones ratio 3.903 against δ's 3.898. The single-cell rows
 with Im ω̃ < 0 in that table are a phase artefact (the phase-averaged one-step Im ω̃ is
-positive in all rows). The type-VI candidates are assembled as
+positive in all rows). Growth over many steps is a separate matter: the numpy replica and the
+Fortran (W6-G, `icon-ajocksch` commit `96e64fe27a`, `CAPTURE_NOTES.md` "WENO multi-step
+stability (W6-G)") show a multi-step grid-scale instability of 103 at θ = 0; limits and cause
+are under review. The type-VI candidates are assembled as
 `A⁺_full − Σ_{i∈group} d_i A⁺_i` (`weno_least_squares.compute_weno_pseudoinverse_quadratic`,
 f90 2670-2680). For smooth data every fitted candidate reproduces the derivatives, so a
 type-VI candidate returns `(1 − S)` times them, with `S` the group's weight sum
@@ -492,10 +506,11 @@ Tables: `weno_data/slurm/w6s_analysis.py <gtfn_cpu json> <dace_gpu json>` (numpy
 2. Python cylinder on Andreas' grid for all Table 2 rows incl. hybrid, UNITY, the four
    limiter rows; compare with `reference/jocksch_grid/`.
 3. W5 / W6 follow-ups: gates on all backends (`dace_gpu` > `dace_cpu` > `gtfn_gpu`). The 103
-   order study is done (W6, section above). Open: the Fortran confirmation of the multi-step
-   instability seen in the numpy replica of 103 (W6-G, running on the Fortran tree); the
-   pseudoinverse injection test (item 4); the 103 launch-count restructuring (27 candidates ×
-   2 launches) before any performance claim.
+   order study is done (W6, section above), and so is the Fortran confirmation of the
+   multi-step instability seen in the numpy replica of 103 (W6-G, committed on the Fortran
+   tree, `icon-ajocksch` `96e64fe27a`; its review is running). Open: the pseudoinverse
+   injection test (item 4); the 103 launch-count restructuring (27 candidates × 2 launches)
+   before any performance claim.
 4. Dispersion relation: done at θ = 0 (W4a, W4b capture) and θ = 30° (W4c, section
    above). Open: the provenance of his `dispersion_ffsl_{0,30}[_inexact].txt` (none of
    schemes 2, 3, 5; question for Andreas), and the direct test that the θ = 0
