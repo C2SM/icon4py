@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 import pytest
 from numpy import testing as np_testing
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
@@ -778,14 +778,17 @@ def test_factory_geopot_agl_ifc(
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest
+@_aes_physics_experiment
 def test_factory_height_above_ground(
+    data_provider: serialbox.IconSerialDataProvider,
     grid_savepoint: serialbox.IconGridSavepoint,
-    metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: test_defs.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    field_ref = metrics_savepoint.z_mc().asnumpy() - metrics_savepoint.z_ifc().asnumpy()[:, -1:]
+    geopot_agl_ifc = data_provider.from_savepoint_tmx_init().geopot_agl_ifc().asnumpy()
+    # ICON's full levels are the midpoints of its half levels (mo_vertical_grid.f90)
+    field_ref = 0.5 * (geopot_agl_ifc[:, :-1] + geopot_agl_ifc[:, 1:]) / constants.GRAV
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
