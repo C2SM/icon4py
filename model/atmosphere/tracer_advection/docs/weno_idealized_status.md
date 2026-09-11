@@ -396,8 +396,9 @@ this is the Fortran's behaviour).** Checked at coefficient level by the W6 revie
 functions on a torus patch at edge lengths 1 and 1/2: the type-VI candidates return (1 − S)
 times the derivatives of a quadratic to 3.5e-14, asserted to 1e-8; δ on a Gaussian core
 −1.6132e-3 / −1.6191e-3 OPTIMIZED and −4.1627e-4 / −4.1638e-4 UNITY at h/r_e = 1/6 / 1/12,
-asserted within 1 % of −1.6214e-3 / −4.1647e-4 and of each other; the test fails if the
-assembly is changed, on purpose). Fortran-side confirmation (W6-F, reviewed and accepted):
+asserted within 1 % of −1.6214e-3 / −4.1647e-4 and of each other, their h²-extrapolation
+−1.62107e-3 / −4.16409e-4 within 0.1 % of the closed form; the test fails if the assembly is
+changed, on purpose). Fortran-side confirmation (W6-F, reviewed and accepted):
 icon-ajocksch commit `3b86566381`, `CAPTURE_NOTES.md` "WENO dispersion (W6-F)": in his Fortran
 the one-step α² damping coefficient A of 103 at CFL 0.01 is 7.83e-4 (optimised) / 1.98e-4 (all
 ones) against ~1e-8 for scheme 3. The damping is a property of 103, not of the sampled cell: a
@@ -433,10 +434,16 @@ gtfn_cpu slopes. 103 OPT, 103 UNITY and 132 document the deficiency of the type-
 construction above rather than an order of accuracy: they are gated on the local rate
 between the last two members in the results file, ± 0.1 around the rate measured for that
 member pair (x2-x4, x4-x8, x8-x16), every band below the third-order one, so the gate tells
-first from third order; their (1, 2, 4) fit is printed only. `ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY=1`
+first from third order (it catches a return to third order or a shifted transition, not the
+value of δ); and on the ratio of the last member's L2 error to scheme 3's at the same factor,
+± 5 % around the measured one (x4 / x8 / x16: OPT 1.105 / 4.299 / 17.09, UNITY 1.027 / 1.805 /
+5.038; 132 1.518 / 3.862 at x4 / x8), which on the finest members follows the size of the δ
+diffusion (a 6 % larger x16 OPT error fails it). δ itself is pinned by the unit test. Their
+(1, 2, 4) fit is printed only. `ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY=1`
 passes on both results files without a rerun (gtfn_cpu all rows, last pair x2-x4; dace_gpu
 with `ICON4PY_WENO_ORDER_STUDY_ROWS=miura3,miura3_weno_opt,miura3_weno_unity,miura3_weno_hybrid`,
-last pair x8-x16, x4-x8 for 132; logs `weno_data/slurm/w6fix_checkonly_<backend>.log`).
+last pair x8-x16, x4-x8 for 132; logs `weno_data/slurm/w6fix_checkonly_<backend>.log`, with
+the ratio gate `weno_data/slurm/polish_checkonly_<backend>.log`).
 
 **Rerun** (santis, husk; one debug job per row, chained; each job takes and releases
 `weno_data/pytest.lock` itself, so it survives the submitting agent). Workspace script
