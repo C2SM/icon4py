@@ -16,6 +16,9 @@ env:
   ICON4PY_ENABLE_GRID_DOWNLOAD: false
   ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
   PYTEST_ADDOPTS: "--durations=0"
+  # gt4py formats generated C++ with clang-format when one is installed; on large generated
+  # programs that can use enough memory to kill the runner.
+  CLANG_FORMAT_EXECUTABLE: /bin/false
 
 jobs:
   test-model:
