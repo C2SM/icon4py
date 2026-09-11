@@ -38,7 +38,7 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
     import gt4py.next.typing as gtx_typing
 
@@ -196,6 +196,8 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     provider = factory.ProgramFieldProvider(
         func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
+    height_coordinate_source.with_metadata({"output_f": {"standard_name": "output_f", "units": ""}})
+    height_coordinate_source.register_provider(provider)
     provider(
         field_name="output_f",
         field_src=height_coordinate_source,
@@ -206,6 +208,73 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
     x = provider.fields["output_f"]
     assert isinstance(x, gtx.Field)
     assert dims.CellDim in x.domain.dims
+
+
+def _average_downwards(z_ifc: data_alloc.NDArray) -> data_alloc.NDArray:
+    return 0.5 * (z_ifc[:, 1:-1] + z_ifc[:, 2:])
+
+
+def _program_provider(domain: dict) -> factory.FieldProvider:
+    return factory.ProgramFieldProvider(
+        func=vertical_ops.average_two_vertical_levels_downwards_on_cells,
+        domain=domain,
+        fields={"average": "output_f"},
+        deps={"input_field": "height_coordinate"},
+        do_exchange=False,
+    )
+
+
+def _field_operator_provider(domain: dict) -> factory.FieldProvider:
+    return factory.EmbeddedFieldOperatorProvider(
+        func=vertical_ops.average_level_plus1_on_cells.with_backend(None),
+        domain=domain,
+        fields={"average": "output_f"},
+        deps={"half_level_field": "height_coordinate"},
+        do_exchange=False,
+    )
+
+
+def _numpy_provider(domain: dict) -> factory.FieldProvider:
+    return factory.NumpyDataProvider(
+        func=_average_downwards,
+        domain=domain,
+        fields=("output_f",),
+        deps={"z_ifc": "height_coordinate"},
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "make_provider", [_program_provider, _field_operator_provider, _numpy_provider]
+)
+def test_provider_vertical_extent_is_declared_domain(
+    height_coordinate_source: SimpleFieldSource,
+    make_provider: Callable[[dict], factory.FieldProvider],
+) -> None:
+    assert height_coordinate_source.vertical_grid is not None
+    num_levels = height_coordinate_source.vertical_grid.num_levels
+    provider = make_provider(
+        {
+            dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
+            dims.KDim: (v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1), k_domain(v_grid.Zone.BOTTOM)),
+        }
+    )
+    height_coordinate_source.with_metadata({"output_f": {"standard_name": "output_f", "units": ""}})
+    height_coordinate_source.register_provider(provider)
+    provider(
+        field_name="output_f",
+        field_src=height_coordinate_source,
+        backend=height_coordinate_source.backend,
+        grid=height_coordinate_source,
+        exchange=decomposition.SingleNodeExchange(),
+    )
+    x = provider.fields["output_f"]
+    assert isinstance(x, gtx.Field)
+    assert x.domain[dims.CellDim].unit_range == gtx.common.UnitRange(
+        0, height_coordinate_source.grid.num_cells
+    )
+    assert x.domain[dims.KDim].unit_range == gtx.common.UnitRange(1, num_levels)
+    assert np.all(x.asnumpy() != 0.0)
 
 
 @pytest.mark.datatest
