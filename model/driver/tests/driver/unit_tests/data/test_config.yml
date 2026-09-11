@@ -77,7 +77,6 @@ driver:
     value: 5
   output_path: output
   apply_extra_second_order_divdamp: false
-  do_prep_adv: false
   diffuse_before_time_loop: false
   vertical_cfl_threshold: 0.85
   ndyn_substeps: 5

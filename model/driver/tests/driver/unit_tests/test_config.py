@@ -80,19 +80,6 @@ def test_empty_modeltimestep_falls_back_to_dtime() -> None:
     assert config.dtime == datetime.timedelta(seconds=120)
 
 
-# ltransport is true for MCH_CH_R04B09, EXCLAIM_APE_AES and Weisman-Klemp, false for
-# the dry testcases (JW, GAUSS3D).
-@pytest.mark.parametrize("ltransport", [True, False])
-def test_do_prep_adv_from_ltransport(ltransport: bool) -> None:
-    atm_dict, master_dict = _make_dicts(
-        {"dtime": 10.0, "modeltimestep": "  ", "ltransport": ltransport}
-    )
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
-    assert config.do_prep_adv is ltransport
-
-
 # The extra diffusion call before the time loop is only made for real data runs, which
 # are the ones that are not a testcase. MCH_CH_R04B09 is the only one.
 @pytest.mark.parametrize("ltestcase", [True, False])
