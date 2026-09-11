@@ -12,6 +12,7 @@ from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
+from icon4py.model.common.math.value_of_size import value_of_size_on_half_levels_wp
 
 
 @gtx.field_operator
@@ -143,7 +144,7 @@ def _init_nabla2_factor_in_upper_damping_zone(
         ((1 + nshift) <= dims.KHalfDim)
         & (dims.KHalfDim < (nshift + end_index_of_damping_layer + 1)),
         physical_heights,
-        0.0,
+        value_of_size_on_half_levels_wp(0.0, physical_heights),
     )
     diff_multfac_n2w = (
         1.0 / 12.0 * ((height_sliced - heights_nrd_shift) / (heights_1 - heights_nrd_shift)) ** 4

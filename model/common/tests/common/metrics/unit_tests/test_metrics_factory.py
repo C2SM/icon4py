@@ -175,7 +175,6 @@ def test_factory_ddqz_full_e(
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest
-@pytest.mark.uses_concat_where
 def test_factory_ddqz_z_half(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
@@ -394,7 +393,6 @@ def test_factory_exner_w_explicit_weight_parameter(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 def test_factory_exner_exfac(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -416,7 +414,6 @@ def test_factory_exner_exfac(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_factory_pressure_gradient_fields(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -479,7 +476,6 @@ def test_factory_horizontal_mask_for_3d_divdamp(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.embedded_remap_error
 @pytest.mark.cpu_only  # TODO(halungge): slow on GPU due to vwind_impl_wgt computation)
 @pytest.mark.datatest
 def test_factory_zdiff_gradp(
@@ -606,7 +602,6 @@ def test_vertical_coordinates_on_half_levels(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_compute_wgtfac_c(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -628,7 +623,6 @@ def test_compute_wgtfac_c(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_factory_compute_diffusion_mask_and_coef(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -651,7 +645,6 @@ def test_factory_compute_diffusion_mask_and_coef(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_factory_compute_diffusion_intcoeff_and_vertoffset(
     grid_savepoint: serialbox.IconGridSavepoint,

@@ -49,6 +49,10 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants, RayleighType
+from icon4py.model.common.math.value_of_size import (
+    value_of_size_on_cells_on_half_levels_vp,
+    value_of_size_on_cells_on_half_levels_wp,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -193,7 +197,10 @@ def solve_w(
             dtime=dtime,
             cpd=cpd,
         ),
-        (broadcast(vpfloat("0.0"), (dims.CellDim,)), broadcast(wpfloat("0.0"), (dims.CellDim,))),
+        (
+            value_of_size_on_cells_on_half_levels_vp(vpfloat("0.0"), z_alpha),
+            value_of_size_on_cells_on_half_levels_wp(wpfloat("0.0"), z_w_expl),
+        ),
     )
     next_w = concat_where(
         dims.KHalfDim < last_inner_level,
@@ -259,14 +266,14 @@ def _vertically_implicit_solver_at_predictor_step(
     )
 
     w_explicit_term = concat_where(
-        1 <= dims.KHalfDim,
+        dims.KHalfDim == 0,
+        wpfloat("0.0"),
         _compute_w_explicit_term_with_predictor_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
             nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             dtime=dtime,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )
 
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
@@ -276,7 +283,7 @@ def _vertically_implicit_solver_at_predictor_step(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        value_of_size_on_cells_on_half_levels_wp(wpfloat("0.0"), current_w),
     )
 
     (
@@ -293,9 +300,9 @@ def _vertically_implicit_solver_at_predictor_step(
         dtime=dtime,
     )
     tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
-        dims.KHalfDim < n_lev,
+        dims.KHalfDim == n_lev,
+        vpfloat("0.0"),
         tridiagonal_alpha_coeff_at_cells_on_half_levels,
-        broadcast(vpfloat("0.0"), (dims.CellDim,)),
     )
 
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
@@ -601,7 +608,8 @@ def _vertically_implicit_solver_at_corrector_step(
         z_theta_v_fl_e=theta_v_flux_at_edges_on_model_levels,
     )
     w_explicit_term = concat_where(
-        1 <= dims.KHalfDim,
+        dims.KHalfDim == 0,
+        wpfloat("0.0"),
         _compute_w_explicit_term_with_interpolated_predictor_corrector_advective_tendency(
             current_w=current_w,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
@@ -611,7 +619,6 @@ def _vertically_implicit_solver_at_corrector_step(
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )
     vertical_mass_flux_at_cells_on_half_levels = concat_where(
         (1 <= dims.KHalfDim) & (dims.KHalfDim < n_lev),
@@ -620,7 +627,7 @@ def _vertically_implicit_solver_at_corrector_step(
             -astype(contravariant_correction_at_cells_on_half_levels, wpfloat)
             + exner_w_explicit_weight_parameter * current_w
         ),
-        broadcast(wpfloat("0.0"), (dims.CellDim,)),
+        value_of_size_on_cells_on_half_levels_wp(wpfloat("0.0"), current_w),
     )
     (
         tridiagonal_beta_coeff_at_cells_on_model_levels,
@@ -636,9 +643,9 @@ def _vertically_implicit_solver_at_corrector_step(
         dtime=dtime,
     )
     tridiagonal_alpha_coeff_at_cells_on_half_levels = concat_where(
-        dims.KHalfDim < n_lev,
+        dims.KHalfDim == n_lev,
+        vpfloat("0.0"),
         tridiagonal_alpha_coeff_at_cells_on_half_levels,
-        broadcast(vpfloat("0.0"), (dims.CellDim,)),
     )
     (rho_explicit_term, exner_explicit_term) = _compute_explicit_part_for_rho_and_exner(
         rho_nnow=current_rho,

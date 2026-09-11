@@ -22,7 +22,6 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from . import test_dycore_utils
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
 class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
     PROGRAM = apply_divergence_damping_and_update_vn

@@ -53,7 +53,6 @@ from ..utils import (
 # ------------------------------------
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
@@ -97,6 +96,10 @@ from ..utils import (
         ),
     ],
 )
+# `embedded_remap_error`: `compute_ppm4gpu_courant_number` shifts `p_cellmass_now` by up to
+# `KHalfDim + 3.5`; on embedded the shifted intermediate's vertical domain shrinks below the
+# program's output domain and the assignment goes out of bounds.
+@pytest.mark.embedded_remap_error
 def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
     date,
     even_timestep,

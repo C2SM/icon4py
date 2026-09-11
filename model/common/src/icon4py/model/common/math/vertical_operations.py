@@ -88,13 +88,9 @@ def with_boundaries_on_half_levels_on_cells(
     Each branch is evaluated only on its own region, so vertical (``Koff``) shifts in the
     arguments need to be in bounds only within that region.
     """
-    result = concat_where(
-        (dims.KHalfDim > 0) & (dims.KHalfDim < nlev),
-        interior,
-        0.0,
+    return concat_where(
+        dims.KHalfDim == 0, top, concat_where(dims.KHalfDim == nlev, bottom, interior)
     )
-    result = concat_where(dims.KHalfDim == 0, top, result)
-    return concat_where(dims.KHalfDim == nlev, bottom, result)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

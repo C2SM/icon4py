@@ -28,7 +28,6 @@ from .test_update_theta_and_exner import update_theta_and_exner_numpy
 
 
 @pytest.mark.skip_value_error
-@pytest.mark.embedded_remap_error
 class TestApplyDiffusionToThetaAndExner(stencil_tests.StencilTest):
     PROGRAM = apply_diffusion_to_theta_and_exner
     OUTPUTS = ("theta_v", "exner")

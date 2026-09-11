@@ -10,7 +10,6 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -107,7 +106,6 @@ class TestComputeTangentialWindWpFullLevels(stencil_tests.StencilTest):
         return tangential_wind_input_data(data_alloc, grid, on_half_levels=False)
 
 
-@pytest.mark.embedded_remap_error
 class TestComputeTangentialWind(stencil_tests.StencilTest):
     """Variable-precision variant used by the dycore velocity advection."""
 

@@ -20,7 +20,6 @@ from icon4py.model.testing.fixtures.datatest import backend_like
 from icon4py.model.testing.fixtures.stencil_tests import data_alloc, grid, grid_manager
 
 
-@pytest.mark.embedded_remap_error
 class TestNabla2OnCell(stencil_tests.StencilTest):
     PROGRAM = compute_nabla2_on_cell
     OUTPUTS = ("nabla2_psi_c",)
@@ -51,7 +50,6 @@ class TestNabla2OnCell(stencil_tests.StencilTest):
         )
 
 
-@pytest.mark.embedded_remap_error
 class TestNabla2OnCellK(stencil_tests.StencilTest):
     PROGRAM = compute_nabla2_on_cell_k
     OUTPUTS = ("nabla2_psi_c",)
