@@ -151,7 +151,7 @@ variables:
     # that don't run many tests.
     NUM_PROCESSES: 32
     OMP_NUM_THREADS: 8
-    GT4PY_BUILD_JOBS: 12
+    GT4PY_BUILD_JOBS: 8
     GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
