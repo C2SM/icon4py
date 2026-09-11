@@ -29,17 +29,23 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
 - **Scheme gaps ported** (commits `92a4cb3d8`, `6dbaa6496`, `84d71fc7f`, `f50ae5db1`,
   reviewed, no number-changing defects): weight sets `OPTIMIZED/HAND_TUNED/UNITY`, hybrid
   132, cell-local PD limiter (value 104, orientation-correct). Not yet wired into the driver.
-- **Tests vs capture (W5, W5b).** Serialbox `step` key and lsq-coefficients reader, capture
-  registered as a local experiment, L1/L2/trajectory test module (`c07baf6a4`), FMA
-  conftest, Table 2 / Fortran gates, GPU sbatch script (`e49fdbd0b`, verified by W5b).
-  Measured on gtfn_cpu and dace_cpu (identical to the printed digits): L1 bit-identical
-  except the SVD pseudoinverses (7e-13 / 2.5e-12); L2 per step 1e-15 for 2 and 102, 2e-14
-  for 3, 2.5e-9 .. 3.5e-9 for 103 (the Fortran's `REAL(sp)` smoothness indicator);
-  trajectories stay within one order of magnitude of the step-1 level. FMA off changes the
-  last digit only (and makes the 102 step-1 tracer bit-identical); kept as tooling, not
-  default. All eight cylinder gates pass (1e-11 .. 3e-10 to the Fortran pair sum, 3.5e-9
-  for 103). Tables and recipes: `docs/running_the_jocksch_reference_tests.md`. GPU
-  backends: see that note.
+- **Tests vs capture (W5, W5b, W5c).** Serialbox `step` key and lsq-coefficients reader,
+  capture registered as a local experiment, L1/L2/trajectory test module (`c07baf6a4`),
+  FMA conftest, Table 2 / Fortran gates, GPU sbatch script (`e49fdbd0b`, verified by W5b;
+  review fixes and the hybrid 132 case in W5c). Measured on gtfn_cpu, dace_cpu, gtfn_gpu
+  and dace_gpu (identical to the printed digits, GPU jobs 858221 / 858312): L1
+  bit-identical except the SVD pseudoinverses (7e-13 / 2.5e-12; the interpolation
+  factory's linear one 3.5e-16 on CPU, 7.4e-15 with cupy's SVD on GPU, harmless
+  downstream); L2 per step (tracer 1; tracers 2-4 asserted bit-equal) 1e-15 for 2 and
+  102, 2e-14 for 3, 2.5e-9 .. 3.5e-9 for 103 and 2.4e-9 for 132 (the Fortran's
+  `REAL(sp)` smoothness indicator); trajectories grow over the first tens of steps and
+  saturate (up to 220x the step-1 level where step 1 is one ulp, within 2x of the
+  step-100 value everywhere). FMA off changes the last digit only (and makes the 102
+  step-1 tracer bit-identical, as the GPU builds do); kept as tooling, not default. All
+  eight cylinder gates pass (1e-11 .. 3e-10 to the Fortran pair sum, 3.5e-9 for 103).
+  Tables, recipes and the GPU-job prerequisites (venv `cuda13` extra for the uenv's CUDA
+  13, `uv` copy in `weno_data/bin/`, submit from the workspace root):
+  `docs/running_the_jocksch_reference_tests.md`.
 
 ## Decisions
 

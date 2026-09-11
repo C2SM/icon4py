@@ -18,11 +18,12 @@ the initial cylinder. Savepoints: 'lsq-coefficients' (init time) and 'advection-
 'test_defs.Experiments.jocksch_cylinder(ihadv_tracer, itype_hlimit)'; the data is not
 downloadable, see the scope note for the test-data layout.
 
-Three levels, each gated at twice the worst agreement measured on gtfn_cpu, dace_cpu and
-gtfn_cpu with FMA contraction off (santis, GCC 14.3, numpy with OpenBLAS; the measured
-values stand next to every gate), not looser: a factor two at round-off level is still
-round-off, and the backends differ from each other in the last digit
-(docs/running_the_jocksch_reference_tests.md has the tables per backend):
+Three levels, each gated at twice the worst agreement measured on gtfn_cpu, dace_cpu,
+gtfn_cpu with FMA contraction off, gtfn_gpu and dace_gpu (santis, GCC 14.3, numpy with
+OpenBLAS, cupy 14 on CUDA 13; the measured values stand next to every gate), not looser:
+a factor two at round-off level is still round-off, and the backends differ from each
+other in the last digit (docs/running_the_jocksch_reference_tests.md has the tables per
+backend):
 
 L1  every init-time coefficient 'weno_least_squares' produces (9-point stencil, moments,
     row weights, the full quadratic and linear pseudoinverses, the 27 + 3 candidate
@@ -158,8 +159,10 @@ EXPERIMENT_CONFIG: Final = test_config.EXPERIMENT_CONFIG_PATH / "jocksch_cylinde
 #: computed on the backend's array namespace (see its gate).
 L1_TOLERANCE_QUADRATIC_PSEUDOINV: Final = 8e-13
 L1_TOLERANCE_QUADRATIC_CANDIDATES: Final = 3e-12
-#: 3.5e-16 on CPU; this SVD is `interpolation_fields.py` `array_ns.linalg.svd`, cupy on GPU
-L1_TOLERANCE_LINEAR_PSEUDOINV: Final = 8e-16
+#: 3.5e-16 on CPU; this SVD is `interpolation_fields.py` `array_ns.linalg.svd`, cupy on GPU:
+#: 7.4e-15 on gtfn_gpu and dace_gpu (cusolver's SVD against LAPACK's; the scheme-2 flux
+#: built from it agrees with the Fortran to 1.3e-15 on every backend, see L2), gate 2x that
+L1_TOLERANCE_LINEAR_PSEUDOINV: Final = 1.5e-14
 L1_TOLERANCE_LINEAR_CANDIDATES: Final = 3e-16
 
 #: L2 gates per case, (max |q_py - q_f90|, max |F_py - F_f90| / max |F_f90|) for tracer 0
