@@ -469,7 +469,7 @@ def _velocity_advection_scale_factors(dtime: float) -> tuple[float, float]:
 
 def _update_max_vertical_cfl(
     diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
-    vertical_cfl: fa.CellKHalfField[ta.vpfloat],
+    vertical_cfl: fa.CellKHalfField[ta.anyfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ) -> None:
