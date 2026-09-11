@@ -111,7 +111,7 @@ class TestAccumulateWenoCandidateFluxWeights(stencil_tests.StencilTest):
             + smooth_4 * z_quad_vector_sum_4.astype(sp)
             + smooth_5 * z_quad_vector_sum_5.astype(sp)
             + smooth_6 * z_quad_vector_sum_6.astype(sp)
-        ).astype(np.float64)
+        ).astype(ta.wpfloat)
         w = l_weight_s / (beta + _WENO_EPS) ** 2
 
         # f90 3009-3010: accumulate onto the incoming weighted sums and weight sum

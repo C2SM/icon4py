@@ -24,13 +24,14 @@ ihadv<scheme>_hlim<limiter>[_dj1|_ones] (his printed '#' error, the neighbour-pa
 test_jocksch_cylinder.py); the results table is in icon-ajocksch/CAPTURE_NOTES.md.
 """
 
+from __future__ import annotations
+
 import math
 import pathlib
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 import gt4py.next.typing as gtx_typing
 import pytest
-from _pytest.mark import ParameterSet  # what pytest.param returns; pytest 9 does not re-export it
 
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, weno_least_squares
 from icon4py.model.common.decomposition import definitions as decomp_defs
@@ -38,6 +39,12 @@ from icon4py.model.common.decomposition import definitions as decomp_defs
 from .. import utils as test_utils
 from ..fixtures import *  # noqa: F403
 from .test_jocksch_cylinder import PAPER_TRUNCATION
+
+
+if TYPE_CHECKING:
+    # what pytest.param returns; pytest 9 does not re-export it, so the private import
+    # stays a type-checking one (the annotations are strings, see __future__ above)
+    from _pytest.mark import ParameterSet
 
 
 #: Andreas Jocksch's own torus (a copy of his dispersion_relation/icon/grids/

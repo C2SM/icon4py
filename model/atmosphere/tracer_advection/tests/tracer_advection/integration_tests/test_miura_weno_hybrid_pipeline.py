@@ -57,11 +57,29 @@ from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_quadratic_co
 from icon4py.model.atmosphere.tracer_advection.stencils.select_horizontal_tracer_flux_by_upwind_cell import (
     select_horizontal_tracer_flux_by_upwind_cell,
 )
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.initial_condition.analytical import moving_cylinder
-from icon4py.model.testing.fixtures.datatest import backend
+from icon4py.model.testing import (
+    definitions as test_defs,
+    grid_utils as gridtest_utils,
+    serialbox as sb,
+)
+from icon4py.model.testing.fixtures.datatest import (
+    backend,
+    data_provider,
+    download_ser_data,
+    process_props,
+)
 
 from .. import utils
+from ..fixtures import advection_init_savepoint
+from .test_jocksch_reference import (
+    NUM_LEVELS as CAPTURE_NUM_LEVELS,
+    case,
+    date,
+    experiment,
+    experiment_description,
+)
 from .test_miura3_weno_pipeline import (
     N_CAND,
     NLEV,
@@ -438,18 +456,20 @@ def test_reference_constant_selection_detects_a_wrong_threshold(torus_patch, pat
 # --- the selection mask's sensitivity to the residual's precision -----------------------
 
 
-def _selection_mask(
+def _selection_residual(
     *,
     p_cc: np.ndarray,  # (n_cells,)
     lsq_error: np.ndarray,  # (n_cells, 5, 9)
     pseudoinv_full: np.ndarray,  # (n_cells, 5, 9)
     stencil_c9: np.ndarray,  # (n_cells, 9)
     sp: type,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """f90 3547-3574 on one level, vectorised, with the residual path in the kind ``sp``.
 
     The fit (3553-3562) is double; lsq_error, zlc and every partial sum of the residual
-    (3564-3568) are rounded to ``sp`` in the Fortran's order; the comparison is double.
+    (3564-3568) are rounded to ``sp`` in the Fortran's order. Returns the residual ``lsqe``
+    widened to double and the double threshold ``5e-5 * (p_cc + 1e-10)**2`` it is compared
+    with (3574); the mask is ``lsqe > threshold``.
     """
     z_b = p_cc[stencil_c9] - p_cc[:, np.newaxis]
     coeff = np.einsum("nus,ns->nu", pseudoinv_full, z_b)
@@ -462,7 +482,13 @@ def _selection_mask(
     lsqe = np.zeros(p_cc.shape, dtype=sp)
     for js in range(9):
         lsqe = (lsqe + residual[:, js] * residual[:, js]).astype(sp)
-    return lsqe.astype(np.float64) > THRESHOLD * (p_cc + EPS) ** 2
+    return lsqe.astype(np.float64), THRESHOLD * (p_cc + EPS) ** 2
+
+
+def _selection_mask(**kwargs) -> np.ndarray:
+    """The hybrid's WENO mask (f90 3574), see _selection_residual."""
+    lsqe, threshold = _selection_residual(**kwargs)
+    return lsqe > threshold
 
 
 @pytest.mark.level("integration")
@@ -528,6 +554,105 @@ def test_cylinder_selection_mask_is_the_same_in_single_and_double_precision(cyli
     )
     assert mask_double.any() and not mask_double.all(), "vacuous: one branch only"
     assert n_differ == 0
+
+
+#: the steps of the ihadv132 capture whose 'advection-init' tracer the mask is evaluated on
+#: (step 1 carries the initial cylinder, the later ones the Fortran's evolved field)
+EVOLVED_STEPS = [1, 2, 10, 50, 100]
+#: a residual within this relative distance of the threshold counts as 'at the boundary'
+BOUNDARY_BAND = 10.0 * float(np.finfo(np.float32).eps)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("case", [pytest.param((132, 0), id="ihadv132_hlim0")], indirect=True)
+@pytest.mark.parametrize("step", EVOLVED_STEPS)
+def test_evolved_selection_mask_is_the_same_in_single_and_double_precision(
+    case: tuple[int, int],
+    step: int,
+    *,
+    experiment: test_defs.Experiment,
+    advection_init_savepoint: sb.AdvectionInitSavepoint,
+) -> None:
+    """The residual's precision does not change the hybrid's mask on the Fortran's evolved fields.
+
+    The check above is decided by construction: on the initial cylinder every stencil is
+    either constant (residual exactly 0 in both kinds) or O(1) against the 5e-5 threshold.
+    Here the same numpy selection runs on the tracer of the 'advection-init' savepoints
+    of the ihadv132_hlim0 capture (test_jocksch_reference.py), i.e. on the Fortran's own
+    hybrid solution after step - 1 steps, whose cells behind the cylinder carry the
+    scheme's ripples at every magnitude. The coefficients are the port's (lsq_error and
+    the full quadratic pseudoinverse of weno_least_squares on the grid file the capture
+    used), the field one level of the savepoint (the ten levels are asserted identical).
+    Measured 2026-09-11 (WENO-selected cells in single / double precision, cells that
+    differ, of 880): step 1: 78 / 78, 0; step 2: 89 / 89, 0; step 10: 227 / 227, 0;
+    step 50: 624 / 624, 0; step 100: 666 / 666, 0, hence the zero-count assertion. The
+    boundary band (a residual within 10 float32 eps, 1.2e-6 relative, of the threshold) is
+    empty at every step and asserted so: the residual nearest to the threshold is 1.3e-1
+    away at step 10, 8.7e-3 at step 50 and 3.8e-3 at step 100 (relative), three orders
+    of magnitude more than single precision can move it, so the selection of the evolved
+    field is not a round-off decision either.
+    """
+    grid_manager = gridtest_utils.get_grid_manager_from_identifier(
+        experiment.grid,
+        num_levels=CAPTURE_NUM_LEVELS,
+        keep_skip_values=True,
+        allocator=model_backends.get_allocator(None),
+    )
+    grid = grid_manager.grid
+    domain_length, domain_height = grid.grid_params.domain_length, grid.grid_params.domain_height
+    assert domain_length is not None and domain_height is not None
+    c2e2c = grid.get_connectivity("C2E2C").asnumpy()
+    c2v = grid.get_connectivity("C2V").asnumpy()
+    cell_center_x = grid_manager.coordinates[dims.CellDim]["x"].asnumpy()
+    cell_center_y = grid_manager.coordinates[dims.CellDim]["y"].asnumpy()
+    stencil_c9 = weno.create_stencil_c9(c2e2c, c2v)
+    geometry = dict(
+        stencil_c9=stencil_c9,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    lsq_moments = weno.compute_lsq_moments_torus(
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
+        vertex_x=grid_manager.coordinates[dims.VertexDim]["x"].asnumpy(),
+        vertex_y=grid_manager.coordinates[dims.VertexDim]["y"].asnumpy(),
+        c2v=c2v,
+        domain_length=domain_length,
+        domain_height=domain_height,
+    )
+    coefficients = dict(
+        lsq_error=weno.compute_lsq_error_quadratic(lsq_moments=lsq_moments, **geometry),
+        pseudoinv_full=weno.compute_lsq_pseudoinverse_quadratic(
+            lsq_moments=lsq_moments, **geometry
+        ),
+        stencil_c9=stencil_c9,
+    )
+
+    tracer = advection_init_savepoint.tracer(0).asnumpy()
+    assert tracer.shape == (stencil_c9.shape[0], CAPTURE_NUM_LEVELS)
+    assert (tracer == tracer[:, :1]).all(), "the capture's ten levels are identical columns"
+    p_cc = tracer[:, 0]
+
+    lsqe_single, threshold = _selection_residual(p_cc=p_cc, sp=np.float32, **coefficients)
+    lsqe_double, _ = _selection_residual(p_cc=p_cc, sp=np.float64, **coefficients)
+    mask_single = lsqe_single > threshold
+    mask_double = lsqe_double > threshold
+    n_differ = int(np.sum(mask_single != mask_double))
+    boundary = np.abs(lsqe_double - threshold) <= BOUNDARY_BAND * threshold
+    print(
+        f"\nhybrid selection on the ihadv132 capture, step {step:3d}: WENO on "
+        f"{int(mask_single.sum())} of {mask_single.size} cells in single, "
+        f"{int(mask_double.sum())} in double, {n_differ} cells differ, "
+        f"{int(boundary.sum())} within 10 eps_sp of the threshold; "
+        f"min |lsqe - threshold| / threshold = "
+        f"{float((np.abs(lsqe_double - threshold) / threshold).min()):.3e}"
+    )
+    if step == 1:
+        assert mask_double.any() and not mask_double.all(), "vacuous: one branch only"
+    assert n_differ == 0
+    assert not boundary.any()
 
 
 # --- the gt4py pipeline -----------------------------------------------------------------

@@ -48,6 +48,8 @@ set_precision(precision)
 #: Decision of 2026-09-10: the working precision until the single-precision option (PR #970)
 #: is merged; set it to gtx.float32 to reproduce the Fortran's single-precision arithmetic.
 #: Init-time numpy code stays float64 regardless; the cast happens where the fields are built.
+#: Bound once at import from the wpfloat of that moment: set_precision() does not rebind it
+#: (nor do the stencils that imported it see a rebinding); to be resolved when PR #970 merges.
 fortran_sp_float: type[gtx.float32] | type[gtx.float64] = wpfloat
 #: Kind of the Fortran's unsuffixed real literals (e.g. `5e-5`, `1e-10` at mo_advection_hflux.f90
 #: 3574): always REAL(sp), independent of the REAL(sp) *variables* fortran_sp_float stands in for.
