@@ -30,27 +30,41 @@ L1  every init-time coefficient 'weno_least_squares' produces (9-point stencil, 
     stencil is compared index by index because Jocksch's create_stencil_c9 order is what
     the port reproduces (it does, so no permutation is applied);
 L2  one 'Advection.run' from 'advection-init' step n against 'advection-exit' step n, for
-    steps 1, 2, 50, 100 and all four advected tracers, on the granule the driver builds
-    (grid, geometry, interpolation and reconstruction coefficients all from icon4py,
-    the grid file being the one ICON read);
+    steps 1, 2, 50, 100, on the granule the driver builds (grid, geometry, interpolation
+    and reconstruction coefficients all from icon4py, the grid file being the one ICON
+    read). Tracers 1-4 of the capture are identical by construction (the same initial
+    cylinder advected with the same scheme, icon-ajocksch/CAPTURE_NOTES.md, 'tracers 1..5
+    = 1 where ...'), so the step is run for tracer 0 only and the exit savepoint's tracers
+    1-3 (tracer and flux) are asserted bit-equal to its tracer 0;
 L3  the 100-step trajectory from step 1 with the new tracer fed back, against the exit
-    savepoints along the way, to see whether round-off compounds (it does not: the
-    per-step difference grows from its step-1 level by at most one order of magnitude
-    over the 100 steps for every case).
+    savepoints along the way, to see how round-off compounds: the per-step difference
+    grows over the first tens of steps and then saturates. Step 1 -> worst step
+    (gtfn_cpu): (2,0) 8.9e-16 -> 8.7e-15 (96), (3,0) 2.1e-14 -> 5.8e-14 (98), (102,0)
+    1.1e-16 -> 5.9e-15 (97), (103,0) 2.5e-9 -> 1.3e-8 (12), (3,3) 2.2e-16 -> 4.9e-14
+    (97), (3,4) 2.1e-14 -> 5.9e-14 (97), (2,4) 8.9e-16 -> 1.4e-14 (61); so up to 220x
+    the step-1 level where step 1 is at 1e-16, but the maximum over the 100 steps stays
+    within 2x of the trajectory's own value at step 100 for every case (1.0x .. 1.4x;
+    2.2x for 103, whose worst step is early) and within 2x of its step-50 value except
+    for 103 (3.7x).
 
 Measured (gtfn_cpu, dace_cpu): schemes 2, 102 and the limited runs of 3 agree to 1e-15 per
 step, the unlimited quadratic scheme 3 to 2e-14 (the SVD round-off of its pseudoinverse,
 7e-13, propagated), and the quadratic WENO scheme 103 only to 3.5e-9 in the tracer and
-8e-9 in the flux, at a handful of edges on the cylinder boundary. That is not the port:
+8e-9 in the flux, at a handful of edges on the cylinder boundary (the hybrid scheme 132,
+which selects between the quadratic fit and the 103 blend per cell, to 2.4e-9 / 4.2e-9
+for the same reason). That is not the port:
 substituting the Fortran candidate pseudoinverses changes nothing, and perturbing the
 tracer at 1e-14 moves the flux by 2e-14. The Fortran evaluates the smoothness indicator
-of every candidate in single precision (mo_advection_hflux.f90,
-upwind_hflux_miura3_weno: 'REAL(sp) :: zlc(6), z_lsq_smooth(6), area' and
-'DOT_PRODUCT(z_lsq_smooth, real(z_quad_vector_sum))'), and icon4py in double; emulating
-the single-precision indicator in the icon4py stencil moves the icon4py result by the
-same 1e-9 (to 1.0e-9 / 2.3e-9 from the Fortran, the remainder being the different
-rounding sequences). The ihadv103 gate is therefore the size of the Fortran's
-single-precision round-off, not of a double-precision port. With FMA contraction off
+of every candidate in single precision, by declaration: mo_advection_hflux.f90:2643
+(upwind_hflux_miura3_weno) declares 'REAL(sp) :: zlc(6), z_lsq_smooth(6), area', and
+:3007 assigns 'DOT_PRODUCT(z_lsq_smooth, real(z_quad_vector_sum))', a single-precision
+dot product, to the working-precision smoothness; icon4py evaluates it in double. A
+single-precision indicator of an O(1) tracer carries a relative round-off of 1e-7 into
+the nonlinear weights, which the blend turns into the 1e-9 seen (the earlier port
+stretch reported an emulation experiment of the same size; it is not in the tree and has
+not been reproduced here, so only the source-level argument stands). The ihadv103 gate
+is therefore the size of the Fortran's single-precision round-off, not of a
+double-precision port. With FMA contraction off
 (ICON4PY_FP_CONTRACT_OFF=1, the Fortran's -Mnofma) the numbers change in the last printed
 digit only, except that the step-1 tracer of scheme 102 becomes bit-identical (one
 subnormal residue, 7e-42): the 1e-16 seen with contraction is the port's own FMA.
@@ -115,6 +129,7 @@ SCHEMES: Final[dict[int, _HADV]] = {
     3: _HADV.QUADRATIC_3RD_ORDER,
     102: _HADV.LINEAR_2ND_ORDER_WENO,
     103: _HADV.QUADRATIC_3RD_ORDER_WENO,
+    132: _HADV.QUADRATIC_3RD_ORDER_WENO_HYBRID,
 }
 #: itype_hlimit -> icon4py limiter; schemes 2 and 3 use ICON's own limiters, so these
 #: mean the same thing on both sides (the WENO routines would select Jocksch's cell-local
@@ -138,24 +153,31 @@ EXPERIMENT_CONFIG: Final = test_config.EXPERIMENT_CONFIG_PATH / "jocksch_cylinde
 #: measured: bit-identical for the stencil, moments, moments_hat, row weights and
 #: l_weights_s; the SVD pseudoinverses differ by LAPACK-vs-ICON round-off: 7.2e-13 full
 #: quadratic, 2.5e-12 worst of the 27 candidates, 3.5e-16 linear full, 2.7e-16 linear
-#: candidates
+#: candidates. The 'weno_least_squares' quantities are pure numpy and therefore the same
+#: on every backend; the linear full pseudoinverse is the interpolation factory's and is
+#: computed on the backend's array namespace (see its gate).
 L1_TOLERANCE_QUADRATIC_PSEUDOINV: Final = 8e-13
 L1_TOLERANCE_QUADRATIC_CANDIDATES: Final = 3e-12
-L1_TOLERANCE_LINEAR_PSEUDOINV: Final = 4e-16
+#: 3.5e-16 on CPU; this SVD is `interpolation_fields.py` `array_ns.linalg.svd`, cupy on GPU
+L1_TOLERANCE_LINEAR_PSEUDOINV: Final = 8e-16
 L1_TOLERANCE_LINEAR_CANDIDATES: Final = 3e-16
 
-#: L2 gates per case, (max |q_py - q_f90|, max |F_py - F_f90| / max |F_f90|) over the four
-#: tracers and the steps 1, 2, 50, 100, and the trajectory gate on max |q_py - q_f90| over
-#: all 100 steps: twice the worst value measured on gtfn_cpu, dace_cpu and gtfn_cpu with
+#: L2 gates per case, (max |q_py - q_f90|, max |F_py - F_f90| / max |F_f90|) for tracer 0
+#: over the steps 1, 2, 50, 100, and the trajectory gate on max |q_py - q_f90| over all
+#: 100 steps: twice the worst value measured on gtfn_cpu, dace_cpu and gtfn_cpu with
 #: -ffp-contract=off (in brackets, per case), see the module docstring for the ihadv103 case
 L2_TOLERANCES: Final[dict[tuple[int, int], tuple[float, float]]] = {
     (2, 0): (2e-15, 3e-15),  # 8.9e-16, 1.3e-15
     (3, 0): (5e-14, 1e-13),  # 2.1e-14, 4.7e-14
-    (102, 0): (1e-15, 3e-15),  # 4.4e-16, 1.3e-15
+    (102, 0): (
+        2e-15,
+        3e-15,
+    ),  # 4.4e-16 (2 ulp of an O(1) tracer; 4 ulp leaves room for GPU reordering), 1.3e-15
     (103, 0): (7e-9, 2e-8),  # 3.5e-9, 7.8e-9
     (3, 3): (8e-15, 2e-14),  # 3.7e-15, 8.2e-15
     (3, 4): (5e-14, 1e-13),  # 2.1e-14, 4.7e-14
     (2, 4): (2e-15, 3e-15),  # 8.9e-16, 1.3e-15
+    (132, 0): (5e-9, 9e-9),  # 2.4e-9, 4.2e-9 (the 103 candidates' REAL(sp) indicator again)
 }
 TRAJECTORY_TOLERANCES: Final[dict[tuple[int, int], float]] = {
     (2, 0): 2e-14,  # 8.8e-15 (step 96)
@@ -165,6 +187,7 @@ TRAJECTORY_TOLERANCES: Final[dict[tuple[int, int], float]] = {
     (3, 3): 1e-13,  # 4.9e-14 (step 97)
     (3, 4): 1.2e-13,  # 6.0e-14 (step 97)
     (2, 4): 3e-14,  # 1.4e-14 (step 61)
+    (132, 0): 1.4e-8,  # 7.0e-9 (step 3)
 }
 
 CASES: Final = [
@@ -175,13 +198,7 @@ CASES: Final = [
     pytest.param((3, 3), id="ihadv3_hlim3"),
     pytest.param((3, 4), id="ihadv3_hlim4"),
     pytest.param((2, 4), id="ihadv2_hlim4"),
-    pytest.param(
-        (132, 0),
-        id="ihadv132_hlim0",
-        marks=pytest.mark.skip(
-            reason="ihadv_tracer=132 (hybrid WENO, upwind_hflux_miura_weno_hyb) has no icon4py scheme yet"
-        ),
-    ),
+    pytest.param((132, 0), id="ihadv132_hlim0"),
 ]
 STEPS: Final = [1, 2, 50, 100]
 TRAJECTORY_REPORT_STEPS: Final = (1, 10, 50, 100)
@@ -449,24 +466,31 @@ def test_advection_step_matches_reference(
     advection_exit_savepoint: sb.AdvectionExitSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    worst_tracer = worst_flux = 0.0
-    for tracer in ADVECTED_TRACERS:
-        p_tracer_new, hfl_tracer = _run_step(
-            advection_granule, advection_init_savepoint, tracer, backend
+    tracer = ADVECTED_TRACERS[0]
+    p_tracer_new_ref = advection_exit_savepoint.tracer(tracer).asnumpy()
+    hfl_tracer_ref = advection_exit_savepoint.hfl_tracer(tracer).asnumpy()
+    # the capture advects four copies of the same cylinder with the same scheme (module
+    # docstring, L2): one run of the granule covers them, provided they are the same
+    for other in ADVECTED_TRACERS[1:]:
+        np.testing.assert_array_equal(
+            advection_exit_savepoint.tracer(other).asnumpy(), p_tracer_new_ref
         )
-        p_tracer_new_ref = advection_exit_savepoint.tracer(tracer).asnumpy()
-        hfl_tracer_ref = advection_exit_savepoint.hfl_tracer(tracer).asnumpy()
-        tracer_difference = float(np.abs(p_tracer_new.asnumpy() - p_tracer_new_ref).max())
-        flux_difference = scale_relative_difference(hfl_tracer.asnumpy(), hfl_tracer_ref)
-        print(
-            f"\nL2 ihadv{case[0]}_hlim{case[1]} step {step:3d} tracer {tracer}: "
-            f"max|dq| = {tracer_difference:.3e}  max|dF|/max|F| = {flux_difference:.3e}"
+        np.testing.assert_array_equal(
+            advection_exit_savepoint.hfl_tracer(other).asnumpy(), hfl_tracer_ref
         )
-        worst_tracer = max(worst_tracer, tracer_difference)
-        worst_flux = max(worst_flux, flux_difference)
+
+    p_tracer_new, hfl_tracer = _run_step(
+        advection_granule, advection_init_savepoint, tracer, backend
+    )
+    tracer_difference = float(np.abs(p_tracer_new.asnumpy() - p_tracer_new_ref).max())
+    flux_difference = scale_relative_difference(hfl_tracer.asnumpy(), hfl_tracer_ref)
+    print(
+        f"\nL2 ihadv{case[0]}_hlim{case[1]} step {step:3d} tracer {tracer}: "
+        f"max|dq| = {tracer_difference:.3e}  max|dF|/max|F| = {flux_difference:.3e}"
+    )
     tracer_tolerance, flux_tolerance = L2_TOLERANCES[case]
-    assert worst_tracer <= tracer_tolerance
-    assert worst_flux <= flux_tolerance
+    assert tracer_difference <= tracer_tolerance
+    assert flux_difference <= flux_tolerance
 
 
 # ---- trajectory ----

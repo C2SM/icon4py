@@ -10,7 +10,7 @@ to `weno_idealized_scope.md` (what is ported, Fortran <-> Python map) and
 
 | module | what it compares | data |
 |---|---|---|
-| `model/atmosphere/tracer_advection/tests/tracer_advection/integration_tests/test_jocksch_reference.py` | **L1** init-time least-squares coefficients, **L2** one `Advection.run` per savepoint (steps 1, 2, 50, 100, tracers 1-4), **L3** the 100-step trajectory with the new tracer fed back | the serialbox capture, `datatest` mark |
+| `model/atmosphere/tracer_advection/tests/tracer_advection/integration_tests/test_jocksch_reference.py` | **L1** init-time least-squares coefficients, **L2** one `Advection.run` per savepoint (steps 1, 2, 50, 100, tracer 1; tracers 2-4 of the capture are asserted bit-equal to tracer 1, they are the same cylinder advected with the same scheme), **L3** the 100-step trajectory with the new tracer fed back | the serialbox capture, `datatest` mark |
 | `model/driver/tests/driver/integration_tests/test_jocksch_cylinder.py` | the full Python experiment (driver, 100 steps) against the paper's Table 2 (truncation interval) and the Fortran's printed pair-sum error (relative tolerance) | the grid file only |
 
 The reference test compares fields to the Fortran to round-off; the cylinder test compares
@@ -66,15 +66,34 @@ cases on gtfn_cpu.
 `docs/run_jocksch_reference_gpu.sbatch` (one backend per job, debug partition, 30 min):
 
 ```bash
-sbatch --partition=debug model/atmosphere/tracer_advection/docs/run_jocksch_reference_gpu.sbatch gtfn_gpu
-sbatch --partition=debug model/atmosphere/tracer_advection/docs/run_jocksch_reference_gpu.sbatch dace_gpu
+cd <workspace>   # not icon4py/: husk confines --output to the submitting directory and below
+sbatch --partition=debug icon4py/model/atmosphere/tracer_advection/docs/run_jocksch_reference_gpu.sbatch gtfn_gpu
+sbatch --partition=debug icon4py/model/atmosphere/tracer_advection/docs/run_jocksch_reference_gpu.sbatch dace_gpu
 # with FMA contraction off (own cache directory <backend>_nofma):
 sbatch --partition=debug ... run_jocksch_reference_gpu.sbatch dace_gpu nofma
 ```
 
 Every variable is set inside the script (the sandbox's SLURM broker does not forward the
-submitting shell's environment); poll with `squeue -j <id>`; the output is
-`weno_data/slurm/<jobid>.out`.
+submitting shell's environment); the output is `weno_data/slurm/<jobid>.out`, and husk
+forces stderr (its banner, tracebacks, pytest warnings) to `<workspace>/slurm-<jobid>.err`.
+The compute cage hides the home directory, so the script runs a copy of `uv` staged in
+`weno_data/bin/` (`cp -L ~/.local/bin/uv weno_data/bin/`; without it the job exits 127,
+`uv: command not found`). The job is
+a pytest run, so the submitter holds the workspace's pytest lock (`notes/workflow.md`)
+for the job's whole lifetime, polling instead of `--wait` (which the broker refuses):
+
+```bash
+WS=<workspace>
+until mkdir $WS/weno_data/pytest.lock 2>/dev/null; do sleep 30; done
+echo "<agent> sbatch run_jocksch_reference_gpu.sbatch <backend>" > $WS/weno_data/pytest.lock/owner
+cd $WS
+id=$(sbatch --partition=debug --parsable icon4py/model/atmosphere/tracer_advection/docs/run_jocksch_reference_gpu.sbatch <backend>)
+until ! squeue -j $id -h | grep -q .; do sleep 30; done
+rm -rf $WS/weno_data/pytest.lock
+```
+
+If the job times out (30 min), resubmit: the persistent build cache resumes the build
+where it stopped.
 
 ## The FMA switch
 
@@ -99,28 +118,35 @@ default: it costs a second build cache and does not change any verdict.
 
 ## Measured agreement, reference test
 
-Notation: L2 = (max |q_py - q_f90|, max |F_py - F_f90| / max |F_f90|) over the four tracers;
+Notation: L2 = (max |q_py - q_f90|, max |F_py - F_f90| / max |F_f90|) of tracer 1 (the
+four advected tracers of the capture are identical, the test checks that);
 trajectory = max |q_py - q_f90| over the 100 steps (worst step in brackets). The three CPU
 columns agree to the printed digits except where shown; the gates in the module are twice
 the worst CPU value.
 
-### L1 (numpy, identical on all backends)
+### L1
+
+The stencil, moments, row weights, candidate weights, weight set and the
+`weno_least_squares` pseudoinverses are pure numpy, hence the same on every backend. The
+linear full pseudoinverse is the interpolation factory's and its SVD runs on the backend's
+array namespace (`interpolation_fields.py`, `array_ns.linalg.svd`: numpy on CPU, cupy on
+GPU), so its number is per backend.
 
 | array | max rel. diff. | gate |
 |---|---|---|
 | stencil_c9, moments, moments_hat, row weights, candidate weights, l_weights_s | 0 (bit-identical) | equality |
 | quadratic pseudoinverse (SVD) | 7.226e-13 | 8e-13 |
 | 27 quadratic candidate pseudoinverses (worst) | 2.5e-12 | 3e-12 |
-| linear pseudoinverse (interpolation factory) | 3.521e-16 | 4e-16 |
+| linear pseudoinverse (interpolation factory) | 3.521e-16 (CPU; GPU: see below) | 8e-16 |
 | 3 linear candidate pseudoinverses | 2.711e-16 | 3e-16 |
 
 ### L2 per step, gtfn_cpu = dace_cpu = gtfn_cpu nofma (last digit apart)
 
 | case | step 1 | step 2 | step 50 | step 100 | gate |
 |---|---|---|---|---|---|
-| ihadv2_hlim0 | 8.9e-16, 1.3e-15 | 8.9e-16, 9.8e-16 | 6.0e-16, 1.0e-15 | 6.5e-16, 1.1e-15 | 2e-15, 3e-15 |
+| ihadv2_hlim0 | 8.9e-16, 1.3e-15 | 8.9e-16, 9.8e-16 .. 1.1e-15 | 6.0e-16, 1.0e-15 | 6.5e-16, 1.1e-15 | 2e-15, 3e-15 |
 | ihadv3_hlim0 | 2.1e-14, 4.7e-14 | 1.8e-14, 4.0e-14 | 6.2e-15, 1.4e-14 | 6.0e-15, 1.4e-14 | 5e-14, 1e-13 |
-| ihadv102_hlim0 | 1.1e-16 (nofma: 7e-42), 1.3e-16 | 4.4e-16, 1.3e-15 | 2.2e-16 .. 3.3e-16, 6.6e-16 .. 7.2e-16 | 2.2e-16, 6.3e-16 | 1e-15, 3e-15 |
+| ihadv102_hlim0 | 1.1e-16 (nofma: 7e-42), 1.3e-16 | 4.4e-16, 1.3e-15 | 2.2e-16 .. 3.3e-16, 6.6e-16 .. 7.2e-16 | 2.2e-16, 6.3e-16 | 2e-15, 3e-15 |
 | ihadv103_hlim0 | 2.5e-09, 5.5e-09 | 3.5e-09, 7.8e-09 | 2.7e-09, 4.5e-09 | 1.3e-09, 2.0e-09 | 7e-9, 2e-8 |
 | ihadv3_hlim3 | 2.2e-16, 1.9e-16 .. 2.4e-16 | 2.2e-16 .. 4.4e-16, 5.0e-16 .. 7.5e-16 | 3.7e-15, 8.2e-15 | 3.3e-15, 7.5e-15 | 8e-15, 2e-14 |
 | ihadv3_hlim4 | 2.1e-14, 4.7e-14 | 1.8e-14, 4.0e-14 | 3.7e-15, 8.1e-15 | 3.3e-15, 7.3e-15 | 5e-14, 1e-13 |
@@ -138,9 +164,13 @@ the worst CPU value.
 | ihadv3_hlim4 | 5.94e-14 (97) | 5.93e-14 (97) | 5.95e-14 (97) | 1.2e-13 |
 | ihadv2_hlim4 | 1.40e-14 (61) | 1.39e-14 (61) | 1.44e-14 (61) | 3e-14 |
 
-The 103 trajectory has its worst step early (12) and does not grow afterwards; the others
-grow by about one order of magnitude over the 100 steps, which is round-off accumulation
-(the per-step differences are constant, see L2).
+The per-step difference of the trajectory grows over the first tens of steps and then
+saturates: from the step-1 level it reaches 10x for (2,0), (2,4), (3,0) and (3,4), 56x
+for (102,0) and 220x for (3,3) (the two cases whose step-1 difference is a single ulp,
+1.1e-16 / 2.2e-16), but the maximum over the 100 steps is within 2x of the trajectory's
+own value at step 100 in every case (1.0x .. 1.4x; 2.2x for 103, whose worst step is 12 and
+which does not grow afterwards). The one-step differences (L2) stay at their level, so this
+is round-off accumulation, not a drifting scheme.
 
 What the numbers mean: 2 and 102 are bit-level agreement (a few ulp of q ~ 1); 3 (and 3 with
 the PD limiter, which passes the unlimited flux through here) carries the 7e-13 SVD
@@ -176,5 +206,9 @@ on the `_centred` grid copy (`weno_data/reference/<case>_centred/error.txt`), wh
 
 The relative differences are 1e-11 .. 3e-10 for the double-precision schemes (the dt
 difference alone is 5e-11) and 3.5e-9 for 103 (the Fortran's single-precision smoothness
-indicator, as in the reference test). The gates are three times the gtfn_cpu value.
-The mass is conserved to 7e-15 relative in every case.
+indicator, as in the reference test). The gates are about three times (2.9-4.3x) the gtfn_cpu value.
+The mass is conserved to < 9e-15 relative in every case. The eight cases were run in one
+session (`weno_data/slurm/w5b_gtfn_cpu_cylinder.log`); the miura3_weno row there failed
+with a `SyntaxError` from a stencil module a parallel package was editing at that moment,
+and was rerun alone after that edit was committed
+(`w5b_gtfn_cpu_cylinder_miura3_weno.log`, 8:28), which is the value in the table.
