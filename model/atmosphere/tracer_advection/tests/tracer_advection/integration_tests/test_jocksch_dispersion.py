@@ -248,6 +248,11 @@ CONVERGENCE_THRESHOLD_30: Final = 1e-12
 #: a row counts as converged for the comparisons if its last change is at most this
 #: (the capture notes' and compare_dispersion.py's default cut)
 CONVERGED_RESID_30: Final = 1e-8
+#: every CFL of the 'paper' and 'stability' sets needs at least this many converged rows (of
+#: the 59 alphas), otherwise the maxima over the converged rows (the gate against his table,
+#: the growth count at CFL 0.42) would pass on nothing; measured minimum 33 (scheme 2 at CFL
+#: 0.44), the paper sets >= 40 (scheme 3 at CFL 0.01)
+MIN_CONVERGED_30: Final = 30
 #: growth means Im omega < -GROWTH_TOLERANCE at either reference cell (ignores the
 #: +-5e-16 of the alpha = 0 rows)
 GROWTH_TOLERANCE: Final = 1e-14
@@ -279,7 +284,7 @@ FORTRAN_BUILD_DIRS_30: Final[dict[int, pathlib.Path]] = {
 #: max |d omega| (the four columns) against his table over the rows converged here
 #: (resid <= CONVERGED_RESID_30) and all CFLs of the 'paper' or the 'stability' set, per
 #: scheme; measured on gtfn_cpu only. The paper-set maximum is the CFL 0.01 block, so the
-#: gate is 3x that and 17x (scheme 2) / 22x (scheme 3) the CFL 0.5 block; the stability set
+#: gate is 3x that and 17x (scheme 2) / 22.5x (scheme 3) the CFL 0.5 block; the stability set
 #: measures 4.4e-15 / 3.0e-15 (CFL 0.44)
 FORTRAN_TOLERANCE_30: Final[dict[int, float]] = {
     2: 6e-14,  # 1.9e-14 (CFL 0.01; 2.0e-15 .. 3.5e-15 at 0.1 .. 0.5)
@@ -1256,6 +1261,23 @@ def _theta30_statistics(
     )
 
 
+def _assert_converged_rows(stats: _Theta30Stats, cfls: tuple[float, ...]) -> None:
+    """At least MIN_CONVERGED_30 converged rows at every CFL of a gated set.
+
+    The gates take maxima over the converged rows, and a CFL without any contributes nothing
+    (np.nanmax skips its NaN), so without this a table whose rows did not converge would pass
+    them on nothing.
+    """
+    converged_rows = {cfl: stats.stability[cfl][3] for cfl in cfls}
+    print(
+        f"converged rows per CFL (at least {MIN_CONVERGED_30}): "
+        + ", ".join(f"{cfl:.2f}: {n}" for cfl, n in converged_rows.items())
+        + f"; min {min(converged_rows.values())}"
+    )
+    too_few = {cfl: n for cfl, n in converged_rows.items() if n < MIN_CONVERGED_30}
+    assert not too_few, f"CFLs with fewer than {MIN_CONVERGED_30} converged rows: {too_few}"
+
+
 def _plot_theta30(blocks: list[_Theta30Block], scheme: int, tag: str) -> list[pathlib.Path]:
     """Figure 7 at theta = 30 (-Im omega at 695, non-converged rows grey), and next to theta = 0."""
     if plt is None:
@@ -1458,9 +1480,12 @@ def test_dispersion_relation_theta30(
     print("figures: " + ", ".join(str(f) for f in figures))
 
     if cfl_set == "stability":
-        min_im_042, _, n_grow_042, _ = stats.stability[0.42]
+        _assert_converged_rows(stats, cfls)
+        min_im_042, _, n_grow_042, n_converged_042 = stats.stability[0.42]
         min_im_044, _, n_grow_044, _ = stats.stability[0.44]
-        assert n_grow_042 == 0, f"growth at CFL 0.42: min Im omega {min_im_042:.3e}"
+        assert n_grow_042 == 0, (
+            f"growth at CFL 0.42 ({n_converged_042} converged rows): min Im omega {min_im_042:.3e}"
+        )
         assert n_grow_044 > 0, f"no growth at CFL 0.44: min Im omega {min_im_044:.3e}"
         if reference is None:
             pytest.skip(
@@ -1468,6 +1493,7 @@ def test_dispersion_relation_theta30(
             )
         assert stats.his_converged <= FORTRAN_TOLERANCE_30[scheme], stats.his_converged
     if cfl_set == "paper":
+        _assert_converged_rows(stats, cfls)
         if reference is None:
             pytest.skip(f"Fortran reference table {reference_path} not available")
         assert stats.his_converged <= FORTRAN_TOLERANCE_30[scheme], stats.his_converged

@@ -9,15 +9,14 @@
 """The (1 - S) factor of the quadratic WENO type-VI candidates and the blend bias it causes.
 
 These tests document a known deficiency of the published construction; they do not test a
-desired property. The quadratic WENO scheme (Jocksch et al., PPAM 2026, section 2.3) obtains
-its three type-VI candidates from the full-stencil pseudoinverse: the Fortran assembles them as
-A+_full - sum_{i in group} d_i A+_i (mo_intp_coeffs_lsq_bln.f90 2669-2680 on
-transport_ajocksch_capture), and 'weno_least_squares.compute_weno_pseudoinverse_quadratic'
-ports that literally. For smooth data every fitted candidate reproduces the derivatives, so a
-type-VI candidate returns (1 - S) times them, S the group's linear-weight sum (5.9831
-OPTIMIZED, 8 UNITY). Its smoothness indicator is then (1 - S)^2 and its nonlinear weight
-(1 - S)^-4 times what the linear weights assume, at every resolution, and the normalised blend
-returns the derivatives short by the constant
+desired property. The quadratic WENO scheme (Jocksch et al., PPAM 2026, section 2.3) obtains its
+three type-VI candidates from the full-stencil pseudoinverse: the Fortran assembles them as
+A+_full - sum_{i in group} d_i A+_i (mo_intp_coeffs_lsq_bln.f90:2646-2657), and
+'weno_least_squares.compute_weno_pseudoinverse_quadratic' ports that literally. For smooth data
+every fitted candidate reproduces the derivatives, so a type-VI candidate returns (1 - S) times
+them, S the group's linear-weight sum (5.9831 OPTIMIZED, 8 UNITY). Its smoothness indicator is
+then (1 - S)^2 and its nonlinear weight (1 - S)^-4 times what the linear weights assume, at
+every resolution, and the normalised blend returns the derivatives short by the constant
 
     delta = (D + 3 (1 - S)^-3) / (D + 3 (1 - S)^-4) - 1,   D = sum of the fitted candidates' d_j,
 
@@ -38,11 +37,15 @@ numpy only, after the W6 review's coefficient-level check (workspace
 weno_data/w6_review/mech.py): the port's coefficient functions on two resolutions of one
 equilateral torus patch (edge lengths 1 and 1/2), applied to a quadratic field and to a
 Gaussian. The smoothness indicator is transcribed from 'accumulate_weno_candidate_flux_weights'
-(mo_advection_hflux.f90 2996-3008 on transport_ajocksch_capture), in double rather than the
-Fortran's REAL(sp); its quadrature vector is the area average of the monomials over the
-departure region of each outflow edge, for a displacement of 0.11 edge lengths along the domain
-diagonal. Only h / r_e matters: the fits are scale free and the 1e-20 regularisation is far
-below the indicators here.
+(mo_advection_hflux.f90:2996-3008), in double rather than the Fortran's REAL(sp); its quadrature
+vector is the area average of the monomials over the departure region of each outflow edge, for
+a displacement of 0.11 edge lengths along the domain diagonal. Only h / r_e matters: the fits
+are scale free and the 1e-20 regularisation is far below the indicators here.
+
+Fortran line numbers are of A. Jocksch's icon-exclaim commit dacecf46aa (branch
+transport_ajocksch). mo_advection_hflux.f90 is unchanged on transport_ajocksch_capture; there
+the capture's weight-set switch moves the lines of mo_intp_coeffs_lsq_bln.f90 cited here by 23
+(2669-2680).
 """
 
 from typing import Final
@@ -71,11 +74,11 @@ _GAUSSIAN_RADIUS: Final = 6.0
 _CORE_RADIUS: Final = 1.2
 #: departure-region displacement in edge lengths (the order study's CFL number)
 _DISPLACEMENT: Final = 0.11
-#: mo_advection_hflux.f90 3008 (accumulate_weno_candidate_flux_weights._WENO_EPS)
+#: mo_advection_hflux.f90:3008 (accumulate_weno_candidate_flux_weights._WENO_EPS)
 _EPS: Final = 1e-20
 
 #: slots of the three type-VI candidates' groups: candidate k is assembled from slots
-#: 3 + k, 6 + k, ..., 24 + k (mo_intp_coeffs_lsq_bln.f90 2670-2680)
+#: 3 + k, 6 + k, ..., 24 + k (the loop mo_intp_coeffs_lsq_bln.f90:2647-2657)
 _GROUPS: Final = tuple(tuple(range(3 + k, 27, 3)) for k in range(3))
 
 
@@ -262,7 +265,7 @@ def _outflow_departure_regions(
 def _smoothness_indicator(
     coefficients: np.ndarray, area: float, quad_vector: np.ndarray
 ) -> np.ndarray:
-    """accumulate_weno_candidate_flux_weights (mo_advection_hflux.f90 2996-3007) in double.
+    """accumulate_weno_candidate_flux_weights (mo_advection_hflux.f90:2996-3007) in double.
 
     Returns the indicators of the 27 candidates on every edge, (n_edges, 27).
     """
@@ -328,8 +331,10 @@ def test_blend_bias_is_the_constant_delta(patches, option):
     (_, h_coarse), (_, h_fine) = _RESOLUTIONS
     coarse, fine = deltas[h_coarse], deltas[h_fine]
     assert fine == pytest.approx(coarse, rel=1e-2)
-    # the offset from the closed form is a (h / r_e)^2 discretisation term: the Richardson
-    # extrapolation of the two resolutions removes it and leaves the closed form
+    # the offset from the closed form shrinks like (h / r_e)^2 only asymptotically (3.6x for
+    # OPTIMIZED, 2.0x for UNITY on this pair, not 4x): the Richardson extrapolation of the two
+    # resolutions removes most of it and leaves the closed form to 1.9e-4 / 1.5e-4; the 1e-3
+    # check therefore has bite mainly for OPTIMIZED (h = 1/2 offset 1.4e-3, UNITY 2.3e-4)
     refinement_squared = (h_coarse / h_fine) ** 2
     extrapolated = (refinement_squared * fine - coarse) / (refinement_squared - 1.0)
     print(
