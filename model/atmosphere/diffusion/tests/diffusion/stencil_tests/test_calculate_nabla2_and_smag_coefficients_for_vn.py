@@ -195,6 +195,15 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         dual_normal_vert_x = data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat)
         dual_normal_vert_y = data_alloc.random_field(dims.EdgeDim, dims.E2C2VDim, dtype=ta.wpfloat)
 
+        # See calculate_nabla2_and_smag_coefficients_for_vn: E2C2V neighbors 0,1 carry
+        # the primal_edge_length**2 weight, neighbors 2,3 the vert_vert_length**2 one.
+        primal_edge_mask = data_alloc.as_field(
+            np.asarray([1.0, 1.0, 0.0, 0.0]), dims.E2C2VDim, dtype=ta.wpfloat
+        )
+        vert_vert_mask = data_alloc.as_field(
+            np.asarray([0.0, 0.0, 1.0, 1.0]), dims.E2C2VDim, dtype=ta.wpfloat
+        )
+
         z_nabla2_e = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         kh_smag_e = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         kh_smag_ec = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
@@ -217,6 +226,8 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
             dual_normal_vert_y=dual_normal_vert_y,
             vn=vn,
             smag_limit=smag_limit,
+            primal_edge_mask=primal_edge_mask,
+            vert_vert_mask=vert_vert_mask,
             kh_smag_e=kh_smag_e,
             kh_smag_ec=kh_smag_ec,
             z_nabla2_e=z_nabla2_e,

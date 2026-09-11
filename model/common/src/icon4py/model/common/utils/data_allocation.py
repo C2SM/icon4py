@@ -196,6 +196,21 @@ def index_field(
     return gtx.as_field((dim,), np.arange(length, dtype=dtype), allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
+def field_from_values(
+    dim: gtx.Dimension,
+    values: npt.ArrayLike,
+    dtype: npt.DTypeLike = ta.wpfloat,
+    allocator: gtx_typing.Allocator | None = None,
+) -> gtx.Field:
+    """
+    A field over `dim` holding `values`, e.g. a constant per-neighbor value.
+
+    Unlike `constant_field`/`index_field`, `dim` need not be grid-sized: this is meant
+    for fixed-size local (neighbor) dimensions, whose length is given by `values`.
+    """
+    return gtx.as_field((dim,), np.asarray(values, dtype=dtype), allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+
+
 def _shape(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
