@@ -461,250 +461,26 @@ class NonHydrostaticParams:
         """
 
 
-class VelocityAdvection:
-    def __init__(
-        self,
-        *,
-        grid: icon_grid.IconGrid,
-        metric_state: dycore_states.MetricStateNonHydro,
-        interpolation_state: dycore_states.InterpolationState,
-        vertical_params: v_grid.VerticalGrid,
-        edge_params: grid_states.EdgeParams,
-        cell_params: grid_states.CellParams,
-        owner_mask: fa.CellField[bool],
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
-    ):
-        self._grid: icon_grid.IconGrid = grid
-        self._metric_state: dycore_states.MetricStateNonHydro = metric_state
-        self._interpolation_state: dycore_states.InterpolationState = interpolation_state
-        self._vertical_params: v_grid.VerticalGrid = vertical_params
-        self._edge_params: grid_states.EdgeParams = edge_params
-        self._cell_params: grid_states.CellParams = cell_params
-        self._c_owner_mask: fa.CellField[bool] = owner_mask
+def _velocity_advection_scale_factors(dtime: float) -> tuple[float, float]:
+    scaled_cfl_w_limit = 0.65 / dtime
+    scalfac_exdiff = 0.05 / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
+    return scaled_cfl_w_limit, scalfac_exdiff
 
-        self._cfl_w_limit: float = 0.65
-        self._scalfac_exdiff: float = 0.05
-        self._allocate_local_fields(model_backends.get_allocator(backend))
-        self._determine_local_domains()
 
-        cell_horizontal_sizes = {
-            "start_cell_lateral_boundary_level_4": self._start_cell_lateral_boundary_level_4,
-            "end_cell_halo": self._end_cell_halo,
-            "start_edge_nudging_level_2": self._start_edge_nudging_level_2,
-            "end_edge_local": self._end_edge_local,
-        }
-        shared_constant_args: dict[str, gtx.Field | gtx_typing.Scalar] = {
-            "coeff1_dwdz": self._metric_state.coeff1_dwdz,
-            "coeff2_dwdz": self._metric_state.coeff2_dwdz,
-            "c_intp": self._interpolation_state.c_intp,
-            "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
-            "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
-            "tangent_orientation": self._edge_params.tangent_orientation,
-            "e_bln_c_s": self._interpolation_state.e_bln_c_s,
-            "ddqz_z_half": self._metric_state.ddqz_z_half,
-            "geofac_n2s": self._interpolation_state.geofac_n2s,
-            "owner_mask": self._c_owner_mask,
-            "coriolis_frequency": self._edge_params.coriolis_frequency,
-            "geofac_rot": self._interpolation_state.geofac_rot,
-            "coeff_gradekin": self._metric_state.coeff_gradekin,
-            "c_lin_e": self._interpolation_state.c_lin_e,
-            "ddqz_z_full_e": self._metric_state.ddqz_z_full_e,
-            "area_edge": self._edge_params.edge_areas,
-            "area": self._cell_params.area,
-            "geofac_grdiv": self._interpolation_state.geofac_grdiv,
-        }
-
-        self._compute_velocity_advection_in_predictor_step = setup_program(
-            backend=backend,
-            program=compute_velocity_advection_in_predictor_step,
-            constant_args={
-                "rbf_vec_coeff_e": self._interpolation_state.rbf_vec_coeff_e,
-                "wgtfac_e": self._metric_state.wgtfac_e,
-                "wgtfacq_e": self._metric_state.wgtfacq_e,
-                "ddxn_z_full": self._metric_state.ddxn_z_full,
-                "ddxt_z_full": self._metric_state.ddxt_z_full,
-                "wgtfac_c": self._metric_state.wgtfac_c,
-                **shared_constant_args,
-            },
-            variants={
-                "skip_compute_predictor_vertical_advection": [True, False],
-                "apply_extra_diffusion_on_vn": [False, True],
-            },
-            horizontal_sizes={
-                "start_edge_lateral_boundary_level_5": self._start_edge_lateral_boundary_level_5,
-                "end_edge_halo_level_2": self._end_edge_halo_level_2,
-                **cell_horizontal_sizes,
-            },
-            vertical_sizes={
-                "nflatlev": self._vertical_params.nflatlev,
-                "end_index_of_damping_layer": self._vertical_params.end_index_of_damping_layer,
-                "vertical_start": gtx.int32(0),
-                "vertical_end": self._grid.num_levels,
-            },
-            offset_provider=self._grid.connectivities,
-        )
-
-        self._compute_velocity_advection_in_corrector_step = setup_program(
-            backend=backend,
-            program=compute_velocity_advection_in_corrector_step,
-            constant_args=shared_constant_args,
-            variants={
-                "apply_extra_diffusion_on_vn": [False, True],
-            },
-            horizontal_sizes=cell_horizontal_sizes,
-            vertical_sizes={
-                "end_index_of_damping_layer": self._vertical_params.end_index_of_damping_layer,
-                "vertical_start": gtx.int32(0),
-                "vertical_end": self._grid.num_levels,
-            },
-            offset_provider=self._grid.connectivities,
-        )
-
-    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
-        self._vertical_cfl = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.vpfloat
-        )
-
-    def _determine_local_domains(self) -> None:
-        edge_domain = h_grid.domain(dims.EdgeDim)
-        cell_domain = h_grid.domain(dims.CellDim)
-
-        self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
-        )
-        self._start_edge_nudging_level_2 = self._grid.start_index(
-            edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
-        )
-        self._end_edge_local = self._grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-        self._end_edge_halo_level_2 = self._grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-
-        self._start_cell_lateral_boundary_level_4 = self._grid.start_index(
-            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
-        )
-        self._end_cell_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
-
-    def run_predictor_step(
-        self,
-        *,
-        skip_compute_predictor_vertical_advection: bool,
-        diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
-        prognostic_state: prognostics.PrognosticState,
-        contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
-        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
-        tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.anyfloat],
-        dtime: ta.wpfloat,
-    ) -> None:
-        """
-        Compute some diagnostic variables that are used in the predictor step
-        of the dycore and advective tendency of normal and vertical winds.
-
-        Args:
-            skip_compute_predictor_vertical_advection: Option to skip computation of advective tendency of vertical wind
-            diagnostic_state: DiagnosticStateNonHydro class
-            prognostic_state: PrognosticState class
-            contravariant_correction_at_edges_on_model_levels: Contravariant corrected vertical wind at edge [m s-1]
-            horizontal_kinetic_energy_at_edges_on_model_levels: Horizontal kinetic energy at edge [m^2 s-2]
-            tangential_wind_on_half_levels: tangential wind at edge on k-half levels [m s-1]
-            dtime: time step [m s-1]
-        """
-
-        cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
-
-        # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime`
-        # from the reduction below, we would have to synchronize with the device before this call.
-        # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
-        apply_extra_diffusion_on_vn = True
-
-        # TODO(havogt): however, our test data is probably not able to catch cfl_clipping conditons
-        self._compute_velocity_advection_in_predictor_step(
-            tangential_wind=diagnostic_state.tangential_wind,
-            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
-            vn_on_half_levels=diagnostic_state.vn_on_half_levels,
-            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
-            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
-            contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
-            vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.predictor,
-            vertical_cfl=self._vertical_cfl,
-            normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
-            vn=prognostic_state.vn,
-            w=prognostic_state.w,
-            scalfac_exdiff=scalfac_exdiff,
-            cfl_w_limit=cfl_w_limit,
-            dtime=dtime,
-            skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-            apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
-        )
-
-        self._update_max_vertical_cfl(diagnostic_state)
-
-    def _scale_factors_by_dtime(self, dtime: float) -> tuple[float, float]:
-        scaled_cfl_w_limit = self._cfl_w_limit / dtime
-        scalfac_exdiff = self._scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
-        return scaled_cfl_w_limit, scalfac_exdiff
-
-    def _update_max_vertical_cfl(
-        self, diagnostic_state: nonhydro_states.DiagnosticStateNonHydro
-    ) -> None:
-        # Reductions should be performed on flat, contiguous arrays for best cupy performance
-        # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = self._vertical_cfl.array_ns.max(  # type: ignore[attr-defined]
-            self._vertical_cfl.ndarray[
-                self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
-            ].ravel(order="K")  # type: ignore[attr-defined]
-        )
-        diagnostic_state.max_vertical_cfl = self._vertical_cfl.array_ns.maximum(  # type: ignore[attr-defined]
-            max_vertical_cfl, diagnostic_state.max_vertical_cfl
-        )
-
-    def run_corrector_step(
-        self,
-        *,
-        diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
-        prognostic_state: prognostics.PrognosticState,
-        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.anyfloat],
-        tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.anyfloat],
-        dtime: ta.wpfloat,
-    ) -> None:
-        """
-        Compute some diagnostic variables that are used in the corrector step
-        of the dycore and advective tendency of normal and vertical winds.
-
-        Args:
-            diagnostic_state: DiagnosticStateNonHydro class
-            prognostic_state: PrognosticState class
-            horizontal_kinetic_energy_at_edges_on_model_levels: Horizontal kinetic energy at edge [m^2 s-2]
-            tangential_wind_on_half_levels: tangential wind at edge on k-half levels [m s-1]
-            dtime: time step [m s-1]
-        """
-
-        cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
-
-        # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime`
-        # from the reduction below, we would have to synchronize with the device before this call.
-        # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
-        apply_extra_diffusion_on_vn = True
-
-        self._compute_velocity_advection_in_corrector_step(
-            vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.corrector,
-            vertical_cfl=self._vertical_cfl,
-            normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
-            vn=prognostic_state.vn,
-            w=prognostic_state.w,
-            tangential_wind=diagnostic_state.tangential_wind,
-            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
-            vn_on_half_levels=diagnostic_state.vn_on_half_levels,
-            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
-            contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
-            scalfac_exdiff=scalfac_exdiff,
-            cfl_w_limit=cfl_w_limit,
-            dtime=dtime,
-            apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
-        )
-
-        self._update_max_vertical_cfl(diagnostic_state)
+def _update_max_vertical_cfl(
+    diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
+    vertical_cfl: fa.CellKHalfField[ta.vpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+) -> None:
+    # Reductions should be performed on flat, contiguous arrays for best cupy performance
+    # as otherwise cupy won't use cub optimized kernels.
+    max_vertical_cfl = vertical_cfl.array_ns.max(  # type: ignore[attr-defined]
+        vertical_cfl.ndarray[horizontal_start:horizontal_end, :].ravel(order="K")  # type: ignore[attr-defined]
+    )
+    diagnostic_state.max_vertical_cfl = vertical_cfl.array_ns.maximum(  # type: ignore[attr-defined]
+        max_vertical_cfl, diagnostic_state.max_vertical_cfl
+    )
 
 
 class SolveNonhydro:
@@ -1137,16 +913,79 @@ class SolveNonhydro:
             },
         )
 
-        self.velocity_advection = VelocityAdvection(
-            grid=grid,
-            metric_state=metric_state_nonhydro,
-            interpolation_state=interpolation_state,
-            vertical_params=vertical_params,
-            edge_params=edge_geometry,
-            cell_params=cell_geometry,
-            owner_mask=owner_mask,
+        cell_horizontal_sizes = {
+            "start_cell_lateral_boundary_level_4": self._start_cell_lateral_boundary_level_4,
+            "end_cell_halo": self._end_cell_halo,
+            "start_edge_nudging_level_2": self._start_edge_nudging_level_2,
+            "end_edge_local": self._end_edge_local,
+        }
+        shared_constant_args: dict[str, gtx.Field | gtx_typing.Scalar] = {
+            "coeff1_dwdz": self._metric_state_nonhydro.coeff1_dwdz,
+            "coeff2_dwdz": self._metric_state_nonhydro.coeff2_dwdz,
+            "c_intp": self._interpolation_state.c_intp,
+            "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
+            "inv_primal_edge_length": self._edge_geometry.inverse_primal_edge_lengths,
+            "tangent_orientation": self._edge_geometry.tangent_orientation,
+            "e_bln_c_s": self._interpolation_state.e_bln_c_s,
+            "ddqz_z_half": self._metric_state_nonhydro.ddqz_z_half,
+            "geofac_n2s": self._interpolation_state.geofac_n2s,
+            "owner_mask": owner_mask,
+            "coriolis_frequency": self._edge_geometry.coriolis_frequency,
+            "geofac_rot": self._interpolation_state.geofac_rot,
+            "coeff_gradekin": self._metric_state_nonhydro.coeff_gradekin,
+            "c_lin_e": self._interpolation_state.c_lin_e,
+            "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
+            "area_edge": self._edge_geometry.edge_areas,
+            "area": self._cell_params.area,
+            "geofac_grdiv": self._interpolation_state.geofac_grdiv,
+        }
+
+        self._compute_velocity_advection_in_predictor_step = setup_program(
             backend=backend,
+            program=compute_velocity_advection_in_predictor_step,
+            constant_args={
+                "rbf_vec_coeff_e": self._interpolation_state.rbf_vec_coeff_e,
+                "wgtfac_e": self._metric_state_nonhydro.wgtfac_e,
+                "wgtfacq_e": self._metric_state_nonhydro.wgtfacq_e,
+                "ddxn_z_full": self._metric_state_nonhydro.ddxn_z_full,
+                "ddxt_z_full": self._metric_state_nonhydro.ddxt_z_full,
+                "wgtfac_c": self._metric_state_nonhydro.wgtfac_c,
+                **shared_constant_args,
+            },
+            variants={
+                "skip_compute_predictor_vertical_advection": [True, False],
+                "apply_extra_diffusion_on_vn": [False, True],
+            },
+            horizontal_sizes={
+                "start_edge_lateral_boundary_level_5": self._start_edge_lateral_boundary_level_5,
+                "end_edge_halo_level_2": self._end_edge_halo_level_2,
+                **cell_horizontal_sizes,
+            },
+            vertical_sizes={
+                "nflatlev": self._vertical_params.nflatlev,
+                "end_index_of_damping_layer": self._vertical_params.end_index_of_damping_layer,
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self._grid.num_levels,
+            },
+            offset_provider=self._grid.connectivities,
         )
+
+        self._compute_velocity_advection_in_corrector_step = setup_program(
+            backend=backend,
+            program=compute_velocity_advection_in_corrector_step,
+            constant_args=shared_constant_args,
+            variants={
+                "apply_extra_diffusion_on_vn": [False, True],
+            },
+            horizontal_sizes=cell_horizontal_sizes,
+            vertical_sizes={
+                "end_index_of_damping_layer": self._vertical_params.end_index_of_damping_layer,
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self._grid.num_levels,
+            },
+            offset_provider=self._grid.connectivities,
+        )
+
         self._allocate_local_fields(model_backends.get_allocator(backend))
 
         self._en_smag_fac_for_zero_nshift(
@@ -1260,6 +1099,9 @@ class SolveNonhydro:
         Declared as enh_divdamp_fac in ICON.
         """
         self.intermediate_fields = IntermediateFields.allocate(grid=self._grid, allocator=allocator)
+        self._vertical_cfl = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator, dtype=ta.vpfloat
+        )
 
     def _determine_local_domains(self) -> None:
         vertex_domain = h_grid.domain(dims.VertexDim)
@@ -1272,6 +1114,9 @@ class SolveNonhydro:
         )
         self._start_cell_lateral_boundary_level_3 = self._grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+        )
+        self._start_cell_lateral_boundary_level_4 = self._grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._start_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.LOCAL))
@@ -1432,14 +1277,38 @@ class SolveNonhydro:
                 and not (at_initial_timestep and at_first_substep)
             )
 
-            self.velocity_advection.run_predictor_step(
-                skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-                diagnostic_state=diagnostic_state_nh,
-                prognostic_state=prognostic_states.current,
-                contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
-                horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+            cfl_w_limit, scalfac_exdiff = _velocity_advection_scale_factors(dtime)
+
+            # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime`
+            # from the reduction below, we would have to synchronize with the device before this call.
+            # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
+            apply_extra_diffusion_on_vn = True
+
+            # TODO(havogt): however, our test data is probably not able to catch cfl_clipping conditons
+            self._compute_velocity_advection_in_predictor_step(
+                tangential_wind=diagnostic_state_nh.tangential_wind,
                 tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
+                vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels,
+                horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+                contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
+                contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+                vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
+                vertical_cfl=self._vertical_cfl,
+                normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
+                vn=prognostic_states.current.vn,
+                w=prognostic_states.current.w,
+                scalfac_exdiff=scalfac_exdiff,
+                cfl_w_limit=cfl_w_limit,
                 dtime=dtime,
+                skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
+                apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
+            )
+
+            _update_max_vertical_cfl(
+                diagnostic_state_nh,
+                self._vertical_cfl,
+                self._start_cell_lateral_boundary_level_4,
+                self._end_cell_halo,
             )
 
         self._compute_perturbed_quantities_and_interpolation(
@@ -1611,12 +1480,35 @@ class SolveNonhydro:
         )
 
         log.debug("corrector run velocity advection")
-        self.velocity_advection.run_corrector_step(
-            diagnostic_state=diagnostic_state_nh,
-            prognostic_state=prognostic_states.next,
-            horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+        cfl_w_limit, scalfac_exdiff = _velocity_advection_scale_factors(dtime)
+
+        # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime`
+        # from the reduction below, we would have to synchronize with the device before this call.
+        # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
+        apply_extra_diffusion_on_vn = True
+
+        self._compute_velocity_advection_in_corrector_step(
+            vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.corrector,
+            vertical_cfl=self._vertical_cfl,
+            normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.corrector,
+            vn=prognostic_states.next.vn,
+            w=prognostic_states.next.w,
+            tangential_wind=diagnostic_state_nh.tangential_wind,
             tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
+            vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
+            contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+            scalfac_exdiff=scalfac_exdiff,
+            cfl_w_limit=cfl_w_limit,
             dtime=dtime,
+            apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
+        )
+
+        _update_max_vertical_cfl(
+            diagnostic_state_nh,
+            self._vertical_cfl,
+            self._start_cell_lateral_boundary_level_4,
+            self._end_cell_halo,
         )
 
         self._compute_interpolation_and_nonhydro_buoy(

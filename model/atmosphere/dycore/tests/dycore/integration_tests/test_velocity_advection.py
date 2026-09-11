@@ -13,6 +13,10 @@ import pytest
 from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
+from icon4py.model.atmosphere.dycore.stencils import (
+    velocity_advection_corrector,
+    velocity_advection_predictor,
+)
 from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -67,71 +71,9 @@ def create_vertical_params(
         (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
-def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917 [too-many-positional-arguments]
-    interpolation_savepoint: serialbox.InterpolationSavepoint,
-    step_date_init: str,
-    grid_savepoint: serialbox.IconGridSavepoint,
-    icon_grid: icon.IconGrid,
-    metrics_savepoint: serialbox.MetricSavepoint,
-    experiment: test_defs.Experiment,
-    backend: gtx_typing.Backend | None,
-) -> None:
-    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
-    vertical_config = experiment.config.vertical_grid
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
-
-    velocity_advection = solve_nonhydro.VelocityAdvection(
-        grid=icon_grid,
-        metric_state=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_params,
-        edge_params=grid_savepoint.construct_edge_geometry(),
-        cell_params=grid_savepoint.construct_cell_geometry(),
-        owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
-    )
-    assert velocity_advection._cfl_w_limit == 0.65
-    assert velocity_advection._scalfac_exdiff == 0.05
-    assert test_utils.dallclose(velocity_advection._vertical_cfl.asnumpy(), 0.0)
-
-
-@pytest.mark.embedded_static_args
-@pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment_description, step_date_init",
-    [
-        (test_defs.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
-        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
-    ],
-)
-def test_scale_factors_by_dtime(  # noqa: PLR0917 [too-many-positional-arguments]
-    interpolation_savepoint,
-    metrics_savepoint,
-    experiment,
-    step_date_init,
-    savepoint_velocity_init,
-    icon_grid,
-    grid_savepoint,
-    backend,
-):
+def test_scale_factors_by_dtime(experiment, step_date_init, savepoint_velocity_init):
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
-    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
-    vertical_config = experiment.config.vertical_grid
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
-
-    velocity_advection = solve_nonhydro.VelocityAdvection(
-        grid=icon_grid,
-        metric_state=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_params,
-        edge_params=grid_savepoint.construct_edge_geometry(),
-        cell_params=grid_savepoint.construct_cell_geometry(),
-        owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
-    )
-    (cfl_w_limit, scalfac_exdiff) = velocity_advection._scale_factors_by_dtime(dtime)
+    cfl_w_limit, scalfac_exdiff = solve_nonhydro._velocity_advection_scale_factors(dtime)
     assert cfl_w_limit == savepoint_velocity_init.cfl_w_limit()
     assert scalfac_exdiff == savepoint_velocity_init.scalfac_exdiff()
 
@@ -214,29 +156,91 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    velocity_advection = solve_nonhydro.VelocityAdvection(
-        grid=icon_grid,
-        metric_state=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_params,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    cell_domain = h_grid.domain(dims.CellDim)
+    end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
+    end_edge_halo_level_2 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+    end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+    start_cell_lateral_boundary_level_4 = icon_grid.start_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
     )
+    start_edge_lateral_boundary_level_5 = icon_grid.start_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+    )
+    start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+    vertical_cfl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend, dtype=ta.vpfloat
+    )
+    cfl_w_limit, scalfac_exdiff = solve_nonhydro._velocity_advection_scale_factors(dtime)
 
     contravariant_correction_at_edges_on_model_levels = init_savepoint.z_w_concorr_me()
     horizontal_kinetic_energy_at_edges_on_model_levels = init_savepoint.z_kin_hor_e()
     tangential_wind_on_half_levels = init_savepoint.z_vt_ie()
 
-    velocity_advection.run_predictor_step(
-        skip_compute_predictor_vertical_advection=vn_only,
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
-        horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+    velocity_advection_predictor.compute_velocity_advection_in_predictor_step.with_backend(backend)(
+        tangential_wind=diagnostic_state.tangential_wind,
         tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+        vn_on_half_levels=diagnostic_state.vn_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+        contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
+        contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
+        vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.predictor,
+        vertical_cfl=vertical_cfl,
+        normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
+        vn=prognostic_state.vn,
+        w=prognostic_state.w,
+        rbf_vec_coeff_e=interpolation_state.rbf_vec_coeff_e,
+        wgtfac_e=metric_state_nonhydro.wgtfac_e,
+        wgtfacq_e=metric_state_nonhydro.wgtfacq_e,
+        ddxn_z_full=metric_state_nonhydro.ddxn_z_full,
+        ddxt_z_full=metric_state_nonhydro.ddxt_z_full,
+        coeff1_dwdz=metric_state_nonhydro.coeff1_dwdz,
+        coeff2_dwdz=metric_state_nonhydro.coeff2_dwdz,
+        c_intp=interpolation_state.c_intp,
+        inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+        inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
+        tangent_orientation=edge_geometry.tangent_orientation,
+        e_bln_c_s=interpolation_state.e_bln_c_s,
+        wgtfac_c=metric_state_nonhydro.wgtfac_c,
+        ddqz_z_half=metric_state_nonhydro.ddqz_z_half,
+        area=cell_geometry.area,
+        geofac_n2s=interpolation_state.geofac_n2s,
+        owner_mask=grid_savepoint.c_owner_mask(),
+        coriolis_frequency=edge_geometry.coriolis_frequency,
+        geofac_rot=interpolation_state.geofac_rot,
+        coeff_gradekin=metric_state_nonhydro.coeff_gradekin,
+        c_lin_e=interpolation_state.c_lin_e,
+        ddqz_z_full_e=metric_state_nonhydro.ddqz_z_full_e,
+        area_edge=edge_geometry.edge_areas,
+        geofac_grdiv=interpolation_state.geofac_grdiv,
+        scalfac_exdiff=scalfac_exdiff,
+        cfl_w_limit=cfl_w_limit,
         dtime=dtime,
+        skip_compute_predictor_vertical_advection=vn_only,
+        apply_extra_diffusion_on_vn=True,
+        nflatlev=vertical_params.nflatlev,
+        end_index_of_damping_layer=vertical_params.end_index_of_damping_layer,
+        start_edge_lateral_boundary_level_5=start_edge_lateral_boundary_level_5,
+        end_edge_halo_level_2=end_edge_halo_level_2,
+        start_cell_lateral_boundary_level_4=start_cell_lateral_boundary_level_4,
+        end_cell_halo=end_cell_halo,
+        start_edge_nudging_level_2=start_edge_nudging_level_2,
+        end_edge_local=end_edge_local,
+        vertical_start=gtx.int32(0),
+        vertical_end=icon_grid.num_levels,
+        offset_provider={
+            "C2E": icon_grid.get_connectivity("C2E"),
+            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "E2C2E": icon_grid.get_connectivity("E2C2E"),
+            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
+            "E2V": icon_grid.get_connectivity("E2V"),
+            "V2C": icon_grid.get_connectivity("V2C"),
+            "V2E": icon_grid.get_connectivity("V2E"),
+        },
+    )
+    solve_nonhydro._update_max_vertical_cfl(
+        diagnostic_state, vertical_cfl, start_cell_lateral_boundary_level_4, end_cell_halo
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(0).asnumpy()
@@ -308,11 +312,11 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     assert diagnostic_state.max_vertical_cfl == icon_result_max_vcfl_dyn
 
     _compare_cfl(
-        vertical_cfl=velocity_advection._vertical_cfl.asnumpy(),
+        vertical_cfl=vertical_cfl.asnumpy(),
         icon_result_cfl_clipping=savepoint_velocity_exit.cfl_clipping().asnumpy(),
         icon_result_max_vcfl_dyn=icon_result_max_vcfl_dyn,
-        horizontal_start=velocity_advection._start_cell_lateral_boundary_level_4,
-        horizontal_end=velocity_advection._end_cell_halo,
+        horizontal_start=start_cell_lateral_boundary_level_4,
+        horizontal_end=end_cell_halo,
         vertical_start=max(2, grid_savepoint.nrdmax() - 2),
         vertical_end=icon_grid.num_levels - 3,
     )
@@ -401,23 +405,71 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_config = experiment.config.vertical_grid
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    velocity_advection = solve_nonhydro.VelocityAdvection(
-        grid=icon_grid,
-        metric_state=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_params,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-        owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    cell_domain = h_grid.domain(dims.CellDim)
+    end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
+    end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+    start_cell_lateral_boundary_level_4 = icon_grid.start_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
     )
+    start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+    vertical_cfl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend, dtype=ta.vpfloat
+    )
+    cfl_w_limit, scalfac_exdiff = solve_nonhydro._velocity_advection_scale_factors(dtime)
 
-    velocity_advection.run_corrector_step(
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        horizontal_kinetic_energy_at_edges_on_model_levels=init_savepoint.z_kin_hor_e(),
+    velocity_advection_corrector.compute_velocity_advection_in_corrector_step.with_backend(backend)(
+        vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.corrector,
+        vertical_cfl=vertical_cfl,
+        normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
+        vn=prognostic_state.vn,
+        w=prognostic_state.w,
+        tangential_wind=diagnostic_state.tangential_wind,
         tangential_wind_on_half_levels=init_savepoint.z_vt_ie(),
+        vn_on_half_levels=diagnostic_state.vn_on_half_levels,
+        horizontal_kinetic_energy_at_edges_on_model_levels=init_savepoint.z_kin_hor_e(),
+        contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
+        coeff1_dwdz=metric_state_nonhydro.coeff1_dwdz,
+        coeff2_dwdz=metric_state_nonhydro.coeff2_dwdz,
+        c_intp=interpolation_state.c_intp,
+        inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+        inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
+        tangent_orientation=edge_geometry.tangent_orientation,
+        e_bln_c_s=interpolation_state.e_bln_c_s,
+        ddqz_z_half=metric_state_nonhydro.ddqz_z_half,
+        area=cell_geometry.area,
+        geofac_n2s=interpolation_state.geofac_n2s,
+        owner_mask=grid_savepoint.c_owner_mask(),
+        coriolis_frequency=edge_geometry.coriolis_frequency,
+        geofac_rot=interpolation_state.geofac_rot,
+        coeff_gradekin=metric_state_nonhydro.coeff_gradekin,
+        c_lin_e=interpolation_state.c_lin_e,
+        ddqz_z_full_e=metric_state_nonhydro.ddqz_z_full_e,
+        area_edge=edge_geometry.edge_areas,
+        geofac_grdiv=interpolation_state.geofac_grdiv,
+        scalfac_exdiff=scalfac_exdiff,
+        cfl_w_limit=cfl_w_limit,
         dtime=dtime,
+        apply_extra_diffusion_on_vn=True,
+        end_index_of_damping_layer=vertical_params.end_index_of_damping_layer,
+        start_cell_lateral_boundary_level_4=start_cell_lateral_boundary_level_4,
+        end_cell_halo=end_cell_halo,
+        start_edge_nudging_level_2=start_edge_nudging_level_2,
+        end_edge_local=end_edge_local,
+        vertical_start=gtx.int32(0),
+        vertical_end=icon_grid.num_levels,
+        offset_provider={
+            "C2E": icon_grid.get_connectivity("C2E"),
+            "C2E2CO": icon_grid.get_connectivity("C2E2CO"),
+            "E2C": icon_grid.get_connectivity("E2C"),
+            "E2C2EO": icon_grid.get_connectivity("E2C2EO"),
+            "E2V": icon_grid.get_connectivity("E2V"),
+            "V2C": icon_grid.get_connectivity("V2C"),
+            "V2E": icon_grid.get_connectivity("V2E"),
+        },
+    )
+    solve_nonhydro._update_max_vertical_cfl(
+        diagnostic_state, vertical_cfl, start_cell_lateral_boundary_level_4, end_cell_halo
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(1).asnumpy()
@@ -441,11 +493,11 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     assert diagnostic_state.max_vertical_cfl == icon_result_max_vcfl_dyn
 
     _compare_cfl(
-        vertical_cfl=velocity_advection._vertical_cfl.asnumpy(),
+        vertical_cfl=vertical_cfl.asnumpy(),
         icon_result_cfl_clipping=savepoint_velocity_exit.cfl_clipping().asnumpy(),
         icon_result_max_vcfl_dyn=icon_result_max_vcfl_dyn,
-        horizontal_start=velocity_advection._start_cell_lateral_boundary_level_4,
-        horizontal_end=velocity_advection._end_cell_halo,
+        horizontal_start=start_cell_lateral_boundary_level_4,
+        horizontal_end=end_cell_halo,
         vertical_start=max(2, grid_savepoint.nrdmax() - 2),
         vertical_end=icon_grid.num_levels - 3,
     )
