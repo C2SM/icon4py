@@ -30,17 +30,26 @@ member's step.
 
 Environment overrides for the study's runs (unset in a normal test run):
 'ICON4PY_WENO_ORDER_STUDY_FACTORS' (comma-separated refinement factors, e.g. "8" for one
-finer member on a GPU), 'ICON4PY_WENO_ORDER_STUDY_ROWS' (comma-separated row ids) and
-'ICON4PY_WENO_ORDER_STUDY_RESULTS' (a JSON file the results are merged into after every
-run; the final tracer of every run is saved next to it, and a run without the pure row takes
-that row's saved tracers for the distances, so the rows can be run one pytest invocation
-at a time). With a subset of factors or rows the bands are not checked.
+finer member on a GPU), 'ICON4PY_WENO_ORDER_STUDY_ROWS' (comma-separated row ids),
+'ICON4PY_WENO_ORDER_STUDY_RESULTS' (a JSON file every run's record is merged into as soon
+as the run ends, one record per (row, factor): a run replaces only its own record and never
+drops the others, so rows and factors can be run one pytest invocation at a time, e.g. one
+batch job each; the final tracer of every run is saved next to the file) and
+'ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY' (set to 1: run nothing, evaluate the results file,
+which is then required, for all rows or the selected ones). The distances to the pure row
+are recomputed from the saved tracers whenever the results are evaluated, so the order in
+which the rows ran does not matter. The slopes are fitted over the factors
+'_REFINEMENT_FACTORS' and, if the file holds more (an 8x member), also over all of them;
+the bands are checked on the '_REFINEMENT_FACTORS' fit of every evaluated row whose
+records hold those factors (in check-only mode every evaluated row must hold them).
 """
 
 import dataclasses
 import json
+import math
 import os
 import pathlib
+import socket
 import time as wall_time
 from collections.abc import Callable
 from typing import Final
@@ -85,6 +94,9 @@ _UNITY = weno_least_squares.WenoLinearWeights.UNITY
 
 #: the row the WENO rows are measured against
 _PURE_ROW: Final = "miura3"
+
+_ERROR_KEYS: Final = ("error_l1", "error_l2", "error_linf")
+_DISTANCE_KEYS: Final = ("distance_to_miura3_l2", "distance_to_miura3_linf")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -214,23 +226,42 @@ def _time_step(
     return dtime, int(integration_time / dtime)
 
 
-def _previous_results(
-    results_path: pathlib.Path, rows: tuple[_Row, ...], factors: tuple[int, ...]
-) -> tuple[dict[str, dict[str, dict]], dict[str, dict[int, np.ndarray]]]:
-    """The records of earlier invocations and the pure row's saved tracers, if any."""
-    records: dict[str, dict[str, dict]] = {}
-    if results_path.exists():
-        records = json.loads(results_path.read_text()).get("records", {})
-    for row in rows:
-        records[row.id] = {}
-    tracers: dict[str, dict[int, np.ndarray]] = {row.id: {} for row in rows}
-    if _PURE_ROW not in tracers:
-        tracers[_PURE_ROW] = {
-            factor: np.load(_tracer_path(results_path, _PURE_ROW, factor))
-            for factor in factors
-            if _tracer_path(results_path, _PURE_ROW, factor).exists()
-        }
-    return records, tracers
+def _load_records(results_path: pathlib.Path) -> dict[str, dict[str, dict]]:
+    if not results_path.exists():
+        return {}
+    return json.loads(results_path.read_text()).get("records", {})
+
+
+def _write_results(results_path: pathlib.Path, payload: dict) -> None:
+    """Replace the results file atomically, so that a killed job cannot leave half a file."""
+    partial = results_path.with_name(results_path.name + ".partial")
+    partial.write_text(json.dumps(payload, indent=1))
+    partial.replace(results_path)
+
+
+def _merge_record(results_path: pathlib.Path, row_id: str, factor: int, record: dict) -> None:
+    """Set one (row, factor) record in the results file, keeping every other record.
+
+    The file is read again right before the write rather than taken from the start of the
+    invocation, so records written in between (another invocation) are kept as well.
+    """
+    records = _load_records(results_path)
+    records.setdefault(row_id, {})[str(factor)] = record
+    _write_results(results_path, {"records": records})
+
+
+def _distances(simulated: np.ndarray, pure_tracer: np.ndarray) -> dict[str, float]:
+    return {
+        "distance_to_miura3_l2": _relative_l2_error(simulated, pure_tracer),
+        "distance_to_miura3_linf": float(
+            np.max(np.abs(simulated - pure_tracer)) / np.max(np.abs(pure_tracer))
+        ),
+    }
+
+
+def _saved_tracer(results_path: pathlib.Path, row_id: str, factor: int) -> np.ndarray | None:
+    path = _tracer_path(results_path, row_id, factor)
+    return np.load(path) if path.exists() else None
 
 
 def _run_member(
@@ -296,6 +327,8 @@ def _run_member(
         "error_l2": _relative_l2_error(simulated, reference),
         "error_linf": float(error_linf),
         "wall_time_s": elapsed,
+        "backend": getattr(backend, "name", str(backend)),
+        "host": socket.gethostname(),
     }
     if row.advection_type is _MIURA3_WENO_HYBRID:
         # the mask of the last step, the cells whose edges took the WENO flux
@@ -303,10 +336,7 @@ def _run_member(
         use_weno = data_alloc.as_numpy(horizontal._use_weno.ndarray)
         record["weno_cell_fraction"] = float(np.mean(use_weno))
     if pure_tracer is not None:
-        record["distance_to_miura3_l2"] = _relative_l2_error(simulated, pure_tracer)
-        record["distance_to_miura3_linf"] = float(
-            np.max(np.abs(simulated - pure_tracer)) / np.max(np.abs(pure_tracer))
-        )
+        record.update(_distances(simulated, pure_tracer))
     return record, simulated
 
 
@@ -326,13 +356,101 @@ def _describe(row: _Row, factor: int, record: dict) -> str:
     return line
 
 
-def _row_slopes(
-    per_factor: list[dict], grid_spacing: list[float]
-) -> dict[str, tuple[float, float]]:
-    keys = ["error_l1", "error_l2", "error_linf"]
-    if all("distance_to_miura3_l2" in record for record in per_factor):
-        keys += ["distance_to_miura3_l2", "distance_to_miura3_linf"]
-    return {key: _fit_slope(grid_spacing, [record[key] for record in per_factor]) for key in keys}
+def _local_rates(grid_spacing: list[float], values: list[float]) -> list[float]:
+    """The rate between neighbouring members; a straight line has them all equal."""
+    return [
+        math.log(values[i] / values[i + 1]) / math.log(grid_spacing[i] / grid_spacing[i + 1])
+        if values[i] > 0.0 and values[i + 1] > 0.0
+        else float("nan")
+        for i in range(len(values) - 1)
+    ]
+
+
+def _refresh_distances(results_path: pathlib.Path, records: dict[str, dict[str, dict]]) -> None:
+    """Recompute every WENO record's distance to the pure row from the saved tracers."""
+    for row_id, per_factor in records.items():
+        if row_id == _PURE_ROW:
+            continue
+        for factor, record in per_factor.items():
+            simulated = _saved_tracer(results_path, row_id, int(factor))
+            pure_tracer = _saved_tracer(results_path, _PURE_ROW, int(factor))
+            if simulated is not None and pure_tracer is not None:
+                record.update(_distances(simulated, pure_tracer))
+
+
+def _fits(per_factor: dict[str, dict], factors: tuple[int, ...]) -> dict[str, dict]:
+    """Slope +- stderr and local rates of every norm (and distance) over the given factors."""
+    records = [per_factor[str(factor)] for factor in factors]
+    grid_spacing = [record["mean_edge_length"] for record in records]
+    keys = list(_ERROR_KEYS)
+    if all(key in record for record in records for key in _DISTANCE_KEYS):
+        keys += _DISTANCE_KEYS
+    return {
+        key: {
+            "slope": _fit_slope(grid_spacing, [record[key] for record in records]),
+            "local_rates": _local_rates(grid_spacing, [record[key] for record in records]),
+        }
+        for key in keys
+    }
+
+
+def _evaluate(
+    results_path: pathlib.Path, rows: tuple[_Row, ...], *, require_all: bool, write: bool
+) -> None:
+    """Print the slopes of every row in the results file, then check the bands of 'rows'.
+
+    A row is gated on its '_REFINEMENT_FACTORS' fit when its records hold those factors; with
+    'require_all' a row of 'rows' without them fails the test instead of being skipped.
+    """
+    records = _load_records(results_path)
+    _refresh_distances(results_path, records)
+    refinement_label = ",".join(str(factor) for factor in _REFINEMENT_FACTORS)
+    slopes: dict[str, dict[str, dict]] = {}
+    for row in _ROWS:
+        per_factor = records.get(row.id, {})
+        present = tuple(sorted(int(factor) for factor in per_factor))
+        if not set(_REFINEMENT_FACTORS) <= set(present):
+            if per_factor:
+                print(f"\nno slopes, {row.id}: factors {present} only", flush=True)
+            continue
+        fit_sets = [_REFINEMENT_FACTORS] + ([present] if present != _REFINEMENT_FACTORS else [])
+        slopes[row.id] = {}
+        for factors in fit_sets:
+            label = ",".join(str(factor) for factor in factors)
+            fits = _fits(per_factor, factors)
+            slopes[row.id][label] = fits
+            print(
+                f"\nslopes {row.id:18s} x{label}: "
+                + ", ".join(
+                    f"{key.removeprefix('error_').replace('distance_to_miura3_', '|q-q3| ')} "
+                    f"{fit['slope'][0]:.3f} +- {fit['slope'][1]:.3f} "
+                    f"(local {', '.join(f'{rate:.2f}' for rate in fit['local_rates'])})"
+                    for key, fit in fits.items()
+                ),
+                flush=True,
+            )
+    if write:
+        _write_results(results_path, {"records": records, "slopes": slopes})
+
+    for row in rows:
+        if row.id not in slopes:
+            message = f"{row.id}: no records for all of {_REFINEMENT_FACTORS} in {results_path}"
+            assert not require_all, message
+            print(f"\nnot gated, {message}", flush=True)
+            continue
+        per_factor = [records[row.id][str(factor)] for factor in _REFINEMENT_FACTORS]
+        harness._check_convergence(
+            l1_acceptable_range=row.l1_band,
+            linf_acceptable_range=row.linf_band,
+            error_l1=[record["error_l1"] for record in per_factor],
+            error_linf=[record["error_linf"] for record in per_factor],
+            grid_spacing=[record["mean_edge_length"] for record in per_factor],
+        )
+        slope_l2, stderr_l2 = slopes[row.id][refinement_label]["error_l2"]["slope"]
+        assert row.l2_band[0] <= slope_l2 <= row.l2_band[1], (
+            f"{row.id}: L2 rate {slope_l2:.4f} outside {row.l2_band}"
+        )
+        assert stderr_l2 <= harness._STD_TOL
 
 
 @pytest.mark.level("validation")
@@ -344,10 +462,16 @@ def test_weno_order_study(
     process_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> None:
-    allocator = model_backends.get_allocator(backend)
     factors = _selected_factors()
     rows = _selected_rows()
-    full_study = factors == _REFINEMENT_FACTORS and rows == _ROWS
+    if os.environ.get("ICON4PY_WENO_ORDER_STUDY_CHECK_ONLY", "0") not in ("", "0"):
+        results = os.environ.get("ICON4PY_WENO_ORDER_STUDY_RESULTS")
+        assert results, "the check-only mode evaluates ICON4PY_WENO_ORDER_STUDY_RESULTS"
+        assert pathlib.Path(results).exists(), f"no results file {results}"
+        _evaluate(pathlib.Path(results), rows, require_all=True, write=False)
+        return
+
+    allocator = model_backends.get_allocator(backend)
     results_path = pathlib.Path(
         os.environ.get("ICON4PY_WENO_ORDER_STUDY_RESULTS", tmp_path / "weno_order_study.json")
     )
@@ -371,7 +495,7 @@ def test_weno_order_study(
         for factor in factors
     }
 
-    records, tracers = _previous_results(results_path, rows, factors)
+    # rows in _ROWS order, so the pure row's tracers are saved before a WENO row reads them
     for row in rows:
         for factor in factors:
             record, simulated = _run_member(
@@ -381,45 +505,12 @@ def test_weno_order_study(
                 grid_manager=grid_managers[factor],
                 process_props=process_props,
                 backend=backend,
-                pure_tracer=tracers[_PURE_ROW].get(factor) if row.id != _PURE_ROW else None,
+                pure_tracer=(
+                    _saved_tracer(results_path, _PURE_ROW, factor) if row.id != _PURE_ROW else None
+                ),
             )
-            records[row.id][str(factor)] = record
-            tracers[row.id][factor] = simulated
             np.save(_tracer_path(results_path, row.id, factor), simulated)
+            _merge_record(results_path, row.id, factor, record)
             print("\n" + _describe(row, factor, record), flush=True)
-            results_path.write_text(json.dumps({"records": records}, indent=1))
 
-    # the slopes, printed for every row before anything is asserted
-    grid_spacing = [records[rows[0].id][str(factor)]["mean_edge_length"] for factor in factors]
-    slopes = {
-        row.id: _row_slopes([records[row.id][str(factor)] for factor in factors], grid_spacing)
-        for row in rows
-    }
-    for row in rows:
-        print(
-            f"\nslopes {row.id:18s}: "
-            + ", ".join(
-                f"{key.removeprefix('error_').removeprefix('distance_to_miura3_')} "
-                f"{slope:.3f} +- {stderr:.3f}"
-                for key, (slope, stderr) in slopes[row.id].items()
-            ),
-            flush=True,
-        )
-    results_path.write_text(json.dumps({"records": records, "slopes": slopes}, indent=1))
-
-    if not full_study:
-        return
-    for row in rows:
-        per_factor = [records[row.id][str(factor)] for factor in factors]
-        harness._check_convergence(
-            l1_acceptable_range=row.l1_band,
-            linf_acceptable_range=row.linf_band,
-            error_l1=[record["error_l1"] for record in per_factor],
-            error_linf=[record["error_linf"] for record in per_factor],
-            grid_spacing=grid_spacing,
-        )
-        slope_l2, stderr_l2 = slopes[row.id]["error_l2"]
-        assert row.l2_band[0] <= slope_l2 <= row.l2_band[1], (
-            f"{row.id}: L2 rate {slope_l2:.4f} outside {row.l2_band}"
-        )
-        assert stderr_l2 <= harness._STD_TOL
+    _evaluate(results_path, rows, require_all=False, write=True)
