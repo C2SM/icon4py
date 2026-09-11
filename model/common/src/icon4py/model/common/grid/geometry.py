@@ -836,6 +836,18 @@ class GridGeometry(factory.FieldSource):
         return None
 
 
+class _IntermediateFields(factory.FieldSource):
+    """The outputs of a wrapped provider, declared with the metadata of the field they feed."""
+
+    def __init__(self, provider: factory.FieldProvider, metadata: dict[str, model.FieldMetaData]):
+        self._providers = dict.fromkeys(metadata, provider)
+        self._metadata = metadata
+
+    @property
+    def metadata(self) -> dict[str, model.FieldMetaData]:
+        return self._metadata
+
+
 class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
     def __init__(
         self,
@@ -864,6 +876,16 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | None:
         if self._fields.get(field_name) is None:
+            assert field_src is not None
+            intermediates = _IntermediateFields(
+                self._wrapped_provider,
+                {
+                    name: field_src.get(target, factory.RetrievalType.METADATA)
+                    for target, pair in zip(self.fields, self._pairs, strict=True)
+                    for name in pair
+                },
+            )
+            source = factory.CompositeSource(me=field_src, others=(intermediates,))
             # get the fields from the wrapped provider
             input_fields = []
             for p in self._pairs:
@@ -871,7 +893,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
                     [
                         self._wrapped_provider(
                             field_name=name,
-                            field_src=field_src,
+                            field_src=source,
                             backend=backend,
                             grid=grid,
                             exchange=exchange,
