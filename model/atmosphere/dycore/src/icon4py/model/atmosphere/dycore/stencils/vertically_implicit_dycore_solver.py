@@ -8,7 +8,7 @@
 
 
 import gt4py.next as gtx
-from gt4py.next import astype, broadcast
+from gt4py.next import astype
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
@@ -714,8 +714,8 @@ def _vertically_implicit_solver_at_corrector_step(
                 dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             ) = (
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
+                value_of_size_on_cells_on_half_levels_wp(wpfloat("0.0"), current_w),
+                value_of_size_on_cells_on_half_levels_wp(wpfloat("0.0"), current_w),
             )
 
         (
