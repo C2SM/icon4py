@@ -131,6 +131,8 @@ variables:
     ICON4PY_DALLCLOSE_PRINT_INSTEAD_OF_FAIL: false
     ICON4PY_DRIVER_LOGGING_LEVEL: critical
     PYTEST_ADDOPTS: "--durations=0"
+    # gt4py skips formatting generated code when `$CLANG_FORMAT_EXECUTABLE --version` fails.
+    CLANG_FORMAT_EXECUTABLE: /bin/false
 
 .test_template_aarch64:
   extends: [.container-runner-santis-gh200, .test_runner_base]

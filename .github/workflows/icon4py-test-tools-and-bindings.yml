@@ -9,6 +9,9 @@ on:
       - main
     types: [opened, reopened, synchronize]
   merge_group:
+env:
+  # gt4py skips formatting generated code when `$CLANG_FORMAT_EXECUTABLE --version` fails.
+  CLANG_FORMAT_EXECUTABLE: /bin/false
 jobs:
   test-bindings:
     runs-on: ubuntu-latest
