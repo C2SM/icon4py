@@ -99,9 +99,10 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
   dace_cpu (CFL 0.2) gives the same digits (scheme 2 bit-identical to gtfn_cpu on every
   cell, scheme 3 within 2.5e-16 in the tracer); since W4c the `single` set asserts its
   table at cell 294 against the saved gtfn_cpu full table at 3e-15 (dace_cpu, job 859997:
-  5.6e-17 / 5.6e-17 for scheme 2 — the F20.16 print — and 4.4e-16 / 1.1e-15 for scheme 3),
-  and fig. 7's colormap is centred at zero. The θ = 0 tables of the W4c rerun (job 860014)
-  are byte-identical to W4a's. Parity: cell 294 is tip-up; cells of one
+  5.6e-17 / 5.6e-17 for scheme 2 — the F20.16 print — and 4.4e-16 / 1.1e-15 for scheme 3;
+  untested on the GPU backends), and fig. 7's colormap is centred at zero. The θ = 0
+  tables of the W4c rerun (job 860014) are byte-identical to W4a's. Parity: cell 294 is
+  tip-up; cells of one
   parity ≥ 3 edge lengths from the periodic seam agree to 5e-13 / 2e-13 (scheme 2, Re
   modulo the aliasing period `2π(a/2)/dt` — the principal branch flips by round-off near
   `2·CFL·α = π` — / Im) and 1.4e-11 / 8e-11 (scheme 3), the two parities' means to
@@ -133,7 +134,8 @@ build caches). Recipes: `icon-ajocksch/CAPTURE_NOTES.md`.
   periodic-wrap replacements, the `0.1`/`1.1` default-real literals kept; `length_ref` =
   edge 695 = 5000.0 exactly), computed from icon4py's vertex coordinates and E2V and used
   for `mass_flx_me` and `vn_traj` on all levels `:3643`; it equals `u·n` of the geometry to
-  8.9e-16 (asserted at 1e-15, which fixes the vertex order); air mass 1 `:3646-3647`;
+  8.9e-16 (asserted at 1e-12, which fixes the vertex order: a reversed order gives O(1));
+  air mass 1 `:3646-3647`;
 - α = ireal/100·π, ireal = 0, 2, …, 116, one per level (59) `:3569-3570`; the wave
   `exp(-iα(x u_x + y u_y)·2/a)` once per CFL `:3651-3672`;
 - 1000 iterations `:3678` of {`Advection.run` on the real and on the imaginary tracer with
@@ -175,8 +177,11 @@ Comparison ("converged" = resid ≤ 1e-8; max |Δ| over the four ω columns):
 | 2 | 1.9e-14 (CFL 0.01; 2.0e-15-3.5e-15 at 0.1-0.5) | 2.3e-12 | 1.7e-14 | 3.4 (the two α = 0 rows at CFL 0.46/0.48, below; else ≤ 2.2e-12) |
 | 3 | 1.8e-14 (CFL 0.01; 2.2e-15-2.7e-15 at 0.1-0.5) | 3.4e-12 | 1.8e-14 | 2.2e-12 |
 
-Paper gates 6e-14 (3×). Stability limit: identical to our build and to his tables — no growth
-(Im ω < −1e-14 on converged rows, either cell) through CFL 0.42, growth from 0.44: scheme 2
+Gates against his tables, converged rows, max over the set: 6e-14 on the `paper` set (3× its
+CFL 0.01 block, 17× / 23× the CFL 0.5 block for scheme 2 / 3) and on the `stability` set
+(measured 4.4e-15 / 3.0e-15 at CFL 0.44); gtfn_cpu measurements only. Stability limit:
+identical to our build and to his tables — no growth (Im ω < −1e-14 on converged rows,
+either cell) through CFL 0.42, growth from 0.44: scheme 2
 32 of 33 converged α, min Im ω −3.609e-2 at α 3.644 (0.50: 56/56, −0.2696); scheme 3 15 of
 58, −1.381e-5 at α 3.267 (0.46: −3.452e-4 at 0.628; 0.50: 40/57, −3.547e-3 at 2.639); the
 minima agree with our build's to all printed digits. Convergence after 1000 iterations
@@ -197,20 +202,36 @@ takes over later) — so every level runs his 1000 iterations; the non-converged
 level α = 1.822 needs them anyway.
 
 **Sensitivity to the pseudoinverse (hypothesis test for findings #8).** At θ = 0, icon4py
-and our build differ in scheme 3 by |Δω|·2·CFL·|q_new/q_now| (the round-off of the one-step
-ratio; |q_new/q_now| = exp(−1.9999999999·CFL·Im ω̃)) = 9.8e-15 / 1.3e-13 / 3.1e-13 / 5.0e-13 /
-6.8e-13 / 8.1e-13 at CFL 0.01 / 0.1 / 0.2 / 0.3 / 0.4 / 0.5, attributed to the SVD
-pseudoinverses (L1: 7.2e-13 relative). The same two implementations at θ = 30, converged
-rows, max over both cells: 3.6e-16 / 5.0e-16 / 9.4e-16 / 1.1e-15 / 1.6e-15 / 2.6e-15 —
-27-470× smaller, and at the level of scheme 2 (3.3e-16-1.9e-15, whose pseudoinverses
-differ by 3.5e-16); max over all converged rows with CFL ≤ 0.5: 4.3e-15 (component) /
-5.5e-15 (modulus), 3.7e-15 on rows with resid < 1e-12 in both. Our build vs his
-`quadratic_oblique5.txt` on the same rows: ≤ 4.7e-15. So the θ = 30 eigenvalue does not
-register the difference that the θ = 0 step shows: a single pair of implementations
-reproduces the whole θ = 0 / θ = 30 contrast of his two quadratic tables, and that contrast
-is no evidence that they came from different builds. (Why the θ = 30 eigenvalue is
-insensitive is not established; nor is the SVD attribution at θ = 0 — both would be
-settled by injecting the capture's pseudoinverse into the icon4py granule.)
+and our build differ in scheme 3 at his cell 294 (0-based 293) by |Δω|·2·CFL·|q_new/q_now|
+(the round-off of the one-step ratio; |q_new/q_now| = exp(−1.9999999999·CFL·Im ω̃)) =
+9.8e-15 / 1.3e-13 / 3.1e-13 / 5.0e-13 / 6.8e-13 / 8.1e-13 at CFL 0.01 / 0.1 / 0.2 / 0.3 /
+0.4 / 0.5, attributed to the SVD pseudoinverses (L1: 7.2e-13 relative). The same two
+implementations at θ = 30, converged rows, max over both cells: 3.6e-16 / 5.0e-16 / 9.4e-16 /
+1.1e-15 / 1.6e-15 / 2.6e-15 — 27-470× smaller, and at the level of scheme 2 (3.3e-16-1.9e-15,
+whose pseudoinverses differ by 3.5e-16); max over all converged rows with CFL ≤ 0.5: 4.3e-15
+(component) / 5.5e-15 (modulus), 3.7e-15 on rows with resid < 1e-12 in both. Our build vs his
+`quadratic_oblique5.txt` on the same rows: ≤ 4.7e-15.
+
+The contrast is the sampling cell, not the angle: the pseudoinverse round-off concentrates in
+strips of cells (W4c review, numpy, `weno_data/w4c_review/percell.py` and `pinv.py`).
+icon4py vs our build at θ = 0, scheme 3, the same run from the same q_now, per cell over the
+638 cells ≥ 3 edge lengths from the x seam, same normalisation: cell 293 lies in the worst
+strip at every CFL (9.8e-15 … 8.1e-13; within 1.1 % of the maximum at CFL 0.01 and 0.1 %
+from CFL 0.1); cells 694 / 695 (his θ = 30 cells 695 / 696) stay at the θ = 30 level,
+2.2e-16 … 1.05e-15 over CFL 0.01 … 0.5; the median cell 2.2e-16 … 2.1e-15. Only whole strips
+exceed 1e-13: the rows at y = 14.43 / 15.88 km (all 40 cells, containing 293) from CFL 0.1,
+and y = −37.5 / −36.1 km from CFL 0.4 (29 of the 638 cells to CFL 0.3, 58 from 0.4). Our
+build's own `lsq_high_lsq_pseudoinv` (capture) deviates from the median over its triangle
+orientation, relative to the largest entry, by 7.4e-13 (tip-up) / 3.6e-13 (tip-down) in that
+strip and by ~2e-15 / 4e-15 in the rows of 695 / 694 (median cell 1.8e-15 / 2.6e-15).
+icon4py's own θ = 30 field has the same strips: at CFL 0.5 the one-step ω of the strip cells ≥ 4 edge lengths from both seams
+deviates from that of the same-orientation cell 694 / 695 by 1.5e-13 (median), that of the
+cells whose θ = 0 difference is below 3e-15 by 6.5e-15. So his θ = 0 cell sits in the worst
+strip and his θ = 30 cells where the pseudoinverses agree to round-off: one pair of
+implementations reproduces the whole θ = 0 / θ = 30 contrast, and his θ = 0 and θ = 30
+quadratic tables fit one build. The strip pattern, a per-cell property of the
+pseudoinverse, supports the SVD attribution of the θ = 0 gap; the direct test (injecting the
+capture's pseudoinverse into the icon4py granule, Next item 4) is still open.
 
 Rerun (from the workspace root; each job waits ≤ 1500 s for the lock):
 
@@ -376,10 +397,15 @@ functions on a torus patch at edge lengths 1 and 1/2: the type-VI candidates ret
 times the derivatives of a quadratic to 3.5e-14, asserted to 1e-8; δ on a Gaussian core
 −1.6132e-3 / −1.6191e-3 OPTIMIZED and −4.1627e-4 / −4.1638e-4 UNITY at h/r_e = 1/6 / 1/12,
 asserted within 1 % of −1.6214e-3 / −4.1647e-4 and of each other; the test fails if the
-assembly is changed, on purpose). Fortran-side confirmation, pending review: icon-ajocksch
-commit `3b86566381`, `CAPTURE_NOTES.md` "WENO dispersion (W6-F)": in his Fortran the one-step
-α² damping coefficient of 103 at CFL 0.01 is 7.83e-4 (optimised) / 1.98e-4 (all ones) against
-~1e-8 for scheme 3. The type-VI candidates are assembled as
+assembly is changed, on purpose). Fortran-side confirmation (W6-F, reviewed and accepted):
+icon-ajocksch commit `3b86566381`, `CAPTURE_NOTES.md` "WENO dispersion (W6-F)": in his Fortran
+the one-step α² damping coefficient A of 103 at CFL 0.01 is 7.83e-4 (optimised) / 1.98e-4 (all
+ones) against ~1e-8 for scheme 3. The damping is a property of 103, not of the sampled cell: a
+numpy replica that reproduces our Fortran build's 103 table on his grid to 4.3e-13 gives A > 0
+at every cell, the phase average A = −(δ/2)(1 − 2 CFL) to 0.1 % (optimised) / 0.3 % (ones)
+over CFL 0.01-0.4, and an optimised / ones ratio 3.903 against δ's 3.898. The single-cell rows
+with Im ω̃ < 0 in that table are a phase artefact (the phase-averaged one-step Im ω̃ is
+positive in all rows). The type-VI candidates are assembled as
 `A⁺_full − Σ_{i∈group} d_i A⁺_i` (`weno_least_squares.compute_weno_pseudoinverse_quadratic`,
 f90 2670-2680). For smooth data every fitted candidate reproduces the derivatives, so a
 type-VI candidate returns `(1 − S)` times them, with `S` the group's weight sum
@@ -458,13 +484,17 @@ Tables: `weno_data/slurm/w6s_analysis.py <gtfn_cpu json> <dace_gpu json>` (numpy
    assertion in the limiter, hybrid-state coupling check, citation drift); #970 shaping.
 2. Python cylinder on Andreas' grid for all Table 2 rows incl. hybrid, UNITY, the four
    limiter rows; compare with `reference/jocksch_grid/`.
-3. W5 follow-ups: gates on all backends (`dace_gpu` > `dace_cpu` > `gtfn_gpu`), 103 order
-   study on the torus patch.
+3. W5 / W6 follow-ups: gates on all backends (`dace_gpu` > `dace_cpu` > `gtfn_gpu`). The 103
+   order study is done (W6, section above). Open: the Fortran confirmation of the multi-step
+   instability seen in the numpy replica of 103 (W6-G, running on the Fortran tree); the
+   pseudoinverse injection test (item 4); the 103 launch-count restructuring (27 candidates ×
+   2 launches) before any performance claim.
 4. Dispersion relation: done at θ = 0 (W4a, W4b capture) and θ = 30° (W4c, section
    above). Open: the provenance of his `dispersion_ffsl_{0,30}[_inexact].txt` (none of
-   schemes 2, 3, 5; question for Andreas), and whether the θ = 0 icon4py-vs-build gap of
-   scheme 3 is the SVD pseudoinverse (test: inject the capture's `lsq-coefficients`
-   pseudoinverse into the icon4py granule and rerun θ = 0).
+   schemes 2, 3, 5; question for Andreas), and the direct test that the θ = 0
+   icon4py-vs-build gap of scheme 3 is the SVD pseudoinverse (inject the capture's
+   `lsq-coefficients` pseudoinverse into the icon4py granule and rerun θ = 0); the per-cell
+   strip pattern (W4c section) already supports that attribution.
 5. Milestone 2: FFSL (4/5/22/32/42/52), PSM, vlimit 2/3.
 
 ## Sandbox notes (husk)
