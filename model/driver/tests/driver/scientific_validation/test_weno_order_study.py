@@ -158,8 +158,8 @@ def _measured_local_rates(l1: float, l2: float, linf: float) -> _Bands:
 #:   statements.
 #: - The quadratic WENO rows (103 OPTIMIZED, 103 UNITY, 132) document a known deficiency of
 #:   the published type-VI construction, not a pre-asymptotic range: the type-VI candidates
-#:   A+_full - sum d_i A+_i (mo_intp_coeffs_lsq_bln.f90 2669-2680 on
-#:   transport_ajocksch_capture, ported literally in
+#:   A+_full - sum d_i A+_i (mo_intp_coeffs_lsq_bln.f90 2646-2657 at transport_ajocksch
+#:   dacecf46aa, ported literally in
 #:   weno_least_squares.compute_weno_pseudoinverse_quadratic) return (1 - S) times the
 #:   derivatives of smooth data, so the blend returns them short by a constant delta
 #:   (-1.6214e-3 OPTIMIZED, -4.1647e-4 UNITY, -1.2127e-3 hybrid), a first-order diffusion
@@ -234,7 +234,8 @@ _ROWS: Final[tuple[_Row, ...]] = (
     # 2.556 +- 0.128, Linf 2.580 +- 0.116; x1,2,4,8: 2.254, 2.262, 2.260; local rates x1-x2
     # 2.78, 2.78, 2.78; L2 error / scheme 3's x1 0.859, x2 0.964; the gated local rates and
     # ratios below (no 16x member); the WENO branch blends with unit weights at run time
-    # (f90 3684) on candidates assembled with this row's (optimised) set
+    # (mo_advection_hflux.f90:3684 at dacecf46aa) on candidates assembled with this row's
+    # (optimised) set
     _Row(
         "miura3_weno_hybrid",
         _MIURA3_WENO_HYBRID,
