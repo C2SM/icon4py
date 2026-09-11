@@ -1,0 +1,49 @@
+# Convergence-order study of the quadratic WENO schemes (103, 132) on a smooth Gaussian,
+# model/driver/tests/driver/scientific_validation/test_weno_order_study.py. A copy of
+# linear_horizontal_advection_gaussian_2d.yaml with three changes: a wider Gaussian
+# (decay_radius 0.35, so the coarsest member of the (38, 44, 400 m) family resolves the
+# e-folding radius with 4.4 edge lengths / 5.1 rows of cells), 3 levels (the metrics factory's
+# minimum; the levels are identical copies), a quarter period instead of a full one (the
+# reference tracer is analytic for any displacement), and no flux limiter (the study is about
+# the reconstruction's order on a smooth profile; a limiter would clip it).
+geometry: {}
+metrics: {}
+interpolation: {}
+vertical_grid:
+  num_levels: 3
+  model_top_height: 1000.0
+  lowest_layer_thickness: 0.0
+topography:
+  config:
+    type: flat
+initial_condition:
+  config:
+    type: lin_hor_adv
+    tracer_profile: gaussian_2d
+    velocity_field: constant
+    cfl_number: 0.11
+    initial_center: [0.5, 0.5]
+    decay_radius: 0.35
+prescribed_tendencies:
+  data_path:
+driver:
+  experiment_name: weno_order_study
+  profiling_options:
+  dtime: 1
+  start_of_simulation: 0001-01-01T00:00:00
+  start_of_timestepping: 0001-01-01T00:00:00
+  end_of_simulation:
+    type: relative
+    value: 0.25
+nonhydrostatic:
+diffusion:
+tracer_config:
+  qv: true
+tracer_advection:
+  horizontal_advection_type: quadratic_3rd_order
+  horizontal_advection_limiter: no_limiter
+  vertical_advection_type: no_advection
+  vertical_advection_limiter: no_limiter
+  weno_linear_weights: optimized
+graupel:
+muphys:
