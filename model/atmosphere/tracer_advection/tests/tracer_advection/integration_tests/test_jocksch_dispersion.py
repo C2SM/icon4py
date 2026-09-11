@@ -109,8 +109,8 @@ The per-CFL results are saved as soon as a CFL is done (``theta30_parts/``), so 
 table runs as a chain of 30-minute jobs (ICON4PY_DISPERSION_THETA30_CFLS, a deadline in
 ICON4PY_DISPERSION_DEADLINE, done CFLs are skipped); the gated sets are the paper's six
 CFLs and the stability pair 0.42 / 0.44 (validation level; 3.7 s / 9.4 s per CFL for
-scheme 2 / 3 on gtfn_cpu on a compute node, the full tables 3.1 / 8.0 min). The measured numbers
-are in the status note (docs/weno_idealized_status.md).
+scheme 2 / 3 on gtfn_cpu on a compute node, the full tables 3.2 min (192.5 s) / 8.0 min).
+The measured numbers are in the status note (docs/weno_idealized_status.md).
 """
 
 from __future__ import annotations
@@ -279,11 +279,11 @@ FORTRAN_BUILD_DIRS_30: Final[dict[int, pathlib.Path]] = {
 #: max |d omega| (the four columns) against his table over the rows converged here
 #: (resid <= CONVERGED_RESID_30) and all CFLs of the 'paper' or the 'stability' set, per
 #: scheme; measured on gtfn_cpu only. The paper-set maximum is the CFL 0.01 block, so the
-#: gate is 3x that and 17x (scheme 2) / 23x (scheme 3) the CFL 0.5 block; the stability set
+#: gate is 3x that and 17x (scheme 2) / 22x (scheme 3) the CFL 0.5 block; the stability set
 #: measures 4.4e-15 / 3.0e-15 (CFL 0.44)
 FORTRAN_TOLERANCE_30: Final[dict[int, float]] = {
-    2: 6e-14,  # 1.9e-14 (CFL 0.01; 2.0e-15 .. 3.5e-15 at 0.1 .. 0.5, 3.5e-15 at 0.5)
-    3: 6e-14,  # 1.8e-14 (CFL 0.01; 2.2e-15 .. 2.7e-15 at 0.1 .. 0.5, 2.7e-15 at 0.5)
+    2: 6e-14,  # 1.9e-14 (CFL 0.01; 2.0e-15 .. 3.5e-15 at 0.1 .. 0.5)
+    3: 6e-14,  # 1.8e-14 (CFL 0.01; 2.2e-15 .. 2.7e-15 at 0.1 .. 0.5, 2.66e-15 at 0.5)
 }
 PARTS_DIR: Final = OUTPUT_DIR / "theta30_parts"
 
@@ -450,6 +450,11 @@ def _advect(setup: _Setup, q_now: np.ndarray, dtime: float) -> np.ndarray:
     return p_tracer_new.asnumpy().copy()
 
 
+def _or_na(value: float) -> str:
+    """``value`` as ``.3e``, or "n/a" for NaN (a comparison whose table is missing)."""
+    return "n/a" if math.isnan(value) else f"{value:.3e}"
+
+
 def _time_step(cfl: float) -> float:
     return 1.0 * (EDGE_LENGTH / 2) * DT_FACTOR * cfl
 
@@ -595,8 +600,8 @@ def _summarise(
         "up_vs_down_re  up_vs_down_im  n_seam  diff_max  growth_max  alpha_at_growth_max  "
         "growth_zero_alphas  build_dRe  build_dIm  build_norm_component  build_norm_modulus",
     ]
-    max_d_re = 0.0
-    max_d_im = 0.0
+    # NaN without his table, so that the summary prints n/a rather than 0
+    max_d_re = max_d_im = 0.0 if reference is not None else math.nan
     build_norm_max: dict[str, list[float]] = {"all": [0.0, 0.0], "cfl<=0.5": [0.0, 0.0]}
     for i, cfl in enumerate(table.cfls):
         omega = table.omega[i]  # (cells, alpha)
@@ -605,10 +610,10 @@ def _summarise(
             block = _fortran_block(reference, cfl)
             d_re = float(np.abs(at_cell.real - block[:, 2]).max())
             d_im = float(np.abs(at_cell.imag - block[:, 3]).max())
+            max_d_re = max(max_d_re, d_re)
+            max_d_im = max(max_d_im, d_im)
         else:
             d_re = d_im = math.nan
-        max_d_re = max(max_d_re, d_re)
-        max_d_im = max(max_d_im, d_im)
         build_columns = ""
         if build is not None:
             build_block = _fortran_block(build, cfl)
@@ -809,7 +814,7 @@ def test_dispersion_relation_theta0(
         f"({len(cfls)} CFL x {NUM_LEVELS} alpha), reference {reference_path}, our build {build_path}",
         f"# setup {setup_seconds:.1f} s, {table.seconds_per_run:.3f} s per Advection.run, "
         f"total {total_seconds:.1f} s",
-        f"# max |Re omega - Fortran| {max_d_re:.3e}, max |Im omega - Fortran| {max_d_im:.3e}",
+        f"# max |Re omega - Fortran| {_or_na(max_d_re)}, max |Im omega - Fortran| {_or_na(max_d_im)}",
     ]
     backend_d = (math.nan, math.nan)
     if backend_reference is not None:
@@ -1098,6 +1103,7 @@ class _Theta30Stats:
 
     lines: list[str]
     #: max |d omega| over the four columns against his table on the converged rows / all rows
+    #: (NaN without his table, likewise the build values without our build)
     his_converged: float
     his_all: float
     #: the same against our build (rows converged in both)
@@ -1139,9 +1145,11 @@ def _theta30_statistics(
         "build_all  norm_c  norm_m  norm_c12  min_im  at_alpha  n_grow  parity  parity_re  "
         "early  n_bitequal  wall  adv",
     ]
-    his_converged = his_all = build_converged = build_all = 0.0
-    normalised = [0.0, 0.0]
-    normalised_tight = [0.0, 0.0]
+    # NaN without his table / our build, so that the summary prints n/a rather than 0
+    his_converged = his_all = 0.0 if reference is not None else math.nan
+    build_converged = build_all = 0.0 if build is not None and build_conv is not None else math.nan
+    normalised = [0.0, 0.0] if build is not None and build_conv is not None else [math.nan] * 2
+    normalised_tight = list(normalised)
     stability = {}
     for block in blocks:
         cfl = block.cfl
@@ -1223,11 +1231,11 @@ def _theta30_statistics(
     first_growth = growing[0] if growing else None
     stable_before = [cfl for cfl in sorted(stability) if first_growth is None or cfl < first_growth]
     lines += [
-        f"# max |d| against his table: converged rows {his_converged:.3e}, all rows {his_all:.3e}",
-        f"# max |d| against our build: converged rows {build_converged:.3e}, all rows {build_all:.3e}",
+        f"# max |d| against his table: converged rows {_or_na(his_converged)}, all rows {_or_na(his_all)}",
+        f"# max |d| against our build: converged rows {_or_na(build_converged)}, all rows {_or_na(build_all)}",
         "# normalised against our build, CFL <= 0.5 (component, modulus): converged rows "
-        f"{normalised[0]:.3e}, {normalised[1]:.3e}; resid < 1e-12 rows "
-        f"{normalised_tight[0]:.3e}, {normalised_tight[1]:.3e}",
+        f"{_or_na(normalised[0])}, {_or_na(normalised[1])}; resid < 1e-12 rows "
+        f"{_or_na(normalised_tight[0])}, {_or_na(normalised_tight[1])}",
         f"# stability: last CFL without growth before the first growth {stable_before[-1] if stable_before else None}, "
         f"first CFL with growth {first_growth}",
         "# convergence: rows with resid > 1e-12 / 1e-8 / 1e-4: "
@@ -1454,8 +1462,11 @@ def test_dispersion_relation_theta30(
         min_im_044, _, n_grow_044, _ = stats.stability[0.44]
         assert n_grow_042 == 0, f"growth at CFL 0.42: min Im omega {min_im_042:.3e}"
         assert n_grow_044 > 0, f"no growth at CFL 0.44: min Im omega {min_im_044:.3e}"
-        if reference is not None:
-            assert stats.his_converged <= FORTRAN_TOLERANCE_30[scheme], stats.his_converged
+        if reference is None:
+            pytest.skip(
+                f"growth limits asserted; Fortran reference table {reference_path} not available"
+            )
+        assert stats.his_converged <= FORTRAN_TOLERANCE_30[scheme], stats.his_converged
     if cfl_set == "paper":
         if reference is None:
             pytest.skip(f"Fortran reference table {reference_path} not available")
