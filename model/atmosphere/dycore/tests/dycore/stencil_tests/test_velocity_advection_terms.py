@@ -713,7 +713,7 @@ class TestComputeCfl(stencil_tests.StencilTest):
         *,
         ddqz_z_half: np.ndarray,
         contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
-        cfl_w_limit: float,
+        cfl_w_limit: ta.anyfloat,
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
