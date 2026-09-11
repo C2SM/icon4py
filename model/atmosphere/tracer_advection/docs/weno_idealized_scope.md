@@ -62,7 +62,7 @@ the sphere branch is `lsq_compute_coeff_cell`, f90:596 dispatch):
 - Candidates 1–3 (type VI) are **assembled, not fitted**: initialised to the full 9-point
   pseudoinverse (f90:2586) and then reduced by the weighted sum of one 120°-group each,
   `pseudoinv_3(:,:,k) -= Σ_{i in group k} pseudoinv_3(:,:,i) · l_weights_s(i)`
-  (f90:2647-2660), with `l_weights_s(1:3) = 1`.
+  (f90:2647-2657), with `l_weights_s(1:3) = 1`.
 - `lsq_error_3` (f90:2546) stores `A·A⁺` per candidate, used by the hybrid's selection
   criterion.
 - The `.false.` block in `mo_nh_stepping.f90` that re-does this assembly at run time with
