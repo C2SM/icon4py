@@ -331,9 +331,10 @@ def _run_member(
         "host": socket.gethostname(),
     }
     if row.advection_type is _MIURA3_WENO_HYBRID:
-        # the mask of the last step, the cells whose edges took the WENO flux
+        # the selection mask of the last step (computed from the tracer at its start): the
+        # (cell, level) points whose edges took the WENO flux
         horizontal = icon4py_driver.granules.tracer_advection._horizontal_advection
-        use_weno = data_alloc.as_numpy(horizontal._use_weno.ndarray)
+        use_weno = data_alloc.as_numpy(horizontal._tracer_flux._use_weno.ndarray)
         record["weno_cell_fraction"] = float(np.mean(use_weno))
     if pure_tracer is not None:
         record.update(_distances(simulated, pure_tracer))
