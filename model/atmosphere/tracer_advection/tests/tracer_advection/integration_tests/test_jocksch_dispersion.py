@@ -251,7 +251,8 @@ CONVERGED_RESID_30: Final = 1e-8
 #: every CFL of the 'paper' and 'stability' sets needs at least this many converged rows (of
 #: the 59 alphas), otherwise the maxima over the converged rows (the gate against his table,
 #: the growth count at CFL 0.42) would pass on nothing; measured minimum 33 (scheme 2 at CFL
-#: 0.44), the paper sets >= 40 (scheme 3 at CFL 0.01)
+#: 0.44), the paper sets >= 40 (scheme 3 at CFL 0.01), on gtfn_cpu and dace_gpu alike (the
+#: same converged rows at every CFL of both sets)
 MIN_CONVERGED_30: Final = 30
 #: growth means Im omega < -GROWTH_TOLERANCE at either reference cell (ignores the
 #: +-5e-16 of the alpha = 0 rows)
@@ -283,9 +284,10 @@ FORTRAN_BUILD_DIRS_30: Final[dict[int, pathlib.Path]] = {
 }
 #: max |d omega| (the four columns) against his table over the rows converged here
 #: (resid <= CONVERGED_RESID_30) and all CFLs of the 'paper' or the 'stability' set, per
-#: scheme; measured on gtfn_cpu only. The paper-set maximum is the CFL 0.01 block, so the
+#: scheme; measured on gtfn_cpu (below). The paper-set maximum is the CFL 0.01 block, so the
 #: gate is 3x that and 17x (scheme 2) / 22.5x (scheme 3) the CFL 0.5 block; the stability set
-#: measures 4.4e-15 / 3.0e-15 (CFL 0.44)
+#: measures 4.4e-15 / 3.0e-15 (CFL 0.44). dace_gpu: paper 2.0e-14 / 2.2e-14 (CFL 0.01),
+#: stability 3.6e-15 / 6.4e-15 (CFL 0.44)
 FORTRAN_TOLERANCE_30: Final[dict[int, float]] = {
     2: 6e-14,  # 1.9e-14 (CFL 0.01; 2.0e-15 .. 3.5e-15 at 0.1 .. 0.5)
     3: 6e-14,  # 1.8e-14 (CFL 0.01; 2.2e-15 .. 2.7e-15 at 0.1 .. 0.5, 2.66e-15 at 0.5)

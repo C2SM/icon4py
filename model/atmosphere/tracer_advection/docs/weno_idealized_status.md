@@ -180,9 +180,13 @@ Comparison ("converged" = resid ≤ 1e-8; max |Δ| over the four ω columns):
 
 Gates against his tables, converged rows, max over the set: 6e-14 on the `paper` set (3× its
 CFL 0.01 block, 17× / 22.5× the CFL 0.5 block for scheme 2 / 3) and on the `stability` set
-(measured 4.4e-15 / 3.0e-15 at CFL 0.44); gtfn_cpu measurements only. Each CFL of both sets
+(measured 4.4e-15 / 3.0e-15 at CFL 0.44); measured on gtfn_cpu. Each CFL of both sets
 needs ≥ 30 converged rows (of 59; measured minimum 33, scheme 2 at CFL 0.44; the `paper` sets
 ≥ 40), so neither these maxima nor the no-growth count at 0.42 can pass on an empty set.
+dace_gpu (job 860504, both sets, 4 passed): the same converged rows at every CFL (so the same
+minima), ω within 2.2e-14 of gtfn_cpu on them, against his tables 2.0e-14 / 2.2e-14 on the
+`paper` set (CFL 0.01) and 3.6e-15 / 6.4e-15 on the `stability` set (CFL 0.44), the same
+growth limits (none at 0.42, growth at 0.44).
 Without his tables (his scratch is purgeable) both sets skip with the reason after the
 converged-row assert (the `stability` set also after its growth asserts), and the summaries
 print n/a. Stability limit: identical to our build and to his tables — no growth
