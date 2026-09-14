@@ -35,9 +35,9 @@ def main(
         pathlib.Path,
         typer.Option(
             help=(
-                "YAML configuration file path. Please use "
-                "'scripts/python/convert_fortran_config_to_yaml.py' to generate one from a "
-                "directory of Fortran namelists if you need to convert from Fortran namelists."
+                "YAML configuration file path. Use "
+                "'scripts/python/convert_fortran_config_to_yaml.py' to generate a YAML configuration from a "
+                "directory of Fortran namelists if conversion from Fortran namelists is needed."
             )
         ),
     ],
