@@ -118,6 +118,18 @@ def test_construct_config_from_icon() -> None:
     assert result.other == 3
 
 
+def test_construct_config_from_icon_overrides_icon_values() -> None:
+    result = options.construct_config_from_icon(
+        config_cls=ConfigClass,
+        icon_config={
+            "nested_1": {"nested_2": {"isomchce": 42}},
+            "lsomflg": [False, False, False],
+        },
+        choice=7,
+    )
+    assert result.choice == 7
+
+
 def test_default_conversion() -> None:
     @dataclasses.dataclass
     class TesteeConfig:

@@ -729,7 +729,6 @@ def test_factory_inv_ddqz_z_full_e(
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest
-@pytest.mark.uses_concat_where
 @_aes_physics_experiment
 def test_factory_wgtfacq1_c_and_e(
     data_provider: serialbox.IconSerialDataProvider,

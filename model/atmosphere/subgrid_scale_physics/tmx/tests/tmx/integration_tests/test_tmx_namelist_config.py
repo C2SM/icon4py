@@ -32,10 +32,9 @@ import pytest
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import TmxConfig
 from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.utils import fortran_config
-from icon4py.model.testing import definitions
+from icon4py.model.testing import datatest_utils as dt_utils, definitions
 
 from ..fixtures import *  # noqa: F403
-from ..fixtures import load_fortran_dict
 
 
 if TYPE_CHECKING:
@@ -49,7 +48,7 @@ def test_tmx_config_cross_checks_input_namelist_and_defaults(
     experiment_description: definitions.ExperimentDescription,
     process_props: decomposition.ProcessProperties,
 ) -> None:
-    input_dict = load_fortran_dict(
+    input_dict = dt_utils.load_fortran_dict(
         experiment_description=experiment_description,
         process_props=process_props,
         fname=fortran_config.INPUT_DICT_FNAME,

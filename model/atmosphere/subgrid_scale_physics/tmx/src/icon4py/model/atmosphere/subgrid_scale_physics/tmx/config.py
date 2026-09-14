@@ -23,12 +23,8 @@ from icon4py.model.common.config import config_io, options as common_conf_opt
 
 
 @config_io.register_enum
-class TurbulenceSolverType(int, enum.Enum):
-    """
-    Type of the vertical diffusion solver.
-
-    Note: Called ``solver_type`` in ``mo_turb_vdiff_config.f90``.
-    """
+class SolverType(int, enum.Enum):
+    """Type of the vertical diffusion solver."""
 
     EXPLICIT = 1  # explicit time stepping
     IMPLICIT = 2  # implicit time stepping
@@ -36,11 +32,7 @@ class TurbulenceSolverType(int, enum.Enum):
 
 @config_io.register_enum
 class EnergyType(int, enum.Enum):
-    """
-    Type of energy diffused by the temperature (heat) diffusion.
-
-    Note: Called ``energy_type`` in ``mo_turb_vdiff_config.f90``.
-    """
+    """Type of energy diffused by the temperature (heat) diffusion."""
 
     DRY_STATIC = 1  # dry static energy cp*T + g*z
     INTERNAL = 2  # internal energy cv*T
@@ -54,14 +46,14 @@ class TmxConfig:
     """
 
     solver_type: typing.Annotated[
-        TurbulenceSolverType,
+        SolverType,
         common_conf_opt.ConfigOption(
             description="Type of the vertical diffusion solver (explicit or implicit).",
             icon_equivalent=common_conf_opt.IconOption(
                 "solver_type", ("aes_vdf_nml", "aes_vdf_config"), unnamed_index=23
             ),
         ),
-    ] = TurbulenceSolverType.IMPLICIT
+    ] = SolverType.IMPLICIT
 
     energy_type: typing.Annotated[
         EnergyType,
@@ -209,7 +201,7 @@ class TmxConfig:
     ] = 300.0
 
     def __post_init__(self) -> None:
-        self.solver_type = TurbulenceSolverType(self.solver_type)
+        self.solver_type = SolverType(self.solver_type)
         self.energy_type = EnergyType(self.energy_type)
 
         if self.turb_prandtl <= 0.0:
@@ -224,21 +216,15 @@ class TmxConfig:
     @classmethod
     def from_fortran_dict(cls, *, atm_dict: dict[str, Any], **overrides: Any) -> TmxConfig:
         """
-        Construct the configuration from the echoed ICON namelist.
+        Build the configuration from the echoed ICON namelist.
 
-        ``aes_vdf_nml`` is a derived-type namelist (``t_vdiff_config``), which
-        ICON echoes as an anonymous positional array of the member values in
-        declaration order, so the options are located by ``unnamed_index``
-        (pinned to mo_turb_vdiff_config.f90) instead of by name. Only the
-        first domain is read. The guards below make a change of the Fortran
-        type fail loudly instead of silently mis-assigning values.
+        ICON writes ``aes_vdf_config`` values in Fortran member order, without names.
+        We read the first domain using each option's ``unnamed_index``. The checks below
+        help detect changes to the expected Fortran layout.
         """
-        # number of members of the Fortran t_vdiff_config derived type
-        # (mo_turb_vdiff_config.f90); the echoed aes_vdf_nml namelist holds this
-        # many values per domain, in declaration order. Must be kept in sync with
-        # the 'unnamed_index' positions of the options above.
+        # Layout of t_vdiff_config in mo_turb_vdiff_config.f90
+        # Keep these values and the options' unnamed_index positions in sync
         num_members = 42
-        # position of 'use_tmx' in t_vdiff_config, used as an order canary
         use_tmx_index = 22
 
         flat = atm_dict["aes_vdf_nml"]["aes_vdf_config"]
