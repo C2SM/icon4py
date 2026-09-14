@@ -57,7 +57,7 @@ from ..utils import (
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
-    "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter, use_serialized_reference",
+    "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [
         (
             "2021-06-20T12:00:10.000",
@@ -67,7 +67,6 @@ from ..utils import (
             tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             tracer_advection.VerticalAdvectionType.NO_ADVECTION,
             tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
-            True,
         ),
         (
             "2021-06-20T12:00:20.000",
@@ -77,52 +76,10 @@ from ..utils import (
             tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             tracer_advection.VerticalAdvectionType.NO_ADVECTION,
             tracer_advection.VerticalAdvectionLimiter.NO_LIMITER,
-            True,
-        ),
-        (
-            "2021-06-20T12:00:10.000",
-            False,
-            4,
-            tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
-            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
-            True,
-        ),
-        (
-            "2021-06-20T12:00:20.000",
-            True,
-            4,
-            tracer_advection.HorizontalAdvectionType.NO_ADVECTION,
-            tracer_advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
-            True,
-        ),
-        # The serialized reference uses horizontal-only transport for tracer 1.
-        (
-            "2021-06-20T12:00:10.000",
-            False,
-            1,
-            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-            tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
-            False,
-        ),
-        (
-            "2021-06-20T12:00:20.000",
-            True,
-            1,
-            tracer_advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-            tracer_advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            tracer_advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            tracer_advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
-            False,
         ),
     ],
 )
-def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-arguments]
+def test_advection_run_single_step(
     date,
     even_timestep,
     ntracer,
@@ -130,7 +87,6 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     horizontal_advection_limiter,
     vertical_advection_type,
     vertical_advection_limiter,
-    use_serialized_reference,
     *,
     grid_savepoint,
     icon_grid,
@@ -198,37 +154,6 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
     p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
 
-    if not use_serialized_reference:
-        horizontal_advection, vertical_advection = (
-            tracer_advection.convert_config_to_horizontal_vertical_advection(
-                config=config,
-                grid=icon_grid,
-                interpolation_state=interpolation_state,
-                least_squares_state=least_squares_state,
-                metric_state=metric_state,
-                edge_params=edge_geometry,
-                cell_params=cell_geometry,
-                backend=backend,
-                exchange=decomposition.single_node_exchange,
-            )
-        )
-        reference_advection = tracer_advection.GodunovSplittingAdvection(
-            horizontal_advection=horizontal_advection,
-            vertical_advection=vertical_advection,
-            grid=icon_grid,
-            metric_state=metric_state,
-            backend=backend,
-            exchange=decomposition.single_node_exchange,
-            even_timestep=even_timestep,
-        )
-        diagnostic_state_ref = construct_diagnostic_init_state(
-            icon_grid, advection_init_savepoint, ntracer, backend=backend
-        )
-        p_tracer_now_ref = advection_init_savepoint.tracer(ntracer)
-        p_tracer_new_ref = data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
-        )
-
     log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
 
     advection_granule.run(
@@ -239,36 +164,19 @@ def test_advection_run_single_step(  # noqa: PLR0917 [too-many-positional-argume
         dtime=dtime,
     )
 
-    if use_serialized_reference:
-        diagnostic_state_ref = construct_diagnostic_exit_state(
-            icon_grid=icon_grid,
-            savepoint=advection_exit_savepoint,
-            ntracer=ntracer,
-            backend=backend,
-        )
-        p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
+    diagnostic_state_ref = construct_diagnostic_exit_state(
+        icon_grid=icon_grid,
+        savepoint=advection_exit_savepoint,
+        ntracer=ntracer,
+        backend=backend,
+    )
+    p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
-        verify_advection_fields(
-            grid=icon_grid,
-            diagnostic_state=diagnostic_state,
-            diagnostic_state_ref=diagnostic_state_ref,
-            p_tracer_new=p_tracer_new,
-            p_tracer_new_ref=p_tracer_new_ref,
-            even_timestep=even_timestep,
-        )
-    else:
-        reference_advection.run(
-            diagnostic_state=diagnostic_state_ref,
-            prep_adv=prep_adv,
-            p_tracer_now=p_tracer_now_ref,
-            p_tracer_new=p_tracer_new_ref,
-            dtime=dtime,
-        )
-        verify_advection_fields(
-            grid=icon_grid,
-            diagnostic_state=diagnostic_state,
-            diagnostic_state_ref=diagnostic_state_ref,
-            p_tracer_new=p_tracer_new,
-            p_tracer_new_ref=p_tracer_new_ref,
-            even_timestep=even_timestep,
-        )
+    verify_advection_fields(
+        grid=icon_grid,
+        diagnostic_state=diagnostic_state,
+        diagnostic_state_ref=diagnostic_state_ref,
+        p_tracer_new=p_tracer_new,
+        p_tracer_new_ref=p_tracer_new_ref,
+        even_timestep=even_timestep,
+    )

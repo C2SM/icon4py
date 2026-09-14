@@ -107,33 +107,6 @@ class AdvectionMetricState:
     ddqz_z_full: fa.CellKField[ta.wpfloat]
 
 
-@dataclasses.dataclass(frozen=True)
-class ProductionAdvectionState:
-    """Intermediates that must survive the production advection program boundary."""
-
-    rhodz_ast2: fa.CellKField[ta.wpfloat]
-    r_m: fa.CellKField[ta.wpfloat]
-    p_tracer_after_vertical: fa.CellKField[ta.wpfloat]
-    p_mflx_tracer_h_unlimited: fa.EdgeKField[ta.wpfloat]
-
-
-def initialize_production_advection_state(
-    grid: icon_grid.IconGrid,
-    allocator: gtx_typing.Allocator,
-) -> ProductionAdvectionState:
-    """Allocate the single state shared by the production advection programs."""
-    return ProductionAdvectionState(
-        rhodz_ast2=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
-        r_m=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator),
-        p_tracer_after_vertical=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=allocator
-        ),
-        p_mflx_tracer_h_unlimited=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, allocator=allocator
-        ),
-    )
-
-
 def initialize_advection_diagnostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.Allocator,
