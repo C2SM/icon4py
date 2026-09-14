@@ -17,14 +17,17 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 import uxarray as ux  # type: ignore[import-untyped]  # uxarray has no type hints
+import xarray as xr
 import zarr
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims, time
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base, vertical as v_grid
-from icon4py.model.common.io import distributed, netcdf_writers, ugrid, writers
+from icon4py.model.common.io import distributed, netcdf_writers, ugrid, writers, zarr_writers
 from icon4py.model.common.io.io import (
+    PHASE_ASYNC_WAIT,
+    PHASE_ASYNC_WRITE,
     PHASE_DISTRIBUTE,
     PHASE_WRITE,
     FieldGroupIOConfig,
@@ -37,7 +40,7 @@ from icon4py.model.common.io.io import (
     generate_name,
 )
 from icon4py.model.common.states import data
-from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils
+from icon4py.model.testing import datatest_utils, definitions as test_defs, grid_utils, test_utils
 
 from ...fixtures import test_path
 from .. import utils as test_io_utils
@@ -315,17 +318,23 @@ def test_fieldgroup_monitor_records_phase_timings_per_capture(test_path: pathlib
 def create_field_group_monitor(
     test_path: pathlib.Path,
     grid: base.Grid,
+    *,
     output_interval: OutputInterval = time.NumTimeSteps(1),
     dtime: time.RelativeTime = time.RelativeTime(hours=1),
+    # the tests built on this helper count plain files: netCDF (zarr stores are
+    # directories)
+    backend: OutputBackend = OutputBackend.NETCDF,
+    asynchronous: bool | None = None,
+    timesteps_per_file: int = 10,
 ) -> tuple[FieldGroupIOConfig, FieldGroupMonitor]:
     config = FieldGroupIOConfig(
         basename="test_empty",
         output_interval=output_interval,
         variables=["exner_function", "air_density"],
-        # the tests built on this helper count plain files: netCDF (zarr stores are
-        # directories)
-        backend=OutputBackend.NETCDF,
+        backend=backend,
         mode=OutputMode.GATHER,
+        asynchronous=asynchronous,
+        timesteps_per_file=timesteps_per_file,
     )
     vertical_config = v_grid.VerticalGridConfig(num_levels=test_io_utils.simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
@@ -446,6 +455,10 @@ class _SingleRankBlockDistribution:
     @property
     def rank_blocks(self) -> dict[str, distributed.RankBlock]:
         return self._rank_blocks
+
+    @property
+    def prepare_returns_copy(self) -> bool:
+        return False
 
     def prepare(self, state: dict) -> dict:
         return state
@@ -848,3 +861,132 @@ def test_io_monitor_builds_alignment_aware_rank_block_distributions(
     assert aligned.rank_blocks["cell"].size == 8
     assert aligned.rank_blocks["cell"].padded_size == 16
     assert unaligned.rank_blocks["cell"].size == 4
+
+
+# ------------------------------------------------------------------------------------
+# Asynchronous output
+# ------------------------------------------------------------------------------------
+
+
+def test_fieldgroup_config_asynchronous_defaults_to_backend_support() -> None:
+    # unconfigured: asynchronous exactly for the backends that support it
+    for backend, expected in ((OutputBackend.ZARR, True), (OutputBackend.NETCDF, False)):
+        config = FieldGroupIOConfig(
+            basename="prognostics", variables=["air_density"], backend=backend
+        )
+        assert config.is_asynchronous is expected
+    explicit = FieldGroupIOConfig(
+        basename="prognostics",
+        variables=["air_density"],
+        backend=OutputBackend.ZARR,
+        asynchronous=False,
+    )
+    assert explicit.is_asynchronous is False
+
+
+def test_fieldgroup_config_rejects_asynchronous_netcdf() -> None:
+    with pytest.raises(errors.InvalidConfigError, match="asynchronous"):
+        FieldGroupIOConfig(
+            basename="prognostics",
+            variables=["air_density"],
+            backend=OutputBackend.NETCDF,
+            asynchronous=True,
+        )
+
+
+def test_fieldgroup_config_rejects_non_bool_asynchronous() -> None:
+    with pytest.raises(errors.InvalidConfigError, match="asynchronous"):
+        FieldGroupIOConfig(
+            basename="prognostics",
+            variables=["air_density"],
+            backend=OutputBackend.ZARR,
+            asynchronous=1,  # type: ignore[arg-type]  # the rejection under test
+        )
+
+
+def _open_single_zarr_store(path: pathlib.Path) -> xr.Dataset:
+    stores = sorted(f for f in path.iterdir() if f.name.endswith(".zarr"))
+    assert len(stores) == 1
+    return xr.open_zarr(stores[0])
+
+
+def test_fieldgroup_monitor_async_write_decoupled_from_state(test_path: pathlib.Path) -> None:
+    # the deep copy of asynchronous output: mutating the model state right after
+    # ``store`` must not change what lands in the store (the single-node distribution
+    # passes the state through by reference)
+    config, group_monitor = create_field_group_monitor(
+        test_path, test_io_utils.simple_grid, backend=OutputBackend.ZARR
+    )
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    expected = {name: np.array(state[name].data, copy=True) for name in config.variables}
+    group_monitor.store(state, dt.datetime.fromisoformat("2024-01-01T00:00:00"))
+    for name in config.variables:
+        state[name].data[...] = -99.0
+    group_monitor.close()
+    with _open_single_zarr_store(group_monitor.output_path) as ds:
+        for name in config.variables:
+            test_utils.assert_dallclose(ds[name].values[0], expected[name].T)
+
+
+def test_fieldgroup_monitor_async_records_async_phases(test_path: pathlib.Path) -> None:
+    # asynchronous groups record one (async_wait, async_write) sample pair per capture
+    _, group_monitor = create_field_group_monitor(
+        test_path,
+        test_io_utils.simple_grid,
+        output_interval=time.NumTimeSteps(2),
+        backend=OutputBackend.ZARR,
+    )
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
+    for step in range(4):
+        group_monitor.store(state, step_time + step * dt.timedelta(hours=1))
+    group_monitor.close()
+    phase_seconds = group_monitor.phase_seconds
+    assert len(phase_seconds[PHASE_ASYNC_WAIT]) == 2
+    assert len(phase_seconds[PHASE_ASYNC_WRITE]) == 2
+    # synchronous groups carry no async phases
+    _, sync_monitor = create_field_group_monitor(test_path, test_io_utils.simple_grid)
+    assert PHASE_ASYNC_WAIT not in sync_monitor.phase_seconds
+    assert PHASE_ASYNC_WRITE not in sync_monitor.phase_seconds
+
+
+def test_fieldgroup_monitor_async_file_roll(test_path: pathlib.Path) -> None:
+    # the write queue survives file rollovers: one store directory per capture
+    _, group_monitor = create_field_group_monitor(
+        test_path, test_io_utils.simple_grid, backend=OutputBackend.ZARR, timesteps_per_file=1
+    )
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    step_time = dt.datetime.fromisoformat("2024-01-01T00:00:00")
+    for step in range(3):
+        group_monitor.store(state, step_time + step * dt.timedelta(hours=1))
+    group_monitor.close()
+    stores = sorted(f.name for f in group_monitor.output_path.iterdir() if f.name.endswith(".zarr"))
+    assert stores == [f"test_empty_{counter:0>4}.zarr" for counter in (1, 2, 3)]
+
+
+def test_fieldgroup_monitor_async_close_is_final(test_path: pathlib.Path) -> None:
+    _, group_monitor = create_field_group_monitor(
+        test_path, test_io_utils.simple_grid, backend=OutputBackend.ZARR
+    )
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    group_monitor.store(state, dt.datetime.fromisoformat("2024-01-01T00:00:00"))
+    group_monitor.close()
+    with pytest.raises(RuntimeError, match="shut down"):
+        group_monitor.store(state, dt.datetime.fromisoformat("2024-01-01T01:00:00"))
+
+
+def test_fieldgroup_monitor_async_write_failure_surfaces_on_close(
+    test_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken_write(writes: list[zarr_writers._VariableWrite]) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(zarr_writers, "_write_variables", broken_write)
+    _, group_monitor = create_field_group_monitor(
+        test_path, test_io_utils.simple_grid, backend=OutputBackend.ZARR
+    )
+    state = test_io_utils.model_state(test_io_utils.simple_grid)
+    group_monitor.store(state, dt.datetime.fromisoformat("2024-01-01T00:00:00"))
+    with pytest.raises(RuntimeError, match="write task failed") as close_error:
+        group_monitor.close()
+    assert isinstance(close_error.value.__cause__, OSError)

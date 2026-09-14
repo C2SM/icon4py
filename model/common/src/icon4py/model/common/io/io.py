@@ -29,6 +29,7 @@ from icon4py.model.common.io import (
     distributed,
     netcdf_writers,
     ugrid,
+    utils,
     writers,
     zarr_writers,
 )
@@ -71,10 +72,16 @@ FILE_SUFFIXES: Final[dict[OutputBackend, str]] = {
     OutputBackend.ZARR: ".zarr",
 }
 
-#: Timed phases of a capture step: "distribute" (collective gather / halo stripping)
-#: and "write" (file/store output).
+#: Timed phases of a capture step: "distribute" (collective gather / halo stripping,
+#: plus the decoupling copy of asynchronous groups) and "write" (file/store output;
+#: for asynchronous groups only its synchronous part: store metadata and queueing).
+#: Asynchronous groups add "async_wait" (the part of "write" spent blocked on a full
+#: write queue -- the backpressure signal) and "async_write" (background-thread write
+#: seconds; they overlap the model computation and are no model-visible overhead).
 PHASE_DISTRIBUTE: Final[str] = "distribute"
 PHASE_WRITE: Final[str] = "write"
+PHASE_ASYNC_WAIT: Final[str] = "async_wait"
+PHASE_ASYNC_WRITE: Final[str] = "async_write"
 
 
 def _interval_in_steps(output_interval: OutputInterval, dtime: time.RelativeTime) -> int:
@@ -143,6 +150,11 @@ class FieldGroupIOConfig(Config):
     #: needs an MPI-parallel netCDF4 installation in multi-rank runs (checked when
     #: the writer is created, see ``netcdf_writers.NETCDFWriter``).
     mode: OutputMode = OutputMode.DISTRIBUTED
+    #: Whether the group's data writes run on a background thread, overlapping the
+    #: file output with the model computation (zarr backend only, see
+    #: ``FieldGroupMonitor``). Default (None): asynchronous exactly for the backends
+    #: that support it (see ``is_asynchronous``).
+    asynchronous: bool | None = None
     #: Entries per chunk along the horizontal (cell/edge/vertex) axes. Default (None):
     #: one chunk per rank block in distributed mode; otherwise the whole axis (zarr)
     #: or the library default (netCDF).
@@ -168,6 +180,17 @@ class FieldGroupIOConfig(Config):
                 f"see 'common.config.config_io')."
             )
         self.validate()
+
+    @property
+    def is_asynchronous(self) -> bool:
+        """Resolved ``asynchronous`` flag.
+
+        The configured value; when unconfigured (None), asynchronous exactly for the
+        backends that support it (zarr).
+        """
+        if self.asynchronous is None:
+            return self.backend == OutputBackend.ZARR
+        return self.asynchronous
 
     @property
     def block_alignment(self) -> int:
@@ -202,6 +225,18 @@ class FieldGroupIOConfig(Config):
             raise exceptions.InvalidConfigError(
                 f"Invalid 'horizontal_shard_size': {self.horizontal_shard_size} is not "
                 f"a multiple of 'horizontal_chunk_size' ({self.horizontal_chunk_size})."
+            )
+
+    def _validate_asynchronous(self) -> None:
+        if self.asynchronous is not None and not isinstance(self.asynchronous, bool):
+            raise exceptions.InvalidConfigError(
+                f"Invalid 'asynchronous': must be a bool or None, got {self.asynchronous!r}."
+            )
+        if self.asynchronous and self.backend != OutputBackend.ZARR:
+            raise exceptions.InvalidConfigError(
+                f"Invalid 'asynchronous': the '{self.backend}' backend only writes "
+                f"synchronously (its distributed writes are collective MPI operations, "
+                f"which must stay off the background write thread)."
             )
 
     def _validate_basename(self) -> None:
@@ -241,6 +276,7 @@ class FieldGroupIOConfig(Config):
         if not self.variables:
             raise exceptions.InvalidConfigError("No variables provided for output.")
         self._validate_horizontal_chunking()
+        self._validate_asynchronous()
         self._validate_basename()
 
 
@@ -396,10 +432,11 @@ class IOMonitor(monitor.Monitor):
     def close(self) -> None:
         """Close all field-group writers.
 
-        Safe to call from error paths: no communication of its own. Exception: closing
-        a parallel netCDF file is collective, but IO-layer errors raise on all ranks
-        together (see e.g. ``FieldGroupMonitor._refuse_to_overwrite``), so the ranks
-        still close in lockstep.
+        Safe to call from error paths: no communication of its own (draining the
+        write queues of asynchronous groups is local file writing). Exception:
+        closing a parallel netCDF file is collective, but IO-layer errors raise on
+        all ranks together (see e.g. ``FieldGroupMonitor._refuse_to_overwrite``), so
+        the ranks still close in lockstep.
         """
         for m in self._group_monitors:
             m.close()
@@ -416,6 +453,10 @@ class IOMonitor(monitor.Monitor):
     def report_timings(self) -> None:
         """Log the accumulated output overhead of this rank, per field group and phase.
 
+        The "async_write" phase of asynchronous groups is the exception: it overlaps
+        the model computation (see the phase constants) and is logged for visibility
+        of the hidden write cost, not as overhead.
+
         Deliberately communication-free: a reduction over the ranks would leave the
         surviving ranks blocked in a collective when one rank failed earlier, and
         timing output is not worth a hang. Every rank logs its own totals; whether
@@ -427,8 +468,7 @@ class IOMonitor(monitor.Monitor):
             return
         self._timings_logged = True
         for m in self._group_monitors:
-            for phase in (PHASE_DISTRIBUTE, PHASE_WRITE):
-                seconds = m.phase_seconds[phase]
+            for phase, seconds in m.phase_seconds.items():
                 if not seconds:
                     continue
                 log.info(
@@ -452,6 +492,14 @@ class FieldGroupMonitor(monitor.Monitor):
     With a multi-rank ``process_props``, construction is collective on its communicator
     (the file attributes are broadcast so all ranks carry identical values), just like
     ``store`` is.
+
+    An asynchronous group (``FieldGroupIOConfig.is_asynchronous``) owns one background
+    write thread for the lifetime of the monitor (``writers.AsyncWriteQueue``): at a
+    capture step ``store`` queues the data write and returns, overlapping the file
+    output with the following model steps. All communication -- the ``prepare`` of the
+    distribution as well as the store-metadata operations and barrier of the writer --
+    stays on the calling thread. ``close`` is final for such a group: it blocks until
+    every queued write is on disk and stops the thread.
     """
 
     def __init__(
@@ -498,6 +546,11 @@ class FieldGroupMonitor(monitor.Monitor):
         self._current_timesteps_in_file = 0
         self._dataset: writers.FieldWriter | None = None
         self._phase_seconds: dict[str, list[float]] = {PHASE_DISTRIBUTE: [], PHASE_WRITE: []}
+        self._write_queue: writers.AsyncWriteQueue | None = (
+            writers.AsyncWriteQueue(name=config.basename, max_pending=writers.MAX_PENDING_WRITES)
+            if config.is_asynchronous
+            else None
+        )
 
     @property
     def output_path(self) -> pathlib.Path:
@@ -568,6 +621,7 @@ class FieldGroupMonitor(monitor.Monitor):
                 global_attrs=self._global_attrs,
                 rank_blocks=self._distribution.rank_blocks,
                 process_props=self._process_props,
+                async_queue=self._write_queue,
                 horizontal_chunk_size=self.config.horizontal_chunk_size,
                 horizontal_shard_size=self.config.horizontal_shard_size,
             )
@@ -583,6 +637,10 @@ class FieldGroupMonitor(monitor.Monitor):
         (the distribution communicates at capture steps). File and step counters advance
         identically on all ranks, including ranks that do not write.
 
+        For an asynchronous group the data write is queued instead of performed and
+        overlaps the following model steps; at ``writers.MAX_PENDING_WRITES`` queued
+        captures this blocks until the writer catches up (phase "async_wait").
+
         Args:
             state: dict  model state dictionary
             model_time: the current time step of the simulation
@@ -590,9 +648,6 @@ class FieldGroupMonitor(monitor.Monitor):
         self._step_counter += 1
         if not self._at_capture_time():
             return
-        # TODO(halungge): this should do a deep copy of the data once IO becomes
-        #   asynchronous (the gather/halo-strip paths already copy, the single-node
-        #   path writes synchronously before the state is mutated)
         try:
             state_to_store = {field: state[field] for field in self._field_names}
         except KeyError as e:
@@ -604,6 +659,16 @@ class FieldGroupMonitor(monitor.Monitor):
 
         start = timeit.default_timer()
         prepared_state = self._distribution.prepare(state_to_store)
+        if (
+            self._write_queue is not None
+            and prepared_state is not None
+            and not self._distribution.prepare_returns_copy
+        ):
+            # the queued write outlives this call, so the data must not alias the
+            # model state, which the model mutates in the following steps
+            prepared_state = {
+                name: utils.host_copy(field) for name, field in prepared_state.items()
+            }
         self._phase_seconds[PHASE_DISTRIBUTE].append(timeit.default_timer() - start)
 
         new_file = self._do_initialize_new_file()
@@ -621,7 +686,7 @@ class FieldGroupMonitor(monitor.Monitor):
 
         self._update_current_file_count()
         if self._is_file_limit_reached():
-            self.close()
+            self._close_dataset()
 
     def _update_current_file_count(self) -> None:
         self._current_timesteps_in_file = self._current_timesteps_in_file + 1
@@ -646,12 +711,34 @@ class FieldGroupMonitor(monitor.Monitor):
 
     @property
     def phase_seconds(self) -> dict[str, list[float]]:
-        """Per-phase wall-clock seconds of every capture step (output overhead)."""
-        return self._phase_seconds
+        """Per-phase wall-clock seconds of every capture step (output overhead).
 
-    def close(self) -> None:
+        Asynchronous groups additionally carry the "async_wait" and "async_write"
+        phases (see the phase constants): "async_wait" is contained in "write",
+        "async_write" overlaps the model computation and is no model-visible
+        overhead. Their values settle once the group is closed.
+        """
+        seconds = dict(self._phase_seconds)
+        if self._write_queue is not None:
+            seconds[PHASE_ASYNC_WAIT] = list(self._write_queue.wait_seconds)
+            seconds[PHASE_ASYNC_WRITE] = list(self._write_queue.task_seconds)
+        return seconds
+
+    def _close_dataset(self) -> None:
+        """Close the current file; for an asynchronous group this drains its queued writes."""
         if self._dataset is not None:
             self._dataset.close()
         # reset unconditionally: gather-mode ranks without a writer must keep the same
         # counter values as the writing rank
         self._current_timesteps_in_file = 0
+
+    def close(self) -> None:
+        """Close the group's writer; final for an asynchronous group.
+
+        Blocks until every queued write is on disk and stops the background write
+        thread -- a subsequent capture would raise. A queued write that failed in the
+        background is re-raised here.
+        """
+        self._close_dataset()
+        if self._write_queue is not None:
+            self._write_queue.shutdown()
