@@ -1180,7 +1180,7 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/romanc/dace?branch=romanc%2Fstree-sdfg-nested-sdfg-connectors#00c61216762a0a2ce4bb6d725bdc7b1a5400be9a"}
+source = {git = "https://github.com/spcl/dace?branch=main#fa4064dc1f1e05bf25b71c9b89e33380e98dcc10"}
 version = "2.0.0a8"
 
 [[package]]
@@ -1659,7 +1659,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering#dd69498cac66d649b517f1e534917b594732bcb0"}
+source = {git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering#cd8a87b588e9aec8c56b8cc43a1c8b7f23419907"}
 version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
@@ -2208,7 +2208,7 @@ requires-dist = [
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
-  {name = "dace", git = "https://github.com/romanc/dace?branch=romanc%2Fstree-sdfg-nested-sdfg-connectors"},
+  {name = "dace", git = "https://github.com/spcl/dace?branch=main"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
   {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
