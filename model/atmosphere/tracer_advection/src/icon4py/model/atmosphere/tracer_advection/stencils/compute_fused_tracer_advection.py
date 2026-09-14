@@ -79,7 +79,7 @@ from icon4py.model.common.interpolation.stencils.compute_tangential_wind import 
 def _compute_ppm4gpu_flux(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellmass_now: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     slev: gtx.int32,
@@ -88,7 +88,7 @@ def _compute_ppm4gpu_flux(
     dbl_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    z_cfl = broadcast(0.0, (dims.CellDim, dims.KDim))
+    z_cfl = broadcast(0.0, (dims.CellDim, dims.KHalfDim))
     z_cfl = concat_where(
         (dims.KDim > 0) & (dims.KDim < elev + 1),
         _compute_ppm4gpu_courant_number(
