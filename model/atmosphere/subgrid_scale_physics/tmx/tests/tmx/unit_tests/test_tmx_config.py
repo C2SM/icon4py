@@ -9,34 +9,30 @@ from __future__ import annotations
 
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.tmx.config import (
-    EnergyType,
-    TmxConfig,
-    TurbulenceSolverType,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.tmx import config as tmx_config
 from icon4py.model.common.config import config_io
 
 
 @pytest.mark.parametrize("turb_prandtl", [0.0, -1.0])
 def test_config_rejects_non_positive_turb_prandtl(turb_prandtl: float) -> None:
     with pytest.raises(ValueError, match="turb_prandtl"):
-        TmxConfig(turb_prandtl=turb_prandtl)
+        tmx_config.TmxConfig(turb_prandtl=turb_prandtl)
 
 
 def test_config_rejects_negative_km_min() -> None:
     with pytest.raises(ValueError, match="km_min"):
-        TmxConfig(km_min=-1.0)
+        tmx_config.TmxConfig(km_min=-1.0)
 
 
 def test_config_coerces_enums_from_ints() -> None:
-    config = TmxConfig(solver_type=1, energy_type=1)
-    assert config.solver_type is TurbulenceSolverType.EXPLICIT
-    assert config.energy_type is EnergyType.DRY_STATIC
+    config = tmx_config.TmxConfig(solver_type=1, energy_type=1)
+    assert config.solver_type is tmx_config.SolverType.EXPLICIT
+    assert config.energy_type is tmx_config.EnergyType.DRY_STATIC
 
 
 def test_config_rejects_invalid_enum_values() -> None:
     with pytest.raises(ValueError):
-        TmxConfig(solver_type=3)
+        tmx_config.TmxConfig(solver_type=3)
 
 
 def _echoed_vdf_record(**overrides: object) -> list[object]:
@@ -92,9 +88,9 @@ def test_config_from_fortran_dict() -> None:
             )
         }
     }
-    config = TmxConfig.from_fortran_dict(atm_dict=fortran_dict)
-    assert config.solver_type is TurbulenceSolverType.EXPLICIT
-    assert config.energy_type is EnergyType.DRY_STATIC
+    config = tmx_config.TmxConfig.from_fortran_dict(atm_dict=fortran_dict)
+    assert config.solver_type is tmx_config.SolverType.EXPLICIT
+    assert config.energy_type is tmx_config.EnergyType.DRY_STATIC
     assert config.dissipation_factor == 0.5
     assert config.use_louis is False
     assert config.use_louis_land is False
@@ -113,21 +109,23 @@ def test_config_from_fortran_dict() -> None:
 def test_config_from_fortran_dict_rejects_changed_member_count() -> None:
     record = _echoed_vdf_record()
     with pytest.raises(ValueError, match="not a multiple"):
-        TmxConfig.from_fortran_dict(atm_dict={"aes_vdf_nml": {"aes_vdf_config": [*record, 0.0]}})
+        tmx_config.TmxConfig.from_fortran_dict(
+            atm_dict={"aes_vdf_nml": {"aes_vdf_config": [*record, 0.0]}}
+        )
 
 
 def test_config_from_fortran_dict_rejects_missing_use_tmx() -> None:
     record = _echoed_vdf_record()
     record[22] = False
     with pytest.raises(ValueError, match="use_tmx"):
-        TmxConfig.from_fortran_dict(atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}})
+        tmx_config.TmxConfig.from_fortran_dict(atm_dict={"aes_vdf_nml": {"aes_vdf_config": record}})
 
 
 def test_config_round_trips_through_config_io() -> None:
     """Every enum option is registered, so the config survives (un)structuring."""
-    config = TmxConfig()
+    config = tmx_config.TmxConfig()
     unstructured = config_io.CONV.unstructure(config)
 
     assert unstructured["solver_type"] == "implicit"
     assert unstructured["energy_type"] == "internal"
-    assert config_io.CONV.structure(unstructured, TmxConfig) == config
+    assert config_io.CONV.structure(unstructured, tmx_config.TmxConfig) == config
