@@ -8,6 +8,7 @@
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 
 import gt4py.next as gtx
 
@@ -27,6 +28,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definit
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
+    integrate_tracers_horizontally,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coefficients_svd import (
     reconstruct_linear_coefficients_svd,
@@ -355,23 +357,23 @@ class HorizontalAdvection(ABC):
         self,
         *,
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_tracer_new: fa.CellKField[ta.wpfloat],
+        p_tracers_now: tuple[fa.CellKField[ta.wpfloat], ...],
+        p_tracers_new: tuple[fa.CellKField[ta.wpfloat], ...],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_mflx_tracers_h: tuple[fa.EdgeKField[ta.wpfloat], ...],
         dtime: ta.wpfloat,
     ) -> None:
         """
-        Run a horizontal tracer_advection step.
+        Run a horizontal tracer_advection step for all tracers.
 
         Args:
             prep_adv: input argument, data class that contains precalculated tracer_advection fields
-            p_tracer_now: input argument, field that contains current tracer mass fraction
-            p_tracer_new: output argument, field that contains new tracer mass fraction
+            p_tracers_now: input argument, fields that contain current tracer mass fractions
+            p_tracers_new: output argument, fields that contain new tracer mass fractions
             rhodz_now: input argument, field that contains current air mass in each layer
             rhodz_new: input argument, field that contains new air mass in each layer
-            p_mflx_tracer_h: output argument, field that contains new horizontal tracer mass flux
+            p_mflx_tracers_h: output argument, fields that contain new horizontal tracer mass fluxes
             dtime: input argument, the time step
 
         """
@@ -417,21 +419,22 @@ class NoAdvection(HorizontalAdvection):
         self,
         *,
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_tracer_new: fa.CellKField[ta.wpfloat],
+        p_tracers_now: tuple[fa.CellKField[ta.wpfloat], ...],
+        p_tracers_new: tuple[fa.CellKField[ta.wpfloat], ...],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_mflx_tracers_h: tuple[fa.EdgeKField[ta.wpfloat], ...],
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("horizontal tracer_advection run - start")
 
-        log.debug("running stencil copy_field_on_cell_k - start")
-        self._copy_field_on_cell_k(
-            field=p_tracer_now,
-            output_field=p_tracer_new,
-        )
-        log.debug("running stencil copy_field_on_cell_k - end")
+        for p_tracer_now, p_tracer_new in zip(p_tracers_now, p_tracers_new, strict=True):
+            log.debug("running stencil copy_field_on_cell_k - start")
+            self._copy_field_on_cell_k(
+                field=p_tracer_now,
+                output_field=p_tracer_new,
+            )
+            log.debug("running stencil copy_field_on_cell_k - end")
         log.debug("horizontal tracer_advection run - end")
 
 
@@ -442,29 +445,31 @@ class FiniteVolume(HorizontalAdvection):
         self,
         *,
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_tracer_new: fa.CellKField[ta.wpfloat],
+        p_tracers_now: tuple[fa.CellKField[ta.wpfloat], ...],
+        p_tracers_new: tuple[fa.CellKField[ta.wpfloat], ...],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_mflx_tracers_h: tuple[fa.EdgeKField[ta.wpfloat], ...],
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("horizontal tracer_advection run - start")
 
-        self._compute_numerical_flux(
-            prep_adv=prep_adv,
-            p_tracer_now=p_tracer_now,
-            rhodz_now=rhodz_now,
-            p_mflx_tracer_h=p_mflx_tracer_h,
-            dtime=dtime,
-        )
+        # every flux before any update, so that the update can process all tracers in one call
+        for p_tracer_now, p_mflx_tracer_h in zip(p_tracers_now, p_mflx_tracers_h, strict=True):
+            self._compute_numerical_flux(
+                prep_adv=prep_adv,
+                p_tracer_now=p_tracer_now,
+                rhodz_now=rhodz_now,
+                p_mflx_tracer_h=p_mflx_tracer_h,
+                dtime=dtime,
+            )
 
         self._update_unknowns(
-            p_tracer_now=p_tracer_now,
-            p_tracer_new=p_tracer_new,
+            p_tracers_now=p_tracers_now,
+            p_tracers_new=p_tracers_new,
             rhodz_now=rhodz_now,
             rhodz_new=rhodz_new,
-            p_mflx_tracer_h=p_mflx_tracer_h,
+            p_mflx_tracers_h=p_mflx_tracers_h,
             dtime=dtime,
         )
         log.debug("horizontal tracer_advection run - end")
@@ -484,11 +489,11 @@ class FiniteVolume(HorizontalAdvection):
     def _update_unknowns(
         self,
         *,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_tracer_new: fa.CellKField[ta.wpfloat],
+        p_tracers_now: tuple[fa.CellKField[ta.wpfloat], ...],
+        p_tracers_new: tuple[fa.CellKField[ta.wpfloat], ...],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_mflx_tracers_h: tuple[fa.EdgeKField[ta.wpfloat], ...],
         dtime: ta.wpfloat,
     ) -> None: ...
 
@@ -600,6 +605,8 @@ class SemiLagrangian(FiniteVolume):
             },
             offset_provider=self._grid.connectivities,
         )
+        # one program per tracer count, set up on first use: the count is known only in `run`
+        self._integrate_tracers_horizontally: dict[int, Callable[..., None]] = {}
 
         log.debug("horizontal tracer_advection class init - end")
 
@@ -658,25 +665,60 @@ class SemiLagrangian(FiniteVolume):
     def _update_unknowns(
         self,
         *,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_tracer_new: fa.CellKField[ta.wpfloat],
+        p_tracers_now: tuple[fa.CellKField[ta.wpfloat], ...],
+        p_tracers_new: tuple[fa.CellKField[ta.wpfloat], ...],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        p_mflx_tracers_h: tuple[fa.EdgeKField[ta.wpfloat], ...],
         dtime: ta.wpfloat,
     ) -> None:
         log.debug("horizontal unknowns update - start")
 
-        # update tracer mass fraction
-        log.debug("running stencil integrate_tracer_horizontally - start")
-        self._integrate_tracer_horizontally(
-            p_mflx_tracer_h=p_mflx_tracer_h,
-            tracer_now=p_tracer_now,
+        ntracer = len(p_tracers_now)
+        if ntracer == 1:
+            # gtfn fails to compile a program taking a 1-element tuple: its bindings pass the element
+            # where the generated code expects the tuple
+            log.debug("running stencil integrate_tracer_horizontally - start")
+            self._integrate_tracer_horizontally(
+                p_mflx_tracer_h=p_mflx_tracers_h[0],
+                tracer_now=p_tracers_now[0],
+                rhodz_now=rhodz_now,
+                rhodz_new=rhodz_new,
+                tracer_new_hor=p_tracers_new[0],
+                p_dtime=dtime,
+            )
+            log.debug("running stencil integrate_tracer_horizontally - end")
+            log.debug("horizontal unknowns update - end")
+            return
+
+        if ntracer not in self._integrate_tracers_horizontally:
+            self._integrate_tracers_horizontally[ntracer] = model_options.setup_program(
+                backend=self._backend,
+                program=integrate_tracers_horizontally(ntracer),
+                constant_args={
+                    "deepatmo_divh": self._metric_state.deepatmo_divh,
+                    "geofac_div": self._interpolation_state.geofac_div,
+                },
+                horizontal_sizes={
+                    "horizontal_start": self._start_cell_nudging,
+                    "horizontal_end": self._end_cell_local,
+                },
+                vertical_sizes={
+                    "vertical_start": gtx.int32(0),
+                    "vertical_end": self._grid.num_levels,
+                },
+                offset_provider=self._grid.connectivities,
+            )
+
+        # update tracer mass fractions, all tracers in one program call
+        log.debug("running stencil integrate_tracers_horizontally - start")
+        self._integrate_tracers_horizontally[ntracer](
+            fluxes_and_tracers=tuple(zip(p_mflx_tracers_h, p_tracers_now, strict=True)),
             rhodz_now=rhodz_now,
             rhodz_new=rhodz_new,
-            tracer_new_hor=p_tracer_new,
+            tracers_new_hor=p_tracers_new,
             p_dtime=dtime,
         )
-        log.debug("running stencil integrate_tracer_horizontally - end")
+        log.debug("running stencil integrate_tracers_horizontally - end")
 
         log.debug("horizontal unknowns update - end")

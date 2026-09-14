@@ -357,110 +357,99 @@ class GodunovSplittingAdvection(Advection):
             even_timestep=self._even_timestep,
         )
 
-        for p_tracer_now, p_tracer_new, hfl_tracer, vfl_tracer, grf_tend_tracer in zip(
-            p_tracers_now,
-            p_tracers_new,
-            diagnostic_state.hfl_tracer,
-            diagnostic_state.vfl_tracer,
-            diagnostic_state.grf_tend_tracer,
-            strict=True,
-        ):
-            self._advect_tracer(
-                diagnostic_state=diagnostic_state,
+        # Godunov splitting; every tracer finishes the first transport before any starts the
+        # second, so that a transport can process all tracers in one call
+        if self._even_timestep:
+            self._run_vertical_advection(
                 prep_adv=prep_adv,
-                p_tracer_now=p_tracer_now,
-                p_tracer_new=p_tracer_new,
-                hfl_tracer=hfl_tracer,
-                vfl_tracer=vfl_tracer,
-                grf_tend_tracer=grf_tend_tracer,
+                p_tracers_now=p_tracers_now,
+                p_tracers_new=p_tracers_new,
+                rhodz_now=diagnostic_state.airmass_now,
+                rhodz_new=self._rhodz_ast2,
+                p_mflx_tracers_v=diagnostic_state.vfl_tracer,
                 dtime=dtime,
             )
+            self._horizontal_advection.run(
+                prep_adv=prep_adv,
+                p_tracers_now=p_tracers_new,
+                p_tracers_new=p_tracers_new,
+                rhodz_now=self._rhodz_ast2,
+                rhodz_new=diagnostic_state.airmass_new,
+                p_mflx_tracers_h=diagnostic_state.hfl_tracer,
+                dtime=dtime,
+            )
+        else:
+            self._horizontal_advection.run(
+                prep_adv=prep_adv,
+                p_tracers_now=p_tracers_now,
+                p_tracers_new=p_tracers_new,
+                rhodz_now=diagnostic_state.airmass_now,
+                rhodz_new=self._rhodz_ast2,
+                p_mflx_tracers_h=diagnostic_state.hfl_tracer,
+                dtime=dtime,
+            )
+            self._run_vertical_advection(
+                prep_adv=prep_adv,
+                p_tracers_now=p_tracers_new,
+                p_tracers_new=p_tracers_new,
+                rhodz_now=self._rhodz_ast2,
+                rhodz_new=diagnostic_state.airmass_new,
+                p_mflx_tracers_v=diagnostic_state.vfl_tracer,
+                dtime=dtime,
+            )
+
+        for p_tracer_now, p_tracer_new, grf_tend_tracer in zip(
+            p_tracers_now, p_tracers_new, diagnostic_state.grf_tend_tracer, strict=True
+        ):
+            # update lateral boundaries with interpolated time tendencies
+            if self._grid.limited_area:
+                log.debug("running stencil apply_interpolated_tracer_time_tendency - start")
+                self._apply_interpolated_tracer_time_tendency(
+                    p_tracer_now=p_tracer_now,
+                    p_grf_tend_tracer=grf_tend_tracer,
+                    p_tracer_new=p_tracer_new,
+                    p_dtime=dtime,
+                )
+                log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
+
+            # exchange updated tracer values, originally happens only if iforcing /= inwp
+            log.debug("communication of tracer tracer_advection field: p_tracer_new - start")
+            self._exchange.exchange(
+                dims.CellDim,
+                p_tracer_new,
+                stream=decomposition.DEFAULT_STREAM,
+            )
+            log.debug("communication of tracer tracer_advection field: p_tracer_new - end")
 
         # finalize step
         self._even_timestep = not self._even_timestep
 
         log.debug("tracer_advection run - end")
 
-    def _advect_tracer(
+    def _run_vertical_advection(
         self,
         *,
-        diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
         prep_adv: tracer_advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_tracer_new: fa.CellKField[ta.wpfloat],
-        hfl_tracer: fa.EdgeKField[ta.wpfloat],
-        vfl_tracer: fa.CellKHalfField[ta.wpfloat],
-        grf_tend_tracer: fa.CellKField[ta.wpfloat],
+        p_tracers_now: tuple[fa.CellKField[ta.wpfloat], ...],
+        p_tracers_new: tuple[fa.CellKField[ta.wpfloat], ...],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        p_mflx_tracers_v: tuple[fa.CellKHalfField[ta.wpfloat], ...],
         dtime: ta.wpfloat,
     ) -> None:
-        # Godunov splitting
-        if self._even_timestep:
-            # vertical transport
+        for p_tracer_now, p_tracer_new, p_mflx_tracer_v in zip(
+            p_tracers_now, p_tracers_new, p_mflx_tracers_v, strict=True
+        ):
             self._vertical_advection.run(
                 prep_adv=prep_adv,
                 p_tracer_now=p_tracer_now,
                 p_tracer_new=p_tracer_new,
-                rhodz_now=diagnostic_state.airmass_now,
-                rhodz_new=self._rhodz_ast2,
-                p_mflx_tracer_v=vfl_tracer,
+                rhodz_now=rhodz_now,
+                rhodz_new=rhodz_new,
+                p_mflx_tracer_v=p_mflx_tracer_v,
                 dtime=dtime,
                 even_timestep=self._even_timestep,
             )
-
-            # horizontal transport
-            self._horizontal_advection.run(
-                prep_adv=prep_adv,
-                p_tracer_now=p_tracer_new,
-                p_tracer_new=p_tracer_new,
-                rhodz_now=self._rhodz_ast2,
-                rhodz_new=diagnostic_state.airmass_new,
-                p_mflx_tracer_h=hfl_tracer,
-                dtime=dtime,
-            )
-
-        else:
-            # horizontal transport
-            self._horizontal_advection.run(
-                prep_adv=prep_adv,
-                p_tracer_now=p_tracer_now,
-                p_tracer_new=p_tracer_new,
-                rhodz_now=diagnostic_state.airmass_now,
-                rhodz_new=self._rhodz_ast2,
-                p_mflx_tracer_h=hfl_tracer,
-                dtime=dtime,
-            )
-
-            # vertical transport
-            self._vertical_advection.run(
-                prep_adv=prep_adv,
-                p_tracer_now=p_tracer_new,
-                p_tracer_new=p_tracer_new,
-                rhodz_now=self._rhodz_ast2,
-                rhodz_new=diagnostic_state.airmass_new,
-                p_mflx_tracer_v=vfl_tracer,
-                dtime=dtime,
-                even_timestep=self._even_timestep,
-            )
-
-        # update lateral boundaries with interpolated time tendencies
-        if self._grid.limited_area:
-            log.debug("running stencil apply_interpolated_tracer_time_tendency - start")
-            self._apply_interpolated_tracer_time_tendency(
-                p_tracer_now=p_tracer_now,
-                p_grf_tend_tracer=grf_tend_tracer,
-                p_tracer_new=p_tracer_new,
-                p_dtime=dtime,
-            )
-            log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
-
-        # exchange updated tracer values, originally happens only if iforcing /= inwp
-        log.debug("communication of tracer tracer_advection field: p_tracer_new - start")
-        self._exchange.exchange(
-            dims.CellDim,
-            p_tracer_new,
-            stream=decomposition.DEFAULT_STREAM,
-        )
-        log.debug("communication of tracer tracer_advection field: p_tracer_new - end")
 
 
 def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]
