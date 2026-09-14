@@ -226,6 +226,9 @@ variables:
 
 .test_tools_aarch64:
   extends: [.test_runner_serial, .test_template_aarch64, .retry_on_transient_failure]
+  variables:
+    # The bindings reference test compares against clang-formatted generated code.
+    CLANG_FORMAT_EXECUTABLE: clang-format
   script:
     - nox -s "test_tools_and_bindings-${PYVERSION_SHORT}($SELECTION)"
 
