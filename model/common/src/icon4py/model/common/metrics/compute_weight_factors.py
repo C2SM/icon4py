@@ -79,28 +79,30 @@ def _compute_wgtfacq1_c(z_ifc: fa.CellKHalfField[wpfloat]) -> fa.CellKField[wpfl
     level being written: from full level k, interface j sits at
     ``KDim + (j - k) - 0.5``.
     """
+    # TODO(havogt): one-sided masks, because with `==` GT4Py infers the shifted branches over
+    # the whole column and dace reads out of bounds, see https://github.com/GridTools/gt4py/issues/2205.
     za = concat_where(
-        dims.KDim == 0,
+        dims.KDim < 1,
         z_ifc(dims.KDim - 0.5),
-        concat_where(dims.KDim == 1, z_ifc(dims.KDim - 1.5), z_ifc(dims.KDim - 2.5)),
+        concat_where(dims.KDim < 2, z_ifc(dims.KDim - 1.5), z_ifc(dims.KDim - 2.5)),
     )
     zb = concat_where(
-        dims.KDim == 0,
+        dims.KDim < 1,
         z_ifc(dims.KDim + 0.5),
-        concat_where(dims.KDim == 1, z_ifc(dims.KDim - 0.5), z_ifc(dims.KDim - 1.5)),
+        concat_where(dims.KDim < 2, z_ifc(dims.KDim - 0.5), z_ifc(dims.KDim - 1.5)),
     )
     zc = concat_where(
-        dims.KDim == 0,
+        dims.KDim < 1,
         z_ifc(dims.KDim + 1.5),
-        concat_where(dims.KDim == 1, z_ifc(dims.KDim + 0.5), z_ifc(dims.KDim - 0.5)),
+        concat_where(dims.KDim < 2, z_ifc(dims.KDim + 0.5), z_ifc(dims.KDim - 0.5)),
     )
     zd = concat_where(
-        dims.KDim == 0,
+        dims.KDim < 1,
         z_ifc(dims.KDim + 2.5),
-        concat_where(dims.KDim == 1, z_ifc(dims.KDim + 1.5), z_ifc(dims.KDim + 0.5)),
+        concat_where(dims.KDim < 2, z_ifc(dims.KDim + 1.5), z_ifc(dims.KDim + 0.5)),
     )
     w1, w2, w3 = _compute_quadratic_extrapolation_weights(za, zb, zc, zd)
-    return concat_where(dims.KDim == 0, w1, concat_where(dims.KDim == 1, w2, w3))
+    return concat_where(dims.KDim < 1, w1, concat_where(dims.KDim < 2, w2, w3))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -132,28 +134,30 @@ def _compute_wgtfacq_c(
     nlev-3..nlev-1 carry the weights of interfaces nlev..nlev-3, and the level
     nearest the surface carries the first one.
     """
+    # TODO(havogt): one-sided masks, because with `==` GT4Py infers the shifted branches over
+    # the whole column and dace reads out of bounds, see https://github.com/GridTools/gt4py/issues/2205.
     za = concat_where(
-        dims.KDim == nlev - 1,
+        dims.KDim >= nlev - 1,
         z_ifc(dims.KDim + 0.5),
-        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim + 1.5), z_ifc(dims.KDim + 2.5)),
+        concat_where(dims.KDim >= nlev - 2, z_ifc(dims.KDim + 1.5), z_ifc(dims.KDim + 2.5)),
     )
     zb = concat_where(
-        dims.KDim == nlev - 1,
+        dims.KDim >= nlev - 1,
         z_ifc(dims.KDim - 0.5),
-        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim + 0.5), z_ifc(dims.KDim + 1.5)),
+        concat_where(dims.KDim >= nlev - 2, z_ifc(dims.KDim + 0.5), z_ifc(dims.KDim + 1.5)),
     )
     zc = concat_where(
-        dims.KDim == nlev - 1,
+        dims.KDim >= nlev - 1,
         z_ifc(dims.KDim - 1.5),
-        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim - 0.5), z_ifc(dims.KDim + 0.5)),
+        concat_where(dims.KDim >= nlev - 2, z_ifc(dims.KDim - 0.5), z_ifc(dims.KDim + 0.5)),
     )
     zd = concat_where(
-        dims.KDim == nlev - 1,
+        dims.KDim >= nlev - 1,
         z_ifc(dims.KDim - 2.5),
-        concat_where(dims.KDim == nlev - 2, z_ifc(dims.KDim - 1.5), z_ifc(dims.KDim - 0.5)),
+        concat_where(dims.KDim >= nlev - 2, z_ifc(dims.KDim - 1.5), z_ifc(dims.KDim - 0.5)),
     )
     w1, w2, w3 = _compute_quadratic_extrapolation_weights(za, zb, zc, zd)
-    return concat_where(dims.KDim == nlev - 1, w1, concat_where(dims.KDim == nlev - 2, w2, w3))
+    return concat_where(dims.KDim >= nlev - 1, w1, concat_where(dims.KDim >= nlev - 2, w2, w3))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
