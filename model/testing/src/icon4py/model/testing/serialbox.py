@@ -2020,24 +2020,6 @@ class TmxEntrySavepoint(IconSavepoint):
     def wa(self):
         return self._get_field("wa", dims.CellDim, dims.KHalfDim)
 
-    def qv(self):
-        return self._get_field("qv", dims.CellDim, dims.KDim)
-
-    def qc(self):
-        return self._get_field("qc", dims.CellDim, dims.KDim)
-
-    def qi(self):
-        return self._get_field("qi", dims.CellDim, dims.KDim)
-
-    def qr(self):
-        return self._get_field("qr", dims.CellDim, dims.KDim)
-
-    def qs(self):
-        return self._get_field("qs", dims.CellDim, dims.KDim)
-
-    def qg(self):
-        return self._get_field("qg", dims.CellDim, dims.KDim)
-
     def rho(self):
         return self._get_field("rho", dims.CellDim, dims.KDim)
 
@@ -2046,15 +2028,6 @@ class TmxEntrySavepoint(IconSavepoint):
 
     def pres(self):
         return self._get_field("pres", dims.CellDim, dims.KDim)
-
-    def pres_ifc(self):
-        return self._get_field("pres_ifc", dims.CellDim, dims.KHalfDim)
-
-    def mair(self):
-        return self._get_field("mair", dims.CellDim, dims.KDim)
-
-    def cvair(self):
-        return self._get_field("cvair", dims.CellDim, dims.KDim)
 
 
 class TmxDiagnosticsExitSavepoint(IconSavepoint):
