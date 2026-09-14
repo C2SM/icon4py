@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import astype, maximum, minimum, neighbor_sum, sqrt
+from gt4py.next import astype, maximum, minimum, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2V
@@ -27,12 +27,6 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
     smag_limit: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
-    # E2C2V neighbors 0,1 carry the primal_edge_length**2 weight (primal_edge_mask ==
-    # 1,1,0,0), neighbors 2,3 the vert_vert_length**2 weight (vert_vert_mask ==
-    # 0,0,1,1). These masks let that per-neighbor weighting be expressed as a single
-    # `neighbor_sum` reduction instead of an unrolled sum of indexed terms.
-    primal_edge_mask: gtx.Field[gtx.Dims[dims.E2C2VDim], wpfloat],
-    vert_vert_mask: gtx.Field[gtx.Dims[dims.E2C2VDim], wpfloat],
     smag_offset: vpfloat,
 ) -> tuple[
     fa.EdgeKField[vpfloat],
@@ -45,18 +39,11 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
 
     v_n = u_vert_wp(E2C2V) * primal_normal_vert_x + v_vert_wp(E2C2V) * primal_normal_vert_y
 
-    # inv_primal_edge_length squared weights E2C2V neighbors 0 and 1, inv_vert_vert_length
-    # squared weights neighbors 2 and 3. Each neighbor also contributes a -vn term with the
-    # same weight, so the whole expression is a single neighbor_sum of (v_n - vn) * weight.
-    # Folding the vn subtraction into the reduction keeps it consistent with the v_n sum when
-    # a neighbor is missing: neighbor_sum drops both terms together instead of dropping only
-    # the v_n contribution while still subtracting vn.
-    inv_primal_edge_length_2 = inv_primal_edge_length * inv_primal_edge_length
-    inv_vert_vert_length_2 = inv_vert_vert_length * inv_vert_vert_length
-    weight = primal_edge_mask * inv_primal_edge_length_2 + vert_vert_mask * inv_vert_vert_length_2
-
-    nabla2_of_vn = neighbor_sum((v_n - vn) * weight, axis=dims.E2C2VDim)
-
+    nabla2_of_vn = (v_n[dims.E2C2VDim(0)] + v_n[dims.E2C2VDim(1)] - wpfloat("2.0") * vn) * (
+        inv_primal_edge_length * inv_primal_edge_length
+    ) + (v_n[dims.E2C2VDim(2)] + v_n[dims.E2C2VDim(3)] - wpfloat("2.0") * vn) * (
+        inv_vert_vert_length * inv_vert_vert_length
+    )
     # The factor of 4 comes from the lengths in the denominator being twice those needed
     # for the diffusion stencil (https://doi.org/10.1002%2Fqj.2378).
     nabla2_of_vn = wpfloat("4.0") * nabla2_of_vn
@@ -96,8 +83,6 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
     dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
     smag_limit: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
-    primal_edge_mask: gtx.Field[gtx.Dims[dims.E2C2VDim], wpfloat],
-    vert_vert_mask: gtx.Field[gtx.Dims[dims.E2C2VDim], wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     kh_smag_ec: fa.EdgeKField[vpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
@@ -120,8 +105,6 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
         dual_normal_vert_y=dual_normal_vert_y,
         vn=vn,
         smag_limit=smag_limit,
-        primal_edge_mask=primal_edge_mask,
-        vert_vert_mask=vert_vert_mask,
         smag_offset=smag_offset,
         out=(kh_smag_e, kh_smag_ec, z_nabla2_e),
         domain={
