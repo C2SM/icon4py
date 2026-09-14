@@ -26,11 +26,14 @@ def _limit_vertical_parabola_semi_monotonically(
             (p_cc, p_cc),
             where(
                 p_face(dims.KDim - 0.5) > p_face(dims.KDim + 0.5),
-                (wpfloat(
-                    3.0) * p_cc - wpfloat(2.0) * p_face(dims.KDim + 0.5),
+                (
+                    wpfloat(3.0) * p_cc - wpfloat(2.0) * p_face(dims.KDim + 0.5),
                     p_face(dims.KDim + 0.5),
                 ),
-                (p_face(dims.KDim - 0.5), wpfloat(3.0) * p_cc - wpfloat(2.0) * p_face(dims.KDim - 0.5)),
+                (
+                    p_face(dims.KDim - 0.5),
+                    wpfloat(3.0) * p_cc - wpfloat(2.0) * p_face(dims.KDim - 0.5),
+                ),
             ),
         ),
         (p_face(dims.KDim - 0.5), p_face(dims.KDim + 0.5)),

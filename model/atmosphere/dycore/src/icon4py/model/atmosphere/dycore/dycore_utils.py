@@ -6,10 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import abs, broadcast, maximum  # noqa: A004
+from gt4py.next import abs, maximum  # noqa: A004
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -108,6 +108,8 @@ def _compute_rayleigh_damping_factor(
 
 @gtx.program
 def compute_rayleigh_damping_factor(
-    rayleigh_w: fa.KHalfField[wpfloat], dtime: wpfloat, rayleigh_damping_factor: fa.KHalfField[wpfloat]
+    rayleigh_w: fa.KHalfField[wpfloat],
+    dtime: wpfloat,
+    rayleigh_damping_factor: fa.KHalfField[wpfloat],
 ) -> None:
     _compute_rayleigh_damping_factor(rayleigh_w, dtime, out=rayleigh_damping_factor)

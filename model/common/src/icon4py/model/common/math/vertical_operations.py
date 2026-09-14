@@ -267,13 +267,16 @@ def copy_half_level_below_to_model_levels_on_cells(  # noqa: PLR0917 [too-many-p
 def _set_constant_on_model_levels_on_cells_wp(value: wpfloat) -> fa.CellKField[wpfloat]:
     return broadcast(value, (dims.CellDim, dims.KDim))
 
+
 @gtx.field_operator
 def _set_constant_on_model_levels_on_cells_vp(value: vpfloat) -> fa.CellKField[vpfloat]:
     return broadcast(value, (dims.CellDim, dims.KDim))
 
+
 @gtx.field_operator
 def _set_constant_on_model_levels_on_edges_wp(value: wpfloat) -> fa.EdgeKField[wpfloat]:
     return broadcast(value, (dims.EdgeDim, dims.KDim))
+
 
 @gtx.field_operator
 def _set_constant_on_model_levels_on_edges_vp(value: vpfloat) -> fa.EdgeKField[vpfloat]:

@@ -33,8 +33,9 @@ def _init_test_fields() -> tuple[
         _set_constant_on_model_levels_on_edges_wp(zero_wp),
         _set_constant_on_model_levels_on_edges_wp(zero_wp),
         _set_constant_on_model_levels_on_edges_vp(zero_vp),
-        _set_constant_on_model_levels_on_cells_vp(zero_vp)
+        _set_constant_on_model_levels_on_cells_vp(zero_vp),
     )
+
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_test_fields(  # noqa: PLR0917 [too-many-positional-arguments]
@@ -51,10 +52,13 @@ def init_test_fields(  # noqa: PLR0917 [too-many-positional-arguments]
 ) -> None:
     _init_test_fields(
         out=(z_rho_e, z_theta_v_e, z_graddiv_vn, z_dwdz_dd),
-        domain=({dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
-                {dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
-                {dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
-                {dims.CellDim: (cells_start, cells_end), dims.KDim: (vertical_start, vertical_end)},))
+        domain=(
+            {dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
+            {dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
+            {dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
+            {dims.CellDim: (cells_start, cells_end), dims.KDim: (vertical_start, vertical_end)},
+        ),
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

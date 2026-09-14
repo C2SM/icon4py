@@ -32,52 +32,54 @@ def _sum_neighbor_contributions_all(
     js_gt4 = js >= wpfloat(4.0)
 
     prod_p0 = where(
-        mask1 & js_gt0, p_cc(dims.KHalfDim + 0.5) * p_cellmass_now(dims.KHalfDim + 0.5), wpfloat(0.0
-    ))
-    prod_p1 = where(
-        
-        mask1 & js_gt1, p_cc(dims.KHalfDim + 1.5) * p_cellmass_now(dims.KHalfDim + 1.5), wpfloat(0.0
+        mask1 & js_gt0,
+        p_cc(dims.KHalfDim + 0.5) * p_cellmass_now(dims.KHalfDim + 0.5),
+        wpfloat(0.0),
     )
+    prod_p1 = where(
+        mask1 & js_gt1,
+        p_cc(dims.KHalfDim + 1.5) * p_cellmass_now(dims.KHalfDim + 1.5),
+        wpfloat(0.0),
     )
     prod_p2 = where(
-        
-        mask1 & js_gt2, p_cc(dims.KHalfDim + 2.5) * p_cellmass_now(dims.KHalfDim + 2.5), wpfloat(0.0
-    )
+        mask1 & js_gt2,
+        p_cc(dims.KHalfDim + 2.5) * p_cellmass_now(dims.KHalfDim + 2.5),
+        wpfloat(0.0),
     )
     prod_p3 = where(
-        
-        mask1 & js_gt3, p_cc(dims.KHalfDim + 3.5) * p_cellmass_now(dims.KHalfDim + 3.5), wpfloat(0.0
-    )
+        mask1 & js_gt3,
+        p_cc(dims.KHalfDim + 3.5) * p_cellmass_now(dims.KHalfDim + 3.5),
+        wpfloat(0.0),
     )
     prod_p4 = where(
-        
-        mask1 & js_gt4, p_cc(dims.KHalfDim + 4.5) * p_cellmass_now(dims.KHalfDim + 4.5), wpfloat(0.0
-    )
+        mask1 & js_gt4,
+        p_cc(dims.KHalfDim + 4.5) * p_cellmass_now(dims.KHalfDim + 4.5),
+        wpfloat(0.0),
     )
     prod_m0 = where(
-        
-        mask2 & js_gt0, p_cc(dims.KHalfDim - 0.5) * p_cellmass_now(dims.KHalfDim - 0.5), wpfloat(0.0
-    )
+        mask2 & js_gt0,
+        p_cc(dims.KHalfDim - 0.5) * p_cellmass_now(dims.KHalfDim - 0.5),
+        wpfloat(0.0),
     )
     prod_m1 = where(
-        
-        mask2 & js_gt1, p_cc(dims.KHalfDim - 1.5) * p_cellmass_now(dims.KHalfDim - 1.5), wpfloat(0.0
-    )
+        mask2 & js_gt1,
+        p_cc(dims.KHalfDim - 1.5) * p_cellmass_now(dims.KHalfDim - 1.5),
+        wpfloat(0.0),
     )
     prod_m2 = where(
-        
-        mask2 & js_gt2, p_cc(dims.KHalfDim - 2.5) * p_cellmass_now(dims.KHalfDim - 2.5), wpfloat(0.0
-    )
+        mask2 & js_gt2,
+        p_cc(dims.KHalfDim - 2.5) * p_cellmass_now(dims.KHalfDim - 2.5),
+        wpfloat(0.0),
     )
     prod_m3 = where(
-        
-        mask2 & js_gt3, p_cc(dims.KHalfDim - 3.5) * p_cellmass_now(dims.KHalfDim - 3.5), wpfloat(0.0
-    )
+        mask2 & js_gt3,
+        p_cc(dims.KHalfDim - 3.5) * p_cellmass_now(dims.KHalfDim - 3.5),
+        wpfloat(0.0),
     )
     prod_m4 = where(
-        
-        mask2 & js_gt4, p_cc(dims.KHalfDim - 4.5) * p_cellmass_now(dims.KHalfDim - 4.5), wpfloat(0.0
-    )
+        mask2 & js_gt4,
+        p_cc(dims.KHalfDim - 4.5) * p_cellmass_now(dims.KHalfDim - 4.5),
+        wpfloat(0.0),
     )
 
     prod_jks = (

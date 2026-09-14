@@ -49,7 +49,9 @@ def _compute_surface_pressure(
         * (
             ddqz_z_full(dims.KHalfDim - 0.5) / virtual_temperature(dims.KHalfDim - 0.5)
             + ddqz_z_full(dims.KHalfDim - 1.5) / virtual_temperature(dims.KHalfDim - 1.5)
-            + wpfloat(0.5) * ddqz_z_full(dims.KHalfDim - 2.5) / virtual_temperature(dims.KHalfDim - 2.5)
+            + wpfloat(0.5)
+            * ddqz_z_full(dims.KHalfDim - 2.5)
+            / virtual_temperature(dims.KHalfDim - 2.5)
         )
     )
     return surface_pressure
