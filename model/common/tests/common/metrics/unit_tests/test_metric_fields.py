@@ -141,7 +141,7 @@ def test_compute_rayleigh_w(
 ) -> None:
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
-    rayleigh_w_full = data_alloc.zero_field(icon_grid, dims.KHalfDim, allocator=backend)
+    rayleigh_w_full = data_alloc.random_field(icon_grid, dims.KHalfDim, allocator=backend)
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
@@ -150,8 +150,9 @@ def test_compute_rayleigh_w(
         rayleigh_coeff=experiment.config.metrics.rayleigh_coeff,
         vct_a_1=vct_a_1,
         pi_const=math.pi,
+        end_index_of_damping_layer=grid_savepoint.nrdmax(),
         vertical_start=0,
-        vertical_end=gtx.int32(grid_savepoint.nrdmax() + 1),
+        vertical_end=gtx.int32(icon_grid.num_levels + 1),
         offset_provider={},
     )
 
@@ -166,8 +167,12 @@ def test_compute_coeff_dwdz(
     coeff1_dwdz_ref = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz_ref = metrics_savepoint.coeff2_dwdz()
 
-    coeff1_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
-    coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    coeff1_dwdz_full = data_alloc.random_field(
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+    )
+    coeff2_dwdz_full = data_alloc.random_field(
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+    )
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),
         1 / metrics_savepoint.inv_ddqz_z_full().ndarray,
@@ -181,7 +186,7 @@ def test_compute_coeff_dwdz(
         coeff2_dwdz=coeff2_dwdz_full,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=1,
+        vertical_start=0,
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={},
     )
