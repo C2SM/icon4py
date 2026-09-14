@@ -15,20 +15,16 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _interpolate_to_cell_center_wp(
+def _interpolate_to_cell_center(
     interpolant: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
 ) -> fa.CellKField[wpfloat]:
-    """Interpolate an edge field to the cell centers with the bilinear C2E weights.
-
-    Working-precision variant; the reduced-precision one lives in
-    :mod:`interpolate_to_cell_center_vp`.
-    """
+    """Interpolate an edge field to the cell centers with the bilinear C2E weights."""
     return neighbor_sum(e_bln_c_s * interpolant(C2E), axis=dims.C2EDim)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_to_cell_center_wp(
+def interpolate_to_cell_center(
     interpolant: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     interpolation: fa.CellKField[wpfloat],
@@ -37,7 +33,7 @@ def interpolate_to_cell_center_wp(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _interpolate_to_cell_center_wp(
+    _interpolate_to_cell_center(
         interpolant=interpolant,
         e_bln_c_s=e_bln_c_s,
         out=interpolation,

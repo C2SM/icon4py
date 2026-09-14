@@ -32,13 +32,13 @@ def _compute_tangential_wind_wp(
 
     Full-level variant (vn -> vt). The reconstruction is purely horizontal, but
     half levels are their own dimension, so half-level input (vn_ie -> vt_ie)
-    needs :func:`_compute_tangential_wind_on_half_levels_wp`.
+    needs :func:`_compute_tangential_wind_on_half_levels`.
     """
     return neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=dims.E2C2EDim)
 
 
 @gtx.field_operator
-def _compute_tangential_wind_on_half_levels_wp(
+def _compute_tangential_wind_on_half_levels(
     vn: fa.EdgeKHalfField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
 ) -> fa.EdgeKHalfField[wpfloat]:
@@ -74,6 +74,27 @@ def compute_tangential_wind_wp(
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_tangential_wind_on_half_levels(
+    vn: fa.EdgeKHalfField[wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
+    vt: fa.EdgeKHalfField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _compute_tangential_wind_on_half_levels(
+        vn=vn,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        out=vt,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )
 

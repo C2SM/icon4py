@@ -88,13 +88,25 @@ def with_boundaries_on_half_levels_on_cells(
     Each branch is evaluated only on its own region, so vertical (``Koff``) shifts in the
     arguments need to be in bounds only within that region.
     """
-    result = concat_where(
-        (dims.KHalfDim > 0) & (dims.KHalfDim < nlev),
-        interior,
-        0.0,
+    # TODO(havogt): one-sided masks, because with `==` GT4Py infers the branches over the
+    # whole column and dace reads out of bounds, see https://github.com/GridTools/gt4py/issues/2205.
+    return concat_where(
+        dims.KHalfDim < 1, top, concat_where(dims.KHalfDim >= nlev, bottom, interior)
     )
-    result = concat_where(dims.KHalfDim == 0, top, result)
-    return concat_where(dims.KHalfDim == nlev, bottom, result)
+
+
+@gtx.field_operator
+def with_boundaries_on_half_levels_on_edges(
+    top: fa.EdgeKHalfField[wpfloat],
+    interior: fa.EdgeKHalfField[wpfloat],
+    bottom: fa.EdgeKHalfField[wpfloat],
+    nlev: gtx.int32,
+) -> fa.EdgeKHalfField[wpfloat]:
+    """Edge counterpart of :func:`with_boundaries_on_half_levels_on_cells`."""
+    # TODO(havogt): one-sided masks, see `with_boundaries_on_half_levels_on_cells`.
+    return concat_where(
+        dims.KHalfDim < 1, top, concat_where(dims.KHalfDim >= nlev, bottom, interior)
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

@@ -12,14 +12,14 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_wp,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_wp import (
-    _interpolate_to_cell_center_wp,
+from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
+    _interpolate_to_cell_center,
 )
 from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _interpolate_edge_field_to_cell_half_levels_wp(
+def _interpolate_edge_field_to_cell_half_levels(
     interpolant: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     wgtfac_c: fa.CellKHalfField[wpfloat],
@@ -38,8 +38,6 @@ def _interpolate_edge_field_to_cell_half_levels_wp(
 
     Only the interior half levels are defined; the top (k = 0) and bottom
     (k = nlev) rows must be excluded by the caller's domain.
-
-    Working-precision variant.
     """
-    interpolant_c = _interpolate_to_cell_center_wp(interpolant=interpolant, e_bln_c_s=e_bln_c_s)
+    interpolant_c = _interpolate_to_cell_center(interpolant=interpolant, e_bln_c_s=e_bln_c_s)
     return _interpolate_cell_field_to_half_levels_wp(wgtfac_c=wgtfac_c, interpolant=interpolant_c)

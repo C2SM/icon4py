@@ -15,7 +15,6 @@ Ports ``Smagorinsky_init`` (mo_tmx_smagorinsky.f90) and ``Compute_diagnostics``
 
 import gt4py.next as gtx
 from gt4py.next import abs, maximum, minimum, power, sqrt, where  # noqa: A004
-from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
@@ -27,21 +26,24 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
     _compute_cell_2_vertex_interpolation,
 )
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
-    _compute_tangential_wind_on_half_levels_wp,
+    _compute_tangential_wind_on_half_levels,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_with_boundaries_wp import (
-    _interpolate_cell_field_to_half_levels_with_boundaries_wp,
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
+    _interpolate_cell_field_to_half_levels_with_boundaries,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_cell_half_levels_wp import (
-    _interpolate_edge_field_to_cell_half_levels_wp,
+from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_cell_half_levels import (
+    _interpolate_edge_field_to_cell_half_levels,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_with_boundaries_wp import (
-    _interpolate_edge_field_to_half_levels_with_boundaries_wp,
+from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels import (
+    _interpolate_edge_field_to_half_levels_with_boundaries,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_wp import (
-    _interpolate_to_cell_center_wp,
+from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
+    _interpolate_to_cell_center,
 )
-from icon4py.model.common.math.vertical_operations import average_level_plus1_on_cells
+from icon4py.model.common.math.vertical_operations import (
+    average_level_plus1_on_cells,
+    with_boundaries_on_half_levels_on_cells,
+)
 from icon4py.model.common.physics.compute_brunt_vaisala_frequency import (
     _compute_brunt_vaisala_frequency,
 )
@@ -204,7 +206,7 @@ def _compute_thermodynamic_diagnostics(
     theta_v = _compute_virtual_potential_temperature(
         virtual_temperature=virtual_temperature, pressure=pressure
     )
-    rho_ic = _interpolate_cell_field_to_half_levels_with_boundaries_wp(
+    rho_ic = _interpolate_cell_field_to_half_levels_with_boundaries(
         interpolant=rho,
         wgtfac_c=wgtfac_c,
         wgtfacq1_c=wgtfacq1_c,
@@ -404,14 +406,14 @@ def _compute_edge_shear_diagnostics(
         and shear and divergence of the stress at full-level edges
     """
     w_ie = _cell_2_edge_interpolation_on_half_levels(w, c_lin_e)
-    vn_ie = _interpolate_edge_field_to_half_levels_with_boundaries_wp(
+    vn_ie = _interpolate_edge_field_to_half_levels_with_boundaries(
         interpolant=vn,
         wgtfac_e=wgtfac_e,
         wgtfacq1_e=wgtfacq1_e,
         wgtfacq_e=wgtfacq_e,
         nlev=nlev,
     )
-    vt_ie = _compute_tangential_wind_on_half_levels_wp(vn=vn_ie, rbf_vec_coeff_e=rbf_vec_coeff_e)
+    vt_ie = _compute_tangential_wind_on_half_levels(vn=vn_ie, rbf_vec_coeff_e=rbf_vec_coeff_e)
     shear, div_stress = _compute_shear_and_div_of_stress(
         u_vert=u_vert,
         v_vert=v_vert,
@@ -543,8 +545,8 @@ def _compute_strain_rate_diagnostics(
         divergence of the stress at full-level cells and the mechanical
         production term at half-level cells
     """
-    div_c = _interpolate_to_cell_center_wp(interpolant=div_stress, e_bln_c_s=e_bln_c_s)
-    mech_prod = _interpolate_edge_field_to_cell_half_levels_wp(
+    div_c = _interpolate_to_cell_center(interpolant=div_stress, e_bln_c_s=e_bln_c_s)
+    mech_prod = _interpolate_edge_field_to_cell_half_levels(
         interpolant=shear, e_bln_c_s=e_bln_c_s, wgtfac_c=wgtfac_c
     )
     return div_c, mech_prod
@@ -716,8 +718,9 @@ def _compute_smagorinsky_viscosity(
         )
 
     km = rho_ic * mixing_length_sq * stability_term
-    km_ic = concat_where(dims.KHalfDim == 0, km(dims.KHalfDim + 1), km)
-    km_ic = concat_where(dims.KHalfDim == nlev, km(dims.KHalfDim - 1), km_ic)
+    km_ic = with_boundaries_on_half_levels_on_cells(
+        top=km(dims.KHalfDim + 1), interior=km, bottom=km(dims.KHalfDim - 1), nlev=nlev
+    )
     kh_ic = km_ic * rturb_prandtl
     return km_ic, kh_ic
 
@@ -794,8 +797,9 @@ def _assign_constant_viscosity(
         eddy viscosity km_ic and eddy diffusivity kh_ic at half levels
     """
     km = rho_ic * km_const
-    km_ic = concat_where(dims.KHalfDim == 0, km(dims.KHalfDim + 1), km)
-    km_ic = concat_where(dims.KHalfDim == nlev, km(dims.KHalfDim - 1), km_ic)
+    km_ic = with_boundaries_on_half_levels_on_cells(
+        top=km(dims.KHalfDim + 1), interior=km, bottom=km(dims.KHalfDim - 1), nlev=nlev
+    )
     kh_ic = km_ic * rturb_prandtl
     return km_ic, kh_ic
 
