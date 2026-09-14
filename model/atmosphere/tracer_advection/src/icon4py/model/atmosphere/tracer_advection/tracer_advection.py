@@ -18,9 +18,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.tracer_advection import (
-    tracer_advection_states,
-)
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_tracer_time_tendency import (
     apply_interpolated_tracer_time_tendency,
 )
@@ -29,9 +27,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_adv
     compute_tracer_advection_even_timestep_before_horizontal_limiter,
     compute_tracer_advection_odd_timestep_after_horizontal_limiter,
     compute_tracer_advection_odd_timestep_before_horizontal_limiter,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.copy_cell_kdim_field import (
-    copy_cell_kdim_field,
 )
 from icon4py.model.common import (
     constants,
@@ -249,7 +244,7 @@ class GodunovSplittingAdvection(Advection):
         backend: gtx_typing.Backend | None,
         exchange: decomposition.ExchangeRuntime,
         even_timestep: bool = False,
-        vertical_advection_type: VerticalAdvectionType = VerticalAdvectionType.PPM_3RD_ORDER,
+        vertical_advection_type: VerticalAdvectionType = VerticalAdvectionType.THIRD_ORDER_PPM,
     ):
         log.debug("tracer_advection class init - start")
 
@@ -269,9 +264,7 @@ class GodunovSplittingAdvection(Advection):
         self._rhodz_ast2 = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
-        self._r_m = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator
-        )
+        self._r_m = data_alloc.zero_field(self._grid, dims.CellDim, dims.KDim, allocator=allocator)
         self._p_tracer_after_vertical = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
@@ -463,9 +456,7 @@ class GodunovSplittingAdvection(Advection):
                 p_dtime=dtime,
             )
 
-        self._exchange.exchange(
-            dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM
-        )
+        self._exchange.exchange(dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM)
 
         if self._even_timestep:
             self._compute_even_timestep_after_horizontal_limiter(
@@ -509,109 +500,6 @@ class GodunovSplittingAdvection(Advection):
         self._even_timestep = not self._even_timestep
 
         log.debug("tracer_advection run - end")
-
-
-def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]
-    *,
-    config: AdvectionConfig,
-    grid: icon_grid.IconGrid,
-    interpolation_state: tracer_advection_states.AdvectionInterpolationState,
-    least_squares_state: tracer_advection_states.AdvectionLeastSquaresState,
-    metric_state: tracer_advection_states.AdvectionMetricState,
-    edge_params: grid_states.EdgeParams,
-    cell_params: grid_states.CellParams,
-    backend: gtx_typing.Backend | None,
-    exchange: decomposition.ExchangeRuntime,
-) -> tuple[
-    tracer_advection_horizontal.HorizontalAdvection, tracer_advection_vertical.VerticalAdvection
-]:
-    assert exchange is not None, "Exchange runtime must not be None."
-    horizontal_limiter: tracer_advection_horizontal.HorizontalFluxLimiter | None
-    match config.horizontal_advection_limiter:
-        case HorizontalAdvectionLimiter.NO_LIMITER:
-            horizontal_limiter = tracer_advection_horizontal.NoLimiter()
-        case HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
-            horizontal_limiter = tracer_advection_horizontal.PositiveDefinite(
-                grid=grid,
-                interpolation_state=interpolation_state,
-                backend=backend,
-                exchange=exchange,
-            )
-        case _:
-            raise NotImplementedError("Unknown horizontal tracer advection limiter.")
-
-    horizontal_advection: tracer_advection_horizontal.HorizontalAdvection
-    match config.horizontal_advection_type:
-        case HorizontalAdvectionType.NO_ADVECTION:
-            horizontal_advection = tracer_advection_horizontal.NoAdvection(
-                grid=grid, backend=backend
-            )
-        case HorizontalAdvectionType.FIRST_ORDER_UPWIND:
-            horizontal_advection = tracer_advection_horizontal.FirstOrderUpwind(
-                grid=grid,
-                interpolation_state=interpolation_state,
-                metric_state=metric_state,
-                backend=backend,
-            )
-        case HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA:
-            tracer_flux = tracer_advection_horizontal.SecondOrderMiura(
-                grid=grid,
-                least_squares_state=least_squares_state,
-                horizontal_limiter=horizontal_limiter,
-                backend=backend,
-            )
-            horizontal_advection = tracer_advection_horizontal.SemiLagrangian(
-                tracer_flux=tracer_flux,
-                grid=grid,
-                interpolation_state=interpolation_state,
-                metric_state=metric_state,
-                edge_params=edge_params,
-                cell_params=cell_params,
-                backend=backend,
-            )
-        case _:
-            raise NotImplementedError("Unknown horizontal tracer_advection type.")
-
-    vertical_limiter: tracer_advection_vertical.VerticalLimiter
-    match config.vertical_advection_limiter:
-        case VerticalAdvectionLimiter.NO_LIMITER:
-            vertical_limiter = tracer_advection_vertical.NoLimiter(grid=grid, backend=backend)
-        case VerticalAdvectionLimiter.SEMI_MONOTONIC:
-            vertical_limiter = tracer_advection_vertical.SemiMonotonicLimiter(
-                grid=grid, backend=backend
-            )
-        case _:
-            raise NotImplementedError("Unknown vertical tracer_advection limiter.")
-
-    vertical_advection: tracer_advection_vertical.VerticalAdvection
-    match config.vertical_advection_type:
-        case VerticalAdvectionType.NO_ADVECTION:
-            vertical_advection = tracer_advection_vertical.NoAdvection(grid=grid, backend=backend)
-        case VerticalAdvectionType.FIRST_ORDER_UPWIND:
-            boundary_conditions = tracer_advection_vertical.NoFluxCondition(
-                grid=grid, backend=backend
-            )
-            vertical_advection = tracer_advection_vertical.FirstOrderUpwind(
-                boundary_conditions=boundary_conditions,
-                grid=grid,
-                metric_state=metric_state,
-                backend=backend,
-            )
-        case VerticalAdvectionType.THIRD_ORDER_PPM:
-            boundary_conditions = tracer_advection_vertical.NoFluxCondition(
-                grid=grid, backend=backend
-            )
-            vertical_advection = tracer_advection_vertical.PiecewiseParabolicMethod(
-                boundary_conditions=boundary_conditions,
-                vertical_limiter=vertical_limiter,
-                grid=grid,
-                metric_state=metric_state,
-                backend=backend,
-            )
-        case _:
-            raise NotImplementedError("Unknown vertical tracer advection type.")
-
-    return horizontal_advection, vertical_advection
 
 
 def convert_config_to_advection(

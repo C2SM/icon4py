@@ -26,9 +26,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_positive_definite_
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_barycentric_backtrajectory_alt import (
     _compute_barycentric_backtrajectory_alt,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.compute_edge_tangential import (
-    _compute_edge_tangential,
-)
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     _compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
@@ -57,9 +54,6 @@ from icon4py.model.atmosphere.tracer_advection.stencils.compute_ppm_slope import
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_vertical_parabola_limiter_condition import (
     _compute_vertical_parabola_limiter_condition,
 )
-from icon4py.model.atmosphere.tracer_advection.stencils.init_constant_cell_kdim_field import (
-    _init_constant_cell_kdim_field,
-)
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_horizontally import (
     _integrate_tracer_horizontally,
 )
@@ -76,6 +70,9 @@ from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coeff
     _reconstruct_linear_coefficients_svd,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
+    _compute_tangential_wind_wp,
+)
 
 
 @gtx.field_operator
@@ -91,7 +88,7 @@ def _compute_ppm4gpu_flux(
     dbl_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    z_cfl = _init_constant_cell_kdim_field(value=0.0)
+    z_cfl = broadcast(ta.wpfloat("0.0"), (dims.CellDim, dims.KDim))
     z_cfl = concat_where(
         (dims.KDim > 0) & (dims.KDim < elev + 1),
         _compute_ppm4gpu_courant_number(
@@ -150,7 +147,7 @@ def _compute_ppm4gpu_flux(
     return concat_where(
         (dims.KDim > 0) & (dims.KDim < elev + 1),
         p_upflux,
-        _init_constant_cell_kdim_field(value=0.0),
+        broadcast(ta.wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
 
 
@@ -170,7 +167,7 @@ def _compute_unlimited_horizontal_tracer_flux(
     lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
     p_dtime: ta.wpfloat,
 ) -> fa.EdgeKField[ta.wpfloat]:
-    z_real_vt = _compute_edge_tangential(p_vn_in=p_vn, ptr_coeff=rbf_vec_coeff_e)
+    z_real_vt = _compute_tangential_wind_wp(vn=p_vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
     p_distv_bary_1, p_distv_bary_2 = _compute_barycentric_backtrajectory_alt(
         p_vn=p_vn,
         p_vt=z_real_vt,
@@ -632,7 +629,7 @@ def _compute_tracer_advection_odd_timestep_after_horizontal_limiter(
             geofac_div=geofac_div,
             p_dtime=p_dtime,
         ),
-        _init_constant_cell_kdim_field(value=0.0),
+        broadcast(ta.wpfloat("0.0"), (dims.CellDim, dims.KDim)),
     )
     p_mflx_tracer_v = _compute_ppm4gpu_flux(
         p_cc=p_tracer_after_horizontal,
