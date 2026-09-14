@@ -16,29 +16,29 @@ def _compute_ppm_quartic_face_values(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     z_slope: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
-    zgeo1 = p_cellhgt_mc_now(dims.KDim - 1) / (p_cellhgt_mc_now(dims.KDim - 1) + p_cellhgt_mc_now)
-    zgeo2 = 1.0 / (
-        p_cellhgt_mc_now(dims.KDim - 2)
-        + p_cellhgt_mc_now(dims.KDim - 1)
-        + p_cellhgt_mc_now
-        + p_cellhgt_mc_now(dims.KDim + 1)
-    )
-    zgeo3 = (p_cellhgt_mc_now(dims.KDim - 2) + p_cellhgt_mc_now(dims.KDim - 1)) / (
-        2.0 * p_cellhgt_mc_now(dims.KDim - 1) + p_cellhgt_mc_now
-    )
-    zgeo4 = (p_cellhgt_mc_now(dims.KDim + 1) + p_cellhgt_mc_now) / (
-        2.0 * p_cellhgt_mc_now + p_cellhgt_mc_now(dims.KDim - 1)
-    )
+) -> fa.CellKHalfField[ta.wpfloat]:
+    hgt_m2 = p_cellhgt_mc_now(dims.KHalfDim - 1.5)
+    hgt_m1 = p_cellhgt_mc_now(dims.KHalfDim - 0.5)
+    hgt = p_cellhgt_mc_now(dims.KHalfDim + 0.5)
+    hgt_p1 = p_cellhgt_mc_now(dims.KHalfDim + 1.5)
+    cc_m1 = p_cc(dims.KHalfDim - 0.5)
+    cc = p_cc(dims.KHalfDim + 0.5)
+    slope_above = z_slope(dims.KHalfDim - 0.5)
+    slope_below = z_slope(dims.KHalfDim + 0.5)
+
+    zgeo1 = hgt_m1 / (hgt_m1 + hgt)
+    zgeo2 = 1.0 / (hgt_m2 + hgt_m1 + hgt + hgt_p1)
+    zgeo3 = (hgt_m2 + hgt_m1) / (2.0 * hgt_m1 + hgt)
+    zgeo4 = (hgt_p1 + hgt) / (2.0 * hgt + hgt_m1)
 
     p_face = (
-        p_cc(dims.KDim - 1)
-        + zgeo1 * (p_cc - p_cc(dims.KDim - 1))
+        cc_m1
+        + zgeo1 * (cc - cc_m1)
         + zgeo2
         * (
-            (2.0 * p_cellhgt_mc_now * zgeo1) * (zgeo3 - zgeo4) * (p_cc - p_cc(dims.KDim - 1))
-            - zgeo3 * p_cellhgt_mc_now(dims.KDim - 1) * z_slope
-            + zgeo4 * p_cellhgt_mc_now * z_slope(dims.KDim - 1)
+            (2.0 * hgt * zgeo1) * (zgeo3 - zgeo4) * (cc - cc_m1)
+            - zgeo3 * hgt_m1 * slope_below
+            + zgeo4 * hgt * slope_above
         )
     )
 
@@ -50,7 +50,7 @@ def compute_ppm_quartic_face_values(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     z_slope: fa.CellKField[ta.wpfloat],
-    p_face: fa.CellKField[ta.wpfloat],
+    p_face: fa.CellKHalfField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -63,6 +63,6 @@ def compute_ppm_quartic_face_values(
         out=p_face,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

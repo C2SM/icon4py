@@ -33,7 +33,7 @@ from icon4py.model.common import (
     topography,
     type_alias as ta,
 )
-from icon4py.model.common.config import options as common_conf_opt
+from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file
@@ -330,14 +330,14 @@ class DriverConfig:
         )
 
 
-@dataclasses.dataclass(frozen=True)
-class ExperimentConfig:
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class ExperimentConfig(config_io.ConfigWithShared):
     geometry: GeometryConfig
     metrics: metrics_factory.MetricsConfig
     interpolation: interpolation_factory.InterpolationConfig
     vertical_grid: v_grid.VerticalGridConfig
-    topography: topography.TopographyConfig
-    initial_condition: initial_condition.InitialConditionConfig
+    initial_condition: initial_condition.IC_CONFIG
+    topography: topography.TOPO_CONFIG
     prescribed_tendencies: prescribed_tendencies.PrescribedTendenciesConfig
     driver: DriverConfig
     nonhydrostatic: solve_nh.NonHydrostaticConfig | None = None
@@ -351,7 +351,7 @@ class ExperimentConfig:
         # The file-based initial condition needs the clock of the driver to know which
         # savepoint to read: the initial state, or the state of a later time step when
         # restarting. 'with_overrides' rebuilds the config, so the two stay in sync.
-        initial_condition_config = self.initial_condition.config
+        initial_condition_config = self.initial_condition
         if isinstance(initial_condition_config, from_file.FromFileConfig):
             initial_condition_config.start_of_simulation = self.driver.start_of_simulation
             initial_condition_config.start_of_timestepping = self.driver.start_of_timestepping
@@ -400,18 +400,16 @@ def read_experiment_config_from_fortran(
 
     vertical_grid_cfg = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
 
-    topography_cfg = topography.TopographyConfig.from_fortran_dict(
+    topography_cfg = topography.from_fortran_dict(
         atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
     )
 
     nonhydro_cfg = solve_nh.NonHydrostaticConfig.from_fortran_dict(
         atm_dict,
-        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
     )
 
     diffusion_cfg = diffusion.DiffusionConfig.from_fortran_dict(
         atm_dict,
-        max_nudging_coefficient=interpolation_cfg.max_nudging_coefficient,
     )
 
     do_tracer_advection = not (
@@ -464,7 +462,7 @@ def read_experiment_config_from_fortran(
 
     # the file-based initial condition needs the clock of the driver to know which
     # savepoint to read: the initial state, or a later one when restarting
-    initial_condition_cfg = initial_condition.InitialConditionConfig.from_fortran_dict(
+    initial_condition_cfg = initial_condition.from_fortran_dict(
         atm_dict=atm_dict,
         input_dict=input_dict,
         data_path=config_file_path,
@@ -473,13 +471,8 @@ def read_experiment_config_from_fortran(
         dtime=driver_cfg.dtime,
     )
 
-    if not do_tracer_advection and isinstance(
-        initial_condition_cfg.config, from_file.FromFileConfig
-    ):
-        initial_condition_cfg = dataclasses.replace(
-            initial_condition_cfg,
-            config=dataclasses.replace(initial_condition_cfg.config, ntracer=0),
-        )
+    if not do_tracer_advection and isinstance(initial_condition_cfg, from_file.FromFileConfig):
+        initial_condition_cfg = dataclasses.replace(initial_condition_cfg, ntracer=0)
 
     muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
@@ -488,13 +481,13 @@ def read_experiment_config_from_fortran(
         metrics=metrics_cfg,
         interpolation=interpolation_cfg,
         vertical_grid=vertical_grid_cfg,
-        topography=topography_cfg,
         nonhydrostatic=nonhydro_cfg,
         diffusion=diffusion_cfg,
         tracer_config=tracer_cfg,
         tracer_advection=tracer_advection_cfg,
         graupel=graupel_cfg,
         muphys=muphys_cfg,
+        topography=topography_cfg,
         initial_condition=initial_condition_cfg,
         prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
             atm_dict=atm_dict, data_path=config_file_path

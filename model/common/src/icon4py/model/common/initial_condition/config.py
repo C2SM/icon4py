@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import logging
 import pathlib
 from typing import TYPE_CHECKING, Any
@@ -19,10 +18,13 @@ from icon4py.model.common.initial_condition import from_file as from_file_ic
 from icon4py.model.common.initial_condition.analytical import (
     gauss3d as gauss_ic,
     jablonowski_williamson as jw_ic,
+    linear_horizontal_tracer_advection as lin_hor_adv_ic,
+    linear_vertical_tracer_advection as lin_ver_adv_ic,
     weisman_klemp as wk_ic,
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import fortran_config
 
 
@@ -42,7 +44,12 @@ log = logging.getLogger(__name__)
 
 
 type IC_CONFIG = (
-    jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | from_file_ic.FromFileConfig
+    jw_ic.JablonowskiWilliamsonConfig
+    | gauss_ic.Gauss3DConfig
+    | wk_ic.WeismanKlempConfig
+    | lin_hor_adv_ic.LinearHorizontalAdvectionConfig
+    | lin_ver_adv_ic.LinearVerticalAdvectionConfig
+    | from_file_ic.FromFileConfig
 )
 
 
@@ -51,96 +58,89 @@ config_io.register_config_union(
     {
         "jablonowski_williamson": jw_ic.JablonowskiWilliamsonConfig,
         "gauss_3d": gauss_ic.Gauss3DConfig,
+        "weisman_klemp": wk_ic.WeismanKlempConfig,
+        "linear_horizontal_adv": lin_hor_adv_ic.LinearHorizontalAdvectionConfig,
+        "linear_vertical_adv": lin_ver_adv_ic.LinearVerticalAdvectionConfig,
         "from_file": from_file_ic.FromFileConfig,
-        "weissman_klemp": wk_ic.WeismanKlempConfig,
     },
 )
 
 
-@dataclasses.dataclass
-class InitialConditionConfig:
-    config: IC_CONFIG
+def from_fortran_dict(
+    *,
+    atm_dict: dict[str, Any],
+    input_dict: dict[str, Any],
+    data_path: pathlib.Path,
+    start_of_simulation: time.AbsoluteTime,
+    start_of_timestepping: time.AbsoluteTime,
+    dtime: time.RelativeTime,
+) -> IC_CONFIG:
+    run_nml = atm_dict["run_nml"]
+    if not run_nml["ltestcase"]:
+        log.info("Reading initial condition from file")
+        return from_file_ic.FromFileConfig(
+            data_path=data_path / fortran_config.SER_DATA_SUBDIR,
+            start_of_simulation=start_of_simulation,
+            start_of_timestepping=start_of_timestepping,
+            dtime=dtime,
+            ntracer=fortran_config.list_to_value(run_nml["ntracer"]),
+        )
 
-    @classmethod
-    def from_fortran_dict(
-        cls,
-        *,
-        atm_dict: dict[str, Any],
-        input_dict: dict[str, Any],
-        data_path: pathlib.Path,
-        start_of_simulation: time.AbsoluteTime,
-        start_of_timestepping: time.AbsoluteTime,
-        dtime: time.RelativeTime,
-    ) -> InitialConditionConfig:
-        run_nml = atm_dict["run_nml"]
-        if not run_nml["ltestcase"]:
-            log.info("Reading initial condition from file")
-            return cls(
-                config=from_file_ic.FromFileConfig(
-                    data_path=data_path / fortran_config.SER_DATA_SUBDIR,
-                    start_of_simulation=start_of_simulation,
-                    start_of_timestepping=start_of_timestepping,
-                    dtime=dtime,
-                    ntracer=fortran_config.list_to_value(run_nml["ntracer"]),
-                ),
+    testcase_nml = input_dict.get("nh_testcase_nml", {})
+    test_name = testcase_nml.get("nh_test_name")
+    config: (
+        jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | wk_ic.WeismanKlempConfig
+    )  # mypy does not automatically catch type
+    match test_name:
+        case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
+            log.info("Analytical initial condition for Jablonowski-Williamson test case")
+            config = fortran_config.config_dataclass_from_dict(
+                jw_ic.JablonowskiWilliamsonConfig, testcase_nml
             )
+            # Only the APE cases rescale qv to a prescribed global moisture content.
+            config.normalize_global_moisture = test_name in ("APE_nwp", "APE_aes")
+            # Fortran resets jw_up to 0 only for jabw_s; other cases keep the default (1.0).
+            if test_name == "jabw_s":
+                config.baroclinic_amplitude = 0.0
+        case "gauss3D":
+            log.info("Analytical initial condition for Gauss 3D test case")
+            config = fortran_config.config_dataclass_from_dict(gauss_ic.Gauss3DConfig, testcase_nml)
+        case "wk82":
+            log.info("Analytical initial condition for Weisman-Klemp test case")
+            config = fortran_config.config_dataclass_from_dict(
+                wk_ic.WeismanKlempConfig, testcase_nml
+            )
+        case name:
+            raise ValueError(f"Unknown or missing test case name: {name!r}")
 
-        testcase_nml = input_dict.get("nh_testcase_nml", {})
-        test_name = testcase_nml.get("nh_test_name")
-        config: (
-            jw_ic.JablonowskiWilliamsonConfig | gauss_ic.Gauss3DConfig | wk_ic.WeismanKlempConfig
-        )  # mypy does not automatically catch type
-        match test_name:
-            case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
-                log.info("Analytical initial condition for Jablonowski-Williamson test case")
-                config = fortran_config.config_dataclass_from_dict(
-                    jw_ic.JablonowskiWilliamsonConfig, testcase_nml
-                )
-                # Only the APE cases rescale qv to a prescribed global moisture content.
-                config.normalize_global_moisture = test_name in ("APE_nwp", "APE_aes")
-                # Fortran resets jw_up to 0 only for jabw_s; other cases keep the default (1.0).
-                if test_name == "jabw_s":
-                    config.baroclinic_amplitude = 0.0
-            case "gauss3D":
-                log.info("Analytical initial condition for Gauss 3D test case")
-                config = fortran_config.config_dataclass_from_dict(
-                    gauss_ic.Gauss3DConfig, testcase_nml
-                )
-            case "wk82":
-                log.info("Analytical initial condition for Weisman-Klemp test case")
-                config = fortran_config.config_dataclass_from_dict(
-                    wk_ic.WeismanKlempConfig, testcase_nml
-                )
-            case name:
-                raise ValueError(f"Unknown or missing test case name: {name!r}")
-
-        return cls(config=config)
+    return config
 
 
 def create(
     *,
-    config: InitialConditionConfig,
+    config: IC_CONFIG,
     vertical_config: v_grid.VerticalGridConfig,
     grid: icon_grid.IconGrid,
     static_fields: static_fields.StaticFieldFactories,
     prognostic_state_now: prognostics.PrognosticState,
     tracer_state_now: tracer_states.TracerState,
     solve_nonhydro_diagnostic_state: nonhydro_states.DiagnosticStateNonHydro | None,
+    tracer_prep_adv_state: prep_adv_states.TracerPrepAdvState | None,
     backend: gtx_typing.Backend | None,
     exchange: decomposition_defs.ExchangeRuntime,
     global_reductions: decomposition_defs.Reductions,
 ) -> None:
     """
-    Fill the prognostic and tracer states by dispatching on the type of ``config.config``.
+    Fill the prognostic and tracer states by dispatching on the type of ``config``.
 
     The perturbed exner function of the dycore is initialized too, when its diagnostic
     state is given: diagnosed from the initial state, or, when restarting, read from the
     serialized data together with the advective tendencies of the previous time step.
     """
-    match config.config:
+    match config:
         case jw_ic.JablonowskiWilliamsonConfig():
             jw_ic.jablonowski_williamson(
-                config=config.config,
+                config=config,
                 vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
@@ -152,7 +152,7 @@ def create(
             )
         case gauss_ic.Gauss3DConfig():
             gauss_ic.gauss3d(
-                config=config.config,
+                config=config,
                 vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
@@ -162,7 +162,7 @@ def create(
             )
         case wk_ic.WeismanKlempConfig():
             wk_ic.weisman_klemp(
-                config=config.config,
+                config=config,
                 vertical_config=vertical_config,
                 grid=grid,
                 static_fields=static_fields,
@@ -171,14 +171,32 @@ def create(
                 backend=backend,
                 exchange=exchange,
             )
+        case lin_hor_adv_ic.LinearHorizontalAdvectionConfig():
+            lin_hor_adv_ic.linear_horizontal_advection(
+                config=config,
+                grid=grid,
+                static_fields=static_fields,
+                prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
+                tracer_prep_adv_state=tracer_prep_adv_state,
+            )
+        case lin_ver_adv_ic.LinearVerticalAdvectionConfig():
+            lin_ver_adv_ic.linear_vertical_advection(
+                config=config,
+                vertical_config=vertical_config,
+                metrics=static_fields.metrics,
+                prognostic_state_now=prognostic_state_now,
+                tracer_state_now=tracer_state_now,
+                tracer_prep_adv_state=tracer_prep_adv_state,
+            )
         case from_file_ic.FromFileConfig():
-            if config.config.is_restart:
+            if config.is_restart:
                 if solve_nonhydro_diagnostic_state is None:
                     raise ValueError(
                         "restarting needs the diagnostic state of the dycore to initialize."
                     )
                 from_file_ic.read_restart_from_file(
-                    config=config.config,
+                    config=config,
                     grid=grid,
                     prognostic_state_now=prognostic_state_now,
                     solve_nonhydro_diagnostic_state=solve_nonhydro_diagnostic_state,
@@ -187,7 +205,7 @@ def create(
                 )
                 return
             from_file_ic.read_initial_condition_from_file(
-                config=config.config,
+                config=config,
                 grid=grid,
                 prognostic_state_now=prognostic_state_now,
                 tracer_state_now=tracer_state_now,

@@ -47,9 +47,8 @@ def test_compute_wgtfac_c(
     wgtfac_c = data_alloc.zero_field(
         icon_grid,
         dims.CellDim,
-        dims.KDim,
+        dims.KHalfDim,
         dtype=ta.wpfloat,
-        extend={dims.KDim: 1},
         allocator=backend,
     )
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
@@ -89,7 +88,7 @@ def test_compute_wgtfacq_e_dsl(
         c_lin_e=interpolation_savepoint.c_lin_e().ndarray,
         n_edges=icon_grid.num_edges,
         nlev=icon_grid.num_levels,
-        exchange=decomposition.single_node_exchange,
+        exchange=decomposition.SingleNodeExchange(),
     )
 
     assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_e_dsl), wgtfacq_e_ref.asnumpy())

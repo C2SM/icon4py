@@ -19,12 +19,12 @@ def _compute_solver_coefficients_matrix(
     theta_v_nnow: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     vwind_impl_wgt: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
-    rho_ic: fa.CellKField[wpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
+    rho_ic: fa.CellKHalfField[wpfloat],
     dtime: wpfloat,
     rd: wpfloat,
     cvd: wpfloat,
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKHalfField[vpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_44."""
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
@@ -40,10 +40,10 @@ def compute_solver_coefficients_matrix(
     rho_nnow: fa.CellKField[wpfloat],
     theta_v_nnow: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
+    z_alpha: fa.CellKHalfField[vpfloat],
     vwind_impl_wgt: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
-    rho_ic: fa.CellKField[wpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
+    rho_ic: fa.CellKHalfField[wpfloat],
     dtime: wpfloat,
     rd: wpfloat,
     cvd: wpfloat,
@@ -64,8 +64,14 @@ def compute_solver_coefficients_matrix(
         rd=rd,
         cvd=cvd,
         out=(z_beta, z_alpha),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+        domain=(
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+        ),
     )

@@ -66,9 +66,9 @@ class TestMoApplyNabla2ToW(stencil_tests.StencilTest):
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid):
         area = data_alloc.random_field(dims.CellDim, dtype=wpfloat)
-        z_nabla2_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_nabla2_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
-        w = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
         return dict(
             area=area,
             z_nabla2_c=z_nabla2_c,
@@ -78,5 +78,5 @@ class TestMoApplyNabla2ToW(stencil_tests.StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

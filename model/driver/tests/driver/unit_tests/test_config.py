@@ -180,16 +180,14 @@ def test_io_roundtrip_cls_cls() -> None:
             vertical_grid:
                 num_levels: 10
             topography:
-                config:
-                    type: jablonowski_williamson
+                type: jablonowski_williamson
             initial_condition:
-                config:
-                    type: jablonowski_williamson
+                type: jablonowski_williamson
             prescribed_tendencies: {}
             driver:
                 experiment_name: foo
                 profiling_options:
-                dtime: 10
+                dtime: 10 seconds
                 start_of_simulation: 2020-01-01T00:00:00
                 start_of_timestepping: 2020-01-01T00:00:00
                 end_of_simulation:

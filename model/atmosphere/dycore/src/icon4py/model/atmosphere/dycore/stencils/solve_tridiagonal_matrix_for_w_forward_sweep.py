@@ -13,7 +13,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.scan_operator(
-    axis=dims.KDim,
+    axis=dims.KHalfDim,
     forward=True,
     init=(  # type: ignore[call-overload] # GT4Py misses type hint for tuples here
         vpfloat("0.0"),
@@ -46,24 +46,28 @@ def tridiagonal_forward_sweep_for_w(
 @gtx.field_operator
 def _solve_tridiagonal_matrix_for_w_forward_sweep(
     vwind_impl_wgt: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
-    ddqz_z_half: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
+    ddqz_z_half: fa.CellKHalfField[vpfloat],
+    z_alpha: fa.CellKHalfField[vpfloat],
     z_beta: fa.CellKField[vpfloat],
-    z_w_expl: fa.CellKField[wpfloat],
+    z_w_expl: fa.CellKHalfField[wpfloat],
     z_exner_expl: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
+) -> tuple[fa.CellKHalfField[vpfloat], fa.CellKHalfField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_52."""
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
     z_gamma_vp = astype(dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half_wp, vpfloat)
-    z_a = (vpfloat("0.0") - z_gamma_vp) * z_beta(dims.KDim - 1) * z_alpha(dims.KDim - 1)
-    z_c = (vpfloat("0.0") - z_gamma_vp) * z_beta * z_alpha(dims.KDim + 1)
-    z_b = vpfloat("1.0") + z_gamma_vp * z_alpha * (z_beta(dims.KDim - 1) + z_beta)
+    z_a = (vpfloat("0.0") - z_gamma_vp) * z_beta(dims.KHalfDim - 0.5) * z_alpha(dims.KHalfDim - 1)
+    z_c = (vpfloat("0.0") - z_gamma_vp) * z_beta(dims.KHalfDim + 0.5) * z_alpha(dims.KHalfDim + 1)
+    z_b = vpfloat("1.0") + z_gamma_vp * z_alpha * (
+        z_beta(dims.KHalfDim - 0.5) + z_beta(dims.KHalfDim + 0.5)
+    )
     z_gamma_wp = astype(z_gamma_vp, wpfloat)
-    w_prep = z_w_expl - z_gamma_wp * (z_exner_expl(dims.KDim - 1) - z_exner_expl)
+    w_prep = z_w_expl - z_gamma_wp * (
+        z_exner_expl(dims.KHalfDim - 0.5) - z_exner_expl(dims.KHalfDim + 0.5)
+    )
     z_q_res, w_res = tridiagonal_forward_sweep_for_w(a=z_a, b=z_b, c=z_c, d=w_prep)
     return z_q_res, w_res
 
@@ -71,14 +75,14 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def solve_tridiagonal_matrix_for_w_forward_sweep(
     vwind_impl_wgt: fa.CellField[wpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
-    ddqz_z_half: fa.CellKField[vpfloat],
-    z_alpha: fa.CellKField[vpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
+    ddqz_z_half: fa.CellKHalfField[vpfloat],
+    z_alpha: fa.CellKHalfField[vpfloat],
     z_beta: fa.CellKField[vpfloat],
-    z_w_expl: fa.CellKField[wpfloat],
+    z_w_expl: fa.CellKHalfField[wpfloat],
     z_exner_expl: fa.CellKField[wpfloat],
-    z_q: fa.CellKField[vpfloat],
-    w: fa.CellKField[wpfloat],
+    z_q: fa.CellKHalfField[vpfloat],
+    w: fa.CellKHalfField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
     horizontal_start: gtx.int32,
@@ -99,6 +103,6 @@ def solve_tridiagonal_matrix_for_w_forward_sweep(
         out=(z_q, w),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

@@ -37,10 +37,12 @@ lint = [
 ]
 scripts = [
   "lazy-loader>=0.5",
+  "numpy>=1.23.3",
   "packaging>=24.0",
   "pytest>=8.0.1",
   "pyyaml>=6.0",
   "rich>=13.0.0",
+  "serialbox4py>=2.6.2",
   "typer>=0.15",
   "f90nml>=1.5",
   {include-group = "build"}
@@ -167,6 +169,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
   # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/config/unit_tests/test_options.py',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/config/unit_tests/test_config_io.py',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/grid',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/metrics',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/states',
