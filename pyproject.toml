@@ -418,6 +418,8 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
+# GridTools/gt4py#2833 (tuple comprehensions), unmerged. Pinned by rev: the branch is force-pushed.
+gt4py = {git = "https://github.com/GridTools/gt4py", rev = "5da530ef72fe9306a7e2293b8acd7fd3df67dfef"}
 icon4py-atmosphere-diffusion = {workspace = true}
 icon4py-atmosphere-dycore = {workspace = true}
 icon4py-atmosphere-microphysics = {workspace = true}
