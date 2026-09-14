@@ -35,7 +35,7 @@ class SaturationAdjustmentConfig:
     tolerance: ta.wpfloat = 1.0e-3
 
     def __post_init__(self):
-        ta.dataclass_scalars_to_wp(self, ["tolerance"])
+        ta.dataclass_float_to_wp(self)
 
 
 @dataclasses.dataclass
