@@ -88,7 +88,7 @@ def _compute_ppm4gpu_flux(
     dbl_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    z_cfl = broadcast(ta.wpfloat("0.0"), (dims.CellDim, dims.KDim))
+    z_cfl = broadcast(0.0, (dims.CellDim, dims.KDim))
     z_cfl = concat_where(
         (dims.KDim > 0) & (dims.KDim < elev + 1),
         _compute_ppm4gpu_courant_number(
@@ -147,7 +147,7 @@ def _compute_ppm4gpu_flux(
     return concat_where(
         (dims.KDim > 0) & (dims.KDim < elev + 1),
         p_upflux,
-        broadcast(ta.wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        broadcast(0.0, (dims.CellDim, dims.KDim)),
     )
 
 
@@ -629,7 +629,7 @@ def _compute_tracer_advection_odd_timestep_after_horizontal_limiter(
             geofac_div=geofac_div,
             p_dtime=p_dtime,
         ),
-        broadcast(ta.wpfloat("0.0"), (dims.CellDim, dims.KDim)),
+        broadcast(0.0, (dims.CellDim, dims.KDim)),
     )
     p_mflx_tracer_v = _compute_ppm4gpu_flux(
         p_cc=p_tracer_after_horizontal,
