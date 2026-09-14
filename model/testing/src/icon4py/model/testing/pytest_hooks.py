@@ -51,9 +51,8 @@ def pytest_configure(config):
         "markers", "single_precision_ready: intended to run if single precision is selected"
     )
 
-    # Handle datatest options: --datatest-only  and --datatest-skip
-    if m_option := config.getoption("-m", []):
-        m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
+    # add parenthesis around original k_option just in case
+    m_option = [f"({m_expr})"] if (m_expr := config.getoption("-m")) else []
     if config.getoption("--datatest-only"):
         m_option.append("datatest")
     if config.getoption("--datatest-skip"):
