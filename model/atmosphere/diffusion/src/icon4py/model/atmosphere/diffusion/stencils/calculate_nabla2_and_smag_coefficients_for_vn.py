@@ -46,15 +46,16 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     v_n = u_vert_wp(E2C2V) * primal_normal_vert_x + v_vert_wp(E2C2V) * primal_normal_vert_y
 
     # inv_primal_edge_length squared weights E2C2V neighbors 0 and 1, inv_vert_vert_length
-    # squared weights neighbors 2 and 3; each pair's vn contribution is also subtracted
-    # twice, once per weight.
+    # squared weights neighbors 2 and 3. Each neighbor also contributes a -vn term with the
+    # same weight, so the whole expression is a single neighbor_sum of (v_n - vn) * weight.
+    # Folding the vn subtraction into the reduction keeps it consistent with the v_n sum when
+    # a neighbor is missing: neighbor_sum drops both terms together instead of dropping only
+    # the v_n contribution while still subtracting vn.
     inv_primal_edge_length_2 = inv_primal_edge_length * inv_primal_edge_length
     inv_vert_vert_length_2 = inv_vert_vert_length * inv_vert_vert_length
     weight = primal_edge_mask * inv_primal_edge_length_2 + vert_vert_mask * inv_vert_vert_length_2
 
-    nabla2_of_vn = neighbor_sum(v_n * weight, axis=dims.E2C2VDim) - wpfloat("2.0") * vn * (
-        inv_primal_edge_length_2 + inv_vert_vert_length_2
-    )
+    nabla2_of_vn = neighbor_sum((v_n - vn) * weight, axis=dims.E2C2VDim)
 
     # The factor of 4 comes from the lengths in the denominator being twice those needed
     # for the diffusion stencil (https://doi.org/10.1002%2Fqj.2378).
