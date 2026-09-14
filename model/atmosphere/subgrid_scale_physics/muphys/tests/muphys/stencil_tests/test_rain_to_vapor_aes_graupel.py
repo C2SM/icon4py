@@ -9,17 +9,15 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import (
-    rain_to_vapor_aes_graupel,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import rain_to_vapor
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-class TestRainToVaporAesGraupel(stencil_tests.StencilTest):
-    PROGRAM = rain_to_vapor_aes_graupel
+class TestRainToVapor(stencil_tests.StencilTest):
+    PROGRAM = rain_to_vapor
     OUTPUTS = ("conversion_rate",)
 
     @stencil_tests.static_reference

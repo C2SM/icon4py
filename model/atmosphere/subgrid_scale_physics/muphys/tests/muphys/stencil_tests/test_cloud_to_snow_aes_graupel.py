@@ -9,17 +9,15 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import (
-    cloud_to_snow_aes_graupel,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import cloud_to_snow
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-class TestCloudToSnowAesGraupel(stencil_tests.StencilTest):
-    PROGRAM = cloud_to_snow_aes_graupel
+class TestCloudToSnow(stencil_tests.StencilTest):
+    PROGRAM = cloud_to_snow
     OUTPUTS = ("riming_snow_rate",)
 
     @stencil_tests.static_reference
