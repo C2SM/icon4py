@@ -47,6 +47,13 @@ def pytest_configure(config):
         "markers",
         "level(name): marks test as unit, integration, or validation tests. Validation tests are excluded by default and must be explicitly requested with --level=validation",
     )
+    config.addinivalue_line(
+        "markers",
+        "shard_weight(seconds): expected run time of a test module, used by --shard to balance the shards",
+    )
+
+    if (shard := config.getoption("--shard")) is not None:
+        config.pluginmanager.register(_ShardSelector(shard), "icon4py_shard_selector")
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):
@@ -123,6 +130,16 @@ def pytest_addoption(parser: pytest.Parser):
 
     with contextlib.suppress(ValueError):
         parser.addoption(
+            "--shard",
+            action="store",
+            default=None,
+            metavar="K/N",
+            help="Run only shard K of N (1-based) of the selected tests. Test modules are never split: "
+            "they are packed by their 'shard_weight' marker, or by their number of tests if unmarked.",
+        )
+
+    with contextlib.suppress(ValueError):
+        parser.addoption(
             "--mpi-subcomm-size",
             action="store",
             type=int,
@@ -174,6 +191,58 @@ def pytest_collection_modifyitems(config, items):
     if removed_items:
         config.hook.pytest_deselected(items=removed_items)
     items[:] = matched_items
+
+
+#: Weight in seconds of each test of a module without a `shard_weight` marker.
+_DEFAULT_TEST_SHARD_WEIGHT = 5
+
+
+class _ShardSelector:
+    """
+    Keep one of N shards of the selected tests, never splitting a test module.
+
+    Modules are taken heaviest first, each into the currently lightest shard, so every
+    process that selected the same tests (e.g. all pytest-xdist workers) computes the same
+    partition. Tests of one module often share compiled programs, which a split would
+    compile twice.
+    """
+
+    def __init__(self, spec: str):
+        match = re.fullmatch(r"(\d+)/(\d+)", spec)
+        if match is None or not 1 <= int(match[1]) <= int(match[2]):
+            raise pytest.UsageError(f"--shard expects K/N with 1 <= K <= N, got '{spec}'.")
+        self.index = int(match[1]) - 1
+        self.count = int(match[2])
+
+    # `trylast` so that the partition is computed on the tests left after `-k`, `-m`,
+    # `--deselect` and `--level`.
+    @pytest.hookimpl(trylast=True)
+    def pytest_collection_modifyitems(self, config: pytest.Config, items: list[pytest.Item]):
+        modules: dict[str, list[pytest.Item]] = {}
+        for item in items:
+            modules.setdefault(item.nodeid.split("::")[0], []).append(item)
+
+        weights = {}
+        for module, module_items in modules.items():
+            marker = module_items[0].get_closest_marker("shard_weight")
+            weights[module] = (
+                marker.args[0]
+                if marker is not None
+                else _DEFAULT_TEST_SHARD_WEIGHT * len(module_items)
+            )
+
+        loads = [0] * self.count
+        kept = set()
+        for module in sorted(weights, key=lambda module: (-weights[module], module)):
+            shard = loads.index(min(loads))
+            loads[shard] += weights[module]
+            if shard == self.index:
+                kept.add(module)
+
+        deselected = [item for item in items if item.nodeid.split("::")[0] not in kept]
+        if deselected:
+            config.hook.pytest_deselected(items=deselected)
+        items[:] = [item for item in items if item.nodeid.split("::")[0] in kept]
 
 
 @pytest.hookimpl(trylast=True)

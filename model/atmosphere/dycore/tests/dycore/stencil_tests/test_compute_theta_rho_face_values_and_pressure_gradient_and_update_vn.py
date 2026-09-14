@@ -22,6 +22,9 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing import stencil_tests
 
 
+pytestmark = pytest.mark.shard_weight(500)
+
+
 def compute_theta_rho_face_value_by_miura_scheme_numpy(
     *,
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],

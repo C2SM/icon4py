@@ -36,6 +36,9 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 )
 
 
+pytestmark = pytest.mark.shard_weight(530)
+
+
 def interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
     *,
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],

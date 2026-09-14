@@ -24,6 +24,9 @@ from icon4py.model.testing.reference_funcs import interpolate_to_cell_center_num
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
 
 
+pytestmark = pytest.mark.shard_weight(130)
+
+
 def _compute_advective_normal_wind_tendency_numpy(
     *,
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
