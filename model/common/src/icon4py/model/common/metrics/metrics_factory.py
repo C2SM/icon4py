@@ -345,8 +345,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={"vct_a": "vct_a"},
             domain={
                 dims.KHalfDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    v_grid.Domain(dims.KHalfDim, v_grid.Zone.DAMPING, 1),
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
                 )
             },
             fields={"rayleigh_w": attrs.RAYLEIGH_W},
@@ -356,6 +356,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "rayleigh_coeff": self._config.rayleigh_coeff,
                 "vct_a_1": self._vct_a_1,
                 "pi_const": math.pi,
+                "end_index_of_damping_layer": self._vertical_grid.end_index_of_damping_layer,
             },
             do_exchange=False,
         )
@@ -373,7 +374,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
-                    v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1),
+                    vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
@@ -867,12 +868,13 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         compute_wgtfacq_c = factory.NumpyDataProvider(
             func=weight_factors.compute_wgtfacq_c_dsl,
-            domain=gtx.domain(
-                {
-                    dims.CellDim: (0, self._grid.num_cells),
-                    dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
-                }
-            ),
+            domain={
+                dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
+                dims.KDim: (
+                    v_grid.Domain(dims.KDim, v_grid.Zone.BOTTOM, -3),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
             fields=(attrs.WGTFACQ_C,),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
             params={"nlev": self._grid.num_levels},
@@ -891,12 +893,13 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "wgtfacq_c_dsl": attrs.WGTFACQ_C,
             },
             connectivities={"e2c": dims.E2CDim},
-            domain=gtx.domain(
-                {
-                    dims.EdgeDim: (0, self._grid.num_edges),
-                    dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
-                }
-            ),
+            domain={
+                dims.EdgeDim: (edge_domain(h_grid.Zone.LOCAL), edge_domain(h_grid.Zone.END)),
+                dims.KDim: (
+                    v_grid.Domain(dims.KDim, v_grid.Zone.BOTTOM, -3),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
             fields=(attrs.WGTFACQ_E,),
             params={"n_edges": self._grid.num_edges, "nlev": self._grid.num_levels},
         )
