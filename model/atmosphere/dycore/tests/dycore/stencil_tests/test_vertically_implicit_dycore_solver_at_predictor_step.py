@@ -52,6 +52,9 @@ from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
 )
 
 
+pytestmark = pytest.mark.shard_weight(620)
+
+
 @pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
 class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
