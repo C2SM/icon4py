@@ -377,14 +377,7 @@ class DiffusionConfig:
     ] = False
 
     def __post_init__(self) -> None:
-        ta.dataclass_scalars_to_wp(
-            self,
-            attributes=[
-                field.name
-                for field in self.__dataclass_fields__.values()
-                if "float" in repr(field.type)
-            ],
-        )
+        ta.dataclass_float_to_wp(self)
 
         self._validate()
 

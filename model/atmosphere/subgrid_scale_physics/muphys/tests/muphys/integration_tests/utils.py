@@ -45,7 +45,7 @@ class MuphysExperiment:
     qnc: float = 100.0
 
     def __post_init__(self):
-        ta.dataclass_scalars_to_wp(self, attributes=["dt", "qnc"])
+        ta.dataclass_float_to_wp(self)
 
     @property
     def input_file(self) -> pathlib.Path:

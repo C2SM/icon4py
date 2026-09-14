@@ -87,14 +87,7 @@ class SingleMomentSixClassIconGraupelConfig:
     snow2graupel_riming_coeff: ta.wpfloat = 0.5
 
     def __post_init__(self):
-        ta.dataclass_scalars_to_wp(
-            self,
-            attributes=[
-                field.name
-                for field in self.__dataclass_fields__.values()
-                if "float" in repr(field.type)
-            ],
-        )
+        ta.dataclass_float_to_wp(self)
 
     @classmethod
     def from_fortran_dict(
