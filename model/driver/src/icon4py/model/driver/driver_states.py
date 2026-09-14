@@ -266,7 +266,7 @@ def initialize_prep_tracer_advection(
     """Build the tracer-advection prep state, sharing the dycore's accumulated buffers.
 
     Tracer advection reads the velocities/mass fluxes that the dycore accumulates over
-    the dynamics substeps (``lprep_adv``), so it must reference the dycore's
+    the dynamics substeps (``prepare_fluxes_for_advection``), so it must reference the dycore's
     ``PrepAdvection`` buffers (ICON's ``mass_flx_ic`` is the vertical mass flux at cell
     half levels). Without a dycore there is nothing accumulating them, so fall back to
     zero fields.

@@ -123,7 +123,7 @@ class Icon4pyDriver:
         return f"{self.__class__.__name__}:{func.__name__}"
 
     @functools.cached_property
-    def _do_prep_adv_in_dycore(self) -> bool:
+    def _prepare_fluxes_for_advection(self) -> bool:
         return self.config.nonhydrostatic is not None and self.config.tracer_advection is not None
 
     @functools.cached_property
@@ -450,7 +450,7 @@ class Icon4pyDriver:
                     dtime=self.model_time_variables.substep_timestep,
                     ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
                     at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
-                    lprep_adv=self._do_prep_adv_in_dycore,
+                    prepare_fluxes_for_advection=self._prepare_fluxes_for_advection,
                     at_first_substep=self._is_first_substep(dyn_substep),
                     at_last_substep=self._is_last_substep(dyn_substep),
                 )
