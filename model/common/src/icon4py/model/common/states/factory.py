@@ -772,7 +772,7 @@ def _func_name(callable_: Callable[..., Any]) -> str:
 
 
 def allfloats_as_double(dtype_metadata: state_utils.ScalarType) -> state_utils.ScalarType:
-    if dtype_metadata in [gtx.int32, bool]:
-        return dtype_metadata
-    else:
+    if dtype_metadata in [gtx.float32, gtx.float64]:
         return gtx.float64
+    else:
+        return dtype_metadata
