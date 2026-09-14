@@ -252,7 +252,6 @@ def construct_config_from_icon(
     >>> construct_config_from_icon(ConfigClass, {"isomche": 1})
     ConfigClass(choice=1)
     """
-    return config_cls(
-        **dict(iter_pairs_from_icon(config_cls, icon_config)),
-        **overrides,
-    )
+    values = dict(iter_pairs_from_icon(config_cls, icon_config))
+    values.update(overrides)
+    return config_cls(**values)
