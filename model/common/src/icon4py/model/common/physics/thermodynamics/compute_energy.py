@@ -91,15 +91,8 @@ def _compute_dry_static_energy(
 
         dry_static_energy = cpd * temperature + grav * height_above_ground
 
-    ``height_above_ground`` is the geometric height of the full levels above the
-    surface (``ghf`` in the Fortran code, provided by the metrics factory as
-    ``HEIGHT_ABOVE_GROUND``), so ``grav * height_above_ground`` is the
-    geopotential above ground.
-
-    The Fortran subroutine loops over the tmx ``t_domain`` cell range
-    (``grf_bdywidth_c + 1`` to ``min_rlcell_int``), which maps to the horizontal
-    domain ``(h_grid.Zone.NUDGING, h_grid.Zone.LOCAL)``, and over all full
-    levels (Fortran jk = 1..nlev -> k = 0..nlev-1).
+    ``height_above_ground`` is the height of the full levels above the surface
+    (``ghf``), so ``grav * height_above_ground`` is the geopotential above ground.
 
     Args:
         temperature: air temperature at full levels [K]

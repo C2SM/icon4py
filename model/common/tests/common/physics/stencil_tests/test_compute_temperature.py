@@ -21,7 +21,7 @@ from icon4py.model.common.physics.thermodynamics.compute_temperature import (
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 class TestComputeVirtualTemperatureAndTemperature(stencil_tests.StencilTest):
@@ -122,13 +122,6 @@ class TestComputeTemperatureFromInternalEnergyPerArea(stencil_tests.StencilTest)
         )
 
 
-def compute_virtual_potential_temperature_numpy(
-    virtual_temperature: np.ndarray,
-    pressure: np.ndarray,
-) -> np.ndarray:
-    return virtual_temperature * (phy_const.P0REF / pressure) ** phy_const.RD_O_CPD
-
-
 class TestComputeVirtualPotentialTemperature(stencil_tests.StencilTest):
     PROGRAM = compute_virtual_potential_temperature
     OUTPUTS = ("theta_v",)
@@ -141,7 +134,9 @@ class TestComputeVirtualPotentialTemperature(stencil_tests.StencilTest):
         pressure: np.ndarray,
         **kwargs,
     ) -> dict:
-        theta_v = compute_virtual_potential_temperature_numpy(virtual_temperature, pressure)
+        theta_v = reference_funcs.compute_virtual_potential_temperature_numpy(
+            virtual_temperature, pressure
+        )
         return dict(theta_v=theta_v)
 
     @stencil_tests.input_data_fixture

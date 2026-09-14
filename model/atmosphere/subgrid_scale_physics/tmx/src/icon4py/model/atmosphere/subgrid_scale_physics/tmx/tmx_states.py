@@ -135,18 +135,18 @@ class TmxDiagnosticState:
     div_c: fa.CellKField[ta.wpfloat]
     """Horizontal wind divergence at cell centers on full levels [1/s]."""
     km_c: fa.CellKField[ta.wpfloat]
-    """Turbulent viscosity at cell centers on full levels [m^2/s]."""
+    """Turbulent viscosity at cell centers on full levels [kg/(m s)]."""
     # cell, half levels
     rho_ic: fa.CellKHalfField[ta.wpfloat]
     """Air density at cell centers on half levels [kg/m^3]."""
     bruvais: fa.CellKHalfField[ta.wpfloat]
     """Brunt-Vaisala frequency squared at cell centers on half levels [1/s^2]."""
     mech_prod: fa.CellKHalfField[ta.wpfloat]
-    """Mechanical production term of turbulent kinetic energy on half levels [m^2/s^2]."""
+    """Mechanical production term of turbulent kinetic energy on half levels [1/s^2]."""
     km_ic: fa.CellKHalfField[ta.wpfloat]
-    """Turbulent viscosity at cell centers on half levels [m^2/s]."""
+    """Turbulent viscosity at cell centers on half levels [kg/(m s)]."""
     kh_ic: fa.CellKHalfField[ta.wpfloat]
-    """Turbulent diffusivity at cell centers on half levels [m^2/s]."""
+    """Turbulent diffusivity at cell centers on half levels [kg/(m s)]."""
     # edge, full levels
     vn: fa.EdgeKField[ta.wpfloat]
     """Normal wind at edge midpoints on full levels [m/s]."""
@@ -162,7 +162,7 @@ class TmxDiagnosticState:
     w_ie: fa.EdgeKHalfField[ta.wpfloat]
     """Vertical wind at edge midpoints on half levels [m/s]."""
     km_ie: fa.EdgeKHalfField[ta.wpfloat]
-    """Turbulent viscosity at edge midpoints on half levels [m^2/s]."""
+    """Turbulent viscosity at edge midpoints on half levels [kg/(m s)]."""
     # vertex, full levels
     u_vert: fa.VertexKField[ta.wpfloat]
     """Zonal wind at vertices on full levels [m/s]."""
@@ -172,7 +172,7 @@ class TmxDiagnosticState:
     w_vert: fa.VertexKHalfField[ta.wpfloat]
     """Vertical wind at vertices on half levels [m/s]."""
     km_iv: fa.VertexKHalfField[ta.wpfloat]
-    """Turbulent viscosity at vertices on half levels [m^2/s]."""
+    """Turbulent viscosity at vertices on half levels [kg/(m s)]."""
 
     @classmethod
     def allocate(

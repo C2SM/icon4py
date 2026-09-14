@@ -16,31 +16,7 @@ from icon4py.model.common.physics.compute_brunt_vaisala_frequency import (
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.testing import stencil_tests
-
-
-def compute_brunt_vaisala_frequency_numpy(
-    theta_v: np.ndarray,
-    wgtfac_c: np.ndarray,
-    inv_ddqz_z_half: np.ndarray,
-    *,
-    grav: float,
-) -> np.ndarray:
-    nlev = theta_v.shape[1]
-    bruvais = np.zeros((theta_v.shape[0], nlev + 1), dtype=theta_v.dtype)
-    # Fortran jk = 2..nlev (1-based) -> k = 1..nlev-1 (0-based); the top and
-    # bottom half levels (k = 0 and k = nlev) stay untouched (zero-initialized).
-    theta_v_ic = (
-        wgtfac_c[:, 1:nlev] * theta_v[:, 1:nlev]
-        + (1.0 - wgtfac_c[:, 1:nlev]) * theta_v[:, 0 : nlev - 1]
-    )
-    bruvais[:, 1:nlev] = (
-        grav
-        * (theta_v[:, 0 : nlev - 1] - theta_v[:, 1:nlev])
-        * inv_ddqz_z_half[:, 1:nlev]
-        / theta_v_ic
-    )
-    return bruvais
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 class TestComputeBruntVaisalaFrequency(stencil_tests.StencilTest):
@@ -57,7 +33,7 @@ class TestComputeBruntVaisalaFrequency(stencil_tests.StencilTest):
         grav: float,
         **kwargs,
     ) -> dict:
-        bruvais = compute_brunt_vaisala_frequency_numpy(
+        bruvais = reference_funcs.compute_brunt_vaisala_frequency_numpy(
             theta_v, wgtfac_c, inv_ddqz_z_half, grav=grav
         )
         return dict(bruvais=bruvais)

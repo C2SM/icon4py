@@ -17,6 +17,7 @@ import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx import tmx_states
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.metrics import metric_fields
 
 
 if TYPE_CHECKING:
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
 # so the verification tests parametrize over the subsequent steps only.
 TMX_DATES: tuple[str, ...] = ("2008-09-01T00:05:00.000", "2008-09-01T00:10:00.000")
 
-# Relative tolerance of all tmx integration datatests, see verify_full_run_fields.
+# Relative tolerance of all tmx integration datatests.
 RTOL: float = 3.0e-12
 
 
@@ -64,7 +65,7 @@ def construct_metric_state(
         geopot_agl_ifc=init_savepoint.geopot_agl_ifc(),
         height_above_ground=gtx.as_field(
             (dims.CellDim, dims.KDim),
-            z_mc.asnumpy() - z_ifc.asnumpy()[:, -1:],
+            metric_fields.compute_height_above_surface(z=z_mc.asnumpy(), z_ifc=z_ifc.asnumpy()),
             allocator=allocator,
         ),
     )

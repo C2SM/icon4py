@@ -28,7 +28,7 @@ from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 def compute_smagorinsky_mixing_length_numpy(
@@ -149,64 +149,47 @@ def _coefficient_field(
     )
 
 
-def compute_dry_static_energy_numpy(
-    temperature: np.ndarray, height_above_ground: np.ndarray, *, grav: float
-) -> np.ndarray:
-    return PhysicsConstants.cpd * temperature + grav * height_above_ground
-
-
-def compute_virtual_potential_temperature_numpy(
-    virtual_temperature: np.ndarray, pressure: np.ndarray
-) -> np.ndarray:
-    return virtual_temperature * (PhysicsConstants.p0ref / pressure) ** PhysicsConstants.rd_o_cpd
-
-
-def interpolate_cell_field_to_half_levels_with_boundaries_numpy(
+def interpolate_to_half_levels_with_boundaries_numpy(
     interpolant: np.ndarray,
-    wgtfac_c: np.ndarray,
+    wgtfac: np.ndarray,
     *,
-    wgtfacq1_c: np.ndarray,
-    wgtfacq_c: np.ndarray,
+    wgtfacq1: np.ndarray,
+    wgtfacq: np.ndarray,
 ) -> np.ndarray:
     nlev = interpolant.shape[1]
     interpolation = np.zeros((interpolant.shape[0], nlev + 1), dtype=interpolant.dtype)
     # Fortran jk = 1 (1-based) -> k = 0
     interpolation[:, 0] = (
-        wgtfacq1_c[:, 0] * interpolant[:, 0]
-        + wgtfacq1_c[:, 1] * interpolant[:, 1]
-        + wgtfacq1_c[:, 2] * interpolant[:, 2]
+        wgtfacq1[:, 0] * interpolant[:, 0]
+        + wgtfacq1[:, 1] * interpolant[:, 1]
+        + wgtfacq1[:, 2] * interpolant[:, 2]
     )
     # Fortran jk = 2..nlev (1-based) -> k = 1..nlev-1
     interpolation[:, 1:nlev] = (
-        wgtfac_c[:, 1:nlev] * interpolant[:, 1:nlev]
-        + (1.0 - wgtfac_c[:, 1:nlev]) * interpolant[:, 0 : nlev - 1]
+        wgtfac[:, 1:nlev] * interpolant[:, 1:nlev]
+        + (1.0 - wgtfac[:, 1:nlev]) * interpolant[:, 0 : nlev - 1]
     )
     # Fortran jk = nlevp1 (1-based) -> k = nlev
     interpolation[:, nlev] = (
-        wgtfacq_c[:, 2] * interpolant[:, nlev - 1]
-        + wgtfacq_c[:, 1] * interpolant[:, nlev - 2]
-        + wgtfacq_c[:, 0] * interpolant[:, nlev - 3]
+        wgtfacq[:, 2] * interpolant[:, nlev - 1]
+        + wgtfacq[:, 1] * interpolant[:, nlev - 2]
+        + wgtfacq[:, 0] * interpolant[:, nlev - 3]
     )
     return interpolation
 
 
-def compute_brunt_vaisala_frequency_numpy(
-    theta_v: np.ndarray, wgtfac_c: np.ndarray, inv_ddqz_z_half: np.ndarray, *, grav: float
+def _on_subdomain(
+    initial: np.ndarray,
+    computed: np.ndarray,
+    horizontal: tuple[int, int],
+    vertical: tuple[int, int],
 ) -> np.ndarray:
-    """Interior half levels k = 1..nlev-1 only; the boundary rows stay zero."""
-    nlev = theta_v.shape[1]
-    theta_v_ic = (
-        wgtfac_c[:, 1:nlev] * theta_v[:, 1:nlev]
-        + (1.0 - wgtfac_c[:, 1:nlev]) * theta_v[:, 0 : nlev - 1]
-    )
-    bruvais = np.zeros((theta_v.shape[0], nlev + 1), dtype=theta_v.dtype)
-    bruvais[:, 1:nlev] = (
-        grav
-        * (theta_v[:, 0 : nlev - 1] - theta_v[:, 1:nlev])
-        * inv_ddqz_z_half[:, 1:nlev]
-        / theta_v_ic
-    )
-    return bruvais
+    """The program's per-output domain: outside it the output keeps its initial value."""
+    out = initial.copy()
+    horizontal_slice = slice(*horizontal)
+    vertical_slice = slice(*vertical)
+    out[horizontal_slice, vertical_slice] = computed[horizontal_slice, vertical_slice]
+    return out
 
 
 class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
@@ -261,43 +244,44 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         cell_end_halo_level_2: int,
         **kwargs: Any,
     ) -> dict:
-        dry_static_energy_full = compute_dry_static_energy_numpy(
+        dry_static_energy_full = reference_funcs.compute_dry_static_energy_numpy(
             temperature, height_above_ground, grav=grav
         )
-        theta_v_full = compute_virtual_potential_temperature_numpy(virtual_temperature, pressure)
-        rho_ic_full = interpolate_cell_field_to_half_levels_with_boundaries_numpy(
-            rho,
-            wgtfac_c,
-            wgtfacq1_c=wgtfacq1_c,
-            wgtfacq_c=wgtfacq_c,
+        theta_v_full = reference_funcs.compute_virtual_potential_temperature_numpy(
+            virtual_temperature, pressure
         )
-        bruvais_full = compute_brunt_vaisala_frequency_numpy(
+        rho_ic_full = interpolate_to_half_levels_with_boundaries_numpy(
+            rho, wgtfac_c, wgtfacq1=wgtfacq1_c, wgtfacq=wgtfacq_c
+        )
+        bruvais_full = reference_funcs.compute_brunt_vaisala_frequency_numpy(
             theta_v_full, wgtfac_c, inv_ddqz_z_half, grav=grav
         )
 
-        # Each output keeps its initial value outside its own domain.
-        dry_static_energy_out = dry_static_energy.copy()
-        dry_static_energy_out[cell_start_nudging:cell_end_local, 0:nlev] = dry_static_energy_full[
-            cell_start_nudging:cell_end_local, 0:nlev
-        ]
-        theta_v_out = theta_v.copy()
-        theta_v_out[cell_start_lateral_boundary_level_3:cell_end_local, 0:nlev] = theta_v_full[
-            cell_start_lateral_boundary_level_3:cell_end_local, 0:nlev
-        ]
-        rho_ic_out = rho_ic.copy()
-        rho_ic_out[cell_start_lateral_boundary_level_2:cell_end_halo_level_2, 0 : nlev + 1] = (
-            rho_ic_full[cell_start_lateral_boundary_level_2:cell_end_halo_level_2, 0 : nlev + 1]
-        )
-        bruvais_out = bruvais.copy()
-        bruvais_out[cell_start_lateral_boundary_level_3:cell_end_local, 1:nlev] = bruvais_full[
-            cell_start_lateral_boundary_level_3:cell_end_local, 1:nlev
-        ]
-
         return dict(
-            dry_static_energy=dry_static_energy_out,
-            theta_v=theta_v_out,
-            rho_ic=rho_ic_out,
-            bruvais=bruvais_out,
+            dry_static_energy=_on_subdomain(
+                dry_static_energy,
+                dry_static_energy_full,
+                (cell_start_nudging, cell_end_local),
+                (0, nlev),
+            ),
+            theta_v=_on_subdomain(
+                theta_v,
+                theta_v_full,
+                (cell_start_lateral_boundary_level_3, cell_end_local),
+                (0, nlev),
+            ),
+            rho_ic=_on_subdomain(
+                rho_ic,
+                rho_ic_full,
+                (cell_start_lateral_boundary_level_2, cell_end_halo_level_2),
+                (0, nlev + 1),
+            ),
+            bruvais=_on_subdomain(
+                bruvais,
+                bruvais_full,
+                (cell_start_lateral_boundary_level_3, cell_end_local),
+                (1, nlev),
+            ),
         )
 
     @stencil_tests.input_data_fixture
@@ -359,46 +343,9 @@ def cell_2_edge_interpolation_numpy(
     in_field: np.ndarray,
     coeff: np.ndarray,
 ) -> np.ndarray:
-    """Reference of ``_cell_2_edge_interpolation`` (w -> w_ie)."""
+    """Reference of ``_cell_2_edge_interpolation_on_half_levels``."""
     e2c = connectivities[dims.E2C]  # (n_edges, 2)
     return np.sum(in_field[e2c] * np.expand_dims(coeff, axis=-1), axis=1)
-
-
-def interpolate_edge_field_to_half_levels_with_boundaries_numpy(
-    *,
-    interpolant: np.ndarray,
-    wgtfac_e: np.ndarray,
-    wgtfacq1_e: np.ndarray,
-    wgtfacq_e: np.ndarray,
-) -> np.ndarray:
-    """Reference of ``_interpolate_edge_field_to_half_levels_with_boundaries_wp`` (vn -> vn_ie)."""
-    nlev = interpolant.shape[1]
-    interpolation = np.zeros((interpolant.shape[0], nlev + 1), dtype=interpolant.dtype)
-    interpolation[:, 0] = (
-        wgtfacq1_e[:, 0] * interpolant[:, 0]
-        + wgtfacq1_e[:, 1] * interpolant[:, 1]
-        + wgtfacq1_e[:, 2] * interpolant[:, 2]
-    )
-    interpolation[:, 1:nlev] = (
-        wgtfac_e[:, 1:nlev] * interpolant[:, 1:nlev]
-        + (1.0 - wgtfac_e[:, 1:nlev]) * interpolant[:, 0 : nlev - 1]
-    )
-    interpolation[:, nlev] = (
-        wgtfacq_e[:, 2] * interpolant[:, nlev - 1]
-        + wgtfacq_e[:, 1] * interpolant[:, nlev - 2]
-        + wgtfacq_e[:, 0] * interpolant[:, nlev - 3]
-    )
-    return interpolation
-
-
-def compute_tangential_wind_numpy(
-    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
-    vn: np.ndarray,
-    rbf_vec_coeff_e: np.ndarray,
-) -> np.ndarray:
-    """Reference of ``_compute_tangential_wind_wp`` (vn_ie -> vt_ie)."""
-    e2c2e = connectivities[dims.E2C2E]  # (n_edges, 4)
-    return np.sum(vn[e2c2e] * np.expand_dims(rbf_vec_coeff_e, axis=-1), axis=1)
 
 
 def compute_shear_and_div_of_stress_numpy(
@@ -421,7 +368,7 @@ def compute_shear_and_div_of_stress_numpy(
     inv_dual_edge_length: np.ndarray,
     inv_ddqz_z_full_e: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Reference of ``_compute_shear_and_div_of_stress`` (verbatim from the pre-fusion test)."""
+    """Reference of ``_compute_shear_and_div_of_stress``."""
     e2c2v = connectivities[dims.E2C2V]  # (n_edges, 4)
     e2c = connectivities[dims.E2C]  # (n_edges, 2)
 
@@ -473,20 +420,6 @@ def compute_shear_and_div_of_stress_numpy(
     div_stress = vgrad_11 + vgrad_22 + vgrad_33
 
     return shear, div_stress
-
-
-def _on_subdomain(
-    initial: np.ndarray,
-    computed: np.ndarray,
-    horizontal: tuple[int, int],
-    vertical: tuple[int, int],
-) -> np.ndarray:
-    """The program's per-output domain: outside it the output keeps its initial value."""
-    out = initial.copy()
-    horizontal_slice = slice(*horizontal)
-    vertical_slice = slice(*vertical)
-    out[horizontal_slice, vertical_slice] = computed[horizontal_slice, vertical_slice]
-    return out
 
 
 class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
@@ -545,13 +478,10 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
         # The fused field operator evaluates the intermediates wherever a consumer
         # needs them, independently of the sub-domain each of them is written on.
         w_ie_full = cell_2_edge_interpolation_numpy(connectivities, in_field=w, coeff=c_lin_e)
-        vn_ie_full = interpolate_edge_field_to_half_levels_with_boundaries_numpy(
-            interpolant=vn,
-            wgtfac_e=wgtfac_e,
-            wgtfacq1_e=wgtfacq1_e,
-            wgtfacq_e=wgtfacq_e,
+        vn_ie_full = interpolate_to_half_levels_with_boundaries_numpy(
+            vn, wgtfac_e, wgtfacq1=wgtfacq1_e, wgtfacq=wgtfacq_e
         )
-        vt_ie_full = compute_tangential_wind_numpy(
+        vt_ie_full = reference_funcs.compute_tangential_wind_numpy(
             connectivities, vn=vn_ie_full, rbf_vec_coeff_e=rbf_vec_coeff_e
         )
         shear_full, div_stress_full = compute_shear_and_div_of_stress_numpy(
@@ -704,27 +634,24 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
         )
 
 
-def interpolate_to_cell_center_numpy(
-    interpolant: np.ndarray, e_bln_c_s: np.ndarray, c2e: np.ndarray
+def interpolate_edge_field_to_cell_half_levels_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    interpolant: np.ndarray,
+    e_bln_c_s: np.ndarray,
+    wgtfac_c: np.ndarray,
 ) -> np.ndarray:
-    """Edge -> cell average with the bilinear C2E weights, on full levels."""
-    return np.sum(np.expand_dims(e_bln_c_s, axis=-1) * interpolant[c2e], axis=1)
-
-
-def interpolate_shear_to_half_level_cells_numpy(
-    shear: np.ndarray, e_bln_c_s: np.ndarray, wgtfac_c: np.ndarray, c2e: np.ndarray
-) -> np.ndarray:
-    """Reference of ``_interpolate_edge_field_to_cell_half_levels_wp`` (nlev + 1 levels)."""
-    shear_c = interpolate_to_cell_center_numpy(shear, e_bln_c_s, c2e)
+    interpolant_c = reference_funcs.interpolate_to_cell_center_numpy(
+        connectivities, interpolant, e_bln_c_s
+    )
 
     # Full -> half level interpolation: half level k mixes full levels k and k - 1.
     # Fortran jk = 2..nlev (1-based) -> k = 1..nlev-1 (0-based); the top and
     # bottom half-level rows are not computed.
-    mech_prod = np.zeros_like(wgtfac_c)
-    mech_prod[:, 1:-1] = (
-        wgtfac_c[:, 1:-1] * shear_c[:, 1:] + (1.0 - wgtfac_c[:, 1:-1]) * shear_c[:, :-1]
+    interpolation = np.zeros_like(wgtfac_c)
+    interpolation[:, 1:-1] = (
+        wgtfac_c[:, 1:-1] * interpolant_c[:, 1:] + (1.0 - wgtfac_c[:, 1:-1]) * interpolant_c[:, :-1]
     )
-    return mech_prod
+    return interpolation
 
 
 class TestComputeStrainRateDiagnostics(stencil_tests.StencilTest):
@@ -749,26 +676,21 @@ class TestComputeStrainRateDiagnostics(stencil_tests.StencilTest):
     ) -> dict:
         nlev = vertical_end
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        c2e = connectivities[dims.C2E]  # (n_cells, 3)
-
-        div_c_full = interpolate_to_cell_center_numpy(div_stress, e_bln_c_s, c2e)
-        mech_prod_full = interpolate_shear_to_half_level_cells_numpy(
-            shear, e_bln_c_s, wgtfac_c, c2e
+        div_c_full = reference_funcs.interpolate_to_cell_center_numpy(
+            connectivities, div_stress, e_bln_c_s
         )
-
-        # Each output only covers its own sub-domain; elsewhere the field keeps the
-        # value it was allocated with.
-        div_c_out = div_c.copy()
-        div_c_out[cell_start_nudging:cell_end_halo, 0:nlev] = div_c_full[
-            cell_start_nudging:cell_end_halo, 0:nlev
-        ]
-
-        mech_prod_out = mech_prod.copy()
-        mech_prod_out[cell_start_lateral_boundary_level_3:cell_end_halo, 1:nlev] = mech_prod_full[
-            cell_start_lateral_boundary_level_3:cell_end_halo, 1:nlev
-        ]
-
-        return dict(div_c=div_c_out, mech_prod=mech_prod_out)
+        mech_prod_full = interpolate_edge_field_to_cell_half_levels_numpy(
+            connectivities, shear, e_bln_c_s, wgtfac_c
+        )
+        return dict(
+            div_c=_on_subdomain(div_c, div_c_full, (cell_start_nudging, cell_end_halo), (0, nlev)),
+            mech_prod=_on_subdomain(
+                mech_prod,
+                mech_prod_full,
+                (cell_start_lateral_boundary_level_3, cell_end_halo),
+                (1, nlev),
+            ),
+        )
 
     @stencil_tests.input_data_fixture
     def input_data(

@@ -36,18 +36,11 @@ def _compute_brunt_vaisala_frequency(
         theta_v_ic(k) = wgtfac_c(k) * theta_v(k)
                         + (1 - wgtfac_c(k)) * theta_v(k-1)
 
-    (``vert_intp_full2half_cell_3d``, interior rows only) is fused into this
-    stencil, reusing the common field operator
-    ``_interpolate_cell_field_to_half_levels_wp``.
+    (``vert_intp_full2half_cell_3d``, interior rows only) is fused into this stencil.
 
     The top and bottom half levels (k = 0 and k = nlev) are not computed; run
     the program with ``vertical_start = 1``, ``vertical_end = nlev`` so that
     the half-level shifts stay in bounds.
-
-    The tmx call site (``Compute_diagnostics`` in ``mo_vdf_atmo.f90``) uses
-    ``opt_rlstart = 3``, ``rl_end = min_rlcell_int``, which maps to the
-    horizontal domain ``(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3,
-    h_grid.Zone.LOCAL)``.
 
     Args:
         theta_v: virtual potential temperature at full levels [K] (nlev levels)

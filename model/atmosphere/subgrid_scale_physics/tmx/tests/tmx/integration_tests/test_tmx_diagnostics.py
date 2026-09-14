@@ -88,16 +88,16 @@ def test_tmx_init_and_run_diagnostics_single_step(
         use_louis_ice=tmx_config.use_louis_ice,
     )
 
-    # init fields, computed in the granule constructor (Smagorinsky_init in
-    # mo_tmx_smagorinsky.f90). 'height_above_ground' now comes from the metrics
-    # factory; it is only serialized at diagnostics-exit.
+    # Smagorinsky_init runs in the constructor; 'ghf' is only serialized at diagnostics exit
     test_utils.assert_dallclose(
-        granule.mix_len_sq.asnumpy(), init_savepoint.mix_len_sq().asnumpy(), err_msg="mix_len_sq"
+        granule.mixing_length_sq.asnumpy(),
+        init_savepoint.mix_len_sq().asnumpy(),
+        err_msg="mixing_length_sq",
     )
     test_utils.assert_dallclose(
-        granule.louis_factor.asnumpy(),
+        granule.scaling_factor_louis.asnumpy(),
         init_savepoint.scaling_factor_louis().asnumpy(),
-        err_msg="louis_factor",
+        err_msg="scaling_factor_louis",
     )
     test_utils.assert_dallclose(
         metric_state.height_above_ground.asnumpy(),
@@ -109,9 +109,7 @@ def test_tmx_init_and_run_diagnostics_single_step(
     granule.run_diagnostics(construct_input_state(entry_savepoint), diagnostic_state)
 
     nlev = icon_grid.num_levels
-    # (diagnostic state attribute, exit savepoint accessor, K slice compared,
-    # absolute tolerance; see verify_full_run_fields in utils.py for how the
-    # tolerances are chosen)
+    # (diagnostic state attribute, exit savepoint accessor, K slice compared, absolute tolerance)
     # K rows are excluded only where the Fortran leaves them dead:
     # - bruvais: brunt_vaisala_freq (mo_nh_vert_interp_les.f90) computes
     #   jk = 2..nlev (1-based), i.e. rows 1..nlev-1; rows 0 and nlev are never

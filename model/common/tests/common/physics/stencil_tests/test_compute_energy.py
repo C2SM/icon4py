@@ -18,7 +18,7 @@ from icon4py.model.common.physics.thermodynamics.compute_energy import (
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 class TestComputeInternalEnergyPerArea(stencil_tests.StencilTest):
@@ -56,15 +56,6 @@ class TestComputeInternalEnergyPerArea(stencil_tests.StencilTest):
         )
 
 
-def compute_dry_static_energy_numpy(
-    temperature: np.ndarray,
-    height_above_ground: np.ndarray,
-    *,
-    grav: float,
-) -> np.ndarray:
-    return constants.CPD * temperature + grav * height_above_ground
-
-
 class TestComputeStaticEnergy(stencil_tests.StencilTest):
     PROGRAM = compute_dry_static_energy
     OUTPUTS = ("dry_static_energy",)
@@ -78,7 +69,7 @@ class TestComputeStaticEnergy(stencil_tests.StencilTest):
         grav: float,
         **kwargs,
     ) -> dict:
-        dry_static_energy = compute_dry_static_energy_numpy(
+        dry_static_energy = reference_funcs.compute_dry_static_energy_numpy(
             temperature,
             height_above_ground,
             grav=grav,

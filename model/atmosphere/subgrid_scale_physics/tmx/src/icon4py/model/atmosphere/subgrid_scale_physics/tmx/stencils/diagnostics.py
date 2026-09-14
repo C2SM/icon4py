@@ -116,16 +116,11 @@ def _compute_scaling_factor_louis(
     Returns:
         scaling factor for the Louis constant b
     """
-    # Global mean cell area of the R2B8 grid [m^2] (``mean_area_R2B8`` in ICON's
-    # mo_tmx_smagorinsky.f90). Defined here because module-level closure constants
-    # are not supported by the gtfn backend.
+    # global mean cell area of the R2B8 grid [m^2] (``mean_area_R2B8`` in mo_tmx_smagorinsky.f90)
     mean_cell_area_r2b8 = wpfloat("97294071.23714285")
     return mean_cell_area_r2b8 / cell_area
 
 
-# The two Smagorinsky_init fields are deliberately not fused into one program:
-# the Fortran only computes the Louis scaling factor when the Louis stability
-# correction is enabled, and both programs run once, at granule construction.
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_smagorinsky_mixing_length(
     dz_ic: fa.CellKHalfField[wpfloat],
@@ -321,9 +316,6 @@ def _compute_shear_and_div_of_stress(
         shear      = 2 * |S|^2 = 4 * (T_11^2 + T_22^2 + T_33^2)
                      + 2 * (D_12^2 + D_13^2 + D_23^2),  D_ij = T_ij + T_ji
         div_stress = trace(S_ij) = T_11 + T_22 + T_33
-
-    Half-level (interface) input fields (w_vert, w, vn_ie, vt_ie, w_ie) must
-    provide num_levels + 1 vertical levels; outputs live on full levels.
     """
     # Normal/tangential velocity components at the four E2C2V vertices
     # (0, 1: edge endpoints; 2, 3: far vertices of the adjacent cells).
@@ -632,9 +624,7 @@ def _stability_term_louis(
                                  min(1, (1 / (1 + b * scaling * |Ri|))^4))
         stability_term = sqrt(0.5 * mech_prod * stability_function)
     """
-    # Threshold to avoid division by zero in the Richardson number (``eps_louis``
-    # in ICON's mo_tmx_smagorinsky.f90). Defined here because module-level closure
-    # constants are not supported by the gtfn backend.
+    # avoids a division by zero in the Richardson number (``eps_louis`` in mo_tmx_smagorinsky.f90)
     eps_louis = wpfloat("1.0e-28")
     ri = wpfloat("2.0") * bruvais / maximum(eps_louis, mech_prod)
 
@@ -855,8 +845,6 @@ def _interpolate_km_to_full_level_cells(
     ``rl_start = grf_bdywidth_c`` -> ``h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4``,
     ``rl_end = min_rlcell_int - 1`` -> ``h_grid.Zone.HALO`` (halo cells are
     computed on purpose because ``km_c`` is used in the diffusion later).
-    The floor deliberately lives here (and in the vertex/edge interpolations)
-    and not in the Smagorinsky viscosity computation, matching the Fortran.
     """
     return maximum(km_min, average_level_plus1_on_cells(km_ic))
 

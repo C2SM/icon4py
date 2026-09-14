@@ -8,13 +8,8 @@
 
 """The Smagorinsky diagnostics component of tmx.
 
-Port of ``Compute_diagnostics`` in ICON's ``mo_vdf_atmo.f90``, together with the
-init programs it needs (``Smagorinsky_init`` in ``mo_tmx_smagorinsky.f90`` and
-``compute_geopotential_height_above_ground``).
-
-Constructed on its own: it takes the configuration values it uses rather than a
-configuration object, so a caller -- a test above all -- can build this component
-without building the rest of the granule.
+Port of ``Compute_diagnostics`` in ICON's ``mo_vdf_atmo.f90``, together with
+``Smagorinsky_init`` in ``mo_tmx_smagorinsky.f90``, which runs at construction.
 """
 
 from __future__ import annotations
@@ -107,27 +102,25 @@ class Diagnostics:
         self._allocate_local_fields()
         self._setup_init_and_diagnostics_programs(backend, num_levels)
 
-        # Run the init programs (Smagorinsky_init in mo_tmx_smagorinsky.f90 and
-        # compute_geopotential_height_above_ground in mo_vdf_atmo.f90)
-        self.compute_smagorinsky_mixing_length(mixing_length_sq=self.mix_len_sq)
+        # the init part, Smagorinsky_init in mo_tmx_smagorinsky.f90
+        self.compute_smagorinsky_mixing_length(mixing_length_sq=self.mixing_length_sq)
         if use_louis:
             # the Fortran init only computes the Louis scaling factor if the
             # Louis stability correction is enabled; the field stays zero otherwise
-            self.compute_scaling_factor_louis(scaling_factor_louis=self.louis_factor)
+            self.compute_scaling_factor_louis(scaling_factor_louis=self.scaling_factor_louis)
 
     def _allocate_local_fields(self) -> None:
         zero_field = functools.partial(data_alloc.zero_field, self._grid, allocator=self._allocator)
 
         # squared Smagorinsky mixing length at half-level cell centers [m^2]
-        self.mix_len_sq: fa.CellKField[ta.wpfloat] = zero_field(dims.CellDim, dims.KHalfDim)
+        self.mixing_length_sq: fa.CellKHalfField[ta.wpfloat] = zero_field(
+            dims.CellDim, dims.KHalfDim
+        )
         # cell-area scaling factor of the Louis constant b
-        self.louis_factor: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
+        self.scaling_factor_louis: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
 
-        # Constant zero placeholders. These are never written: they are read-only
-        # inputs the atmosphere-only port has no source for, kept so the program
-        # signatures match the Fortran.
-        # land / sea-ice fractions, needed by the Louis stability correction
-        # (see the 'use_louis_land' / 'use_louis_ice' warning in __init__)
+        # land and sea-ice fractions: the atmosphere-only port has no source for them,
+        # so they stay zero (see the warning in __init__)
         self.fract_land: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
         self.fract_ice: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
 
@@ -149,7 +142,6 @@ class Diagnostics:
         self._cell_end_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._cell_end_halo = self._grid.end_index(cell_domain(h_grid.Zone.HALO))
         self._cell_end_halo_level_2 = self._grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
-        self._cell_end_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         self._edge_start_lateral_boundary_level_2 = self._grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -388,8 +380,8 @@ class Diagnostics:
                 backend=backend,
                 program=diag_stencils.compute_smagorinsky_viscosity,
                 constant_args={
-                    "mixing_length_sq": self.mix_len_sq,
-                    "scaling_factor_louis": self.louis_factor,
+                    "mixing_length_sq": self.mixing_length_sq,
+                    "scaling_factor_louis": self.scaling_factor_louis,
                     "fract_land": self.fract_land,
                     "fract_ice": self.fract_ice,
                     "rturb_prandtl": self._rturb_prandtl,
@@ -425,7 +417,7 @@ class Diagnostics:
                 # cells rl 4..min_rlcell_int-1
                 "cell_start": self._cell_start_lateral_boundary_level_4,
                 "cell_end": self._cell_end_halo,
-                # vertices rl 1..min_rlvert_int-1
+                # vertices rl 5..min_rlvert_int-1
                 "vertex_start": self._vertex_start_nudging,
                 "vertex_end": self._vertex_end_halo,
                 # edges rl grf_bdywidth_e..min_rledge_int-1
@@ -450,9 +442,7 @@ class Diagnostics:
 
         Port of ``Compute_diagnostics`` in mo_vdf_atmo.f90 (l. 343-482), with
         the halo exchanges at the Fortran sync points and one program per
-        exchange interval and horizontal dimension. ``mix_len_sq`` and
-        ``louis_factor`` are granule-owned fields computed at construction; the
-        corresponding fields of ``diagnostic_state`` are not written here.
+        exchange interval and horizontal dimension.
 
         Note: the Fortran zero-initializes u_vert/v_vert/w_vert and
         km_iv/km_c/km_ie/kh_ic/km_ic before (re)computing them on possibly

@@ -218,15 +218,6 @@ def _compute_virtual_potential_temperature(
         theta_v = tv * (p0ref / p)**rd_o_cpd
 
     with tv the virtual temperature (``ptvm1``) and p the pressure (``papm1``).
-    The constants match the Fortran ``mo_physical_constants.f90`` values:
-    ``p0ref = 100000.0`` Pa, ``rd_o_cpd = rd / cpd = 287.04 / 1004.64``
-    (available as ``PhysicsConstants.p0ref`` / ``PhysicsConstants.rd_o_cpd``).
-
-    The tmx call site (``Compute_diagnostics`` in ``mo_vdf_atmo.f90``) uses
-    ``rl_start = 3``, ``rl_end = min_rlcell_int``, which maps to the horizontal
-    domain ``(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3, h_grid.Zone.LOCAL)``, and
-    all full levels (Fortran jk = 1..nlev -> k = 0..nlev-1).
-
     Args:
         virtual_temperature: virtual temperature at full levels [K]
         pressure: air pressure at full levels [Pa]

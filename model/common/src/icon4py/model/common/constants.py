@@ -110,10 +110,9 @@ LATENT_HEAT_FOR_SUBLIMATION_INVARIANT: Final[ta.wpfloat] = (
     LATENT_HEAT_FOR_SUBLIMATION - (CPV - SPECIFIC_HEAT_CAPACITY_ICE) * MELTING_TEMPERATURE
 )
 
-# Von Karman constant, called 'ckap' in ICON (mo_turb_vdiff_params.f90).
+#: von Karman constant, ckap in ICON.
 VON_KARMAN_CONSTANT: Final[ta.wpfloat] = 0.4
 CKAP: Final[ta.wpfloat] = VON_KARMAN_CONSTANT
-
 
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[ta.wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
