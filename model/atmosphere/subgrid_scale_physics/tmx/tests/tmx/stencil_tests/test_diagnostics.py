@@ -32,8 +32,8 @@ from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 def compute_smagorinsky_mixing_length_numpy(
-    dz_ic: np.ndarray,
-    geopot_agl_ic: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    geopot_agl_ifc: np.ndarray,
     cell_area: np.ndarray,
     *,
     smag_constant: float,
@@ -41,9 +41,9 @@ def compute_smagorinsky_mixing_length_numpy(
     grav: float,
 ) -> np.ndarray:
     kappa = 0.4
-    z_agl = geopot_agl_ic * (1.0 / grav)
+    z_agl = geopot_agl_ifc * (1.0 / grav)
     les_filter = smag_constant * np.minimum(
-        max_turb_scale, (dz_ic * cell_area[:, np.newaxis]) ** 0.33333
+        max_turb_scale, (ddqz_z_half * cell_area[:, np.newaxis]) ** 0.33333
     )
     return (
         (les_filter * z_agl)
@@ -52,16 +52,29 @@ def compute_smagorinsky_mixing_length_numpy(
     )
 
 
-class TestInitSmagorinskyMixingLength(stencil_tests.StencilTest):
+class TestComputeSmagorinskyMixingLength(stencil_tests.StencilTest):
     PROGRAM = compute_smagorinsky_mixing_length
     OUTPUTS = ("mixing_length_sq",)
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+        ),
+    }
 
     @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         *,
-        dz_ic: np.ndarray,
-        geopot_agl_ic: np.ndarray,
+        ddqz_z_half: np.ndarray,
+        geopot_agl_ifc: np.ndarray,
         cell_area: np.ndarray,
         smag_constant: float,
         max_turb_scale: float,
@@ -69,8 +82,8 @@ class TestInitSmagorinskyMixingLength(stencil_tests.StencilTest):
         **kwargs,
     ) -> dict:
         mixing_length_sq = compute_smagorinsky_mixing_length_numpy(
-            dz_ic,
-            geopot_agl_ic,
+            ddqz_z_half,
+            geopot_agl_ifc,
             cell_area,
             smag_constant=smag_constant,
             max_turb_scale=max_turb_scale,
@@ -82,18 +95,18 @@ class TestInitSmagorinskyMixingLength(stencil_tests.StencilTest):
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        dz_ic = data_alloc.random_field(
+        ddqz_z_half = data_alloc.random_field(
             dims.CellDim, dims.KHalfDim, low=10.0, high=500.0, dtype=wpfloat
         )
-        geopot_agl_ic = data_alloc.random_field(
+        geopot_agl_ifc = data_alloc.random_field(
             dims.CellDim, dims.KHalfDim, low=0.0, high=100000.0, dtype=wpfloat
         )
         cell_area = data_alloc.random_field(dims.CellDim, low=1.0e6, high=1.0e8, dtype=wpfloat)
         mixing_length_sq = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
 
         return dict(
-            dz_ic=dz_ic,
-            geopot_agl_ic=geopot_agl_ic,
+            ddqz_z_half=ddqz_z_half,
+            geopot_agl_ifc=geopot_agl_ifc,
             cell_area=cell_area,
             mixing_length_sq=mixing_length_sq,
             smag_constant=wpfloat(0.23),
@@ -106,9 +119,16 @@ class TestInitSmagorinskyMixingLength(stencil_tests.StencilTest):
         )
 
 
-class TestInitLouisScalingFactor(stencil_tests.StencilTest):
+class TestComputeScalingFactorLouis(stencil_tests.StencilTest):
     PROGRAM = compute_scaling_factor_louis
     OUTPUTS = ("scaling_factor_louis",)
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+        ),
+    }
 
     @stencil_tests.static_reference
     def reference(
@@ -205,10 +225,20 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
 
     PROGRAM = compute_thermodynamic_diagnostics
     OUTPUTS = ("dry_static_energy", "theta_v", "rho_ic", "bruvais")
-    # The granule binds the vertical bounds and ``nlev`` at compile time; the
-    # variant exercises that path, which is also the one dace can specialize.
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "cell_start_nudging",
+            "cell_start_lateral_boundary_level_2",
+            "cell_start_lateral_boundary_level_3",
+            "cell_end_local",
+            "cell_end_halo_level_2",
+            "vertical_start",
+            "vertical_start_interior",
+            "vertical_end",
+            "vertical_end_half",
+            "nlev",
+        ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_start_interior",
@@ -417,18 +447,27 @@ def compute_shear_and_div_of_stress_numpy(
     d_23 = vgrad_23 + vgrad_32
 
     shear = 4.0 * (vgrad_11**2 + vgrad_22**2 + vgrad_33**2) + 2.0 * (d_12**2 + d_13**2 + d_23**2)
-    div_stress = vgrad_11 + vgrad_22 + vgrad_33
+    div_of_stress = vgrad_11 + vgrad_22 + vgrad_33
 
-    return shear, div_stress
+    return shear, div_of_stress
 
 
 class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
     PROGRAM = compute_edge_shear_diagnostics
-    OUTPUTS = ("w_ie", "vn_ie", "vt_ie", "shear", "div_stress")
-    # The granule binds the vertical bounds and ``nlev`` at compile time; the
-    # variant exercises that path, which is also the one dace can specialize.
+    OUTPUTS = ("w_ie", "vn_ie", "vt_ie", "shear", "div_of_stress")
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "edge_start_lateral_boundary_level_2",
+            "edge_start_lateral_boundary_level_3",
+            "edge_start_lateral_boundary_level_4",
+            "edge_end_halo_level_2",
+            "edge_end_halo_level_3",
+            "vertical_start",
+            "vertical_end",
+            "vertical_end_half",
+            "nlev",
+        ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
@@ -464,7 +503,7 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
         vn_ie: np.ndarray,
         vt_ie: np.ndarray,
         shear: np.ndarray,
-        div_stress: np.ndarray,
+        div_of_stress: np.ndarray,
         nlev: int,
         edge_start_lateral_boundary_level_2: int,
         edge_start_lateral_boundary_level_3: int,
@@ -531,8 +570,8 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
                 (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
                 all_full_levels,
             ),
-            div_stress=_on_subdomain(
-                div_stress,
+            div_of_stress=_on_subdomain(
+                div_of_stress,
                 div_stress_full,
                 (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
                 all_full_levels,
@@ -576,7 +615,7 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
         vn_ie = data_alloc.zero_field(dims.EdgeDim, dims.KHalfDim, dtype=ta.wpfloat)
         vt_ie = data_alloc.zero_field(dims.EdgeDim, dims.KHalfDim, dtype=ta.wpfloat)
         shear = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        div_stress = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        div_of_stress = data_alloc.zero_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         # Fortran rl bounds of the fused subroutines (mo_vdf_atmo.f90):
         # cells2edges_scalar (w_ie) 2..min_rledge_int-2,
@@ -621,7 +660,7 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
             vn_ie=vn_ie,
             vt_ie=vt_ie,
             shear=shear,
-            div_stress=div_stress,
+            div_of_stress=div_of_stress,
             nlev=gtx.int32(grid.num_levels),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(grid.num_levels),
@@ -657,13 +696,29 @@ def interpolate_edge_field_to_cell_half_levels_numpy(
 class TestComputeStrainRateDiagnostics(stencil_tests.StencilTest):
     PROGRAM = compute_strain_rate_diagnostics
     OUTPUTS = ("div_c", "mech_prod")
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "cell_start_nudging",
+            "cell_start_lateral_boundary_level_3",
+            "cell_end_halo",
+            "vertical_start",
+            "vertical_start_interior",
+            "vertical_end",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_start_interior",
+            "vertical_end",
+        ),
+    }
 
     @stencil_tests.static_reference
     def reference(
         grid: base.Grid,
         *,
         shear: np.ndarray,
-        div_stress: np.ndarray,
+        div_of_stress: np.ndarray,
         e_bln_c_s: np.ndarray,
         wgtfac_c: np.ndarray,
         div_c: np.ndarray,
@@ -677,7 +732,7 @@ class TestComputeStrainRateDiagnostics(stencil_tests.StencilTest):
         nlev = vertical_end
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         div_c_full = reference_funcs.interpolate_to_cell_center_numpy(
-            connectivities, div_stress, e_bln_c_s
+            connectivities, div_of_stress, e_bln_c_s
         )
         mech_prod_full = interpolate_edge_field_to_cell_half_levels_numpy(
             connectivities, shear, e_bln_c_s, wgtfac_c
@@ -697,7 +752,7 @@ class TestComputeStrainRateDiagnostics(stencil_tests.StencilTest):
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, Any]:
         shear = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        div_stress = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        div_of_stress = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
         wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         div_c = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
@@ -722,7 +777,7 @@ class TestComputeStrainRateDiagnostics(stencil_tests.StencilTest):
 
         return dict(
             shear=shear,
-            div_stress=div_stress,
+            div_of_stress=div_of_stress,
             e_bln_c_s=e_bln_c_s,
             wgtfac_c=wgtfac_c,
             div_c=div_c,
@@ -736,13 +791,13 @@ class TestComputeStrainRateDiagnostics(stencil_tests.StencilTest):
         )
 
 
-def stability_term_classic_numpy(
+def compute_stability_term_classic_numpy(
     mech_prod: np.ndarray, bruvais: np.ndarray, rturb_prandtl: float
 ) -> np.ndarray:
     return np.sqrt(np.maximum(0.0, 0.5 * mech_prod - rturb_prandtl * bruvais))
 
 
-def stability_term_louis_numpy(
+def compute_stability_term_louis_numpy(
     mech_prod: np.ndarray,
     bruvais: np.ndarray,
     scaling_factor_louis: np.ndarray,
@@ -787,13 +842,13 @@ def compute_smagorinsky_viscosity_numpy(
         )
         stability_term = np.where(
             classic_mask[:, np.newaxis],
-            stability_term_classic_numpy(mech_prod, bruvais, rturb_prandtl),
-            stability_term_louis_numpy(
+            compute_stability_term_classic_numpy(mech_prod, bruvais, rturb_prandtl),
+            compute_stability_term_louis_numpy(
                 mech_prod, bruvais, scaling_factor_louis, rturb_prandtl, louis_constant_b
             ),
         )
     else:
-        stability_term = stability_term_classic_numpy(mech_prod, bruvais, rturb_prandtl)
+        stability_term = compute_stability_term_classic_numpy(mech_prod, bruvais, rturb_prandtl)
 
     km_ic = np.zeros_like(mech_prod)
     # interior half levels, Fortran jk = 2..nlev (1-based) -> k = 1..nlev-1 (0-based)
@@ -886,18 +941,30 @@ def smagorinsky_viscosity_input_data(
     )
 
 
-# Static-params variants: prove that the config bools can be passed both as regular
-# runtime scalars ("none") and as static (compile-time) arguments selecting the variant.
-SMAGORINSKY_VISCOSITY_STATIC_VARIANTS = {
-    "none": (),
-    "compile_time_variant": ("use_louis", "use_louis_land", "use_louis_ice"),
-}
-
-
 class TestComputeSmagorinskyViscosityClassic(stencil_tests.StencilTest):
     PROGRAM = compute_smagorinsky_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
-    STATIC_PARAMS = SMAGORINSKY_VISCOSITY_STATIC_VARIANTS
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "nlev",
+            "use_louis",
+            "use_louis_land",
+            "use_louis_ice",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nlev",
+            "use_louis",
+            "use_louis_land",
+            "use_louis_ice",
+        ),
+    }
 
     @stencil_tests.static_reference
     def reference(grid: base.Grid, **kwargs: Any) -> dict:
@@ -915,7 +982,27 @@ class TestComputeSmagorinskyViscosityClassic(stencil_tests.StencilTest):
 class TestComputeSmagorinskyViscosityLouis(stencil_tests.StencilTest):
     PROGRAM = compute_smagorinsky_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
-    STATIC_PARAMS = SMAGORINSKY_VISCOSITY_STATIC_VARIANTS
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "nlev",
+            "use_louis",
+            "use_louis_land",
+            "use_louis_ice",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nlev",
+            "use_louis",
+            "use_louis_land",
+            "use_louis_ice",
+        ),
+    }
 
     @stencil_tests.static_reference
     def reference(grid: base.Grid, **kwargs: Any) -> dict:
@@ -933,7 +1020,27 @@ class TestComputeSmagorinskyViscosityLouis(stencil_tests.StencilTest):
 class TestComputeSmagorinskyViscosityLouisMaskedLandIce(stencil_tests.StencilTest):
     PROGRAM = compute_smagorinsky_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
-    STATIC_PARAMS = SMAGORINSKY_VISCOSITY_STATIC_VARIANTS
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "nlev",
+            "use_louis",
+            "use_louis_land",
+            "use_louis_ice",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nlev",
+            "use_louis",
+            "use_louis_land",
+            "use_louis_ice",
+        ),
+    }
 
     @stencil_tests.static_reference
     def reference(grid: base.Grid, **kwargs: Any) -> dict:
@@ -951,7 +1058,27 @@ class TestComputeSmagorinskyViscosityLouisMaskedLandIce(stencil_tests.StencilTes
 class TestComputeSmagorinskyViscosityLouisMaskedLandOnly(stencil_tests.StencilTest):
     PROGRAM = compute_smagorinsky_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
-    STATIC_PARAMS = SMAGORINSKY_VISCOSITY_STATIC_VARIANTS
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "nlev",
+            "use_louis",
+            "use_louis_land",
+            "use_louis_ice",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nlev",
+            "use_louis",
+            "use_louis_land",
+            "use_louis_ice",
+        ),
+    }
 
     @stencil_tests.static_reference
     def reference(grid: base.Grid, **kwargs: Any) -> dict:
@@ -984,6 +1111,21 @@ def assign_constant_viscosity_numpy(
 class TestAssignConstantViscosity(stencil_tests.StencilTest):
     PROGRAM = assign_constant_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "nlev",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nlev",
+        ),
+    }
 
     @stencil_tests.static_reference
     def reference(
@@ -1021,7 +1163,7 @@ class TestAssignConstantViscosity(stencil_tests.StencilTest):
         )
 
 
-def interpolate_km_to_full_level_cells_numpy(km_ic: np.ndarray, *, km_min: float) -> np.ndarray:
+def interpolate_km_to_cells_numpy(km_ic: np.ndarray, *, km_min: float) -> np.ndarray:
     return np.maximum(km_min, 0.5 * (km_ic[:, :-1] + km_ic[:, 1:]))
 
 
@@ -1041,6 +1183,25 @@ def interpolate_km_to_edges_numpy(
 class TestInterpolateKm(stencil_tests.StencilTest):
     PROGRAM = interpolate_km
     OUTPUTS = ("km_c", "km_iv", "km_ie")
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "cell_start",
+            "cell_end",
+            "vertex_start",
+            "vertex_end",
+            "edge_start",
+            "edge_end",
+            "vertical_start",
+            "vertical_end",
+            "vertical_end_half",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "vertical_end_half",
+        ),
+    }
 
     @stencil_tests.static_reference
     def reference(
@@ -1054,7 +1215,7 @@ class TestInterpolateKm(stencil_tests.StencilTest):
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         return dict(
-            km_c=interpolate_km_to_full_level_cells_numpy(km_ic, km_min=km_min),
+            km_c=interpolate_km_to_cells_numpy(km_ic, km_min=km_min),
             km_iv=interpolate_km_to_vertices_numpy(
                 km_ic,
                 cells_aw_verts=cells_aw_verts,

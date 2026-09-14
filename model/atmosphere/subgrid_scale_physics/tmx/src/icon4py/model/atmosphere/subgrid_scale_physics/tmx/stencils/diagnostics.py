@@ -59,8 +59,8 @@ from icon4py.model.common.type_alias import wpfloat
 # ---------------------------------------------------------------------------
 @gtx.field_operator
 def _compute_smagorinsky_mixing_length(
-    dz_ic: fa.CellKHalfField[wpfloat],
-    geopot_agl_ic: fa.CellKHalfField[wpfloat],
+    ddqz_z_half: fa.CellKHalfField[wpfloat],
+    geopot_agl_ifc: fa.CellKHalfField[wpfloat],
     cell_area: fa.CellField[wpfloat],
     smag_constant: wpfloat,
     max_turb_scale: wpfloat,
@@ -79,8 +79,8 @@ def _compute_smagorinsky_mixing_length(
     von Karman constant. Reference: Dipankar et al. (2015).
 
     Args:
-        dz_ic: layer thickness centered at half levels (nlev + 1 levels)
-        geopot_agl_ic: geopotential above ground at half levels (nlev + 1 levels)
+        ddqz_z_half: layer thickness centered at half levels
+        geopot_agl_ifc: geopotential above ground at half levels
         cell_area: cell area
         smag_constant: Smagorinsky constant Cs
         max_turb_scale: maximum turbulence length scale
@@ -91,9 +91,9 @@ def _compute_smagorinsky_mixing_length(
     """
     kappa = PhysicsConstants.von_karman
 
-    z_agl = geopot_agl_ic * (wpfloat("1.0") / grav)
+    z_agl = geopot_agl_ifc * (wpfloat("1.0") / grav)
     les_filter = smag_constant * minimum(
-        max_turb_scale, power(dz_ic * cell_area, wpfloat("0.33333"))
+        max_turb_scale, power(ddqz_z_half * cell_area, wpfloat("0.33333"))
     )
     return (
         (les_filter * z_agl)
@@ -125,8 +125,8 @@ def _compute_scaling_factor_louis(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_smagorinsky_mixing_length(
-    dz_ic: fa.CellKHalfField[wpfloat],
-    geopot_agl_ic: fa.CellKHalfField[wpfloat],
+    ddqz_z_half: fa.CellKHalfField[wpfloat],
+    geopot_agl_ifc: fa.CellKHalfField[wpfloat],
     cell_area: fa.CellField[wpfloat],
     mixing_length_sq: fa.CellKHalfField[wpfloat],
     smag_constant: wpfloat,
@@ -138,8 +138,8 @@ def compute_smagorinsky_mixing_length(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_smagorinsky_mixing_length(
-        dz_ic=dz_ic,
-        geopot_agl_ic=geopot_agl_ic,
+        ddqz_z_half=ddqz_z_half,
+        geopot_agl_ifc=geopot_agl_ifc,
         cell_area=cell_area,
         smag_constant=smag_constant,
         max_turb_scale=max_turb_scale,
@@ -317,7 +317,7 @@ def _compute_shear_and_div_of_stress(
 
         shear      = 2 * |S|^2 = 4 * (T_11^2 + T_22^2 + T_33^2)
                      + 2 * (D_12^2 + D_13^2 + D_23^2),  D_ij = T_ij + T_ji
-        div_stress = trace(S_ij) = T_11 + T_22 + T_33
+        div_of_stress = trace(S_ij) = T_11 + T_22 + T_33
     """
     # Normal/tangential velocity components at the four E2C2V vertices
     # (0, 1: edge endpoints; 2, 3: far vertices of the adjacent cells).
@@ -359,9 +359,9 @@ def _compute_shear_and_div_of_stress(
     ) + wpfloat("2.0") * (d_12 * d_12 + d_13 * d_13 + d_23 * d_23)
 
     # Trace of the strain-rate tensor S_ij: trace(S_ij) = S_jj = 0.5 * D_jj = du_j/dx_j.
-    div_stress = vgrad_11 + vgrad_22 + vgrad_33
+    div_of_stress = vgrad_11 + vgrad_22 + vgrad_33
 
-    return shear, div_stress
+    return shear, div_of_stress
 
 
 @gtx.field_operator
@@ -414,7 +414,7 @@ def _compute_edge_shear_diagnostics(
         nlev=nlev,
     )
     vt_ie = _compute_tangential_wind_on_half_levels(vn=vn_ie, rbf_vec_coeff_e=rbf_vec_coeff_e)
-    shear, div_stress = _compute_shear_and_div_of_stress(
+    shear, div_of_stress = _compute_shear_and_div_of_stress(
         u_vert=u_vert,
         v_vert=v_vert,
         w_vert=w_vert,
@@ -432,7 +432,7 @@ def _compute_edge_shear_diagnostics(
         inv_dual_edge_length=inv_dual_edge_length,
         inv_ddqz_z_full_e=inv_ddqz_z_full_e,
     )
-    return w_ie, vn_ie, vt_ie, shear, div_stress
+    return w_ie, vn_ie, vt_ie, shear, div_of_stress
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -460,7 +460,7 @@ def compute_edge_shear_diagnostics(
     vn_ie: fa.EdgeKHalfField[wpfloat],
     vt_ie: fa.EdgeKHalfField[wpfloat],
     shear: fa.EdgeKField[wpfloat],
-    div_stress: fa.EdgeKField[wpfloat],
+    div_of_stress: fa.EdgeKField[wpfloat],
     nlev: gtx.int32,
     edge_start_lateral_boundary_level_2: gtx.int32,
     edge_start_lateral_boundary_level_3: gtx.int32,
@@ -492,7 +492,7 @@ def compute_edge_shear_diagnostics(
         inv_dual_edge_length=inv_dual_edge_length,
         inv_ddqz_z_full_e=inv_ddqz_z_full_e,
         nlev=nlev,
-        out=(w_ie, vn_ie, vt_ie, shear, div_stress),
+        out=(w_ie, vn_ie, vt_ie, shear, div_of_stress),
         domain=(
             # w_ie
             {
@@ -509,7 +509,7 @@ def compute_edge_shear_diagnostics(
                 dims.EdgeDim: (edge_start_lateral_boundary_level_3, edge_end_halo_level_2),
                 dims.KHalfDim: (vertical_start, vertical_end_half),
             },
-            # shear / div_stress
+            # shear / div_of_stress
             {
                 dims.EdgeDim: (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
                 dims.KDim: (vertical_start, vertical_end),
@@ -528,7 +528,7 @@ def compute_edge_shear_diagnostics(
 @gtx.field_operator
 def _compute_strain_rate_diagnostics(
     shear: fa.EdgeKField[wpfloat],
-    div_stress: fa.EdgeKField[wpfloat],
+    div_of_stress: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     wgtfac_c: fa.CellKHalfField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKHalfField[wpfloat]]:
@@ -545,7 +545,7 @@ def _compute_strain_rate_diagnostics(
         divergence of the stress at full-level cells and the mechanical
         production term at half-level cells
     """
-    div_c = _interpolate_to_cell_center(interpolant=div_stress, e_bln_c_s=e_bln_c_s)
+    div_c = _interpolate_to_cell_center(interpolant=div_of_stress, e_bln_c_s=e_bln_c_s)
     mech_prod = _interpolate_edge_field_to_cell_half_levels(
         interpolant=shear, e_bln_c_s=e_bln_c_s, wgtfac_c=wgtfac_c
     )
@@ -555,7 +555,7 @@ def _compute_strain_rate_diagnostics(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_strain_rate_diagnostics(
     shear: fa.EdgeKField[wpfloat],
-    div_stress: fa.EdgeKField[wpfloat],
+    div_of_stress: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     wgtfac_c: fa.CellKHalfField[wpfloat],
     div_c: fa.CellKField[wpfloat],
@@ -569,7 +569,7 @@ def compute_strain_rate_diagnostics(
 ) -> None:
     _compute_strain_rate_diagnostics(
         shear=shear,
-        div_stress=div_stress,
+        div_of_stress=div_of_stress,
         e_bln_c_s=e_bln_c_s,
         wgtfac_c=wgtfac_c,
         out=(div_c, mech_prod),
@@ -592,7 +592,7 @@ def compute_strain_rate_diagnostics(
 # Compute_diagnostics: eddy viscosity and diffusivity
 # ---------------------------------------------------------------------------
 @gtx.field_operator
-def _stability_term_classic(
+def _compute_stability_term_classic(
     mech_prod: fa.CellKHalfField[wpfloat],
     bruvais: fa.CellKHalfField[wpfloat],
     rturb_prandtl: wpfloat,
@@ -610,7 +610,7 @@ def _stability_term_classic(
 
 
 @gtx.field_operator
-def _stability_term_louis(
+def _compute_stability_term_louis(
     mech_prod: fa.CellKHalfField[wpfloat],
     bruvais: fa.CellKHalfField[wpfloat],
     scaling_factor_louis: fa.CellField[wpfloat],
@@ -684,10 +684,10 @@ def _compute_smagorinsky_viscosity(
     selected variant is compiled.
     """
     if use_louis:
-        stability_classic = _stability_term_classic(
+        stability_classic = _compute_stability_term_classic(
             mech_prod=mech_prod, bruvais=bruvais, rturb_prandtl=rturb_prandtl
         )
-        stability_louis = _stability_term_louis(
+        stability_louis = _compute_stability_term_louis(
             mech_prod=mech_prod,
             bruvais=bruvais,
             scaling_factor_louis=scaling_factor_louis,
@@ -713,7 +713,7 @@ def _compute_smagorinsky_viscosity(
                     stability_louis,
                 )
     else:
-        stability_term = _stability_term_classic(
+        stability_term = _compute_stability_term_classic(
             mech_prod=mech_prod, bruvais=bruvais, rturb_prandtl=rturb_prandtl
         )
 
@@ -788,7 +788,7 @@ def _assign_constant_viscosity(
       (Fortran 1-based: k = 1 <- k = 2, k = nlevp1 <- k = nlev).
 
     Args:
-        rho_ic: air density at half-level cell centers (nlev + 1 levels)
+        rho_ic: air density at half-level cell centers
         km_const: constant kinematic eddy viscosity
         rturb_prandtl: reciprocal turbulent Prandtl number
         nlev: number of full levels
@@ -834,7 +834,7 @@ def assign_constant_viscosity(
 # Compute_diagnostics: the eddy viscosity on cells, vertices and edges
 # ---------------------------------------------------------------------------
 @gtx.field_operator
-def _interpolate_km_to_full_level_cells(
+def _interpolate_km_to_cells(
     km_ic: fa.CellKHalfField[wpfloat],
     km_min: wpfloat,
 ) -> fa.CellKField[wpfloat]:
@@ -941,7 +941,7 @@ def interpolate_km(
     are one program; they still compile to one kernel each, because they write
     a cell, a vertex and an edge field.
     """
-    _interpolate_km_to_full_level_cells(
+    _interpolate_km_to_cells(
         km_ic=km_ic,
         km_min=km_min,
         out=km_c,

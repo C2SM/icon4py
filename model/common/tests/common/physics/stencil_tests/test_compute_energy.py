@@ -56,7 +56,7 @@ class TestComputeInternalEnergyPerArea(stencil_tests.StencilTest):
         )
 
 
-class TestComputeStaticEnergy(stencil_tests.StencilTest):
+class TestComputeDryStaticEnergy(stencil_tests.StencilTest):
     PROGRAM = compute_dry_static_energy
     OUTPUTS = ("dry_static_energy",)
 

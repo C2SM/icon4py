@@ -187,8 +187,8 @@ class Diagnostics:
             backend=backend,
             program=diag_stencils.compute_smagorinsky_mixing_length,
             constant_args={
-                "dz_ic": self._metric_state.ddqz_z_half,
-                "geopot_agl_ic": self._metric_state.geopot_agl_ifc,
+                "ddqz_z_half": self._metric_state.ddqz_z_half,
+                "geopot_agl_ifc": self._metric_state.geopot_agl_ifc,
                 "cell_area": self._cell_params.area,
                 "smag_constant": self._smag_constant,
                 "max_turb_scale": self._max_turb_scale,
@@ -252,7 +252,7 @@ class Diagnostics:
         )
         # compute_normal_velocity_edge: edges rl grf_bdywidth_e+1..min_rledge_int,
         # all full levels
-        self.compute_vn_from_uv = setup_program(
+        self.interpolate_cell_vector_to_edge_normal = setup_program(
             backend=backend,
             program=interpolate_cell_vector_to_edge_normal,
             constant_args={
@@ -468,7 +468,7 @@ class Diagnostics:
         self._exchange.exchange(dims.CellDim, input_state.u, input_state.v)
         log.debug("communication of input u, v (cells): end")
 
-        self.compute_vn_from_uv(
+        self.interpolate_cell_vector_to_edge_normal(
             vector_x=input_state.u,
             vector_y=input_state.v,
             normal_component=diagnostic_state.vn,
@@ -510,11 +510,11 @@ class Diagnostics:
             vn_ie=diagnostic_state.vn_ie,
             vt_ie=diagnostic_state.vt_ie,
             shear=diagnostic_state.shear,
-            div_stress=diagnostic_state.div_of_stress,
+            div_of_stress=diagnostic_state.div_of_stress,
         )
         self.compute_strain_rate_diagnostics(
             shear=diagnostic_state.shear,
-            div_stress=diagnostic_state.div_of_stress,
+            div_of_stress=diagnostic_state.div_of_stress,
             div_c=diagnostic_state.div_c,
             mech_prod=diagnostic_state.mech_prod,
         )
