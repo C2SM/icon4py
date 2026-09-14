@@ -106,7 +106,7 @@ def _compute_ppm4gpu_flux(
     z_slope = _limit_vertical_slope_semi_monotonically(
         p_cc=p_cc,
         z_slope=_compute_ppm_slope(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, elev=elev),
-        k_half=k,
+        k=k,
         elev=elev,
     )
     p_face = concat_where(

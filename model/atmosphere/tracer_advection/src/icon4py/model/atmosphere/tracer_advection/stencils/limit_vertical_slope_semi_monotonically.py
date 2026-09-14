@@ -16,7 +16,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 def _limit_vertical_slope_semi_monotonically(
     p_cc: fa.CellKField[ta.wpfloat],
     z_slope: fa.CellKField[ta.wpfloat],
-    k: fa.KHalfField[gtx.int32],
+    k: fa.KField[gtx.int32],
     elev: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
     p_cc_min_last = minimum(p_cc(dims.KDim - 1), p_cc)
