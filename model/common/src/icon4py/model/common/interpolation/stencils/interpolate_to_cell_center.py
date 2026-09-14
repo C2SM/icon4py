@@ -5,36 +5,35 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import gt4py.next as gtx
-from gt4py.next import astype, neighbor_sum
+from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2E
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _interpolate_to_cell_center_vp(
-    interpolant: fa.EdgeKField[vpfloat],
+def _interpolate_to_cell_center(
+    interpolant: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-) -> fa.CellKField[vpfloat]:
+) -> fa.CellKField[wpfloat]:
     """Interpolate an edge field to the cell centers with the bilinear C2E weights."""
-    interpolant_wp = astype(interpolant, wpfloat)
-    interpolation_wp = neighbor_sum(e_bln_c_s * interpolant_wp(C2E), axis=dims.C2EDim)
-    return astype(interpolation_wp, vpfloat)
+    return neighbor_sum(e_bln_c_s * interpolant(C2E), axis=dims.C2EDim)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_to_cell_center_vp(
-    interpolant: fa.EdgeKField[vpfloat],
+def interpolate_to_cell_center(
+    interpolant: fa.EdgeKField[wpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    interpolation: fa.CellKField[vpfloat],
+    interpolation: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _interpolate_to_cell_center_vp(
+    _interpolate_to_cell_center(
         interpolant=interpolant,
         e_bln_c_s=e_bln_c_s,
         out=interpolation,

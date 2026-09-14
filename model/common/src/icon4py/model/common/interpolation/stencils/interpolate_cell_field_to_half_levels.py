@@ -9,6 +9,11 @@ import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.math.vertical_operations import (
+    extrapolate_quadratically_to_surface_on_cells,
+    extrapolate_quadratically_to_top_on_cells,
+    with_boundaries_on_half_levels_on_cells,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -20,7 +25,8 @@ def _interpolate_cell_field_to_half_levels_vp(
     """
     Interpolate a CellDim variable of floating precision from full levels to half levels.
     The return variable also has floating precision.
-        var_half_k-1/2 = wgt_fac_c_k-1 var_half_k-1 + wgt_fac_c_k var_half_k
+        var_half_k = wgtfac_c_k * var_full_k + (1 - wgtfac_c_k) * var_full_k-1
+    (half level k lies above full level k, so ``var_full_k`` is the level below it)
 
     Args:
         wgtfac_c: weight factor
@@ -42,7 +48,8 @@ def _interpolate_cell_field_to_half_levels_wp(
     """
     Interpolate a CellDim variable of working precision from full levels to half levels.
     The return variable also has working precision.
-        var_half_k-1/2 = wgt_fac_c_k-1 var_half_k-1 + wgt_fac_c_k var_half_k
+        var_half_k = wgtfac_c_k * var_full_k + (1 - wgtfac_c_k) * var_full_k-1
+    (half level k lies above full level k, so ``var_full_k`` is the level below it)
 
     Args:
         wgtfac_c: weight factor
@@ -86,4 +93,38 @@ def _interpolate_cell_field_to_half_levels_with_surface_value_wp(
         dims.KHalfDim < surface_level - 1,
         _interpolate_cell_field_to_half_levels_wp(wgtfac_c=wgtfac_c, interpolant=interpolant),
         surface_value,
+    )
+
+
+@gtx.field_operator
+def _interpolate_cell_field_to_half_levels_with_boundaries(
+    interpolant: fa.CellKField[wpfloat],
+    wgtfac_c: fa.CellKHalfField[wpfloat],
+    wgtfacq1_c: fa.CellKField[wpfloat],
+    wgtfacq_c: fa.CellKField[wpfloat],
+    nlev: gtx.int32,
+) -> fa.CellKHalfField[wpfloat]:
+    """
+    Interpolate a cell field from full levels to half levels, with the top and bottom
+    half levels extrapolated quadratically.
+
+    Args:
+        interpolant: cell field on full levels
+        wgtfac_c: interpolation weight on half levels
+        wgtfacq1_c: top extrapolation weights, one row per full level 0..2
+        wgtfacq_c: bottom extrapolation weights, one row per full level nlev - 3..nlev - 1
+        nlev: number of full levels
+
+    Returns:
+        cell field on half levels
+    """
+    return with_boundaries_on_half_levels_on_cells(
+        top=extrapolate_quadratically_to_top_on_cells(interpolant=interpolant, weights=wgtfacq1_c),
+        interior=_interpolate_cell_field_to_half_levels_wp(
+            wgtfac_c=wgtfac_c, interpolant=interpolant
+        ),
+        bottom=extrapolate_quadratically_to_surface_on_cells(
+            interpolant=interpolant, weights=wgtfacq_c
+        ),
+        nlev=nlev,
     )
