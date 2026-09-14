@@ -125,7 +125,7 @@ class Icon4pyDriver:
 
     @functools.cached_property
     def _prepare_fluxes_for_advection(self) -> bool:
-        return self.config.nonhydrostatic is not None and self.config.tracer_advection is not None
+        return self.config.tracer_advection is not None
 
     @functools.cached_property
     def _diagnostics_computer(self) -> driver_io.DiagnosticsComputer:
