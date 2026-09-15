@@ -259,8 +259,6 @@ class GodunovSplittingAdvection(Advection):
 
         allocator = model_backends.get_allocator(self._backend)
 
-        # intermediate fields that must survive the program boundary (halo exchange
-        # of the horizontal limiter factor r_m sits between the two programs)
         self._rhodz_ast2 = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
