@@ -261,6 +261,12 @@ class TestComputeVelocityAdvectionInCorrectorStep(stencil_tests.StencilTest):
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         cell_domain = h_grid.domain(dims.CellDim)
+        start_cell_lateral_boundary_level_4 = grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
+        )
+        end_cell_halo = grid.end_index(cell_domain(h_grid.Zone.HALO))
+        start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+        end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
         return dict(
             vertical_wind_advective_tendency=vertical_wind_advective_tendency,
@@ -296,12 +302,10 @@ class TestComputeVelocityAdvectionInCorrectorStep(stencil_tests.StencilTest):
             dtime=dtime,
             apply_extra_diffusion_on_vn=request.param["apply_extra_diffusion_on_vn"],
             end_index_of_damping_layer=end_index_of_damping_layer,
-            start_cell_lateral_boundary_level_4=grid.start_index(
-                cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
-            ),
-            end_cell_halo=grid.end_index(cell_domain(h_grid.Zone.HALO)),
-            start_edge_nudging_level_2=grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2)),
-            end_edge_local=grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
+            start_cell_lateral_boundary_level_4=start_cell_lateral_boundary_level_4,
+            end_cell_halo=end_cell_halo,
+            start_edge_nudging_level_2=start_edge_nudging_level_2,
+            end_edge_local=end_edge_local,
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
