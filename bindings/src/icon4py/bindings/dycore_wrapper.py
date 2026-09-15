@@ -374,7 +374,8 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=vol_flx_ic,
     )
 
-    # Make `max_vcfl` a 0-d array to avoid cupy synchronization, see `velocity_advection.py`.
+    # Make `max_vcfl` a 0-d array to avoid cupy synchronization, see `_update_max_vertical_cfl`
+    # in `solve_nonhydro.py`.
     # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
     max_vcfl = data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)
 
