@@ -124,10 +124,6 @@ class Icon4pyDriver:
         return f"{self.__class__.__name__}:{func.__name__}"
 
     @functools.cached_property
-    def _prepare_fluxes_for_advection(self) -> bool:
-        return self.config.tracer_advection is not None
-
-    @functools.cached_property
     def _diagnostics_computer(self) -> driver_io.DiagnosticsComputer:
         """Reuses its scratch/output buffers across output steps (allocated once)."""
         return driver_io.DiagnosticsComputer(grid=self.grid, backend=self.backend)
@@ -451,7 +447,7 @@ class Icon4pyDriver:
                     dtime=self.model_time_variables.substep_timestep,
                     ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
                     at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
-                    prepare_fluxes_for_advection=self._prepare_fluxes_for_advection,
+                    prepare_fluxes_for_advection=self.granules.tracer_advection is not None,
                     at_first_substep=self._is_first_substep(dyn_substep),
                     at_last_substep=self._is_last_substep(dyn_substep),
                 )
