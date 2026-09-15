@@ -384,6 +384,8 @@ max-complexity = 15
 # Avoid messing up conditions in gt4py stencils (SIM300)
 # Stencil parameters referenced in domain specs must remain positional (PLR0917)
 "**/model/**/stencils/*.py" = ["SIM300", "PLR0917"]
+"**/model/driver/tests/driver/integration_tests/test_benchmark_driver.py" = ["F405"]
+"**/model/driver/tests/driver/mpi_tests/test_benchmark_driver.py" = ["F405"]
 # Ignore spurious errors when explicitly importing fixtures in tests (F401, F811).
 # Check: https://github.com/astral-sh/ruff/issues/10662
 # TODO(havogt): fix error related to PLR0915, PLR0911, TD, RUF012 and remove ignores below

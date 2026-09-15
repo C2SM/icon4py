@@ -22,8 +22,19 @@ from icon4py.model.testing import (
     serialbox as sb,
     test_utils,
 )
-
-from ..fixtures import *  # noqa: F403
+from icon4py.model.testing.fixtures import (
+    backend,
+    data_provider,
+    download_ser_data,
+    experiment,
+    experiment_description,
+    linit,
+    process_props,
+    savepoint_diffusion_exit,
+    savepoint_nonhydro_exit,
+    savepoint_time_step_exit,
+    step_date_exit,
+)
 
 
 # Tolerances (atol, rtol) per experiment, measured across the CSCS CI backends
@@ -68,7 +79,7 @@ _TOLERANCES: dict[test_defs.ExperimentDescription, dict[str, tuple[float, float]
 # Metadata selecting the MCH mid-time-step dynamics savepoints (see the MCH branch in
 # the test body): solve-nonhydro exit at the corrector (istep=2) of the last substep
 # (2 for MCH), and the non-initial diffusion savepoint. Only instantiated for MCH.
-@pytest.fixture  # type: ignore[no-redef]  # deliberately shadows the fixtures.py import
+@pytest.fixture
 def istep_exit() -> int:
     return 2
 

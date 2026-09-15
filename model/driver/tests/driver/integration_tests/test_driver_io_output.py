@@ -26,8 +26,13 @@ from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.io import io as common_io
 from icon4py.model.driver import config as driver_config, driver, driver_io, driver_utils
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs, grid_utils
-
-from ..fixtures import *  # noqa: F403
+from icon4py.model.testing.fixtures import (
+    backend,
+    download_ser_data,
+    experiment,
+    experiment_description,
+    process_props,
+)
 
 
 def _find_one(directory: pathlib.Path, pattern: str) -> pathlib.Path:
