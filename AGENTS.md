@@ -189,7 +189,7 @@ uv run --group test --frozen nox -s 'test_common(datatest=True)'
 uv run --group test --frozen nox -s 'test_common(datatest=False)'
 
 # Run tests in single-precision mode:
-uv run --group test --frozen nox -s 'test_<component>' -- --single-precision
+ICON4PY_FLOAT_PRECISION=single uv run --group test --frozen nox -s 'test_<component>'
 ```
 
 Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks).
