@@ -18,18 +18,18 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.tracer_advection import (
-    tracer_advection_horizontal,
-    tracer_advection_states,
-    tracer_advection_vertical,
-)
-from icon4py.model.atmosphere.tracer_advection.stencils.apply_density_increment import (
-    apply_density_increment,
-)
+from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_tracer_time_tendency import (
     apply_interpolated_tracer_time_tendency,
 )
+from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_advection import (
+    compute_tracer_advection_even_timestep_after_horizontal_limiter,
+    compute_tracer_advection_even_timestep_before_horizontal_limiter,
+    compute_tracer_advection_odd_timestep_after_horizontal_limiter,
+    compute_tracer_advection_odd_timestep_before_horizontal_limiter,
+)
 from icon4py.model.common import (
+    constants,
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
@@ -236,51 +236,52 @@ class GodunovSplittingAdvection(Advection):
     def __init__(
         self,
         *,
-        horizontal_advection: tracer_advection_horizontal.HorizontalAdvection,
-        vertical_advection: tracer_advection_vertical.VerticalAdvection,
         grid: icon_grid.IconGrid,
         metric_state: tracer_advection_states.AdvectionMetricState,
+        interpolation_state: tracer_advection_states.AdvectionInterpolationState,
+        least_squares_state: tracer_advection_states.AdvectionLeastSquaresState,
+        edge_params: grid_states.EdgeParams,
         backend: gtx_typing.Backend | None,
         exchange: decomposition.ExchangeRuntime,
         even_timestep: bool = False,
+        vertical_advection_type: VerticalAdvectionType = VerticalAdvectionType.THIRD_ORDER_PPM,
     ):
         log.debug("tracer_advection class init - start")
 
         # input arguments
-        self._horizontal_advection = horizontal_advection
-        self._vertical_advection = vertical_advection
         self._grid = grid
         self._metric_state = metric_state
         self._backend = backend
         self._exchange = exchange
         self._even_timestep = even_timestep  # originally jstep_adv(:)%marchuk_order = 1
 
-        # density fields
-        #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
-        self._rhodz_ast2 = data_alloc.zero_field(
-            self._grid,
-            dims.CellDim,
-            dims.KDim,
-            allocator=model_backends.get_allocator(self._backend),
-        )
         self._determine_local_domains()
-        # stencils
-        self._apply_density_increment = setup_program(
-            backend=self._backend,
-            program=apply_density_increment,
-            constant_args={
-                "deepatmo_divzl": self._metric_state.deepatmo_divzl,
-                "deepatmo_divzu": self._metric_state.deepatmo_divzu,
-            },
-            horizontal_sizes={
-                "horizontal_end": self._end_cell_end,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
-            },
-            offset_provider=self._grid.connectivities,
+
+        allocator = model_backends.get_allocator(self._backend)
+
+        self._rhodz_ast2 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
+        self._r_m = data_alloc.zero_field(self._grid, dims.CellDim, dims.KDim, allocator=allocator)
+        self._p_tracer_after_vertical = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+        )
+        self._p_mflx_tracer_h_unlimited = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
+        )
+        self._k = data_alloc.index_field(
+            self._grid,
+            dims.KDim,
+            dtype=gtx.int32,
+            allocator=allocator,
+        )
+        self._k_half = data_alloc.index_field(
+            self._grid,
+            dims.KHalfDim,
+            dtype=gtx.int32,
+            allocator=allocator,
+        )
+
         self._apply_interpolated_tracer_time_tendency = setup_program(
             backend=self._backend,
             program=apply_interpolated_tracer_time_tendency,
@@ -292,6 +293,99 @@ class GodunovSplittingAdvection(Advection):
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
+        )
+
+        metric_state = self._metric_state
+        shared_horizontal_args: dict[str, gtx.Field | gtx_typing.Scalar] = {
+            "rbf_vec_coeff_e": interpolation_state.rbf_vec_coeff_e,
+            "pos_on_tplane_e_1": interpolation_state.pos_on_tplane_e_1,
+            "pos_on_tplane_e_2": interpolation_state.pos_on_tplane_e_2,
+            "primal_normal_cell_1": edge_params.primal_normal_cell[0],
+            "dual_normal_cell_1": edge_params.dual_normal_cell[0],
+            "primal_normal_cell_2": edge_params.primal_normal_cell[1],
+            "dual_normal_cell_2": edge_params.dual_normal_cell[1],
+            "lsq_pseudoinv_1": least_squares_state.lsq_pseudoinv_1,
+            "lsq_pseudoinv_2": least_squares_state.lsq_pseudoinv_2,
+            "geofac_div": interpolation_state.geofac_div,
+            "dbl_eps": constants.DBL_EPS,
+        }
+        shared_vertical_args: dict[str, gtx.Field | gtx_typing.Scalar] = {
+            "p_cellhgt_mc_now": metric_state.ddqz_z_full,
+            "deepatmo_divzl": metric_state.deepatmo_divzl,
+            "deepatmo_divzu": metric_state.deepatmo_divzu,
+            "k": self._k,
+            "k_half": self._k_half,
+            "slev": gtx.int32(0),
+            "slevp1_ti": gtx.int32(1),
+            "elev": gtx.int32(self._grid.num_levels - 1),
+            "ivadv_tracer": gtx.int32(vertical_advection_type.value),
+            "iadv_slev_jt": gtx.int32(0),
+            "dbl_eps": constants.DBL_EPS,
+        }
+        horizontal_domains: dict[str, gtx.int32] = {
+            "start_cell_lateral_boundary_level_2": self._start_cell_lateral_boundary_level_2,
+            "end_cell_local": self._end_cell_local,
+            "end_cell_end": self._end_cell_end,
+            "start_edge_lateral_boundary_level_5": self._start_edge_lateral_boundary_level_5,
+            "end_edge_halo": self._end_edge_halo,
+        }
+        vertical_domains: dict[str, gtx.int32] = {"vertical_end": gtx.int32(self._grid.num_levels)}
+
+        self._compute_even_timestep_before_horizontal_limiter = setup_program(
+            backend=self._backend,
+            program=compute_tracer_advection_even_timestep_before_horizontal_limiter,
+            constant_args={**shared_vertical_args, **shared_horizontal_args},
+            horizontal_sizes=horizontal_domains,
+            vertical_sizes=vertical_domains,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_even_timestep_after_horizontal_limiter = setup_program(
+            backend=self._backend,
+            program=compute_tracer_advection_even_timestep_after_horizontal_limiter,
+            constant_args={
+                "deepatmo_divh": metric_state.deepatmo_divh,
+                "geofac_div": interpolation_state.geofac_div,
+            },
+            horizontal_sizes={
+                "start_cell_nudging": self._start_cell_nudging,
+                "end_cell_local": self._end_cell_local,
+                "start_edge_lateral_boundary_level_5": self._start_edge_lateral_boundary_level_5,
+                "end_edge_halo": self._end_edge_halo,
+            },
+            vertical_sizes=vertical_domains,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_odd_timestep_before_horizontal_limiter = setup_program(
+            backend=self._backend,
+            program=compute_tracer_advection_odd_timestep_before_horizontal_limiter,
+            constant_args={
+                "deepatmo_divzl": metric_state.deepatmo_divzl,
+                "deepatmo_divzu": metric_state.deepatmo_divzu,
+                **shared_horizontal_args,
+            },
+            horizontal_sizes={
+                **horizontal_domains,
+                "start_cell_lateral_boundary_level_3": self._start_cell_lateral_boundary_level_3,
+            },
+            vertical_sizes=vertical_domains,
+            offset_provider=self._grid.connectivities,
+        )
+        self._compute_odd_timestep_after_horizontal_limiter = setup_program(
+            backend=self._backend,
+            program=compute_tracer_advection_odd_timestep_after_horizontal_limiter,
+            constant_args={
+                **shared_vertical_args,
+                "deepatmo_divh": metric_state.deepatmo_divh,
+                "geofac_div": interpolation_state.geofac_div,
+            },
+            horizontal_sizes={
+                "start_cell_nudging": self._start_cell_nudging,
+                "end_cell_local": self._end_cell_local,
+                "start_edge_lateral_boundary_level_5": self._start_edge_lateral_boundary_level_5,
+                "end_edge_halo": self._end_edge_halo,
+            },
+            vertical_sizes=vertical_domains,
+            offset_provider=self._grid.connectivities,
         )
 
         log.debug("tracer_advection class init - end")
@@ -308,10 +402,18 @@ class GodunovSplittingAdvection(Advection):
         self._start_cell_lateral_boundary_level_3 = self._grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
+        self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_lateral_boundary_level_4 = self._grid.end_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
+        self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
+
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        self._start_edge_lateral_boundary_level_5 = self._grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
     def run(
         self,
@@ -324,208 +426,84 @@ class GodunovSplittingAdvection(Advection):
     ) -> None:
         log.debug("tracer_advection run - start")
 
-        log.debug("communication of prep_adv cell field: mass_flx_ic - start")
         self._exchange.exchange(
             dims.CellDim,
             prep_adv.mass_flx_ic,
             stream=decomposition.DEFAULT_STREAM,
         )
-        log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
-        # reintegrate density for conservation of mass
-        rhodz_in, horizontal_start = (
-            (diagnostic_state.airmass_now, self._start_cell_lateral_boundary_level_2)
-            if self._even_timestep
-            else (diagnostic_state.airmass_new, self._start_cell_lateral_boundary_level_3)
-        )
-
-        log.debug("running stencil apply_density_increment - start")
-        self._apply_density_increment(
-            rhodz_in=rhodz_in,
-            p_mflx_contra_v=prep_adv.mass_flx_ic,
-            rhodz_out=self._rhodz_ast2,
-            p_dtime=dtime,
-            even_timestep=self._even_timestep,
-            horizontal_start=horizontal_start,
-        )
-        log.debug("running stencil apply_density_increment - end")
-
-        # Godunov splitting
         if self._even_timestep:
-            # vertical transport
-            self._vertical_advection.run(
-                prep_adv=prep_adv,
-                p_tracer_now=p_tracer_now,
-                p_tracer_new=p_tracer_new,
-                rhodz_now=diagnostic_state.airmass_now,
-                rhodz_new=self._rhodz_ast2,
+            self._compute_even_timestep_before_horizontal_limiter(
+                rhodz_ast2=self._rhodz_ast2,
                 p_mflx_tracer_v=diagnostic_state.vfl_tracer,
-                dtime=dtime,
-                even_timestep=self._even_timestep,
+                p_tracer_after_vertical=self._p_tracer_after_vertical,
+                p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
+                r_m=self._r_m,
+                rhodz_now=diagnostic_state.airmass_now,
+                p_mflx_contra_v=prep_adv.mass_flx_ic,
+                p_tracer_now=p_tracer_now,
+                p_mass_flx_e=prep_adv.mass_flx_me,
+                p_vn=prep_adv.vn_traj,
+                p_dtime=dtime,
             )
-
-            # horizontal transport
-            self._horizontal_advection.run(
-                prep_adv=prep_adv,
-                p_tracer_now=p_tracer_new,
-                p_tracer_new=p_tracer_new,
-                rhodz_now=self._rhodz_ast2,
-                rhodz_new=diagnostic_state.airmass_new,
-                p_mflx_tracer_h=diagnostic_state.hfl_tracer,
-                dtime=dtime,
-            )
-
         else:
-            # horizontal transport
-            self._horizontal_advection.run(
-                prep_adv=prep_adv,
-                p_tracer_now=p_tracer_now,
-                p_tracer_new=p_tracer_new,
+            self._compute_odd_timestep_before_horizontal_limiter(
+                rhodz_ast2=self._rhodz_ast2,
+                p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
+                r_m=self._r_m,
                 rhodz_now=diagnostic_state.airmass_now,
-                rhodz_new=self._rhodz_ast2,
-                p_mflx_tracer_h=diagnostic_state.hfl_tracer,
-                dtime=dtime,
-            )
-
-            # vertical transport
-            self._vertical_advection.run(
-                prep_adv=prep_adv,
-                p_tracer_now=p_tracer_new,
-                p_tracer_new=p_tracer_new,
-                rhodz_now=self._rhodz_ast2,
                 rhodz_new=diagnostic_state.airmass_new,
-                p_mflx_tracer_v=diagnostic_state.vfl_tracer,
-                dtime=dtime,
-                even_timestep=self._even_timestep,
+                p_mflx_contra_v=prep_adv.mass_flx_ic,
+                p_tracer_now=p_tracer_now,
+                p_mass_flx_e=prep_adv.mass_flx_me,
+                p_vn=prep_adv.vn_traj,
+                p_dtime=dtime,
             )
 
-        # update lateral boundaries with interpolated time tendencies
+        self._exchange.exchange(dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM)
+
+        if self._even_timestep:
+            self._compute_even_timestep_after_horizontal_limiter(
+                p_mflx_tracer_h=diagnostic_state.hfl_tracer,
+                p_tracer_new=p_tracer_new,
+                r_m=self._r_m,
+                p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
+                p_tracer_after_vertical=self._p_tracer_after_vertical,
+                rhodz_ast2=self._rhodz_ast2,
+                rhodz_new=diagnostic_state.airmass_new,
+                p_dtime=dtime,
+            )
+        else:
+            self._compute_odd_timestep_after_horizontal_limiter(
+                p_mflx_tracer_h=diagnostic_state.hfl_tracer,
+                p_mflx_tracer_v=diagnostic_state.vfl_tracer,
+                p_tracer_new=p_tracer_new,
+                r_m=self._r_m,
+                p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
+                p_tracer_now=p_tracer_now,
+                rhodz_ast2=self._rhodz_ast2,
+                rhodz_now=diagnostic_state.airmass_now,
+                rhodz_new=diagnostic_state.airmass_new,
+                p_mflx_contra_v=prep_adv.mass_flx_ic,
+                p_dtime=dtime,
+            )
+
         if self._grid.limited_area:
-            log.debug("running stencil apply_interpolated_tracer_time_tendency - start")
             self._apply_interpolated_tracer_time_tendency(
                 p_tracer_now=p_tracer_now,
                 p_grf_tend_tracer=diagnostic_state.grf_tend_tracer,
                 p_tracer_new=p_tracer_new,
                 p_dtime=dtime,
             )
-            log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
 
-        # exchange updated tracer values, originally happens only if iforcing /= inwp
-        log.debug("communication of tracer tracer_advection field: p_tracer_new - start")
         self._exchange.exchange(
             dims.CellDim,
             p_tracer_new,
             stream=decomposition.DEFAULT_STREAM,
         )
-        log.debug("communication of tracer tracer_advection field: p_tracer_new - end")
-
-        # finalize step
         self._even_timestep = not self._even_timestep
 
         log.debug("tracer_advection run - end")
-
-
-def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]
-    *,
-    config: AdvectionConfig,
-    grid: icon_grid.IconGrid,
-    interpolation_state: tracer_advection_states.AdvectionInterpolationState,
-    least_squares_state: tracer_advection_states.AdvectionLeastSquaresState,
-    metric_state: tracer_advection_states.AdvectionMetricState,
-    edge_params: grid_states.EdgeParams,
-    cell_params: grid_states.CellParams,
-    backend: gtx_typing.Backend | None,
-    exchange: decomposition.ExchangeRuntime,
-) -> tuple[
-    tracer_advection_horizontal.HorizontalAdvection, tracer_advection_vertical.VerticalAdvection
-]:
-    assert exchange is not None, "Exchange runtime must not be None."
-    horizontal_limiter: tracer_advection_horizontal.HorizontalFluxLimiter | None
-    match config.horizontal_advection_limiter:
-        case HorizontalAdvectionLimiter.NO_LIMITER:
-            horizontal_limiter = tracer_advection_horizontal.NoLimiter()
-        case HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
-            horizontal_limiter = tracer_advection_horizontal.PositiveDefinite(
-                grid=grid,
-                interpolation_state=interpolation_state,
-                backend=backend,
-                exchange=exchange,
-            )
-        case _:
-            raise NotImplementedError("Unknown horizontal tracer advection limiter.")
-
-    horizontal_advection: tracer_advection_horizontal.HorizontalAdvection
-    match config.horizontal_advection_type:
-        case HorizontalAdvectionType.NO_ADVECTION:
-            horizontal_advection = tracer_advection_horizontal.NoAdvection(
-                grid=grid, backend=backend
-            )
-        case HorizontalAdvectionType.FIRST_ORDER_UPWIND:
-            horizontal_advection = tracer_advection_horizontal.FirstOrderUpwind(
-                grid=grid,
-                interpolation_state=interpolation_state,
-                metric_state=metric_state,
-                backend=backend,
-            )
-        case HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA:
-            tracer_flux = tracer_advection_horizontal.SecondOrderMiura(
-                grid=grid,
-                least_squares_state=least_squares_state,
-                horizontal_limiter=horizontal_limiter,
-                backend=backend,
-            )
-            horizontal_advection = tracer_advection_horizontal.SemiLagrangian(
-                tracer_flux=tracer_flux,
-                grid=grid,
-                interpolation_state=interpolation_state,
-                metric_state=metric_state,
-                edge_params=edge_params,
-                cell_params=cell_params,
-                backend=backend,
-            )
-        case _:
-            raise NotImplementedError("Unknown horizontal tracer_advection type.")
-
-    vertical_limiter: tracer_advection_vertical.VerticalLimiter
-    match config.vertical_advection_limiter:
-        case VerticalAdvectionLimiter.NO_LIMITER:
-            vertical_limiter = tracer_advection_vertical.NoLimiter(grid=grid, backend=backend)
-        case VerticalAdvectionLimiter.SEMI_MONOTONIC:
-            vertical_limiter = tracer_advection_vertical.SemiMonotonicLimiter(
-                grid=grid, backend=backend
-            )
-        case _:
-            raise NotImplementedError("Unknown vertical tracer_advection limiter.")
-
-    vertical_advection: tracer_advection_vertical.VerticalAdvection
-    match config.vertical_advection_type:
-        case VerticalAdvectionType.NO_ADVECTION:
-            vertical_advection = tracer_advection_vertical.NoAdvection(grid=grid, backend=backend)
-        case VerticalAdvectionType.FIRST_ORDER_UPWIND:
-            boundary_conditions = tracer_advection_vertical.NoFluxCondition(
-                grid=grid, backend=backend
-            )
-            vertical_advection = tracer_advection_vertical.FirstOrderUpwind(
-                boundary_conditions=boundary_conditions,
-                grid=grid,
-                metric_state=metric_state,
-                backend=backend,
-            )
-        case VerticalAdvectionType.THIRD_ORDER_PPM:
-            boundary_conditions = tracer_advection_vertical.NoFluxCondition(
-                grid=grid, backend=backend
-            )
-            vertical_advection = tracer_advection_vertical.PiecewiseParabolicMethod(
-                boundary_conditions=boundary_conditions,
-                vertical_limiter=vertical_limiter,
-                grid=grid,
-                metric_state=metric_state,
-                backend=backend,
-            )
-        case _:
-            raise NotImplementedError("Unknown vertical tracer advection type.")
-
-    return horizontal_advection, vertical_advection
 
 
 def convert_config_to_advection(
@@ -541,6 +519,8 @@ def convert_config_to_advection(
     exchange: decomposition.ExchangeRuntime,
     even_timestep: bool = False,
 ) -> Advection:
+    assert exchange is not None, "Exchange runtime must not be None."
+
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
         and config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION
@@ -548,26 +528,14 @@ def convert_config_to_advection(
         # tracer advection is disabled for all tracers
         return NoAdvection(grid=grid, backend=backend, exchange=exchange)
 
-    horizontal_advection, vertical_advection = convert_config_to_horizontal_vertical_advection(
-        config=config,
+    return GodunovSplittingAdvection(
         grid=grid,
+        metric_state=metric_state,
         interpolation_state=interpolation_state,
         least_squares_state=least_squares_state,
-        metric_state=metric_state,
         edge_params=edge_params,
-        cell_params=cell_params,
-        backend=backend,
-        exchange=exchange,
-    )
-
-    advection = GodunovSplittingAdvection(
-        horizontal_advection=horizontal_advection,
-        vertical_advection=vertical_advection,
-        grid=grid,
-        metric_state=metric_state,
         backend=backend,
         exchange=exchange,
         even_timestep=even_timestep,
+        vertical_advection_type=config.vertical_advection_type,
     )
-
-    return advection
