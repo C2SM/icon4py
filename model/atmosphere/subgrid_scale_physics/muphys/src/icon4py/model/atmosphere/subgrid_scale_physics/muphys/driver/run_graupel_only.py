@@ -67,7 +67,7 @@ def setup_graupel(
     vertical_start: int,
     vertical_end: int,
     enable_masking: bool = True,
-    enable_dace_hooks: bool = True,
+    enable_dace_hooks: bool = False,
     scheme: config.MuphysScheme = config.MuphysScheme.KOKKOS_MUPHYS,
 ):
     # the GT4Py operators branch on a plain bool (the DSL has no match statement)
