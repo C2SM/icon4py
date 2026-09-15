@@ -954,7 +954,9 @@ class SolveNonhydro:
             },
             variants={
                 "skip_compute_predictor_vertical_advection": [True, False],
-                "apply_extra_diffusion_on_vn": [False, True],
+                # Only True: deriving `apply_extra_diffusion_on_vn` from `max_vertical_cfl` would need a
+                # device synchronization, so the call site fixes it to True (see the TODO there).
+                "apply_extra_diffusion_on_vn": [True],
             },
             horizontal_sizes={
                 "start_edge_lateral_boundary_level_5": self._start_edge_lateral_boundary_level_5,
@@ -975,7 +977,8 @@ class SolveNonhydro:
             program=compute_velocity_advection_in_corrector_step,
             constant_args=shared_constant_args,
             variants={
-                "apply_extra_diffusion_on_vn": [False, True],
+                # Only True, as for the predictor step above.
+                "apply_extra_diffusion_on_vn": [True],
             },
             horizontal_sizes=cell_horizontal_sizes,
             vertical_sizes={
