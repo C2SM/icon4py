@@ -378,10 +378,8 @@ def _compute_advection_in_vertical_momentum(
             dtime=dtime,
         )
         if not skip_vertical_wind_advective_tendency
-        else broadcast(
-            vpfloat("0.0"),
-            (dims.CellDim, dims.KHalfDim),
-        )  # "0.0" is a dummy value and should never be used
+        # Skipped: a placeholder that must not be read; the caller keeps its previous tendency.
+        else broadcast(vpfloat("0.0"), (dims.CellDim, dims.KHalfDim))
     )
 
     contravariant_corrected_w_at_cells_on_model_levels = (
