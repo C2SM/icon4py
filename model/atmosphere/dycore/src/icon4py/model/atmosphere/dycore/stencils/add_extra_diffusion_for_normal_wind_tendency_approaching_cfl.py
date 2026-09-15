@@ -5,6 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+# Note: Currently unused, kept for implementing a version faithful to ICON.
+# The ICON version requires the CFL reduction within velocity advection which
+# drains the GPU kernel pipeline.
+
 import gt4py.next as gtx
 from gt4py.next import abs, astype, minimum, neighbor_sum, where  # noqa: A004
 
