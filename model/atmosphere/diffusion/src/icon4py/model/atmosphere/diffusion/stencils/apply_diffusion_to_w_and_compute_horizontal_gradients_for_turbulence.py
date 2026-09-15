@@ -43,22 +43,14 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     fa.CellKHalfField[vpfloat],
 ]:
     dwdx, dwdy = (
-        concat_where(
-            0 < dims.KHalfDim,
-            _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
-            (dwdx, dwdy),
-        )
+        _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y)
         if type_shear == 2
         else (dwdx, dwdy)
     )
 
     z_nabla2_c = _calculate_nabla2_for_w(w_old, geofac_n2s)
 
-    w = concat_where(
-        (interior_idx <= dims.CellDim) & (dims.CellDim < halo_idx),
-        _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
-        w_old,
-    )
+    w = _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w)
 
     w = concat_where(
         (0 < dims.KHalfDim)
@@ -108,8 +100,18 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         interior_idx=interior_idx,
         halo_idx=halo_idx,
         out=(w, dwdx, dwdy),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KHalfDim: (vertical_start, vertical_end),
-        },
+        domain=(
+            {
+                dims.CellDim: (interior_idx, halo_idx),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start + 1, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start + 1, vertical_end),
+            },
+        ),
     )
