@@ -587,8 +587,9 @@ class FieldGroupMonitor(monitor.Monitor):
             state: dict  model state dictionary
             model_time: the current time step of the simulation
         """
+        capture = self.at_capture_time()
         self._step_counter += 1
-        if not self.at_capture_time():
+        if not capture:
             return
         # TODO(halungge): this should do a deep copy of the data once IO becomes
         #   asynchronous (the gather/halo-strip paths already copy, the single-node
