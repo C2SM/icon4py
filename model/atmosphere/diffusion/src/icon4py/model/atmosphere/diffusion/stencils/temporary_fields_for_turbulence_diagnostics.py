@@ -26,31 +26,3 @@ def _temporary_fields_for_turbulence_diagnostics(
     kh_c_wp = neighbor_sum(kh_smag_ec_wp(C2E) * e_bln_c_s, axis=dims.C2EDim) / diff_multfac_smag_wp
     div_wp = neighbor_sum(vn(C2E) * geofac_div, axis=dims.C2EDim)
     return astype((kh_c_wp, div_wp), vpfloat)
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def temporary_fields_for_turbulence_diagnostics(
-    kh_smag_ec: fa.EdgeKField[vpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
-    kh_c: fa.CellKField[vpfloat],
-    div: fa.CellKField[vpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _temporary_fields_for_turbulence_diagnostics(
-        kh_smag_ec=kh_smag_ec,
-        vn=vn,
-        e_bln_c_s=e_bln_c_s,
-        geofac_div=geofac_div,
-        diff_multfac_smag=diff_multfac_smag,
-        out=(kh_c, div),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )

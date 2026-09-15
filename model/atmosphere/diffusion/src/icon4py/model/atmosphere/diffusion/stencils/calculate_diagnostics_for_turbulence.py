@@ -31,16 +31,3 @@ def _calculate_diagnostics_for_turbulence(
     hdef_ic_wp = hdef_ic_wp * hdef_ic_wp
 
     return astype((div_ic_wp, hdef_ic_wp), vpfloat)
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_diagnostics_for_turbulence(
-    div: fa.CellKField[vpfloat],
-    kh_c: fa.CellKField[vpfloat],
-    wgtfac_c: fa.CellKHalfField[vpfloat],
-    div_ic: fa.CellKHalfField[vpfloat],
-    hdef_ic: fa.CellKHalfField[vpfloat],
-) -> None:
-    _calculate_diagnostics_for_turbulence(
-        div, kh_c, wgtfac_c, out=(div_ic[:, 1:-1], hdef_ic[:, 1:-1])
-    )
