@@ -274,7 +274,12 @@ class GodunovSplittingAdvection(Advection):
         self._k = data_alloc.index_field(
             self._grid,
             dims.KDim,
-            extend={dims.KDim: 1},
+            dtype=gtx.int32,
+            allocator=allocator,
+        )
+        self._k_half = data_alloc.index_field(
+            self._grid,
+            dims.KHalfDim,
             dtype=gtx.int32,
             allocator=allocator,
         )
@@ -311,6 +316,7 @@ class GodunovSplittingAdvection(Advection):
             "deepatmo_divzl": metric_state.deepatmo_divzl,
             "deepatmo_divzu": metric_state.deepatmo_divzu,
             "k": self._k,
+            "k_half": self._k_half,
             "slev": gtx.int32(0),
             "slevp1_ti": gtx.int32(1),
             "elev": gtx.int32(self._grid.num_levels - 1),

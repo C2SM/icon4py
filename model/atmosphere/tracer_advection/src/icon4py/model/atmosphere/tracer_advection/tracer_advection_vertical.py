@@ -254,9 +254,6 @@ class SemiMonotonicLimiter(VerticalLimiter):
 
         # fields
         allocator = model_backends.get_allocator(self._backend)
-        self._k_field = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=allocator
-        )
         self._l_limit = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, dtype=gtx.int32, allocator=allocator
         )
@@ -267,7 +264,6 @@ class SemiMonotonicLimiter(VerticalLimiter):
             program=limit_vertical_slope_semi_monotonically,
             constant_args={
                 "elev": self._grid.num_levels - 1,
-                "k": self._k_field,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(1),

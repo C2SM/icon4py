@@ -81,16 +81,16 @@ def _compute_ppm4gpu_flux(
     p_cellmass_now: fa.CellKField[ta.wpfloat],
     p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
-    k: fa.KField[gtx.int32],
+    k: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
     dbl_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKHalfField[ta.wpfloat]:
     z_cfl = broadcast(0.0, (dims.CellDim, dims.KHalfDim))
     z_cfl = concat_where(
-        (dims.KDim > 0) & (dims.KDim < elev + 1),
+        (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
         _compute_ppm4gpu_courant_number(
             p_mflx_contra_v=p_mflx_contra_v,
             p_cellmass_now=p_cellmass_now,
@@ -106,18 +106,17 @@ def _compute_ppm4gpu_flux(
     z_slope = _limit_vertical_slope_semi_monotonically(
         p_cc=p_cc,
         z_slope=_compute_ppm_slope(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, elev=elev),
-        k=k,
         elev=elev,
     )
     p_face = concat_where(
-        (dims.KDim > 1) & (dims.KDim < elev),
+        (dims.KHalfDim > 1) & (dims.KHalfDim < elev),
         _compute_ppm_quartic_face_values(
             p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, z_slope=z_slope
         ),
         _compute_ppm_quadratic_face_values(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now),
     )
-    p_face = concat_where(dims.KDim > 0, p_face, p_cc)
-    p_face = concat_where(dims.KDim < elev + 1, p_face, p_cc(dims.KDim - 1))
+    p_face = concat_where(dims.KHalfDim > 0, p_face, p_cc(dims.KHalfDim + 0.5))
+    p_face = concat_where(dims.KHalfDim < elev + 1, p_face, p_cc(dims.KHalfDim - 0.5))
     l_limit = _compute_vertical_parabola_limiter_condition(p_face=p_face, p_cc=p_cc)
     z_face_up, z_face_low = _limit_vertical_parabola_semi_monotonically(
         l_limit=l_limit, p_face=p_face, p_cc=p_cc
@@ -145,9 +144,9 @@ def _compute_ppm4gpu_flux(
         p_dtime=p_dtime,
     )
     return concat_where(
-        (dims.KDim > 0) & (dims.KDim < elev + 1),
+        (dims.KHalfDim > 0) & (dims.KHalfDim < elev + 1),
         p_upflux,
-        broadcast(0.0, (dims.CellDim, dims.KDim)),
+        broadcast(0.0, (dims.CellDim, dims.KHalfDim)),
     )
 
 
@@ -196,7 +195,7 @@ def _compute_unlimited_horizontal_tracer_flux(
 @gtx.field_operator
 def _compute_tracer_advection_even_timestep_before_horizontal_limiter(
     rhodz_now: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_tracer_now: fa.CellKField[ta.wpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
@@ -204,6 +203,7 @@ def _compute_tracer_advection_even_timestep_before_horizontal_limiter(
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     k: fa.KField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
@@ -223,7 +223,7 @@ def _compute_tracer_advection_even_timestep_before_horizontal_limiter(
     p_dtime: ta.wpfloat,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    fa.CellKHalfField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.EdgeKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -241,7 +241,7 @@ def _compute_tracer_advection_even_timestep_before_horizontal_limiter(
         p_cellmass_now=rhodz_now,
         p_mflx_contra_v=p_mflx_contra_v,
         p_cellhgt_mc_now=p_cellhgt_mc_now,
-        k=k,
+        k=k_half,
         slev=slev,
         slevp1_ti=slevp1_ti,
         elev=elev,
@@ -295,12 +295,12 @@ def _compute_tracer_advection_even_timestep_before_horizontal_limiter(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_tracer_advection_even_timestep_before_horizontal_limiter(
     rhodz_ast2: fa.CellKField[ta.wpfloat],
-    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
     p_tracer_after_vertical: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h_unlimited: fa.EdgeKField[ta.wpfloat],
     r_m: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_tracer_now: fa.CellKField[ta.wpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
@@ -308,6 +308,7 @@ def compute_tracer_advection_even_timestep_before_horizontal_limiter(
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     k: fa.KField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
@@ -342,6 +343,7 @@ def compute_tracer_advection_even_timestep_before_horizontal_limiter(
         deepatmo_divzl=deepatmo_divzl,
         deepatmo_divzu=deepatmo_divzu,
         k=k,
+        k_half=k_half,
         slev=slev,
         slevp1_ti=slevp1_ti,
         elev=elev,
@@ -373,7 +375,7 @@ def compute_tracer_advection_even_timestep_before_horizontal_limiter(
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_2, end_cell_end),
-                dims.KDim: (0, vertical_end + 1),
+                dims.KHalfDim: (0, vertical_end + 1),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_2, end_cell_end),
@@ -462,7 +464,7 @@ def compute_tracer_advection_even_timestep_after_horizontal_limiter(
 def _compute_tracer_advection_odd_timestep_before_horizontal_limiter(
     rhodz_now: fa.CellKField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_tracer_now: fa.CellKField[ta.wpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
@@ -522,7 +524,7 @@ def compute_tracer_advection_odd_timestep_before_horizontal_limiter(
     r_m: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_tracer_now: fa.CellKField[ta.wpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
@@ -595,12 +597,13 @@ def _compute_tracer_advection_odd_timestep_after_horizontal_limiter(
     rhodz_ast2: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     deepatmo_divh: fa.KField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     k: fa.KField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
@@ -609,7 +612,7 @@ def _compute_tracer_advection_odd_timestep_after_horizontal_limiter(
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     dbl_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
-) -> tuple[fa.EdgeKField[ta.wpfloat], fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
+) -> tuple[fa.EdgeKField[ta.wpfloat], fa.CellKHalfField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     # PPM accesses vertical neighbors; padding keeps its local input defined at inferred offsets.
     p_mflx_tracer_h = concat_where(
         (dims.KDim >= 0) & (dims.KDim < elev + 1),
@@ -636,7 +639,7 @@ def _compute_tracer_advection_odd_timestep_after_horizontal_limiter(
         p_cellmass_now=rhodz_ast2,
         p_mflx_contra_v=p_mflx_contra_v,
         p_cellhgt_mc_now=p_cellhgt_mc_now,
-        k=k,
+        k=k_half,
         slev=slev,
         slevp1_ti=slevp1_ti,
         elev=elev,
@@ -661,7 +664,7 @@ def _compute_tracer_advection_odd_timestep_after_horizontal_limiter(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_tracer_advection_odd_timestep_after_horizontal_limiter(
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_v: fa.CellKHalfField[ta.wpfloat],
     p_tracer_new: fa.CellKField[ta.wpfloat],
     r_m: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h_unlimited: fa.EdgeKField[ta.wpfloat],
@@ -669,12 +672,13 @@ def compute_tracer_advection_odd_timestep_after_horizontal_limiter(
     rhodz_ast2: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     deepatmo_divh: fa.KField[ta.wpfloat],
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     k: fa.KField[gtx.int32],
+    k_half: fa.KHalfField[gtx.int32],
     slev: gtx.int32,
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
@@ -701,7 +705,8 @@ def compute_tracer_advection_odd_timestep_after_horizontal_limiter(
         deepatmo_divh=deepatmo_divh,
         deepatmo_divzl=deepatmo_divzl,
         deepatmo_divzu=deepatmo_divzu,
-        k_half=k,
+        k=k,
+        k_half=k_half,
         slev=slev,
         slevp1_ti=slevp1_ti,
         elev=elev,
@@ -718,7 +723,7 @@ def compute_tracer_advection_odd_timestep_after_horizontal_limiter(
             },
             {
                 dims.CellDim: (start_cell_nudging, end_cell_local),
-                dims.KDim: (0, vertical_end + 1),
+                dims.KHalfDim: (0, vertical_end + 1),
             },
             {
                 dims.CellDim: (start_cell_nudging, end_cell_local),

@@ -29,10 +29,10 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
         *,
         p_cc: np.ndarray,
         z_slope: np.ndarray,
-        k: np.ndarray,
         elev: gtx.int32,
         **kwargs: Any,
     ) -> dict:
+        k = np.arange(grid.num_levels)
         p_cc_min_last = np.minimum(p_cc[:, :-2], p_cc[:, 1:-1])
         p_cc_min = np.where(k[1:-1] == elev, p_cc_min_last, np.minimum(p_cc_min_last, p_cc[:, 2:]))
         slope_l = np.minimum(np.abs(z_slope[:, 1:-1]), 2.0 * (p_cc[:, 1:-1] - p_cc_min))
@@ -49,7 +49,6 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
         return dict(
             p_cc=p_cc,
             z_slope=z_slope,
-            k=k,
             elev=elev,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
