@@ -2177,7 +2177,9 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
-        prepare_fluxes_for_advection=savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv"),
+        prepare_fluxes_for_advection=savepoint_nonhydro_init.get_metadata("prep_adv").get(
+            "prep_adv"
+        ),
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=float(experiment.config.driver.ndyn_substeps),
         iau_wgt_dyn=iau_wgt_dyn,

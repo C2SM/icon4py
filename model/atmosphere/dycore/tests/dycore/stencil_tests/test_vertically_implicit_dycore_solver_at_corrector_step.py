@@ -399,7 +399,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture(
         params=[
-            {"at_first_substep": afs, "at_last_substep": als, "prepare_fluxes_for_advection": la, "is_iau_active": ia}
+            {
+                "at_first_substep": afs,
+                "at_last_substep": als,
+                "prepare_fluxes_for_advection": la,
+                "is_iau_active": ia,
+            }
             for afs, als, la, ia in [
                 (True, True, True, True),  # For testing the whole functionality of the stencil
                 (True, False, True, False),  # For benchmarking against MCH experiments
