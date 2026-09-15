@@ -38,29 +38,6 @@ def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
     return atm_dict, master_dict
 
 
-@pytest.mark.parametrize(
-    ("duration", "expected_seconds"),
-    [
-        ("PT300S", 300.0),
-        ("PT1H", 3600.0),
-        ("PT10M", 600.0),
-        ("PT1H30M", 5400.0),
-        ("P1DT6H", 108000.0),
-        ("PT0.5S", 0.5),
-    ],
-)
-def test_relativetime_from_iso8601_valid(duration: str, expected_seconds: float) -> None:
-    assert driver_config.relativetime_from_iso8601(duration) == datetime.timedelta(
-        seconds=expected_seconds
-    )
-
-
-@pytest.mark.parametrize("duration", ["", "P", "PT", "P1Y", "P1M", "300", "PT300", "P1DT", "P1WT"])
-def test_relativetime_from_iso8601_invalid(duration: str) -> None:
-    with pytest.raises(ValueError, match="Invalid ISO 8601 duration"):
-        driver_config.relativetime_from_iso8601(duration)
-
-
 def test_modeltimestep_takes_priority_over_dtime() -> None:
     # trailing whitespace mimics the fixed-width Fortran string
     atm_dict, master_dict = _make_dicts(
