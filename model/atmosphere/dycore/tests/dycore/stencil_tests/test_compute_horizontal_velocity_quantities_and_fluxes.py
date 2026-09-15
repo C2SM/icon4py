@@ -31,27 +31,6 @@ from .test_velocity_advection_terms import (
 )
 
 
-def interpolate_vn_to_half_levels_and_compute_kinetic_energy_numpy(
-    wgtfac_e: np.ndarray, vn: np.ndarray, vt: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    return (
-        interpolate_vn_to_half_levels_numpy(wgtfac_e, vn),
-        compute_horizontal_kinetic_energy_at_edges_numpy(vn, vt),
-    )
-
-
-def copy_to_half_levels_and_compute_kinetic_energy_at_top_numpy(
-    vn: np.ndarray, vt: np.ndarray
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    # ICON sets vn_ie, z_vt_ie and z_kin_hor_e directly from the model level at jk=1.
-    nlev = vn.shape[1]
-    vn_ie = np.zeros((vn.shape[0], nlev + 1))
-    vn_ie[:, :nlev] = vn
-    z_vt_ie = np.zeros((vt.shape[0], nlev + 1))
-    z_vt_ie[:, :nlev] = vt
-    return vn_ie, z_vt_ie, compute_horizontal_kinetic_energy_at_edges_numpy(vn, vt)
-
-
 def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     *,
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
@@ -59,51 +38,17 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     tangential_wind: np.ndarray,
     vn_on_half_levels: np.ndarray,
     tangential_wind_on_half_levels: np.ndarray,
-    horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
     wgtfac_e: np.ndarray,
     wgtfacq_e: np.ndarray,
-    nlevp1: int,
 ) -> tuple[np.ndarray, ...]:
-    k = np.arange(nlevp1)[np.newaxis, :]
-    k_nlev = k[:, :-1]
-
-    vn_ie, z_kin_hor_e = interpolate_vn_to_half_levels_and_compute_kinetic_energy_numpy(
-        wgtfac_e, vn, tangential_wind
-    )
-    vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels = np.where(
-        k_nlev >= 1,
-        (vn_ie[:, :-1], z_kin_hor_e),
-        (vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels),
-    )
-
-    tangential_wind_on_half_levels[:, :-1] = np.where(
-        k_nlev >= 1,
-        interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind)[:, :-1],
-        tangential_wind_on_half_levels[:, :-1],
-    )
-
-    vn_ie_at_top, tangential_wind_on_half_levels_at_top, z_kin_hor_e_at_top = (
-        copy_to_half_levels_and_compute_kinetic_energy_at_top_numpy(vn, tangential_wind)
-    )
-    (
-        vn_on_half_levels[:, :-1],
-        tangential_wind_on_half_levels[:, :-1],
-        horizontal_kinetic_energy_at_edges_on_model_levels,
-    ) = np.where(
-        k_nlev == 0,
-        (
-            vn_ie_at_top[:, :-1],
-            tangential_wind_on_half_levels_at_top[:, :-1],
-            z_kin_hor_e_at_top,
-        ),
-        (
-            vn_on_half_levels[:, :-1],
-            tangential_wind_on_half_levels[:, :-1],
-            horizontal_kinetic_energy_at_edges_on_model_levels,
-        ),
-    )
-
+    vn_on_half_levels[:, :-1] = interpolate_vn_to_half_levels_numpy(wgtfac_e, vn)[:, :-1]
     vn_on_half_levels[:, -1] = extrapolate_to_surface_numpy(wgtfacq_e, vn)
+    tangential_wind_on_half_levels[:, :-1] = interpolate_vt_to_interface_edges_numpy(
+        wgtfac_e, tangential_wind
+    )[:, :-1]
+    horizontal_kinetic_energy_at_edges_on_model_levels = (
+        compute_horizontal_kinetic_energy_at_edges_numpy(vn, tangential_wind)
+    )
 
     return (
         vn_on_half_levels,
@@ -232,10 +177,8 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
             tangential_wind=tangential_wind,
             vn_on_half_levels=vn_on_half_levels,
             tangential_wind_on_half_levels=tangential_wind_on_half_levels,
-            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
             wgtfac_e=wgtfac_e,
             wgtfacq_e=wgtfacq_e,
-            nlevp1=vertical_end,
         )
 
         spatially_averaged_vn[:horizontal_start, :] = initial_spatially_averaged_vn[
