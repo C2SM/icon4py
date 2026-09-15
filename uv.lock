@@ -2131,7 +2131,7 @@ version = "0.4.1"
 
 [package.metadata]
 requires-dist = [
-  {name = "gt4py", specifier = "==1.2.2"},
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
   {name = "icon4py-common", editable = "model/common"},
   {name = "packaging", specifier = ">=20.0"}
 ]
