@@ -64,10 +64,10 @@ def test_main_cli_invokes_run_driver(
             ],
         )
 
-    assert result.exit_code == 0, result.output
-    mock_create_grid_manager.assert_called_once()
-    mock_run_driver.assert_called_once()
-    run_driver_kwargs = mock_run_driver.call_args.kwargs
-    assert run_driver_kwargs["grid_manager"] is mock_grid_manager
-    assert data_alloc.backend_name(run_driver_kwargs["backend"]) == data_alloc.backend_name(backend)
-    assert run_driver_kwargs["config"].driver.experiment_name == "foo"
+        assert result.exit_code == 0, result.output or result.exception
+        mock_create_grid_manager.assert_called_once()
+        mock_run_driver.assert_called_once()
+        run_driver_kwargs = mock_run_driver.call_args.kwargs
+        assert run_driver_kwargs["grid_manager"] is mock_grid_manager
+        assert data_alloc.backend_name(run_driver_kwargs["backend"]) == data_alloc.backend_name(backend)
+        assert run_driver_kwargs["config"].driver.experiment_name == "foo"
