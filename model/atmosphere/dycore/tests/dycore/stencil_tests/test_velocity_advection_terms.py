@@ -13,7 +13,9 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import (
+    _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask,
     _clip_contravariant_corrected_w,
+    _compute_advective_normal_wind_tendency,
     _compute_cfl,
     _compute_extra_diffusion,
     _compute_extra_diffusion_for_w,
@@ -22,7 +24,7 @@ from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import (
     _interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import reference_funcs, stencil_tests
 from icon4py.model.testing.reference_funcs import interpolate_to_cell_center_numpy
@@ -938,6 +940,166 @@ class TestInterpolateContravariantVerticalVelocityToFullLevels(stencil_tests.Ste
             out=data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat),
             domain={
                 dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+        )
+
+
+class TestComputeAdvectiveNormalWindTendency(stencil_tests.StencilTest):
+    PROGRAM = _compute_advective_normal_wind_tendency
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        horizontal_kinetic_energy_at_edges_on_model_levels: np.ndarray,
+        upward_vorticity_at_vertices_on_model_levels: np.ndarray,
+        tangential_wind: np.ndarray,
+        vn_on_half_levels: np.ndarray,
+        contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
+        coriolis_frequency: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        c_lin_e: np.ndarray,
+        coeff_gradekin: np.ndarray,
+        ddqz_z_full_e: np.ndarray,
+        out: np.ndarray,
+        domain: dict,
+        **kwargs: Any,
+    ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        normal_wind_advective_tendency = _compute_advective_normal_wind_tendency_numpy(
+            connectivities=connectivities,
+            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+            coeff_gradekin=coeff_gradekin,
+            horizontal_kinetic_energy_at_cells_on_model_levels=interpolate_to_cell_center_numpy(
+                connectivities, horizontal_kinetic_energy_at_edges_on_model_levels, e_bln_c_s
+            ),
+            upward_vorticity_at_vertices=upward_vorticity_at_vertices_on_model_levels,
+            tangential_wind=tangential_wind,
+            coriolis_frequency=coriolis_frequency,
+            c_lin_e=c_lin_e,
+            contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
+            vn_on_half_levels=vn_on_half_levels,
+            ddqz_z_full_e=ddqz_z_full_e,
+        )
+        return dict(
+            out=_restore_outside(
+                normal_wind_advective_tendency, out, domain[dims.EdgeDim], domain[dims.KDim]
+            )
+        )
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        # The operator reads both E2C neighbours unmasked, so it runs where they exist.
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+        end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+
+        return dict(
+            horizontal_kinetic_energy_at_edges_on_model_levels=data_alloc.random_field(
+                dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+            ),
+            upward_vorticity_at_vertices_on_model_levels=data_alloc.random_field(
+                dims.VertexDim, dims.KDim, dtype=ta.vpfloat
+            ),
+            tangential_wind=data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat),
+            vn_on_half_levels=data_alloc.random_field(
+                dims.EdgeDim, dims.KHalfDim, dtype=ta.vpfloat
+            ),
+            contravariant_corrected_w_at_cells_on_model_levels=data_alloc.random_field(
+                dims.CellDim, dims.KDim, dtype=ta.vpfloat
+            ),
+            coriolis_frequency=data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat),
+            e_bln_c_s=data_alloc.random_field(dims.CellDim, dims.C2EDim, dtype=ta.wpfloat),
+            c_lin_e=data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat),
+            coeff_gradekin=data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.vpfloat),
+            ddqz_z_full_e=data_alloc.random_field(
+                dims.EdgeDim, dims.KDim, low=0.5, high=1.5, dtype=ta.vpfloat
+            ),
+            out=data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat),
+            domain={
+                dims.EdgeDim: (start_edge_nudging_level_2, end_edge_local),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+        )
+
+
+class TestAddExtraDiffusionForNormalWindTendencyWithoutLevelmask(stencil_tests.StencilTest):
+    PROGRAM = _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        c_lin_e: np.ndarray,
+        contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
+        ddqz_z_full_e: np.ndarray,
+        area_edge: np.ndarray,
+        tangent_orientation: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
+        upward_vorticity_at_vertices_on_model_levels: np.ndarray,
+        geofac_grdiv: np.ndarray,
+        vn: np.ndarray,
+        normal_wind_advective_tendency: np.ndarray,
+        cfl_w_limit: ta.wpfloat,
+        scalfac_exdiff: ta.wpfloat,
+        dtime: ta.wpfloat,
+        **kwargs: Any,
+    ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
+        return dict(
+            out=_add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask_numpy(
+                connectivities=connectivities,
+                c_lin_e=c_lin_e,
+                contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
+                ddqz_z_full_e=ddqz_z_full_e,
+                area_edge=area_edge,
+                tangent_orientation=tangent_orientation,
+                inv_primal_edge_length=inv_primal_edge_length,
+                upward_vorticity_at_vertices=upward_vorticity_at_vertices_on_model_levels,
+                geofac_grdiv=geofac_grdiv,
+                vn=vn,
+                normal_wind_advective_tendency=normal_wind_advective_tendency,
+                cfl_w_limit=cfl_w_limit,
+                scalfac_exdiff=scalfac_exdiff,
+                dtime=dtime,
+            )
+        )
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        dtime = ta.wpfloat("2.0")
+        return dict(
+            c_lin_e=data_alloc.random_field(dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat),
+            contravariant_corrected_w_at_cells_on_model_levels=data_alloc.random_field(
+                dims.CellDim, dims.KDim, dtype=ta.vpfloat
+            ),
+            ddqz_z_full_e=data_alloc.random_field(
+                dims.EdgeDim, dims.KDim, low=0.5, high=1.5, dtype=ta.vpfloat
+            ),
+            area_edge=data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat),
+            tangent_orientation=data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat),
+            inv_primal_edge_length=data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat),
+            upward_vorticity_at_vertices_on_model_levels=data_alloc.random_field(
+                dims.VertexDim, dims.KDim, dtype=ta.vpfloat
+            ),
+            geofac_grdiv=data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim, dtype=ta.wpfloat),
+            vn=data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.wpfloat),
+            normal_wind_advective_tendency=data_alloc.random_field(
+                dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
+            ),
+            cfl_w_limit=ta.vpfloat(0.65 / dtime),
+            scalfac_exdiff=ta.wpfloat("0.05"),
+            dtime=dtime,
+            out=data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat),
+            domain={
+                dims.EdgeDim: (0, gtx.int32(grid.num_edges)),
                 dims.KDim: (0, gtx.int32(grid.num_levels)),
             },
         )
