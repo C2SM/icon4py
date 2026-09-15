@@ -31,33 +31,3 @@ def _calculate_diagnostic_quantities_for_turbulence(
     )
     div_ic_vp, hdef_ic_vp = _calculate_diagnostics_for_turbulence(div, kh_c, wgtfac_c)
     return div_ic_vp, hdef_ic_vp
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_diagnostic_quantities_for_turbulence(
-    kh_smag_ec: fa.EdgeKField[vpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
-    wgtfac_c: fa.CellKHalfField[vpfloat],
-    div_ic: fa.CellKHalfField[vpfloat],
-    hdef_ic: fa.CellKHalfField[vpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _calculate_diagnostic_quantities_for_turbulence(
-        kh_smag_ec=kh_smag_ec,
-        vn=vn,
-        e_bln_c_s=e_bln_c_s,
-        geofac_div=geofac_div,
-        diff_multfac_smag=diff_multfac_smag,
-        wgtfac_c=wgtfac_c,
-        out=(div_ic, hdef_ic),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KHalfDim: (vertical_start, vertical_end),
-        },
-    )
