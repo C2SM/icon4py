@@ -39,7 +39,7 @@
   stage: benchmark
   script:
     - .cscs-ci/scripts/ci-mpi-wrapper.sh nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
-  # start-cuda-mps.sh is for shared GPUs; these jobs have one GPU per task.
+  # MPS is explicitly not enabled here. The job uses one GPU per task.
   before_script:
     - cd /icon4py
     - source .cscs-ci/scripts/gt4py-cache.sh
@@ -57,7 +57,7 @@
   stage: benchmark
   script:
     - nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
-  # start-cuda-mps.sh is for shared GPUs; this job has one GPU per task.
+  # MPS is explicitly not enabled here. The job uses one GPU per task.
   before_script:
     - cd /icon4py
     - source .cscs-ci/scripts/gt4py-cache.sh
