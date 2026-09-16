@@ -245,6 +245,9 @@ class GodunovSplittingAdvection(Advection):
         exchange: decomposition.ExchangeRuntime,
         even_timestep: bool = False,
         vertical_advection_type: VerticalAdvectionType = VerticalAdvectionType.THIRD_ORDER_PPM,
+        horizontal_advection_type: HorizontalAdvectionType = HorizontalAdvectionType.SECOND_ORDER_LINEAR_MIURA,
+        horizontal_advection_limiter: HorizontalAdvectionLimiter = HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+        vertical_advection_limiter: VerticalAdvectionLimiter = VerticalAdvectionLimiter.SEMI_MONOTONIC,
     ):
         log.debug("tracer_advection class init - start")
 
@@ -308,6 +311,8 @@ class GodunovSplittingAdvection(Advection):
             "lsq_pseudoinv_2": least_squares_state.lsq_pseudoinv_2,
             "geofac_div": interpolation_state.geofac_div,
             "dbl_eps": constants.DBL_EPS,
+            "ihadv_tracer": gtx.int32(horizontal_advection_type.value),
+            "itype_hlimit": gtx.int32(horizontal_advection_limiter.value),
         }
         shared_vertical_args: dict[str, gtx.Field | gtx_typing.Scalar] = {
             "p_cellhgt_mc_now": metric_state.ddqz_z_full,
@@ -321,6 +326,7 @@ class GodunovSplittingAdvection(Advection):
             "ivadv_tracer": gtx.int32(vertical_advection_type.value),
             "iadv_slev_jt": gtx.int32(0),
             "dbl_eps": constants.DBL_EPS,
+            "itype_vlimit": gtx.int32(vertical_advection_limiter.value),
         }
         horizontal_domains: dict[str, gtx.int32] = {
             "start_cell_lateral_boundary_level_2": self._start_cell_lateral_boundary_level_2,
@@ -345,6 +351,7 @@ class GodunovSplittingAdvection(Advection):
             constant_args={
                 "deepatmo_divh": metric_state.deepatmo_divh,
                 "geofac_div": interpolation_state.geofac_div,
+                "itype_hlimit": gtx.int32(horizontal_advection_limiter.value),
             },
             horizontal_sizes={
                 "start_cell_nudging": self._start_cell_nudging,
@@ -538,4 +545,7 @@ def convert_config_to_advection(
         exchange=exchange,
         even_timestep=even_timestep,
         vertical_advection_type=config.vertical_advection_type,
+        horizontal_advection_type=config.horizontal_advection_type,
+        horizontal_advection_limiter=config.horizontal_advection_limiter,
+        vertical_advection_limiter=config.vertical_advection_limiter,
     )
