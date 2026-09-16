@@ -43,6 +43,38 @@ def tridiagonal_forward_sweep_for_w(
     return c_new, d_new  # type: ignore[return-value] # return type hints for scan operators broken in GT4Py
 
 
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=(vpfloat("0.0"), 0.0))
+def _coefficient_forward_scan(
+    state_kminus1: tuple[vpfloat, float],
+    vwind_impl_wgt: wpfloat,
+    theta_v_ic: wpfloat,
+    ddqz_z_half: vpfloat,
+    alpha_prev: vpfloat,
+    alpha: vpfloat,
+    alpha_next: vpfloat,
+    beta_prev: vpfloat,
+    beta: vpfloat,
+    w_explicit: wpfloat,
+    exner_prev: wpfloat,
+    exner: wpfloat,
+    dtime: wpfloat,
+    cpd: wpfloat,
+) -> tuple[wpfloat, wpfloat]:
+    ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
+    z_gamma_vp = astype(dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half_wp, vpfloat)
+    a = (vpfloat("0.0") - z_gamma_vp) * beta_prev * alpha_prev
+    c = (vpfloat("0.0") - z_gamma_vp) * beta * alpha_next
+    b = vpfloat("1.0") + z_gamma_vp * alpha * (beta_prev + beta)
+    z_gamma_wp = astype(z_gamma_vp, wpfloat)
+    d = w_explicit - z_gamma_wp * (exner_prev - exner)
+    c_kminus1 = astype(state_kminus1[0], vpfloat)
+    d_kminus1 = state_kminus1[1]
+    normalization = vpfloat("1.0") / (b + a * c_kminus1)
+    c_new = (vpfloat("0.0") - c) * normalization
+    d_new = (d - astype(a, wpfloat) * d_kminus1) * astype(normalization, wpfloat)
+    return (c_new, d_new)
+
+
 @gtx.field_operator
 def _solve_tridiagonal_matrix_for_w_forward_sweep(
     vwind_impl_wgt: fa.CellField[wpfloat],
@@ -55,17 +87,21 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
-    """Formerly known as _mo_solve_nonhydro_stencil_52."""
-    ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
-
-    z_gamma_vp = astype(dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half_wp, vpfloat)
-    z_a = (vpfloat("0.0") - z_gamma_vp) * z_beta(dims.KDim - 1) * z_alpha(dims.KDim - 1)
-    z_c = (vpfloat("0.0") - z_gamma_vp) * z_beta * z_alpha(dims.KDim + 1)
-    z_b = vpfloat("1.0") + z_gamma_vp * z_alpha * (z_beta(dims.KDim - 1) + z_beta)
-    z_gamma_wp = astype(z_gamma_vp, wpfloat)
-    w_prep = z_w_expl - z_gamma_wp * (z_exner_expl(dims.KDim - 1) - z_exner_expl)
-    z_q_res, w_res = tridiagonal_forward_sweep_for_w(a=z_a, b=z_b, c=z_c, d=w_prep)
-    return z_q_res, w_res
+    return _coefficient_forward_scan(
+        vwind_impl_wgt,
+        theta_v_ic,
+        ddqz_z_half,
+        z_alpha(dims.KDim - 1),
+        z_alpha,
+        z_alpha(dims.KDim + 1),
+        z_beta(dims.KDim - 1),
+        z_beta,
+        z_w_expl,
+        z_exner_expl(dims.KDim - 1),
+        z_exner_expl,
+        dtime,
+        cpd,
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
