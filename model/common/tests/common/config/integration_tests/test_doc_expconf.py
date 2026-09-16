@@ -9,30 +9,28 @@
 from __future__ import annotations
 
 import enum
+from collections.abc import Callable
 
 import pytest
 import textual
 import textual.widgets
 
 from icon4py.model.common.config import config_doc
+from icon4py.model.driver.config import ExperimentConfig
 
 
-@pytest.mark.asyncio
-async def test_initial():
+@pytest.mark.level("integration")
+def test_initial(snap_compare: Callable):
     """Test the initial view."""
-    app = config_doc.ConfigDocApp()
-    async with app.run_test() as _:
-        tree = app.query_one("#tree", expect_type=textual.widgets.Tree)
-        assert str(tree.root.label) == "icon4py-config.yml"
-        assert len(tree.root.children) > 10
-        table = app.query_one("#info-table", expect_type=textual.widgets.DataTable)
-        assert table.get_cell_at((0, 1)) == "This is the top-level of the config file."
+    app = config_doc.ConfigDocApp(ExperimentConfig)
+    assert snap_compare(app, terminal_size=(160, 40))
 
 
+@pytest.mark.level("integration")
 @pytest.mark.asyncio
 async def test_select_everything():
     """Test that there are no crashes when selecting all of the config options."""
-    app = config_doc.ConfigDocApp()
+    app = config_doc.ConfigDocApp(ExperimentConfig)
     async with app.run_test() as pilot:
         tree = app.query_one("#tree", expect_type=textual.widgets.Tree)
         assert tree.cursor_line == 0

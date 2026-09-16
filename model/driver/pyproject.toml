@@ -48,6 +48,7 @@ requires-python = ">=3.12"
 version = "0.4.1"
 
 [project.scripts]
+icon4py-configdoc = "icon4py.model.driver.config_doc:main"
 icon4py-driver = "icon4py.model.driver.main:app"
 
 [project.urls]
