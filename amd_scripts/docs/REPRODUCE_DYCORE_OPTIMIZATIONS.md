@@ -1,9 +1,18 @@
 # Reproduce the dycore optimisation measurements
 
-[Read the analysis first](DYCORE_GRANULE_ANALYSIS.md). The small
-`dycore-optimizations` branch is for code review. Exact measured source snapshots,
-job wrappers and raw evidence live on **`mi300_opt`**, so they do not expand this
-PR into a benchmark-framework review. Keep both branches available in the fork.
+[Read the analysis first](DYCORE_GRANULE_ANALYSIS.md). Run the commands below **from the `dycore-optimizations` checkout**.
+The small launcher creates a detached, private checkout of the pinned experiment
+inside the job output directory and runs the recorded harness there. Your current
+branch and source files stay unchanged. This replays the measured implementations;
+it is not a GPU validation of the solver's current-main port.
+
+The large harness and evidence remain on `mi300_opt`, instead of being duplicated
+in this review diff. Both branches must be available in the fork. If the archived
+commit is missing locally, fetch it before submitting:
+
+```bash
+git fetch fork mi300_opt
+```
 
 **There is not yet a measured combined 5% result to reproduce.** We measured
 2.13% less device time from theta compiler fusion and 3.28% additional reduction
@@ -12,10 +21,10 @@ below is needed to confirm or revise it. Do not sum the percentages.
 
 ## Source and environment
 
-Use an isolated, configured benchmark checkout of `mi300_opt` at commit
-**`cdc034acb`**. This includes both measured snapshots and the new combined
-benchmark. Do not run these wrappers from the current-main optimisation branch:
-the measured implementation and dependency versions must match.
+The launcher uses experiment commit **`cdc034acb`**, including both measured
+snapshots and the new combined benchmark. It checks installed GT4Py/DaCe revisions,
+sets Python imports to the private model copy, and records `REPLAY.json` next to
+the results. No branch switch or installed-source patch is performed.
 
 The measured stack is pinned to:
 
@@ -26,7 +35,7 @@ The measured stack is pinned to:
 | GT4Py | `eb763b97515a76c70e60befcba44dcf3bd18fb65` |
 | DaCe | `5115128a73dc518071dbe9580b63d382540efe46` |
 
-In that checkout, `amd_scripts/review_2026_09_16/BASES.json` records the original
+In the private snapshot, `amd_scripts/review_2026_09_16/BASES.json` records the original
 bases, and each experiment's `PATCH_MANIFEST.json` checks its compiler source.
 The GT4Py scalar-conversion prerequisite is
 `amd_scripts/review_2026_09_16/patches/02-domain-scalar-gt4py.patch`; apply it in
@@ -35,10 +44,12 @@ module to a **private GT4Py copy**; do not patch the installed compiler with the
 new-main review patch when reproducing the original timings.
 
 The cluster jobs require the existing ICON regional/grid input data and the
-configured `venv_mi300` or `venv_gh200`, with editable packages pointing at this
-benchmark checkout and its sibling GT4Py/DaCe checkouts. Follow the repository's
+configured `venv_mi300` or `venv_gh200`, with GT4Py and DaCe installed from
+the pinned editable checkouts. The launcher links those dependencies beside the
+private model and ensures that the private model is imported. Follow the repository's
 environment/data setup for a fresh checkout; the wrappers do not provision the
-input data or those environments. They select the recorded CSCS uenvs and
+input data or those environments. If the review checkout has a `testdata`
+directory or symlink, it is also linked into the private checkout. They select the recorded CSCS uenvs and
 serial compilation settings. These are cluster reproduction instructions, not
 a claim that a fresh CPU-only clone can reproduce GPU timings.
 
@@ -48,42 +59,43 @@ into a checkout while its jobs are running. The user submits/manages all jobs.
 
 ## Run the separate comparisons on MI300A
 
-From that benchmark checkout on Beverin:
+From `dycore-optimizations` on Beverin:
 
 ```bash
-sbatch amd_scripts/theta_shared_timing/run_amd.sh
-sbatch amd_scripts/solver_scan_fusion/run_amd.sh
+sbatch --export=ALL,OPTIMIZATION_COMPARISON=theta amd_scripts/benchmark_optimizations_amd.sh
+sbatch --export=ALL,OPTIMIZATION_COMPARISON=solver-increment amd_scripts/benchmark_optimizations_amd.sh
 ```
 
 These are separate allocations with separate output directories:
 
 | Experiment | A | B | Output |
 |---|---|---|---|
-| Theta primary comparison | Original code | Compiler theta fusion | `amd_scripts/theta_shared_timing_runs/amd_<job>/compiler_vs_native/` |
-| Solver incremental comparison | Compiler theta fusion | Same theta + both fused solvers | `amd_scripts/solver_scan_fusion_runs/amd_<job>/solver_coefficients_in_scan/` |
+| Theta primary comparison | Original code | Compiler theta fusion | `results/compiler_vs_native/` |
+| Solver incremental comparison | Compiler theta fusion | Same theta + both fused solvers | `results/solver_coefficients_in_scan/` |
 
-The theta wrapper also runs its historical comparison against the Python theta
-rewrite. That extra comparison is not another optimisation to add. The solver
-experiment measures the **increment on top of theta**, not solver-only versus
-original. Both separate recipes are MI300A recipes; do not use them on GH200.
+The launcher selects only the theta-versus-native comparison, omitting the
+historical Python-rewrite comparison. The solver experiment measures the
+**increment on top of theta**, not solver-only versus original. Both separate
+recipes are AMD-only; the launcher rejects them on NVIDIA.
 
 ## Measure the complete combination directly
 
 On Beverin:
 
 ```bash
-sbatch amd_scripts/combined_fusion/run_amd.sh
+sbatch --export=ALL,OPTIMIZATION_COMPARISON=combined amd_scripts/benchmark_optimizations_amd.sh
 ```
 
-On Santis, from its equivalently configured benchmark checkout:
+On Santis, also from `dycore-optimizations`, with its configured GH200 environment:
 
 ```bash
-sbatch amd_scripts/combined_fusion/run_nvidia.sh
+sbatch --export=ALL,OPTIMIZATION_COMPARISON=combined amd_scripts/benchmark_optimizations_nvidia.sh
 ```
 
 Both use original code as A and compiler theta fusion plus both fused solvers
-as B. Results go to `amd_scripts/combined_fusion_runs/amd_<job>/` and
-`amd_scripts/combined_fusion_runs/nvidia_<job>/`. This is a prepared experiment;
+as B. All results go to `amd_scripts/optimization_runs/amd_<job>/results/` or
+`amd_scripts/optimization_runs/nvidia_<job>/results/`. The adjacent `snapshot/`
+directory retains the exact model and build outputs for inspection. This is a prepared experiment;
 there are no completed combined results yet. Each GPU retains its native launch
 configuration. No profilers run during these timings.
 
@@ -111,11 +123,11 @@ The historical global/regional comparison and previous GPU validation remain
 in the analysis. These optimisation recipes intentionally measure regional/120;
 they do not establish global-grid safety or speedup.
 
-To verify the retained original evidence locally without a GPU, from the
-`mi300_opt` experiment checkout:
+To verify the retained original evidence without a GPU, from this branch
+after a replay has prepared its snapshot:
 
 ```bash
-python3 amd_scripts/review_2026_09_16/verify_evidence.py
+python3 amd_scripts/optimization_runs/amd_<job>/snapshot/icon4py/amd_scripts/review_2026_09_16/verify_evidence.py
 ```
 
 That reconstructs the separate measured gains and checks the archived evidence.

@@ -84,7 +84,8 @@ patch rather than copying the compiler into Icon4Py. Its base is GT4Py
 `a461b874` (upstream main); the modified transformation source is
 unchanged from the measured prototype. It does not automatically enable theta
 fusion in Icon4Py. This branch contains the solver change, depth-parameterised
-tests, compiler patch and this analysis.
+tests, compiler patch, this analysis and small launchers for reproducing the
+experiments directly from this branch.
 Benchmark scripts, raw data and unsuccessful experiments stay on the experiment
 branch; the retained evidence is under `amd_scripts/review_2026_09_16/` there.
 
