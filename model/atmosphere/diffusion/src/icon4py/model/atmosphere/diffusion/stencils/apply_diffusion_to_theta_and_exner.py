@@ -9,12 +9,8 @@
 import gt4py.next as gtx
 from gt4py.next import where
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
-    _calculate_nabla2_for_z,
-)
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta import (
-    _calculate_nabla2_of_theta,
-)
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_for_z import _nabla2_for_z
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_of_theta import _nabla2_of_theta
 from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
     _truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
@@ -41,8 +37,8 @@ def _apply_diffusion_to_theta_and_exner(
     rd_o_cvd: vpfloat,
     apply_zdiffusion_t: bool,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
-    z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
+    z_nabla2_e = _nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
+    z_temp = _nabla2_of_theta(z_nabla2_e, geofac_div)
 
     if apply_zdiffusion_t:
         # Only where `zd_diffcoef` is not 0 to avoid loading the other fields.

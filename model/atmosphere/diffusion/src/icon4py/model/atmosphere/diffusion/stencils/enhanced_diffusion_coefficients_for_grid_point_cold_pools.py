@@ -18,7 +18,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
+def _enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: fa.CellKField[wpfloat],
     theta_ref_mc: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
@@ -36,7 +36,7 @@ def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
+def enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: fa.CellKField[wpfloat],
     theta_ref_mc: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
@@ -47,7 +47,7 @@ def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
+    _enhanced_diffusion_coefficients_for_grid_point_cold_pools(
         theta_v=theta_v,
         theta_ref_mc=theta_ref_mc,
         thresh_tdiff=thresh_tdiff,

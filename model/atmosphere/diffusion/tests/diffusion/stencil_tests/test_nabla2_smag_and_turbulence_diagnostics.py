@@ -10,8 +10,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_smag_and_turbulence_diagnostics import (
-    calculate_nabla2_smag_and_turbulence_diagnostics,
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_smag_and_turbulence_diagnostics import (
+    nabla2_smag_and_turbulence_diagnostics,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -161,8 +161,8 @@ def _diagnostic_quantities_for_turbulence_numpy(
 
 
 @pytest.mark.continuous_benchmarking
-class TestCalculateNabla2SmagAndTurbulenceDiagnostics(stencil_tests.StencilTest):
-    PROGRAM = calculate_nabla2_smag_and_turbulence_diagnostics
+class TestNabla2SmagAndTurbulenceDiagnostics(stencil_tests.StencilTest):
+    PROGRAM = nabla2_smag_and_turbulence_diagnostics
     OUTPUTS = ("kh_smag_e", "z_nabla2_e", "div_ic", "hdef_ic")
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),

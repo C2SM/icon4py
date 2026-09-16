@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _calculate_nabla4(
+def _nabla4(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
     primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
@@ -54,7 +54,7 @@ def _calculate_nabla4(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_nabla4(
+def nabla4(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
     primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
@@ -68,7 +68,7 @@ def calculate_nabla4(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _calculate_nabla4(
+    _nabla4(
         u_vert=u_vert,
         v_vert=v_vert,
         primal_normal_vert_v1=primal_normal_vert_v1,

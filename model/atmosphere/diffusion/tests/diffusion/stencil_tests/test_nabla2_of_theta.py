@@ -11,15 +11,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta import (
-    calculate_nabla2_of_theta,
-)
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_of_theta import nabla2_of_theta
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
-def calculate_nabla2_of_theta_numpy(
+def nabla2_of_theta_numpy(
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     z_nabla2_e: np.ndarray,
     geofac_div: np.ndarray,
@@ -30,8 +28,8 @@ def calculate_nabla2_of_theta_numpy(
     return z_temp
 
 
-class TestCalculateNabla2OfTheta(stencil_tests.StencilTest):
-    PROGRAM = calculate_nabla2_of_theta
+class TestNabla2OfTheta(stencil_tests.StencilTest):
+    PROGRAM = nabla2_of_theta
     OUTPUTS = ("z_temp",)
 
     @stencil_tests.static_reference
@@ -43,7 +41,7 @@ class TestCalculateNabla2OfTheta(stencil_tests.StencilTest):
         **kwargs,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
+        z_temp = nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
         return dict(z_temp=z_temp)
 
     @stencil_tests.input_data_fixture

@@ -21,7 +21,7 @@ from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_nu
 from .test_apply_nabla2_to_vn_in_lateral_boundary import (
     apply_nabla2_to_vn_in_lateral_boundary_numpy,
 )
-from .test_calculate_nabla4 import calculate_nabla4_numpy
+from .test_nabla4 import nabla4_numpy
 
 
 @pytest.mark.uses_concat_where
@@ -71,7 +71,7 @@ class TestApplyDiffusionToVn(stencil_tests.StencilTest):
         connectivities = stencil_tests.connectivities_asnumpy(grid)
         edge = np.arange(area_edge.shape[0])
         vn_cp = vn.copy()
-        z_nabla4_e2 = calculate_nabla4_numpy(
+        z_nabla4_e2 = nabla4_numpy(
             connectivities=connectivities,
             u_vert=u_vert,
             v_vert=v_vert,

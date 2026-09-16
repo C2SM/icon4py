@@ -7,18 +7,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
-    _calculate_diagnostic_quantities_for_turbulence,
+from icon4py.model.atmosphere.diffusion.stencils.diagnostic_quantities_for_turbulence import (
+    _diagnostic_quantities_for_turbulence,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
-    _calculate_nabla2_and_smag_coefficients_for_vn,
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_and_smag_coefficients_for_vn import (
+    _nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _calculate_nabla2_smag_and_turbulence_diagnostics(
+def _nabla2_smag_and_turbulence_diagnostics(
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -44,7 +44,7 @@ def _calculate_nabla2_smag_and_turbulence_diagnostics(
     fa.CellKHalfField[vpfloat],
     fa.CellKHalfField[vpfloat],
 ]:
-    kh_smag_e, kh_smag_ec, z_nabla2_e = _calculate_nabla2_and_smag_coefficients_for_vn(
+    kh_smag_e, kh_smag_ec, z_nabla2_e = _nabla2_and_smag_coefficients_for_vn(
         diff_multfac_smag=diff_multfac_smag,
         tangent_orientation=tangent_orientation,
         inv_primal_edge_length=inv_primal_edge_length,
@@ -60,7 +60,7 @@ def _calculate_nabla2_smag_and_turbulence_diagnostics(
         smag_offset=smag_offset,
     )
     div_ic, hdef_ic = (
-        _calculate_diagnostic_quantities_for_turbulence(
+        _diagnostic_quantities_for_turbulence(
             kh_smag_ec=kh_smag_ec,
             vn=vn,
             e_bln_c_s=e_bln_c_s,
@@ -75,7 +75,7 @@ def _calculate_nabla2_smag_and_turbulence_diagnostics(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_nabla2_smag_and_turbulence_diagnostics(
+def nabla2_smag_and_turbulence_diagnostics(
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -106,7 +106,7 @@ def calculate_nabla2_smag_and_turbulence_diagnostics(
     cell_vertical_start: gtx.int32,
     cell_vertical_end: gtx.int32,
 ) -> None:
-    _calculate_nabla2_smag_and_turbulence_diagnostics(
+    _nabla2_smag_and_turbulence_diagnostics(
         diff_multfac_smag=diff_multfac_smag,
         tangent_orientation=tangent_orientation,
         inv_primal_edge_length=inv_primal_edge_length,

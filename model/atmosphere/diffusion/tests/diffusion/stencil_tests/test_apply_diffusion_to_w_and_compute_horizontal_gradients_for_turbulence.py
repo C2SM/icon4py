@@ -21,10 +21,8 @@ from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
 from .test_apply_nabla2_to_w_in_upper_damping_layer import (
     apply_nabla2_to_w_in_upper_damping_layer_numpy,
 )
-from .test_calculate_horizontal_gradients_for_turbulence import (
-    calculate_horizontal_gradients_for_turbulence_numpy,
-)
-from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
+from .test_horizontal_gradients_for_turbulence import horizontal_gradients_for_turbulence_numpy
+from .test_nabla2_for_w import nabla2_for_w_numpy
 
 
 @pytest.mark.embedded_remap_error
@@ -87,7 +85,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
         out_dwdy = dwdy.copy()
 
         if type_shear == 2:
-            grad_dwdx, grad_dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
+            grad_dwdx, grad_dwdy = horizontal_gradients_for_turbulence_numpy(
                 connectivities, w_old, geofac_grg_x, geofac_grg_y
             )
             grad_slice = (
@@ -97,7 +95,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
             out_dwdx[grad_slice] = grad_dwdx[grad_slice]
             out_dwdy[grad_slice] = grad_dwdy[grad_slice]
 
-        z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w_old, geofac_n2s)
+        z_nabla2_c = nabla2_for_w_numpy(connectivities, w_old, geofac_n2s)
 
         w = apply_nabla2_to_w_numpy(
             connectivities=connectivities,

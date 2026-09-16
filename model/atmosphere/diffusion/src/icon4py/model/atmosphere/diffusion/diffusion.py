@@ -34,11 +34,11 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import ap
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
-    calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+from icon4py.model.atmosphere.diffusion.stencils.enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
+    enhanced_diffusion_coefficients_for_grid_point_cold_pools,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_smag_and_turbulence_diagnostics import (
-    calculate_nabla2_smag_and_turbulence_diagnostics,
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_smag_and_turbulence_diagnostics import (
+    nabla2_smag_and_turbulence_diagnostics,
 )
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.config import config_io, options as common_conf_opt
@@ -545,9 +545,9 @@ class Diffusion:
             or self.config.loutshs
             or self.config.a_hshr > 0.0
         )
-        self.calculate_nabla2_smag_and_turbulence_diagnostics = setup_program(
+        self.nabla2_smag_and_turbulence_diagnostics = setup_program(
             backend=backend,
-            program=calculate_nabla2_smag_and_turbulence_diagnostics,
+            program=nabla2_smag_and_turbulence_diagnostics,
             constant_args={
                 "tangent_orientation": self._edge_params.tangent_orientation,
                 "inv_primal_edge_length": self._edge_params.inverse_primal_edge_lengths,
@@ -625,9 +625,9 @@ class Diffusion:
             },
             offset_provider=self._grid.connectivities,
         )
-        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = setup_program(
+        self.enhanced_diffusion_coefficients_for_grid_point_cold_pools = setup_program(
             backend=backend,
-            program=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+            program=enhanced_diffusion_coefficients_for_grid_point_cold_pools,
             constant_args={
                 "theta_ref_mc": self._metric_state.theta_ref_mc,
                 "thresh_tdiff": self.thresh_tdiff,
@@ -847,10 +847,8 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of vn - end")
 
-        log.debug(
-            "running stencils 01 02 03 (calculate_nabla2_smag_and_turbulence_diagnostics): start"
-        )
-        self.calculate_nabla2_smag_and_turbulence_diagnostics(
+        log.debug("running stencils 01 02 03 (nabla2_smag_and_turbulence_diagnostics): start")
+        self.nabla2_smag_and_turbulence_diagnostics(
             diff_multfac_smag=self.diff_multfac_smag,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
@@ -863,9 +861,7 @@ class Diffusion:
             smag_offset=smag_offset,
             compute_diagnostic_quantities=self._compute_diagnostic_quantities,
         )
-        log.debug(
-            "running stencils 01 02 03 (calculate_nabla2_smag_and_turbulence_diagnostics): end"
-        )
+        log.debug("running stencils 01 02 03 (nabla2_smag_and_turbulence_diagnostics): end")
 
         # 5.  HALO EXCHANGE -- CALL sync_patch_array(SYNC_E, z_nabla2_e)
         # ICON: mo_nh_diffusion.f90:853. Fill halo edges before second RBF.
@@ -940,14 +936,14 @@ class Diffusion:
 
         if self.config.apply_to_temperature:
             log.debug(
-                "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
+                "running fused stencils 11 12 (enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
             )
-            self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
+            self.enhanced_diffusion_coefficients_for_grid_point_cold_pools(
                 theta_v=prognostic_state.theta_v,
                 kh_smag_e=self.kh_smag_e,
             )
             log.debug(
-                "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
+                "running stencils 11 12 (enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
             )
             log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
             self.copy_field_on_cell_k(

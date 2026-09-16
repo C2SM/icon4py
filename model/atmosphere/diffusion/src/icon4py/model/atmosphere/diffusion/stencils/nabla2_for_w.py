@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _calculate_nabla2_for_w(
+def _nabla2_for_w(
     w: fa.CellKHalfField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
 ) -> fa.CellKHalfField[vpfloat]:
@@ -23,7 +23,7 @@ def _calculate_nabla2_for_w(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_nabla2_for_w(
+def nabla2_for_w(
     w: fa.CellKHalfField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     z_nabla2_c: fa.CellKHalfField[vpfloat],
@@ -33,7 +33,7 @@ def calculate_nabla2_for_w(
     vertical_end: gtx.int32,
 ) -> None:
     # TODO(): replace this by common/math/stencils/compute_nabla2_on_cell_k
-    _calculate_nabla2_for_w(
+    _nabla2_for_w(
         w=w,
         geofac_n2s=geofac_n2s,
         out=z_nabla2_c,

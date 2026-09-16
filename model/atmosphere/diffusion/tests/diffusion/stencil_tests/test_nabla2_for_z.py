@@ -11,16 +11,14 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
-    calculate_nabla2_for_z,
-)
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_for_z import nabla2_for_z
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-def calculate_nabla2_for_z_numpy(
+def nabla2_for_z_numpy(
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     kh_smag_e: np.ndarray,
     inv_dual_edge_length: np.ndarray,
@@ -38,8 +36,8 @@ def calculate_nabla2_for_z_numpy(
     return z_nabla2_e
 
 
-class TestCalculateNabla2ForZ(stencil_tests.StencilTest):
-    PROGRAM = calculate_nabla2_for_z
+class TestNabla2ForZ(stencil_tests.StencilTest):
+    PROGRAM = nabla2_for_z
     OUTPUTS = ("z_nabla2_e",)
 
     @stencil_tests.static_reference
@@ -53,7 +51,7 @@ class TestCalculateNabla2ForZ(stencil_tests.StencilTest):
         **kwargs,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        z_nabla2_e = calculate_nabla2_for_z_numpy(
+        z_nabla2_e = nabla2_for_z_numpy(
             connectivities, kh_smag_e, inv_dual_edge_length, theta_v, z_nabla2_e, **kwargs
         )
         return dict(z_nabla2_e=z_nabla2_e)

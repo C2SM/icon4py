@@ -12,12 +12,10 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import _apply
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
     _apply_nabla2_to_w_in_upper_damping_layer,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_for_turbulence import (
-    _calculate_horizontal_gradients_for_turbulence,
+from icon4py.model.atmosphere.diffusion.stencils.horizontal_gradients_for_turbulence import (
+    _horizontal_gradients_for_turbulence,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
-    _calculate_nabla2_for_w,
-)
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_for_w import _nabla2_for_w
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -43,12 +41,12 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     fa.CellKHalfField[vpfloat],
 ]:
     dwdx, dwdy = (
-        _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y)
+        _horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y)
         if type_shear == 2
         else (dwdx, dwdy)
     )
 
-    z_nabla2_c = _calculate_nabla2_for_w(w_old, geofac_n2s)
+    z_nabla2_c = _nabla2_for_w(w_old, geofac_n2s)
 
     w = _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w)
 

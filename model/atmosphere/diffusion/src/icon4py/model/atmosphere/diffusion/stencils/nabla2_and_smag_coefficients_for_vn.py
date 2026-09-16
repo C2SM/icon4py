@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _calculate_nabla2_and_smag_coefficients_for_vn(
+def _nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],

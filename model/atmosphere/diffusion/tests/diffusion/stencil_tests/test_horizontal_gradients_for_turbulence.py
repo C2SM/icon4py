@@ -11,8 +11,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_for_turbulence import (
-    calculate_horizontal_gradients_for_turbulence,
+from icon4py.model.atmosphere.diffusion.stencils.horizontal_gradients_for_turbulence import (
+    horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-def calculate_horizontal_gradients_for_turbulence_numpy(
+def horizontal_gradients_for_turbulence_numpy(
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     w: np.ndarray,
     geofac_grg_x: np.ndarray,
@@ -36,8 +36,8 @@ def calculate_horizontal_gradients_for_turbulence_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestCalculateHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
-    PROGRAM = calculate_horizontal_gradients_for_turbulence
+class TestHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
+    PROGRAM = horizontal_gradients_for_turbulence
     OUTPUTS = ("dwdx", "dwdy")
 
     @stencil_tests.static_reference
@@ -50,7 +50,7 @@ class TestCalculateHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
         **kwargs,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        dwdx, dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
+        dwdx, dwdy = horizontal_gradients_for_turbulence_numpy(
             connectivities, w, geofac_grg_x, geofac_grg_y
         )
         return dict(dwdx=dwdx, dwdy=dwdy)

@@ -11,13 +11,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
+from icon4py.model.atmosphere.diffusion.stencils.nabla4 import nabla4
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
-def calculate_nabla4_numpy(
+def nabla4_numpy(
     *,
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     u_vert: np.ndarray,
@@ -59,8 +59,8 @@ def calculate_nabla4_numpy(
 
 
 @pytest.mark.continuous_benchmarking
-class TestCalculateNabla4(stencil_tests.StencilTest):
-    PROGRAM = calculate_nabla4
+class TestNabla4(stencil_tests.StencilTest):
+    PROGRAM = nabla4
     OUTPUTS = ("z_nabla4_e2",)
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
@@ -90,7 +90,7 @@ class TestCalculateNabla4(stencil_tests.StencilTest):
         **kwargs,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        z_nabla4_e2 = calculate_nabla4_numpy(
+        z_nabla4_e2 = nabla4_numpy(
             connectivities=connectivities,
             u_vert=u_vert,
             v_vert=v_vert,

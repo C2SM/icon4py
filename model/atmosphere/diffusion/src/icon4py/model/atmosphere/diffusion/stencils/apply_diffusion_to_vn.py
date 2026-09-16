@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_to_vn i
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_boundary import (
     _apply_nabla2_to_vn_in_lateral_boundary,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import _calculate_nabla4
+from icon4py.model.atmosphere.diffusion.stencils.nabla4 import _nabla4
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -41,7 +41,7 @@ def _apply_diffusion_to_vn(
     start_2nd_nudge_line_idx_e: gtx.int32,
     limited_area: bool,
 ) -> fa.EdgeKField[wpfloat]:
-    z_nabla4_e2 = _calculate_nabla4(
+    z_nabla4_e2 = _nabla4(
         u_vert,
         v_vert,
         primal_normal_vert_v1,

@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _calculate_horizontal_gradients_for_turbulence(
+def _horizontal_gradients_for_turbulence(
     w: fa.CellKHalfField[wpfloat],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
@@ -25,7 +25,7 @@ def _calculate_horizontal_gradients_for_turbulence(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_horizontal_gradients_for_turbulence(
+def horizontal_gradients_for_turbulence(
     w: fa.CellKHalfField[wpfloat],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
@@ -36,7 +36,7 @@ def calculate_horizontal_gradients_for_turbulence(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _calculate_horizontal_gradients_for_turbulence(
+    _horizontal_gradients_for_turbulence(
         w=w,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,

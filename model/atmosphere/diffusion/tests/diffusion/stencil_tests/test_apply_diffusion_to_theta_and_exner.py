@@ -19,8 +19,8 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.testing import stencil_tests
 
-from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
-from .test_calculate_nabla2_of_theta import calculate_nabla2_of_theta_numpy
+from .test_nabla2_for_z import nabla2_for_z_numpy
+from .test_nabla2_of_theta import nabla2_of_theta_numpy
 from .test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy,
 )
@@ -56,10 +56,10 @@ class TestApplyDiffusionToThetaAndExner(stencil_tests.StencilTest):
         kwargs_2 = {k: v for k, v in kwargs.items() if k != "theta_v"}  # remove unused kwargs
 
         z_nabla2_e = np.zeros_like(kh_smag_e)
-        z_nabla2_e = calculate_nabla2_for_z_numpy(
+        z_nabla2_e = nabla2_for_z_numpy(
             connectivities, kh_smag_e, inv_dual_edge_length, theta_v_in, z_nabla2_e, **kwargs_2
         )
-        z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
+        z_temp = nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
 
         if apply_zdiffusion_t:
             z_temp = np.where(

@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _calculate_nabla2_for_z(
+def _nabla2_for_z(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
@@ -26,7 +26,7 @@ def _calculate_nabla2_for_z(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_nabla2_for_z(
+def nabla2_for_z(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
@@ -36,7 +36,7 @@ def calculate_nabla2_for_z(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _calculate_nabla2_for_z(
+    _nabla2_for_z(
         kh_smag_e=kh_smag_e,
         inv_dual_edge_length=inv_dual_edge_length,
         theta_v=theta_v,

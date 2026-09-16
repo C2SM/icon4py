@@ -11,15 +11,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
-    calculate_nabla2_for_w,
-)
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_for_w import nabla2_for_w
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
-def calculate_nabla2_for_w_numpy(
+def nabla2_for_w_numpy(
     connectivities: Mapping[gtx.FieldOffset, np.ndarray], w: np.ndarray, geofac_n2s: np.ndarray
 ) -> np.ndarray:
     c2e2cO = connectivities[dims.C2E2CO]
@@ -31,8 +29,8 @@ def calculate_nabla2_for_w_numpy(
 
 
 @pytest.mark.embedded_remap_error
-class TestCalculateNabla2ForW(stencil_tests.StencilTest):
-    PROGRAM = calculate_nabla2_for_w
+class TestNabla2ForW(stencil_tests.StencilTest):
+    PROGRAM = nabla2_for_w
     OUTPUTS = ("z_nabla2_c",)
 
     @stencil_tests.static_reference
@@ -44,7 +42,7 @@ class TestCalculateNabla2ForW(stencil_tests.StencilTest):
         **kwargs,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w, geofac_n2s)
+        z_nabla2_c = nabla2_for_w_numpy(connectivities, w, geofac_n2s)
         return dict(z_nabla2_c=z_nabla2_c)
 
     @stencil_tests.input_data_fixture
