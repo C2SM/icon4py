@@ -21,7 +21,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
+def _apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
     area: fa.CellField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
@@ -63,7 +63,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
+def apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
     area: fa.CellField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
@@ -83,7 +83,7 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
+    _apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
         area=area,
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,

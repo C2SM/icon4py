@@ -10,8 +10,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_horizontal_gradients_for_turbulence import (
+    apply_diffusion_to_w_and_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -27,8 +27,8 @@ from .test_nabla2_for_w import nabla2_for_w_numpy
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
-class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
-    PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
+class TestApplyDiffusionToWAndHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
+    PROGRAM = apply_diffusion_to_w_and_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),

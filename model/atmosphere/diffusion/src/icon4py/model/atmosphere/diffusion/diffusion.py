@@ -31,8 +31,8 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
     apply_diffusion_to_theta_and_exner,
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_horizontal_gradients_for_turbulence import (
+    apply_diffusion_to_w_and_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.atmosphere.diffusion.stencils.enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     enhanced_diffusion_coefficients_for_grid_point_cold_pools,
@@ -599,9 +599,9 @@ class Diffusion:
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
-        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = setup_program(
+        self.apply_diffusion_to_w_and_horizontal_gradients_for_turbulence = setup_program(
             backend=backend,
-            program=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
+            program=apply_diffusion_to_w_and_horizontal_gradients_for_turbulence,
             constant_args={
                 "geofac_n2s": self._interpolation_state.geofac_n2s,
                 "geofac_grg_x": self._interpolation_state.geofac_grg_x,
@@ -911,12 +911,12 @@ class Diffusion:
         )
 
         log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
+            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_horizontal_gradients_for_turbulence): start"
         )
         # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
         self.copy_field_on_cell_khalf(field=prognostic_state.w, output_field=self.w_tmp)
 
-        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
+        self.apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
             w_old=self.w_tmp,
             w=prognostic_state.w,
             dwdx=diagnostic_state.dwdx,
@@ -925,7 +925,7 @@ class Diffusion:
             diff_multfac_n2w=self.diff_multfac_n2w,
         )
         log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
+            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_horizontal_gradients_for_turbulence): end"
         )
 
         self.halo_exchange_wait(
