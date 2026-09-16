@@ -31,7 +31,6 @@ dependencies = [
   "serialbox4py>=2.6.2",
   "cattrs>=26.1.0",
   "pyyaml>=6.0.3",
-  "rich>=15.0.0",
   "textual>=8.2.8"
 ]
 description = "Shared code for the icon4py model."

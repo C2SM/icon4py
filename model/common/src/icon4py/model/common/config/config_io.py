@@ -50,6 +50,18 @@ class SharedOptionSet:
     options: dict[str, typing.Any]
     consumers: list[str]
 
+    @classmethod
+    def __examples__(
+        cls: type[typing.Self],
+    ) -> typing.Iterator[tuple[typing.Self, type[typing.Self]]]:
+        yield (
+            cls(
+                options={"<option 1>": "<value 1>", "<option 2>": "<value 2>"},
+                consumers=["<section A>", "<section B>"],
+            ),
+            cls,
+        )
+
 
 @CONV.register_structure_hook
 def structure_shared_set(data: dict, _: typing.Any) -> SharedOptionSet:

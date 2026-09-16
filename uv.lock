@@ -16,10 +16,10 @@ resolution-markers = [
   "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
   "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
   "python_full_version == '3.13.*' and platform_machine == 'ARM64' and sys_platform == 'win32'",
+  "python_full_version < '3.13' and platform_machine == 'ARM64' and sys_platform == 'win32'",
   "python_full_version == '3.13.*' and platform_machine != 'ARM64' and sys_platform == 'win32'",
   "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
   "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-  "python_full_version < '3.13' and platform_machine == 'ARM64' and sys_platform == 'win32'",
   "python_full_version < '3.13' and platform_machine != 'ARM64' and sys_platform == 'win32'",
   "python_full_version < '3.13' and sys_platform == 'emscripten'",
   "python_full_version < '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'"
@@ -82,8 +82,8 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "idna", marker = "sys_platform != 'emscripten' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"},
-  {name = "typing-extensions", marker = "(python_full_version < '3.15' and sys_platform != 'emscripten') or (python_full_version >= '3.15' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (python_full_version >= '3.15' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (python_full_version >= '3.15' and extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (sys_platform == 'emscripten' and extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"}
+  {name = "idna"},
+  {name = "typing-extensions", marker = "python_full_version < '3.15' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"}
 ]
 name = "anyio"
 sdist = {url = "https://files.pythonhosted.org/packages/a9/d2/f4d173e22df740bc37b1db102b386ba719b66e95b0f0d751f556b387e6d2/anyio-4.15.1.tar.gz", hash = "sha256:9f28306018cbd6d329e64a36d58256edff76dd996fe423bc957326e578b82a94", size = 276966, upload-time = "2026-09-05T10:42:39.44Z"}
@@ -1752,11 +1752,11 @@ wheels = [
 
 [[package]]
 name = "fsspec"
-sdist = {url = "https://files.pythonhosted.org/packages/00/78/f34251dadb8f3921264a1d9b8946f5e542014ee2614b285261b4e40e6775/fsspec-2026.7.0.tar.gz", hash = "sha256:c803c40f4cf860b49dea58ee3e1c33cb9c790520e233537e1340049f89b82a88", size = 317040, upload-time = "2026-07-28T16:34:51.052Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/77/cd/9be253869fc42e764de7f3dedd6969af7d44ff9c3375214a3442a6f3fc08/fsspec-2026.9.0.tar.gz", hash = "sha256:0f08147951c8cb31d844c3547d631053b127863b60be04cf06e121333ee0e2fe", size = 333545, upload-time = "2026-09-18T17:50:42.825Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "2026.7.0"
+version = "2026.9.0"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/fd/3c/6a2bf344106328fd04963664a60b9bb6496fc25df8e962fcdc1367285fb9/fsspec-2026.7.0-py3-none-any.whl", hash = "sha256:b57ddbafedfaef7018c1ecab32aa200a9d7ca26b77965f64e48b70061249d279", size = 206583, upload-time = "2026-07-28T16:34:49.538Z"}
+  {url = "https://files.pythonhosted.org/packages/6c/c0/a98505f18594f1bce828bb159cec0fcf9860562f1a2c85913409fc8f3d9e/fsspec-2026.9.0-py3-none-any.whl", hash = "sha256:8dd6e646e99ea382bd85f97a45e6b526a442d79423a7dc673f1e2756d05fcb5f", size = 221738, upload-time = "2026-09-18T17:50:41.341Z"}
 ]
 
 [[package]]
@@ -1933,8 +1933,8 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "h11", marker = "sys_platform != 'emscripten' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"},
-  {name = "truststore", marker = "sys_platform != 'emscripten' or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-cuda13') or (extra == 'extra-7-icon4py-cuda12' and extra == 'extra-7-icon4py-rocm7') or (extra == 'extra-7-icon4py-cuda13' and extra == 'extra-7-icon4py-rocm7')"}
+  {name = "h11"},
+  {name = "truststore"}
 ]
 name = "httpcore2"
 sdist = {url = "https://files.pythonhosted.org/packages/15/8c/e925b1c92018abb3a1863ce1549d76d2381e334d21d65d4ac8f65dabd78a/httpcore2-2.13.0.tar.gz", hash = "sha256:2adc8be4fb285fbcd6d894298db3b52c177e74b6674eda3a76bd36be3292a3db", size = 67740, upload-time = "2026-09-14T14:18:04.717Z"}
@@ -2429,7 +2429,6 @@ dependencies = [
   {name = "numpy"},
   {name = "packaging"},
   {name = "pyyaml"},
-  {name = "rich"},
   {name = "serialbox4py"},
   {name = "textual"}
 ]
@@ -2462,7 +2461,6 @@ requires-dist = [
   {name = "packaging", specifier = ">=20.0"},
   {name = "pymetis", marker = "extra == 'io'", specifier = ">2022.1"},
   {name = "pyyaml", specifier = ">=6.0.3"},
-  {name = "rich", specifier = ">=15.0.0"},
   {name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0"},
   {name = "serialbox4py", specifier = ">=2.6.2"},
   {name = "textual", specifier = ">=8.2.8"},
@@ -2818,11 +2816,11 @@ dependencies = [
   {name = "packaging"}
 ]
 name = "lazy-loader"
-sdist = {url = "https://files.pythonhosted.org/packages/49/ac/21a1f8aa3777f5658576777ea76bfb124b702c520bbe90edf4ae9915eafa/lazy_loader-0.5.tar.gz", hash = "sha256:717f9179a0dbed357012ddad50a5ad3d5e4d9a0b8712680d4e687f5e6e6ed9b3", size = 15294, upload-time = "2026-03-06T15:45:09.054Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/19/8c/0f2ff2a8b7513e68871a74740c17a504b0488c679b379e6445ebb7bd78dc/lazy_loader-0.6.tar.gz", hash = "sha256:2f4b7824d6401958639008a0cae20c776b61dff619accd6890693e2de8260167", size = 18438, upload-time = "2026-09-21T21:31:32.982Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "0.5"
+version = "0.6"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/8a/a1/8d812e53a5da1687abb10445275d41a8b13adb781bbf7196ddbcf8d88505/lazy_loader-0.5-py3-none-any.whl", hash = "sha256:ab0ea149e9c554d4ffeeb21105ac60bed7f3b4fd69b1d2360a4add51b170b005", size = 8044, upload-time = "2026-03-06T15:45:07.668Z"}
+  {url = "https://files.pythonhosted.org/packages/23/93/4e45e37f26c820216704b36b8e67cc55c490a7abd287a78a26a2c0e21386/lazy_loader-0.6-py3-none-any.whl", hash = "sha256:77253be3391b06124a0e16105bd663b6c54470af1a9ca8e1cf026f38d58ed056", size = 8791, upload-time = "2026-09-21T21:31:31.632Z"}
 ]
 
 [[package]]
@@ -3622,11 +3620,11 @@ wheels = [
 
 [[package]]
 name = "nanobind"
-sdist = {url = "https://files.pythonhosted.org/packages/07/11/69cf231c4f3ac4fa724a0b1933c3650fb65aff6b9d7a4c2573b9e4e40077/nanobind-3.0.1.tar.gz", hash = "sha256:f7f0a889c8fb80deaacb95e918d88e05148850a32d2b8eda28446291b2bf7c35", size = 1142340, upload-time = "2026-08-27T22:45:21.806Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/c7/1f/e28fae715401e8f57400e72aeaff4fde12046d31828164f34f61f0816da8/nanobind-3.1.0.tar.gz", hash = "sha256:6661e3dc1434d78781ccf7913442d90361dab395c3424efadb63bbb6ddea7ea3", size = 1145390, upload-time = "2026-09-18T15:59:42.726Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "3.0.1"
+version = "3.1.0"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/1c/cf/261b8281d410d99b22ce47559ce56f98c7548dccf8c25ed70a51fbf42d1f/nanobind-3.0.1-py3-none-any.whl", hash = "sha256:4b49491fe8bf483a5e0342125b8fe56237e490ba642c7e296170b8cd256a7764", size = 316363, upload-time = "2026-08-27T22:45:20.155Z"}
+  {url = "https://files.pythonhosted.org/packages/36/c1/6fd56f7a02a478d54a1a3e6000eccd34b446b1c45cbf0d002fe5d2937126/nanobind-3.1.0-py3-none-any.whl", hash = "sha256:96984dbe8154ffb86e653b1b60aaeed6985c710c5e75ad0279eb87943c66292d", size = 316917, upload-time = "2026-09-18T15:59:37.796Z"}
 ]
 
 [[package]]
@@ -4165,11 +4163,11 @@ dependencies = [
   {name = "panel"}
 ]
 name = "panel-material-ui"
-sdist = {url = "https://files.pythonhosted.org/packages/9f/7d/7dbbda0e64527f87fae61561f87ef0d91cff7fd2f105ba5dc1d412ccddb4/panel_material_ui-0.14.2.tar.gz", hash = "sha256:4b4e9d6f771294d778b6c13ea77348a633d55e48264dfa803f4d8bbd9d5ebf6a", size = 3991585, upload-time = "2026-08-11T13:35:23.703Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/84/18/655c0d98b19a9d9f8f357fbd113d3491b9f8217a6c75f347d280d6c5345b/panel_material_ui-0.15.0.tar.gz", hash = "sha256:483aeac52954cb0c5ebfe560b04c619f2e2c0077087708099c3c0aaf67614ecb", size = 4041112, upload-time = "2026-09-22T07:53:45.761Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "0.14.2"
+version = "0.15.0"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/8b/e3/524f051e605702b53d34560f6f5d79a7262589f750fdba14484e99b27548/panel_material_ui-0.14.2-py3-none-any.whl", hash = "sha256:726b9aecc675c03e2c0f823c03f9a20910052a9a0d2e10b0c4430bcacf824911", size = 1734158, upload-time = "2026-08-11T13:35:22.016Z"}
+  {url = "https://files.pythonhosted.org/packages/ed/e5/d1b15eeea292f5b58a80b83fcc746aae42b91ade29f5f7fbeb442811e2bb/panel_material_ui-0.15.0-py3-none-any.whl", hash = "sha256:33270e6fe00f178d9c8b8658f48d4c9477d85eb126638135f316918514a70f1d", size = 1766337, upload-time = "2026-09-22T07:53:43.916Z"}
 ]
 
 [[package]]
@@ -4285,11 +4283,11 @@ wheels = [
 
 [[package]]
 name = "platformdirs"
-sdist = {url = "https://files.pythonhosted.org/packages/89/24/92d90bebedf197eb15b144367ce6fd4ad2de571927cd09dde190a36db8fc/platformdirs-4.11.10.tar.gz", hash = "sha256:9cd351c078ccf7dda1fdc5f8ccb9d8f5258984c63990e6df3627dde0b70b51d0", size = 39389, upload-time = "2026-09-18T01:45:15.107Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/ea/dd/65804b0c2925a1c821a05502ea57517b69a073ff400d25ab9faa3a2cf012/platformdirs-4.11.12.tar.gz", hash = "sha256:e8dc1cb58f1153fd7f61db1374317770baababec2480b37b8f01c6cc25b45267", size = 40016, upload-time = "2026-09-22T01:02:36.973Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "4.11.10"
+version = "4.11.12"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/67/45/cae23ec98a49825d58de75c38cdb714605adeb6e6ab72a7ad2b28322892c/platformdirs-4.11.10-py3-none-any.whl", hash = "sha256:973c4c082b964958c71588448488d2b14fb253893dfbdb82325a14c84e540e8f", size = 24763, upload-time = "2026-09-18T01:45:13.878Z"}
+  {url = "https://files.pythonhosted.org/packages/ec/2b/69de6317fbf48865bb12aa56c9cfcfff46b3add0cd45250725d96146dce0/platformdirs-4.11.12-py3-none-any.whl", hash = "sha256:b1ba966ac76153d9985a0787ffab951e7c18416189873d4e4ddb2c8a04a0a254", size = 24976, upload-time = "2026-09-22T01:02:35.742Z"}
 ]
 
 [[package]]
@@ -4642,11 +4640,11 @@ wheels = [
 
 [[package]]
 name = "pyparsing"
-sdist = {url = "https://files.pythonhosted.org/packages/f3/91/9c6ee907786a473bf81c5f53cf703ba0957b23ab84c264080fb5a450416f/pyparsing-3.3.2.tar.gz", hash = "sha256:c777f4d763f140633dcb6d8a3eda953bf7a214dc4eff598413c070bcdc117cbc", size = 6851574, upload-time = "2026-01-21T03:57:59.36Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/e4/11/b213bebff182584360cb8d17c72c1677fec5c5c228de439e63bcf8ab1c8f/pyparsing-3.3.3.tar.gz", hash = "sha256:928ae7e20211f3b6f3915a72f06a0cfd29ab9d24279dd6346b6b1a7146397d36", size = 1050487, upload-time = "2026-09-20T20:59:05.609Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "3.3.2"
+version = "3.3.3"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/10/bd/c038d7cc38edc1aa5bf91ab8068b63d4308c66c4c8bb3cbba7dfbc049f9c/pyparsing-3.3.2-py3-none-any.whl", hash = "sha256:850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d", size = 122781, upload-time = "2026-01-21T03:57:55.912Z"}
+  {url = "https://files.pythonhosted.org/packages/38/bb/d215ee7c73b61497b28a5503f9f53523f294fcc936762b7caf90e0c1c2b5/pyparsing-3.3.3-py3-none-any.whl", hash = "sha256:ece8c00a69cf01b45d0b1dedabb469c90d8caf996d4fda40f147627a122849a4", size = 126420, upload-time = "2026-09-20T20:59:04.025Z"}
 ]
 
 [[package]]
@@ -5233,11 +5231,11 @@ dependencies = [
   {name = "optype", extra = ["numpy"]}
 ]
 name = "scipy-stubs"
-sdist = {url = "https://files.pythonhosted.org/packages/fc/99/02c608a58cf99774c577f22e457427f87c8e608652c5de95178daa003e1f/scipy_stubs-1.18.1.0.tar.gz", hash = "sha256:87bec0df883cd9cd6b7dc4c74a33362cf550e9cad679643a29a886ab2b438ddc", size = 448822, upload-time = "2026-08-22T09:22:52.944Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/dc/76/13f1b922b32ec866389b6f359cf6c29bdb74726df130f0a23a95c72486c1/scipy_stubs-1.18.1.1.tar.gz", hash = "sha256:87995ba945f04a3c3fb9cdb5c06d093cf3637ca1271ae6799eb8030b63fb2263", size = 460131, upload-time = "2026-09-20T22:37:38.617Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "1.18.1.0"
+version = "1.18.1.1"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/12/11/263ced30149fbede00614a11f01de792842d3636b5a9e3abfee34e764a0e/scipy_stubs-1.18.1.0-py3-none-any.whl", hash = "sha256:fc1f00da3eb6bf1adf2138774b5e6a91dcf7c77039ff199577dc47929c10793e", size = 653731, upload-time = "2026-08-22T09:22:51.43Z"}
+  {url = "https://files.pythonhosted.org/packages/27/53/9b6dff8225ef3dbc203b1c2329d9efb2b66dfd51d5c2bf048c0676f47731/scipy_stubs-1.18.1.1-py3-none-any.whl", hash = "sha256:1a48be1702cad1ae9aa850c62ed157c988d990305880511d0e38994d502664f4", size = 665244, upload-time = "2026-09-20T22:37:37.029Z"}
 ]
 
 [[package]]
@@ -5838,11 +5836,11 @@ wheels = [
 
 [[package]]
 name = "trove-classifiers"
-sdist = {url = "https://files.pythonhosted.org/packages/c2/e3/7ca82ee24c82d344584abd5b8637b3bd056f2900226e8d82fc22f1184b92/trove_classifiers-2026.6.1.19.tar.gz", hash = "sha256:c5132b4b61a829d11cfbd2d72e97f20a45ed6edb95e45c5efdeb5e00836b2745", size = 17059, upload-time = "2026-06-01T19:41:34.649Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/bf/93/af436dfaa845cab5d96f0adbc1e4f3730532d37fa249e4eb796fb1d7fc82/trove_classifiers-2026.9.21.13.tar.gz", hash = "sha256:0a9ebc8d4e2f3e8a22848c5258033035bec17a3012ac3fea16dbaa764489eb71", size = 17085, upload-time = "2026-09-21T13:29:07.301Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "2026.6.1.19"
+version = "2026.9.21.13"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/7c/a4/81502f486f01db95bc8320646a8a12511f5e556cb63d5e224d91816605c4/trove_classifiers-2026.6.1.19-py3-none-any.whl", hash = "sha256:ab4c4ec93cc4a4e7815fa759906e05e6bb3f2fbd92ea0f897288c6a43efd15b3", size = 14211, upload-time = "2026-06-01T19:41:33.434Z"}
+  {url = "https://files.pythonhosted.org/packages/30/81/0da8afb52a71d0a4f2bd3152357b1a441e393b286374802b9d3addab4ab5/trove_classifiers-2026.9.21.13-py3-none-any.whl", hash = "sha256:8b1ff4f9c191b1040b71c37f1e445ab99732911e3cd91de52838453a854d7a17", size = 14232, upload-time = "2026-09-21T13:29:06.123Z"}
 ]
 
 [[package]]
@@ -5982,11 +5980,11 @@ all = [
 
 [[package]]
 name = "validate-pyproject-schema-store"
-sdist = {url = "https://files.pythonhosted.org/packages/68/b0/5fee8cd9b828ce7f0851a67929acbc06d9574d0120616fcd441b54ac4585/validate_pyproject_schema_store-2026.9.17.tar.gz", hash = "sha256:1648ada62f70d9a3797f0d33a61d7c5a30e0dff7056ccc3e754423f229d5d27d", size = 202249, upload-time = "2026-09-17T13:26:02.087Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/0f/9d/e17fcab291300ffbf69f15c7b7ba9d633a882e2423f58ed3e3f25fce149f/validate_pyproject_schema_store-2026.9.19.tar.gz", hash = "sha256:3371588256add790f1fdb4dd8cdb8139b8fc77697d32711439b5ce0889b5b109", size = 202220, upload-time = "2026-09-19T12:31:58.023Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "2026.9.17"
+version = "2026.9.19"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/da/7e/fb3b949ff978e39b2262edcf31e676b15ead0e58f2b0ac1d83e1bcf94a62/validate_pyproject_schema_store-2026.9.17-py3-none-any.whl", hash = "sha256:8ccb7eb3fa9e6d28e233d5eea813490f2599d9bec6caf7c404e291ae32f688b1", size = 205783, upload-time = "2026-09-17T13:26:00.281Z"}
+  {url = "https://files.pythonhosted.org/packages/96/4d/52869ec28a4520aadeea3c9d58e38435752dd9d9e2213304cb199edcbe0a/validate_pyproject_schema_store-2026.9.19-py3-none-any.whl", hash = "sha256:2070d6d064e52a2fa60d298ce0130f1dc189be7e82fc58d1c32411d9182495cf", size = 205782, upload-time = "2026-09-19T12:31:56.201Z"}
 ]
 
 [package.optional-dependencies]

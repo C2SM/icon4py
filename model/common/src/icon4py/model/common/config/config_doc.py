@@ -11,25 +11,31 @@ from __future__ import annotations
 import dataclasses
 import enum
 import functools
-import textwrap
 import types
 import typing
+from collections.abc import Callable, Iterator
 
-import rich.tree
 import textual.app
 import textual.containers
 import textual.reactive
 import textual.widget
 import textual.widgets.tree
-import yaml
+from typing_extensions import _AnnotatedAlias
 
 from icon4py.model.common import time, type_alias as ta
 from icon4py.model.common.config import config_io, options as config_options
-from icon4py.model.driver.config import ExperimentConfig
 
 
-type HINT = type | typing.TypeAliasType | types.UnionType
-type RESOLVED = type | types.UnionType
+type HINT = (
+    type
+    | typing.TypeAliasType
+    | types.UnionType
+    | types.GenericAlias
+    | enum.EnumType
+    | _AnnotatedAlias
+    | None
+)
+type RESOLVED = type | types.UnionType | types.GenericAlias | enum.EnumType | None
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
@@ -71,12 +77,40 @@ class MissingDefault:
         return str(self)
 
 
+@typing.overload
+def resolve_type(type_hint: enum.EnumType) -> enum.EnumType: ...
+
+
+@typing.overload
+def resolve_type(type_hint: type) -> type: ...
+
+
+@typing.overload
+def resolve_type(type_hint: types.UnionType) -> types.UnionType: ...
+
+
+@typing.overload
+def resolve_type(type_hint: types.GenericAlias) -> types.GenericAlias: ...
+
+
+@typing.overload
+def resolve_type(type_hint: None) -> None: ...
+
+
+@typing.overload
+def resolve_type(type_hint: HINT) -> RESOLVED: ...
+
+
 def resolve_type(type_hint: HINT) -> RESOLVED:
+    if type_hint is None:
+        return None
     actual_type = type_hint
     if hasattr(type_hint, "__metadata__") and hasattr(type_hint, "__origin__"):
         actual_type = resolve_type(typing.cast(RESOLVED, type_hint.__origin__))
     if isinstance(actual_type, typing.TypeAliasType):
         actual_type = resolve_type(actual_type.__value__)
+    if actual_type is None:
+        return actual_type
     if (
         hasattr(actual_type, "__args__")
         and hasattr(actual_type, "__name__")
@@ -120,62 +154,14 @@ class ConfigClassContainer:
     record: Record
     children: tuple[Record | ConfigClassContainer | UnionContainer, ...]
 
-    @classmethod
-    def children_from_dataclass(
-        cls: type[typing.Self], data_class: HINT, ctx: TraversalContext
-    ) -> typing.Iterator[typing.Self | Record | UnionContainer]:
-        assert dataclasses.is_dataclass(data_class)
-        for field, field_type in children_with_type(data_class):
-            resolved = resolve_type(field_type)
-            new_ctx = ctx.append_path(field.name, field=field, type_hint=field_type)
-            if dataclasses.is_dataclass(field_type):
-                yield cls.from_type(resolved, ctx=new_ctx)
-            elif isinstance(resolved, types.UnionType):
-                yield UnionContainer.from_type(resolved, ctx=new_ctx)
-            else:
-                yield Record.from_type(resolved, ctx=new_ctx)
-
-    @classmethod
-    def from_type(
-        cls: type[typing.Self], data_class: RESOLVED, ctx: TraversalContext
-    ) -> typing.Self:
-        return cls(
-            record=Record.from_type(data_class, ctx),
-            children=tuple(cls.children_from_dataclass(data_class, ctx)),
-        )
-
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class UnionContainer:
     record: Record
     alternatives: tuple[Record | ConfigClassContainer | UnionContainer, ...]
 
-    @classmethod
-    def from_type(
-        cls: type[typing.Self], type_hint: types.UnionType, ctx: TraversalContext
-    ) -> typing.Self:
-        actual_type = resolve_type(type_hint)
-        assert isinstance(actual_type, types.UnionType)
-        alts: list[Record | ConfigClassContainer | UnionContainer] = []
-        for t in actual_type.__args__:
-            if dataclasses.is_dataclass(typing.cast(type, t)):
-                alts.append(ConfigClassContainer.from_type(t, ctx=ctx))
-            else:
-                alts.append(Record.from_type(t, ctx))
-        return cls(record=Record.from_type(type_hint, ctx), alternatives=tuple(alts))
 
-
-def selfdoc(config_class: type) -> rich.tree.Tree:
-    ir = node_from_type(
-        config_class,
-        ctx=TraversalContext(
-            name_path=(config_class.__name__,), current_field=None, current_typehint=type
-        ),
-    )
-    return tree_from_node(ir)
-
-
-def children_with_type(data_class: HINT) -> typing.Iterator[tuple[dataclasses.Field, type]]:
+def children_with_type(data_class: RESOLVED) -> typing.Iterator[tuple[dataclasses.Field, type]]:
     assert dataclasses.is_dataclass(data_class)
     annotations = typing.get_type_hints(data_class, include_extras=True)
     for field in dataclasses.fields(data_class):
@@ -206,12 +192,14 @@ def node_from_dataclass(type_hint: RESOLVED, ctx: TraversalContext) -> ConfigCla
 
 def node_from_union(type_hint: types.UnionType, ctx: TraversalContext) -> UnionContainer:
     return UnionContainer(
-        record=Record.from_type(type_hint, ctx=ctx),
+        record=(rec := Record.from_type(type_hint, ctx=ctx)),
         alternatives=tuple(
             node_from_type(
                 resolve_type(t),
                 ctx=ctx.append_path(
-                    name=str(resolve_type(t)), field=ctx.current_field, type_hint=t
+                    name=str(resolve_type(t)),
+                    field=ctx.current_field,
+                    type_hint=typing.Annotated[t, rec.option_meta],
                 ),
             )
             for t in type_hint.__args__
@@ -221,9 +209,12 @@ def node_from_union(type_hint: types.UnionType, ctx: TraversalContext) -> UnionC
 
 def description_from_type(type_hint: RESOLVED) -> str:
     if dataclasses.is_dataclass(type_hint) or isinstance(type_hint, enum.EnumType):
-        return type_hint.__doc__ or "??"
+        desc = type_hint.__doc__ or "??"
+        if desc.startswith(f"{type_hint.__name__}("):
+            desc = "??"
     else:
-        return "??"
+        desc = "??"
+    return desc
 
 
 def node_from_other_type(type_hint: HINT, ctx: TraversalContext) -> Record:
@@ -241,44 +232,13 @@ def node_from_other_type(type_hint: HINT, ctx: TraversalContext) -> Record:
 
 
 @functools.singledispatch
-def tree_from_node(node: Record | UnionContainer | ConfigClassContainer) -> rich.tree.Tree:
-    _ = node
-    return rich.tree.Tree("ERROR")
+def add_node_to_ttree(
+    node: Record | ConfigClassContainer | UnionContainer, ttree: textual.widgets.tree.TreeNode
+) -> None: ...
 
 
-@tree_from_node.register
-def tree_from_record(node: Record) -> rich.tree.Tree:
-    result = rich.tree.Tree(node.qualified_name[-1])
-    info = result.add("INFO")
-    info.add(f"description: {node.option_meta.description}")
-    info.add(f"required: {not node.optional}")
-    info.add(f"default: {node.default}")
-    info.add("units: NOT IMPLEMENTED YET")
-    info.add(f"type: {node.allowed_type}")
-    info.add("syntax: NOT IMPLEMENTED YET")
-    return result
-
-
-@tree_from_node.register
-def tree_from_conf_container(node: ConfigClassContainer) -> rich.tree.Tree:
-    result = tree_from_node(node.record)
-    for child in node.children:
-        result.add(tree_from_node(child))
-    return result
-
-
-@tree_from_node.register
-def tree_from_union_container(node: UnionContainer) -> rich.tree.Tree:
-    result = tree_from_node(node.record)
-    info = next(n for n in result.children if n.label == "INFO")
-    types_node = info.add("allowed types:")
-    for alternative in node.alternatives:
-        types_node.add(tree_from_node(alternative))
-    return result
-
-
-@functools.singledispatch
-def add_node_to_ttree(node: Record, ttree: textual.widgets.tree.TreeNode) -> None:
+@add_node_to_ttree.register
+def add_record_to_ttree(node: Record, ttree: textual.widgets.tree.TreeNode) -> None:
     ttree.add_leaf(node.qualified_name[-1], data=node)
 
 
@@ -306,57 +266,63 @@ def record_from_node(node: Record | ConfigClassContainer | UnionContainer) -> Re
             return node.record
 
 
-T = typing.TypeVar("T")
-
-
 @functools.singledispatch
-def examples_for[T](some_type: type[T]) -> typing.Iterator[tuple[T | dict | str, type]]:
-    some_type = resolve_type(some_type)
-    if some_type is config_io.SharedOptionSet:
-        yield (
-            config_io.SharedOptionSet(
-                options={"<option 1>": "<value 1>", "<option 2>": "<value 2>"},
-                consumers=["<section A>", "<section B>"],
-            ),
-            some_type,
-        )
-    else:
-        try:
-            yield some_type(), some_type
-        except TypeError:
-            if dataclasses.is_dataclass(some_type):
-                field_types = typing.get_type_hints(some_type)
-                yield (
-                    some_type(
-                        **{
-                            f.name: next(examples_for(resolve_type(field_types[f.name])))[0]
-                            for f in dataclasses.fields(some_type)
-                        }
-                    ),
-                    some_type,
-                )
-            elif some_type is time.AbsoluteTime:
-                yield from examples_for_abstime(some_type)
-            elif some_type is ta.wpfloat:
-                yield from examples_for_wpfloat(some_type)
-            else:
-                yield "No example found.", str
+def examples_for(some_type: HINT) -> typing.Iterator[tuple[object, RESOLVED]]:
+    _ = some_type
+    yield "No example found.", str
+
+
+@examples_for.register
+def examples_for_type(
+    some_type: type, *, try_call: bool = True
+) -> typing.Iterator[tuple[object, RESOLVED]]:
+    resolved = resolve_type(some_type)
+    match resolved:
+        case _ if hasattr(resolved, "__examples__") and isinstance(
+            resolved.__examples__, types.MethodType
+        ):
+            yield from resolved.__examples__()
+        case Callable() if try_call:
+            try:
+                yield resolved(), resolved
+            except TypeError:
+                yield from examples_for_type(some_type, try_call=False)
+        case _ if dataclasses.is_dataclass(resolved):
+            field_types = typing.get_type_hints(resolved)
+            yield (
+                resolved(
+                    **{
+                        f.name: next(examples_for(resolve_type(field_types[f.name])))[0]
+                        for f in dataclasses.fields(resolved)
+                    }
+                ),
+                resolved,
+            )
+        case time.AbsoluteTime:
+            yield from examples_for_abstime(resolved)
+        case ta.wpfloat:
+            yield from examples_for_wpfloat(resolved)
+        case _:
+            yield "No example found.", str
 
 
 @examples_for.register
 def examples_for_enum(
     some_type: enum.EnumType,
-) -> typing.Iterator[tuple[typing.Any, enum.EnumType]]:
-    yield from ((e, some_type) for e in some_type)
+) -> typing.Iterator[tuple[object, enum.EnumType]]:
+    enum_values: Iterator[object] = iter(some_type)
+    yield from ((e, some_type) for e in enum_values)
 
 
 @examples_for.register
-def examples_for_none(some_type: types.NoneType) -> typing.Iterator[tuple[None, types.NoneType]]:
+def examples_for_none(some_type: None) -> typing.Iterator[tuple[None, None]]:
     yield None, some_type
 
 
 @examples_for.register
-def examples_for_union(some_type: types.UnionType) -> typing.Iterator[tuple[None, types.UnionType]]:
+def examples_for_union(
+    some_type: types.UnionType,
+) -> typing.Iterator[tuple[object, types.UnionType]]:
     for allowed_type in some_type.__args__:
         yield from ((ex, some_type) for ex, _ in examples_for(allowed_type))
 
@@ -381,7 +347,15 @@ def examples_for_abstime(
 def examples_for_wpfloat(
     some_type: type[ta.wpfloat],
 ) -> typing.Iterator[tuple[float, type[ta.wpfloat]]]:
-    yield 0.0, ta.wpfloat
+    yield 0.0, some_type
+
+
+@dataclasses.dataclass
+class NoRoot:
+    """
+    You are seeing this because something went wrong and the configuration browser
+    was not initialized properly!
+    """
 
 
 class ConfigDocWidget(textual.widget.Widget):
@@ -399,6 +373,7 @@ class ConfigDocWidget(textual.widget.Widget):
                 yield textual.widgets.Markdown(id="description")
 
     def on_mount(self: typing.Self) -> None:
+        self.root_class = self.root_class or NoRoot
         self.query_one("#left").styles.width = "1fr"
         self.query_one("#right").styles.width = "2fr"
         tree: textual.widgets.Tree[Record | ConfigClassContainer | UnionContainer] = self.query_one(
@@ -429,7 +404,7 @@ class ConfigDocWidget(textual.widget.Widget):
     ) -> None:
         node = message.node
         node.expand()
-        desc = self.query_one("#description", expect_type=textual.widgets.Markdown)
+        info = self.query_one("#description", expect_type=textual.widgets.Markdown)
         record = record_from_node(
             typing.cast(Record | ConfigClassContainer | UnionContainer, node.data)
         )
@@ -439,44 +414,40 @@ class ConfigDocWidget(textual.widget.Widget):
             else record.qualified_name[-2]
         )
         examples = "\n--\n\n".join(
-            yaml.dump(  # TODO(ricoh): [c38] make this part of API
-                {
-                    example_name: config_io.CONV.unstructure(
-                        example, unstructure_as=unstructure_type
-                    )
-                },
-                sort_keys=False,
-                Dumper=config_io.IndentSequencesDumper,
+            config_io.write_yaml_str(
+                {example_name: config_io.CONV.unstructure(example, unstructure_as=unstructure_type)}
             )
             for example, unstructure_type in examples_for(record.allowed_type)
         )
-        markdown = textwrap.dedent(
-            f"""
-            ## Description
-
-            {record.option_meta.description}
-
-            ## Info
-
-            - type: {record.allowed_type}
-            - default: {record.default}
-
-            ## Examples
-
-            ```yaml
-            {{examples}}
-            ```
-            """
-        ).format(examples=examples)
-        desc.update(markdown)
+        desc = record.option_meta.description
+        markdown = "\n".join(
+            (
+                "## Description",
+                "",
+                f"{desc}",
+                "",
+                "## Info",
+                "",
+                f"- type: {record.allowed_type}",
+                f"- default: {record.default}",
+                f"- can{' ' if record.optional else ' not '}be omitted",
+                "",
+                "## Examples",
+                "",
+                "```yaml",
+                f"{examples}",
+                "```",
+            )
+        )
+        info.update(markdown)
 
 
 class ConfigDocApp(textual.app.App):
     root_class: textual.reactive.var[type | None] = textual.reactive.var(None, init=True)
 
-    def __init__(self, root_class: type | None = None, **kwargs):
+    def __init__(self, root_class: type | None = None, **kwargs: typing.Any):
         super().__init__(**kwargs)
-        self.root_class = root_class if root_class else ExperimentConfig
+        self.root_class = root_class
 
     def compose(self) -> textual.app.ComposeResult:
         config_widget = ConfigDocWidget()
