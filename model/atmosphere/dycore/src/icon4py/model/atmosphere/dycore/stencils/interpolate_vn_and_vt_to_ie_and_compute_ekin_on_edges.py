@@ -18,12 +18,12 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 
 @gtx.field_operator
 def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
-    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     vt: fa.EdgeKField[ta.vpfloat],
 ) -> tuple[
-    fa.EdgeKField[ta.vpfloat],
-    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKHalfField[ta.vpfloat],
+    fa.EdgeKHalfField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_36."""
@@ -36,11 +36,11 @@ def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
-    wgtfac_e: fa.EdgeKField[ta.vpfloat],
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     vt: fa.EdgeKField[ta.vpfloat],
-    vn_ie: fa.EdgeKField[ta.vpfloat],
-    z_vt_ie: fa.EdgeKField[ta.vpfloat],
+    vn_ie: fa.EdgeKHalfField[ta.vpfloat],
+    z_vt_ie: fa.EdgeKHalfField[ta.vpfloat],
     z_kin_hor_e: fa.EdgeKField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -52,8 +52,18 @@ def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
         vn=vn,
         vt=vt,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+        domain=(
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.EdgeDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+        ),
     )

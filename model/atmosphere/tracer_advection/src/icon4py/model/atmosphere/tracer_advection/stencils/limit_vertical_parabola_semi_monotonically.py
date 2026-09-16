@@ -15,21 +15,24 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 @gtx.field_operator
 def _limit_vertical_parabola_semi_monotonically(
     l_limit: fa.CellKField[gtx.int32],
-    p_face: fa.CellKField[ta.wpfloat],
+    p_face: fa.CellKHalfField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     q_face_up, q_face_low = where(
         l_limit != 0,
         where(
-            (p_cc < minimum(p_face, p_face(dims.KDim + 1))),
+            (p_cc < minimum(p_face(dims.KDim - 0.5), p_face(dims.KDim + 0.5))),
             (p_cc, p_cc),
             where(
-                p_face > p_face(dims.KDim + 1),
-                (3.0 * p_cc - 2.0 * p_face(dims.KDim + 1), p_face(dims.KDim + 1)),
-                (p_face, 3.0 * p_cc - 2.0 * p_face),
+                p_face(dims.KDim - 0.5) > p_face(dims.KDim + 0.5),
+                (
+                    3.0 * p_cc - 2.0 * p_face(dims.KDim + 0.5),
+                    p_face(dims.KDim + 0.5),
+                ),
+                (p_face(dims.KDim - 0.5), 3.0 * p_cc - 2.0 * p_face(dims.KDim - 0.5)),
             ),
         ),
-        (p_face, p_face(dims.KDim + 1)),
+        (p_face(dims.KDim - 0.5), p_face(dims.KDim + 0.5)),
     )
 
     return q_face_up, q_face_low
@@ -38,7 +41,7 @@ def _limit_vertical_parabola_semi_monotonically(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def limit_vertical_parabola_semi_monotonically(
     l_limit: fa.CellKField[gtx.int32],
-    p_face: fa.CellKField[ta.wpfloat],
+    p_face: fa.CellKHalfField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
     p_face_up: fa.CellKField[ta.wpfloat],
     p_face_low: fa.CellKField[ta.wpfloat],

@@ -22,10 +22,10 @@ from icon4py.model.testing import stencil_tests
 def calculate_diagnostics_for_turbulence_numpy(
     wgtfac_c: np.ndarray, div: np.ndarray, kh_c: np.ndarray, div_ic, hdef_ic
 ) -> tuple[np.ndarray, np.ndarray]:
-    kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
-    div_offset_1 = np.roll(div, shift=1, axis=1)
-    div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
-    hdef_ic[:, 1:] = ((wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2)[:, 1:]
+    nlev = div.shape[1]
+    w = wgtfac_c[:, 1:nlev]
+    div_ic[:, 1:nlev] = w * div[:, 1:nlev] + (1.0 - w) * div[:, 0 : nlev - 1]
+    hdef_ic[:, 1:nlev] = (w * kh_c[:, 1:nlev] + (1.0 - w) * kh_c[:, 0 : nlev - 1]) ** 2
     return div_ic, hdef_ic
 
 
@@ -51,9 +51,9 @@ class TestCalculateDiagnosticsForTurbulence(stencil_tests.StencilTest):
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper):
-        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         div = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
         kh_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        div_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
-        hdef_ic = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        div_ic = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        hdef_ic = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
         return dict(wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic)

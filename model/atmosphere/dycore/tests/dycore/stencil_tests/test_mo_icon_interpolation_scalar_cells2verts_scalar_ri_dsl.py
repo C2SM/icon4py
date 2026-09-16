@@ -55,9 +55,9 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(stencil_tests.StencilT
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        p_cell_in = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=wpfloat)
+        p_cell_in = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
         c_intp = data_alloc.random_field(dims.VertexDim, dims.V2CDim, dtype=wpfloat)
-        p_vert_out = data_alloc.zero_field(dims.VertexDim, dims.KDim, dtype=vpfloat)
+        p_vert_out = data_alloc.zero_field(dims.VertexDim, dims.KHalfDim, dtype=vpfloat)
 
         return dict(
             p_cell_in=p_cell_in,
@@ -66,5 +66,5 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(stencil_tests.StencilT
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_vertices),
             vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

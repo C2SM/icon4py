@@ -14,15 +14,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
-    w_nnow: fa.CellKField[wpfloat],
-    ddt_w_adv_ntl1: fa.CellKField[vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[vpfloat],
-    rho_ic: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
+    w_nnow: fa.CellKHalfField[wpfloat],
+    ddt_w_adv_ntl1: fa.CellKHalfField[vpfloat],
+    z_th_ddz_exner_c: fa.CellKHalfField[vpfloat],
+    rho_ic: fa.CellKHalfField[wpfloat],
+    w_concorr_c: fa.CellKHalfField[vpfloat],
     vwind_expl_wgt: fa.CellField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
-) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+) -> tuple[fa.CellKHalfField[wpfloat], fa.CellKHalfField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_43."""
     ddt_w_adv_ntl1_wp, z_th_ddz_exner_c_wp, w_concorr_c_wp = astype(
         (ddt_w_adv_ntl1, z_th_ddz_exner_c, w_concorr_c), wpfloat
@@ -35,13 +35,13 @@ def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
-    z_w_expl: fa.CellKField[wpfloat],
-    w_nnow: fa.CellKField[wpfloat],
-    ddt_w_adv_ntl1: fa.CellKField[vpfloat],
-    z_th_ddz_exner_c: fa.CellKField[vpfloat],
-    z_contr_w_fl_l: fa.CellKField[wpfloat],
-    rho_ic: fa.CellKField[wpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
+    z_w_expl: fa.CellKHalfField[wpfloat],
+    w_nnow: fa.CellKHalfField[wpfloat],
+    ddt_w_adv_ntl1: fa.CellKHalfField[vpfloat],
+    z_th_ddz_exner_c: fa.CellKHalfField[vpfloat],
+    z_contr_w_fl_l: fa.CellKHalfField[wpfloat],
+    rho_ic: fa.CellKHalfField[wpfloat],
+    w_concorr_c: fa.CellKHalfField[vpfloat],
     vwind_expl_wgt: fa.CellField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
@@ -62,6 +62,6 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
         out=(z_w_expl, z_contr_w_fl_l),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

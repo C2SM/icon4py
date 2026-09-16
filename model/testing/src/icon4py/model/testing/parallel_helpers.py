@@ -85,7 +85,7 @@ def check_local_global_field(
     atol: float,
     rtol: float = 0.0,
 ) -> None:
-    if dim == dims.KDim:
+    if dim.kind == gtx.DimensionKind.VERTICAL:
         test_utils.assert_dallclose(global_reference_field, local_field)
         return
 

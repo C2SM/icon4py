@@ -39,9 +39,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    init_cell_kdim_field_with_zero_wp,
-)
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
 )
@@ -64,7 +61,7 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     vertical as v_grid,
 )
-from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.math import smagorinsky, vertical_operations
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -100,9 +97,9 @@ class IntermediateFields:
     """
     Declared as z_kin_hor_e in ICON.
     """
-    tangential_wind_on_half_levels: fa.EdgeKField[ta.anyfloat]
+    tangential_wind_on_half_levels: fa.EdgeKHalfField[ta.anyfloat]
     """
-    Declared as z_vt_ie in ICON. Tangential wind at edge on k-half levels. NOTE THAT IT ONLY HAS nlev LEVELS because it is only used for computing horizontal advection of w and thus level nlevp1 is not needed because w[nlevp1-1] is diagnostic.
+    Declared as z_vt_ie in ICON. Tangential wind at edge on k-half levels. The bottom half level is never computed: it is only used for the horizontal advection of w, and w[nlevp1-1] is diagnostic.
     """
     horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.anyfloat]
     """
@@ -137,7 +134,7 @@ class IntermediateFields:
                 grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             tangential_wind_on_half_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, allocator=allocator
+                grid, dims.EdgeDim, dims.KHalfDim, allocator=allocator
             ),
         )
 
@@ -656,7 +653,7 @@ class SolveNonhydro:
             },
             variants={
                 "at_first_substep": [False, True],
-                "prepare_advection": [False, True],
+                "prepare_fluxes_for_advection": [False, True],
             },
             horizontal_sizes={
                 "horizontal_start": gtx.int32(self._start_edge_lateral_boundary_level_5),
@@ -721,7 +718,7 @@ class SolveNonhydro:
             variants={
                 "at_first_substep": [False, True],
                 "at_last_substep": [False, True],
-                "lprep_adv": [False, True],
+                "prepare_fluxes_for_advection": [False, True],
                 "is_iau_active": [False, True] if self._config.iau_init else [False],
             },
             horizontal_sizes={
@@ -754,9 +751,9 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._init_cell_kdim_field_with_zero_wp = setup_program(
+        self._set_constant_on_half_levels_on_cells = setup_program(
             backend=backend,
-            program=init_cell_kdim_field_with_zero_wp,
+            program=vertical_operations.set_constant_on_half_levels_on_cells,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary,
                 "horizontal_end": self._end_cell_lateral_boundary_level_4,
@@ -933,7 +930,7 @@ class SolveNonhydro:
         Declared as z_dexner_dz_c_1 in ICON.
         """
         self.nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+            self._grid, dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_th_ddz_exner_c in ICON. theta' dpi0/dz + theta (1 - eta_impl) dpi'/dz.
@@ -976,9 +973,6 @@ class SolveNonhydro:
         self.z_theta_v_v = data_alloc.zero_field(
             self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
-        self.k_field = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        )
         self._contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
@@ -1002,7 +996,7 @@ class SolveNonhydro:
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
         self.rayleigh_damping_factor = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+            self._grid, dims.KHalfDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as z_raylfac in ICON.
@@ -1085,7 +1079,7 @@ class SolveNonhydro:
         dtime: float,
         ndyn_substeps_var: int,
         at_initial_timestep: bool,
-        lprep_adv: bool,
+        prepare_fluxes_for_advection: bool,
         at_first_substep: bool,
         at_last_substep: bool,
         is_iau_active: bool = False,
@@ -1101,14 +1095,14 @@ class SolveNonhydro:
             dtime: time step
             ndyn_substeps_var: number of dynamical substeps
             at_initial_timestep: initial time step of the model run
-            lprep_adv: Preparation for tracer advection
+            prepare_fluxes_for_advection: Preparation for tracer advection
             at_first_substep: first substep
             at_last_substep: last substep
             is_iau_active: Incremental analysis update active during dycore step
             iau_wgt_dyn: weight scalar for the incremental analysis update
         """
         log.info(
-            f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {lprep_adv}"
+            f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {prepare_fluxes_for_advection}"
         )
 
         if self.p_test_run:
@@ -1138,7 +1132,7 @@ class SolveNonhydro:
             second_order_divdamp_factor=second_order_divdamp_factor,
             dtime=dtime,
             ndyn_substeps_var=ndyn_substeps_var,
-            lprep_adv=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
             is_iau_active=is_iau_active,
@@ -1345,14 +1339,14 @@ class SolveNonhydro:
         prep_adv: dycore_states.PrepAdvection,
         dtime: float,
         ndyn_substeps_var: int,
-        lprep_adv: bool,
+        prepare_fluxes_for_advection: bool,
         at_first_substep: bool,
         at_last_substep: bool,
         is_iau_active: bool,
         iau_wgt_dyn: float,
     ) -> None:
         log.info(
-            f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  "
+            f"running corrector step: dtime = {dtime}, prep_adv = {prepare_fluxes_for_advection},  "
             f"second_order_divdamp_factor = {second_order_divdamp_factor}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
         )
 
@@ -1445,7 +1439,7 @@ class SolveNonhydro:
             vn=prognostic_states.next.vn,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
-            prepare_advection=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
         )
@@ -1478,7 +1472,7 @@ class SolveNonhydro:
             is_iau_active=is_iau_active,
             iau_wgt_dyn=iau_wgt_dyn,
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
-            lprep_adv=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(ndyn_substeps_var),
             dtime=dtime,
@@ -1488,13 +1482,14 @@ class SolveNonhydro:
 
         # prepare flux field for tracer advection on lateral boundary, if exists
         if self._grid.limited_area:
-            if lprep_adv:
+            if prepare_fluxes_for_advection:
                 if at_first_substep:
                     log.debug(
                         "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
                     )
-                    self._init_cell_kdim_field_with_zero_wp(
-                        field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    self._set_constant_on_half_levels_on_cells(
+                        field=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                        value=0.0,
                     )
                 self._update_mass_flux_weighted(
                     rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,

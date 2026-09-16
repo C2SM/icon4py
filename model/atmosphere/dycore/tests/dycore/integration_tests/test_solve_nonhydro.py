@@ -271,9 +271,10 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         ],
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_3:, :],
     )
+    # ICON's z_th_ddz_exner_c stores only nlev levels, so the bottom half level has no reference
     assert test_utils.dallclose(
         solve_nonhydro.nonhydro_buoy_at_cells_on_half_levels.asnumpy()[
-            cell_start_lateral_boundary_level_3:, 1:
+            cell_start_lateral_boundary_level_3:, 1:-1
         ],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_3:, 1:],
         rtol=2.0e-12,
@@ -391,9 +392,10 @@ def test_nonhydro_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     )
 
     # stencil 35,36, 37,38
+    # ICON's z_vt_ie stores only nlev levels, so the bottom half level has no reference
     assert test_utils.dallclose(
         solve_nonhydro.intermediate_fields.tangential_wind_on_half_levels.asnumpy()[
-            edge_start_lateral_boundary_level_5:, :
+            edge_start_lateral_boundary_level_5:, :-1
         ],
         sp_exit.z_vt_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=2e-14,
@@ -483,13 +485,13 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
-    lprep_adv = init_savepoint.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = init_savepoint.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=init_savepoint.vn_traj(),
         mass_flx_me=init_savepoint.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=init_savepoint.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
         ),
     )
 
@@ -545,7 +547,7 @@ def test_nonhydro_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         second_order_divdamp_factor=second_order_divdamp_factor,
         dtime=dtime,
         ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
         is_iau_active=is_iau_active,
@@ -677,13 +679,13 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
         ),
     )
 
@@ -721,7 +723,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         dtime=dtime,
         ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         at_first_substep=substep_init == 1,
         at_last_substep=substep_init == experiment.config.driver.ndyn_substeps,
         is_iau_active=is_iau_active,
@@ -798,13 +800,13 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, allocator=backend
+            icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
         ),
     )
 
@@ -853,7 +855,7 @@ def test_run_solve_nonhydro_multi_step(  # noqa: PLR0917 [too-many-positional-ar
             dtime=dtime,
             ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
             at_initial_timestep=at_initial_timestep,
-            lprep_adv=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
             is_iau_active=is_iau_active,
@@ -995,7 +997,7 @@ def test_compute_perturbed_quantities_and_interpolation(  # noqa: PLR0917 [too-m
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
     )
     temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
@@ -1177,7 +1179,7 @@ def test_compute_interpolation_and_nonhydro_buoy(  # noqa: PLR0917 [too-many-pos
     rhotheta_implicit_weight_parameter = sp_init.wgt_nnew_rth()
 
     nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
+        icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -1815,7 +1817,7 @@ def test_compute_averaged_vn_and_fluxes(  # noqa: PLR0917 [too-many-positional-a
         rho_at_edges_on_model_levels=z_rho_e,
         ddqz_z_full_e=ddqz_z_full_e,
         theta_v_at_edges_on_model_levels=z_theta_v_e,
-        prepare_advection=True,
+        prepare_fluxes_for_advection=True,
         at_first_substep=at_first_substep,
         r_nsubsteps=r_nsubsteps,
         horizontal_start=horizontal_start,
@@ -2175,7 +2177,9 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
-        lprep_adv=savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv"),
+        prepare_fluxes_for_advection=savepoint_nonhydro_init.get_metadata("prep_adv").get(
+            "prep_adv"
+        ),
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=float(experiment.config.driver.ndyn_substeps),
         iau_wgt_dyn=iau_wgt_dyn,

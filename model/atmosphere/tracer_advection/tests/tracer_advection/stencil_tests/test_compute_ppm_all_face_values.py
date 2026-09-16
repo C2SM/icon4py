@@ -31,6 +31,7 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         p_cc: np.ndarray,
         p_cellhgt_mc_now: np.ndarray,
         p_face_in: np.ndarray,
+        p_face: np.ndarray,
         slev: gtx.int32,
         elev: gtx.int32,
         slevp1: gtx.int32,
@@ -38,23 +39,26 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         **kwargs: Any,
     ) -> dict:
         p_face_a = p_face_in.copy()
-        p_face_a[:, 1:] = p_cc[:, 1:] * (
+        p_face_a[:, 1:-1] = p_cc[:, 1:] * (
             1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])
         ) + (p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])) * (
             (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1]) * p_cc[:, 1:] + p_cc[:, :-1]
         )
-        k = np.arange(p_cc.shape[1])
-        p_face = np.where((k == slevp1) | (k == elev), p_face_a, p_face_in)
-        p_face = np.where((k == slev), p_cc, p_face)
-        p_face[:, 1:] = np.where((k[1:] == elevp1), p_cc[:, :-1], p_face[:, 1:])
+
+        p_face = p_face.copy()
+        p_face[:, :-1] = p_face_in[:, :-1]
+        p_face[:, slevp1] = p_face_a[:, slevp1]
+        p_face[:, elev] = p_face_a[:, elev]
+        p_face[:, slev] = p_cc[:, slev]
+        p_face[:, elevp1] = p_cc[:, elevp1 - 1]
         return dict(p_face=p_face)
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_face_in = data_alloc.random_field(dims.CellDim, dims.KDim)
-        p_face = data_alloc.zero_field(dims.CellDim, dims.KDim)
+        p_face_in = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        p_face = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
         slev = gtx.int32(1)
         slevp1 = gtx.int32(2)
         elev = grid.num_levels - 2

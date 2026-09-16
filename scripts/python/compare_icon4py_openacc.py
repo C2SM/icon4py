@@ -68,14 +68,14 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
         "compute_averaged_vn_and_fluxes",
         {
             "at_first_substep": False,
-            "prepare_advection": True,
+            "prepare_fluxes_for_advection": True,
         },
     ),
     "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first": (
         "compute_averaged_vn_and_fluxes",
         {
             "at_first_substep": True,
-            "prepare_advection": True,
+            "prepare_fluxes_for_advection": True,
         },
     ),
     "compute_advection_in_predictor_vertical_momentum": (
@@ -240,7 +240,7 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
             update_mass_flux_weighted_original[
                 ::5
             ],  # take ONLY every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep
-            unmatched_data.pop("init_cell_kdim_field_with_zero_wp"),
+            unmatched_data.pop("set_constant_on_half_levels_on_cells"),
             strict=True,
         )
     ]

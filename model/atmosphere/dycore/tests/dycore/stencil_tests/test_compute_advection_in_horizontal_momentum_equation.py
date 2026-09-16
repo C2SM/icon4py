@@ -19,8 +19,8 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
+from icon4py.model.testing.reference_funcs import interpolate_to_cell_center_numpy
 
-from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
 
 
@@ -270,7 +270,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.random_field(
             dims.CellDim, dims.KDim
         )
-        vn_on_half_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        vn_on_half_levels = data_alloc.random_field(dims.EdgeDim, dims.KHalfDim)
         coeff_gradekin = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)
         e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim)
         c_lin_e = data_alloc.random_field(dims.EdgeDim, dims.E2CDim)

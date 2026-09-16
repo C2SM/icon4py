@@ -250,20 +250,33 @@ def initialize_granules(
         inverse_vertex_vertex_lengths=geometry_field_source.get(
             f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
         ),
-        primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-        primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
-        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
-        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
-        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        primal_normal_vert=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        ),
+        dual_normal_vert=(
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+        ),
+        primal_normal_cell=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
+        ),
+        dual_normal_cell=(
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        ),
         edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
         coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
-        edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
-        edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
-        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
-        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        edge_center=(
+            geometry_field_source.get(geometry_meta.EDGE_LAT),
+            geometry_field_source.get(geometry_meta.EDGE_LON),
+        ),
+        primal_normal=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        ),
+        edge_cell_distances=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE),
     )
 
     log.info("creating diffusion interpolation state")
@@ -605,7 +618,6 @@ def display_driver_setup_in_log_file(
     log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
     log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
     log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
-    log.info(f"Prepare advection      : {config.do_prep_adv}")
     log.info(f"Initial diffusion      : {config.diffuse_before_time_loop}")
     log.info(f"Statistics enabled     : {config.enable_statistics_logging}")
     log.info(f"Active tracers         : {tracer_config}")

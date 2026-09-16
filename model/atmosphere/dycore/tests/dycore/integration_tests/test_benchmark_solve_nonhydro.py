@@ -91,20 +91,32 @@ def solve_nonhydro(
         inverse_vertex_vertex_lengths=geometry_field_source.get(
             f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
         ),
-        primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-        primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
-        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
-        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        primal_normal_vert=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        ),
+        dual_normal_vert=(
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+        ),
+        primal_normal_cell=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
+        ),
+        dual_normal_cell=(
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        ),
         edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
         coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
-        edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
-        edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
-        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
-        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        edge_center=(
+            geometry_field_source.get(geometry_meta.EDGE_LAT),
+            geometry_field_source.get(geometry_meta.EDGE_LON),
+        ),
+        primal_normal=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        ),
     )
 
     interpolation_state = dycore_states.InterpolationState(
@@ -227,7 +239,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
 
     dtime = 10.0 if mesh.limited_area else 90.0
 
-    lprep_adv = True
+    prepare_fluxes_for_advection = True
     ndyn_substeps = 5
     at_initial_timestep = False
     second_order_divdamp_factor = 0.02
@@ -236,32 +248,30 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         mass_flx_me=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
         ),
     )
 
     diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(0.0, allocator),
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
         ),
         perturbed_exner_at_cells_on_model_levels=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KDim, allocator=allocator
         ),
         rho_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
         ),
         exner_tendency_due_to_slow_physics=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KDim, allocator=allocator
         ),
         grf_tend_rho=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         grf_tend_thv=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        grf_tend_w=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
+        grf_tend_w=data_alloc.zero_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
         mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
             mesh, dims.EdgeDim, dims.KDim, allocator=allocator
         ),
@@ -274,19 +284,15 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
             data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            data_alloc.zero_field(
-                mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-            ),
-            data_alloc.zero_field(
-                mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-            ),
+            data_alloc.zero_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+            data_alloc.zero_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
         ),
         tangential_wind=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         vn_on_half_levels=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.EdgeDim, dims.KHalfDim, allocator=allocator
         ),
         contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
+            mesh, dims.CellDim, dims.KHalfDim, allocator=allocator
         ),
         rho_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         normal_wind_iau_increment=data_alloc.zero_field(
@@ -301,18 +307,14 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     )
 
     prognostic_state_nnow = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
     )
     prognostic_state_nnew = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
-        ),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
@@ -330,7 +332,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         dtime=dtime,
         ndyn_substeps_var=ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
     )
 
     benchmark(

@@ -15,6 +15,7 @@ import numpy as np
 from icon4py.model.atmosphere.tracer_advection import tracer_advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.states import tracer_prep_adv_states as prep_adv_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb, test_utils
 
@@ -74,9 +75,7 @@ def construct_diagnostic_init_state(
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
         hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend),
-        vfl_tracer=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
+        vfl_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend),
     )
 
 
@@ -97,8 +96,8 @@ def construct_diagnostic_exit_state(
 
 def construct_prep_adv(
     savepoint: sb.AdvectionInitSavepoint,
-) -> tracer_advection_states.AdvectionPrepAdvState:
-    return tracer_advection_states.AdvectionPrepAdvState(
+) -> prep_adv_states.TracerPrepAdvState:
+    return prep_adv_states.TracerPrepAdvState(
         vn_traj=savepoint.vn_traj(),
         mass_flx_me=savepoint.mass_flx_me(),
         mass_flx_ic=savepoint.mass_flx_ic(),
@@ -111,7 +110,7 @@ def log_dbg(field, name=""):
 
 def log_serialized(
     diagnostic_state: tracer_advection_states.AdvectionDiagnosticState,
-    prep_adv: tracer_advection_states.AdvectionPrepAdvState,
+    prep_adv: prep_adv_states.TracerPrepAdvState,
     p_tracer_now: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
 ):
