@@ -18,14 +18,13 @@ from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wi
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity_numpy,
 )
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
-from .test_compute_tangential_wind import compute_tangential_wind_numpy
 from .test_extrapolate_at_top import extrapolate_at_top_numpy
 from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
     interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy,
@@ -73,7 +72,7 @@ def compute_diagnostics_from_normal_wind_numpy(
 
     tangential_wind = np.where(
         k_nlev >= vertical_start,
-        compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
+        reference_funcs.compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
         tangential_wind,
     )
 

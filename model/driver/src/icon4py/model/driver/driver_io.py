@@ -28,11 +28,10 @@ import xarray as xr
 
 from icon4py.model.common import dimension as dims, time, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.diagnostic_calculations import pressure as pressure_diagnostics
-from icon4py.model.common.diagnostic_calculations.stencils import diagnose_temperature
 from icon4py.model.common.grid import base as grid_base, horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.io import io as common_io, utils as io_utils
+from icon4py.model.common.physics.thermodynamics import compute_pressure, compute_temperature
 from icon4py.model.common.states import data as state_data, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -155,9 +154,7 @@ class DiagnosticsComputer:
         # Typed as Any: gt4py's NDArrayObject protocol does not expose __setitem__, so the
         # in-place buffer fills below would not type-check against the precise Field type.
         self._pressure_on_cells_half_levels: Any = _zero_interface()
-        self._surface_pressure: Any = data_alloc.zero_field(
-            grid, dims.CellDim, dtype=ta.wpfloat, allocator=backend
-        )
+        self._pressure_ifc_on_model_levels = _zero_full()
 
     def compute(
         self,
@@ -178,7 +175,7 @@ class DiagnosticsComputer:
         num_levels = self._num_levels
         end_cell_end = self._end_cell_end
 
-        diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(backend)(
+        compute_temperature.compute_virtual_temperature_and_temperature.with_backend(backend)(
             qv=self._qv,
             qc=self._qc,
             qi=self._qi,
@@ -209,15 +206,18 @@ class DiagnosticsComputer:
             offset_provider={"C2E2C2E": self._grid.get_connectivity("C2E2C2E")},
         )
 
-        pressure_diagnostics.diagnose_pressure_surface_to_top(
-            grid=self._grid,
-            backend=backend,
+        compute_pressure.compute_surface_and_hydrostatic_pressure.with_backend(backend)(
             exner=prognostic_state.exner,
             virtual_temperature=self._virtual_temperature,
             ddqz_z_full=ddqz_z_full,
-            surface_pressure=self._surface_pressure,
             pressure=self._pressure,
-            pressure_on_cells_half_levels=self._pressure_on_cells_half_levels,
+            pressure_ifc_on_model_levels=self._pressure_ifc_on_model_levels,
+            pressure_ifc=self._pressure_on_cells_half_levels,
+            horizontal_start=0,
+            horizontal_end=end_cell_end,
+            vertical_start=0,
+            vertical_end=num_levels,
+            offset_provider={},
         )
 
         return {

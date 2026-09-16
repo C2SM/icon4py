@@ -215,7 +215,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def edge_vert_length(self):
         """length of edge midpoint to vertex"""
-        return self._get_field("edge_vert_length", dims.EdgeDim, dims.E2C2VDim)
+        return self._get_field("edge_vert_length", dims.EdgeDim, dims.E2VDim)
 
     def vct_a(self):
         return self._get_field("vct_a", dims.KHalfDim)
@@ -608,20 +608,33 @@ class IconGridSavepoint(IconSavepoint):
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
             inverse_vertex_vertex_lengths=self.inv_vert_vert_length(),
-            primal_normal_vert_x=self.primal_normal_vert_x(),
-            primal_normal_vert_y=self.primal_normal_vert_y(),
-            dual_normal_vert_x=self.dual_normal_vert_x(),
-            dual_normal_vert_y=self.dual_normal_vert_y(),
-            primal_normal_cell_x=self.primal_normal_cell_x(),
-            dual_normal_cell_x=self.dual_normal_cell_x(),
-            primal_normal_cell_y=self.primal_normal_cell_y(),
-            dual_normal_cell_y=self.dual_normal_cell_y(),
+            primal_normal_vert=(
+                self.primal_normal_vert_x(),
+                self.primal_normal_vert_y(),
+            ),
+            dual_normal_vert=(
+                self.dual_normal_vert_x(),
+                self.dual_normal_vert_y(),
+            ),
+            primal_normal_cell=(
+                self.primal_normal_cell_x(),
+                self.primal_normal_cell_y(),
+            ),
+            dual_normal_cell=(
+                self.dual_normal_cell_x(),
+                self.dual_normal_cell_y(),
+            ),
             edge_areas=self.edge_areas(),
             coriolis_frequency=self.f_e(),
-            edge_center_lat=self.edge_center_lat(),
-            edge_center_lon=self.edge_center_lon(),
-            primal_normal_x=self.primal_normal_v1(),
-            primal_normal_y=self.primal_normal_v2(),
+            edge_center=(
+                self.edge_center_lat(),
+                self.edge_center_lon(),
+            ),
+            primal_normal=(
+                self.primal_normal_v1(),
+                self.primal_normal_v2(),
+            ),
+            edge_cell_distances=self.edge_cell_length(),
         )
 
     def construct_cell_geometry(self) -> grid_states.CellParams:
@@ -1962,6 +1975,30 @@ class TopographySavepoint(IconSavepoint):
         return self._get_field("smooth_topography", dims.CellDim)
 
 
+class TmxInitSavepoint(IconSavepoint):
+    """
+    Static savepoint of the TMX (AES turbulent mixing) scheme.
+
+    Written once at the initial time step of vdf Compute_diagnostics in mo_vdf_atmo.f90,
+    after Smagorinsky_init has filled mix_len_sq and the Louis scaling factor.
+    """
+
+    def inv_ddqz_z_half(self):
+        return self._get_field("inv_ddqz_z_half", dims.CellDim, dims.KHalfDim)
+
+    def inv_ddqz_z_full_e(self):
+        return self._get_field("inv_ddqz_z_full_e", dims.EdgeDim, dims.KDim)
+
+    def wgtfacq1_c(self):
+        return self._get_field("wgtfacq1_c", dims.CellDim, dims.KDim)
+
+    def wgtfacq1_e(self):
+        return self._get_field("wgtfacq1_e", dims.EdgeDim, dims.KDim)
+
+    def geopot_agl_ifc(self):
+        return self._get_field("geopot_agl_ifc", dims.CellDim, dims.KHalfDim)
+
+
 class IconTimeStepExitSavepoint(IconSavepoint):
     """End-of-timestep prognostic state, written in perform_nh_timeloop right after
     integrate_nh returns: all physics tendencies applied, time levels swapped."""
@@ -2381,5 +2418,11 @@ class IconSerialDataProvider:
     def from_savepoint_muphys_exit(self, date: str) -> IconMuphysExitSavepoint:
         savepoint = self.serializer.savepoint["aes-graupel-exit"].id[1].date[date].as_savepoint()
         return IconMuphysExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_tmx_init(self) -> TmxInitSavepoint:
+        savepoint = self.serializer.savepoint["tmx-init"].id[1].as_savepoint()
+        return TmxInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
