@@ -254,16 +254,8 @@ def _driver_mpi_bencher_testbed() -> str:
     """
     comm_size = os.environ.get("SLURM_NTASKS") or os.environ.get("OMPI_COMM_WORLD_SIZE") or "1"
     nodes = os.environ.get("SLURM_JOB_NUM_NODES", "1")
-    grid = os.environ["GRID"]
     transport = os.environ.get("GHEX_TRANSPORT_BACKEND", "unknown").lower()
-    return (
-        f"{os.environ['RUNNER']}:"
-        f"{os.environ['SYSTEM_TAG']}:"
-        f"{os.environ['BACKEND']}:"
-        f"{grid}:"
-        f"{nodes}N{comm_size}R:"
-        f"{transport}"
-    )
+    return f"{_serial_testbed()}:{nodes}N{comm_size}R:{transport}"
 
 
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS, requires=["benchmark_driver_mpi-{python}"])
