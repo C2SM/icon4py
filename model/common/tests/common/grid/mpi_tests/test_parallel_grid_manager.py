@@ -186,8 +186,8 @@ def _compare_geometry_fields_single_multi_rank(
         f"(2: {multi_rank_gm.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
 
-    field_ref = single_rank_geometry.get(attrs_name)
-    field = multi_rank_geometry.get(attrs_name)
+    field_ref = single_rank_geometry.get_full_precision(attrs_name)
+    field = multi_rank_geometry.get_full_precision(attrs_name)
     dim = field_ref.domain.dims[0]
 
     atol, rtol = test_utils.get_mpi_comparison_tolerance(backend, atol=1e-15, rtol=0.0)
@@ -341,8 +341,8 @@ def _compare_interpolation_fields_single_multi_rank(
         process_props=process_props,
     )
 
-    field_ref = single_rank_interpolation.get(attrs_name)
-    field = multi_rank_interpolation.get(attrs_name)
+    field_ref = single_rank_interpolation.get_full_precision(attrs_name)
+    field = multi_rank_interpolation.get_full_precision(attrs_name)
     dim = field_ref.domain.dims[0]
 
     atol, rtol = test_utils.get_mpi_comparison_tolerance(
@@ -534,8 +534,8 @@ def _compare_metrics_fields_single_multi_rank(
         process_props=process_props,
     )
 
-    field_ref = single_rank_metrics.get(attrs_name)
-    field = multi_rank_metrics.get(attrs_name)
+    field_ref = single_rank_metrics.get_full_precision(attrs_name)
+    field = multi_rank_metrics.get_full_precision(attrs_name)
 
     if isinstance(field_ref, state_utils.ScalarType):
         assert isinstance(field, state_utils.ScalarType)
@@ -733,8 +733,8 @@ def test_metrics_mask_prog_halo_c(
     )
 
     attrs_name = metrics_attributes.MASK_PROG_HALO_C
-    field = multi_rank_metrics.get(attrs_name).ndarray
-    c_refin_ctrl = multi_rank_metrics.get("c_refin_ctrl").ndarray
+    field = multi_rank_metrics.get_full_precision(attrs_name).ndarray
+    c_refin_ctrl = multi_rank_metrics.get_full_precision("c_refin_ctrl").ndarray
     assert not (
         field[
             multi_rank_gm.decomposition_info.local_index(
@@ -853,7 +853,7 @@ def test_global_reductions_single_vs_multi_rank(
     single_rank_reductions = decomp_defs.create_reduction(
         decomp_defs.SingleNodeProcessProperties(), single_rank_gm.decomposition_info
     )
-    single_rank_field = single_rank_geometry.get(field_name).ndarray
+    single_rank_field = single_rank_geometry.get_full_precision(field_name).ndarray
 
     multi_rank_gm, multi_rank_geometry = _make_multi_rank_geometry(
         grid_file, process_props, backend, allocator
@@ -861,7 +861,7 @@ def test_global_reductions_single_vs_multi_rank(
     multi_rank_reductions = decomp_defs.create_reduction(
         process_props, multi_rank_gm.decomposition_info
     )
-    multi_rank_field = multi_rank_geometry.get(field_name).ndarray
+    multi_rank_field = multi_rank_geometry.get_full_precision(field_name).ndarray
 
     reduce_fn_single = getattr(single_rank_reductions, reduction)
     reduce_fn_multi = getattr(multi_rank_reductions, reduction)

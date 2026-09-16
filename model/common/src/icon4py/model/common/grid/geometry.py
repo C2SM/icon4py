@@ -33,6 +33,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import coordinate_transformations as coord_trans, utils as math_utils
 from icon4py.model.common.states import factory, model, utils as state_utils
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -62,24 +63,13 @@ class GridGeometry(factory.FieldSource):
         GridGeometry for geometry_type=SPHERE grid=f2e06839-694a-cca1-a3d5-028e0ff326e0 : R9B4
         >>> geometry.get("edge_length")
         NumPyArrayField(_domain=Domain(dims=(Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),), ranges=(UnitRange(0, 31558),)), _ndarray=array([3746.2669054 , 3746.2669066 , 3746.33418138, ..., 3736.61622936, 3792.41317057]))
-        >>> geometry.get("edge_length", RetrievalType.METADATA)
+        >>> geometry.get_metadata("edge_length")
         {'standard_name': 'edge_length',
         'long_name': 'edge length',
         'units': 'm',
         'dims': (Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),),
         'icon_var_name': 't_grid_edges%primal_edge_length',
         'dtype': numpy.float64}
-        >>> geometry.get("edge_length", RetrievalType.DATA_ARRAY)
-        <xarray.DataArray (dim_0: 31558)> Size: 252kB
-        array([3746.2669054 , 3746.2669066 , 3746.33418138, ..., 3889.53098062, 3736.61622936, 3792.41317057])
-        Dimensions without coordinates: dim_0
-        .Attributes:
-        standard_name:  edge_length
-        long_name:      edge length
-        units:          m
-        dims:           (Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: ...
-        icon_var_name:  t_grid_edges%primal_edge_length
-        dtype:          <class 'numpy.float64'>
 
 
     """
@@ -229,7 +219,7 @@ class GridGeometry(factory.FieldSource):
                 # TODO(msimberg): Check if we can/should get it from the grid
                 # file directly instead (e.g. via
                 # MPIMPropertyName.MEAN_EDGE_LENGTH).
-                edge_length = self.get(attrs.EDGE_LENGTH).ndarray
+                edge_length = self.get_full_precision(attrs.EDGE_LENGTH).ndarray
                 if self._process_props.comm is not None:
                     assert edge_length.size > 0
                     send_buffer = np.empty(1, dtype=edge_length.dtype)
@@ -816,8 +806,8 @@ class GridGeometry(factory.FieldSource):
             f"{self.__class__.__name__} for geometry_type={geometry_name} (grid={self._grid.id!r})"
         )
 
-    def get_wpfloat(self, name: str) -> float:
-        return ta.wpfloat(self.get(name, type_=factory.RetrievalType.SCALAR))
+    def get_wpfloat(self, name: str) -> wpfloat:
+        return ta.wpfloat(self.get_scalar(name))
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
@@ -834,6 +824,18 @@ class GridGeometry(factory.FieldSource):
     @property
     def vertical_grid(self) -> None:
         return None
+
+
+class _IntermediateFields(factory.FieldSource):
+    """The outputs of a wrapped provider, declared with the metadata of the field they feed."""
+
+    def __init__(self, provider: factory.FieldProvider, metadata: dict[str, model.FieldMetaData]):
+        self._providers = dict.fromkeys(metadata, provider)
+        self._metadata = metadata
+
+    @property
+    def metadata(self) -> dict[str, model.FieldMetaData]:
+        return self._metadata
 
 
 class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
@@ -864,6 +866,16 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | None:
         if self._fields.get(field_name) is None:
+            assert field_src is not None
+            intermediates = _IntermediateFields(
+                self._wrapped_provider,
+                {
+                    name: field_src.get_metadata(target)
+                    for target, pair in zip(self.fields, self._pairs, strict=True)
+                    for name in pair
+                },
+            )
+            source = factory.CompositeSource(me=field_src, others=(intermediates,))
             # get the fields from the wrapped provider
             input_fields = []
             for p in self._pairs:
@@ -871,7 +883,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
                     [
                         self._wrapped_provider(
                             field_name=name,
-                            field_src=field_src,
+                            field_src=source,
                             backend=backend,
                             grid=grid,
                             exchange=exchange,

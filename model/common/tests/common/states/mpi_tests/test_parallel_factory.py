@@ -90,7 +90,7 @@ def test_program_provider_exchange(
         do_exchange=do_exchange,
     )
     source.register_provider(provider)
-    field = source.get("out")
+    field = source.get_full_precision("out")
 
     halo_points = decomposition_info.local_index(
         dims.EdgeDim, decomp_defs.DecompositionInfo.EntryType.HALO
@@ -160,7 +160,7 @@ def test_numpy_provider_exchange(
         do_exchange=do_exchange,
     )
     source.register_provider(provider)
-    field = source.get("out")
+    field = source.get_full_precision("out")
 
     halo_points = decomposition_info.local_index(
         dims.EdgeDim, decomp_defs.DecompositionInfo.EntryType.HALO

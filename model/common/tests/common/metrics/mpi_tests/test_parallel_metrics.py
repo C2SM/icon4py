@@ -107,7 +107,7 @@ def test_distributed_metrics_attrs(  # noqa: PLR0917 [too-many-positional-argume
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
-    field = factory.get(attrs_name).asnumpy()
+    field = factory.get_full_precision(attrs_name).asnumpy()
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
     if horizontal_range is not None:
         # We assume that the horizontal dimension exists and is the first one.
@@ -167,7 +167,7 @@ def test_distributed_metrics_attrs_no_halo(  # noqa: PLR0917 [too-many-positiona
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
-    field = factory.get(attrs_name).asnumpy()
+    field = factory.get_full_precision(attrs_name).asnumpy()
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
     assert test_utils.dallclose(field, field_ref, rtol=1e-7, atol=1.0e-8)
 
@@ -204,7 +204,7 @@ def test_distributed_metrics_attrs_no_halo_regional(  # noqa: PLR0917 [too-many-
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
-    field = factory.get(attrs_name).asnumpy()
+    field = factory.get_full_precision(attrs_name).asnumpy()
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
     assert test_utils.dallclose(field, field_ref, atol=1e-8)
 
@@ -226,7 +226,7 @@ def test_distributed_metrics_wgtfacq_e(  # noqa: PLR0917 [too-many-positional-ar
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
-    field = factory.get(attrs.WGTFACQ_E).asnumpy()
+    field = factory.get_full_precision(attrs.WGTFACQ_E).asnumpy()
     field_ref = metrics_savepoint.wgtfacq_e().asnumpy()
     assert test_utils.dallclose(field, field_ref)
 
@@ -247,6 +247,6 @@ def test_distributed_metrics_nflat_gradp(  # noqa: PLR0917 [too-many-positional-
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
 
-    value = factory.get(attrs.NFLAT_GRADP)
+    value = factory.get_full_precision(attrs.NFLAT_GRADP)
     value_ref = grid_savepoint.nflat_gradp()
     assert value == value_ref
