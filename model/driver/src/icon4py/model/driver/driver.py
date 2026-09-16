@@ -447,7 +447,7 @@ class Icon4pyDriver:
                     dtime=self.model_time_variables.substep_timestep,
                     ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
                     at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
-                    lprep_adv=self.config.driver.do_prep_adv,
+                    prepare_fluxes_for_advection=self.granules.tracer_advection is not None,
                     at_first_substep=self._is_first_substep(dyn_substep),
                     at_last_substep=self._is_last_substep(dyn_substep),
                 )

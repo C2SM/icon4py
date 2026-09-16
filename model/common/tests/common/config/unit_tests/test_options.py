@@ -118,6 +118,18 @@ def test_construct_config_from_icon() -> None:
     assert result.other == 3
 
 
+def test_construct_config_from_icon_overrides_icon_values() -> None:
+    result = options.construct_config_from_icon(
+        config_cls=ConfigClass,
+        icon_config={
+            "nested_1": {"nested_2": {"isomchce": 42}},
+            "lsomflg": [False, False, False],
+        },
+        choice=7,
+    )
+    assert result.choice == 7
+
+
 def test_default_conversion() -> None:
     @dataclasses.dataclass
     class TesteeConfig:
@@ -191,3 +203,27 @@ def test_multioption_conversion() -> None:
         ).sum
         == 42
     )
+
+
+def test_unnamed_index_reads_a_positional_record() -> None:
+    option = options.IconOption(name="second", path=("nml", "record"), unnamed_index=1)
+    assert option.convert({"nml": {"record": ["a", "7", "c"]}}, fallback_converter=int) == 7
+
+
+def test_unnamed_index_constructs_a_config() -> None:
+    @dataclasses.dataclass
+    class TesteeConfig:
+        second: typing.Annotated[
+            int,
+            options.ConfigOption(
+                description="",
+                icon_equivalent=options.IconOption(
+                    name="second", path=("nml", "record"), unnamed_index=1
+                ),
+            ),
+        ] = 0
+
+    result = options.construct_config_from_icon(
+        config_cls=TesteeConfig, icon_config={"nml": {"record": [5, 6, 7]}}
+    )
+    assert result == TesteeConfig(second=6)
