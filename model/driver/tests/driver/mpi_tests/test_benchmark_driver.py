@@ -52,7 +52,7 @@ def _with_barriers[T](
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True, ids=["distributed"])
 @pytest.mark.parametrize(
     "driver_benchmark_experiment",
     BENCHMARK_EXPERIMENTS,
@@ -102,7 +102,7 @@ def test_benchmark_driver_init(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True, ids=["distributed"])
 @pytest.mark.parametrize(
     "driver_benchmark_experiment",
     BENCHMARK_EXPERIMENTS,
@@ -145,7 +145,7 @@ def test_benchmark_driver_timeloop(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-@pytest.mark.parametrize("process_props", [True], indirect=True)
+@pytest.mark.parametrize("process_props", [True], indirect=True, ids=["distributed"])
 @pytest.mark.parametrize(
     "driver_benchmark_experiment",
     BENCHMARK_EXPERIMENTS,
