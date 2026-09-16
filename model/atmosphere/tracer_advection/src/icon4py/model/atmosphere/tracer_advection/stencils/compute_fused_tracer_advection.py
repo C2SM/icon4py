@@ -151,7 +151,7 @@ def _compute_ppm4gpu_flux(
 
 
 @gtx.field_operator
-def _compute_unlimited_horizontal_tracer_flux(
+def _compute_2nd_order_miura_horizontal_flux(
     p_cc: fa.CellKField[ta.wpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
@@ -260,7 +260,7 @@ def _compute_tracer_advection_even_timestep_before_horizontal_limiter(
         ivadv_tracer=ivadv_tracer,
         iadv_slev_jt=iadv_slev_jt,
     )
-    p_mflx_tracer_h_unlimited = _compute_unlimited_horizontal_tracer_flux(
+    p_mflx_tracer_h_unlimited = _compute_2nd_order_miura_horizontal_flux(
         p_cc=p_tracer_after_vertical,
         p_mass_flx_e=p_mass_flx_e,
         p_vn=p_vn,
@@ -491,7 +491,7 @@ def _compute_tracer_advection_odd_timestep_before_horizontal_limiter(
         p_dtime=p_dtime,
         even_timestep=False,
     )
-    p_mflx_tracer_h_unlimited = _compute_unlimited_horizontal_tracer_flux(
+    p_mflx_tracer_h_unlimited = _compute_2nd_order_miura_horizontal_flux(
         p_cc=p_tracer_now,
         p_mass_flx_e=p_mass_flx_e,
         p_vn=p_vn,
