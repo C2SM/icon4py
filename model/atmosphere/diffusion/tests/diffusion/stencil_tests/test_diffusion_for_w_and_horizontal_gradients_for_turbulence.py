@@ -10,25 +10,23 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_horizontal_gradients_for_turbulence import (
-    apply_diffusion_to_w_and_horizontal_gradients_for_turbulence,
+from icon4py.model.atmosphere.diffusion.stencils.diffusion_for_w_and_horizontal_gradients_for_turbulence import (
+    diffusion_for_w_and_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing import stencil_tests
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
-from .test_apply_nabla2_to_w_in_upper_damping_layer import (
-    apply_nabla2_to_w_in_upper_damping_layer_numpy,
-)
 from .test_horizontal_gradients_for_turbulence import horizontal_gradients_for_turbulence_numpy
 from .test_nabla2_for_w import nabla2_for_w_numpy
+from .test_nabla2_for_w_in_upper_damping_layer import nabla2_for_w_in_upper_damping_layer_numpy
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
-class TestApplyDiffusionToWAndHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
-    PROGRAM = apply_diffusion_to_w_and_horizontal_gradients_for_turbulence
+class TestDiffusionForWAndHorizontalGradientsForTurbulence(stencil_tests.StencilTest):
+    PROGRAM = diffusion_for_w_and_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
@@ -111,7 +109,7 @@ class TestApplyDiffusionToWAndHorizontalGradientsForTurbulence(stencil_tests.Ste
             & (reshaped_k < nrdmax)
             & (interior_idx <= reshaped_cell)
             & (reshaped_cell < halo_idx),
-            apply_nabla2_to_w_in_upper_damping_layer_numpy(w, diff_multfac_n2w, area, z_nabla2_c),
+            nabla2_for_w_in_upper_damping_layer_numpy(w, diff_multfac_n2w, area, z_nabla2_c),
             w,
         )
         w_slice = (slice(interior_idx, halo_idx), slice(vertical_start, vertical_end))

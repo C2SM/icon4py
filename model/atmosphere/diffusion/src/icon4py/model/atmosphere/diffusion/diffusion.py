@@ -27,12 +27,12 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     scale_k,
     setup_fields_for_initial_step,
 )
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
-    apply_diffusion_to_theta_and_exner,
+from icon4py.model.atmosphere.diffusion.stencils.diffusion_for_theta_and_exner import (
+    diffusion_for_theta_and_exner,
 )
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_horizontal_gradients_for_turbulence import (
-    apply_diffusion_to_w_and_horizontal_gradients_for_turbulence,
+from icon4py.model.atmosphere.diffusion.stencils.diffusion_for_vn import diffusion_for_vn
+from icon4py.model.atmosphere.diffusion.stencils.diffusion_for_w_and_horizontal_gradients_for_turbulence import (
+    diffusion_for_w_and_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.atmosphere.diffusion.stencils.enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     enhanced_diffusion_coefficients_for_grid_point_cold_pools,
@@ -577,9 +577,9 @@ class Diffusion:
             },
             offset_provider=self._grid.connectivities,
         )
-        self.apply_diffusion_to_vn = setup_program(
+        self.diffusion_for_vn = setup_program(
             backend=backend,
-            program=apply_diffusion_to_vn,
+            program=diffusion_for_vn,
             constant_args={
                 "primal_normal_vert_v1": self._edge_params.primal_normal_vert[0],
                 "primal_normal_vert_v2": self._edge_params.primal_normal_vert[1],
@@ -599,9 +599,9 @@ class Diffusion:
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
-        self.apply_diffusion_to_w_and_horizontal_gradients_for_turbulence = setup_program(
+        self.diffusion_for_w_and_horizontal_gradients_for_turbulence = setup_program(
             backend=backend,
-            program=apply_diffusion_to_w_and_horizontal_gradients_for_turbulence,
+            program=diffusion_for_w_and_horizontal_gradients_for_turbulence,
             constant_args={
                 "geofac_n2s": self._interpolation_state.geofac_n2s,
                 "geofac_grg_x": self._interpolation_state.geofac_grg_x,
@@ -643,9 +643,9 @@ class Diffusion:
             },
             offset_provider=self._grid.connectivities,
         )
-        self.apply_diffusion_to_theta_and_exner = setup_program(
+        self.diffusion_for_theta_and_exner = setup_program(
             backend=backend,
-            program=apply_diffusion_to_theta_and_exner,
+            program=diffusion_for_theta_and_exner,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
                 "zd_vertoffset": self._metric_state.zd_vertoffset,
@@ -891,8 +891,8 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
-        self.apply_diffusion_to_vn(
+        log.debug("running stencils 04 05 06 (diffusion_for_vn): start")
+        self.diffusion_for_vn(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             z_nabla2_e=self.z_nabla2_e,
@@ -900,7 +900,7 @@ class Diffusion:
             diff_multfac_vn=diff_multfac_vn,
             vn=prognostic_state.vn,
         )
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
+        log.debug("running stencils 04 05 06 (diffusion_for_vn): end")
 
         log.debug("communication of prognostic.vn : start")
         handle_edge_comm = self._exchange(
@@ -911,12 +911,12 @@ class Diffusion:
         )
 
         log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_horizontal_gradients_for_turbulence): start"
+            "running stencils 07 08 09 10 (diffusion_for_w_and_horizontal_gradients_for_turbulence): start"
         )
         # TODO(halungge): get rid of this copying. So far passing an empty buffer instead did not verify?
         self.copy_field_on_cell_khalf(field=prognostic_state.w, output_field=self.w_tmp)
 
-        self.apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
+        self.diffusion_for_w_and_horizontal_gradients_for_turbulence(
             w_old=self.w_tmp,
             w=prognostic_state.w,
             dwdx=diagnostic_state.dwdx,
@@ -925,7 +925,7 @@ class Diffusion:
             diff_multfac_n2w=self.diff_multfac_n2w,
         )
         log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_horizontal_gradients_for_turbulence): end"
+            "running stencils 07 08 09 10 (diffusion_for_w_and_horizontal_gradients_for_turbulence): end"
         )
 
         self.halo_exchange_wait(
@@ -945,11 +945,11 @@ class Diffusion:
             log.debug(
                 "running stencils 11 12 (enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
             )
-            log.debug("running stencil 13 to 16 (apply_diffusion_to_theta_and_exner): start")
+            log.debug("running stencil 13 to 16 (diffusion_for_theta_and_exner): start")
             self.copy_field_on_cell_k(
                 field=prognostic_state.theta_v, output_field=self.theta_v_tmp
             )  # TODO(): write in a way that we can avoid the copy
-            self.apply_diffusion_to_theta_and_exner(
+            self.diffusion_for_theta_and_exner(
                 kh_smag_e=self.kh_smag_e,
                 theta_v_in=self.theta_v_tmp,
                 theta_v=prognostic_state.theta_v,
@@ -958,7 +958,7 @@ class Diffusion:
             # The halo exchange can be skipped in the case of NWP or AES physics because the column-wise physics
             # computations, which happen right after diffusion, do not require the halo lines to be correct and there
             # is another halo exchange after the physics are applied.
-            log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
+            log.debug("running stencil 13 to 16 diffusion_for_theta_and_exner: end")
             if initial_run or self.config.iforcing not in (ForcingType.NWP, ForcingType.AES):
                 log.debug("communication of prognostic cell fields: theta and exner - start")
                 self._exchange.exchange(

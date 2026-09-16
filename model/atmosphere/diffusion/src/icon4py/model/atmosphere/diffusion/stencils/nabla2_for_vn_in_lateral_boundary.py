@@ -6,49 +6,38 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _apply_nabla2_and_nabla4_global_to_vn(
-    area_edge: fa.EdgeField[wpfloat],
-    kh_smag_e: fa.EdgeKField[vpfloat],
+def _nabla2_for_vn_in_lateral_boundary(
     z_nabla2_e: fa.EdgeKField[wpfloat],
-    z_nabla4_e2: fa.EdgeKField[vpfloat],
-    diff_multfac_vn: fa.KField[wpfloat],
+    area_edge: fa.EdgeField[wpfloat],
     vn: fa.EdgeKField[wpfloat],
+    fac_bdydiff_v: wpfloat,
 ) -> fa.EdgeKField[wpfloat]:
-    kh_smag_e_wp, z_nabla4_e2_wp = astype((kh_smag_e, z_nabla4_e2), wpfloat)
-
-    vn_wp = vn + area_edge * (
-        kh_smag_e_wp * z_nabla2_e - diff_multfac_vn * z_nabla4_e2_wp * area_edge
-    )
+    vn_wp = vn + (area_edge * fac_bdydiff_v * z_nabla2_e)
     return vn_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def apply_nabla2_and_nabla4_global_to_vn(
-    area_edge: fa.EdgeField[wpfloat],
-    kh_smag_e: fa.EdgeKField[vpfloat],
+def nabla2_for_vn_in_lateral_boundary(
     z_nabla2_e: fa.EdgeKField[wpfloat],
-    z_nabla4_e2: fa.EdgeKField[vpfloat],
-    diff_multfac_vn: fa.KField[wpfloat],
+    area_edge: fa.EdgeField[wpfloat],
     vn: fa.EdgeKField[wpfloat],
+    fac_bdydiff_v: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _apply_nabla2_and_nabla4_global_to_vn(
-        area_edge=area_edge,
-        kh_smag_e=kh_smag_e,
+    _nabla2_for_vn_in_lateral_boundary(
         z_nabla2_e=z_nabla2_e,
-        z_nabla4_e2=z_nabla4_e2,
-        diff_multfac_vn=diff_multfac_vn,
+        area_edge=area_edge,
         vn=vn,
+        fac_bdydiff_v=fac_bdydiff_v,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

@@ -22,7 +22,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _apply_diffusion_to_theta_and_exner(
+def _diffusion_for_theta_and_exner(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
@@ -63,7 +63,7 @@ def _apply_diffusion_to_theta_and_exner(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def apply_diffusion_to_theta_and_exner(
+def diffusion_for_theta_and_exner(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v_in: fa.CellKField[wpfloat],
@@ -83,7 +83,7 @@ def apply_diffusion_to_theta_and_exner(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _apply_diffusion_to_theta_and_exner(
+    _diffusion_for_theta_and_exner(
         kh_smag_e=kh_smag_e,
         inv_dual_edge_length=inv_dual_edge_length,
         theta_v=theta_v_in,

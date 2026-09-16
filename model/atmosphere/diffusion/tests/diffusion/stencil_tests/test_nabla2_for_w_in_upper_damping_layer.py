@@ -9,8 +9,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
-    apply_nabla2_to_w_in_upper_damping_layer,
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_for_w_in_upper_damping_layer import (
+    nabla2_for_w_in_upper_damping_layer,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
@@ -18,7 +18,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-def apply_nabla2_to_w_in_upper_damping_layer_numpy(
+def nabla2_for_w_in_upper_damping_layer_numpy(
     w: np.ndarray,
     diff_multfac_n2w: np.ndarray,
     cell_area: np.ndarray,
@@ -29,8 +29,8 @@ def apply_nabla2_to_w_in_upper_damping_layer_numpy(
     return w
 
 
-class TestApplyNabla2ToWInUpperDampingLayer(stencil_tests.StencilTest):
-    PROGRAM = apply_nabla2_to_w_in_upper_damping_layer
+class TestNabla2ForWInUpperDampingLayer(stencil_tests.StencilTest):
+    PROGRAM = nabla2_for_w_in_upper_damping_layer
     OUTPUTS = ("w",)
 
     @stencil_tests.input_data_fixture
@@ -61,7 +61,5 @@ class TestApplyNabla2ToWInUpperDampingLayer(stencil_tests.StencilTest):
         z_nabla2_c: np.ndarray,
         **kwargs,
     ) -> dict:
-        w = apply_nabla2_to_w_in_upper_damping_layer_numpy(
-            w, diff_multfac_n2w, cell_area, z_nabla2_c
-        )
+        w = nabla2_for_w_in_upper_damping_layer_numpy(w, diff_multfac_n2w, cell_area, z_nabla2_c)
         return dict(w=w)

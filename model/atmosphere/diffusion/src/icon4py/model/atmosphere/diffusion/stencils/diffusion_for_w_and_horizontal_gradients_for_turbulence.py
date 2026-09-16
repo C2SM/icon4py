@@ -9,19 +9,19 @@ import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import _apply_nabla2_to_w
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
-    _apply_nabla2_to_w_in_upper_damping_layer,
-)
 from icon4py.model.atmosphere.diffusion.stencils.horizontal_gradients_for_turbulence import (
     _horizontal_gradients_for_turbulence,
 )
 from icon4py.model.atmosphere.diffusion.stencils.nabla2_for_w import _nabla2_for_w
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_for_w_in_upper_damping_layer import (
+    _nabla2_for_w_in_upper_damping_layer,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
+def _diffusion_for_w_and_horizontal_gradients_for_turbulence(
     area: fa.CellField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
@@ -55,7 +55,7 @@ def _apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
         & (dims.KHalfDim < nrdmax)
         & (interior_idx <= dims.CellDim)
         & (dims.CellDim < halo_idx),
-        _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
+        _nabla2_for_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
 
@@ -63,7 +63,7 @@ def _apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
+def diffusion_for_w_and_horizontal_gradients_for_turbulence(
     area: fa.CellField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
@@ -83,7 +83,7 @@ def apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _apply_diffusion_to_w_and_horizontal_gradients_for_turbulence(
+    _diffusion_for_w_and_horizontal_gradients_for_turbulence(
         area=area,
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,

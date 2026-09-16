@@ -8,14 +8,14 @@
 import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_to_vn import (
-    _apply_nabla2_and_nabla4_global_to_vn,
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_and_nabla4_for_vn import (
+    _nabla2_and_nabla4_for_vn,
 )
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_to_vn import (
-    _apply_nabla2_and_nabla4_to_vn,
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_and_nabla4_global_for_vn import (
+    _nabla2_and_nabla4_global_for_vn,
 )
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_boundary import (
-    _apply_nabla2_to_vn_in_lateral_boundary,
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_for_vn_in_lateral_boundary import (
+    _nabla2_for_vn_in_lateral_boundary,
 )
 from icon4py.model.atmosphere.diffusion.stencils.nabla4 import _nabla4
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _apply_diffusion_to_vn(
+def _diffusion_for_vn(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
     primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
@@ -55,7 +55,7 @@ def _apply_diffusion_to_vn(
     vn = (
         concat_where(
             dims.EdgeDim >= start_2nd_nudge_line_idx_e,
-            _apply_nabla2_and_nabla4_to_vn(
+            _nabla2_and_nabla4_for_vn(
                 area_edge,
                 kh_smag_e,
                 z_nabla2_e,
@@ -65,12 +65,12 @@ def _apply_diffusion_to_vn(
                 vn,
                 nudgezone_diff,
             ),
-            _apply_nabla2_to_vn_in_lateral_boundary(z_nabla2_e, area_edge, vn, fac_bdydiff_v),
+            _nabla2_for_vn_in_lateral_boundary(z_nabla2_e, area_edge, vn, fac_bdydiff_v),
         )
         if limited_area
         else concat_where(
             dims.EdgeDim >= start_2nd_nudge_line_idx_e,
-            _apply_nabla2_and_nabla4_global_to_vn(
+            _nabla2_and_nabla4_global_for_vn(
                 area_edge,
                 kh_smag_e,
                 z_nabla2_e,
@@ -86,7 +86,7 @@ def _apply_diffusion_to_vn(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def apply_diffusion_to_vn(
+def diffusion_for_vn(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
     primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
@@ -108,7 +108,7 @@ def apply_diffusion_to_vn(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _apply_diffusion_to_vn(
+    _diffusion_for_vn(
         u_vert=u_vert,
         v_vert=v_vert,
         primal_normal_vert_v1=primal_normal_vert_v1,

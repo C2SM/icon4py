@@ -13,7 +13,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _apply_nabla2_to_w_in_upper_damping_layer(
+def _nabla2_for_w_in_upper_damping_layer(
     w: fa.CellKHalfField[wpfloat],
     diff_multfac_n2w: fa.KHalfField[wpfloat],
     cell_area: fa.CellField[wpfloat],
@@ -27,7 +27,7 @@ def _apply_nabla2_to_w_in_upper_damping_layer(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def apply_nabla2_to_w_in_upper_damping_layer(
+def nabla2_for_w_in_upper_damping_layer(
     w: fa.CellKHalfField[wpfloat],
     diff_multfac_n2w: fa.KHalfField[wpfloat],
     cell_area: fa.CellField[wpfloat],
@@ -37,7 +37,7 @@ def apply_nabla2_to_w_in_upper_damping_layer(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _apply_nabla2_to_w_in_upper_damping_layer(
+    _nabla2_for_w_in_upper_damping_layer(
         w=w,
         diff_multfac_n2w=diff_multfac_n2w,
         cell_area=cell_area,

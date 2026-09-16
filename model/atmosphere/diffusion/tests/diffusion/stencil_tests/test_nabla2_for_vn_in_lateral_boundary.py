@@ -11,8 +11,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_boundary import (
-    apply_nabla2_to_vn_in_lateral_boundary,
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_for_vn_in_lateral_boundary import (
+    nabla2_for_vn_in_lateral_boundary,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-def apply_nabla2_to_vn_in_lateral_boundary_numpy(
+def nabla2_for_vn_in_lateral_boundary_numpy(
     z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
 ) -> np.array:
     area_edge = np.expand_dims(area_edge, axis=-1)
@@ -28,8 +28,8 @@ def apply_nabla2_to_vn_in_lateral_boundary_numpy(
     return vn
 
 
-class TestApplyNabla2ToVnInLateralBoundary(stencil_tests.StencilTest):
-    PROGRAM = apply_nabla2_to_vn_in_lateral_boundary
+class TestNabla2ForVnInLateralBoundary(stencil_tests.StencilTest):
+    PROGRAM = nabla2_for_vn_in_lateral_boundary
     OUTPUTS = ("vn",)
 
     @stencil_tests.input_data_fixture
@@ -59,5 +59,5 @@ class TestApplyNabla2ToVnInLateralBoundary(stencil_tests.StencilTest):
         fac_bdydiff_v: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        vn = apply_nabla2_to_vn_in_lateral_boundary_numpy(z_nabla2_e, area_edge, vn, fac_bdydiff_v)
+        vn = nabla2_for_vn_in_lateral_boundary_numpy(z_nabla2_e, area_edge, vn, fac_bdydiff_v)
         return dict(vn=vn)

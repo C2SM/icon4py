@@ -11,8 +11,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
-    apply_diffusion_to_theta_and_exner,
+from icon4py.model.atmosphere.diffusion.stencils.diffusion_for_theta_and_exner import (
+    diffusion_for_theta_and_exner,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -29,8 +29,8 @@ from .test_update_theta_and_exner import update_theta_and_exner_numpy
 
 @pytest.mark.skip_value_error
 @pytest.mark.embedded_remap_error
-class TestApplyDiffusionToThetaAndExner(stencil_tests.StencilTest):
-    PROGRAM = apply_diffusion_to_theta_and_exner
+class TestDiffusionForThetaAndExner(stencil_tests.StencilTest):
+    PROGRAM = diffusion_for_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
 
     @stencil_tests.static_reference

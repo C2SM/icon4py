@@ -5,12 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_to_vn import (
-    apply_nabla2_and_nabla4_to_vn,
+from icon4py.model.atmosphere.diffusion.stencils.nabla2_and_nabla4_global_for_vn import (
+    nabla2_and_nabla4_global_for_vn,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
@@ -18,29 +20,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.testing import stencil_tests
 
 
-def apply_nabla2_and_nabla4_to_vn_numpy(
-    *,
-    area_edge,
-    kh_smag_e,
-    z_nabla2_e,
-    z_nabla4_e2,
-    diff_multfac_vn,
-    nudgecoeff_e,
-    vn,
-    nudgezone_diff,
+def nabla2_and_nabla4_global_for_vn_numpy(
+    *, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
 ):
     area_edge = np.expand_dims(area_edge, axis=-1)
     diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
-    nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
-    vn = vn + area_edge * (
-        np.maximum(nudgezone_diff * nudgecoeff_e, kh_smag_e) * z_nabla2_e
-        - diff_multfac_vn * z_nabla4_e2 * area_edge
-    )
+    vn = vn + area_edge * (kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge)
     return vn
 
 
-class TestApplyNabla2AndNabla4ToVn(stencil_tests.StencilTest):
-    PROGRAM = apply_nabla2_and_nabla4_to_vn
+class TestNabla2AndNabla4GlobalForVn(stencil_tests.StencilTest):
+    PROGRAM = nabla2_and_nabla4_global_for_vn
     OUTPUTS = ("vn",)
 
     @stencil_tests.input_data_fixture
@@ -50,9 +40,7 @@ class TestApplyNabla2AndNabla4ToVn(stencil_tests.StencilTest):
         z_nabla2_e = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_nabla4_e2 = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=vpfloat)
         diff_multfac_vn = data_alloc.random_field(dims.KDim, dtype=wpfloat)
-        nudgecoeff_e = data_alloc.random_field(dims.EdgeDim, dtype=wpfloat)
         vn = data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        nudgezone_diff = vpfloat("9.0")
 
         return dict(
             area_edge=area_edge,
@@ -60,9 +48,7 @@ class TestApplyNabla2AndNabla4ToVn(stencil_tests.StencilTest):
             z_nabla2_e=z_nabla2_e,
             z_nabla4_e2=z_nabla4_e2,
             diff_multfac_vn=diff_multfac_vn,
-            nudgecoeff_e=nudgecoeff_e,
             vn=vn,
-            nudgezone_diff=nudgezone_diff,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,
@@ -78,19 +64,17 @@ class TestApplyNabla2AndNabla4ToVn(stencil_tests.StencilTest):
         z_nabla2_e: np.ndarray,
         z_nabla4_e2: np.ndarray,
         diff_multfac_vn: np.ndarray,
-        nudgecoeff_e: np.ndarray,
         vn: np.ndarray,
-        nudgezone_diff: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
-        vn = apply_nabla2_and_nabla4_to_vn_numpy(
+        vn = nabla2_and_nabla4_global_for_vn_numpy(
             area_edge=area_edge,
             kh_smag_e=kh_smag_e,
             z_nabla2_e=z_nabla2_e,
             z_nabla4_e2=z_nabla4_e2,
             diff_multfac_vn=diff_multfac_vn,
-            nudgecoeff_e=nudgecoeff_e,
             vn=vn,
-            nudgezone_diff=nudgezone_diff,
         )
-        return dict(vn=vn)
+        return dict(
+            vn=vn,
+        )

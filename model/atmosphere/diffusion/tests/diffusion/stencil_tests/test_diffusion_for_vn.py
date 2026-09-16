@@ -11,23 +11,21 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
+from icon4py.model.atmosphere.diffusion.stencils.diffusion_for_vn import diffusion_for_vn
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing import stencil_tests
 
-from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
-from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
-from .test_apply_nabla2_to_vn_in_lateral_boundary import (
-    apply_nabla2_to_vn_in_lateral_boundary_numpy,
-)
+from .test_nabla2_and_nabla4_for_vn import nabla2_and_nabla4_for_vn_numpy
+from .test_nabla2_and_nabla4_global_for_vn import nabla2_and_nabla4_global_for_vn_numpy
+from .test_nabla2_for_vn_in_lateral_boundary import nabla2_for_vn_in_lateral_boundary_numpy
 from .test_nabla4 import nabla4_numpy
 
 
 @pytest.mark.uses_concat_where
 @pytest.mark.continuous_benchmarking
-class TestApplyDiffusionToVn(stencil_tests.StencilTest):
-    PROGRAM = apply_diffusion_to_vn
+class TestDiffusionForVn(stencil_tests.StencilTest):
+    PROGRAM = diffusion_for_vn
     OUTPUTS = ("vn",)
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
@@ -87,7 +85,7 @@ class TestApplyDiffusionToVn(stencil_tests.StencilTest):
         if limited_area:
             vn = np.where(
                 condition,
-                apply_nabla2_and_nabla4_to_vn_numpy(
+                nabla2_and_nabla4_for_vn_numpy(
                     area_edge=area_edge,
                     kh_smag_e=kh_smag_e,
                     z_nabla2_e=z_nabla2_e,
@@ -97,14 +95,12 @@ class TestApplyDiffusionToVn(stencil_tests.StencilTest):
                     vn=vn,
                     nudgezone_diff=nudgezone_diff,
                 ),
-                apply_nabla2_to_vn_in_lateral_boundary_numpy(
-                    z_nabla2_e, area_edge, vn, fac_bdydiff_v
-                ),
+                nabla2_for_vn_in_lateral_boundary_numpy(z_nabla2_e, area_edge, vn, fac_bdydiff_v),
             )
         else:
             vn = np.where(
                 condition,
-                apply_nabla2_and_nabla4_global_to_vn_numpy(
+                nabla2_and_nabla4_global_for_vn_numpy(
                     area_edge=area_edge,
                     kh_smag_e=kh_smag_e,
                     z_nabla2_e=z_nabla2_e,

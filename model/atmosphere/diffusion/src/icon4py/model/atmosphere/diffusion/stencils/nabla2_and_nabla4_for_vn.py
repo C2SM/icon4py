@@ -13,7 +13,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _apply_nabla2_and_nabla4_to_vn(
+def _nabla2_and_nabla4_for_vn(
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
@@ -36,7 +36,7 @@ def _apply_nabla2_and_nabla4_to_vn(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def apply_nabla2_and_nabla4_to_vn(
+def nabla2_and_nabla4_for_vn(
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
@@ -50,7 +50,7 @@ def apply_nabla2_and_nabla4_to_vn(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _apply_nabla2_and_nabla4_to_vn(
+    _nabla2_and_nabla4_for_vn(
         area_edge=area_edge,
         kh_smag_e=kh_smag_e,
         z_nabla2_e=z_nabla2_e,
