@@ -4,7 +4,9 @@
 The small launcher creates a detached, private checkout of the pinned experiment
 inside the job output directory and runs the recorded harness there. Your current
 branch and source files stay unchanged. This replays the measured implementations;
-it is not a GPU validation of the solver's current-main port.
+the solver implementation matches this branch, which is based on C2SM's
+`mi300_opt` at `397d774a1`. The replay deliberately does not incorporate later
+uncommitted edits to the review checkout.
 
 The large harness and evidence remain on `mi300_opt`, instead of being duplicated
 in this review diff. Both branches must be available in the fork. If the archived
@@ -41,7 +43,8 @@ The GT4Py scalar-conversion prerequisite is
 `amd_scripts/review_2026_09_16/patches/02-domain-scalar-gt4py.patch`; apply it in
 the pinned GT4Py checkout if absent. The wrappers apply the experimental fusion
 module to a **private GT4Py copy**; do not patch the installed compiler with the
-new-main review patch when reproducing the original timings.
+review patch manually when reproducing the original timings; the harness
+installs the matching compiler module into its private overlay.
 
 The cluster jobs require the existing ICON regional/grid input data and the
 configured `venv_mi300` or `venv_gh200`, with GT4Py and DaCe installed from

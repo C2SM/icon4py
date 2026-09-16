@@ -251,14 +251,19 @@ restored input state and source checksums. Both reported gains clear the
 conservative control-noise screen. Validation covered 148 state arrays with
 zero observed finite-value error and matching nonfinite patterns.
 
-These timings belong to the preserved `mi300_opt` experiment revision. This
-small Icon4Py branch ports the solver arithmetic to current upstream's staggered
-vertical-level interface; its GPU granule validation and timing remain pending.
-The port passes isolated embedded and compiled CPU comparisons against the
-existing independent NumPy reference at 2, 40 and 120 levels in double precision.
-Normal Icon4Py pytest collection was blocked locally by missing Serialbox;
-mixed-precision collection also encounters an existing return-type mismatch in
-the unchanged standalone scan. Neither check is claimed as passing.
+This review branch is based directly on **C2SM's `mi300_opt`**, commit
+`397d774a17135702b411d97edd4fb42cd0e21566`, the model base used for the measurements.
+It retains that branch's vertical-level interface, workspace and vendor tuning;
+it is not a port to upstream `main`. The solver scan, field operator and public
+program match the measured prototype structurally, ignoring docstrings, while
+the existing standalone scan API is retained for compatibility.
+
+The restored implementation passes six isolated embedded/compiled CPU
+comparisons against the independent NumPy reference at 2, 40 and 120 levels
+in double precision. This complements the recorded regional GPU validation;
+it does not establish global-grid, mixed-precision or combined performance.
+The PR base should be **C2SM/icon4py:mi300_opt**, so reviewers see only the
+optimisation, tests, explanation and reproduction entry points.
 
 The [GT4Py patch](../../patches/gt4py-shared-output-fusion.patch) contains the compiler
 transformation and regression tests (22 focused tests and pre-commit checks pass).

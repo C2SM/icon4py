@@ -83,7 +83,7 @@ def prepare_snapshot(root: Path, out: Path, dependencies: dict[str, Path]) -> Pa
                 "snapshot": str(snapshot),
                 "dependencies": {name: str(path) for name, path in dependencies.items()},
                 "launcher_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                "scope": "Pinned experiment replay, not GPU validation of the current-main port.",
+                "scope": "Pinned experiment replay matching the mi300_opt-based review; later local edits are not included.",
             },
             indent=2,
         )
