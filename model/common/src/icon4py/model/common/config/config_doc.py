@@ -197,7 +197,7 @@ def node_from_union(type_hint: types.UnionType, ctx: TraversalContext) -> UnionC
             node_from_type(
                 resolve_type(t),
                 ctx=ctx.append_path(
-                    name=str(resolve_type(t)),
+                    name=f"type: {resolve_type(t).__name__}",
                     field=ctx.current_field,
                     type_hint=typing.Annotated[t, rec.option_meta],
                 ),
@@ -410,7 +410,7 @@ class ConfigDocWidget(textual.widget.Widget):
         )
         example_name = (
             record.qualified_name[-1]
-            if not record.qualified_name[-1].startswith("<class")
+            if not record.qualified_name[-1].startswith("type: ")
             else record.qualified_name[-2]
         )
         examples = "\n--\n\n".join(
