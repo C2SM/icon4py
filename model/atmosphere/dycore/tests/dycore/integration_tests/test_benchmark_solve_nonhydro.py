@@ -210,7 +210,7 @@ def solve_nonhydro(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=geometry_field_source.get_full_precision("cell_owner_mask"),
+        owner_mask=geometry_field_source.get("cell_owner_mask"),
         exchange=decomposition.SingleNodeExchange(),
         backend=backend_like,
         max_nudging_coefficient=0.375,
