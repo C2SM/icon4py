@@ -41,14 +41,13 @@ from __future__ import annotations
 
 import collections
 import contextlib
-import enum
 import functools
 import inspect
 import logging
 import types
 import typing
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
-from typing import Any, Literal, Protocol, TypeVar, cast, overload
+from typing import Any, Protocol, TypeVar, cast
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -185,14 +184,14 @@ class FieldSource(GridProvider, Protocol):
         self.check_field_in_provider(field_name)
         return self.metadata[field_name]
 
-    def get_full_precision(self, field_name: str) -> state_utils.GTXFieldType |  state_utils.ScalarType:
+    def get_full_precision(
+        self, field_name: str
+    ) -> state_utils.GTXFieldType | state_utils.ScalarType:
         log.info(f" retrieving field {field_name}")
         self.check_field_in_provider(field_name)
         provider = self._providers[field_name]
         if field_name not in provider.fields:
-            raise ValueError(
-                f"Field {field_name} not provided by f{provider.func.__name__}."
-            )
+            raise ValueError(f"Field {field_name} not provided by f{provider.func.__name__}.")
 
         return provider(
             field_name=field_name,
@@ -202,13 +201,26 @@ class FieldSource(GridProvider, Protocol):
             exchange=self._exchange,
         )
 
+    def get(self, field_name: str) -> state_utils.GTXFieldType:
+        """Export a field from the factory in the dtype provided by the metadata."""
+        field = self.get_full_precision(field_name)
+        this_metadata = self.metadata[field_name]
+        if "dims" not in this_metadata or not this_metadata["dims"]:
+            raise TypeError(
+                f"This function is intended to return a Field. Field name {field_name!r} looks like a Scalar ('dims' missing in metadata)."
+            )
+        dtype_metadata = this_metadata.get("dtype", ta.wpfloat)
+        # `astype` is a `BuiltInFunction`, whose overloads are erased by the decorator.
+        return cast("state_utils.GTXFieldType", gtx.astype(field, dtype_metadata))
+
     def get_scalar(self, field_name: str) -> state_utils.ScalarType:
         scalar = self.get_full_precision(field_name)
         this_metadata = self.metadata[field_name]
-        if "dims" in this_metadata:
-            raise TypeError(f"This function is intended to return a Scalar. Field name {field_name!r} looks like a Field (contains 'dims' in metadata).")
+        if this_metadata.get("dims", False):
+            raise TypeError(
+                f"This function is intended to return a Scalar. Field name {field_name!r} looks like a Field (contains 'dims' in metadata)."
+            )
         return scalar
-
 
     def output_dtype(self, field_name: str) -> state_utils.ScalarType:
         return self.get_metadata(field_name)["dtype"]
@@ -222,16 +234,6 @@ class FieldSource(GridProvider, Protocol):
 
     def _provided_by_source(self, name) -> bool:
         return name in self._sources._providers or name in self._sources.metadata
-
-    def get(self, field_name: str) -> state_utils.GTXFieldType:
-        """Export a field from the factory in the dtype provided by the metadata."""
-        field = self.get_full_precision(field_name)
-        this_metadata = self.metadata[field_name]
-        if "dims" not in this_metadata:
-            raise TypeError(f"This function is intended to return a Field. Field name {field_name!r} looks like a Scalar ('dims' missing in metadata).")
-        dtype_metadata = this_metadata.get("dtype", ta.wpfloat)
-        # `astype` is a `BuiltInFunction`, whose overloads are erased by the decorator.
-        return cast("state_utils.GTXFieldType", gtx.astype(field, dtype_metadata))
 
     def register_provider(self, provider: FieldProvider) -> None:
         # dependencies must be provider by this field source or registered in sources
@@ -665,7 +667,9 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
     ) -> None:
         self._validate_dependencies()
         args = {
-            k: buffer.ndarray if hasattr(buffer := factory.get_full_precision(v), "ndarray") else buffer
+            k: buffer.ndarray
+            if hasattr(buffer := factory.get_full_precision(v), "ndarray")
+            else buffer
             for k, v in self._dependencies.items()
         }
         offsets = {
@@ -680,12 +684,18 @@ class NumpyDataProvider(FieldProvider, NeedsExchange):
         # force double for floating-precision
         dtypes = factory.dtypes_for_factory(self.fields.keys())
         self._fields = {
-            k: self._as_field(backend, results[i], dtype=dtypes[k], grid=grid_provider) if self._dims else results[i]
+            k: self._as_field(backend, results[i], dtype=dtypes[k], grid=grid_provider)
+            if self._dims
+            else results[i]
             for i, k in enumerate(self.fields)
         }
 
     def _as_field(
-        self, backend: gtx_typing.Backend | None, value: data_alloc.NDArray, dtype, grid: GridProvider
+        self,
+        backend: gtx_typing.Backend | None,
+        value: data_alloc.NDArray,
+        dtype,
+        grid: GridProvider,
     ) -> state_utils.GTXFieldType:
         if self._domain is None:
             return gtx.as_field(self._dims, value, allocator=backend, dtype=dtype)
