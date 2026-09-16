@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import (
     _compute_cfl,
     _compute_extra_diffusion,
     _compute_extra_diffusion_for_w,
+    _compute_horizontal_advection_of_w,
     _compute_interpolated_horizontal_advection_of_w,
     _compute_vertical_advection_of_w,
     _interpolate_contravariant_vertical_velocity_to_full_levels,
@@ -27,20 +28,17 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import reference_funcs, stencil_tests
-from icon4py.model.testing.reference_funcs import interpolate_to_cell_center_numpy
+from icon4py.model.testing.reference_funcs import (
+    compute_curl_numpy,
+    interpolate_cell_field_to_vertex_numpy,
+    interpolate_to_cell_center_numpy,
+)
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
-from .test_compute_horizontal_advection_term_for_vertical_velocity import (
-    compute_horizontal_advection_term_for_vertical_velocity_numpy,
-)
 from .test_interpolate_cell_field_to_half_levels import (
     interpolate_cell_field_to_half_levels_vp_numpy,
 )
 from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
-from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
-)
-from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
 
 
 def interpolate_vn_to_half_levels_numpy(wgtfac_e: np.ndarray, vn: np.ndarray) -> np.ndarray:
@@ -205,19 +203,18 @@ def compute_horizontal_advection_of_w_numpy(
     inv_primal_edge_length: np.ndarray,
     tangent_orientation: np.ndarray,
 ) -> np.ndarray:
-    w_at_vertices = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
-        connectivities, w, c_intp
-    )
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+    inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
+    tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
+    e2c = connectivities[dims.E2C]
+    e2v = connectivities[dims.E2V]
+    w_at_vertices = interpolate_cell_field_to_vertex_numpy(connectivities, w, c_intp)
 
-    return compute_horizontal_advection_term_for_vertical_velocity_numpy(
-        connectivities=connectivities,
-        vn_ie=vn_on_half_levels,
-        inv_dual_edge_length=inv_dual_edge_length,
-        w=w,
-        z_vt_ie=tangential_wind_on_half_levels,
-        inv_primal_edge_length=inv_primal_edge_length,
-        tangent_orientation=tangent_orientation,
-        z_w_v=w_at_vertices,
+    return vn_on_half_levels * inv_dual_edge_length * (w[e2c[:, 0]] - w[e2c[:, 1]]) + (
+        tangential_wind_on_half_levels
+        * inv_primal_edge_length
+        * tangent_orientation
+        * (w_at_vertices[e2v[:, 0]] - w_at_vertices[e2v[:, 1]])
     )
 
 
@@ -488,9 +485,7 @@ def compute_advection_in_horizontal_momentum_numpy(
     horizontal_kinetic_energy_at_cells_on_model_levels = interpolate_to_cell_center_numpy(
         connectivities, horizontal_kinetic_energy_at_edges_on_model_levels, e_bln_c_s
     )
-    upward_vorticity_at_vertices = mo_math_divrot_rot_vertex_ri_dsl_numpy(
-        connectivities, vn, geofac_rot
-    )
+    upward_vorticity_at_vertices = compute_curl_numpy(connectivities, vn, geofac_rot)
 
     normal_wind_advective_tendency = _compute_advective_normal_wind_tendency_numpy(
         connectivities=connectivities,
@@ -1101,5 +1096,71 @@ class TestAddExtraDiffusionForNormalWindTendencyWithoutLevelmask(stencil_tests.S
             domain={
                 dims.EdgeDim: (0, gtx.int32(grid.num_edges)),
                 dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+        )
+
+
+class TestComputeHorizontalAdvectionOfW(stencil_tests.StencilTest):
+    PROGRAM = _compute_horizontal_advection_of_w
+    OUTPUTS = ("out",)
+
+    @stencil_tests.static_reference
+    def reference(
+        grid: base.Grid,
+        *,
+        w: np.ndarray,
+        tangential_wind_on_half_levels: np.ndarray,
+        vn_on_half_levels: np.ndarray,
+        c_intp: np.ndarray,
+        inv_dual_edge_length: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
+        tangent_orientation: np.ndarray,
+        out: np.ndarray,
+        domain: dict,
+        **kwargs: Any,
+    ) -> dict:
+        horizontal_advection_of_w = compute_horizontal_advection_of_w_numpy(
+            connectivities=stencil_tests.connectivities_asnumpy(grid),
+            w=w,
+            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+            vn_on_half_levels=vn_on_half_levels,
+            c_intp=c_intp,
+            inv_dual_edge_length=inv_dual_edge_length,
+            inv_primal_edge_length=inv_primal_edge_length,
+            tangent_orientation=tangent_orientation,
+        )
+        return dict(
+            out=_restore_outside(
+                horizontal_advection_of_w, out, domain[dims.EdgeDim], domain[dims.KHalfDim]
+            )
+        )
+
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        # The operator reads both E2C neighbours unmasked, so it runs where they exist.
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        start_edge_lateral_boundary_level_7 = grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
+        )
+        end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
+
+        return dict(
+            w=data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat),
+            tangential_wind_on_half_levels=data_alloc.random_field(
+                dims.EdgeDim, dims.KHalfDim, dtype=ta.wpfloat
+            ),
+            vn_on_half_levels=data_alloc.random_field(
+                dims.EdgeDim, dims.KHalfDim, dtype=ta.vpfloat
+            ),
+            c_intp=data_alloc.random_field(dims.VertexDim, dims.V2CDim, dtype=ta.wpfloat),
+            inv_dual_edge_length=data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat),
+            inv_primal_edge_length=data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat),
+            tangent_orientation=data_alloc.random_field(dims.EdgeDim, dtype=ta.wpfloat),
+            out=data_alloc.random_field(dims.EdgeDim, dims.KHalfDim, dtype=ta.vpfloat),
+            domain={
+                dims.EdgeDim: (start_edge_lateral_boundary_level_7, end_edge_halo),
+                dims.KHalfDim: (0, gtx.int32(grid.num_levels + 1)),
             },
         )

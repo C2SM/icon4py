@@ -17,20 +17,15 @@ from gt4py.next import (
 )
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
-    _compute_horizontal_advection_term_for_vertical_velocity,
-)
-from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl import (
-    _mo_math_divrot_rot_vertex_ri_dsl,
-)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E, C2E2CO, E2C, E2C2EO, E2V
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_vertex import (
+    _interpolate_cell_field_to_vertex,
+)
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp import (
     _interpolate_to_cell_center_vp,
 )
+from icon4py.model.common.math.stencils.compute_curl import _compute_curl
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -63,18 +58,15 @@ def _compute_horizontal_advection_of_w(
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
 ) -> fa.EdgeKHalfField[ta.vpfloat]:
-    w_at_vertices = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
+    w_at_vertices = astype(_interpolate_cell_field_to_vertex(w, c_intp), vpfloat)
+    vn_on_half_levels_wp = astype(vn_on_half_levels, wpfloat)
 
     horizontal_advection_of_w_at_edges_on_half_levels = (
-        _compute_horizontal_advection_term_for_vertical_velocity(
-            vn_on_half_levels,
-            inv_dual_edge_length,
-            w,
-            tangential_wind_on_half_levels,
-            inv_primal_edge_length,
-            tangent_orientation,
-            w_at_vertices,
-        )
+        vn_on_half_levels_wp * inv_dual_edge_length * (w(E2C[0]) - w(E2C[1]))
+        + tangential_wind_on_half_levels
+        * inv_primal_edge_length
+        * tangent_orientation
+        * astype(w_at_vertices(E2V[0]) - w_at_vertices(E2V[1]), wpfloat)
     )
 
     return astype(horizontal_advection_of_w_at_edges_on_half_levels, vpfloat)
@@ -566,10 +558,7 @@ def _compute_advection_in_horizontal_momentum(
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
 ) -> fa.EdgeKField[ta.vpfloat]:
-    upward_vorticity_at_vertices_on_model_levels = _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot)
-    upward_vorticity_at_vertices_on_model_levels = astype(
-        upward_vorticity_at_vertices_on_model_levels, vpfloat
-    )
+    upward_vorticity_at_vertices_on_model_levels = astype(_compute_curl(vn, geofac_rot), vpfloat)
 
     normal_wind_advective_tendency = _compute_advective_normal_wind_tendency(
         horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
