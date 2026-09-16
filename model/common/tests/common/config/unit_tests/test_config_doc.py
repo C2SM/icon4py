@@ -11,6 +11,7 @@ from __future__ import annotations
 import dataclasses
 import enum
 import typing
+from collections.abc import Callable, Iterator
 
 import pytest
 import textual
@@ -42,6 +43,11 @@ class TestMetaNoMeta:
 
 
 @dataclasses.dataclass
+class NoDocString:
+    foo: int
+
+
+@dataclasses.dataclass
 class TestNested:
     """Config class with another one nested under it."""
 
@@ -68,13 +74,21 @@ class TestEnumOption:
 class TestEndTime:
     """Config class with an time.EndOfSimulation option"""
 
-    sim_end: time.EndOfSimulation
+    sim_end: typing.Annotated[
+        time.EndOfSimulation,
+        config_options.ConfigOption(description="When the simulation should end"),
+    ]
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class TestWithShared(config_io.ConfigWithShared):
     foo: TestNested
     bar: TestNestedNoMeta
+
+
+@dataclasses.dataclass
+class TestNoDoc:
+    nodoc: NoDocString
 
 
 @pytest.mark.parametrize(
@@ -89,7 +103,12 @@ class TestWithShared(config_io.ConfigWithShared):
         (int | float, lambda x: tuple(i[0] for i in x) == (0, 0.0)),
     ),
 )
-def test_examples_for(typehint, check):
+def test_examples_for(
+    typehint: type, check: Callable[[Iterator[tuple[object, config_doc.RESOLVED]]], bool]
+) -> None:
+    """
+    Check the resulting examples for a given tpye with a checking function also given in the params.
+    """
     examples = config_doc.examples_for(typehint)
     assert check(examples)
 
@@ -104,10 +123,18 @@ def test_examples_for(typehint, check):
         (TestNestedNoMeta, ("down", "enter")),
         (TestEnumOption, ("down", "enter")),
         (TestEndTime, ("down", "enter", "tab", "pagedown")),
+        (TestEndTime, ("down", "enter", "down", "enter", "tab", "pagedown")),
         (TestWithShared, ("down", "enter", "tab", "pagedown")),
+        (TestNoDoc, ("down", "enter")),
     ),
     ids=lambda val: val if not isinstance(val, tuple) else "".join(k[0] for k in val),
 )
-def test_snapshots(snap_compare, config_class, key_presses):
+def test_snapshots(snap_compare: Callable, config_class: type, key_presses: tuple[str]) -> None:
+    """
+    Compare svg 'screenshots' of a specific TUI app state.
+
+    The state is reached by starting the browser from the given class and
+    executing the given key presses.
+    """
     app = config_doc.ConfigDocApp(config_class)
     assert snap_compare(app, press=key_presses)
