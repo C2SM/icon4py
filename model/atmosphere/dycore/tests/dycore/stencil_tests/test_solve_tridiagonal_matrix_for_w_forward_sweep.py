@@ -14,8 +14,8 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
-from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
+from icon4py.model.common.grid import base as base_grid, simple
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
@@ -92,6 +92,14 @@ class TestSolveTridiagonalMatrixForWForwardSweep(stencil_tests.StencilTest):
             cpd=cpd,
         )
         return dict(z_q=z_q_ref, w=w_ref)
+
+    @pytest.fixture(scope="class", params=[2, 40, 120])
+    def grid(
+        self, request: pytest.FixtureRequest, backend_like: model_backends.BackendLike
+    ) -> base_grid.Grid:
+        return simple.simple_grid(
+            allocator=model_backends.get_allocator(backend_like), num_levels=request.param
+        )
 
     @stencil_tests.input_data_fixture
     def input_data(
