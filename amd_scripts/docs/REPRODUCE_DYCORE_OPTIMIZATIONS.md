@@ -8,13 +8,22 @@ the solver implementation matches this branch, which is based on C2SM's
 `mi300_opt` at `397d774a1`. The replay deliberately does not incorporate later
 uncommitted edits to the review checkout.
 
-The large harness and evidence remain on `mi300_opt`, instead of being duplicated
-in this review diff. Both branches must be available in the fork. If the archived
-commit is missing locally, fetch it before submitting:
+**Reproduction still depends on the `mi300_opt` experiment archive.** This
+branch contains the optimisations and launchers; the complete benchmark harness
+and original evidence are stored on `dganellari/icon4py:mi300_opt`. The launcher
+runs the pinned archive commit `cdc034acb` in a private checkout, rather than
+benchmarking the current review working tree.
+
+Stay on `dycore-optimizations`. If the archive commit is missing locally, download
+it before submitting (this works regardless of your remote names):
 
 ```bash
-git fetch fork mi300_opt
+git fetch https://github.com/dganellari/icon4py.git mi300_opt
 ```
+
+`git fetch` downloads the archive history; it does not switch branches or modify
+checked-out source files. No checkout of `mi300_opt` is required. Launch the jobs
+below from `dycore-optimizations` after fetching.
 
 **There is not yet a measured combined 5% result to reproduce.** We measured
 2.13% less device time from theta compiler fusion and 3.28% additional reduction
