@@ -1287,7 +1287,7 @@ class SolveNonhydro:
             # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
             apply_extra_diffusion_on_vn = True
 
-            # TODO(havogt): however, our test data is probably not able to catch cfl_clipping conditons
+            # TODO(havogt): however, our test data is probably not able to catch cfl_clipping conditions
             self._compute_velocity_advection_in_predictor_step(
                 tangential_wind=diagnostic_state_nh.tangential_wind,
                 tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
