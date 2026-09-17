@@ -4,8 +4,9 @@ ICON4Py's datatests validate against Serialbox dumps produced by an instrumented
 Fortran build, one archive per `(experiment, communicator size)`, published to
 `https://rgw.cscs.ch/c2sm:testdata` under `experiments/`. Generation runs on CSCS Santis.
 
-Each archive carries `ser_data/`, the namelists, and the slurm log — which contains ICON's
-startup banner, and therefore the identity of the build that produced the data.
+Each archive carries `ser_data/`, the namelists, a `config.yml` produced directly from
+those namelists, and the slurm log — which contains ICON's startup banner, and therefore
+the identity of the build that produced the data.
 
 ## Which ICON build produced an archive
 
