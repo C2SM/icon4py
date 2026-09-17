@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import dataclasses
-import enum
 import pathlib
 
 import pytest
@@ -23,23 +22,12 @@ from icon4py.model.testing import (
 
 
 def _path_to_experiment_testdata(experiment: MuphysExperiment) -> pathlib.Path:
-    return (
-        config.TEST_DATA_PATH
-        / test_defs.MUPHYS_DATA_DIR
-        / experiment.type.name.lower()
-        / experiment.name
-    )
-
-
-class ExperimentType(int, enum.Enum):
-    GRAUPEL_ONLY = 0
-    FULL_MUPHYS = 1
+    return config.TEST_DATA_PATH / test_defs.MUPHYS_DATA_DIR / "full_mphys" / experiment.name
 
 
 @dataclasses.dataclass(frozen=True)
 class MuphysExperiment:
     name: str
-    type: ExperimentType
     dt: float = 30.0
     qnc: float = 100.0
 
@@ -62,7 +50,7 @@ def download_test_data(experiment: MuphysExperiment) -> None:
         _path_to_experiment_testdata(experiment),
         uri=dt_utils.get_muphys_archive_url(
             test_defs.TESTDATA_ROOT_URL,
-            experiment.type.name.lower(),
+            "full_mphys",
             experiment.name,
         ),
     )

@@ -80,8 +80,6 @@ def test_muphys_granule(
     # numpy index of the first level ICON computes the scheme on (Fortran jks_cloudy is 1-based)
     jks = init_savepoint.jks_cloudy() - 1
 
-    # MuphysConfig().qnc matches the Fortran cloud_num = 50.0e6 m^-3 (mo_cloud_mig.f90);
-    # the graupel scheme matches the Fortran that generated the data
     muphys_configuration = muphys_config.MuphysConfig()
     component = muphys_component.MuphysComponent(
         grid=icon_grid,
