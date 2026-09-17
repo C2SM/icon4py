@@ -35,6 +35,7 @@ members = [
   "icon4py-atmosphere-microphysics",
   "icon4py-atmosphere-muphys",
   "icon4py-atmosphere-physics-driver",
+  "icon4py-atmosphere-tmx",
   "icon4py-atmosphere-tracer-advection",
   "icon4py-bindings",
   "icon4py-common",
@@ -1180,8 +1181,9 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/spcl/dace.git?branch=main#62268b0006d5352152fd6837eccd37759537b8b1"}
-version = "2.0.0a8"
+sdist = {url = "https://files.pythonhosted.org/packages/76/34/a6e66f329ea94167c1c0da89dfaf053b1d90836ccab7161176dd12f10f9e/dace-2.0.0a9.tar.gz", hash = "sha256:ee9cd2a40c16fb09d559556433bb4f51b71fa88760fbc04306d54552775b5c4a", size = 6572070, upload-time = "2026-09-17T09:31:23.155Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "2.0.0a9"
 
 [[package]]
 dependencies = [
@@ -1659,7 +1661,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=dace_bump_version#64b6ea0652eb7aa2f88fe1e7e67137f33b741baf"}
+source = {git = "https://github.com/edopao/gt4py?branch=dace_bump_version#d8336c979a6c03863f30830e632efdcc52bc4aee"}
 version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
@@ -1773,6 +1775,7 @@ dependencies = [
   {name = "icon4py-atmosphere-microphysics"},
   {name = "icon4py-atmosphere-muphys"},
   {name = "icon4py-atmosphere-physics-driver"},
+  {name = "icon4py-atmosphere-tmx"},
   {name = "icon4py-atmosphere-tracer-advection"},
   {name = "icon4py-common"},
   {name = "icon4py-driver"}
@@ -1888,6 +1891,7 @@ requires-dist = [
   {name = "icon4py-atmosphere-microphysics", editable = "model/atmosphere/subgrid_scale_physics/microphysics"},
   {name = "icon4py-atmosphere-muphys", editable = "model/atmosphere/subgrid_scale_physics/muphys"},
   {name = "icon4py-atmosphere-physics-driver", editable = "model/atmosphere/subgrid_scale_physics/physics_driver"},
+  {name = "icon4py-atmosphere-tmx", editable = "model/atmosphere/subgrid_scale_physics/tmx"},
   {name = "icon4py-atmosphere-tracer-advection", editable = "model/atmosphere/tracer_advection"},
   {name = "icon4py-bindings", marker = "extra == 'fortran'", editable = "bindings"},
   {name = "icon4py-common", editable = "model/common"},
@@ -2122,6 +2126,23 @@ dependencies = [
   {name = "icon4py-common"},
   {name = "packaging"}
 ]
+name = "icon4py-atmosphere-tmx"
+source = {editable = "model/atmosphere/subgrid_scale_physics/tmx"}
+version = "0.4.1"
+
+[package.metadata]
+requires-dist = [
+  {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_bump_version"},
+  {name = "icon4py-common", editable = "model/common"},
+  {name = "packaging", specifier = ">=20.0"}
+]
+
+[[package]]
+dependencies = [
+  {name = "gt4py"},
+  {name = "icon4py-common"},
+  {name = "packaging"}
+]
 name = "icon4py-atmosphere-tracer-advection"
 source = {editable = "model/atmosphere/tracer_advection"}
 version = "0.4.1"
@@ -2187,7 +2208,6 @@ profiling = [
 dependencies = [
   {name = "array-api-compat"},
   {name = "cattrs"},
-  {name = "dace"},
   {name = "gt4py"},
   {name = "numpy"},
   {name = "packaging"},
@@ -2208,7 +2228,6 @@ requires-dist = [
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
-  {name = "dace", git = "https://github.com/spcl/dace?branch=main"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
   {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_bump_version"},
