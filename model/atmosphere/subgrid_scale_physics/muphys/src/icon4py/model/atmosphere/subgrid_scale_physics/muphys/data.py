@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import dataclasses
+from typing import Final
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import SPECIES
 from icon4py.model.common import dimension as dims
@@ -26,6 +27,9 @@ _PRECIP_KEY = dict(
     pg="graupelfall_flux",
     pre="precipitation_energy_flux",
 )
+
+#: the granule's precip output ports, in declaration order
+PRECIP_PORTS: Final = tuple(_PRECIP_KEY)
 
 INPUTS_PROPERTIES: dict[str, model.FieldMetaData] = {
     "dz": model.FieldMetaData(standard_name="layer_thickness", units="m"),

@@ -127,24 +127,11 @@ class MuphysComponent:
         self._step = step
 
         cell_k_domain = gtx.domain({dims.CellDim: self._ncells, dims.KDim: self._nlev})
-        self._pflx: fa.CellKField[ta.wpfloat] = gtx.zeros(
-            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
-        )
-        self._pr: fa.CellKField[ta.wpfloat] = gtx.zeros(
-            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
-        )
-        self._ps: fa.CellKField[ta.wpfloat] = gtx.zeros(
-            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
-        )
-        self._pi: fa.CellKField[ta.wpfloat] = gtx.zeros(
-            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
-        )
-        self._pg: fa.CellKField[ta.wpfloat] = gtx.zeros(
-            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
-        )
-        self._pre: fa.CellKField[ta.wpfloat] = gtx.zeros(
-            cell_k_domain, dtype=ta.wpfloat, allocator=allocator
-        )
+        self._cell_k_domain = cell_k_domain
+        self._allocator = allocator
+        # Left unallocated: under a driver these are bound to caller-owned buffers
+        # before the first step, so allocating them here would be thrown away.
+        self._precip: dict[str, fa.CellKField[ta.wpfloat]] | None = None
 
         self._tendencies: dict[str, fa.CellKField[ta.wpfloat]] = {
             "tend_temperature": gtx.zeros(cell_k_domain, dtype=ta.wpfloat, allocator=allocator),
@@ -185,6 +172,7 @@ class MuphysComponent:
         buffers, already filled in place.
         """
         fields = cast("dict[str, fa.CellKField[ta.wpfloat]]", state)
+        precip = self._precip_buffers()
 
         self._copy_field(field=fields["te"], output_field=self._te_in)
         for s in SPECIES:
@@ -198,12 +186,12 @@ class MuphysComponent:
             q_in=self._q_in,
             q_out=self._q_in,
             t_out=self._te_in,
-            pflx=self._pflx,
-            pr=self._pr,
-            ps=self._ps,
-            pi=self._pi,
-            pg=self._pg,
-            pre=self._pre,
+            pflx=precip["pflx"],
+            pr=precip["pr"],
+            ps=precip["ps"],
+            pi=precip["pi"],
+            pg=precip["pg"],
+            pre=precip["pre"],
         )
 
         self._calculate_tendency(
@@ -222,33 +210,32 @@ class MuphysComponent:
 
         return cast(
             "dict[str, model.DataField]",
-            {
-                **self._tendencies,
-                "pflx": self._pflx,
-                "pr": self._pr,
-                "ps": self._ps,
-                "pi": self._pi,
-                "pg": self._pg,
-                "pre": self._pre,
-            },
+            {**self._tendencies, **precip},
         )
+
+    def _precip_buffers(self) -> dict[str, fa.CellKField[ta.wpfloat]]:
+        """The precip outputs: the caller's if bound, else our own, allocated on first use.
+
+        Allocating on demand rather than in ``__init__`` keeps the driver path
+        from ever creating buffers that ``bind_output_buffers`` replaces.
+        """
+        if self._precip is None:
+            self._precip = {
+                port: gtx.zeros(self._cell_k_domain, dtype=ta.wpfloat, allocator=self._allocator)
+                for port in muphys_data.PRECIP_PORTS
+            }
+        return self._precip
 
     def bind_output_buffers(self, buffers: dict[str, fa.CellKField[ta.wpfloat]]) -> None:
         """Redirect the precip diagnostics into buffers the caller owns.
 
-        Points the six precip attributes at the buffers passed in. ``__call__``
-        hands those same attributes to the granule as its output arguments on
-        every step, so redirecting them once here redirects every write that
-        follows: the driver never copies a diagnostic out of our results.
+        ``__call__`` hands these to the granule as its output arguments on every
+        step, so binding them once here redirects every write that follows: the
+        driver never copies a diagnostic out of our results.
 
         ``PhysicsDriver`` calls this once per process while it is being built,
         passing the buffers its ``DiagnosticsStore`` owns. If nobody calls it the
-        allocations made in ``__init__`` stay in use, which is what lets the
-        component run on its own in the granule datatests.
+        component allocates its own on the first step, which is what lets it run
+        on its own in the granule datatests.
         """
-        self._pflx = buffers["pflx"]
-        self._pr = buffers["pr"]
-        self._ps = buffers["ps"]
-        self._pi = buffers["pi"]
-        self._pg = buffers["pg"]
-        self._pre = buffers["pre"]
+        self._precip = {port: buffers[port] for port in muphys_data.PRECIP_PORTS}
