@@ -223,7 +223,7 @@ class FieldSource(GridProvider, Protocol):
         return scalar
 
     def output_dtype(self, field_name: str) -> state_utils.ScalarType:
-        return self.get_metadata(field_name)["dtype"]
+        return self.get_metadata(field_name).get("dtype", ta.wpfloat)
 
     def internal_dtype(self, field_name: str) -> state_utils.ScalarType:
         return allfloats_as_double(self.output_dtype(field_name))
