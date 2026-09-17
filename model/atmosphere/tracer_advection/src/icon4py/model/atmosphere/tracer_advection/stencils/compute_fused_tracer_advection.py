@@ -427,6 +427,7 @@ def _compute_tracer_advection_even_timestep_after_horizontal_limiter(
     deepatmo_divh: fa.KField[ta.wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     p_dtime: ta.wpfloat,
+    ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
 ) -> tuple[fa.EdgeKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     p_mflx_tracer_h = (
@@ -436,14 +437,18 @@ def _compute_tracer_advection_even_timestep_after_horizontal_limiter(
         if (itype_hlimit == 4)
         else p_mflx_tracer_h_unlimited
     )
-    p_tracer_new = _integrate_tracer_horizontally(
-        p_mflx_tracer_h=p_mflx_tracer_h,
-        deepatmo_divh=deepatmo_divh,
-        tracer_now=p_tracer_after_vertical,
-        rhodz_now=rhodz_ast2,
-        rhodz_new=rhodz_new,
-        geofac_div=geofac_div,
-        p_dtime=p_dtime,
+    p_tracer_new = (
+        _integrate_tracer_horizontally(
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            deepatmo_divh=deepatmo_divh,
+            tracer_now=p_tracer_after_vertical,
+            rhodz_now=rhodz_ast2,
+            rhodz_new=rhodz_new,
+            geofac_div=geofac_div,
+            p_dtime=p_dtime,
+        )
+        if (ihadv_tracer != 0)
+        else p_tracer_after_vertical
     )
     return p_mflx_tracer_h, p_tracer_new
 
@@ -460,6 +465,7 @@ def compute_tracer_advection_even_timestep_after_horizontal_limiter(
     deepatmo_divh: fa.KField[ta.wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     p_dtime: ta.wpfloat,
+    ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
     start_cell_nudging: gtx.int32,
     end_cell_local: gtx.int32,
@@ -476,6 +482,7 @@ def compute_tracer_advection_even_timestep_after_horizontal_limiter(
         deepatmo_divh=deepatmo_divh,
         geofac_div=geofac_div,
         p_dtime=p_dtime,
+        ihadv_tracer=ihadv_tracer,
         itype_hlimit=itype_hlimit,
         out=(p_mflx_tracer_h, p_tracer_new),
         domain=(
@@ -653,6 +660,7 @@ def _compute_tracer_advection_odd_timestep_after_horizontal_limiter(
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
     ivadv_tracer: gtx.int32,
+    ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
     itype_vlimit: gtx.int32,
     iadv_slev_jt: gtx.int32,
@@ -674,14 +682,18 @@ def _compute_tracer_advection_odd_timestep_after_horizontal_limiter(
     )
     p_tracer_after_horizontal = concat_where(
         (dims.KDim >= 0) & (dims.KDim < elev + 1),
-        _integrate_tracer_horizontally(
-            p_mflx_tracer_h=p_mflx_tracer_h,
-            deepatmo_divh=deepatmo_divh,
-            tracer_now=p_tracer_now,
-            rhodz_now=rhodz_now,
-            rhodz_new=rhodz_ast2,
-            geofac_div=geofac_div,
-            p_dtime=p_dtime,
+        (
+            _integrate_tracer_horizontally(
+                p_mflx_tracer_h=p_mflx_tracer_h,
+                deepatmo_divh=deepatmo_divh,
+                tracer_now=p_tracer_now,
+                rhodz_now=rhodz_now,
+                rhodz_new=rhodz_ast2,
+                geofac_div=geofac_div,
+                p_dtime=p_dtime,
+            )
+            if (ihadv_tracer != 0)
+            else p_tracer_now
         ),
         broadcast(0.0, (dims.CellDim, dims.KDim)),
     )
@@ -739,6 +751,7 @@ def compute_tracer_advection_odd_timestep_after_horizontal_limiter(
     slevp1_ti: gtx.int32,
     elev: gtx.int32,
     ivadv_tracer: gtx.int32,
+    ihadv_tracer: gtx.int32,
     itype_hlimit: gtx.int32,
     itype_vlimit: gtx.int32,
     iadv_slev_jt: gtx.int32,
@@ -769,6 +782,7 @@ def compute_tracer_advection_odd_timestep_after_horizontal_limiter(
         slevp1_ti=slevp1_ti,
         elev=elev,
         ivadv_tracer=ivadv_tracer,
+        ihadv_tracer=ihadv_tracer,
         itype_hlimit=itype_hlimit,
         itype_vlimit=itype_vlimit,
         iadv_slev_jt=iadv_slev_jt,

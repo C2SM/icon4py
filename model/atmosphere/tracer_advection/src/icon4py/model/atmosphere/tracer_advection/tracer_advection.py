@@ -351,6 +351,7 @@ class GodunovSplittingAdvection(Advection):
             constant_args={
                 "deepatmo_divh": metric_state.deepatmo_divh,
                 "geofac_div": interpolation_state.geofac_div,
+                "ihadv_tracer": gtx.int32(horizontal_advection_type.value),
                 "itype_hlimit": gtx.int32(horizontal_advection_limiter.value),
             },
             horizontal_sizes={
@@ -384,6 +385,8 @@ class GodunovSplittingAdvection(Advection):
                 **shared_vertical_args,
                 "deepatmo_divh": metric_state.deepatmo_divh,
                 "geofac_div": interpolation_state.geofac_div,
+                "ihadv_tracer": gtx.int32(horizontal_advection_type.value),
+                "itype_hlimit": gtx.int32(horizontal_advection_limiter.value),
             },
             horizontal_sizes={
                 "start_cell_nudging": self._start_cell_nudging,
