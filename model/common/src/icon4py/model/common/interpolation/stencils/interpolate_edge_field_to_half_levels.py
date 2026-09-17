@@ -24,8 +24,6 @@ def _interpolate_edge_field_to_half_levels(
 ) -> fa.EdgeKHalfField[wpfloat]:
     """
     Interpolate an edge field from full levels to half levels.
-        var_half_k = wgtfac_e_k * var_full_k + (1 - wgtfac_e_k) * var_full_k-1
-    (half level k lies above full level k, so ``var_full_k`` is the level below it)
 
     Args:
         interpolant: edge field on full levels

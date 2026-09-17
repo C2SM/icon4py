@@ -213,11 +213,9 @@ def _compute_virtual_potential_temperature(
     """
     Compute the virtual potential temperature at full-level cell centers.
 
-    Port of ``get_virtual_potential_temperature`` in ICON's ``mo_vdf_atmo.f90``:
+    Port of ``get_virtual_potential_temperature`` in ICON's ``mo_vdf_atmo.f90``, with
+    ``ptvm1`` the virtual temperature and ``papm1`` the pressure.
 
-        theta_v = tv * (p0ref / p)**rd_o_cpd
-
-    with tv the virtual temperature (``ptvm1``) and p the pressure (``papm1``).
     Args:
         virtual_temperature: virtual temperature at full levels [K]
         pressure: air pressure at full levels [Pa]

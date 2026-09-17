@@ -24,18 +24,10 @@ def _compute_brunt_vaisala_frequency(
     """
     Compute the squared Brunt-Vaisala frequency at half-level cell centers.
 
-    Port of ``brunt_vaisala_freq`` in ICON's ``mo_nh_vert_interp_les.f90``:
-
-        bruvais(k) = grav * (theta_v(k-1) - theta_v(k)) * inv_ddqz_z_half(k)
-                     / theta_v_ic(k)
-
-    (Fortran jk = 2..nlev, 1-based -> k = 1..nlev-1, 0-based; ``k-1`` is the
-    full level above ``k``, so ``bruvais`` is positive for stable
-    stratification), with theta_v interpolated to the half levels as in
-    ``vert_intp_full2half_cell_3d`` (interior rows only):
-
-        theta_v_ic(k) = wgtfac_c(k) * theta_v(k)
-                        + (1 - wgtfac_c(k)) * theta_v(k-1)
+    Port of ``brunt_vaisala_freq`` in ICON's ``mo_nh_vert_interp_les.f90`` (Fortran
+    jk = 2..nlev, 1-based -> k = 1..nlev-1, 0-based), with theta_v interpolated to the
+    half levels as in ``vert_intp_full2half_cell_3d`` (interior rows only). ``bruvais``
+    is positive for stable stratification.
 
     The top and bottom half levels (k = 0 and k = nlev) are not computed; the
     domain has to exclude them, so that the half-level shifts stay in bounds.

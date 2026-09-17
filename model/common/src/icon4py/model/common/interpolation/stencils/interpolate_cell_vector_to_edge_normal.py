@@ -25,11 +25,7 @@ def _interpolate_cell_vector_to_edge_normal(
     Interpolate a cell-centered vector field to the edges and take its normal component.
 
     Inverse of the RBF reconstruction in
-    :mod:`edge_2_cell_vector_rbf_interpolation`::
-
-        normal_component(e, k) = sum over the two E2C neighbor cells c of
-            c_lin_e(e, c) * (vector_x(c, k) * primal_normal_cell_x(e, c)
-                             + vector_y(c, k) * primal_normal_cell_y(e, c))
+    :mod:`edge_2_cell_vector_rbf_interpolation`.
     """
     return neighbor_sum(
         c_lin_e * (vector_x(E2C) * primal_normal_cell_x + vector_y(E2C) * primal_normal_cell_y),

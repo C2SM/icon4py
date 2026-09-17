@@ -25,10 +25,7 @@ def _compute_tangential_wind_wp(
 
     Working-precision port of ``rbf_vec_interpol_edge`` in ICON's
     ``mo_intp_rbf.f90`` (``rbf_vec_interpol_edge_lib`` in iconmath's
-    ``mo_lib_intp_rbf.F90``):
-
-        vt(e, k) = sum over the four E2C2E neighbor edges e' of
-                   rbf_vec_coeff_e(e, e') * vn(e', k)
+    ``mo_lib_intp_rbf.F90``).
     """
     return neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=dims.E2C2EDim)
 

@@ -87,10 +87,7 @@ def _compute_dry_static_energy(
     """
     Compute the dry static energy at full-level cell centers.
 
-    Port of ``compute_static_energy`` in ICON's ``mo_vdf_atmo.f90``:
-
-        dry_static_energy = cpd * temperature + grav * height_above_ground
-
+    Port of ``compute_static_energy`` in ICON's ``mo_vdf_atmo.f90``.
     ``height_above_ground`` is the height of the full levels above the surface
     (``ghf``), so ``grav * height_above_ground`` is the geopotential above ground.
 

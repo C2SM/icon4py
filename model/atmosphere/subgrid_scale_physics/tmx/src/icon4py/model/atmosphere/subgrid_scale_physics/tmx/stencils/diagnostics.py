@@ -444,10 +444,7 @@ def _compute_shear_and_div_of_stress(
     """
     Compute shear and divergence of stress at edges of full levels.
 
-        shear         = ||D||^2 = 2 |S|^2,  D = T + T^t = 2 S
-        div_of_stress = trace(T)
-
-    with T the velocity gradient and S the strain rate. Mechanical production is
+    ``shear`` is ``2 |S|^2`` with S the strain rate, so the mechanical production is
     half of ``shear`` multiplied by km.
     """
     velocity_gradient = _compute_velocity_gradient_tensor(
@@ -774,14 +771,9 @@ def _compute_eddy_viscosity(
     Compute the eddy viscosity and diffusivity at half-level cell centers.
 
     Port of ``Smagorinsky_model`` in ICON's ``mo_tmx_smagorinsky.f90`` and, with
-    ``use_km_const``, of ``Assign_constant_eddy_viscosity`` in ``mo_vdf_atmo.f90``:
-    - interior half levels (0 < k < nlev):
-        km_ic = rho_ic * mixing_length_sq * stability_term   (Smagorinsky-Lilly)
-        km_ic = rho_ic * km_const                            (use_km_const)
-        kh_ic = km_ic * rturb_prandtl
-    - boundary half levels are copies of the adjacent interior rows:
-        k = 0 copies k = 1, k = nlev copies k = nlev - 1
-      (Fortran 1-based: k = 1 <- k = 2, k = nlevp1 <- k = nlev).
+    ``use_km_const``, of ``Assign_constant_eddy_viscosity`` in ``mo_vdf_atmo.f90``. The
+    boundary half levels are copies of the adjacent interior rows: k = 0 copies k = 1,
+    k = nlev copies k = nlev - 1 (Fortran 1-based: k = 1 <- k = 2, k = nlevp1 <- k = nlev).
 
     Depending on the configuration, the classic (Lilly 1962) or the Louis (1979)
     stability correction function is used. If the Louis formulation is enabled but
