@@ -5,7 +5,7 @@ tags: [config, fortran, icon]
 # [Configuration Classes]
 
 - **Status**: valid
-- **Authors**: Rico Häuselmann (@DropD)
+- **Authors**: Rico Häuselmann (@DropD), Jacopo Canton (@jcanton)
 - **Created**: 2026-06-17
 - **Updated**: 2026-09-17
 
