@@ -270,8 +270,10 @@ transformation and regression tests (22 focused tests and pre-commit checks pass
 GT4Py is a separate repository, so the change is carried here as an applyable
 patch rather than copying the compiler into Icon4Py. Its base is GT4Py
 `a461b874` (upstream main); the modified transformation source is
-unchanged from the measured prototype. It does not automatically enable theta
-fusion in Icon4Py. The same compiler change is also committed separately as
+unchanged from the measured prototype. Normal Icon4Py runs can now opt in with
+`ICON4PY_DACE_THETA_FUSION=1`; the default is off. The restricted callback is
+registered in [model options](../../model/common/src/icon4py/model/common/model_options.py),
+and requires the patched compiler. The same compiler change is also committed separately as
 `857e718d` on GT4Py branch `dycore-shared-output-fusion`, ready to push to
 `dganellari/gt4py` for a normal compiler PR.
 
@@ -304,8 +306,8 @@ The measured theta selection used the existing optimizer callback
 `TopLevelDataFlowVerticalSplitCallBack`. It opted in only for
 `theta_v_at_edges_on_model_levels`, matching horizontal ranges and differing
 vertical bands, and reset the flag for every candidate. It was not enabled
-indiscriminately for other programs. Production integration must retain that
-restriction until broader validation is complete.
+indiscriminately for other programs. Normal model configuration now retains this
+restriction under the explicit switch; broader grid/variant validation remains pending.
 
 The explicit benchmark-level fix and the GPU scalar conversion needed by the
 profiling harness remain recorded in the experiment branch. They are not speedup

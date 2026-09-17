@@ -16,6 +16,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
+from gt4py.next.program_processors.runners.dace.transformations import map_fusion_extended
 
 from icon4py.model.common import backend_configuration as backend_cfg, dimension, model_backends
 
@@ -33,6 +34,45 @@ def _dace_remove_access_node_copies(sdfg: dace.SDFG) -> None:
         validate=False,
         validate_all=False,
     )
+
+
+def _dace_select_theta_split(
+    transformation: map_fusion_extended.VerticalSplitMapRange,
+    first_map: dace.nodes.Map,
+    second_map: dace.nodes.Map,
+    _state: dace.SDFGState,
+    _sdfg: dace.SDFG,
+) -> bool:
+    """Allow shared-output splitting only for matching interior theta bands."""
+    # The matcher reuses this instance, so reset the opt-in for every candidate.
+    transformation.allow_shared_data = False
+    if transformation.access_node.data != "theta_v_at_edges_on_model_levels":
+        return True
+    edge, level = "i_Edge_gtx_horizontal", "i_K_gtx_vertical"
+    first = dict(zip(first_map.params, first_map.range, strict=True))
+    second = dict(zip(second_map.params, second_map.range, strict=True))
+    transformation.allow_shared_data = (
+        set(first) == set(second) == {edge, level}
+        and first[edge] == second[edge]
+        and first[level] != second[level]
+    )
+    return True
+
+
+def _configure_theta_fusion(optimization_hooks: dict[Any, Any]) -> None:
+    setting = os.environ.get("ICON4PY_DACE_THETA_FUSION", "0")
+    if setting not in {"0", "1"}:
+        raise ValueError("'ICON4PY_DACE_THETA_FUSION' must be '0' or '1'.")
+    if setting == "0":
+        return
+    if "allow_shared_data" not in map_fusion_extended.VerticalSplitMapRange.__properties__:
+        raise RuntimeError(
+            "'ICON4PY_DACE_THETA_FUSION=1' requires the GT4Py shared-output fusion patch."
+        )
+    hook = gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowVerticalSplitCallBack
+    if hook in optimization_hooks and optimization_hooks[hook] is not _dace_select_theta_split:
+        raise ValueError("Theta fusion conflicts with an existing vertical-split callback.")
+    optimization_hooks[hook] = _dace_select_theta_split
 
 
 def _set_program_specific_dace_options(
@@ -58,6 +98,7 @@ def _set_program_specific_dace_options(
     # due to it falling into a less optimized code generation (on santis).
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
+        _configure_theta_fusion(optimization_hooks)
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
         if device != model_backends.DeviceType.ROCM:
@@ -104,8 +145,9 @@ def get_dace_options(
     **backend_descriptor: Any,
 ) -> model_backends.BackendDescriptor:
     device = backend_descriptor.get("device")
-    optimization_args = backend_descriptor.get("optimization_args", {})
-    optimization_hooks = optimization_args.get("optimization_hooks", {})
+    # Backend descriptors may be reused for other programs or configurations.
+    optimization_args = dict(backend_descriptor.get("optimization_args", {}))
+    optimization_hooks = dict(optimization_args.get("optimization_hooks", {}))
 
     if backend_config is not None:
         # The workspace memory allows to avoid the overhead of runtime allocations,

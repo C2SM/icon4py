@@ -30,6 +30,29 @@ below from `dycore-optimizations` after fetching.
 from solver fusion. Their product suggests 5.34%; the direct combined experiment
 below is needed to confirm or revise it. Do not sum the percentages.
 
+## Enable theta fusion in normal dycore runs
+
+With the GT4Py shared-output fusion patch installed, normal model configuration
+can enable the same restricted callback used in the measured experiment:
+
+```bash
+export ICON4PY_DACE_THETA_FUSION=1  # Enable before constructing the dycore/backend.
+# Set to 0, or leave unset, to disable the model's opt-in.
+```
+
+`model_options.py` registers `TopLevelDataFlowVerticalSplitCallBack` only for
+`compute_rho_theta_pgrad_and_update_vn`. The callback selects the theta output,
+matching horizontal ranges and different vertical bands; other candidates keep
+shared-output splitting disabled. An unpatched compiler or an existing conflicting
+callback produces a clear error. Configure each comparison in a fresh process
+and use separate persistent cache directories to retain the generated SDFGs.
+This enables graph-based matching across specializations; it does not claim
+validation or a speedup for every grid/IAU variant.
+
+This switch configures normal runs of this branch. The pinned replay commands
+below retain their original benchmark-controlled A/B configuration and do not
+exercise later model-options edits. Solver fusion remains applied in the model.
+
 ## Source and environment
 
 The launcher uses experiment commit **`cdc034acb`**, including both measured
