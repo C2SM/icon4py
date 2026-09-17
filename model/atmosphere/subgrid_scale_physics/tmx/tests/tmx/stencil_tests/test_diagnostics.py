@@ -367,12 +367,12 @@ class TestComputeThermodynamicDiagnostics(stencil_tests.StencilTest):
         )
 
 
-def cell_2_edge_interpolation_numpy(
+def interpolate_cell_field_to_edge_numpy(
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     in_field: np.ndarray,
     coeff: np.ndarray,
 ) -> np.ndarray:
-    """Reference of ``_cell_2_edge_interpolation_on_half_levels``."""
+    """Reference of ``_interpolate_cell_field_to_edge_on_half_levels``."""
     e2c = connectivities[dims.E2C]  # (n_edges, 2)
     return np.sum(in_field[e2c] * np.expand_dims(coeff, axis=-1), axis=1)
 
@@ -515,7 +515,7 @@ class TestComputeEdgeShearDiagnostics(stencil_tests.StencilTest):
 
         # The fused field operator evaluates the intermediates wherever a consumer
         # needs them, independently of the sub-domain each of them is written on.
-        w_ie_full = cell_2_edge_interpolation_numpy(connectivities, in_field=w, coeff=c_lin_e)
+        w_ie_full = interpolate_cell_field_to_edge_numpy(connectivities, in_field=w, coeff=c_lin_e)
         vn_ie_full = interpolate_to_half_levels_with_boundaries_numpy(
             vn, wgtfac_e, wgtfacq1=wgtfacq1_e, wgtfacq=wgtfacq_e
         )

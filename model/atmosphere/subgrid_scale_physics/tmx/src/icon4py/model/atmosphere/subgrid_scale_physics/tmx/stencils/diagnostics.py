@@ -19,14 +19,14 @@ from gt4py.next import abs, maximum, minimum, power, sqrt, where  # noqa: A004
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.dimension import E2C, E2C2V, E2C2VDim, KDim
-from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
-    _cell_2_edge_interpolation_on_half_levels,
-)
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     _compute_cell_2_vertex_interpolation,
 )
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
     _compute_tangential_wind_on_half_levels,
+)
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_edge import (
+    _interpolate_cell_field_to_edge_on_half_levels,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_with_boundaries,
@@ -511,7 +511,7 @@ def _compute_edge_shear_diagnostics(
         vertical velocity, normal and tangential velocity at half-level edges,
         and shear and divergence of the stress at full-level edges
     """
-    w_ie = _cell_2_edge_interpolation_on_half_levels(w, c_lin_e)
+    w_ie = _interpolate_cell_field_to_edge_on_half_levels(w, c_lin_e)
     vn_ie = _interpolate_edge_field_to_half_levels_with_boundaries(
         interpolant=vn,
         wgtfac_e=wgtfac_e,
@@ -908,7 +908,7 @@ def _interpolate_km(
     return (
         maximum(km_min, average_level_plus1_on_cells(km_ic)),
         maximum(km_min, _compute_cell_2_vertex_interpolation(km_ic, cells_aw_verts)),
-        maximum(km_min, _cell_2_edge_interpolation_on_half_levels(km_ic, c_lin_e)),
+        maximum(km_min, _interpolate_cell_field_to_edge_on_half_levels(km_ic, c_lin_e)),
     )
 
 

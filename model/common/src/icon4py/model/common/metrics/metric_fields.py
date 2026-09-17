@@ -31,12 +31,12 @@ from gt4py.next.experimental import concat_where
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C
-from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
-    _cell_2_edge_interpolation,
-    _cell_2_edge_interpolation_on_half_levels,
-)
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     _compute_cell_2_vertex_interpolation,
+)
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_edge import (
+    _interpolate_cell_field_to_edge,
+    _interpolate_cell_field_to_edge_on_half_levels,
 )
 from icon4py.model.common.math.gradient import _grad_fd_tang, grad_fd_norm
 from icon4py.model.common.math.vertical_operations import (
@@ -563,7 +563,7 @@ def compute_wgtfac_e(  # noqa: PLR0917 [too-many-positional-arguments]
         vertical_end: vertical end index
     """
 
-    _cell_2_edge_interpolation_on_half_levels(
+    _interpolate_cell_field_to_edge_on_half_levels(
         in_field=wgtfac_c,
         coeff=c_lin_e,
         out=wgtfac_e,
@@ -667,7 +667,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(  # noqa: PL
 
     e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
     k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
-    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
+    z_me = _interpolate_cell_field_to_edge(in_field=z_mc, coeff=c_lin_e)
     downward_distance = _compute_downward_extrapolation_distance(topography)
     extrapolation_distance = concat_where(
         (horizontal_start_distance <= dims.EdgeDim) & (dims.EdgeDim < horizontal_end_distance),
