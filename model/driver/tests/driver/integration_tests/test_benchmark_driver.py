@@ -20,7 +20,6 @@ from icon4py.model.driver import config as driver_config, driver, driver_states
 from icon4py.model.testing.fixtures.datatest import backend, process_props
 
 from ..fixtures import (
-    BENCHMARK_EXPERIMENTS,
     BENCHMARK_ROUNDS,
     BENCHMARK_WARMUP_ROUNDS,
     driver_benchmark_config,
@@ -33,12 +32,6 @@ from ..fixtures import (
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-@pytest.mark.parametrize(
-    "driver_benchmark_experiment",
-    BENCHMARK_EXPERIMENTS,
-    indirect=True,
-    ids=lambda e: e.name,
-)
 def test_benchmark_driver_init(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
@@ -81,12 +74,6 @@ def test_benchmark_driver_init(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-@pytest.mark.parametrize(
-    "driver_benchmark_experiment",
-    BENCHMARK_EXPERIMENTS,
-    indirect=True,
-    ids=lambda e: e.name,
-)
 def test_benchmark_driver_timeloop(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,
@@ -122,12 +109,6 @@ def test_benchmark_driver_timeloop(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-@pytest.mark.parametrize(
-    "driver_benchmark_experiment",
-    BENCHMARK_EXPERIMENTS,
-    indirect=True,
-    ids=lambda e: e.name,
-)
 def test_benchmark_driver_total(
     driver_benchmark_config: driver_config.ExperimentConfig,
     driver_benchmark_grid_manager: gm.GridManager,

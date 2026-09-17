@@ -92,7 +92,7 @@ def _make_grid_manager(
     )
 
 
-@pytest.fixture
+@pytest.fixture(params=BENCHMARK_EXPERIMENTS, ids=lambda experiment: experiment.name)
 def driver_benchmark_experiment(request: pytest.FixtureRequest) -> test_defs.ExperimentDescription:
     return request.param
 
