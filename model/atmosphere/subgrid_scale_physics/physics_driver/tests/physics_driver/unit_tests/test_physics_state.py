@@ -10,6 +10,7 @@
 
 import gt4py.next as gtx
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_state
 from icon4py.model.common import dimension as dims
@@ -276,6 +277,19 @@ def test_apply_projects_accumulated_wind_tendency_to_vn():
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
 
 
+def test_apply_rejects_a_lone_horizontal_wind_tendency():
+    # vn is ONE projection of (u, v), so a process declaring only one of the two would
+    # silently lose the other half of the momentum: an error, not a no-op.
+    grid = simple.simple_grid()
+    ws = _entry_state(grid)
+    apply_once = _apply_to_prognostic(grid)
+    ws.diagnose_from(_uniform_prognostic(grid, exner=0.95, theta_v=300.0), _tracer_state(grid))
+    acc = _accumulated(grid, tend_u=data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KDim))
+
+    with pytest.raises(ValueError, match="applied as a pair"):
+        apply_once(ws, acc, dt_seconds=300.0)
+
+
 def test_entry_state_groups_diagnostics_in_common_container():
     grid = simple.simple_grid()
     ws = _entry_state(grid)
@@ -304,3 +318,21 @@ def test_diagnostics_store_allocates_from_metadata():
     assert buffers["kh"].domain.dims == (dims.CellDim, dims.KDim)
     assert buffers["cptgz_vi"].domain.dims == (dims.CellDim,)
     assert store["tmx"] is buffers
+
+
+def test_diagnostics_store_rejects_half_level_output_declared_on_full_levels():
+    # The buffer shape comes from `dims` alone, so a declaration that still says
+    # is_on_half_levels while carrying KDim would quietly be one level too short.
+    grid = simple.simple_grid()
+    store = physics_state.DiagnosticsStore(grid=grid)
+    props = {
+        "kh": model.FieldMetaData(
+            standard_name="test_field",
+            units="1",
+            dims=(dims.CellDim, dims.KDim),
+            is_on_half_levels=True,
+        )
+    }
+
+    with pytest.raises(ValueError, match="must contain KHalfDim"):
+        store.allocate("tmx", props)

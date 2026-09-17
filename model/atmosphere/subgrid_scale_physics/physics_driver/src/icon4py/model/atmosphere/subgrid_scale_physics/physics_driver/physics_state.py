@@ -369,7 +369,13 @@ class ApplyToPrognostic:
             )
 
         # 3. Winds: ONE projection of the summed (u, v) tendencies onto edge normals
-        if "tend_u" in acc:
+        wind_tendencies = {"tend_u", "tend_v"} & acc.keys()
+        if len(wind_tendencies) == 1:
+            (declared,) = wind_tendencies
+            raise ValueError(
+                f"the horizontal wind tendencies are applied as a pair; got only {declared}"
+            )
+        if wind_tendencies:
             self._compute_vn_from_uv(
                 u=acc["tend_u"],
                 v=acc["tend_v"],
@@ -425,10 +431,12 @@ class DiagnosticsStore:
                     f"diagnostic output '{name}' of process '{process_name}' declares no dims; "
                     "the store allocates its buffer from that metadata"
                 )
-            extend = {dims.KDim: 1} if props.is_on_half_levels else None
-            buffers[name] = data_alloc.zero_field(
-                self._grid, *props.dims, extend=extend, allocator=self._backend
-            )
+            if props.is_on_half_levels and dims.KHalfDim not in props.dims:
+                raise ValueError(
+                    f"diagnostic output '{name}' of process '{process_name}' is declared on "
+                    "half levels; its dims must contain KHalfDim"
+                )
+            buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
         self._store[process_name] = buffers
         return buffers
 
