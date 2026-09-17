@@ -98,33 +98,6 @@ class Diagnostics:
             )
 
         num_levels = self._grid.num_levels
-        self._determine_horizontal_domains()
-        self._allocate_local_fields()
-        self._setup_init_and_diagnostics_programs(backend, num_levels)
-
-        # the init part, Smagorinsky_init in mo_tmx_smagorinsky.f90
-        self.compute_smagorinsky_mixing_length(mixing_length_sq=self.mixing_length_sq)
-        if use_louis:
-            # the Fortran init only computes the Louis scaling factor if the
-            # Louis stability correction is enabled; the field stays zero otherwise
-            self.compute_scaling_factor_louis(scaling_factor_louis=self.scaling_factor_louis)
-
-    def _allocate_local_fields(self) -> None:
-        zero_field = functools.partial(data_alloc.zero_field, self._grid, allocator=self._allocator)
-
-        # squared Smagorinsky mixing length at half-level cell centers [m^2]
-        self.mixing_length_sq: fa.CellKHalfField[ta.wpfloat] = zero_field(
-            dims.CellDim, dims.KHalfDim
-        )
-        # cell-area scaling factor of the Louis constant b
-        self.scaling_factor_louis: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
-
-        # land and sea-ice fractions: the atmosphere-only port has no source for them,
-        # so they stay zero (see the warning in __init__)
-        self.fract_land: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
-        self.fract_ice: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
-
-    def _determine_horizontal_domains(self) -> None:
         cell_domain = h_grid.domain(dims.CellDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
         vertex_domain = h_grid.domain(dims.VertexDim)
@@ -167,6 +140,31 @@ class Diagnostics:
         self._vertex_start_nudging = self._grid.start_index(vertex_domain(h_grid.Zone.NUDGING))
         self._vertex_end_local = self._grid.end_index(vertex_domain(h_grid.Zone.LOCAL))
         self._vertex_end_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
+
+        self._allocate_local_static_fields()
+        self._setup_init_and_diagnostics_programs(backend, num_levels)
+
+        # the init part, Smagorinsky_init in mo_tmx_smagorinsky.f90
+        self.compute_smagorinsky_mixing_length(mixing_length_sq=self.mixing_length_sq)
+        if use_louis:
+            # the Fortran init only computes the Louis scaling factor if the
+            # Louis stability correction is enabled; the field stays zero otherwise
+            self.compute_scaling_factor_louis(scaling_factor_louis=self.scaling_factor_louis)
+
+    def _allocate_local_static_fields(self) -> None:
+        zero_field = functools.partial(data_alloc.zero_field, self._grid, allocator=self._allocator)
+
+        # squared Smagorinsky mixing length at half-level cell centers [m^2]
+        self.mixing_length_sq: fa.CellKHalfField[ta.wpfloat] = zero_field(
+            dims.CellDim, dims.KHalfDim
+        )
+        # cell-area scaling factor of the Louis constant b
+        self.scaling_factor_louis: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
+
+        # land and sea-ice fractions: the atmosphere-only port has no source for them,
+        # so they stay zero (see the warning in __init__)
+        self.fract_land: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
+        self.fract_ice: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
 
     def _setup_init_and_diagnostics_programs(
         self,
@@ -432,7 +430,7 @@ class Diagnostics:
             offset_provider=self._grid.connectivities,
         )
 
-    def run_diagnostics(
+    def run(
         self,
         input_state: tmx_states.TmxInputState,
         diagnostic_state: tmx_states.TmxDiagnosticState,
@@ -443,12 +441,6 @@ class Diagnostics:
         Port of ``Compute_diagnostics`` in mo_vdf_atmo.f90 (l. 343-482), with
         the halo exchanges at the Fortran sync points and one program per
         exchange interval and horizontal dimension.
-
-        Note: the Fortran zero-initializes u_vert/v_vert/w_vert and
-        km_iv/km_c/km_ie/kh_ic/km_ic before (re)computing them on possibly
-        smaller domains. This is not replicated here: entries outside the
-        computed domains keep their allocation-time zeros (or whatever a
-        previous call left there); they must not be relied upon.
         """
         log.debug("tmx diagnostics (Compute_diagnostics): start")
 
@@ -463,7 +455,6 @@ class Diagnostics:
             bruvais=diagnostic_state.bruvais,
         )
 
-        # S1: CALL sync_patch_array(SYNC_C, patch, pum1/pvm1) in mo_vdf_atmo.f90
         log.debug("communication of input u, v (cells): start")
         self._exchange.exchange(dims.CellDim, input_state.u, input_state.v)
         log.debug("communication of input u, v (cells): end")
@@ -474,7 +465,6 @@ class Diagnostics:
             normal_component=diagnostic_state.vn,
         )
 
-        # S2: CALL sync_patch_array(SYNC_E, patch, vn) in mo_vdf_atmo.f90
         log.debug("communication of vn (edges): start")
         self._exchange.exchange(dims.EdgeDim, diagnostic_state.vn)
         log.debug("communication of vn (edges): end")
@@ -487,7 +477,6 @@ class Diagnostics:
             v_vert=diagnostic_state.v_vert,
         )
 
-        # S3: CALL sync_patch_array_mult(SYNC_V, patch, 3, w_vert, u_vert, v_vert)
         log.debug("communication of w_vert, u_vert, v_vert (vertices): start")
         self._exchange.exchange(
             dims.VertexDim,
@@ -497,9 +486,6 @@ class Diagnostics:
         )
         log.debug("communication of w_vert, u_vert, v_vert (vertices): end")
 
-        # w_ie is computed here rather than before S3 (where the Fortran
-        # computes it): it only depends on the input w, and this is the group
-        # that consumes it.
         self.compute_edge_shear_diagnostics(
             w=input_state.w,
             vn=diagnostic_state.vn,
@@ -534,12 +520,9 @@ class Diagnostics:
                 kh_ic=diagnostic_state.kh_ic,
             )
 
-        # S4: CALL sync_patch_array(SYNC_C, patch, kh_ic/km_ic) in
-        # mo_tmx_smagorinsky.f90 (l. 299-300). Unconditional, unlike the Fortran,
-        # which skips it in the constant-viscosity branch: both of our viscosity
-        # programs write cells rl 3..min_rlcell_int only, and 'interpolate_km'
-        # gathers from halo cells, so the halo rows have to come from here in
-        # either branch.
+        # unconditional, unlike the Fortran, which skips it in the constant-viscosity branch:
+        # the viscosity programs write cells rl 3..min_rlcell_int only, and 'interpolate_km'
+        # gathers from halo cells
         log.debug("communication of kh_ic, km_ic (cells): start")
         self._exchange.exchange(dims.CellDim, diagnostic_state.kh_ic, diagnostic_state.km_ic)
         log.debug("communication of kh_ic, km_ic (cells): end")

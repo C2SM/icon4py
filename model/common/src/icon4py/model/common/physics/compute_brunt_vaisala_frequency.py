@@ -31,12 +31,11 @@ def _compute_brunt_vaisala_frequency(
 
     (Fortran jk = 2..nlev, 1-based -> k = 1..nlev-1, 0-based; ``k-1`` is the
     full level above ``k``, so ``bruvais`` is positive for stable
-    stratification). The interpolation of theta_v to the half levels
+    stratification), with theta_v interpolated to the half levels as in
+    ``vert_intp_full2half_cell_3d`` (interior rows only):
 
         theta_v_ic(k) = wgtfac_c(k) * theta_v(k)
                         + (1 - wgtfac_c(k)) * theta_v(k-1)
-
-    (``vert_intp_full2half_cell_3d``, interior rows only) is fused into this stencil.
 
     The top and bottom half levels (k = 0 and k = nlev) are not computed; run
     the program with ``vertical_start = 1``, ``vertical_end = nlev`` so that

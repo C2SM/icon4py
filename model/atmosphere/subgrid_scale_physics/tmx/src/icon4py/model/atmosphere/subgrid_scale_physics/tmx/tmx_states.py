@@ -11,7 +11,7 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable
+import functools
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -80,27 +80,6 @@ class TmxInterpolationState:
     """RBF coefficients for the zonal wind component at cell centers (rbf_vec_coeff_c_1)."""
     rbf_coeff_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
     """RBF coefficients for the meridional wind component at cell centers (rbf_vec_coeff_c_2)."""
-
-
-def _field_allocators(
-    grid: base_grid.Grid, allocator: gtx_typing.Allocator | None
-) -> tuple[
-    Callable[[gtx.Dimension], gtx.Field],
-    Callable[[gtx.Dimension], gtx.Field],
-]:
-    """Return zero-field factories for full-level and half-level fields."""
-
-    def full(horizontal_dim: gtx.Dimension) -> gtx.Field:
-        return data_alloc.zero_field(
-            grid, horizontal_dim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        )
-
-    def half(horizontal_dim: gtx.Dimension) -> gtx.Field:
-        return data_alloc.zero_field(
-            grid, horizontal_dim, dims.KHalfDim, dtype=ta.wpfloat, allocator=allocator
-        )
-
-    return full, half
 
 
 @dataclasses.dataclass(frozen=True)
@@ -179,26 +158,28 @@ class TmxDiagnosticState:
         cls, grid: base_grid.Grid, allocator: gtx_typing.Allocator | None = None
     ) -> TmxDiagnosticState:
         """Allocate a diagnostic state with all fields initialized to zero."""
-        full, half = _field_allocators(grid, allocator)
+        zero_field = functools.partial(
+            data_alloc.zero_field, grid, dtype=ta.wpfloat, allocator=allocator
+        )
         return cls(
-            theta_v=full(dims.CellDim),
-            cptgz=full(dims.CellDim),
-            div_c=full(dims.CellDim),
-            km_c=full(dims.CellDim),
-            rho_ic=half(dims.CellDim),
-            bruvais=half(dims.CellDim),
-            mech_prod=half(dims.CellDim),
-            km_ic=half(dims.CellDim),
-            kh_ic=half(dims.CellDim),
-            vn=full(dims.EdgeDim),
-            shear=full(dims.EdgeDim),
-            div_of_stress=full(dims.EdgeDim),
-            vn_ie=half(dims.EdgeDim),
-            vt_ie=half(dims.EdgeDim),
-            w_ie=half(dims.EdgeDim),
-            km_ie=half(dims.EdgeDim),
-            u_vert=full(dims.VertexDim),
-            v_vert=full(dims.VertexDim),
-            w_vert=half(dims.VertexDim),
-            km_iv=half(dims.VertexDim),
+            theta_v=zero_field(dims.CellDim, dims.KDim),
+            cptgz=zero_field(dims.CellDim, dims.KDim),
+            div_c=zero_field(dims.CellDim, dims.KDim),
+            km_c=zero_field(dims.CellDim, dims.KDim),
+            rho_ic=zero_field(dims.CellDim, dims.KHalfDim),
+            bruvais=zero_field(dims.CellDim, dims.KHalfDim),
+            mech_prod=zero_field(dims.CellDim, dims.KHalfDim),
+            km_ic=zero_field(dims.CellDim, dims.KHalfDim),
+            kh_ic=zero_field(dims.CellDim, dims.KHalfDim),
+            vn=zero_field(dims.EdgeDim, dims.KDim),
+            shear=zero_field(dims.EdgeDim, dims.KDim),
+            div_of_stress=zero_field(dims.EdgeDim, dims.KDim),
+            vn_ie=zero_field(dims.EdgeDim, dims.KHalfDim),
+            vt_ie=zero_field(dims.EdgeDim, dims.KHalfDim),
+            w_ie=zero_field(dims.EdgeDim, dims.KHalfDim),
+            km_ie=zero_field(dims.EdgeDim, dims.KHalfDim),
+            u_vert=zero_field(dims.VertexDim, dims.KDim),
+            v_vert=zero_field(dims.VertexDim, dims.KDim),
+            w_vert=zero_field(dims.VertexDim, dims.KHalfDim),
+            km_iv=zero_field(dims.VertexDim, dims.KHalfDim),
         )

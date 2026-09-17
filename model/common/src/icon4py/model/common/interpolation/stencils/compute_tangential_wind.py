@@ -29,10 +29,6 @@ def _compute_tangential_wind_wp(
 
         vt(e, k) = sum over the four E2C2E neighbor edges e' of
                    rbf_vec_coeff_e(e, e') * vn(e', k)
-
-    Full-level variant (vn -> vt). The reconstruction is purely horizontal, but
-    half levels are their own dimension, so half-level input (vn_ie -> vt_ie)
-    needs :func:`_compute_tangential_wind_on_half_levels`.
     """
     return neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=dims.E2C2EDim)
 

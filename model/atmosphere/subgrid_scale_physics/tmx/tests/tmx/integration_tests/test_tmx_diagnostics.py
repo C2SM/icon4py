@@ -10,7 +10,7 @@
 
 Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys),
 verifies the init fields against the tmx-init savepoint and one call of
-``run_diagnostics`` against the tmx-diagnostics-exit savepoint.
+``run`` against the tmx-diagnostics-exit savepoint.
 """
 
 from __future__ import annotations
@@ -106,7 +106,7 @@ def test_tmx_init_and_run_diagnostics_single_step(
     )
 
     diagnostic_state = tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator)
-    granule.run_diagnostics(construct_input_state(entry_savepoint), diagnostic_state)
+    granule.run(construct_input_state(entry_savepoint), diagnostic_state)
 
     nlev = icon_grid.num_levels
     # (diagnostic state attribute, exit savepoint accessor, K slice compared, absolute tolerance)

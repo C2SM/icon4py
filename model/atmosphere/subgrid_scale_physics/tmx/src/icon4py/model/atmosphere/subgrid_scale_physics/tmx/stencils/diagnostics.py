@@ -30,9 +30,7 @@ from icon4py.model.common.interpolation.stencils.compute_tangential_wind import 
 )
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_with_boundaries,
-)
-from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_cell_half_levels import (
-    _interpolate_edge_field_to_cell_half_levels,
+    _interpolate_cell_field_to_half_levels_wp,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels import (
     _interpolate_edge_field_to_half_levels_with_boundaries,
@@ -198,9 +196,6 @@ def _compute_thermodynamic_diagnostics(
 ]:
     """
     Thermodynamic cell diagnostics of ``Compute_diagnostics`` (mo_vdf_atmo.f90).
-
-    Fuses ``compute_static_energy``, ``get_virtual_potential_temperature``,
-    ``vert_intp_full2half_cell_3d`` (rho -> rho_ic) and ``brunt_vaisala_freq``.
 
     Returns:
         dry static energy, virtual potential temperature, air density at half
@@ -375,9 +370,6 @@ def _compute_shear_and_div_of_stress(
     """
     Compute shear and divergence of stress at edges of full levels.
 
-    Fuses the ICON TMX subroutines 'compute_velocity_gradient_tensor' and
-    'compute_shear' (mo_vdf_atmo.f90):
-
         shear         = ||D||^2 = 2 |S|^2,  D = T + T^t = 2 S
         div_of_stress = trace(T)
 
@@ -440,11 +432,6 @@ def _compute_edge_shear_diagnostics(
 ]:
     """
     Edge diagnostics of ``Compute_diagnostics`` (mo_vdf_atmo.f90).
-
-    Fuses ``cells2edges_scalar`` (w -> w_ie),
-    ``interpolate_normal_velocity_edge_interface`` (vn -> vn_ie),
-    ``rbf_vec_interpol_edge`` (vn_ie -> vt_ie) and the shear/divergence of the
-    stress tensor.
 
     Returns:
         vertical velocity, normal and tangential velocity at half-level edges,
@@ -591,8 +578,9 @@ def _compute_strain_rate_diagnostics(
         production term at half-level cells
     """
     div_c = _interpolate_to_cell_center(interpolant=div_of_stress, e_bln_c_s=e_bln_c_s)
-    mech_prod = _interpolate_edge_field_to_cell_half_levels(
-        interpolant=shear, e_bln_c_s=e_bln_c_s, wgtfac_c=wgtfac_c
+    mech_prod = _interpolate_cell_field_to_half_levels_wp(
+        wgtfac_c=wgtfac_c,
+        interpolant=_interpolate_to_cell_center(interpolant=shear, e_bln_c_s=e_bln_c_s),
     )
     return div_c, mech_prod
 
@@ -879,83 +867,26 @@ def assign_constant_viscosity(
 # Compute_diagnostics: the eddy viscosity on cells, vertices and edges
 # ---------------------------------------------------------------------------
 @gtx.field_operator
-def _interpolate_km_to_cells(
-    km_ic: fa.CellKHalfField[wpfloat],
-    km_min: wpfloat,
-) -> fa.CellKField[wpfloat]:
-    """
-    Interpolate the eddy viscosity from half-level cell centers to full-level
-    cell centers and apply the minimum-viscosity floor:
-
-        km_c(k) = max(km_min, 0.5 * (km_ic(k) + km_ic(k + 1)))
-
-    Port of ``interpolate_eddy_viscosity2cell`` in ICON's ``mo_vdf_atmo.f90``.
-    Domains (Fortran call site in ``Compute_diagnostics``): jk = 1..nlev;
-    ``rl_start = grf_bdywidth_c`` -> ``h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4``,
-    ``rl_end = min_rlcell_int - 1`` -> ``h_grid.Zone.HALO`` (halo cells are
-    computed on purpose because ``km_c`` is used in the diffusion later).
-    """
-    return maximum(km_min, average_level_plus1_on_cells(km_ic))
-
-
-@gtx.field_operator
-def _interpolate_km_to_vertices(
+def _interpolate_km(
     km_ic: fa.CellKHalfField[wpfloat],
     cells_aw_verts: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
-    km_min: wpfloat,
-) -> fa.VertexKHalfField[wpfloat]:
-    """
-    Interpolate the eddy viscosity from half-level cell centers to half-level
-    vertices (area-weighted V2C gather with ``cells_aw_verts``) and apply the
-    minimum-viscosity floor:
-
-        km_iv = max(km_min, sum_{c in V2C} cells_aw_verts * km_ic(c))
-
-    Port of ``interpolate_eddy_viscosity2half_vertex`` in ICON's
-    ``mo_vdf_atmo.f90``. Domains: all half levels (``cells2verts_scalar``
-    defaults to the full column); ``opt_rlstart = 5 (= max_rlvert)`` ->
-    ``h_grid.Zone.NUDGING``, ``opt_rlend = min_rlvert_int - 1`` ->
-    ``h_grid.Zone.HALO`` (halo vertices are computed on purpose).
-
-    Note: the Fortran applies the ``MAX(km_min, ...)`` floor to the *entire*
-    ``km_iv`` array (which was initialized to zero beforehand), so vertices
-    outside the interpolated region end up holding ``km_min``. Here the floor
-    is fused with the gather and only acts on the program domain; the caller
-    must initialize ``km_iv`` to ``km_min`` (instead of zero) if values outside
-    this domain are ever read.
-    """
-    return maximum(km_min, _compute_cell_2_vertex_interpolation(km_ic, cells_aw_verts))
-
-
-@gtx.field_operator
-def _interpolate_km_to_edges(
-    km_ic: fa.CellKHalfField[wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     km_min: wpfloat,
-) -> fa.EdgeKHalfField[wpfloat]:
+) -> tuple[fa.CellKField[wpfloat], fa.VertexKHalfField[wpfloat], fa.EdgeKHalfField[wpfloat]]:
     """
-    Interpolate the eddy viscosity from half-level cell centers to half-level
-    edges (linear E2C gather with ``c_lin_e``) and apply the minimum-viscosity
-    floor:
+    Interpolate the eddy viscosity from half-level cell centers to full-level cells,
+    half-level vertices and half-level edges, with the minimum-viscosity floor ``km_min``.
 
-        km_ie = max(km_min, sum_{c in E2C} c_lin_e * km_ic(c))
-
-    Port of ``interpolate_eddy_viscosity2half_edge`` in ICON's
-    ``mo_vdf_atmo.f90``. The single-neighbor lateral-boundary fill of
-    ``cells2edges_scalar`` (edges with ``refin_ctrl`` 1..2) is not reached at
-    this call site (``opt_rlstart = grf_bdywidth_e``) and is not ported.
-    Domains: all half levels; ``opt_rlstart = grf_bdywidth_e (= 9)`` ->
-    ``h_grid.Zone.NUDGING``, ``opt_rlend = min_rledge_int - 1`` ->
-    ``h_grid.Zone.HALO`` (halo edges are computed on purpose).
-
-    Note: the Fortran applies the ``MAX(km_min, ...)`` floor to the *entire*
-    ``km_ie`` array (which was initialized to zero beforehand), so edges outside
-    the interpolated region end up holding ``km_min``. Here the floor is fused
-    with the gather and only acts on the program domain; the caller must
-    initialize ``km_ie`` to ``km_min`` (instead of zero) if values outside this
-    domain are ever read.
+    Port of ``interpolate_eddy_viscosity2cell``, ``interpolate_eddy_viscosity2half_vertex``
+    and ``interpolate_eddy_viscosity2half_edge`` in ICON's ``mo_vdf_atmo.f90``. The Fortran
+    applies the floor to the whole vertex and edge arrays; here it acts on the program
+    domain only.
     """
-    return maximum(km_min, _cell_2_edge_interpolation_on_half_levels(km_ic, c_lin_e))
+    return (
+        maximum(km_min, average_level_plus1_on_cells(km_ic)),
+        maximum(km_min, _compute_cell_2_vertex_interpolation(km_ic, cells_aw_verts)),
+        maximum(km_min, _cell_2_edge_interpolation_on_half_levels(km_ic, c_lin_e)),
+    )
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -977,41 +908,24 @@ def interpolate_km(
     vertical_end: gtx.int32,
     vertical_end_half: gtx.int32,
 ) -> None:
-    """
-    Interpolate the half-level cell viscosity to the three grid entities.
-
-    The km/kh loops that follow the kh_ic/km_ic exchange in
-    ``Compute_diagnostics`` (mo_vdf_atmo.f90). All three read the same
-    (already exchanged) ``km_ic`` and nothing exchanges between them, so they
-    are one program; they still compile to one kernel each, because they write
-    a cell, a vertex and an edge field.
-    """
-    _interpolate_km_to_cells(
-        km_ic=km_ic,
-        km_min=km_min,
-        out=km_c,
-        domain={
-            dims.CellDim: (cell_start, cell_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-    _interpolate_km_to_vertices(
+    _interpolate_km(
         km_ic=km_ic,
         cells_aw_verts=cells_aw_verts,
-        km_min=km_min,
-        out=km_iv,
-        domain={
-            dims.VertexDim: (vertex_start, vertex_end),
-            dims.KHalfDim: (vertical_start, vertical_end_half),
-        },
-    )
-    _interpolate_km_to_edges(
-        km_ic=km_ic,
         c_lin_e=c_lin_e,
         km_min=km_min,
-        out=km_ie,
-        domain={
-            dims.EdgeDim: (edge_start, edge_end),
-            dims.KHalfDim: (vertical_start, vertical_end_half),
-        },
+        out=(km_c, km_iv, km_ie),
+        domain=(
+            {
+                dims.CellDim: (cell_start, cell_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.VertexDim: (vertex_start, vertex_end),
+                dims.KHalfDim: (vertical_start, vertical_end_half),
+            },
+            {
+                dims.EdgeDim: (edge_start, edge_end),
+                dims.KHalfDim: (vertical_start, vertical_end_half),
+            },
+        ),
     )
