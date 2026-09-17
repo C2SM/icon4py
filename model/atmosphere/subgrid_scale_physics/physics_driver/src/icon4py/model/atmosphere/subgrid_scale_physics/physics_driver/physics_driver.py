@@ -50,13 +50,36 @@ class PhysicsProcess:
     """One physics process: its component, its state adapter and its time control.
 
     The state adapter belongs to the process rather than being shared, because it
-    maps the entry state to the input names of this one component.
+    maps the entry state to the input names of this one component. The process also
+    decides whether it runs on a given step and keeps its last computed outputs, so
+    a step between two firings can reuse them.
     """
 
     name: str
     component: PhysicsComponent
     state: ComponentState
     time_control: ProcessTimeControl
+    _cached_output: dict[str, Any] | None = dataclasses.field(default=None, init=False, repr=False)
+
+    def run(
+        self,
+        entry_state: physics_state.EntryState,
+        step_start_datetime: datetime.datetime,
+        dtime: datetime.timedelta,
+    ) -> dict[str, Any] | None:
+        """Take the entry state, and this step's outputs are freshly computed, recycled, or ``None`` if it does not run.
+        """
+        tc = self.time_control
+        tc.validate_interval(dtime)
+        if not tc.enable_process or not tc.is_in_window(step_start_datetime):
+            return None
+        # Compute on a firing (active) step, and also on the first in-window step -- when
+        # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
+        if tc.is_active(step_start_datetime) or self._cached_output is None:
+            self._cached_output = self.component(
+                self.state.as_component_input(entry_state), step_start_datetime
+            )
+        return self._cached_output
 
 
 class PhysicsDriver:
@@ -83,7 +106,6 @@ class PhysicsDriver:
         self._entry = entry_state
         self._accumulators = accumulators
         self._apply = apply_to_prognostic
-        self._recycle_cache: dict[str, dict[str, Any]] = {}
         self.diagnostics = diagnostics
         for process in processes:
             process.component.bind_output_buffers(
@@ -102,18 +124,7 @@ class PhysicsDriver:
         self._accumulators.zero()
         dt_seconds = dtime.total_seconds()
         for process in self._processes:
-            tc = process.time_control
-            tc.validate_interval(dtime)
-            if not tc.enable_process or not tc.is_in_window(step_start_datetime):
-                continue
-            # Compute on a firing (active) step, and also on the first in-window step -- when
-            # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
-            if tc.is_active(step_start_datetime) or process.name not in self._recycle_cache:
-                outputs = process.component(
-                    process.state.as_component_input(self._entry), step_start_datetime
-                )
-                self._recycle_cache[process.name] = outputs
-            else:
-                outputs = self._recycle_cache[process.name]
-            self._accumulators.accumulate(outputs, process.component.outputs_properties)
+            outputs = process.run(self._entry, step_start_datetime, dtime)
+            if outputs is not None:
+                self._accumulators.accumulate(outputs, process.component.outputs_properties)
         self._apply(self._entry, self._accumulators, dt_seconds)
