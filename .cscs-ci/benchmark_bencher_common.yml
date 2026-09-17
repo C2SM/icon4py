@@ -11,7 +11,6 @@
 
 .benchmark_driver_base_variables:
   variables:
-    TEST_SELECTION: "test_benchmark_driver"
     SLURM_TIMELIMIT: '02:00:00'
     OMP_PROC_BIND: close
     OMP_PLACES: cores
@@ -38,7 +37,7 @@
 .benchmark_driver_mpi_nox_job:
   stage: benchmark
   script:
-    - .cscs-ci/scripts/ci-mpi-wrapper.sh nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
+    - .cscs-ci/scripts/ci-mpi-wrapper.sh nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID
   # MPS is explicitly not enabled here. The job uses one GPU per task.
   before_script:
     - cd /icon4py
@@ -56,7 +55,7 @@
 .benchmark_driver_nox_job:
   stage: benchmark
   script:
-    - nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
+    - nox -s "${NOX_SESSION}" -- --backend=$BACKEND --grid=$GRID
   # MPS is explicitly not enabled here. The job uses one GPU per task.
   before_script:
     - cd /icon4py

@@ -6,10 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import pathlib
-from collections.abc import Mapping
 
 import gt4py.next.typing as gtx_typing
-import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -28,41 +26,6 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     definitions as test_defs,
 )
-
-
-_GRID_DESCRIPTION_PRESETS: dict[str, test_defs.GridDescription] = {
-    "icon_global": test_defs.Grids.R02B04_GLOBAL,
-    "icon_benchmark_global": test_defs.Grids.R02B06_GLOBAL,
-}
-
-
-def resolve_grid_description(
-    grid_option: str, *, presets: Mapping[str, test_defs.GridDescription] | None = None
-) -> test_defs.GridDescription:
-    """Resolve a ``--grid`` option string to a ``GridDescription``.
-
-    An optional trailing ``:<levels>`` suffix is stripped because a
-    ``GridDescription`` does not carry a level override. Resolution order:
-    ``presets`` (defaulting to the module-level presets), a ``Grids``
-    attribute name, then any ``GridDescription`` whose ``.name`` matches.
-    """
-    if presets is None:
-        presets = _GRID_DESCRIPTION_PRESETS
-    name = grid_option.split(":", maxsplit=1)[0].strip()
-    grid = presets.get(name)
-    if grid is None and hasattr(test_defs.Grids, name):
-        grid = getattr(test_defs.Grids, name)
-    if grid is None:
-        for maybe_grid in vars(test_defs.Grids).values():
-            if isinstance(maybe_grid, test_defs.GridDescription) and maybe_grid.name == name:
-                grid = maybe_grid
-                break
-    if grid is None:
-        raise pytest.UsageError(
-            f"Unknown grid '{name}' in '--grid' option. "
-            f"Use a preset, a 'Grids' attribute name, or a grid description name."
-        )
-    return grid
 
 
 grid_geometries: dict[str, geometry.GridGeometry] = {}
