@@ -80,33 +80,32 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
         cell = np.arange(w_old.shape[0])
         reshaped_k = k[np.newaxis, :]
         reshaped_cell = cell[:, np.newaxis]
-        out_w, out_dwdx, out_dwdy = (
-            np.zeros_like(w_old),
-            dwdx.copy(),
-            dwdy.copy(),
-        )  # create output arrays to update only the necessary slices
+        # Initialize outputs with the pass-through values that the per-output
+        # domains no longer write back.
+        out_w = w_old.copy()
+        out_dwdx = dwdx.copy()
+        out_dwdy = dwdy.copy()
+
         if type_shear == 2:
-            dwdx, dwdy = np.where(
-                reshaped_k > 0,
-                calculate_horizontal_gradients_for_turbulence_numpy(
-                    connectivities, w_old, geofac_grg_x, geofac_grg_y
-                ),
-                (dwdx, dwdy),
+            grad_dwdx, grad_dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
+                connectivities, w_old, geofac_grg_x, geofac_grg_y
             )
+            grad_slice = (
+                slice(horizontal_start, horizontal_end),
+                slice(vertical_start + 1, vertical_end),
+            )
+            out_dwdx[grad_slice] = grad_dwdx[grad_slice]
+            out_dwdy[grad_slice] = grad_dwdy[grad_slice]
 
         z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w_old, geofac_n2s)
 
-        w = np.where(
-            (interior_idx <= reshaped_cell) & (reshaped_cell < halo_idx),
-            apply_nabla2_to_w_numpy(
-                connectivities=connectivities,
-                area=area,
-                z_nabla2_c=z_nabla2_c,
-                geofac_n2s=geofac_n2s,
-                w=w_old,
-                diff_multfac_w=diff_multfac_w,
-            ),
-            w_old,
+        w = apply_nabla2_to_w_numpy(
+            connectivities=connectivities,
+            area=area,
+            z_nabla2_c=z_nabla2_c,
+            geofac_n2s=geofac_n2s,
+            w=w_old,
+            diff_multfac_w=diff_multfac_w,
         )
 
         w = np.where(
@@ -117,10 +116,8 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
             apply_nabla2_to_w_in_upper_damping_layer_numpy(w, diff_multfac_n2w, area, z_nabla2_c),
             w,
         )
-        subset = (slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end))
-        out_w[subset] = w[subset]
-        out_dwdx[subset] = dwdx[subset]
-        out_dwdy[subset] = dwdy[subset]
+        w_slice = (slice(interior_idx, halo_idx), slice(vertical_start, vertical_end))
+        out_w[w_slice] = w[w_slice]
         return dict(w=out_w, dwdx=out_dwdx, dwdy=out_dwdy)
 
     @stencil_tests.input_data_fixture
@@ -151,7 +148,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(stencil_te
         w_old = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         diff_multfac_w = 5.0
 
-        w = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
+        w = data_alloc.as_field(w_old.asnumpy().copy(), dims.CellDim, dims.KHalfDim)
         dwdx = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         dwdy = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
 
