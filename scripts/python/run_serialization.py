@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import dataclasses
 import itertools
-import json
 import pathlib
 import re
 import shlex
@@ -27,7 +26,6 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import TYPE_CHECKING, Annotated
 
-import f90nml
 import typer
 
 
@@ -451,28 +449,23 @@ def copy_ser_data(
     # Copy ser_data folder
     shutil.copytree(src_dir, dest_dir / test_defs.SERIALIZED_DATA_SUBDIR)
 
-    from icon4py.model.common.utils import (  # noqa: PLC0415 [import-outside-top-level]
-        fortran_config,
-    )
-
-    # Translate to json and copy NAMELIST_ICON_output_atm
-    nml = f90nml.read(exp_dir / fortran_config.NAMELIST_ATM_FNAME)
-    with (dest_dir / (fortran_config.ATM_DICT_FNAME)).open("w") as f:
-        json.dump(nml.todict(), f, indent=4)
-    # same for icon_master.namelist
-    nml = f90nml.read(exp_dir / fortran_config.NAMELIST_MASTER_FNAME)
-    with (dest_dir / (fortran_config.MASTER_DICT_FNAME)).open("w") as f:
-        json.dump(nml.todict(), f, indent=4)
-    # same for NAMELIST_expname
-    nml = f90nml.read(exp_dir / get_dumped_nmlfile_name(experiment_description))
-    with (dest_dir / (fortran_config.INPUT_DICT_FNAME)).open("w") as f:
-        json.dump(nml.todict(), f, indent=4)
-
     # Copy NAMELIST files
     namelist_files = sorted(itertools.chain(exp_dir.glob("NAMELIST_*"), exp_dir.glob("*.namelist")))
     for src_file in namelist_files:
         if src_file.is_file():
             shutil.copy2(src_file, dest_dir / src_file.name)
+
+    # Convert namelists to config.yml
+    import fortran_config_converter  # noqa: PLC0415 [import-outside-top-level]
+
+    from icon4py.model.common.config import config_io  # noqa: PLC0415 [import-outside-top-level]
+
+    namelist_expname = get_dumped_nmlfile_name(experiment_description)
+    config = fortran_config_converter.convert_experiment(
+        dest_dir,
+        namelist_expname=namelist_expname,
+    )
+    (dest_dir / "config.yml").write_text(config_io.write_yaml_str(config))
 
     # Copy LOG file if available
     if job_id is not None:
