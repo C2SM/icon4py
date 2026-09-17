@@ -26,7 +26,6 @@ benchmark_bencher_granules_baseline_aarch64:
   variables:
     NOX_SESSION: "__bencher_baseline_CI-${PYVERSION_SHORT}"
     TEST_SELECTION: "${GRANULE_TEST_SELECTION}"
-  rules:
 
 benchmark_bencher_driver_mpi_baseline_aarch64:
   extends: [.test_runner_mpi, .test_template_aarch64, .bencher_driver_mpi_baseline_tests]
