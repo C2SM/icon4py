@@ -23,7 +23,10 @@ from icon4py.model.common.components.components import Component
 
 
 if TYPE_CHECKING:
-    from icon4py.model.common.states import prognostic_state, tracer_states
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.common.states import factory, prognostic_state, tracer_states
 
 
 class PhysicsComponent(Component[Any, Any], Protocol):
@@ -67,7 +70,11 @@ class PhysicsProcess:
         step_start_datetime: datetime.datetime,
         dtime: datetime.timedelta,
     ) -> dict[str, Any] | None:
-        """Take the entry state, and this step's outputs are freshly computed, recycled, or ``None`` if it does not run.
+        """This step's outputs: freshly computed, recycled, or ``None`` if it does not run.
+
+        Takes the entry state rather than the component's input mapping: building
+        that mapping may derive inputs of its own, which must not happen on a step
+        where the component does not compute.
         """
         tc = self.time_control
         tc.validate_interval(dtime)
@@ -111,6 +118,34 @@ class PhysicsDriver:
             process.component.bind_output_buffers(
                 diagnostics.allocate(process.name, process.component.outputs_properties)
             )
+
+    @classmethod
+    def from_sources(
+        cls,
+        processes: list[PhysicsProcess],
+        *,
+        grid: base_grid.Grid,
+        geometry: factory.FieldSource,
+        interpolation: factory.FieldSource,
+        metrics: factory.FieldSource,
+        backend: gtx_typing.Backend | None = None,
+    ) -> PhysicsDriver:
+        """Build the driver together with the coupling pieces it owns.
+
+        The pieces stay constructor arguments so a caller -- a test, above all --
+        can substitute them; this is the assembly every real caller wants.
+        """
+        return cls(
+            processes,
+            entry_state=physics_state.EntryState(
+                grid=grid, interpolation=interpolation, metrics=metrics, backend=backend
+            ),
+            accumulators=physics_state.TendencyAccumulators(backend=backend),
+            apply_to_prognostic=physics_state.ApplyToPrognostic(
+                grid=grid, geometry=geometry, interpolation=interpolation, backend=backend
+            ),
+            diagnostics=physics_state.DiagnosticsStore(grid=grid, backend=backend),
+        )
 
     def run(
         self,

@@ -24,10 +24,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
     component as muphys_component,
     state as muphys_state,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import (
-    physics_driver,
-    physics_state,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.physics_driver import physics_driver
 from icon4py.model.atmosphere.tracer_advection import tracer_advection, tracer_advection_states
 from icon4py.model.common import (
     constants,
@@ -476,22 +473,13 @@ def initialize_granules(
                 enable_process=True,
             ),
         )
-        physics_granule = physics_driver.PhysicsDriver(
+        physics_granule = physics_driver.PhysicsDriver.from_sources(
             [muphys_process],
-            entry_state=physics_state.EntryState(
-                grid=grid,
-                interpolation=interpolation_field_source,
-                metrics=metrics_field_source,
-                backend=backend,
-            ),
-            accumulators=physics_state.TendencyAccumulators(backend=backend),
-            apply_to_prognostic=physics_state.ApplyToPrognostic(
-                grid=grid,
-                geometry=geometry_field_source,
-                interpolation=interpolation_field_source,
-                backend=backend,
-            ),
-            diagnostics=physics_state.DiagnosticsStore(grid=grid, backend=backend),
+            grid=grid,
+            geometry=geometry_field_source,
+            interpolation=interpolation_field_source,
+            metrics=metrics_field_source,
+            backend=backend,
         )
 
     return Granules(
