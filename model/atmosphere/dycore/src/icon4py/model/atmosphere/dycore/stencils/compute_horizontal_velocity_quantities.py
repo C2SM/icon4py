@@ -81,8 +81,8 @@ def _compute_horizontal_velocity_quantities_and_fluxes(
         vn, tangential_wind
     )
 
-    vn_on_half_levels = _interpolate_to_half_levels(wgtfac_e, vn)
-    tangential_wind_on_half_levels = _interpolate_to_half_levels(wgtfac_e, tangential_wind)
+    vn_on_half_levels = _interpolate_to_half_levels(vn, wgtfac_e)
+    tangential_wind_on_half_levels = _interpolate_to_half_levels(tangential_wind, wgtfac_e)
 
     contravariant_correction_at_edges_on_model_levels = concat_where(
         nflatlev <= dims.KDim,

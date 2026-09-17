@@ -49,7 +49,7 @@ def _compute_brunt_vaisala_frequency(
     Returns:
         squared Brunt-Vaisala frequency at half levels [1/s2]
     """
-    theta_v_ic = _interpolate_cell_field_to_half_levels_wp(wgtfac_c=wgtfac_c, interpolant=theta_v)
+    theta_v_ic = _interpolate_cell_field_to_half_levels_wp(interpolant=theta_v, wgtfac_c=wgtfac_c)
     return (
         grav
         * (theta_v(dims.KHalfDim - 0.5) - theta_v(dims.KHalfDim + 0.5))

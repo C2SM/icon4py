@@ -19,8 +19,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _interpolate_cell_field_to_half_levels_vp(
-    wgtfac_c: fa.CellKHalfField[ta.vpfloat],
     interpolant: fa.CellKField[ta.vpfloat],
+    wgtfac_c: fa.CellKHalfField[ta.vpfloat],
 ) -> fa.CellKHalfField[ta.vpfloat]:
     """
     Interpolate a CellDim variable of floating precision from full levels to half levels.
@@ -29,8 +29,8 @@ def _interpolate_cell_field_to_half_levels_vp(
     (half level k lies above full level k, so ``var_full_k`` is the level below it)
 
     Args:
-        wgtfac_c: weight factor
         interpolant: CellDim variables at full levels
+        wgtfac_c: weight factor
     Returns:
         CellDim variables at half levels
     """
@@ -42,8 +42,8 @@ def _interpolate_cell_field_to_half_levels_vp(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _interpolate_cell_field_to_half_levels_wp(
-    wgtfac_c: fa.CellKHalfField[ta.wpfloat],
     interpolant: fa.CellKField[ta.wpfloat],
+    wgtfac_c: fa.CellKHalfField[ta.wpfloat],
 ) -> fa.CellKHalfField[ta.wpfloat]:
     """
     Interpolate a CellDim variable of working precision from full levels to half levels.
@@ -52,8 +52,8 @@ def _interpolate_cell_field_to_half_levels_wp(
     (half level k lies above full level k, so ``var_full_k`` is the level below it)
 
     Args:
-        wgtfac_c: weight factor
         interpolant: CellDim variables at full levels
+        wgtfac_c: weight factor
     Returns:
         CellDim variables at half levels
     """
@@ -65,8 +65,8 @@ def _interpolate_cell_field_to_half_levels_wp(
 
 @gtx.field_operator
 def _interpolate_cell_field_to_half_levels_with_surface_value_vp(
-    wgtfac_c: fa.CellKHalfField[ta.vpfloat],
     interpolant: fa.CellKField[ta.vpfloat],
+    wgtfac_c: fa.CellKHalfField[ta.vpfloat],
     surface_value: fa.CellKHalfField[ta.vpfloat],
     surface_level: gtx.int32,
 ) -> fa.CellKHalfField[ta.vpfloat]:
@@ -74,7 +74,7 @@ def _interpolate_cell_field_to_half_levels_with_surface_value_vp(
     caller-supplied ``surface_value`` at the surface."""
     return concat_where(
         dims.KHalfDim < surface_level - 1,
-        _interpolate_cell_field_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=interpolant),
+        _interpolate_cell_field_to_half_levels_vp(interpolant=interpolant, wgtfac_c=wgtfac_c),
         surface_value,
     )
 
@@ -82,8 +82,8 @@ def _interpolate_cell_field_to_half_levels_with_surface_value_vp(
 # TODO(havogt): Generics in GT4Py would allow to avoid
 @gtx.field_operator
 def _interpolate_cell_field_to_half_levels_with_surface_value_wp(
-    wgtfac_c: fa.CellKHalfField[ta.wpfloat],
     interpolant: fa.CellKField[ta.wpfloat],
+    wgtfac_c: fa.CellKHalfField[ta.wpfloat],
     surface_value: fa.CellKHalfField[ta.wpfloat],
     surface_level: gtx.int32,
 ) -> fa.CellKHalfField[ta.wpfloat]:
@@ -91,7 +91,7 @@ def _interpolate_cell_field_to_half_levels_with_surface_value_wp(
     caller-supplied ``surface_value`` at the surface."""
     return concat_where(
         dims.KHalfDim < surface_level - 1,
-        _interpolate_cell_field_to_half_levels_wp(wgtfac_c=wgtfac_c, interpolant=interpolant),
+        _interpolate_cell_field_to_half_levels_wp(interpolant=interpolant, wgtfac_c=wgtfac_c),
         surface_value,
     )
 
@@ -121,7 +121,7 @@ def _interpolate_cell_field_to_half_levels_with_boundaries(
     return with_boundaries_on_half_levels_on_cells(
         top=extrapolate_quadratically_to_top_on_cells(interpolant=interpolant, weights=wgtfacq1_c),
         interior=_interpolate_cell_field_to_half_levels_wp(
-            wgtfac_c=wgtfac_c, interpolant=interpolant
+            interpolant=interpolant, wgtfac_c=wgtfac_c
         ),
         bottom=extrapolate_quadratically_to_surface_on_cells(
             interpolant=interpolant, weights=wgtfacq_c

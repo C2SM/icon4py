@@ -19,8 +19,8 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _interpolate_edge_field_to_half_levels(
-    wgtfac_e: fa.EdgeKHalfField[wpfloat],
     interpolant: fa.EdgeKField[wpfloat],
+    wgtfac_e: fa.EdgeKHalfField[wpfloat],
 ) -> fa.EdgeKHalfField[wpfloat]:
     """
     Interpolate an edge field from full levels to half levels.
@@ -28,8 +28,8 @@ def _interpolate_edge_field_to_half_levels(
     (half level k lies above full level k, so ``var_full_k`` is the level below it)
 
     Args:
-        wgtfac_e: weight factor
         interpolant: edge field on full levels
+        wgtfac_e: weight factor
     Returns:
         edge field on half levels
     """
@@ -62,7 +62,7 @@ def _interpolate_edge_field_to_half_levels_with_boundaries(
     """
     return with_boundaries_on_half_levels_on_edges(
         top=extrapolate_quadratically_to_top_on_edges(interpolant=interpolant, weights=wgtfacq1_e),
-        interior=_interpolate_edge_field_to_half_levels(wgtfac_e=wgtfac_e, interpolant=interpolant),
+        interior=_interpolate_edge_field_to_half_levels(interpolant=interpolant, wgtfac_e=wgtfac_e),
         bottom=extrapolate_quadratically_to_surface_on_edges(
             interpolant=interpolant, weights=wgtfacq_e
         ),

@@ -454,7 +454,7 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
     contravariant_correction_at_cells_on_half_levels = concat_where(
         dims.KHalfDim >= nflatlev + 1,
         _interpolate_cell_field_to_half_levels_vp(
-            wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
+            interpolant=contravariant_correction_at_cells_model_levels, wgtfac_c=wgtfac_c
         ),
         broadcast(vpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )

@@ -653,8 +653,8 @@ def _compute_strain_rate_diagnostics(
     """
     div_c = _interpolate_to_cell_center(interpolant=div_of_stress, e_bln_c_s=e_bln_c_s)
     mech_prod = _interpolate_cell_field_to_half_levels_wp(
-        wgtfac_c=wgtfac_c,
         interpolant=_interpolate_to_cell_center(interpolant=shear, e_bln_c_s=e_bln_c_s),
+        wgtfac_c=wgtfac_c,
     )
     return div_c, mech_prod
 
