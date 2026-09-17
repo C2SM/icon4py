@@ -75,27 +75,6 @@ def compute_tangential_wind_wp(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_tangential_wind_on_half_levels(
-    vn: fa.EdgeKHalfField[wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
-    vt: fa.EdgeKHalfField[wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _compute_tangential_wind_on_half_levels(
-        vn=vn,
-        rbf_vec_coeff_e=rbf_vec_coeff_e,
-        out=vt,
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KHalfDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_tangential_wind_vp(
     vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],

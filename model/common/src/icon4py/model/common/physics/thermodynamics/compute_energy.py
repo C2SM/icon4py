@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.type_alias import wpfloat
 
@@ -78,7 +78,7 @@ def compute_internal_energy_per_area_scalar(  # noqa: PLR0917 [too-many-position
     return rho * dz * (cv * t - qliq * PhysicsConstants.lvc - qice * PhysicsConstants.lsc)
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _compute_dry_static_energy(
     temperature: fa.CellKField[wpfloat],
     height_above_ground: fa.CellKField[wpfloat],
@@ -103,26 +103,3 @@ def _compute_dry_static_energy(
         static energy at full levels [J/kg]
     """
     return PhysicsConstants.cpd * temperature + grav * height_above_ground
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_dry_static_energy(  # noqa: PLR0917 [too-many-positional-arguments]
-    temperature: fa.CellKField[wpfloat],
-    height_above_ground: fa.CellKField[wpfloat],
-    dry_static_energy: fa.CellKField[wpfloat],
-    grav: wpfloat,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _compute_dry_static_energy(
-        temperature=temperature,
-        height_above_ground=height_above_ground,
-        grav=grav,
-        out=dry_static_energy,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )

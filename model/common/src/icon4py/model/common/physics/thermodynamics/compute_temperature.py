@@ -205,7 +205,7 @@ def compute_temperature_from_internal_energy_per_area_scalar(  # noqa: PLR0917 [
     ) / cv
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def _compute_virtual_potential_temperature(
     virtual_temperature: fa.CellKField[wpfloat],
     pressure: fa.CellKField[wpfloat],
@@ -226,24 +226,3 @@ def _compute_virtual_potential_temperature(
         virtual potential temperature at full levels [K]
     """
     return virtual_temperature * power(PhysicsConstants.p0ref / pressure, PhysicsConstants.rd_o_cpd)
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_virtual_potential_temperature(  # noqa: PLR0917 [too-many-positional-arguments]
-    virtual_temperature: fa.CellKField[wpfloat],
-    pressure: fa.CellKField[wpfloat],
-    theta_v: fa.CellKField[wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _compute_virtual_potential_temperature(
-        virtual_temperature=virtual_temperature,
-        pressure=pressure,
-        out=theta_v,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )

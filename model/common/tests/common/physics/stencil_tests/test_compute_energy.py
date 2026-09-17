@@ -13,7 +13,7 @@ import pytest
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.physics.thermodynamics.compute_energy import (
-    compute_dry_static_energy,
+    _compute_dry_static_energy,
     compute_internal_energy_per_area,
 )
 from icon4py.model.common.states import utils as state_utils
@@ -57,8 +57,8 @@ class TestComputeInternalEnergyPerArea(stencil_tests.StencilTest):
 
 
 class TestComputeDryStaticEnergy(stencil_tests.StencilTest):
-    PROGRAM = compute_dry_static_energy
-    OUTPUTS = ("dry_static_energy",)
+    PROGRAM = _compute_dry_static_energy
+    OUTPUTS = ("out",)
 
     @stencil_tests.static_reference
     def reference(
@@ -74,7 +74,7 @@ class TestComputeDryStaticEnergy(stencil_tests.StencilTest):
             height_above_ground,
             grav=grav,
         )
-        return dict(dry_static_energy=dry_static_energy)
+        return dict(out=dry_static_energy)
 
     @stencil_tests.input_data_fixture
     def input_data(
@@ -86,15 +86,13 @@ class TestComputeDryStaticEnergy(stencil_tests.StencilTest):
         height_above_ground = data_alloc.random_field(
             dims.CellDim, dims.KDim, low=0.0, high=3.0e4, dtype=wpfloat
         )
-        dry_static_energy = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-
         return dict(
             temperature=temperature,
             height_above_ground=height_above_ground,
-            dry_static_energy=dry_static_energy,
             grav=constants.GRAV,
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_cells),
-            vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+            out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )

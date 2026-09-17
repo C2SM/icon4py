@@ -28,9 +28,6 @@ from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
 from icon4py.model.common.interpolation.stencils.interpolate_cell_vector_to_edge_normal import (
     interpolate_cell_vector_to_edge_normal,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_wind_to_vertices import (
-    interpolate_wind_to_vertices,
-)
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -272,7 +269,7 @@ class Diagnostics:
         # (vn -> u_vert, v_vert), the three fields synced afterwards
         self.interpolate_wind_to_vertices = setup_program(
             backend=backend,
-            program=interpolate_wind_to_vertices,
+            program=diag_stencils.interpolate_wind_to_vertices,
             constant_args={
                 "cells_aw_verts": self._interpolation_state.cells_aw_verts,
                 "rbf_coeff_v1": self._interpolation_state.rbf_coeff_v1,

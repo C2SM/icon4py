@@ -12,7 +12,7 @@ import pytest
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.physics.compute_brunt_vaisala_frequency import (
-    compute_brunt_vaisala_frequency,
+    _compute_brunt_vaisala_frequency,
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
@@ -20,8 +20,8 @@ from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 class TestComputeBruntVaisalaFrequency(stencil_tests.StencilTest):
-    PROGRAM = compute_brunt_vaisala_frequency
-    OUTPUTS = ("bruvais",)
+    PROGRAM = _compute_brunt_vaisala_frequency
+    OUTPUTS = ("out",)
 
     @stencil_tests.static_reference
     def reference(
@@ -36,7 +36,7 @@ class TestComputeBruntVaisalaFrequency(stencil_tests.StencilTest):
         bruvais = reference_funcs.compute_brunt_vaisala_frequency_numpy(
             theta_v, wgtfac_c, inv_ddqz_z_half, grav=grav
         )
-        return dict(bruvais=bruvais)
+        return dict(out=bruvais)
 
     @stencil_tests.input_data_fixture
     def input_data(
@@ -55,17 +55,15 @@ class TestComputeBruntVaisalaFrequency(stencil_tests.StencilTest):
             high=1.0e-1,
             dtype=wpfloat,
         )
-        bruvais = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
-
         return dict(
             theta_v=theta_v,
             wgtfac_c=wgtfac_c,
             inv_ddqz_z_half=inv_ddqz_z_half,
-            bruvais=bruvais,
             grav=constants.GRAV,
             # Fortran jk = 2..nlev (1-based) -> k = 1..nlev-1 (0-based half levels)
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_cells),
-            vertical_start=1,
-            vertical_end=gtx.int32(grid.num_levels),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KHalfDim: (1, gtx.int32(grid.num_levels)),
+            },
+            out=data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat),
         )

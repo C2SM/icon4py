@@ -21,24 +21,3 @@ def _interpolate_to_cell_center(
 ) -> fa.CellKField[wpfloat]:
     """Interpolate an edge field to the cell centers with the bilinear C2E weights."""
     return neighbor_sum(e_bln_c_s * interpolant(C2E), axis=dims.C2EDim)
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_to_cell_center(
-    interpolant: fa.EdgeKField[wpfloat],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    interpolation: fa.CellKField[wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _interpolate_to_cell_center(
-        interpolant=interpolant,
-        e_bln_c_s=e_bln_c_s,
-        out=interpolation,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )

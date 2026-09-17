@@ -15,8 +15,8 @@ import pytest
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.physics.thermodynamics.compute_temperature import (
+    _compute_virtual_potential_temperature,
     compute_temperature_from_internal_energy_per_area,
-    compute_virtual_potential_temperature,
     compute_virtual_temperature_and_temperature,
 )
 from icon4py.model.common.states import utils as state_utils
@@ -123,8 +123,8 @@ class TestComputeTemperatureFromInternalEnergyPerArea(stencil_tests.StencilTest)
 
 
 class TestComputeVirtualPotentialTemperature(stencil_tests.StencilTest):
-    PROGRAM = compute_virtual_potential_temperature
-    OUTPUTS = ("theta_v",)
+    PROGRAM = _compute_virtual_potential_temperature
+    OUTPUTS = ("out",)
 
     @stencil_tests.static_reference
     def reference(
@@ -137,7 +137,7 @@ class TestComputeVirtualPotentialTemperature(stencil_tests.StencilTest):
         theta_v = reference_funcs.compute_virtual_potential_temperature_numpy(
             virtual_temperature, pressure
         )
-        return dict(theta_v=theta_v)
+        return dict(out=theta_v)
 
     @stencil_tests.input_data_fixture
     def input_data(
@@ -149,14 +149,12 @@ class TestComputeVirtualPotentialTemperature(stencil_tests.StencilTest):
         pressure = data_alloc.random_field(
             dims.CellDim, dims.KDim, low=1.0e3, high=1.05e5, dtype=wpfloat
         )
-        theta_v = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat)
-
         return dict(
             virtual_temperature=virtual_temperature,
             pressure=pressure,
-            theta_v=theta_v,
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_cells),
-            vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
+            domain={
+                dims.CellDim: (0, gtx.int32(grid.num_cells)),
+                dims.KDim: (0, gtx.int32(grid.num_levels)),
+            },
+            out=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
         )
