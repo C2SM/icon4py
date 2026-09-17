@@ -217,7 +217,7 @@ class Experiments:
         name="exclaim_ape_aesPhys",
         long_name="EXCLAIM Aquaplanet experiment. JW IC and AES physics",
         grid=Grids.R02B04_GLOBAL,
-        version=8,
+        version=9,  # v08 was published before config.yml was added to the archives
     )
     MCH_CH_R04B09: Final = ExperimentDescription(
         name="exclaim_ch_r04b09_dsl",

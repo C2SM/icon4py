@@ -266,7 +266,15 @@ class ExperimentConfig(config_io.ConfigWithShared):
 
 
 def read_experiment_config_from_yaml(config_file_path: pathlib.Path) -> ExperimentConfig:
-    return config_io.read_yaml_str(config_file_path.read_text(), ExperimentConfig)
+    """Read an :class:`ExperimentConfig`, resolving relative ``data_path`` entries against the file's directory."""
+    config = config_io.read_yaml_str(config_file_path.read_text(), ExperimentConfig)
+    root = config_file_path.resolve().parent
+    overrides: dict[str, Any] = {}
+    for field in dataclasses.fields(config):
+        data_path = getattr(getattr(config, field.name), "data_path", None)
+        if isinstance(data_path, pathlib.Path) and not data_path.is_absolute():
+            overrides[field.name] = {"data_path": root / data_path}
+    return config.with_overrides(**overrides)
 
 
 def prepare_output_directory(

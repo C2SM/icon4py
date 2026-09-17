@@ -6,16 +6,150 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests for the Fortran namelist-to-YAML converter."""
+"""Tests for the Fortran namelist-to-ExperimentConfig converter."""
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 import datetime
+import pathlib
 
+import f90nml
+import fortran_config_converter as fcc
 import pytest
 
-import fortran_config_converter as fcc
+from icon4py.model.common import constants, prescribed_tendencies
+from icon4py.model.common.config import config_io
+from icon4py.model.common.initial_condition import from_file as from_file_ic
+from icon4py.model.common.initial_condition.analytical import gauss3d as gauss_ic
+from icon4py.model.common.topography import from_file as from_file_topo
+from icon4py.model.common.topography.analytical import gaussian_hill as gausshill_topo
+from icon4py.model.driver import config as driver_config
+
+
+# The subset of the exclaim_gauss3d namelists read by the converter. `max_dom`-sized
+# lists are shortened to two entries.
+ATM_NML = {
+    "diffusion_nml": {
+        "hdiff_efdt_ratio": 36.0,
+        "hdiff_order": 5,
+        "hdiff_smag_fac": 0.015,
+        "hdiff_smag_fac2": 0.07137250900268555,
+        "hdiff_smag_fac3": 0.0,
+        "hdiff_smag_fac4": 1.0,
+        "hdiff_smag_z": 32500.0,
+        "hdiff_smag_z2": 60686.25390625,
+        "hdiff_smag_z3": 50000.0,
+        "hdiff_smag_z4": 90000.0,
+        "hdiff_w_efdt_ratio": 15.0,
+        "itype_t_diffu": 2,
+        "itype_vn_diffu": 1,
+        "lhdiff_smag_w": [False, False],
+        "lhdiff_temp": True,
+        "lhdiff_vn": True,
+        "lhdiff_w": True,
+        "lsmag_3d": [False, False],
+    },
+    "dynamics_nml": {"divavg_cntrwgt": 0.5, "ldeepatmo": False},
+    "gridref_nml": {"denom_diffu_t": 135.0, "denom_diffu_v": 200.0},
+    "initicon_nml": {"init_mode": 2},
+    "interpol_nml": {
+        "lsq_high_ord": 3,
+        "nudge_efold_width": 2.0,
+        "nudge_max_coeff": 0.02,
+        "nudge_zone_width": 8,
+        "rbf_vec_kern_c": 1,
+        "rbf_vec_kern_e": 3,
+        "rbf_vec_kern_v": 1,
+    },
+    "nonhydrostatic_nml": {
+        "damp_height": [45000.0, 45000.0],
+        "divdamp_fac": 0.0025,
+        "divdamp_fac2": 0.004,
+        "divdamp_fac3": 0.004,
+        "divdamp_fac4": 0.004,
+        "divdamp_order": 24,
+        "divdamp_trans_end": 17500.0,
+        "divdamp_trans_start": 12500.0,
+        "divdamp_type": 3,
+        "divdamp_z": 32500.0,
+        "divdamp_z2": 40000.0,
+        "divdamp_z3": 60000.0,
+        "divdamp_z4": 80000.0,
+        "exner_expol": 0.3333333333333333,
+        "htop_moist_proc": 22500.0,
+        "iadv_rhotheta": 2,
+        "igradp_method": 3,
+        "itime_scheme": 4,
+        "l_zdiffu_t": True,
+        "lextra_diffu": True,
+        "ndyn_substeps": 5,
+        "rayleigh_coeff": [0.1, 0.1],
+        "rayleigh_type": 2,
+        "rhotheta_offctr": -0.1,
+        "thhgtd_zdiffu": 200.0,
+        "thslp_zdiffu": 0.025,
+        "vcfl_threshold": 1.05,
+        "veladv_offctr": 0.25,
+        "vwind_offctr": 0.15,
+    },
+    "run_nml": {
+        "dtime": 4.0,
+        "iforcing": 0,
+        "ltestcase": True,
+        "ltransport": False,
+        "lvert_nest": False,
+        # ICON writes the ISO 8601 duration as a fixed-width, blank-padded string.
+        "modeltimestep": "                                ",
+        "ntracer": 0,
+        "num_lev": [35, 31],
+    },
+    "sleve_nml": {
+        "decay_exp": 1.2,
+        "decay_scale_1": 4000.0,
+        "decay_scale_2": 2500.0,
+        "flat_height": 16000.0,
+        "htop_thcknlimit": 15000.0,
+        "max_lay_thckn": 25000.0,
+        "min_lay_thckn": 50.0,
+        "stretch_fac": 1.0,
+        "top_height": 23500.0,
+    },
+    "transport_nml": {
+        "ihadv_tracer": [2, 2],
+        "itype_hlimit": [4, 4],
+        "itype_vlimit": [1, 1],
+        "ivadv_tracer": [3, 3],
+    },
+    "turbdiff_nml": {"a_hshr": 1.0, "itype_sher": 0},
+}
+MASTER_NML = {
+    "master_model_nml": {"model_namelist_filename": "NAMELIST_exclaim_gauss3d_sb_atm"},
+    "master_time_control_nml": {
+        "experimentstartdate": "2008-09-01T00:00:00Z",
+        "experimentstopdate": "2008-09-01T00:00:40Z",
+    },
+}
+INPUT_NML = {
+    "nh_testcase_nml": {
+        "nh_test_name": "gauss3D",
+        "mount_height": 100.0,
+        "mount_width": 500.0,
+        "nh_u0": 0.0,
+        "nh_t0": 300.0,
+        "nh_brunt_vais": 0.01,
+    }
+}
+INPUT_NML_FNAME = "NAMELIST_exclaim_gauss3d_sb"
+
+
+def _write_namelists(
+    namelist_dir: pathlib.Path, *, atm: dict = ATM_NML, input_fname: str = INPUT_NML_FNAME
+) -> None:
+    f90nml.Namelist(atm).write(namelist_dir / fcc.NAMELIST_ATM_FNAME)
+    f90nml.Namelist(MASTER_NML).write(namelist_dir / fcc.NAMELIST_MASTER_FNAME)
+    f90nml.Namelist(INPUT_NML).write(namelist_dir / input_fname)
 
 
 def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
@@ -53,6 +187,8 @@ def test_empty_modeltimestep_falls_back_to_dtime() -> None:
     assert config.dtime == datetime.timedelta(seconds=120)
 
 
+# ltransport is true for MCH_CH_R04B09, EXCLAIM_APE_AES and Weisman-Klemp, false for
+# the dry testcases (JW, GAUSS3D).
 @pytest.mark.parametrize("ltransport", [True, False])
 def test_do_prep_adv_from_ltransport(ltransport: bool) -> None:
     atm_dict, master_dict = _make_dicts(
@@ -64,6 +200,8 @@ def test_do_prep_adv_from_ltransport(ltransport: bool) -> None:
     assert config.do_prep_adv is ltransport
 
 
+# The extra diffusion call before the time loop is only made for real data runs, which
+# are the ones that are not a testcase. MCH_CH_R04B09 is the only one.
 @pytest.mark.parametrize("ltestcase", [True, False])
 def test_diffuse_before_time_loop(ltestcase: bool) -> None:
     atm_dict, master_dict = _make_dicts(
@@ -74,6 +212,24 @@ def test_diffuse_before_time_loop(ltestcase: bool) -> None:
     )
     assert config.diffuse_before_time_loop is (not ltestcase)
     assert config.apply_extra_second_order_divdamp is (not ltestcase)
+
+
+def test_max_dom_lists_are_reduced_to_their_first_entry() -> None:
+    config = fcc.make_diffusion_config(ATM_NML)
+    assert config.apply_smag_diff_to_vertical_wind is False
+    assert config.compute_3d_smag_coeff is False
+
+
+def test_field_type_is_the_fallback_converter() -> None:
+    config = fcc.make_nonhydrostatic_config(ATM_NML)
+    assert config.rayleigh_type is constants.RayleighType.KLEMP
+
+
+def test_missing_namelist_entry_is_an_error() -> None:
+    atm = copy.deepcopy(ATM_NML)
+    del atm["diffusion_nml"]["hdiff_order"]
+    with pytest.raises(KeyError, match="hdiff_order"):
+        fcc.make_diffusion_config(atm)
 
 
 @dataclasses.dataclass
@@ -90,3 +246,59 @@ def test_config_dataclass_from_dict_uses_name_map() -> None:
     )
     assert config.field_a == 42
     assert config.field_b == "default"
+
+
+def test_convert_experiment_testcase(tmp_path: pathlib.Path) -> None:
+    _write_namelists(tmp_path)
+
+    config = fcc.convert_experiment(tmp_path)
+
+    assert config.driver.experiment_name == "exclaim_gauss3d"
+    assert config.driver.dtime == datetime.timedelta(seconds=4)
+    assert config.driver.start_of_timestepping == config.driver.start_of_simulation
+    assert config.vertical_grid.num_levels == 35
+    assert config.topography == gausshill_topo.GaussianHillConfig(
+        mount_height=100.0, mount_width=500.0
+    )
+    assert config.initial_condition == gauss_ic.Gauss3DConfig(u0=0.0, t0=300.0, brunt_vais=0.01)
+    assert config.prescribed_tendencies == prescribed_tendencies.PrescribedTendenciesConfig(
+        data_path=None
+    )
+    assert config.graupel is None
+    assert config.muphys is None
+
+
+def test_convert_experiment_from_file_paths_resolve_against_the_config_file(
+    tmp_path: pathlib.Path,
+) -> None:
+    atm = copy.deepcopy(ATM_NML)
+    atm["run_nml"]["ltestcase"] = False
+    _write_namelists(tmp_path, atm=atm)
+
+    config = fcc.convert_experiment(tmp_path)
+
+    # the generated config is portable: paths are relative to the namelist directory
+    relative = pathlib.Path("ser_data")
+    assert isinstance(config.topography, from_file_topo.FromFileConfig)
+    assert isinstance(config.initial_condition, from_file_ic.FromFileConfig)
+    assert config.topography.data_path == relative
+    assert config.initial_condition.data_path == relative
+    assert config.prescribed_tendencies.data_path == relative
+
+    config_file = tmp_path / "config.yml"
+    config_file.write_text(config_io.write_yaml_str(config))
+    read_back = driver_config.read_experiment_config_from_yaml(config_file)
+    resolved = tmp_path.resolve() / "ser_data"
+    assert read_back.topography.data_path == resolved
+    assert read_back.initial_condition.data_path == resolved
+    assert read_back.prescribed_tendencies.data_path == resolved
+
+
+def test_convert_experiment_with_explicit_namelist_expname(tmp_path: pathlib.Path) -> None:
+    _write_namelists(tmp_path, input_fname="NAMELIST_other")
+    (tmp_path / "NAMELIST_decoy").write_text("&nh_testcase_nml nh_test_name='jabw' /\n")
+
+    with pytest.raises(FileNotFoundError, match="Expected exactly one"):
+        fcc.convert_experiment(tmp_path)
+    config = fcc.convert_experiment(tmp_path, namelist_expname="NAMELIST_other")
+    assert isinstance(config.initial_condition, gauss_ic.Gauss3DConfig)

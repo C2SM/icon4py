@@ -1,5 +1,3 @@
-#!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
-#
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -8,55 +6,80 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Convert Fortran namelist files into an icon4py :class:`ExperimentConfig` YAML.
+"""Convert Fortran namelist files into an icon4py :class:`ExperimentConfig`.
 
-This module replaces the previous two-step pipeline (Fortran ``.nml`` → JSON
-via ``f90nml`` → :class:`Config.from_fortran_dict`).  It reads the namelists
-directly and assembles a :class:`driver.config.ExperimentConfig` that can be
-serialized to YAML with :func:`icon4py.model.common.config.config_io.write_yaml_str`.
+Reads the namelists of an ICON experiment directly with ``f90nml`` and assembles a
+:class:`icon4py.model.driver.config.ExperimentConfig` that can be serialized to YAML
+with :func:`icon4py.model.common.config.config_io.write_yaml_str`.
+
+The Fortran-to-ICON4Py option mapping lives here, in the tables below, and nowhere in
+the model packages.
 """
 
 from __future__ import annotations
 
 import dataclasses
+import logging
 import pathlib
-import re
 import typing
 from typing import Any
 
 import f90nml
 
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
-from icon4py.model.common import constants, initial_condition, prescribed_tendencies, time, topography
+from icon4py.model.common import constants, prescribed_tendencies, time
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry_config import GeometryConfig
 from icon4py.model.common.initial_condition import from_file as from_file_ic
+from icon4py.model.common.initial_condition.analytical import (
+    gauss3d as gauss_ic,
+    jablonowski_williamson as jw_ic,
+    weisman_klemp as wk_ic,
+)
 from icon4py.model.common.interpolation import interpolation_factory
-from icon4py.model.common.interpolation.rbf_interpolation import InterpolationKernel
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_states
+from icon4py.model.common.topography import from_file as from_file_topo
+from icon4py.model.common.topography.analytical import (
+    flat_topography as flat_topo,
+    gaussian_hill as gausshill_topo,
+    jablonowski_williamson as jw_topo,
+)
 from icon4py.model.driver import config as driver_config
+from icon4py.model.testing import definitions as test_defs
 
 
-# Time-format helpers remain in driver.config for ISO 8601 parsing.
-absolutetime_from_iconformat = driver_config.absolutetime_from_iconformat
-relativetime_from_iconformat = driver_config.relativetime_from_iconformat
-relativetime_from_iso8601 = driver_config.relativetime_from_iso8601
+log = logging.getLogger(__name__)
+
+NAMELIST_ATM_FNAME: typing.Final = "NAMELIST_ICON_output_atm"
+NAMELIST_MASTER_FNAME: typing.Final = "icon_master.namelist"
+
+# Paths to serialized data are written relative to the namelist directory, so that
+# the generated config stays valid when the archive is moved to another machine
+# (see `driver.config.read_experiment_config_from_yaml`).
+SER_DATA_PATH: typing.Final = pathlib.Path(test_defs.SERIALIZED_DATA_SUBDIR)
 
 
 # ---------------------------------------------------------------------------
-# Helpers (moved from model/common/utils/fortran_config.py)
+# Helpers
 # ---------------------------------------------------------------------------
 
 
 def list_to_value[T](obj: list[T] | T) -> T:
     # Some parameters are allocated as `max_dom`-sized lists, with one value
     # per domain. ICON4Py (for now) only runs on one domain.
+    # Most parameters have the same value for all elements, others (such as
+    # num_levels) have a default value different from domain[0].
+    # TODO (ricoh,jcanton): stop using this for per-tracer values when enabling
+    # that functionality Tracers are an even different case where there is one
+    # value per tracer, but with the current version of ICON4Py all tracers get
+    # the same config.
     return obj[0] if isinstance(obj, list) else obj
 
 
@@ -79,8 +102,9 @@ def config_dataclass_from_dict[T](
 ) -> T:
     """Construct a dataclass from a Fortran namelist dict.
 
-    Unknown keys are ignored.  Missing keys fall back to dataclass defaults.
-    Fortran→Python name translation is driven by the supplied ``name_map``:
+    Unknown keys are ignored (e.g. topography params mixed into the same nml block).
+    Missing keys fall back to the dataclass field defaults.
+    Fortran→Python name translation is driven by ``name_map``:
     ``{fortran_key: python_field_name}``.
     """
     known_fields = {f.name for f in dataclasses.fields(cls)}  # type: ignore[arg-type]
@@ -88,165 +112,194 @@ def config_dataclass_from_dict[T](
     return cls(**kwargs)
 
 
+@dataclasses.dataclass(frozen=True)
+class IconOption:
+    """Where to find a config field in the ICON namelists and how to convert it."""
+
+    #: ICON4Py config field name
+    field: str
+    #: path through nested namelist sections, ending with the option name
+    path: tuple[str, ...]
+    #: take the first element of a `max_dom`-sized list, see `list_to_value`
+    list_to_value: bool = False
+    #: applied to the namelist value; defaults to the type annotation of the field
+    converter: typing.Callable[[Any], Any] | None = None
+
+
+def _field_type(config_cls: type, field: str) -> typing.Callable[[Any], Any]:
+    """Base type of a (possibly `typing.Annotated`) dataclass field, used as fallback converter."""
+    hint = typing.get_type_hints(config_cls, include_extras=True)[field]
+    return typing.get_args(hint)[0] if typing.get_origin(hint) is typing.Annotated else hint
+
+
+def _kwargs_from_table(
+    config_cls: type, table: list[IconOption], icon_config: dict[str, Any]
+) -> dict[str, Any]:
+    """Read the `config_cls` constructor arguments listed in `table` from `icon_config`.
+
+    All namelist entries in `table` must be present: ICON dumps every namelist in
+    full, so a missing key means the mapping drifted from Fortran and must not be
+    silently replaced by the ICON4Py default.
+    """
+    kwargs: dict[str, Any] = {}
+    for opt in table:
+        value: Any = icon_config
+        for key in opt.path:
+            value = value[key]
+        if opt.list_to_value:
+            value = list_to_value(value)
+        converter = opt.converter or _field_type(config_cls, opt.field)
+        kwargs[opt.field] = converter(value)
+    return kwargs
+
+
+def _build_from_table(
+    config_cls: type,
+    table: list[IconOption],
+    icon_config: dict[str, Any],
+    overrides: dict[str, Any],
+) -> Any:
+    return config_cls(**_kwargs_from_table(config_cls, table, icon_config), **overrides)
+
+
 # ---------------------------------------------------------------------------
 # Config builders
-#
-# DiffusionConfig, NonHydrostaticConfig, InterpolationConfig and DriverConfig
-# previously used ``ConfigOption(icon_equivalent=IconOption(...))`` annotations
-# read at runtime by ``construct_config_from_icon`` / ``iter_pairs_from_icon``.
-# Those annotations and helpers have been removed from the model packages.
-# The Fortran→Python mapping now lives here as explicit dicts.
 # ---------------------------------------------------------------------------
 
 
-def _extract(atm_dict: dict[str, Any], section: str, name: str, *, list_to_value: bool = False) -> Any:
-    """Read a value from a namelist section, optionally de-listifying."""
-    raw = atm_dict[section][name]
-    return list_to_value(raw) if list_to_value else raw
-
-
-_DIFFUSION_FIELDS = [
-    # (python_field, nml_section, nml_name, list_to_value, converter)
-    ("diffusion_type", "diffusion_nml", "hdiff_order", False, diffusion.DiffusionType),
-    ("apply_to_vertical_wind", "diffusion_nml", "lhdiff_w", False, None),
-    ("apply_to_horizontal_wind", "diffusion_nml", "lhdiff_vn", False, None),
-    ("apply_to_temperature", "diffusion_nml", "lhdiff_temp", False, None),
-    ("apply_smag_diff_to_vertical_wind", "diffusion_nml", "lhdiff_smag_w", True, None),
-    ("compute_3d_smag_coeff", "diffusion_nml", "lsmag_3d", True, None),
-    ("type_vn_diffu", "diffusion_nml", "itype_vn_diffu", False, diffusion.SmagorinskyStencilType),
-    ("type_t_diffu", "diffusion_nml", "itype_t_diffu", False, diffusion.TemperatureDiscretizationType),
-    ("hdiff_efdt_ratio", "diffusion_nml", "hdiff_efdt_ratio", False, None),
-    ("hdiff_w_efdt_ratio", "diffusion_nml", "hdiff_w_efdt_ratio", False, None),
-    ("smagorinski_scaling_factor", "diffusion_nml", "hdiff_smag_fac", False, None),
-    ("smagorinski_scaling_factor2", "diffusion_nml", "hdiff_smag_fac2", False, None),
-    ("smagorinski_scaling_factor3", "diffusion_nml", "hdiff_smag_fac3", False, None),
-    ("smagorinski_scaling_factor4", "diffusion_nml", "hdiff_smag_fac4", False, None),
-    ("smagorinski_scaling_height", "diffusion_nml", "hdiff_smag_z", False, None),
-    ("smagorinski_scaling_height2", "diffusion_nml", "hdiff_smag_z2", False, None),
-    ("smagorinski_scaling_height3", "diffusion_nml", "hdiff_smag_z3", False, None),
-    ("smagorinski_scaling_height4", "diffusion_nml", "hdiff_smag_z4", False, None),
-    ("apply_zdiffusion_t", "nonhydrostatic_nml", "l_zdiffu_t", False, None),
-    ("temperature_boundary_diffusion_denominator", "gridref_nml", "denom_diffu_t", False, None),
-    ("velocity_boundary_diffusion_denominator", "gridref_nml", "denom_diffu_v", False, None),
-    ("shear_type", "turbdiff_nml", "itype_sher", False, diffusion.TurbulenceShearForcingType),
-    ("iforcing", "run_nml", "iforcing", False, diffusion.ForcingType),
-    ("a_hshr", "turbdiff_nml", "a_hshr", False, None),
+_DIFFUSION_OPTIONS = [
+    IconOption("diffusion_type", ("diffusion_nml", "hdiff_order")),
+    IconOption("apply_to_vertical_wind", ("diffusion_nml", "lhdiff_w")),
+    IconOption("apply_to_horizontal_wind", ("diffusion_nml", "lhdiff_vn")),
+    IconOption("apply_to_temperature", ("diffusion_nml", "lhdiff_temp")),
+    IconOption(
+        "apply_smag_diff_to_vertical_wind", ("diffusion_nml", "lhdiff_smag_w"), list_to_value=True
+    ),
+    IconOption("compute_3d_smag_coeff", ("diffusion_nml", "lsmag_3d"), list_to_value=True),
+    IconOption("type_vn_diffu", ("diffusion_nml", "itype_vn_diffu")),
+    IconOption("type_t_diffu", ("diffusion_nml", "itype_t_diffu")),
+    IconOption("hdiff_efdt_ratio", ("diffusion_nml", "hdiff_efdt_ratio")),
+    IconOption("hdiff_w_efdt_ratio", ("diffusion_nml", "hdiff_w_efdt_ratio")),
+    IconOption("smagorinski_scaling_factor", ("diffusion_nml", "hdiff_smag_fac")),
+    IconOption("smagorinski_scaling_factor2", ("diffusion_nml", "hdiff_smag_fac2")),
+    IconOption("smagorinski_scaling_factor3", ("diffusion_nml", "hdiff_smag_fac3")),
+    IconOption("smagorinski_scaling_factor4", ("diffusion_nml", "hdiff_smag_fac4")),
+    IconOption("smagorinski_scaling_height", ("diffusion_nml", "hdiff_smag_z")),
+    IconOption("smagorinski_scaling_height2", ("diffusion_nml", "hdiff_smag_z2")),
+    IconOption("smagorinski_scaling_height3", ("diffusion_nml", "hdiff_smag_z3")),
+    IconOption("smagorinski_scaling_height4", ("diffusion_nml", "hdiff_smag_z4")),
+    IconOption("apply_zdiffusion_t", ("nonhydrostatic_nml", "l_zdiffu_t")),
+    IconOption("temperature_boundary_diffusion_denominator", ("gridref_nml", "denom_diffu_t")),
+    IconOption("velocity_boundary_diffusion_denominator", ("gridref_nml", "denom_diffu_v")),
+    IconOption("shear_type", ("turbdiff_nml", "itype_sher")),
+    IconOption("iforcing", ("run_nml", "iforcing")),
+    IconOption("a_hshr", ("turbdiff_nml", "a_hshr")),
 ]
 
 
-def make_diffusion_config(
-    atm_dict: dict[str, Any], **overrides: Any
-) -> diffusion.DiffusionConfig:
-    kwargs: dict[str, Any] = {}
-    for field, section, name, de_list, conv in _DIFFUSION_FIELDS:
-        try:
-            value = _extract(atm_dict, section, name, list_to_value=de_list)
-        except KeyError:
-            continue
-        if conv is not None:
-            value = conv(value)
-        kwargs[field] = value
-    kwargs.update(overrides)
-    return diffusion.DiffusionConfig(**kwargs)
+def make_diffusion_config(atm_dict: dict[str, Any], **overrides: Any) -> diffusion.DiffusionConfig:
+    return _build_from_table(diffusion.DiffusionConfig, _DIFFUSION_OPTIONS, atm_dict, overrides)
 
 
-_NONHYDROSTATIC_FIELDS = [
-    # (python_field, nml_section, nml_name, list_to_value, converter)
-    ("itime_scheme", "nonhydrostatic_nml", "itime_scheme", False, dycore_states.TimeSteppingScheme),
-    ("iadv_rhotheta", "nonhydrostatic_nml", "iadv_rhotheta", False, dycore_states.RhoThetaAdvectionType),
-    ("igradp_method", "nonhydrostatic_nml", "igradp_method", False, dycore_states.HorizontalPressureDiscretizationType),
-    ("rayleigh_type", "nonhydrostatic_nml", "rayleigh_type", False, constants.RayleighType),
-    ("divdamp_order", "nonhydrostatic_nml", "divdamp_order", False, dycore_states.DivergenceDampingOrder),
-    ("divdamp_type", "nonhydrostatic_nml", "divdamp_type", False, dycore_states.DivergenceDampingType),
-    ("l_vert_nested", "run_nml", "lvert_nest", False, None),
-    ("deepatmos_mode", "dynamics_nml", "ldeepatmo", False, None),
-    ("iau_init", "initicon_nml", "init_mode", False, lambda v: bool(v == 5)),
-    ("extra_diffu", "nonhydrostatic_nml", "lextra_diffu", False, None),
-    ("rhotheta_offctr", "nonhydrostatic_nml", "rhotheta_offctr", False, None),
-    ("veladv_offctr", "nonhydrostatic_nml", "veladv_offctr", False, None),
-    ("fourth_order_divdamp_factor", "nonhydrostatic_nml", "divdamp_fac", False, None),
-    ("fourth_order_divdamp_factor2", "nonhydrostatic_nml", "divdamp_fac2", False, None),
-    ("fourth_order_divdamp_factor3", "nonhydrostatic_nml", "divdamp_fac3", False, None),
-    ("fourth_order_divdamp_factor4", "nonhydrostatic_nml", "divdamp_fac4", False, None),
-    ("fourth_order_divdamp_z", "nonhydrostatic_nml", "divdamp_z", False, None),
-    ("fourth_order_divdamp_z2", "nonhydrostatic_nml", "divdamp_z2", False, None),
-    ("fourth_order_divdamp_z3", "nonhydrostatic_nml", "divdamp_z3", False, None),
-    ("fourth_order_divdamp_z4", "nonhydrostatic_nml", "divdamp_z4", False, None),
+_NONHYDROSTATIC_OPTIONS = [
+    IconOption("itime_scheme", ("nonhydrostatic_nml", "itime_scheme")),
+    IconOption("iadv_rhotheta", ("nonhydrostatic_nml", "iadv_rhotheta")),
+    IconOption("igradp_method", ("nonhydrostatic_nml", "igradp_method")),
+    IconOption("rayleigh_type", ("nonhydrostatic_nml", "rayleigh_type")),
+    IconOption("divdamp_order", ("nonhydrostatic_nml", "divdamp_order")),
+    IconOption("divdamp_type", ("nonhydrostatic_nml", "divdamp_type")),
+    IconOption("l_vert_nested", ("run_nml", "lvert_nest")),
+    IconOption("deepatmos_mode", ("dynamics_nml", "ldeepatmo")),
+    IconOption(
+        "iau_init", ("initicon_nml", "init_mode"), converter=lambda init_mode: init_mode == 5
+    ),
+    IconOption("extra_diffu", ("nonhydrostatic_nml", "lextra_diffu")),
+    IconOption("rhotheta_offctr", ("nonhydrostatic_nml", "rhotheta_offctr")),
+    IconOption("veladv_offctr", ("nonhydrostatic_nml", "veladv_offctr")),
+    IconOption("fourth_order_divdamp_factor", ("nonhydrostatic_nml", "divdamp_fac")),
+    IconOption("fourth_order_divdamp_factor2", ("nonhydrostatic_nml", "divdamp_fac2")),
+    IconOption("fourth_order_divdamp_factor3", ("nonhydrostatic_nml", "divdamp_fac3")),
+    IconOption("fourth_order_divdamp_factor4", ("nonhydrostatic_nml", "divdamp_fac4")),
+    IconOption("fourth_order_divdamp_z", ("nonhydrostatic_nml", "divdamp_z")),
+    IconOption("fourth_order_divdamp_z2", ("nonhydrostatic_nml", "divdamp_z2")),
+    IconOption("fourth_order_divdamp_z3", ("nonhydrostatic_nml", "divdamp_z3")),
+    IconOption("fourth_order_divdamp_z4", ("nonhydrostatic_nml", "divdamp_z4")),
 ]
 
 
 def make_nonhydrostatic_config(
     atm_dict: dict[str, Any], **overrides: Any
 ) -> solve_nh.NonHydrostaticConfig:
-    kwargs: dict[str, Any] = {}
-    for field, section, name, de_list, conv in _NONHYDROSTATIC_FIELDS:
-        try:
-            value = _extract(atm_dict, section, name, list_to_value=de_list)
-        except KeyError:
-            continue
-        if conv is not None:
-            value = conv(value)
-        kwargs[field] = value
-    kwargs.update(overrides)
-    return solve_nh.NonHydrostaticConfig(**kwargs)
+    return _build_from_table(
+        solve_nh.NonHydrostaticConfig, _NONHYDROSTATIC_OPTIONS, atm_dict, overrides
+    )
 
 
 def _convert_nudge_max_coeff(nudge_max_coeff: float) -> float:
     return constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * nudge_max_coeff
 
 
-_INTERPOLATION_FIELDS = [
-    # (python_field, nml_section, nml_name, list_to_value, converter)
-    ("divergence_averaging_central_cell_weight", "dynamics_nml", "divavg_cntrwgt", False, None),
-    ("max_nudging_coefficient", "interpol_nml", "nudge_max_coeff", False, _convert_nudge_max_coeff),
-    ("nudge_efold_width", "interpol_nml", "nudge_efold_width", False, None),
-    ("nudge_zone_width", "interpol_nml", "nudge_zone_width", False, None),
-    ("rbf_kernel_cell", "interpol_nml", "rbf_vec_kern_c", False, InterpolationKernel),
-    ("rbf_kernel_edge", "interpol_nml", "rbf_vec_kern_e", False, InterpolationKernel),
-    ("rbf_kernel_vertex", "interpol_nml", "rbf_vec_kern_v", False, InterpolationKernel),
-    ("lsq_high_ord", "interpol_nml", "lsq_high_ord", False, None),
+_INTERPOLATION_OPTIONS = [
+    IconOption("divergence_averaging_central_cell_weight", ("dynamics_nml", "divavg_cntrwgt")),
+    IconOption(
+        "max_nudging_coefficient",
+        ("interpol_nml", "nudge_max_coeff"),
+        converter=_convert_nudge_max_coeff,
+    ),
+    IconOption("nudge_efold_width", ("interpol_nml", "nudge_efold_width")),
+    IconOption("nudge_zone_width", ("interpol_nml", "nudge_zone_width")),
+    IconOption("rbf_kernel_cell", ("interpol_nml", "rbf_vec_kern_c")),
+    IconOption("rbf_kernel_edge", ("interpol_nml", "rbf_vec_kern_e")),
+    IconOption("rbf_kernel_vertex", ("interpol_nml", "rbf_vec_kern_v")),
+    IconOption("lsq_high_ord", ("interpol_nml", "lsq_high_ord")),
 ]
 
 
 def make_interpolation_config(
     atm_dict: dict[str, Any], **overrides: Any
 ) -> interpolation_factory.InterpolationConfig:
-    kwargs: dict[str, Any] = {}
-    for field, section, name, de_list, conv in _INTERPOLATION_FIELDS:
-        try:
-            value = _extract(atm_dict, section, name, list_to_value=de_list)
-        except KeyError:
-            continue
-        if conv is not None:
-            value = conv(value)
-        kwargs[field] = value
-    kwargs.update(overrides)
-    return interpolation_factory.InterpolationConfig(**kwargs)
+    return _build_from_table(
+        interpolation_factory.InterpolationConfig, _INTERPOLATION_OPTIONS, atm_dict, overrides
+    )
 
 
-# ---------------------------------------------------------------------------
-# Driver config (merged master + atm dicts, with converters)
-# ---------------------------------------------------------------------------
+def _experiment_name_from_namelist_filename(model_namelist_filename: str) -> str:
+    return model_namelist_filename.removeprefix("NAMELIST_").removesuffix("_sb_atm")
 
 
-# (field, source_key, section, name, list_to_value, converter)
-# source_key is "master_cfg" or "model_cfg"
-_DRIVER_FIELDS = [
-    ("experiment_name", "master_cfg", "master_model_nml", "model_namelist_filename", False,
-     lambda v: v.removeprefix("NAMELIST_").removesuffix("_sb_atm")),
-    ("start_of_simulation", "master_cfg", "master_time_control_nml", "experimentstartdate", False,
-     absolutetime_from_iconformat),
-    ("start_of_timestepping", "master_cfg", "master_time_control_nml", "experimentstartdate", False,
-     absolutetime_from_iconformat),
-    ("end_of_simulation", "master_cfg", "master_time_control_nml", "experimentstopdate", False,
-     absolutetime_from_iconformat),
-    ("apply_extra_second_order_divdamp", "model_cfg", "run_nml", "ltestcase", False,
-     lambda v: not v),
-    ("do_prep_adv", "model_cfg", "run_nml", "ltransport", False, None),
-    ("diffuse_before_time_loop", "model_cfg", "run_nml", "ltestcase", False,
-     lambda v: not v),
-    ("vertical_cfl_threshold", "model_cfg", "nonhydrostatic_nml", "vcfl_threshold", False, None),
-    ("ndyn_substeps", "model_cfg", "nonhydrostatic_nml", "ndyn_substeps", False, None),
+# The driver reads from both the master and the model namelists.
+_DRIVER_OPTIONS = [
+    IconOption(
+        "experiment_name",
+        ("master_cfg", "master_model_nml", "model_namelist_filename"),
+        converter=_experiment_name_from_namelist_filename,
+    ),
+    IconOption(
+        "start_of_simulation",
+        ("master_cfg", "master_time_control_nml", "experimentstartdate"),
+        converter=driver_config.absolutetime_from_iconformat,
+    ),
+    IconOption(
+        "end_of_simulation",
+        ("master_cfg", "master_time_control_nml", "experimentstopdate"),
+        converter=driver_config.absolutetime_from_iconformat,
+    ),
+    # Not a namelist variable, coded as follows in mo_nh_stepping.f90:
+    # IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)
+    IconOption(
+        "apply_extra_second_order_divdamp",
+        ("model_cfg", "run_nml", "ltestcase"),
+        converter=lambda ltestcase: not ltestcase,
+    ),
+    # lprep_adv in fortran
+    IconOption("do_prep_adv", ("model_cfg", "run_nml", "ltransport")),
+    IconOption(
+        "diffuse_before_time_loop",
+        ("model_cfg", "run_nml", "ltestcase"),
+        converter=lambda ltestcase: not ltestcase,
+    ),
+    IconOption("vertical_cfl_threshold", ("model_cfg", "nonhydrostatic_nml", "vcfl_threshold")),
+    IconOption("ndyn_substeps", ("model_cfg", "nonhydrostatic_nml", "ndyn_substeps")),
 ]
 
 
@@ -254,33 +307,15 @@ def make_driver_config(
     *, atm_dict: dict[str, Any], master_dict: dict[str, Any], **overrides: Any
 ) -> driver_config.DriverConfig:
     icon_config = {"master_cfg": master_dict, "model_cfg": atm_dict}
-    kwargs: dict[str, Any] = {}
-    for field, src, section, name, de_list, conv in _DRIVER_FIELDS:
-        try:
-            raw = icon_config[src][section][name]
-            value = list_to_value(raw) if de_list else raw
-            if conv is not None:
-                value = conv(value)
-            kwargs[field] = value
-        except KeyError:
-            continue
-
-    # dtime is an IconMultiOption: modeltimestep takes priority over dtime
-    try:
-        run_nml = atm_dict["run_nml"]
-        kwargs["dtime"] = relativetime_from_iconformat(
-            run_nml["dtime"], run_nml.get("modeltimestep", "").strip()
-        )
-    except KeyError:
-        pass
-
-    kwargs.update(overrides)
-    return driver_config.DriverConfig.make_initial(**kwargs)
-
-
-# ---------------------------------------------------------------------------
-# Manual config builders
-# ---------------------------------------------------------------------------
+    kwargs = _kwargs_from_table(driver_config.DriverConfig, _DRIVER_OPTIONS, icon_config)
+    # `modeltimestep` (ISO 8601 duration) takes priority over the legacy `dtime`
+    # (seconds); ICON writes it as a fixed-width, blank-padded string.
+    run_nml = atm_dict["run_nml"]
+    kwargs["dtime"] = driver_config.relativetime_from_iconformat(
+        run_nml["dtime"], run_nml["modeltimestep"].strip()
+    )
+    # start_of_timestepping is always equal to start_of_simulation when reading from ICON
+    return driver_config.DriverConfig.make_initial(**kwargs, **overrides)
 
 
 def make_metrics_config(
@@ -357,9 +392,7 @@ def make_graupel_config(
         use_constant_latent_heat=list_to_value(nwp_phy_nml["ithermo_water"]) == 0,
         ice_stickeff_min=nwp_tuning_nml["tune_zceff_min"],
         power_law_coeff_for_ice_mean_fall_speed=nwp_tuning_nml["tune_zvz0i"],
-        exponent_for_density_factor_in_ice_sedimentation=nwp_tuning_nml[
-            "tune_icesedi_exp"
-        ],
+        exponent_for_density_factor_in_ice_sedimentation=nwp_tuning_nml["tune_icesedi_exp"],
         power_law_coeff_for_snow_fall_speed=nwp_tuning_nml["tune_v0snow"],
         rain_mu=nwp_phy_nml["mu_rain"],
         rain_n0=nwp_phy_nml["rain_n0_factor"],
@@ -368,62 +401,84 @@ def make_graupel_config(
     )
 
 
+# Fortran namelist keys of the analytical test cases → ICON4Py dataclass fields.
+_JW_TOPO_NAME_MAP = {"jw_u0": "u0"}
+_JW_IC_NAME_MAP = {
+    "jw_up": "baroclinic_amplitude",
+    "jw_u0": "u0",
+    "jw_temp0": "temp0",
+    "zp_ape": "p_sfc",
+    "rh_at_1000hpa": "rh_at_1000hpa",
+    "qv_max": "qv_max",
+    "ztmc_ape": "global_moisture_content",
+}
+_GAUSS3D_IC_NAME_MAP = {
+    "nh_u0": "u0",
+    "nh_t0": "t0",
+    "nh_brunt_vais": "brunt_vais",
+}
+_WK_IC_NAME_MAP = {
+    "qv_max_wk": "qv_max",
+    "u_infty_wk": "max_wind_speed",
+    "bub_hor_width": "bubble_horizontal_width",
+    "bub_ver_width": "bubble_vertical_width",
+    "bubctr_lon": "bubble_center_x",
+    "bubctr_lat": "bubble_center_y",
+    "bubctr_z": "bubble_center_z",
+    "bub_amp": "bubble_amplitude",
+}
+
+
 def make_topography_config(
     *,
     atm_dict: dict[str, Any],
     input_dict: dict[str, Any],
-    data_path: pathlib.Path,
+) -> (
+    from_file_topo.FromFileConfig
+    | flat_topo.FlatTopographyConfig
+    | jw_topo.JablonowskiWilliamsonConfig
+    | gausshill_topo.GaussianHillConfig
 ):
-    run_nml = atm_dict["run_nml"]
-    if not run_nml["ltestcase"]:
-        from icon4py.model.common.topography import from_file as from_file_topo
-
-        return from_file_topo.FromFileConfig(
-            data_path=data_path / "ser_data",
-        )
+    if not atm_dict["run_nml"]["ltestcase"]:
+        log.info("Reading topography from file")
+        return from_file_topo.FromFileConfig(data_path=SER_DATA_PATH)
 
     testcase_nml = input_dict.get("nh_testcase_nml", {})
     test_name = testcase_nml.get("nh_test_name")
-    config: typing.Any
-    from icon4py.model.common.topography.analytical import (
-        flat_topography as flat_topo,
-        gaussian_hill as gausshill_topo,
-        jablonowski_williamson as jw_topo,
-    )
-
-    # Map Fortran namelist keys to analytical-topography dataclass fields.
-    jw_topo_name_map = {"jw_u0": "u0"}
-
     match test_name:
         case "APE_nwp" | "APE_aes" | "wk82":
-            config = flat_topo.FlatTopographyConfig()
+            log.info("Flat topography")
+            return flat_topo.FlatTopographyConfig()
         case "jabw" | "jabw_s":
-            config = config_dataclass_from_dict(
-                jw_topo.JablonowskiWilliamsonConfig, testcase_nml, jw_topo_name_map
+            log.info("Analytical topography for Jablonowski-Williamson test case")
+            return config_dataclass_from_dict(
+                jw_topo.JablonowskiWilliamsonConfig, testcase_nml, _JW_TOPO_NAME_MAP
             )
         case "gauss3D":
-            config = config_dataclass_from_dict(
-                gausshill_topo.GaussianHillConfig, testcase_nml, {}
-            )
+            log.info("Analytical Gaussian hill topography")
+            return config_dataclass_from_dict(gausshill_topo.GaussianHillConfig, testcase_nml, {})
         case name:
             raise ValueError(f"Unknown or missing test case name: {name!r}")
-
-    return config
 
 
 def make_initial_condition_config(
     *,
     atm_dict: dict[str, Any],
     input_dict: dict[str, Any],
-    data_path: pathlib.Path,
     start_of_simulation: time.AbsoluteTime,
     start_of_timestepping: time.AbsoluteTime,
     dtime: time.RelativeTime,
+) -> (
+    from_file_ic.FromFileConfig
+    | jw_ic.JablonowskiWilliamsonConfig
+    | gauss_ic.Gauss3DConfig
+    | wk_ic.WeismanKlempConfig
 ):
     run_nml = atm_dict["run_nml"]
     if not run_nml["ltestcase"]:
+        log.info("Reading initial condition from file")
         return from_file_ic.FromFileConfig(
-            data_path=data_path / "ser_data",
+            data_path=SER_DATA_PATH,
             start_of_simulation=start_of_simulation,
             start_of_timestepping=start_of_timestepping,
             dtime=dtime,
@@ -432,81 +487,43 @@ def make_initial_condition_config(
 
     testcase_nml = input_dict.get("nh_testcase_nml", {})
     test_name = testcase_nml.get("nh_test_name")
-    config: typing.Any
-    from icon4py.model.common.initial_condition.analytical import (
-        gauss3d as gauss_ic,
-        jablonowski_williamson as jw_ic,
-        weisman_klemp as wk_ic,
-    )
-
-    # Map Fortran namelist keys to analytical-initial-condition dataclass fields.
-    jw_ic_name_map = {
-        "jw_up": "baroclinic_amplitude",
-        "jw_u0": "u0",
-        "jw_temp0": "temp0",
-        "zp_ape": "p_sfc",
-        "rh_at_1000hpa": "rh_at_1000hpa",
-        "qv_max": "qv_max",
-        "ztmc_ape": "global_moisture_content",
-    }
-    gauss3d_ic_name_map = {
-        "nh_u0": "u0",
-        "nh_t0": "t0",
-        "nh_brunt_vais": "brunt_vais",
-    }
-    wk_ic_name_map = {
-        "qv_max_wk": "qv_max",
-        "u_infty_wk": "max_wind_speed",
-        "bub_hor_width": "bubble_horizontal_width",
-        "bub_ver_width": "bubble_vertical_width",
-        "bubctr_lon": "bubble_center_x",
-        "bubctr_lat": "bubble_center_y",
-        "bubctr_z": "bubble_center_z",
-        "bub_amp": "bubble_amplitude",
-    }
-
     match test_name:
         case "jabw" | "jabw_s" | "APE_nwp" | "APE_aes":
+            log.info("Analytical initial condition for Jablonowski-Williamson test case")
             config = config_dataclass_from_dict(
-                jw_ic.JablonowskiWilliamsonConfig, testcase_nml, jw_ic_name_map
+                jw_ic.JablonowskiWilliamsonConfig, testcase_nml, _JW_IC_NAME_MAP
             )
+            # Only the APE cases rescale qv to a prescribed global moisture content.
             config.normalize_global_moisture = test_name in ("APE_nwp", "APE_aes")
+            # Fortran resets jw_up to 0 only for jabw_s; other cases keep the default (1.0).
             if test_name == "jabw_s":
                 config.baroclinic_amplitude = 0.0
+            return config
         case "gauss3D":
-            config = config_dataclass_from_dict(
-                gauss_ic.Gauss3DConfig, testcase_nml, gauss3d_ic_name_map
+            log.info("Analytical initial condition for Gauss 3D test case")
+            return config_dataclass_from_dict(
+                gauss_ic.Gauss3DConfig, testcase_nml, _GAUSS3D_IC_NAME_MAP
             )
         case "wk82":
-            config = config_dataclass_from_dict(
-                wk_ic.WeismanKlempConfig, testcase_nml, wk_ic_name_map
+            log.info("Analytical initial condition for Weisman-Klemp test case")
+            return config_dataclass_from_dict(
+                wk_ic.WeismanKlempConfig, testcase_nml, _WK_IC_NAME_MAP
             )
         case name:
             raise ValueError(f"Unknown or missing test case name: {name!r}")
 
-    return config
-
 
 def make_prescribed_tendencies_config(
-    *,
     atm_dict: dict[str, Any],
-    data_path: pathlib.Path,
 ) -> prescribed_tendencies.PrescribedTendenciesConfig:
-    run_nml = atm_dict["run_nml"]
-    if run_nml["ltestcase"]:
+    if atm_dict["run_nml"]["ltestcase"]:
         return prescribed_tendencies.PrescribedTendenciesConfig(data_path=None)
-    return prescribed_tendencies.PrescribedTendenciesConfig(
-        data_path=data_path / "ser_data"
-    )
+    return prescribed_tendencies.PrescribedTendenciesConfig(data_path=SER_DATA_PATH)
 
 
 # ---------------------------------------------------------------------------
-# Orchestration (moved from driver.config.read_experiment_config_from_fortran)
+# Orchestration
 # ---------------------------------------------------------------------------
-
-#: Filenames of the Fortran namelists read by the converter.
-NAMELIST_ATM_FNAME: typing.Final = "NAMELIST_ICON_output_atm"
-NAMELIST_MASTER_FNAME: typing.Final = "icon_master.namelist"
 
 
 def _namelist_to_dict(namelist_dir: pathlib.Path, fname: str) -> dict[str, Any]:
@@ -517,18 +534,17 @@ def _namelist_to_dict(namelist_dir: pathlib.Path, fname: str) -> dict[str, Any]:
 
 
 def _discover_experiment_namelist(namelist_dir: pathlib.Path) -> str:
-    """Find the experiment-specific NAMELIST file, excluding .json and known namelists."""
-    known = {NAMELIST_ATM_FNAME, NAMELIST_MASTER_FNAME, "NAMELIST_expname"}
+    """Find the experiment-specific namelist: the `NAMELIST_*` file that is not the atm one."""
     candidates = sorted(
         c.name
         for c in namelist_dir.glob("NAMELIST_*")
-        if c.name not in known and not c.name.endswith(".json")
+        if c.name != NAMELIST_ATM_FNAME and c.suffix != ".json"
     )
-    if not candidates:
+    if len(candidates) != 1:
         raise FileNotFoundError(
-            f"No experiment-specific NAMELIST found in {namelist_dir} "
-            f"(looked for NAMELIST_* excluding .json, "
-            f"{NAMELIST_ATM_FNAME!r}, {NAMELIST_MASTER_FNAME!r})."
+            f"Expected exactly one experiment-specific NAMELIST_* in {namelist_dir} "
+            f"(besides {NAMELIST_ATM_FNAME!r}), found {candidates}. "
+            "Pass `namelist_expname` explicitly."
         )
     return candidates[0]
 
@@ -546,51 +562,50 @@ def convert_experiment(
     ----------
     namelist_dir:
         Directory containing ``NAMELIST_ICON_output_atm``, ``icon_master.namelist``
-        and (when applicable) the experiment-specific namelist.
+        and the experiment-specific namelist.
     enable_profiling:
         Include a :class:`ProfilingConfig` in the driver config.
     enable_statistics_output:
         Enable variable-statistics logging in the driver config.
     namelist_expname:
         Filename of the experiment-specific namelist (e.g.
-        ``NAMELIST_exclaim_gauss3d_sb``).  When ``None`` the converter
-        discovers it by globbing ``NAMELIST_*`` excluding ``.json`` files
-        and the known atm/master namelists.
+        ``NAMELIST_exclaim_gauss3d_sb``). When ``None`` it is discovered as the
+        only other ``NAMELIST_*`` file in ``namelist_dir``.
     """
     atm_dict = _namelist_to_dict(namelist_dir, NAMELIST_ATM_FNAME)
     master_dict = _namelist_to_dict(namelist_dir, NAMELIST_MASTER_FNAME)
-
-    if namelist_expname is None:
-        input_fname = _discover_experiment_namelist(namelist_dir)
-    else:
-        input_fname = namelist_expname
+    input_fname = (
+        _discover_experiment_namelist(namelist_dir)
+        if namelist_expname is None
+        else namelist_expname
+    )
     input_dict = _namelist_to_dict(namelist_dir, input_fname)
 
     geometry_cfg = GeometryConfig(use_analytical_means=True)
-
     metrics_cfg = make_metrics_config(atm_dict)
-
     interpolation_cfg = make_interpolation_config(atm_dict)
-
     vertical_grid_cfg = make_vertical_grid_config(atm_dict)
-
-    topography_cfg = make_topography_config(
-        atm_dict=atm_dict, input_dict=input_dict, data_path=namelist_dir
-    )
-
+    topography_cfg = make_topography_config(atm_dict=atm_dict, input_dict=input_dict)
     nonhydro_cfg = make_nonhydrostatic_config(atm_dict)
-
     diffusion_cfg = make_diffusion_config(atm_dict)
 
     do_tracer_advection = not (
-        "exclaim_ch_r04b09_dsl" in namelist_dir.name
-        or "exclaim_ape_R02B04" in namelist_dir.name
+        "exclaim_ch_r04b09_dsl" in namelist_dir.name or "exclaim_ape_R02B04" in namelist_dir.name
     )
-    tracer_advection_cfg = (
-        make_advection_config(atm_dict) if do_tracer_advection else None
-    )
+    # The driver supplies advection's inputs (airmass and the mass fluxes the dycore
+    # accumulates over the substeps), and exclaim_ape_aesPhys runs tracer advection:
+    # the driver test validates transport+muphys against the end-of-time-step
+    # reference (hydrometeors bit-exact, see the test_driver docstring).
+    # The two experiments above stay disabled until their runs are validated the same
+    # way (their datatests do not compare tracers yet).
+    # TODO (jcanton): this isn't the right place to keep a special case
+    # handling. Either fix these experiments or move the special case handling.
+    tracer_advection_cfg = make_advection_config(atm_dict) if do_tracer_advection else None
     ntracer = list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
 
+    # AES physics implies muphys is active for the experiments we support today; the presence
+    # of the aes_phy_nml namelist mirrors the graupel `do_physics` check below. A robust
+    # dt_mig>0 check needs the raw namelist (see docs/2026-07-22-muphys-namelist-dt-mig-gate.md).
     aes_physics_on = "aes_phy_nml" in atm_dict
     tracer_cfg = (
         tracer_states.TracerConfig.all()
@@ -598,6 +613,9 @@ def convert_experiment(
         else tracer_states.TracerConfig.from_ntracer(ntracer)
     )
 
+    # If these two namelists are missing it means that the experiment was run
+    # without microphysics and we have to skip parsing the graupel config which
+    # relies on some of these parameters.
     do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
     graupel_cfg = make_graupel_config(atm_dict) if do_physics else None
 
@@ -609,27 +627,19 @@ def convert_experiment(
         enable_statistics_logging=enable_statistics_output,
     )
 
+    # the file-based initial condition needs the clock of the driver to know which
+    # savepoint to read: the initial state, or a later one when restarting
     initial_condition_cfg = make_initial_condition_config(
         atm_dict=atm_dict,
         input_dict=input_dict,
-        data_path=namelist_dir,
         start_of_simulation=driver_cfg.start_of_simulation,
         start_of_timestepping=driver_cfg.start_of_timestepping,
         dtime=driver_cfg.dtime,
     )
-
-    if not do_tracer_advection and isinstance(
-        initial_condition_cfg, from_file_ic.FromFileConfig
-    ):
+    if not do_tracer_advection and isinstance(initial_condition_cfg, from_file_ic.FromFileConfig):
         initial_condition_cfg = dataclasses.replace(initial_condition_cfg, ntracer=0)
 
-    muphys_cfg: typing.Any = None
-    if aes_physics_on:
-        from icon4py.model.atmosphere.subgrid_scale_physics.muphys import (
-            config as muphys_config,
-        )
-
-        muphys_cfg = muphys_config.MuphysConfig()
+    muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
 
     return driver_config.ExperimentConfig(
         geometry=geometry_cfg,
@@ -644,8 +654,6 @@ def convert_experiment(
         muphys=muphys_cfg,
         topography=topography_cfg,
         initial_condition=initial_condition_cfg,
-        prescribed_tendencies=make_prescribed_tendencies_config(
-            atm_dict=atm_dict, data_path=namelist_dir
-        ),
+        prescribed_tendencies=make_prescribed_tendencies_config(atm_dict),
         driver=driver_cfg,
     )

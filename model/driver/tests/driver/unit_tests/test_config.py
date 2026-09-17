@@ -16,6 +16,7 @@ import textwrap
 import pytest
 
 from icon4py.model.common.config import config_io
+from icon4py.model.common.io import io as common_io, netcdf_writers
 from icon4py.model.driver import config as driver_config, driver_states
 
 
@@ -88,33 +89,78 @@ def test_restart_starts_the_time_loop_at_start_of_timestepping() -> None:
     assert model_time.n_time_steps == 15
 
 
-def test_io_roundtrip_cls_cls() -> None:
-    conf = config_io.read_yaml_str(
-        textwrap.dedent(
-            """
-            geometry: {}
-            metrics: {}
-            interpolation: {}
-            vertical_grid:
-                num_levels: 10
-            topography:
-                type: jablonowski_williamson
-            initial_condition:
-                type: jablonowski_williamson
-            prescribed_tendencies: {}
-            driver:
-                experiment_name: foo
-                profiling_options:
-                dtime: 10 seconds
-                start_of_simulation: 2020-01-01T00:00:00
-                start_of_timestepping: 2020-01-01T00:00:00
-                end_of_simulation:
-                    type: numsteps
-                    value: 5
-            """
-        ),
-        driver_config.ExperimentConfig,
+def test_driver_config_accepts_distributed_netcdf_on_any_installation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The driver config never rejects distributed netCDF: the check is rank-aware.
+
+    Single-rank runs write through a serial file handle whatever the installation, so
+    the parallel-support check happens when the writer is created in a multi-rank run
+    (see ``netcdf_writers.NETCDFWriter``), not at config construction.
+    """
+    monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: "<serial build>")
+    config = dataclasses.replace(
+        _driver_config(),
+        output_backend=common_io.OutputBackend.NETCDF,
+        output_mode=common_io.OutputMode.DISTRIBUTED,
     )
+    assert config.output_backend is common_io.OutputBackend.NETCDF
+    assert config.output_mode is common_io.OutputMode.DISTRIBUTED
+
+
+EXPERIMENT_CONFIG_YAML = textwrap.dedent(
+    """
+    geometry: {}
+    metrics: {}
+    interpolation: {}
+    vertical_grid:
+        num_levels: 10
+    topography:
+        type: jablonowski_williamson
+    initial_condition:
+        type: jablonowski_williamson
+    prescribed_tendencies: {}
+    driver:
+        experiment_name: foo
+        profiling_options:
+        dtime: 10 seconds
+        start_of_simulation: 2020-01-01T00:00:00
+        start_of_timestepping: 2020-01-01T00:00:00
+        end_of_simulation:
+            type: numsteps
+            value: 5
+    """
+)
+
+
+def test_read_experiment_config_from_yaml_resolves_relative_data_path(
+    tmp_path: pathlib.Path,
+) -> None:
+    config_file = tmp_path / "config.yml"
+    config_file.write_text(
+        EXPERIMENT_CONFIG_YAML.replace(
+            "prescribed_tendencies: {}", "prescribed_tendencies:\n    data_path: ser_data"
+        )
+    )
+    config = driver_config.read_experiment_config_from_yaml(config_file)
+    assert config.prescribed_tendencies.data_path == tmp_path.resolve() / "ser_data"
+
+
+def test_read_experiment_config_from_yaml_keeps_absolute_data_path(
+    tmp_path: pathlib.Path,
+) -> None:
+    config_file = tmp_path / "config.yml"
+    config_file.write_text(
+        EXPERIMENT_CONFIG_YAML.replace(
+            "prescribed_tendencies: {}", "prescribed_tendencies:\n    data_path: /abs/ser_data"
+        )
+    )
+    config = driver_config.read_experiment_config_from_yaml(config_file)
+    assert config.prescribed_tendencies.data_path == pathlib.Path("/abs/ser_data")
+
+
+def test_io_roundtrip_cls_cls() -> None:
+    conf = config_io.read_yaml_str(EXPERIMENT_CONFIG_YAML, driver_config.ExperimentConfig)
     assert conf.driver.experiment_name == "foo"
     assert (
         config_io.read_yaml_str(config_io.write_yaml_str(conf), driver_config.ExperimentConfig)

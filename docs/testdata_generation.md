@@ -5,8 +5,9 @@ Fortran build, one archive per `(experiment, communicator size)`, published to
 `https://rgw.cscs.ch/c2sm:testdata` under `experiments/`. Generation runs on CSCS Santis.
 
 Each archive carries `ser_data/`, the namelists, a `config.yml` produced directly from
-those namelists, and the slurm log — which contains ICON's startup banner, and therefore
-the identity of the build that produced the data.
+those namelists (`scripts/python/fortran_config_converter.py`; its `data_path` entries are
+relative to the archive directory), and the slurm log — which contains ICON's startup
+banner, and therefore the identity of the build that produced the data.
 
 ## Which ICON build produced an archive
 
