@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+import sys
 import typing
 from types import SimpleNamespace
 
@@ -13,6 +14,7 @@ import dace
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import pytest
+from gt4py.next.program_processors.runners import dace as dace_backend
 
 from icon4py.model.common import field_type_aliases as fa, model_backends, model_options
 from icon4py.model.common.model_options import customize_backend, setup_program
@@ -233,3 +235,33 @@ def test_theta_fusion_through_model_options_and_auto_optimizer(monkeypatch, sett
     assert sum(isinstance(node, dace.nodes.MapEntry) for node in state.nodes()) == expected_maps
     assert not sdfg.arrays[theta].transient
     assert not sdfg.arrays["rho"].transient
+
+
+@pytest.mark.parametrize("setting", [None, "0", "1"])
+@pytest.mark.parametrize(
+    "program",
+    [
+        "vertically_implicit_solver_at_predictor_step",
+        "vertically_implicit_solver_at_corrector_step",
+    ],
+)
+def test_solver_fusion_options(monkeypatch, setting, program):
+    monkeypatch.delenv("ICON4PY_DACE_SOLVER_FUSION", raising=False)
+    if setting is not None:
+        monkeypatch.setenv("ICON4PY_DACE_SOLVER_FUSION", setting)
+    options = model_options.get_dace_options(program, None)
+    assert options["optimization_args"].get("fuse_scan_inputs", False) == (setting == "1")
+    other = model_options.get_dace_options("another_program", None)
+    assert "fuse_scan_inputs" not in other.get("optimization_args", {})
+
+
+def test_solver_fusion_configuration_errors(monkeypatch):
+    program = "vertically_implicit_solver_at_predictor_step"
+    monkeypatch.setenv("ICON4PY_DACE_SOLVER_FUSION", "yes")
+    with pytest.raises(ValueError, match="must be '0' or '1'"):
+        model_options.get_dace_options(program, None)
+    monkeypatch.setenv("ICON4PY_DACE_SOLVER_FUSION", "1")
+    monkeypatch.delattr(dace_backend, "scan_fusion", raising=False)
+    monkeypatch.setitem(sys.modules, f"{dace_backend.__name__}.scan_fusion", None)
+    with pytest.raises(RuntimeError, match="requires the GT4Py scan-input fusion patch"):
+        model_options.get_dace_options(program, None)

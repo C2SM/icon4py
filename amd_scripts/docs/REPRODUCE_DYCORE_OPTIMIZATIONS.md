@@ -53,6 +53,42 @@ This switch configures normal runs of this branch. The pinned replay commands
 below retain their original benchmark-controlled A/B configuration and do not
 exercise later model-options edits. Solver fusion remains applied in the model.
 
+## Experimental solver compiler option
+
+The new [scan-input fusion patch](../../patches/gt4py-scan-input-fusion.patch)
+moves coefficient calculations into a scan in the compiler, so scientists can
+keep the original Python equations. It is a separate, CPU-validated candidate;
+the measured 3.28% solver gain above belongs to the existing Python rewrite.
+
+For development with the GT4Py review branch, install both compiler changes
+(the second patch applies after the shared-output fusion commit `857e718d`),
+then set this before constructing the model/backend:
+
+```bash
+export ICON4PY_DACE_SOLVER_FUSION=1
+# Set to 0, or leave unset, to disable this compiler pass.
+```
+
+Normal `model_options.py` sets `optimization_args["fuse_scan_inputs"]` only for
+the predictor and corrector vertical solver programs. GT4Py consumes this option
+in its DaCe translator **before building the SDFG**. The remaining options then
+reach `gt_auto_optimize`. Theta's callback, in contrast, runs during SDFG
+optimization. Both options are explicit and default off.
+
+**This branch still contains the measured Python solver rewrite.** Turning the
+compiler option off does not undo that rewrite, and turning it on does not add
+a demonstrated further speedup. To validate the compiler as its replacement,
+compare the original solver equations with this option off/on in a separate
+validation checkout; first require full-granule GPU correctness, then timing.
+The pinned replay below does not exercise this new pass.
+
+Local checks cover 11 compiler tests and 14 model-option tests. A separate
+compiled CPU comparison using the original ICON forward sweep matched both the
+original and manually fused results exactly for three randomized inputs, while
+removing four two-dimensional coefficient arrays. This standalone count is not
+the measured full solver's net three-array reduction. GPU validation, mixed
+precision and full-granule performance of the compiler replacement remain open.
+
 ## Source and environment
 
 The launcher uses experiment commit **`cdc034acb`**, including both measured

@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+import importlib
 import logging
 import os
 from collections.abc import Callable
@@ -75,6 +76,25 @@ def _configure_theta_fusion(optimization_hooks: dict[Any, Any]) -> None:
     optimization_hooks[hook] = _dace_select_theta_split
 
 
+def _configure_solver_fusion(optimization_args: dict[str, Any]) -> None:
+    setting = os.environ.get("ICON4PY_DACE_SOLVER_FUSION", "0")
+    if setting not in {"0", "1"}:
+        raise ValueError("'ICON4PY_DACE_SOLVER_FUSION' must be '0' or '1'.")
+    if setting == "0":
+        return
+    try:
+        scan_fusion = importlib.import_module(
+            "gt4py.next.program_processors.runners.dace.scan_fusion"
+        )
+    except ImportError as error:
+        raise RuntimeError(
+            "'ICON4PY_DACE_SOLVER_FUSION=1' requires the GT4Py scan-input fusion patch."
+        ) from error
+    if not callable(getattr(scan_fusion, "fuse_scan_inputs", None)):
+        raise RuntimeError("The GT4Py scan-input fusion patch is incompatible.")
+    optimization_args["fuse_scan_inputs"] = True
+
+
 def _set_program_specific_dace_options(
     program_name: str,
     device: model_backends.DeviceType | None,
@@ -93,6 +113,7 @@ def _set_program_specific_dace_options(
         )
         optimization_args.setdefault("scan_loop_unrolling", True)
         optimization_args.setdefault("scan_loop_unrolling_factor", 0)
+        _configure_solver_fusion(optimization_args)
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).

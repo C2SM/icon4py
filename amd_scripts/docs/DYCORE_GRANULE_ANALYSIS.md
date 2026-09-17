@@ -288,6 +288,29 @@ correctness/performance checks are still needed before recommending both
 optimisations for general use. No combined saving or reduction of the vendor
 gap is claimed as measured yet.
 
+## Compiler replacement for the Python solver rewrite
+
+A new, opt-in GT4Py pass (commit `832aa13f` on
+`dycore-shared-output-fusion`) now performs the coefficient fusion without changing
+the scientist's equations. It runs before the SDFG is built: it moves coefficient
+expressions into the vertical scan and supplies neighbouring-level inputs in a
+form DaCe can lower. Unsupported accesses and assignments that read their own
+outputs are left unchanged.
+
+The option follows normal model configuration:
+`ICON4PY_DACE_SOLVER_FUSION=1` → `model_options.py` →
+`optimization_args["fuse_scan_inputs"]` → GT4Py's DaCe translator.
+It applies only to the predictor/corrector solvers and defaults off. This earlier
+compiler stage differs from theta's callback inside SDFG `gt_auto_optimize`.
+
+**This is a candidate replacement, not another measured optimisation.** Eleven
+compiler tests and fourteen model-option tests pass. The original ICON standalone
+forward sweep also matches the original and manually fused CPU outputs exactly
+for three randomized inputs; its four full-column coefficient arrays disappear.
+The branch retains the measured Python rewrite until the compiler replacement
+passes full-granule GPU validation. The 3.28% measured increment and 5.34% combined
+estimate above have not changed. No GPU speedup is claimed for this new pass.
+
 ## Where to review the code
 
 - [Solver implementation](../../model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/solve_tridiagonal_matrix_for_w_forward_sweep.py):
@@ -296,6 +319,12 @@ gap is claimed as measured yet.
   Casts and arithmetic order are retained; the existing standalone scan API stays available.
 - [Solver tests](../../model/atmosphere/dycore/tests/dycore/stencil_tests/test_solve_tridiagonal_matrix_for_w_forward_sweep.py):
   the independent NumPy recurrence now covers 2, 40 and 120 levels.
+- [Experimental solver compiler patch and tests](../../patches/gt4py-scan-input-fusion.patch):
+  `scan_fusion.py` implements the pre-SDFG pass; `workflow/translation.py` consumes
+  the option. This preserves the original model equations when used as a
+  replacement for the Python rewrite, after GPU validation.
+- [Normal model configuration](../../model/common/src/icon4py/model/common/model_options.py):
+  separate theta and solver opt-ins, both off by default.
 - [Compiler patch and tests](../../patches/gt4py-shared-output-fusion.patch):
   `allow_shared_data=False` in GT4Py's DaCe transformation layer; guarded splitting
   preserves external outputs and rejects unsupported aliasing, shifted/overlapping
