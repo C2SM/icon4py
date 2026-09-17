@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""States of the tmx turbulent mixing granule."""
+"""States of the tmx turbulent mixing component."""
 
 from __future__ import annotations
 

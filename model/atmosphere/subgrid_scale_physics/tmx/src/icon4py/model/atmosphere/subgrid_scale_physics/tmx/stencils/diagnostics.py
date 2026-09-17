@@ -62,7 +62,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 # ---------------------------------------------------------------------------
-# Smagorinsky_init (mo_tmx_smagorinsky.f90): run once, at granule construction
+# Smagorinsky_init (mo_tmx_smagorinsky.f90): run once, at component construction
 # ---------------------------------------------------------------------------
 @gtx.field_operator
 def _compute_smagorinsky_mixing_length(

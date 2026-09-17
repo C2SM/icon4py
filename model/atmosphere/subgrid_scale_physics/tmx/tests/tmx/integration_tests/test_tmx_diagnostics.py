@@ -6,9 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Integration test of the Tmx granule diagnostics (Smagorinsky).
+"""Integration test of the tmx diagnostics component (Smagorinsky).
 
-Constructs the granule from the serialized ICON state (exp.exclaim_ape_aesPhys),
+Constructs the component from the serialized ICON state (exp.exclaim_ape_aesPhys),
 verifies the init fields against the tmx-init savepoint and one call of
 ``run`` against the tmx-diagnostics-exit savepoint.
 """
@@ -68,7 +68,7 @@ def test_tmx_init_and_run_diagnostics_single_step(
         init_savepoint=init_savepoint,
         allocator=allocator,
     )
-    granule = diagnostics.Diagnostics(
+    component = diagnostics.Diagnostics(
         grid=icon_grid,
         metric_state=metric_state,
         interpolation_state=construct_interpolation_state(interpolation_savepoint),
@@ -90,12 +90,12 @@ def test_tmx_init_and_run_diagnostics_single_step(
 
     # Smagorinsky_init runs in the constructor; 'ghf' is only serialized at diagnostics exit
     test_utils.assert_dallclose(
-        granule.mixing_length_sq.asnumpy(),
+        component.mixing_length_sq.asnumpy(),
         init_savepoint.mix_len_sq().asnumpy(),
         err_msg="mixing_length_sq",
     )
     test_utils.assert_dallclose(
-        granule.scaling_factor_louis.asnumpy(),
+        component.scaling_factor_louis.asnumpy(),
         init_savepoint.scaling_factor_louis().asnumpy(),
         err_msg="scaling_factor_louis",
     )
@@ -106,7 +106,7 @@ def test_tmx_init_and_run_diagnostics_single_step(
     )
 
     diagnostic_state = tmx_states.TmxDiagnosticState.allocate(icon_grid, allocator=allocator)
-    granule.run(construct_input_state(entry_savepoint), diagnostic_state)
+    component.run(construct_input_state(entry_savepoint), diagnostic_state)
 
     nlev = icon_grid.num_levels
     # (diagnostic state attribute, exit savepoint accessor, K slice compared, absolute tolerance)
