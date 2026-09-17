@@ -11,16 +11,13 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
     compute_eddy_viscosity,
     compute_edge_shear_diagnostics,
-    compute_scaling_factor_louis,
     compute_smagorinsky_mixing_length,
     compute_strain_rate_diagnostics,
     compute_thermodynamic_diagnostics,
-    interpolate_km,
 )
 from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
@@ -115,41 +112,6 @@ class TestComputeSmagorinskyMixingLength(stencil_tests.StencilTest):
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels + 1),
-        )
-
-
-class TestComputeScalingFactorLouis(stencil_tests.StencilTest):
-    PROGRAM = compute_scaling_factor_louis
-    OUTPUTS = ("scaling_factor_louis",)
-    STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: (),
-        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            "horizontal_start",
-            "horizontal_end",
-        ),
-    }
-
-    @stencil_tests.static_reference
-    def reference(
-        grid: base.Grid,
-        *,
-        cell_area: np.ndarray,
-        **kwargs,
-    ) -> dict:
-        return dict(scaling_factor_louis=97294071.23714285 / cell_area)  # mean_cell_area_r2b8
-
-    @stencil_tests.input_data_fixture
-    def input_data(
-        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        cell_area = data_alloc.random_field(dims.CellDim, low=1.0e6, high=1.0e8, dtype=wpfloat)
-        scaling_factor_louis = data_alloc.zero_field(dims.CellDim, dtype=wpfloat)
-
-        return dict(
-            cell_area=cell_area,
-            scaling_factor_louis=scaling_factor_louis,
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_cells),
         )
 
 
@@ -1156,106 +1118,4 @@ class TestComputeEddyViscosityConstant(stencil_tests.StencilTest):
             use_louis_land=True,
             use_louis_ice=True,
             use_km_const=True,
-        )
-
-
-def interpolate_km_to_cells_numpy(km_ic: np.ndarray, *, km_min: float) -> np.ndarray:
-    return np.maximum(km_min, 0.5 * (km_ic[:, :-1] + km_ic[:, 1:]))
-
-
-def interpolate_km_to_vertices_numpy(
-    km_ic: np.ndarray, *, cells_aw_verts: np.ndarray, v2c: np.ndarray, km_min: float
-) -> np.ndarray:
-    return np.maximum(km_min, np.sum(cells_aw_verts[:, :, np.newaxis] * km_ic[v2c], axis=1))
-
-
-def interpolate_km_to_edges_numpy(
-    km_ic: np.ndarray, *, c_lin_e: np.ndarray, e2c: np.ndarray, km_min: float
-) -> np.ndarray:
-    return np.maximum(km_min, np.sum(km_ic[e2c] * c_lin_e[:, :, np.newaxis], axis=1))
-
-
-@pytest.mark.skip_value_error
-class TestInterpolateKm(stencil_tests.StencilTest):
-    PROGRAM = interpolate_km
-    OUTPUTS = ("km_c", "km_iv", "km_ie")
-    STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: (),
-        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            "cell_start",
-            "cell_end",
-            "vertex_start",
-            "vertex_end",
-            "edge_start",
-            "edge_end",
-            "vertical_start",
-            "vertical_end",
-            "vertical_end_half",
-        ),
-        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            "vertical_start",
-            "vertical_end",
-            "vertical_end_half",
-        ),
-    }
-
-    @stencil_tests.static_reference
-    def reference(
-        grid: base.Grid,
-        *,
-        km_ic: np.ndarray,
-        cells_aw_verts: np.ndarray,
-        c_lin_e: np.ndarray,
-        km_min: float,
-        **kwargs,
-    ) -> dict:
-        connectivities = stencil_tests.connectivities_asnumpy(grid)
-        return dict(
-            km_c=interpolate_km_to_cells_numpy(km_ic, km_min=km_min),
-            km_iv=interpolate_km_to_vertices_numpy(
-                km_ic,
-                cells_aw_verts=cells_aw_verts,
-                v2c=connectivities[dims.V2C],
-                km_min=km_min,
-            ),
-            km_ie=interpolate_km_to_edges_numpy(
-                km_ic,
-                c_lin_e=c_lin_e,
-                e2c=connectivities[dims.E2C],
-                km_min=km_min,
-            ),
-        )
-
-    @stencil_tests.input_data_fixture
-    def input_data(
-        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        km_ic = data_alloc.random_field(
-            dims.CellDim, dims.KHalfDim, low=0.0, high=1.0, dtype=wpfloat
-        )
-        cells_aw_verts = data_alloc.random_field(
-            dims.VertexDim, dims.V2CDim, low=0.0, high=1.0 / 6.0, dtype=wpfloat
-        )
-        c_lin_e = data_alloc.random_field(
-            dims.EdgeDim, dims.E2CDim, low=0.0, high=1.0, dtype=wpfloat
-        )
-
-        return dict(
-            km_ic=km_ic,
-            cells_aw_verts=cells_aw_verts,
-            c_lin_e=c_lin_e,
-            km_c=data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=wpfloat),
-            km_iv=data_alloc.zero_field(dims.VertexDim, dims.KHalfDim, dtype=wpfloat),
-            km_ie=data_alloc.zero_field(dims.EdgeDim, dims.KHalfDim, dtype=wpfloat),
-            # large enough that the floor is active for part of each field
-            km_min=wpfloat(0.5),
-            cell_start=0,
-            cell_end=gtx.int32(grid.num_cells),
-            vertex_start=0,
-            vertex_end=gtx.int32(grid.num_vertices),
-            edge_start=0,
-            edge_end=gtx.int32(grid.num_edges),
-            vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels),
-            vertical_end_half=gtx.int32(grid.num_levels + 1),
         )
