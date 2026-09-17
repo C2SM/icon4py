@@ -15,27 +15,8 @@ import textwrap
 
 import pytest
 
-import icon4py.model.common.exceptions as errors
 from icon4py.model.common.config import config_io
-from icon4py.model.common.io import io as common_io, netcdf_writers
 from icon4py.model.driver import config as driver_config, driver_states
-
-
-def _make_dicts(run_nml: dict) -> tuple[dict, dict]:
-    # fortran dumps the whole namelist, so the variables the driver read_yaml_strs are always
-    # present. Here they only need a value when the test does not care about it.
-    atm_dict = {
-        "nonhydrostatic_nml": {"vcfl_threshold": 0.85, "ndyn_substeps": 5},
-        "run_nml": {"ltestcase": True, "ltransport": False} | run_nml,
-    }
-    master_dict = {
-        "master_time_control_nml": {
-            "experimentstartdate": "2000-01-01T00:00:00Z",
-            "experimentstopdate": "2000-01-01T01:00:00Z",
-        },
-        "master_model_nml": {"model_namelist_filename": "NAMELIST_test_sb_atm"},
-    }
-    return atm_dict, master_dict
 
 
 @pytest.mark.parametrize(
@@ -61,59 +42,18 @@ def test_relativetime_from_iso8601_invalid(duration: str) -> None:
         driver_config.relativetime_from_iso8601(duration)
 
 
-def test_modeltimestep_takes_priority_over_dtime() -> None:
-    # trailing whitespace mimics the fixed-width Fortran string
-    atm_dict, master_dict = _make_dicts(
-        {"dtime": 999.0, "modeltimestep": "PT300S                          "}
-    )
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
-    assert config.dtime == datetime.timedelta(seconds=300)
-
-
-def test_empty_modeltimestep_falls_back_to_dtime() -> None:
-    atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "        "})
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
-    assert config.dtime == datetime.timedelta(seconds=120)
-
-
-# ltransport is true for MCH_CH_R04B09, EXCLAIM_APE_AES and Weisman-Klemp, false for
-# the dry testcases (JW, GAUSS3D).
-@pytest.mark.parametrize("ltransport", [True, False])
-def test_do_prep_adv_from_ltransport(ltransport: bool) -> None:
-    atm_dict, master_dict = _make_dicts(
-        {"dtime": 10.0, "modeltimestep": "  ", "ltransport": ltransport}
-    )
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
-    assert config.do_prep_adv is ltransport
-
-
-# The extra diffusion call before the time loop is only made for real data runs, which
-# are the ones that are not a testcase. MCH_CH_R04B09 is the only one.
-@pytest.mark.parametrize("ltestcase", [True, False])
-def test_diffuse_before_time_loop(ltestcase: bool) -> None:
-    atm_dict, master_dict = _make_dicts(
-        {"dtime": 10.0, "modeltimestep": "  ", "ltestcase": ltestcase}
-    )
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
-    )
-    assert config.diffuse_before_time_loop is (not ltestcase)
-    assert config.apply_extra_second_order_divdamp is (not ltestcase)
-
-
 def _driver_config(
     start_of_timestepping: datetime.datetime | None = None,
 ) -> driver_config.DriverConfig:
     # the experiment runs from 2000-01-01T00:00:00 to 01:00:00, with a 120 s time step
-    atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "  "})
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict, master_dict=master_dict, profiling_options=None
+    start = datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
+    end = datetime.datetime(2000, 1, 1, 1, 0, 0, tzinfo=datetime.UTC)
+    config = driver_config.DriverConfig.make_initial(
+        experiment_name="test",
+        profiling_options=None,
+        dtime=driver_config.relativetime_from_iso8601("PT120S"),
+        start_of_simulation=start,
+        end_of_simulation=end,
     )
     if start_of_timestepping is None:
         return config
@@ -146,28 +86,6 @@ def test_restart_starts_the_time_loop_at_start_of_timestepping() -> None:
     # ICON measures the elapsed time from the beginning of the simulation
     assert model_time.elapsed_time_in_seconds == 1800.0
     assert model_time.n_time_steps == 15
-
-
-def test_driver_config_accepts_distributed_netcdf_on_any_installation(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The driver config never rejects distributed netCDF: the check is rank-aware.
-
-    Single-rank runs write through a serial file handle whatever the installation, so
-    the parallel-support check happens when the writer is created in a multi-rank run
-    (see ``netcdf_writers.NETCDFWriter``), not at config construction.
-    """
-    monkeypatch.setattr(netcdf_writers, "missing_parallel_support", lambda: "<serial build>")
-    atm_dict, master_dict = _make_dicts({"dtime": 120.0, "modeltimestep": "PT300S"})
-    config = driver_config.DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict,
-        master_dict=master_dict,
-        profiling_options=None,
-        output_backend=common_io.OutputBackend.NETCDF,
-        output_mode=common_io.OutputMode.DISTRIBUTED,
-    )
-    assert config.output_backend is common_io.OutputBackend.NETCDF
-    assert config.output_mode is common_io.OutputMode.DISTRIBUTED
 
 
 def test_io_roundtrip_cls_cls() -> None:

@@ -9,8 +9,8 @@
 from __future__ import annotations
 
 import pathlib
-import unittest.mock as mock
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
 from typer.testing import CliRunner
@@ -69,5 +69,7 @@ def test_main_cli(
         mock_run_driver.assert_called_once()
         run_driver_kwargs = mock_run_driver.call_args.kwargs
         assert run_driver_kwargs["grid_manager"] is mock_grid_manager
-        assert data_alloc.backend_name(run_driver_kwargs["backend"]) == data_alloc.backend_name(backend)
+        assert data_alloc.backend_name(run_driver_kwargs["backend"]) == data_alloc.backend_name(
+            backend
+        )
         assert run_driver_kwargs["config"].driver.experiment_name == "foo"
