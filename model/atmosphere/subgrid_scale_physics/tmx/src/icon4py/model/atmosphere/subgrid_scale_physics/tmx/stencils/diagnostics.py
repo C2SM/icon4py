@@ -40,6 +40,12 @@ from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
 )
+from icon4py.model.common.math.tensor_operations import (
+    Mat3OnEdges,
+    squared_norm_of_symmetric_on_edges,
+    trace_on_edges,
+    twice_symmetric_part_on_edges,
+)
 from icon4py.model.common.math.vertical_operations import (
     average_level_plus1_on_cells,
     with_boundaries_on_half_levels_on_cells,
@@ -288,6 +294,66 @@ def compute_thermodynamic_diagnostics(
 # Compute_diagnostics: edge diagnostics
 # ---------------------------------------------------------------------------
 @gtx.field_operator
+def _compute_velocity_gradient_tensor(
+    u_vert: fa.VertexKField[wpfloat],
+    v_vert: fa.VertexKField[wpfloat],
+    w_vert: fa.VertexKHalfField[wpfloat],
+    w: fa.CellKHalfField[wpfloat],
+    vn_ie: fa.EdgeKHalfField[wpfloat],
+    vt_ie: fa.EdgeKHalfField[wpfloat],
+    w_ie: fa.EdgeKHalfField[wpfloat],
+    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    inv_vert_vert_length: fa.EdgeField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_ddqz_z_full_e: fa.EdgeKField[wpfloat],
+) -> Mat3OnEdges:
+    """
+    The velocity gradient tensor ``T_ij = du_i/dx_j`` at edges of full levels.
+
+    Port of ``compute_velocity_gradient_tensor`` (mo_vdf_atmo.f90). The first index is
+    the velocity component, the second the derivative direction; 0: edge-normal,
+    1: edge-tangential, 2: vertical.
+    """
+    # Normal/tangential velocity components at the four E2C2V vertices
+    # (0, 1: edge endpoints; 2, 3: far vertices of the adjacent cells).
+    vn_vert = u_vert(E2C2V) * primal_normal_vert_x + v_vert(E2C2V) * primal_normal_vert_y
+    vt_vert = u_vert(E2C2V) * dual_normal_vert_x + v_vert(E2C2V) * dual_normal_vert_y
+
+    # Vertical velocity at full levels: cell centers (E2C) and edge endpoints (E2C2V 0, 1).
+    w_full_c1 = wpfloat("0.5") * (w(E2C[0])(KDim - 0.5) + w(E2C[0])(KDim + 0.5))
+    w_full_c2 = wpfloat("0.5") * (w(E2C[1])(KDim - 0.5) + w(E2C[1])(KDim + 0.5))
+    w_full_v1 = wpfloat("0.5") * (w_vert(E2C2V[0])(KDim - 0.5) + w_vert(E2C2V[0])(KDim + 0.5))
+    w_full_v2 = wpfloat("0.5") * (w_vert(E2C2V[1])(KDim - 0.5) + w_vert(E2C2V[1])(KDim + 0.5))
+
+    return (
+        (
+            (vn_vert[E2C2VDim(3)] - vn_vert[E2C2VDim(2)]) * inv_vert_vert_length,
+            (vn_vert[E2C2VDim(1)] - vn_vert[E2C2VDim(0)])
+            * tangent_orientation
+            * inv_primal_edge_length,
+            (vn_ie(KDim - 0.5) - vn_ie(KDim + 0.5)) * inv_ddqz_z_full_e,
+        ),
+        (
+            (vt_vert[E2C2VDim(3)] - vt_vert[E2C2VDim(2)]) * inv_vert_vert_length,
+            (vt_vert[E2C2VDim(1)] - vt_vert[E2C2VDim(0)])
+            * tangent_orientation
+            * inv_primal_edge_length,
+            (vt_ie(KDim - 0.5) - vt_ie(KDim + 0.5)) * inv_ddqz_z_full_e,
+        ),
+        (
+            (w_full_c2 - w_full_c1) * inv_dual_edge_length,
+            (w_full_v2 - w_full_v1) * tangent_orientation * inv_primal_edge_length,
+            (w_ie(KDim - 0.5) - w_ie(KDim + 0.5)) * inv_ddqz_z_full_e,
+        ),
+    )
+
+
+@gtx.field_operator
 def _compute_shear_and_div_of_stress(
     u_vert: fa.VertexKField[wpfloat],
     v_vert: fa.VertexKField[wpfloat],
@@ -310,56 +376,35 @@ def _compute_shear_and_div_of_stress(
     Compute shear and divergence of stress at edges of full levels.
 
     Fuses the ICON TMX subroutines 'compute_velocity_gradient_tensor' and
-    'compute_shear' (mo_vdf_atmo.f90). The 3x3 velocity gradient tensor
-    (first index: velocity component, second index: derivative direction;
-    1: normal, 2: tangential, 3: vertical) is kept in local temporaries and
-    contracted into
+    'compute_shear' (mo_vdf_atmo.f90):
 
-        shear      = 2 * |S|^2 = 4 * (T_11^2 + T_22^2 + T_33^2)
-                     + 2 * (D_12^2 + D_13^2 + D_23^2),  D_ij = T_ij + T_ji
-        div_of_stress = trace(S_ij) = T_11 + T_22 + T_33
+        shear         = ||D||^2 = 2 |S|^2,  D = T + T^t = 2 S
+        div_of_stress = trace(T)
+
+    with T the velocity gradient and S the strain rate. Mechanical production is
+    half of ``shear`` multiplied by km.
     """
-    # Normal/tangential velocity components at the four E2C2V vertices
-    # (0, 1: edge endpoints; 2, 3: far vertices of the adjacent cells).
-    vn_vert = u_vert(E2C2V) * primal_normal_vert_x + v_vert(E2C2V) * primal_normal_vert_y
-    vt_vert = u_vert(E2C2V) * dual_normal_vert_x + v_vert(E2C2V) * dual_normal_vert_y
-
-    # Vertical velocity at full levels: cell centers (E2C) and edge endpoints (E2C2V 0, 1).
-    w_full_c1 = wpfloat("0.5") * (w(E2C[0])(KDim - 0.5) + w(E2C[0])(KDim + 0.5))
-    w_full_c2 = wpfloat("0.5") * (w(E2C[1])(KDim - 0.5) + w(E2C[1])(KDim + 0.5))
-    w_full_v1 = wpfloat("0.5") * (w_vert(E2C2V[0])(KDim - 0.5) + w_vert(E2C2V[0])(KDim + 0.5))
-    w_full_v2 = wpfloat("0.5") * (w_vert(E2C2V[1])(KDim - 0.5) + w_vert(E2C2V[1])(KDim + 0.5))
-
-    # Velocity gradient tensor at edge of full levels, e.g. T_12 = du_1/dx_2.
-    vgrad_11 = (vn_vert[E2C2VDim(3)] - vn_vert[E2C2VDim(2)]) * inv_vert_vert_length
-    vgrad_12 = (
-        (vn_vert[E2C2VDim(1)] - vn_vert[E2C2VDim(0)]) * tangent_orientation * inv_primal_edge_length
+    velocity_gradient = _compute_velocity_gradient_tensor(
+        u_vert,
+        v_vert,
+        w_vert,
+        w,
+        vn_ie,
+        vt_ie,
+        w_ie,
+        primal_normal_vert_x,
+        primal_normal_vert_y,
+        dual_normal_vert_x,
+        dual_normal_vert_y,
+        tangent_orientation,
+        inv_primal_edge_length,
+        inv_vert_vert_length,
+        inv_dual_edge_length,
+        inv_ddqz_z_full_e,
     )
-    vgrad_13 = (vn_ie(KDim - 0.5) - vn_ie(KDim + 0.5)) * inv_ddqz_z_full_e
-
-    vgrad_21 = (vt_vert[E2C2VDim(3)] - vt_vert[E2C2VDim(2)]) * inv_vert_vert_length
-    vgrad_22 = (
-        (vt_vert[E2C2VDim(1)] - vt_vert[E2C2VDim(0)]) * tangent_orientation * inv_primal_edge_length
-    )
-    vgrad_23 = (vt_ie(KDim - 0.5) - vt_ie(KDim + 0.5)) * inv_ddqz_z_full_e
-
-    vgrad_31 = (w_full_c2 - w_full_c1) * inv_dual_edge_length
-    vgrad_32 = (w_full_v2 - w_full_v1) * tangent_orientation * inv_primal_edge_length
-    vgrad_33 = (w_ie(KDim - 0.5) - w_ie(KDim + 0.5)) * inv_ddqz_z_full_e
-
-    # Strain rates at edge center, D_ij = 2 * S_ij = du_i/dx_j + du_j/dx_i.
-    d_12 = vgrad_12 + vgrad_21
-    d_13 = vgrad_13 + vgrad_31
-    d_23 = vgrad_23 + vgrad_32
-
-    # shear = 2 * |S|^2 with |S| = sqrt(2 * S_ij * S_ij);
-    # mechanical production is half of this value multiplied by km.
-    shear = wpfloat("4.0") * (
-        vgrad_11 * vgrad_11 + vgrad_22 * vgrad_22 + vgrad_33 * vgrad_33
-    ) + wpfloat("2.0") * (d_12 * d_12 + d_13 * d_13 + d_23 * d_23)
-
-    # Trace of the strain-rate tensor S_ij: trace(S_ij) = S_jj = 0.5 * D_jj = du_j/dx_j.
-    div_of_stress = vgrad_11 + vgrad_22 + vgrad_33
+    strain_rate = twice_symmetric_part_on_edges(velocity_gradient)  # D = T + T^t = 2 S
+    shear = squared_norm_of_symmetric_on_edges(strain_rate)
+    div_of_stress = trace_on_edges(velocity_gradient)
 
     return shear, div_of_stress
 
