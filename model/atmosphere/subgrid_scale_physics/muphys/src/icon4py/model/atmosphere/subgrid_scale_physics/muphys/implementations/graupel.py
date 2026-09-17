@@ -332,7 +332,7 @@ def sink_saturation(
 
 
 @gtx.field_operator
-def _q_t_update(  # noqa: PLR0917 [too-many-positional-arguments, too-many-statements]
+def _q_t_update(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
