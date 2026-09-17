@@ -38,8 +38,6 @@ benchmark_bencher_granules_feature_aarch64:
   extends: [.test_runner_serial, .test_template_aarch64, .bencher_feature_tests]
   variables:
     TEST_SELECTION: "${GRANULE_TEST_SELECTION}"
-  rules:
-    - when: never  # TEMPORARY: disabled for driver bencher trial; restore before merge
 
 benchmark_bencher_driver_mpi_feature_aarch64:
   extends: [.bencher_driver_mpi_feature_tests]
