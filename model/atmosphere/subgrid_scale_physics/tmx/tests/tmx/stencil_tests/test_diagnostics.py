@@ -14,11 +14,10 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.tmx.stencils.diagnostics import (
-    assign_constant_viscosity,
+    compute_eddy_viscosity,
     compute_edge_shear_diagnostics,
     compute_scaling_factor_louis,
     compute_smagorinsky_mixing_length,
-    compute_smagorinsky_viscosity,
     compute_strain_rate_diagnostics,
     compute_thermodynamic_diagnostics,
     interpolate_km,
@@ -816,7 +815,7 @@ def compute_stability_term_louis_numpy(
     return np.sqrt(0.5 * mech_prod * stability_function)
 
 
-def compute_smagorinsky_viscosity_numpy(
+def compute_eddy_viscosity_numpy(
     mech_prod: np.ndarray,
     bruvais: np.ndarray,
     rho_ic: np.ndarray,
@@ -827,32 +826,38 @@ def compute_smagorinsky_viscosity_numpy(
     fract_ice: np.ndarray,
     rturb_prandtl: float,
     louis_constant_b: float,
+    km_const: float,
+    use_km_const: bool,
     use_louis: bool,
     use_louis_land: bool,
     use_louis_ice: bool,
 ) -> tuple[np.ndarray, np.ndarray]:
     nlev = mech_prod.shape[1] - 1
 
-    if use_louis:
-        # If the Louis formula is used but not over land and/or sea ice, use the
-        # classic formulation for cells with more than 50% land fraction or more
-        # than 50% ice fraction.
-        classic_mask = ((not use_louis_land) & (fract_land > 0.5)) | (
-            (not use_louis_ice) & (fract_ice > 0.5)
-        )
-        stability_term = np.where(
-            classic_mask[:, np.newaxis],
-            compute_stability_term_classic_numpy(mech_prod, bruvais, rturb_prandtl),
-            compute_stability_term_louis_numpy(
-                mech_prod, bruvais, scaling_factor_louis, rturb_prandtl, louis_constant_b
-            ),
-        )
+    if use_km_const:
+        km = rho_ic * km_const
     else:
-        stability_term = compute_stability_term_classic_numpy(mech_prod, bruvais, rturb_prandtl)
+        if use_louis:
+            # If the Louis formula is used but not over land and/or sea ice, use the
+            # classic formulation for cells with more than 50% land fraction or more
+            # than 50% ice fraction.
+            classic_mask = ((not use_louis_land) & (fract_land > 0.5)) | (
+                (not use_louis_ice) & (fract_ice > 0.5)
+            )
+            stability_term = np.where(
+                classic_mask[:, np.newaxis],
+                compute_stability_term_classic_numpy(mech_prod, bruvais, rturb_prandtl),
+                compute_stability_term_louis_numpy(
+                    mech_prod, bruvais, scaling_factor_louis, rturb_prandtl, louis_constant_b
+                ),
+            )
+        else:
+            stability_term = compute_stability_term_classic_numpy(mech_prod, bruvais, rturb_prandtl)
+        km = rho_ic * mixing_length_sq * stability_term
 
     km_ic = np.zeros_like(mech_prod)
     # interior half levels, Fortran jk = 2..nlev (1-based) -> k = 1..nlev-1 (0-based)
-    km_ic[:, 1:nlev] = rho_ic[:, 1:nlev] * mixing_length_sq[:, 1:nlev] * stability_term[:, 1:nlev]
+    km_ic[:, 1:nlev] = km[:, 1:nlev]
     # boundary rows are copies of the adjacent interior rows
     # (Fortran 1-based: k = 1 <- k = 2, k = nlevp1 <- k = nlev)
     km_ic[:, 0] = km_ic[:, 1]
@@ -861,7 +866,7 @@ def compute_smagorinsky_viscosity_numpy(
     return km_ic, kh_ic
 
 
-def smagorinsky_viscosity_reference(
+def eddy_viscosity_reference(
     grid: base.Grid,
     *,
     mech_prod: np.ndarray,
@@ -873,12 +878,14 @@ def smagorinsky_viscosity_reference(
     fract_ice: np.ndarray,
     rturb_prandtl: float,
     louis_constant_b: float,
+    km_const: float,
+    use_km_const: bool,
     use_louis: bool,
     use_louis_land: bool,
     use_louis_ice: bool,
     **kwargs,
 ) -> dict:
-    km_ic, kh_ic = compute_smagorinsky_viscosity_numpy(
+    km_ic, kh_ic = compute_eddy_viscosity_numpy(
         mech_prod,
         bruvais,
         rho_ic,
@@ -888,6 +895,8 @@ def smagorinsky_viscosity_reference(
         fract_ice=fract_ice,
         rturb_prandtl=rturb_prandtl,
         louis_constant_b=louis_constant_b,
+        km_const=km_const,
+        use_km_const=use_km_const,
         use_louis=use_louis,
         use_louis_land=use_louis_land,
         use_louis_ice=use_louis_ice,
@@ -895,12 +904,14 @@ def smagorinsky_viscosity_reference(
     return dict(km_ic=km_ic, kh_ic=kh_ic)
 
 
-def smagorinsky_viscosity_input_data(
+def eddy_viscosity_input_data(
     data_alloc: stencil_tests.DataAllocationWrapper,
     grid: base.Grid,
+    *,
     use_louis: bool,
     use_louis_land: bool,
     use_louis_ice: bool,
+    use_km_const: bool = False,
 ) -> dict[str, gtx.Field | state_utils.ScalarType]:
     mech_prod = data_alloc.random_field(
         dims.CellDim, dims.KHalfDim, low=0.0, high=0.01, dtype=wpfloat
@@ -930,6 +941,8 @@ def smagorinsky_viscosity_input_data(
         kh_ic=kh_ic,
         rturb_prandtl=wpfloat(2.0),
         louis_constant_b=wpfloat(5.3),
+        km_const=wpfloat(0.05),
+        use_km_const=use_km_const,
         use_louis=use_louis,
         use_louis_land=use_louis_land,
         use_louis_ice=use_louis_ice,
@@ -941,8 +954,8 @@ def smagorinsky_viscosity_input_data(
     )
 
 
-class TestComputeSmagorinskyViscosityClassic(stencil_tests.StencilTest):
-    PROGRAM = compute_smagorinsky_viscosity
+class TestComputeEddyViscosityClassic(stencil_tests.StencilTest):
+    PROGRAM = compute_eddy_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
@@ -955,6 +968,7 @@ class TestComputeSmagorinskyViscosityClassic(stencil_tests.StencilTest):
             "use_louis",
             "use_louis_land",
             "use_louis_ice",
+            "use_km_const",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
@@ -963,24 +977,25 @@ class TestComputeSmagorinskyViscosityClassic(stencil_tests.StencilTest):
             "use_louis",
             "use_louis_land",
             "use_louis_ice",
+            "use_km_const",
         ),
     }
 
     @stencil_tests.static_reference
     def reference(grid: base.Grid, **kwargs: Any) -> dict:
-        return smagorinsky_viscosity_reference(grid, **kwargs)
+        return eddy_viscosity_reference(grid, **kwargs)
 
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        return smagorinsky_viscosity_input_data(
+        return eddy_viscosity_input_data(
             data_alloc, grid, use_louis=False, use_louis_land=True, use_louis_ice=True
         )
 
 
-class TestComputeSmagorinskyViscosityLouis(stencil_tests.StencilTest):
-    PROGRAM = compute_smagorinsky_viscosity
+class TestComputeEddyViscosityLouis(stencil_tests.StencilTest):
+    PROGRAM = compute_eddy_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
@@ -993,6 +1008,7 @@ class TestComputeSmagorinskyViscosityLouis(stencil_tests.StencilTest):
             "use_louis",
             "use_louis_land",
             "use_louis_ice",
+            "use_km_const",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
@@ -1001,24 +1017,25 @@ class TestComputeSmagorinskyViscosityLouis(stencil_tests.StencilTest):
             "use_louis",
             "use_louis_land",
             "use_louis_ice",
+            "use_km_const",
         ),
     }
 
     @stencil_tests.static_reference
     def reference(grid: base.Grid, **kwargs: Any) -> dict:
-        return smagorinsky_viscosity_reference(grid, **kwargs)
+        return eddy_viscosity_reference(grid, **kwargs)
 
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        return smagorinsky_viscosity_input_data(
+        return eddy_viscosity_input_data(
             data_alloc, grid, use_louis=True, use_louis_land=True, use_louis_ice=True
         )
 
 
-class TestComputeSmagorinskyViscosityLouisMaskedLandIce(stencil_tests.StencilTest):
-    PROGRAM = compute_smagorinsky_viscosity
+class TestComputeEddyViscosityLouisMaskedLandIce(stencil_tests.StencilTest):
+    PROGRAM = compute_eddy_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
@@ -1031,6 +1048,7 @@ class TestComputeSmagorinskyViscosityLouisMaskedLandIce(stencil_tests.StencilTes
             "use_louis",
             "use_louis_land",
             "use_louis_ice",
+            "use_km_const",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
@@ -1039,24 +1057,25 @@ class TestComputeSmagorinskyViscosityLouisMaskedLandIce(stencil_tests.StencilTes
             "use_louis",
             "use_louis_land",
             "use_louis_ice",
+            "use_km_const",
         ),
     }
 
     @stencil_tests.static_reference
     def reference(grid: base.Grid, **kwargs: Any) -> dict:
-        return smagorinsky_viscosity_reference(grid, **kwargs)
+        return eddy_viscosity_reference(grid, **kwargs)
 
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        return smagorinsky_viscosity_input_data(
+        return eddy_viscosity_input_data(
             data_alloc, grid, use_louis=True, use_louis_land=False, use_louis_ice=False
         )
 
 
-class TestComputeSmagorinskyViscosityLouisMaskedLandOnly(stencil_tests.StencilTest):
-    PROGRAM = compute_smagorinsky_viscosity
+class TestComputeEddyViscosityLouisMaskedLandOnly(stencil_tests.StencilTest):
+    PROGRAM = compute_eddy_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
@@ -1069,6 +1088,7 @@ class TestComputeSmagorinskyViscosityLouisMaskedLandOnly(stencil_tests.StencilTe
             "use_louis",
             "use_louis_land",
             "use_louis_ice",
+            "use_km_const",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
@@ -1077,39 +1097,25 @@ class TestComputeSmagorinskyViscosityLouisMaskedLandOnly(stencil_tests.StencilTe
             "use_louis",
             "use_louis_land",
             "use_louis_ice",
+            "use_km_const",
         ),
     }
 
     @stencil_tests.static_reference
     def reference(grid: base.Grid, **kwargs: Any) -> dict:
-        return smagorinsky_viscosity_reference(grid, **kwargs)
+        return eddy_viscosity_reference(grid, **kwargs)
 
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        return smagorinsky_viscosity_input_data(
+        return eddy_viscosity_input_data(
             data_alloc, grid, use_louis=True, use_louis_land=False, use_louis_ice=True
         )
 
 
-def assign_constant_viscosity_numpy(
-    rho_ic: np.ndarray, km_const: float, rturb_prandtl: float
-) -> tuple[np.ndarray, np.ndarray]:
-    nlev = rho_ic.shape[1] - 1
-    km_ic = np.zeros_like(rho_ic)
-    # interior half levels, Fortran jk = 2..nlev (1-based) -> k = 1..nlev-1 (0-based)
-    km_ic[:, 1:nlev] = rho_ic[:, 1:nlev] * km_const
-    # boundary rows are copies of the adjacent interior rows
-    # (Fortran 1-based: k = 1 <- k = 2, k = nlevp1 <- k = nlev)
-    km_ic[:, 0] = km_ic[:, 1]
-    km_ic[:, nlev] = km_ic[:, nlev - 1]
-    kh_ic = km_ic * rturb_prandtl
-    return km_ic, kh_ic
-
-
-class TestAssignConstantViscosity(stencil_tests.StencilTest):
-    PROGRAM = assign_constant_viscosity
+class TestComputeEddyViscosityConstant(stencil_tests.StencilTest):
+    PROGRAM = compute_eddy_viscosity
     OUTPUTS = ("km_ic", "kh_ic")
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
@@ -1119,47 +1125,37 @@ class TestAssignConstantViscosity(stencil_tests.StencilTest):
             "vertical_start",
             "vertical_end",
             "nlev",
+            "use_louis",
+            "use_louis_land",
+            "use_louis_ice",
+            "use_km_const",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
             "nlev",
+            "use_louis",
+            "use_louis_land",
+            "use_louis_ice",
+            "use_km_const",
         ),
     }
 
     @stencil_tests.static_reference
-    def reference(
-        grid: base.Grid,
-        *,
-        rho_ic: np.ndarray,
-        km_const: float,
-        rturb_prandtl: float,
-        **kwargs,
-    ) -> dict:
-        km_ic, kh_ic = assign_constant_viscosity_numpy(rho_ic, km_const, rturb_prandtl)
-        return dict(km_ic=km_ic, kh_ic=kh_ic)
+    def reference(grid: base.Grid, **kwargs: Any) -> dict:
+        return eddy_viscosity_reference(grid, **kwargs)
 
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        rho_ic = data_alloc.random_field(
-            dims.CellDim, dims.KHalfDim, low=0.5, high=1.4, dtype=wpfloat
-        )
-        km_ic = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
-        kh_ic = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
-
-        return dict(
-            rho_ic=rho_ic,
-            km_ic=km_ic,
-            kh_ic=kh_ic,
-            km_const=wpfloat(0.05),
-            rturb_prandtl=wpfloat(2.0),
-            nlev=gtx.int32(grid.num_levels),
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_cells),
-            vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels + 1),
+        return eddy_viscosity_input_data(
+            data_alloc,
+            grid,
+            use_louis=False,
+            use_louis_land=True,
+            use_louis_ice=True,
+            use_km_const=True,
         )
 
 

@@ -348,54 +348,36 @@ class Diagnostics:
         )
         # Smagorinsky_model / Assign_constant_eddy_viscosity (-> km_ic, kh_ic):
         # cells rl 3..min_rlcell_int, all half levels (rows 0 and nlev are copies
-        # of the adjacent interior rows, fused into the stencils). Not fused with
+        # of the adjacent interior rows). Not fused with
         # the strain-rate diagnostics: the bottom row would read the mechanical
         # production one full level below the last one.
-        if self._use_km_const:
-            self.compute_viscosity = setup_program(
-                backend=backend,
-                program=diag_stencils.assign_constant_viscosity,
-                constant_args={
-                    "km_const": self._km_const,
-                    "rturb_prandtl": self._rturb_prandtl,
-                },
-                horizontal_sizes={
-                    "horizontal_start": self._cell_start_lateral_boundary_level_3,
-                    "horizontal_end": self._cell_end_local,
-                },
-                vertical_sizes={
-                    "vertical_start": gtx.int32(0),
-                    "vertical_end": gtx.int32(num_levels + 1),
-                    "nlev": gtx.int32(num_levels),
-                },
-                offset_provider={},
-            )
-        else:
-            self.compute_viscosity = setup_program(
-                backend=backend,
-                program=diag_stencils.compute_smagorinsky_viscosity,
-                constant_args={
-                    "mixing_length_sq": self.mixing_length_sq,
-                    "scaling_factor_louis": self.scaling_factor_louis,
-                    "fract_land": self.fract_land,
-                    "fract_ice": self.fract_ice,
-                    "rturb_prandtl": self._rturb_prandtl,
-                    "louis_constant_b": self._louis_constant_b,
-                    "use_louis": self._use_louis,
-                    "use_louis_land": self._use_louis_land,
-                    "use_louis_ice": self._use_louis_ice,
-                },
-                horizontal_sizes={
-                    "horizontal_start": self._cell_start_lateral_boundary_level_3,
-                    "horizontal_end": self._cell_end_local,
-                },
-                vertical_sizes={
-                    "vertical_start": gtx.int32(0),
-                    "vertical_end": gtx.int32(num_levels + 1),
-                    "nlev": gtx.int32(num_levels),
-                },
-                offset_provider={},
-            )
+        self.compute_viscosity = setup_program(
+            backend=backend,
+            program=diag_stencils.compute_eddy_viscosity,
+            constant_args={
+                "mixing_length_sq": self.mixing_length_sq,
+                "scaling_factor_louis": self.scaling_factor_louis,
+                "fract_land": self.fract_land,
+                "fract_ice": self.fract_ice,
+                "rturb_prandtl": self._rturb_prandtl,
+                "louis_constant_b": self._louis_constant_b,
+                "km_const": self._km_const,
+                "use_km_const": self._use_km_const,
+                "use_louis": self._use_louis,
+                "use_louis_land": self._use_louis_land,
+                "use_louis_ice": self._use_louis_ice,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._cell_start_lateral_boundary_level_3,
+                "horizontal_end": self._cell_end_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(num_levels + 1),
+                "nlev": gtx.int32(num_levels),
+            },
+            offset_provider={},
+        )
         # the km/kh loops that follow the kh_ic/km_ic exchange
         # ('interpolate_eddy_viscosity2cell' / '2vertex' / '2edge' in
         # mo_vdf_atmo.f90): one program, three entities. Halo rows are computed
@@ -502,23 +484,16 @@ class Diagnostics:
             mech_prod=diagnostic_state.mech_prod,
         )
 
-        if self._use_km_const:
-            self.compute_viscosity(
-                rho_ic=diagnostic_state.rho_ic,
-                km_ic=diagnostic_state.km_ic,
-                kh_ic=diagnostic_state.kh_ic,
-            )
-        else:
-            self.compute_viscosity(
-                mech_prod=diagnostic_state.mech_prod,
-                bruvais=diagnostic_state.bruvais,
-                rho_ic=diagnostic_state.rho_ic,
-                km_ic=diagnostic_state.km_ic,
-                kh_ic=diagnostic_state.kh_ic,
-            )
+        self.compute_viscosity(
+            mech_prod=diagnostic_state.mech_prod,
+            bruvais=diagnostic_state.bruvais,
+            rho_ic=diagnostic_state.rho_ic,
+            km_ic=diagnostic_state.km_ic,
+            kh_ic=diagnostic_state.kh_ic,
+        )
 
         # unconditional, unlike the Fortran, which skips it in the constant-viscosity branch:
-        # the viscosity programs write cells rl 3..min_rlcell_int only, and 'interpolate_km'
+        # the viscosity program writes cells rl 3..min_rlcell_int only, and 'interpolate_km'
         # gathers from halo cells
         log.debug("communication of kh_ic, km_ic (cells): start")
         self._exchange.exchange(dims.CellDim, diagnostic_state.kh_ic, diagnostic_state.km_ic)

@@ -753,7 +753,7 @@ def _compute_stability_term_louis(
 
 
 @gtx.field_operator
-def _compute_smagorinsky_viscosity(
+def _compute_eddy_viscosity(
     mech_prod: fa.CellKHalfField[wpfloat],
     bruvais: fa.CellKHalfField[wpfloat],
     rho_ic: fa.CellKHalfField[wpfloat],
@@ -763,18 +763,21 @@ def _compute_smagorinsky_viscosity(
     fract_ice: fa.CellField[wpfloat],
     rturb_prandtl: wpfloat,
     louis_constant_b: wpfloat,
+    km_const: wpfloat,
+    use_km_const: bool,
     use_louis: bool,
     use_louis_land: bool,
     use_louis_ice: bool,
     nlev: gtx.int32,
 ) -> tuple[fa.CellKHalfField[wpfloat], fa.CellKHalfField[wpfloat]]:
     """
-    Compute the eddy viscosity and diffusivity at half-level cell centers based on
-    the Smagorinsky-Lilly eddy viscosity model.
+    Compute the eddy viscosity and diffusivity at half-level cell centers.
 
-    Port of ``Smagorinsky_model`` in ICON's ``mo_tmx_smagorinsky.f90``:
+    Port of ``Smagorinsky_model`` in ICON's ``mo_tmx_smagorinsky.f90`` and, with
+    ``use_km_const``, of ``Assign_constant_eddy_viscosity`` in ``mo_vdf_atmo.f90``:
     - interior half levels (0 < k < nlev):
-        km_ic = rho_ic * mixing_length_sq * stability_term
+        km_ic = rho_ic * mixing_length_sq * stability_term   (Smagorinsky-Lilly)
+        km_ic = rho_ic * km_const                            (use_km_const)
         kh_ic = km_ic * rturb_prandtl
     - boundary half levels are copies of the adjacent interior rows:
         k = 0 copies k = 1, k = nlev copies k = nlev - 1
@@ -786,45 +789,48 @@ def _compute_smagorinsky_viscosity(
     (``use_louis_ice = False``), cells with more than 50% land fraction and/or more
     than 50% ice fraction fall back to the classic formulation.
 
-    ``use_louis``, ``use_louis_land`` and ``use_louis_ice`` are scalar configuration
-    flags; they can be passed as static (compile-time) arguments so that only the
-    selected variant is compiled.
+    ``use_km_const``, ``use_louis``, ``use_louis_land`` and ``use_louis_ice`` are scalar
+    configuration flags; passed as static (compile-time) arguments, only the selected
+    variant is compiled.
     """
-    if use_louis:
-        stability_classic = _compute_stability_term_classic(
-            mech_prod=mech_prod, bruvais=bruvais, rturb_prandtl=rturb_prandtl
-        )
-        stability_louis = _compute_stability_term_louis(
-            mech_prod=mech_prod,
-            bruvais=bruvais,
-            scaling_factor_louis=scaling_factor_louis,
-            rturb_prandtl=rturb_prandtl,
-            louis_constant_b=louis_constant_b,
-        )
-        if use_louis_land:
-            if use_louis_ice:
-                stability_term = stability_louis
-            else:
-                stability_term = where(
-                    fract_ice > wpfloat("0.5"), stability_classic, stability_louis
-                )
-        else:
-            if use_louis_ice:
-                stability_term = where(
-                    fract_land > wpfloat("0.5"), stability_classic, stability_louis
-                )
-            else:
-                stability_term = where(
-                    (fract_land > wpfloat("0.5")) | (fract_ice > wpfloat("0.5")),
-                    stability_classic,
-                    stability_louis,
-                )
+    if use_km_const:
+        km = rho_ic * km_const
     else:
-        stability_term = _compute_stability_term_classic(
-            mech_prod=mech_prod, bruvais=bruvais, rturb_prandtl=rturb_prandtl
-        )
+        if use_louis:
+            stability_classic = _compute_stability_term_classic(
+                mech_prod=mech_prod, bruvais=bruvais, rturb_prandtl=rturb_prandtl
+            )
+            stability_louis = _compute_stability_term_louis(
+                mech_prod=mech_prod,
+                bruvais=bruvais,
+                scaling_factor_louis=scaling_factor_louis,
+                rturb_prandtl=rturb_prandtl,
+                louis_constant_b=louis_constant_b,
+            )
+            if use_louis_land:
+                if use_louis_ice:
+                    stability_term = stability_louis
+                else:
+                    stability_term = where(
+                        fract_ice > wpfloat("0.5"), stability_classic, stability_louis
+                    )
+            else:
+                if use_louis_ice:
+                    stability_term = where(
+                        fract_land > wpfloat("0.5"), stability_classic, stability_louis
+                    )
+                else:
+                    stability_term = where(
+                        (fract_land > wpfloat("0.5")) | (fract_ice > wpfloat("0.5")),
+                        stability_classic,
+                        stability_louis,
+                    )
+        else:
+            stability_term = _compute_stability_term_classic(
+                mech_prod=mech_prod, bruvais=bruvais, rturb_prandtl=rturb_prandtl
+            )
 
-    km = rho_ic * mixing_length_sq * stability_term
+        km = rho_ic * mixing_length_sq * stability_term
     km_ic = with_boundaries_on_half_levels_on_cells(
         top=km(dims.KHalfDim + 1), interior=km, bottom=km(dims.KHalfDim - 1), nlev=nlev
     )
@@ -833,7 +839,7 @@ def _compute_smagorinsky_viscosity(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_smagorinsky_viscosity(
+def compute_eddy_viscosity(
     mech_prod: fa.CellKHalfField[wpfloat],
     bruvais: fa.CellKHalfField[wpfloat],
     rho_ic: fa.CellKHalfField[wpfloat],
@@ -845,6 +851,8 @@ def compute_smagorinsky_viscosity(
     kh_ic: fa.CellKHalfField[wpfloat],
     rturb_prandtl: wpfloat,
     louis_constant_b: wpfloat,
+    km_const: wpfloat,
+    use_km_const: bool,
     use_louis: bool,
     use_louis_land: bool,
     use_louis_ice: bool,
@@ -854,7 +862,7 @@ def compute_smagorinsky_viscosity(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _compute_smagorinsky_viscosity(
+    _compute_eddy_viscosity(
         mech_prod=mech_prod,
         bruvais=bruvais,
         rho_ic=rho_ic,
@@ -864,70 +872,11 @@ def compute_smagorinsky_viscosity(
         fract_ice=fract_ice,
         rturb_prandtl=rturb_prandtl,
         louis_constant_b=louis_constant_b,
+        km_const=km_const,
+        use_km_const=use_km_const,
         use_louis=use_louis,
         use_louis_land=use_louis_land,
         use_louis_ice=use_louis_ice,
-        nlev=nlev,
-        out=(km_ic, kh_ic),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KHalfDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _assign_constant_viscosity(
-    rho_ic: fa.CellKHalfField[wpfloat],
-    km_const: wpfloat,
-    rturb_prandtl: wpfloat,
-    nlev: gtx.int32,
-) -> tuple[fa.CellKHalfField[wpfloat], fa.CellKHalfField[wpfloat]]:
-    """
-    Assign a constant eddy viscosity and diffusivity (for turbulence model validation).
-
-    Port of ``Assign_constant_eddy_viscosity`` in ICON's ``mo_vdf_atmo.f90``:
-    - interior half levels (0 < k < nlev):
-        km_ic = rho_ic * km_const
-        kh_ic = km_ic * rturb_prandtl
-    - boundary half levels are copies of the adjacent interior rows:
-        k = 0 copies k = 1, k = nlev copies k = nlev - 1
-      (Fortran 1-based: k = 1 <- k = 2, k = nlevp1 <- k = nlev).
-
-    Args:
-        rho_ic: air density at half-level cell centers
-        km_const: constant kinematic eddy viscosity
-        rturb_prandtl: reciprocal turbulent Prandtl number
-        nlev: number of full levels
-
-    Returns:
-        eddy viscosity km_ic and eddy diffusivity kh_ic at half levels
-    """
-    km = rho_ic * km_const
-    km_ic = with_boundaries_on_half_levels_on_cells(
-        top=km(dims.KHalfDim + 1), interior=km, bottom=km(dims.KHalfDim - 1), nlev=nlev
-    )
-    kh_ic = km_ic * rturb_prandtl
-    return km_ic, kh_ic
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def assign_constant_viscosity(
-    rho_ic: fa.CellKHalfField[wpfloat],
-    km_ic: fa.CellKHalfField[wpfloat],
-    kh_ic: fa.CellKHalfField[wpfloat],
-    km_const: wpfloat,
-    rturb_prandtl: wpfloat,
-    nlev: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _assign_constant_viscosity(
-        rho_ic=rho_ic,
-        km_const=km_const,
-        rturb_prandtl=rturb_prandtl,
         nlev=nlev,
         out=(km_ic, kh_ic),
         domain={
