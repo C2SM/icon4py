@@ -11,7 +11,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import typing
-from typing import Any, Final
+from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -153,9 +153,6 @@ class NonHydrostaticConfig:
         dycore_states.TimeSteppingScheme,
         common_conf_opt.ConfigOption(
             description="Options for predictor-corrector time-stepping scheme.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="itime_scheme", path=("nonhydrostatic_nml",)
-            ),
         ),
     ] = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
 
@@ -163,9 +160,6 @@ class NonHydrostaticConfig:
         dycore_states.RhoThetaAdvectionType,
         common_conf_opt.ConfigOption(
             description="Advection method for rho and theta.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="iadv_rhotheta", path=("nonhydrostatic_nml",)
-            ),
         ),
     ] = dycore_states.RhoThetaAdvectionType.MIURA
 
@@ -173,9 +167,6 @@ class NonHydrostaticConfig:
         dycore_states.HorizontalPressureDiscretizationType,
         common_conf_opt.ConfigOption(
             description=("Discretization of horizontal pressure gradient."),
-            icon_equivalent=common_conf_opt.IconOption(
-                name="igradp_method", path=("nonhydrostatic_nml",)
-            ),
         ),
     ] = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
 
@@ -183,10 +174,6 @@ class NonHydrostaticConfig:
         constants.RayleighType,
         common_conf_opt.ConfigOption(
             description="Type of Rayleigh damping.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="rayleigh_type",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = constants.RayleighType.KLEMP
 
@@ -194,10 +181,6 @@ class NonHydrostaticConfig:
         dycore_states.DivergenceDampingOrder,
         common_conf_opt.ConfigOption(
             description="Order of divergence damping.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="divdamp_order",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = dycore_states.DivergenceDampingOrder.COMBINED  # the ICON default is 4,
 
@@ -205,10 +188,6 @@ class NonHydrostaticConfig:
         dycore_states.DivergenceDampingType,
         common_conf_opt.ConfigOption(
             description="Type of divergence damping.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="divdamp_type",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL
 
@@ -216,10 +195,6 @@ class NonHydrostaticConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="Whether to use vertical nesting (variable number of vertical levels).",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="lvert_nest",
-                path=("run_nml",),
-            ),
         ),
     ] = False
 
@@ -227,10 +202,6 @@ class NonHydrostaticConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="Deep atmosphere mode.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="ldeepatmo",
-                path=("dynamics_nml",),
-            ),
         ),
     ] = False
 
@@ -238,11 +209,6 @@ class NonHydrostaticConfig:
         bool,
         common_conf_opt.ConfigOption(
             description="Start from DWD analysis with incremental analysis update.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="init_mode",
-                path=("initicon_nml",),
-                converter=lambda init_mode: bool(init_mode == 5),
-            ),
         ),
     ] = False
 
@@ -252,10 +218,6 @@ class NonHydrostaticConfig:
             description=(
                 "Apply additional momentum diffusion at grid points close to the stability "
                 "limit for vertical advection."
-            ),
-            icon_equivalent=common_conf_opt.IconOption(
-                name="lextra_diffu",
-                path=("nonhydrostatic_nml",),
             ),
         ),
     ] = True
@@ -268,10 +230,6 @@ class NonHydrostaticConfig:
                 "Specifying a negative value here reduces the amount of vertical "
                 "wind off-centering needed for stability of sound waves."
             ),
-            icon_equivalent=common_conf_opt.IconOption(
-                name="rhotheta_offctr",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = -0.1
 
@@ -279,10 +237,6 @@ class NonHydrostaticConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Off-centering of velocity advection in corrector step.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="veladv_offctr",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = 0.25
 
@@ -291,10 +245,6 @@ class NonHydrostaticConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Scaling factor for divergence damping at height 'fourth_order_divdamp_z' and below.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="divdamp_fac",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = 0.0025
 
@@ -302,10 +252,6 @@ class NonHydrostaticConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Scaling factor for divergence damping at height 'fourth_order_divdamp_z2'.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="divdamp_fac2",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = 0.004
 
@@ -313,10 +259,6 @@ class NonHydrostaticConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Scaling factor for divergence damping at height 'fourth_order_divdamp_z3'.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="divdamp_fac3",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = 0.004
 
@@ -324,10 +266,6 @@ class NonHydrostaticConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Scaling factor for divergence damping at height 'fourth_order_divdamp_z4 and higher'.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="divdamp_fac4",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = 0.004
 
@@ -337,10 +275,6 @@ class NonHydrostaticConfig:
             description=(
                 "Height up to which divdamp_fac is used, and where the linear profile "
                 "up to height 'fourth_order_divdamp_z2' starts"
-            ),
-            icon_equivalent=common_conf_opt.IconOption(
-                name="divdamp_z",
-                path=("nonhydrostatic_nml",),
             ),
         ),
     ] = 32500.0
@@ -352,10 +286,6 @@ class NonHydrostaticConfig:
                 "Height with scaling factor 'fourth_order_divdamp_factor2' where the linear profile starting at "
                 "'fourth_order_divdamp_z' ends, and where the quadratic profile up to 'fourth_order_divdamp_z4' starts."
             ),
-            icon_equivalent=common_conf_opt.IconOption(
-                name="divdamp_z2",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = 40000.0
 
@@ -366,10 +296,6 @@ class NonHydrostaticConfig:
                 "Height with scaling factor 'fourth_order_divdamp_factor3'. Needed to determine the quadratic function "
                 " between 'fourth_order_divdamp_z2' and 'fourth_order_divdamp_z4'."
             ),
-            icon_equivalent=common_conf_opt.IconOption(
-                name="divdamp_z3",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = 60000.0
 
@@ -377,19 +303,11 @@ class NonHydrostaticConfig:
         float,
         common_conf_opt.ConfigOption(
             description="Height from which scaling factor 'fourth_order_divdamp_factor4' is used.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="divdamp_z4",
-                path=("nonhydrostatic_nml",),
-            ),
         ),
     ] = 80000.0
 
     def __post_init__(self) -> None:
         self._validate()
-
-    @classmethod
-    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> NonHydrostaticConfig:
-        return common_conf_opt.construct_config_from_icon(cls, atmo_dict, **overrides)
 
     def _validate(self) -> None:
         """Apply consistency checks and validation on configuration parameters."""

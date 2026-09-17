@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import constants as phy_const, dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
@@ -39,12 +39,6 @@ class Gauss3DConfig:
     t0: float = 300.0
     brunt_vais: float = 0.01
     # The default values are from mo_nh_testcases.f90 and mo_nh_testcases_nml.f90
-
-    fortran_name_map: ClassVar[dict[str, str]] = {
-        "nh_u0": "u0",
-        "nh_t0": "t0",
-        "nh_brunt_vais": "brunt_vais",
-    }
 
 
 def gauss3d(

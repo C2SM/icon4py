@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
-import json
 import logging
 import pathlib
 import re
@@ -41,7 +40,6 @@ from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.io import io as common_io
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import tracer_states
-from icon4py.model.common.utils import fortran_config
 
 
 log = logging.getLogger(__name__)
@@ -101,16 +99,6 @@ class DriverConfig:
         str,
         common_conf_opt.ConfigOption(
             description="Name of the experiment",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="model_namelist_filename",
-                path=(
-                    "master_cfg",
-                    "master_model_nml",
-                ),
-                converter=lambda model_namelist_filename: model_namelist_filename.removeprefix(
-                    "NAMELIST_"
-                ).removesuffix("_sb_atm"),
-            ),
         ),
     ]
     profiling_options: typing.Annotated[
@@ -121,75 +109,30 @@ class DriverConfig:
         time.RelativeTime,
         common_conf_opt.ConfigOption(
             description="Time step duration.",
-            icon_equivalent=common_conf_opt.IconMultiOption(
-                options=[
-                    common_conf_opt.IconOption(
-                        name="dtime",
-                        path=(
-                            "model_cfg",
-                            "run_nml",
-                        ),
-                    ),
-                    common_conf_opt.IconOption(
-                        name="modeltimestep",
-                        path=(
-                            "model_cfg",
-                            "run_nml",
-                        ),
-                        converter=str.strip,
-                    ),
-                ],
-                converter=relativetime_from_iconformat,
-            ),
         ),
     ]
     start_of_simulation: typing.Annotated[
         time.AbsoluteTime,
         common_conf_opt.ConfigOption(
             description="Start date and time of a simulation.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="experimentstartdate",
-                path=(
-                    "master_cfg",
-                    "master_time_control_nml",
-                ),
-                converter=absolutetime_from_iconformat,
-            ),
         ),
     ]
     start_of_timestepping: typing.Annotated[
         time.AbsoluteTime,
         common_conf_opt.ConfigOption(
             description="Time from when to start or restart (initial run: equivalent to 'start_of_simulation')",
-            icon_equivalent=common_conf_opt.IconOption(  # always equal to start_of_simulation when reading from ICON
-                name="experimentstartdate",
-                path=(
-                    "master_cfg",
-                    "master_time_control_nml",
-                ),
-                converter=absolutetime_from_iconformat,
-            ),
         ),
     ]
     end_of_simulation: typing.Annotated[
         time.EndOfSimulation,
         common_conf_opt.ConfigOption(
             description="End date and time of a simulation.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="experimentstopdate",
-                path=(
-                    "master_cfg",
-                    "master_time_control_nml",
-                ),
-                converter=absolutetime_from_iconformat,
-            ),
         ),
     ]
     output_path: typing.Annotated[
         pathlib.Path,
         common_conf_opt.ConfigOption(
             description="Output directory path, relative to the working directory.",
-            icon_equivalent=None,
         ),
     ] = dataclasses.field(default_factory=lambda: pathlib.Path("./output"))
     apply_extra_second_order_divdamp: typing.Annotated[
@@ -200,41 +143,18 @@ class DriverConfig:
                 "Not a namelist variable, coded as follows in mo_nh_stepping.f90: "
                 "# IF (elapsed_time_global <= 7200._wp+0.5_wp*dtime .AND. .NOT. ltestcase)"
             ),
-            icon_equivalent=common_conf_opt.IconOption(
-                name="ltestcase",
-                path=(
-                    "model_cfg",
-                    "run_nml",
-                ),
-                converter=lambda value: not value,
-            ),
         ),
     ] = False
     do_prep_adv: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
             description="No description available yet.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="ltransport",
-                path=(
-                    "model_cfg",
-                    "run_nml",
-                ),
-            ),
         ),
     ] = False  # lprep_adv in fortran
     diffuse_before_time_loop: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
             description="No description available yet.",
-            icon_equivalent=common_conf_opt.IconOption(
-                name="ltestcase",
-                path=(
-                    "model_cfg",
-                    "run_nml",
-                ),
-                converter=lambda value: not value,
-            ),
         ),
     ] = False
     vertical_cfl_threshold: typing.Annotated[
@@ -244,33 +164,18 @@ class DriverConfig:
                 "Threshold for vertical advection CFL number at which the adaptive time step reduction "
                 "(increase of ndyn_substeps w.r.t. the fixed fast-physics time step) is triggered."
             ),
-            icon_equivalent=common_conf_opt.IconOption(
-                name="vcfl_threshold",
-                path=(
-                    "model_cfg",
-                    "nonhydrostatic_nml",
-                ),
-            ),
         ),
     ] = dataclasses.field(default_factory=lambda: ta.wpfloat(0.85))
     ndyn_substeps: typing.Annotated[
         int,
         common_conf_opt.ConfigOption(
             description="Number of dynamics substeps per time step.",
-            icon_equivalent=common_conf_opt.IconOption(
-                "ndyn_substeps",
-                (
-                    "model_cfg",
-                    "nonhydrostatic_nml",
-                ),
-            ),
         ),
     ] = 5
     enable_statistics_logging: typing.Annotated[
         bool,
         common_conf_opt.ConfigOption(
             description="Compute and log variable statistics.",
-            icon_equivalent=None,
         ),
     ] = False
     enable_output: typing.Annotated[
@@ -280,14 +185,12 @@ class DriverConfig:
                 "Enable output to file. For now this is only documented in "
                 "'icon4py.model.driver.driver_io'."
             ),
-            icon_equivalent=None,
         ),
     ] = False
     output_backend: typing.Annotated[
         common_io.OutputBackend,
         common_conf_opt.ConfigOption(
             description="File format of the output field groups ('netcdf' or 'zarr').",
-            icon_equivalent=None,
         ),
     ] = common_io.OutputBackend.ZARR
     output_mode: typing.Annotated[
@@ -299,7 +202,6 @@ class DriverConfig:
                 "MPI-parallel netCDF4 installation in multi-rank runs (see 'Parallel "
                 "netCDF' in 'icon4py.model.common.io')."
             ),
-            icon_equivalent=None,
         ),
     ] = common_io.OutputMode.DISTRIBUTED
 
@@ -314,20 +216,6 @@ class DriverConfig:
     def make_initial(cls, **kwargs: Any) -> DriverConfig:
         kwargs["start_of_timestepping"] = kwargs["start_of_simulation"]
         return cls(**kwargs)
-
-    @classmethod
-    def from_fortran_dict(
-        cls, *, atm_dict: dict[str, Any], master_dict: dict[str, Any], **overrides: Any
-    ) -> DriverConfig:
-        # TODO(ricoh): merge the dictionaries outside and put this method in a base class
-        return cls.make_initial(
-            **dict(
-                common_conf_opt.iter_pairs_from_icon(
-                    config_cls=cls, icon_config={"master_cfg": master_dict, "model_cfg": atm_dict}
-                )
-            ),
-            **overrides,
-        )
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -375,125 +263,6 @@ class ExperimentConfig(config_io.ConfigWithShared):
             else:
                 replacements[key] = value
         return dataclasses.replace(self, **replacements)
-
-
-def read_experiment_config_from_fortran(
-    config_file_path: pathlib.Path,
-    *,
-    enable_profiling: bool = False,
-    enable_statistics_output: bool = False,
-) -> ExperimentConfig:
-    """Assemble an :class:`ExperimentConfig` from a directory of serialized Fortran namelists."""
-
-    with (config_file_path / fortran_config.ATM_DICT_FNAME).open() as f:
-        atm_dict = json.load(f)
-    with (config_file_path / fortran_config.MASTER_DICT_FNAME).open() as f:
-        master_dict = json.load(f)
-    with (config_file_path / fortran_config.INPUT_DICT_FNAME).open() as f:
-        input_dict = json.load(f)
-
-    geometry_cfg = GeometryConfig(use_analytical_means=True)
-
-    metrics_cfg = metrics_factory.MetricsConfig.from_fortran_dict(atm_dict)
-
-    interpolation_cfg = interpolation_factory.InterpolationConfig.from_fortran_dict(atm_dict)
-
-    vertical_grid_cfg = v_grid.VerticalGridConfig.from_fortran_dict(atm_dict)
-
-    topography_cfg = topography.from_fortran_dict(
-        atm_dict=atm_dict, input_dict=input_dict, data_path=config_file_path
-    )
-
-    nonhydro_cfg = solve_nh.NonHydrostaticConfig.from_fortran_dict(
-        atm_dict,
-    )
-
-    diffusion_cfg = diffusion.DiffusionConfig.from_fortran_dict(
-        atm_dict,
-    )
-
-    do_tracer_advection = not (
-        "exclaim_ch_r04b09_dsl" in config_file_path.name
-        or "exclaim_ape_R02B04" in config_file_path.name
-    )
-    # The driver supplies advection's inputs (airmass and the mass fluxes the dycore
-    # accumulates over the substeps), and exclaim_ape_aesPhys runs tracer advection:
-    # the driver test validates transport+muphys against the end-of-time-step
-    # reference (hydrometeors bit-exact, see the test_driver docstring).
-    # The two experiments above stay disabled until their runs are validated the same
-    # way (their datatests do not compare tracers yet).
-    # TODO (jcanton): this isn't the right place to keep a special case
-    # handling. Either fix these experiments or move the special case handling.
-    tracer_advection_cfg = (
-        tracer_advection.AdvectionConfig.from_fortran_dict(atm_dict)
-        if do_tracer_advection
-        else None
-    )
-    ntracer = (
-        fortran_config.list_to_value(atm_dict["run_nml"]["ntracer"]) if do_tracer_advection else 0
-    )
-    # AES physics implies muphys is active for the experiments we support today; the presence
-    # of the aes_phy_nml namelist mirrors the graupel `do_physics` check below. A robust
-    # dt_mig>0 check needs the raw namelist (see docs/2026-07-22-muphys-namelist-dt-mig-gate.md).
-    aes_physics_on = "aes_phy_nml" in atm_dict
-    tracer_cfg = (
-        tracer_states.TracerConfig.all()
-        if aes_physics_on
-        else tracer_states.TracerConfig.from_ntracer(ntracer)
-    )
-
-    do_physics = "nwp_phy_nml" in atm_dict and "nwp_tuning_nml" in atm_dict
-    # If these two namelists are missing it means that the experiment was run
-    # without microphysics and we have to skip parsing the graupel config which
-    # relies on some of these parameters.
-    graupel_cfg = (
-        graupel.SingleMomentSixClassIconGraupelConfig.from_fortran_dict(atm_dict)
-        if do_physics
-        else None
-    )
-
-    profiling_stats = ProfilingConfig() if enable_profiling else None
-    driver_cfg = DriverConfig.from_fortran_dict(
-        atm_dict=atm_dict,
-        master_dict=master_dict,
-        profiling_options=profiling_stats,
-        enable_statistics_logging=enable_statistics_output,
-    )
-
-    # the file-based initial condition needs the clock of the driver to know which
-    # savepoint to read: the initial state, or a later one when restarting
-    initial_condition_cfg = initial_condition.from_fortran_dict(
-        atm_dict=atm_dict,
-        input_dict=input_dict,
-        data_path=config_file_path,
-        start_of_simulation=driver_cfg.start_of_simulation,
-        start_of_timestepping=driver_cfg.start_of_timestepping,
-        dtime=driver_cfg.dtime,
-    )
-
-    if not do_tracer_advection and isinstance(initial_condition_cfg, from_file.FromFileConfig):
-        initial_condition_cfg = dataclasses.replace(initial_condition_cfg, ntracer=0)
-
-    muphys_cfg = muphys_config.MuphysConfig() if aes_physics_on else None
-
-    return ExperimentConfig(
-        geometry=geometry_cfg,
-        metrics=metrics_cfg,
-        interpolation=interpolation_cfg,
-        vertical_grid=vertical_grid_cfg,
-        nonhydrostatic=nonhydro_cfg,
-        diffusion=diffusion_cfg,
-        tracer_config=tracer_cfg,
-        tracer_advection=tracer_advection_cfg,
-        graupel=graupel_cfg,
-        muphys=muphys_cfg,
-        topography=topography_cfg,
-        initial_condition=initial_condition_cfg,
-        prescribed_tendencies=prescribed_tendencies.PrescribedTendenciesConfig.from_fortran_dict(
-            atm_dict=atm_dict, data_path=config_file_path
-        ),
-        driver=driver_cfg,
-    )
 
 
 def read_experiment_config_from_yaml(config_file_path: pathlib.Path) -> ExperimentConfig:

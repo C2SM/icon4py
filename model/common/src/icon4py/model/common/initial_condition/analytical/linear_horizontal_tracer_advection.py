@@ -12,7 +12,7 @@ import dataclasses
 import enum
 import math
 import typing
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 from icon4py.model.common.config import config_io, options as common_conf_opt
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, icon as icon_grid
@@ -72,39 +72,32 @@ class LinearHorizontalAdvectionConfig:
         HorizontalTracerProfile,
         common_conf_opt.ConfigOption(
             description="Initial tracer profile.",
-            icon_equivalent=None,
         ),
     ] = HorizontalTracerProfile.GAUSSIAN_2D
     velocity_field: typing.Annotated[
         HorizontalVelocityField,
         common_conf_opt.ConfigOption(
             description="Velocity field for transporting the tracer.",
-            icon_equivalent=None,
         ),
     ] = HorizontalVelocityField.UNIFORM_XY
     cfl_number: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
             description="Maximum CFL number for determination of the time step.",
-            icon_equivalent=None,
         ),
     ] = 0.8
     initial_center: typing.Annotated[
         tuple[float, float],
         common_conf_opt.ConfigOption(
             description="Initial center of the tracer profile relative to the model domain size in x and y directions.",
-            icon_equivalent=None,
         ),
     ] = (0.5, 0.5)
     decay_radius: typing.Annotated[
         float,
         common_conf_opt.ConfigOption(
             description="Decay radius for the Gaussian tracer profile (0.001 fraction), relative to the model domain size.",
-            icon_equivalent=None,
         ),
     ] = 0.25
-
-    fortran_name_map: ClassVar[dict[str, str]] = {}
 
 
 def compute_max_velocity(
