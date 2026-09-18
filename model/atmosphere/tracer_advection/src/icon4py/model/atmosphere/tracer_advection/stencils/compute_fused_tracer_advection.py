@@ -560,8 +560,6 @@ def compute_tracer_advection_odd_timestep_before_horizontal_limiter(
     )
 
 
-
-
 @gtx.field_operator
 def _compute_tracer_advection_after_horizontal_limiter(
     r_m: fa.CellKField[ta.wpfloat],
@@ -651,9 +649,7 @@ def _compute_tracer_advection_after_horizontal_limiter(
     )
     # Even: pass through the vertical flux already written by the before program.
     # Odd: use the newly computed vertical flux.
-    p_mflx_tracer_v_out = (
-        p_mflx_tracer_v if (do_vertical_first == 1) else p_mflx_tracer_v_computed
-    )
+    p_mflx_tracer_v_out = p_mflx_tracer_v if (do_vertical_first == 1) else p_mflx_tracer_v_computed
     # Even: horizontal integration gives the final tracer.
     # Odd: integrate vertically using the computed flux.
     p_tracer_new = (
