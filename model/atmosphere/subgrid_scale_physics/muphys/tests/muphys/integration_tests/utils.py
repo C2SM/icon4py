@@ -22,7 +22,7 @@ from icon4py.model.testing import (
 
 
 def _path_to_experiment_testdata(experiment: MuphysExperiment) -> pathlib.Path:
-    return config.TEST_DATA_PATH / test_defs.MUPHYS_DATA_DIR / "full_mphys" / experiment.name
+    return config.TEST_DATA_PATH / test_defs.MUPHYS_DATA_DIR / "full_muphys" / experiment.name
 
 
 @dataclasses.dataclass(frozen=True)
