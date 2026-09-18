@@ -136,8 +136,6 @@ def _compute_velocity_advection_in_predictor_step(
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     area_edge: fa.EdgeField[ta.wpfloat],
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
-    scalfac_exdiff: ta.wpfloat,
-    cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
     skip_compute_predictor_vertical_advection: bool,
     apply_extra_diffusion_on_vn: bool,
@@ -200,8 +198,6 @@ def _compute_velocity_advection_in_predictor_step(
         area=area,
         geofac_n2s=geofac_n2s,
         owner_mask=owner_mask,
-        scalfac_exdiff=scalfac_exdiff,
-        cfl_w_limit=cfl_w_limit,
         dtime=dtime,
         skip_vertical_wind_advective_tendency=skip_compute_predictor_vertical_advection,
         nlev=nlev,
@@ -233,8 +229,6 @@ def _compute_velocity_advection_in_predictor_step(
         tangent_orientation=tangent_orientation,
         inv_primal_edge_length=inv_primal_edge_length,
         geofac_grdiv=geofac_grdiv,
-        cfl_w_limit=cfl_w_limit,
-        scalfac_exdiff=scalfac_exdiff,
         dtime=dtime,
         apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
         nlev=nlev,
@@ -291,8 +285,6 @@ def compute_velocity_advection_in_predictor_step(
     ddqz_z_full_e: fa.EdgeKField[ta.vpfloat],
     area_edge: fa.EdgeField[ta.wpfloat],
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
-    scalfac_exdiff: ta.wpfloat,
-    cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
     skip_compute_predictor_vertical_advection: bool,
     apply_extra_diffusion_on_vn: bool,
@@ -350,8 +342,6 @@ def compute_velocity_advection_in_predictor_step(
         - ddqz_z_full_e: metrics field equal to vertical spacing
         - area_edge: area associated with each edge
         - geofac_grdiv: metrics field used to compute the gradient of a divergence (of vn)
-        - scalfac_exdiff: scalar factor for external diffusion
-        - cfl_w_limit: CFL limit for vertical velocity
         - dtime: time step
         - skip_compute_predictor_vertical_advection: logical flag to skip the vertical advection
         - apply_extra_diffusion_on_vn: option to apply extra diffusion to vn
@@ -396,8 +386,6 @@ def compute_velocity_advection_in_predictor_step(
         ddqz_z_full_e=ddqz_z_full_e,
         area_edge=area_edge,
         geofac_grdiv=geofac_grdiv,
-        scalfac_exdiff=scalfac_exdiff,
-        cfl_w_limit=cfl_w_limit,
         dtime=dtime,
         skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
         apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,

@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import (
+    VerticalCflConstants,
     _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelmask,
     _clip_contravariant_corrected_w,
     _compute_advective_normal_wind_tendency,
@@ -153,7 +154,6 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
     w: np.ndarray,
     contravariant_correction_at_cells_on_half_levels: np.ndarray,
     ddqz_z_half: np.ndarray,
-    cfl_w_limit: ta.wpfloat,
     dtime: ta.wpfloat,
     nlev: int,
     end_index_of_damping_layer: int,
@@ -168,7 +168,10 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
     )
 
     cfl_clipping = np.where(
-        (np.abs(contravariant_corrected_w_at_cells_on_half_levels) > cfl_w_limit * ddqz_z_half)
+        (
+            np.abs(contravariant_corrected_w_at_cells_on_half_levels) * dtime / ddqz_z_half
+            > VerticalCflConstants.W_LIMIT
+        )
         & condition,
         np.ones([num_rows, num_cols]),
         np.zeros_like(contravariant_corrected_w_at_cells_on_half_levels),
@@ -229,8 +232,6 @@ def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
     geofac_n2s: np.ndarray,
     w: np.ndarray,
     vertical_wind_advective_tendency: np.ndarray,
-    scalfac_exdiff: ta.wpfloat,
-    cfl_w_limit: ta.wpfloat,
     dtime: ta.wpfloat,
 ) -> np.ndarray:
     owner_mask = np.expand_dims(owner_mask, axis=-1)
@@ -239,11 +240,12 @@ def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
 
     difcoef = np.where(
         (cfl_clipping == 1) & (owner_mask == 1),
-        scalfac_exdiff
+        VerticalCflConstants.EXTRA_DIFFUSION_SCALING
+        / dtime
         * np.minimum(
-            0.85 - cfl_w_limit * dtime,
+            VerticalCflConstants.W_MAX - VerticalCflConstants.W_LIMIT,
             np.abs(contravariant_corrected_w_at_cells_on_half_levels) * dtime / ddqz_z_half
-            - cfl_w_limit * dtime,
+            - VerticalCflConstants.W_LIMIT,
         ),
         0,
     )
@@ -298,8 +300,6 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
     area: np.ndarray,
     geofac_n2s: np.ndarray,
     owner_mask: np.ndarray,
-    scalfac_exdiff: ta.wpfloat,
-    cfl_w_limit: ta.wpfloat,
     dtime: ta.wpfloat,
     nlev: int,
     end_index_of_damping_layer: int,
@@ -340,8 +340,6 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
             geofac_n2s=geofac_n2s,
             w=w[:, :-1],
             vertical_wind_advective_tendency=vertical_wind_advective_tendency,
-            scalfac_exdiff=scalfac_exdiff,
-            cfl_w_limit=cfl_w_limit,
             dtime=dtime,
         ),
         vertical_wind_advective_tendency,
@@ -401,8 +399,6 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
     geofac_grdiv: np.ndarray,
     vn: np.ndarray,
     normal_wind_advective_tendency: np.ndarray,
-    cfl_w_limit: ta.wpfloat,
-    scalfac_exdiff: ta.wpfloat,
     dtime: ta.wpfloat,
 ) -> np.ndarray:
     c_lin_e = np.expand_dims(c_lin_e, axis=-1)
@@ -422,19 +418,26 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
     )
 
     difcoef = np.where(
-        (np.abs(contravariant_corrected_w_at_edges_on_model_levels) > cfl_w_limit * ddqz_z_full_e),
-        scalfac_exdiff
-        * np.minimum(
-            0.85 - cfl_w_limit * dtime,
+        (
             np.abs(contravariant_corrected_w_at_edges_on_model_levels) * dtime / ddqz_z_full_e
-            - cfl_w_limit * dtime,
+            > VerticalCflConstants.W_LIMIT
+        ),
+        VerticalCflConstants.EXTRA_DIFFUSION_SCALING
+        / dtime
+        * np.minimum(
+            VerticalCflConstants.W_MAX - VerticalCflConstants.W_LIMIT,
+            np.abs(contravariant_corrected_w_at_edges_on_model_levels) * dtime / ddqz_z_full_e
+            - VerticalCflConstants.W_LIMIT,
         ),
         np.zeros_like(vn),
     )
     e2v = connectivities[dims.E2V]
     e2c2eo = connectivities[dims.E2C2EO]
     return np.where(
-        (np.abs(contravariant_corrected_w_at_edges_on_model_levels) > cfl_w_limit * ddqz_z_full_e),
+        (
+            np.abs(contravariant_corrected_w_at_edges_on_model_levels) * dtime / ddqz_z_full_e
+            > VerticalCflConstants.W_LIMIT
+        ),
         normal_wind_advective_tendency
         + difcoef
         * area_edge
@@ -473,8 +476,6 @@ def compute_advection_in_horizontal_momentum_numpy(
     tangent_orientation: np.ndarray,
     inv_primal_edge_length: np.ndarray,
     geofac_grdiv: np.ndarray,
-    cfl_w_limit: ta.wpfloat,
-    scalfac_exdiff: ta.wpfloat,
     dtime: ta.wpfloat,
     apply_extra_diffusion_on_vn: bool,
     nlev: int,
@@ -517,8 +518,6 @@ def compute_advection_in_horizontal_momentum_numpy(
                 geofac_grdiv=geofac_grdiv,
                 vn=vn,
                 normal_wind_advective_tendency=normal_wind_advective_tendency,
-                cfl_w_limit=cfl_w_limit,
-                scalfac_exdiff=scalfac_exdiff,
                 dtime=dtime,
             ),
             normal_wind_advective_tendency,
@@ -562,17 +561,15 @@ def compute_extra_diffusion_for_w_numpy(
     area: np.ndarray,
     geofac_n2s: np.ndarray,
     w: np.ndarray,
-    scalfac_exdiff: ta.wpfloat,
-    cfl_w_limit: ta.wpfloat,
     dtime: ta.wpfloat,
 ) -> np.ndarray:
     area = np.expand_dims(area, axis=-1)
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
 
-    difcoef = scalfac_exdiff * np.minimum(
-        0.85 - cfl_w_limit * dtime,
+    difcoef = (VerticalCflConstants.EXTRA_DIFFUSION_SCALING / dtime) * np.minimum(
+        VerticalCflConstants.W_MAX - VerticalCflConstants.W_LIMIT,
         np.abs(contravariant_corrected_w_at_cells_on_half_levels) * dtime / ddqz_z_half
-        - cfl_w_limit * dtime,
+        - VerticalCflConstants.W_LIMIT,
     )
 
     c2e2cO = connectivities[dims.C2E2CO]
@@ -648,8 +645,6 @@ class TestComputeExtraDiffusionForW(stencil_tests.StencilTest):
         area: np.ndarray,
         geofac_n2s: np.ndarray,
         w: np.ndarray,
-        scalfac_exdiff: ta.wpfloat,
-        cfl_w_limit: ta.wpfloat,
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
@@ -662,8 +657,6 @@ class TestComputeExtraDiffusionForW(stencil_tests.StencilTest):
                 area=area,
                 geofac_n2s=geofac_n2s,
                 w=w,
-                scalfac_exdiff=scalfac_exdiff,
-                cfl_w_limit=cfl_w_limit,
                 dtime=dtime,
             )
         )
@@ -689,8 +682,6 @@ class TestComputeExtraDiffusionForW(stencil_tests.StencilTest):
             area=area,
             geofac_n2s=geofac_n2s,
             w=w,
-            scalfac_exdiff=ta.wpfloat("10.0"),
-            cfl_w_limit=ta.vpfloat("3.0"),
             dtime=ta.wpfloat("2.0"),
             out=extra_diffusion,
             domain={
@@ -710,12 +701,12 @@ class TestComputeCfl(stencil_tests.StencilTest):
         *,
         ddqz_z_half: np.ndarray,
         contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
-        cfl_w_limit: ta.anyfloat,
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
         cfl_clipping = (
-            np.abs(contravariant_corrected_w_at_cells_on_half_levels) > cfl_w_limit * ddqz_z_half
+            np.abs(contravariant_corrected_w_at_cells_on_half_levels) * dtime / ddqz_z_half
+            > VerticalCflConstants.W_LIMIT
         )
         vertical_cfl = np.where(
             cfl_clipping,
@@ -735,7 +726,6 @@ class TestComputeCfl(stencil_tests.StencilTest):
             contravariant_corrected_w_at_cells_on_half_levels=data_alloc.random_field(
                 dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat
             ),
-            cfl_w_limit=ta.vpfloat("0.5"),
             dtime=ta.wpfloat("2.0"),
             out=(
                 data_alloc.random_mask(dims.CellDim, dims.KHalfDim),
@@ -1040,8 +1030,6 @@ class TestAddExtraDiffusionForNormalWindTendencyWithoutLevelmask(stencil_tests.S
         geofac_grdiv: np.ndarray,
         vn: np.ndarray,
         normal_wind_advective_tendency: np.ndarray,
-        cfl_w_limit: ta.wpfloat,
-        scalfac_exdiff: ta.wpfloat,
         dtime: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
@@ -1059,8 +1047,6 @@ class TestAddExtraDiffusionForNormalWindTendencyWithoutLevelmask(stencil_tests.S
                 geofac_grdiv=geofac_grdiv,
                 vn=vn,
                 normal_wind_advective_tendency=normal_wind_advective_tendency,
-                cfl_w_limit=cfl_w_limit,
-                scalfac_exdiff=scalfac_exdiff,
                 dtime=dtime,
             )
         )
@@ -1089,8 +1075,6 @@ class TestAddExtraDiffusionForNormalWindTendencyWithoutLevelmask(stencil_tests.S
             normal_wind_advective_tendency=data_alloc.random_field(
                 dims.EdgeDim, dims.KDim, dtype=ta.vpfloat
             ),
-            cfl_w_limit=ta.vpfloat(0.65 / dtime),
-            scalfac_exdiff=ta.wpfloat("0.05"),
             dtime=dtime,
             out=data_alloc.random_field(dims.EdgeDim, dims.KDim, dtype=ta.vpfloat),
             domain={

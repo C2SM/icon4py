@@ -461,12 +461,6 @@ class NonHydrostaticParams:
         """
 
 
-def _velocity_advection_scale_factors(dtime: float) -> tuple[float, float]:
-    scaled_cfl_w_limit = 0.65 / dtime
-    scalfac_exdiff = 0.05 / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
-    return scaled_cfl_w_limit, scalfac_exdiff
-
-
 def _update_max_vertical_cfl(
     diagnostic_state: nonhydro_states.DiagnosticStateNonHydro,
     vertical_cfl: fa.CellKHalfField[ta.anyfloat],
@@ -1280,9 +1274,7 @@ class SolveNonhydro:
                 and not (at_initial_timestep and at_first_substep)
             )
 
-            cfl_w_limit, scalfac_exdiff = _velocity_advection_scale_factors(dtime)
-
-            # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime`
+            # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > VerticalCflConstants.W_LIMIT`
             # from the reduction below, we would have to synchronize with the device before this call.
             # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
             apply_extra_diffusion_on_vn = True
@@ -1300,8 +1292,6 @@ class SolveNonhydro:
                 normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
                 vn=prognostic_states.current.vn,
                 w=prognostic_states.current.w,
-                scalfac_exdiff=scalfac_exdiff,
-                cfl_w_limit=cfl_w_limit,
                 dtime=dtime,
                 skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
                 apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
@@ -1483,9 +1473,7 @@ class SolveNonhydro:
         )
 
         log.debug("corrector run velocity advection")
-        cfl_w_limit, scalfac_exdiff = _velocity_advection_scale_factors(dtime)
-
-        # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime`
+        # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > VerticalCflConstants.W_LIMIT`
         # from the reduction below, we would have to synchronize with the device before this call.
         # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
         apply_extra_diffusion_on_vn = True
@@ -1501,8 +1489,6 @@ class SolveNonhydro:
             vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels=z_fields.horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-            scalfac_exdiff=scalfac_exdiff,
-            cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
         )

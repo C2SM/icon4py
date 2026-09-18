@@ -112,8 +112,6 @@ class TestComputeVelocityAdvectionInPredictorStep(stencil_tests.StencilTest):
         ddqz_z_full_e: np.ndarray,
         area_edge: np.ndarray,
         geofac_grdiv: np.ndarray,
-        scalfac_exdiff: ta.wpfloat,
-        cfl_w_limit: ta.wpfloat,
         dtime: ta.wpfloat,
         skip_compute_predictor_vertical_advection: bool,
         apply_extra_diffusion_on_vn: bool,
@@ -168,7 +166,6 @@ class TestComputeVelocityAdvectionInPredictorStep(stencil_tests.StencilTest):
             w=w[:, :-1],
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels_new,
             ddqz_z_half=ddqz_z_half[:, :-1],
-            cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             nlev=nlev,
             end_index_of_damping_layer=end_index_of_damping_layer,
@@ -202,8 +199,6 @@ class TestComputeVelocityAdvectionInPredictorStep(stencil_tests.StencilTest):
                 area=area,
                 geofac_n2s=geofac_n2s,
                 owner_mask=owner_mask,
-                scalfac_exdiff=scalfac_exdiff,
-                cfl_w_limit=cfl_w_limit,
                 dtime=dtime,
                 nlev=nlev,
                 end_index_of_damping_layer=end_index_of_damping_layer,
@@ -232,8 +227,6 @@ class TestComputeVelocityAdvectionInPredictorStep(stencil_tests.StencilTest):
             tangent_orientation=tangent_orientation,
             inv_primal_edge_length=inv_primal_edge_length,
             geofac_grdiv=geofac_grdiv,
-            cfl_w_limit=cfl_w_limit,
-            scalfac_exdiff=scalfac_exdiff,
             dtime=dtime,
             apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
             nlev=nlev,
@@ -346,7 +339,8 @@ class TestComputeVelocityAdvectionInPredictorStep(stencil_tests.StencilTest):
         tangent_orientation = data_alloc.random_field(dims.EdgeDim, low=1.0e-5)
         e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim)
         wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
-        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        # positive thicknesses: the CFL clipping compares |w| * dtime / ddqz_z_half with the limit
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KHalfDim, low=0.0)
         area = data_alloc.random_field(dims.CellDim)
         geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
         owner_mask = data_alloc.random_mask(dims.CellDim)
@@ -359,9 +353,7 @@ class TestComputeVelocityAdvectionInPredictorStep(stencil_tests.StencilTest):
         area_edge = data_alloc.random_field(dims.EdgeDim)
         geofac_grdiv = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
 
-        scalfac_exdiff = 10.0
         dtime = 2.0
-        cfl_w_limit = 0.65 / dtime
 
         # values are set to reflect the MCH ch1 experiment. Changing them changes the runtime
         nflatlev = 5
@@ -416,8 +408,6 @@ class TestComputeVelocityAdvectionInPredictorStep(stencil_tests.StencilTest):
             ddqz_z_full_e=ddqz_z_full_e,
             area_edge=area_edge,
             geofac_grdiv=geofac_grdiv,
-            scalfac_exdiff=scalfac_exdiff,
-            cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             skip_compute_predictor_vertical_advection=request.param[
                 "skip_compute_predictor_vertical_advection"

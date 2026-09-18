@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import enum
+
 import gt4py.next as gtx
 from gt4py.next import (
     abs,  # noqa: A004
@@ -27,6 +29,14 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp i
 )
 from icon4py.model.common.math.stencils.compute_curl import _compute_curl
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+class VerticalCflConstants(ta.wpfloat, enum.Enum):
+    #: w is clipped and extra diffusion is applied above this vertical CFL number
+    W_LIMIT = 0.65
+    #: w is clipped to this vertical CFL number
+    W_MAX = 0.85
+    EXTRA_DIFFUSION_SCALING = 0.05 / (W_MAX - W_LIMIT)
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -117,19 +127,17 @@ def _compute_extra_diffusion_for_w(
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     w: fa.CellKHalfField[ta.wpfloat],
-    scalfac_exdiff: ta.wpfloat,
-    cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.wpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_18."""
-    contravariant_corrected_w_at_cells_on_half_levels_wp, ddqz_z_half_wp, cfl_w_limit_wp = astype(
-        (contravariant_corrected_w_at_cells_on_half_levels, ddqz_z_half, cfl_w_limit), wpfloat
+    contravariant_corrected_w_at_cells_on_half_levels_wp, ddqz_z_half_wp = astype(
+        (contravariant_corrected_w_at_cells_on_half_levels, ddqz_z_half), wpfloat
     )
 
-    difcoef = scalfac_exdiff * minimum(
-        wpfloat("0.85") - cfl_w_limit_wp * dtime,
+    difcoef = (VerticalCflConstants.EXTRA_DIFFUSION_SCALING / dtime) * minimum(
+        VerticalCflConstants.W_MAX - VerticalCflConstants.W_LIMIT,
         abs(contravariant_corrected_w_at_cells_on_half_levels_wp) * dtime / ddqz_z_half_wp
-        - cfl_w_limit_wp * dtime,
+        - VerticalCflConstants.W_LIMIT,
     )
 
     return difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=dims.C2E2CODim)
@@ -139,22 +147,25 @@ def _compute_extra_diffusion_for_w(
 def _compute_cfl(
     ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
     contravariant_corrected_w_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
-    cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
 ) -> tuple[fa.CellKHalfField[bool], fa.CellKHalfField[ta.vpfloat]]:
     contravariant_corrected_w_at_cells_on_half_levels_wp, ddqz_z_half_wp = astype(
         (contravariant_corrected_w_at_cells_on_half_levels, ddqz_z_half), wpfloat
     )
 
+    vertical_cfl_number = (
+        contravariant_corrected_w_at_cells_on_half_levels_wp * dtime / ddqz_z_half_wp
+    )
+
     cfl_clipping = where(
-        abs(contravariant_corrected_w_at_cells_on_half_levels) > cfl_w_limit * ddqz_z_half,
+        abs(vertical_cfl_number) > VerticalCflConstants.W_LIMIT,
         broadcast(True, (dims.CellDim, dims.KHalfDim)),
         False,
     )
 
     vertical_cfl = where(
         cfl_clipping,
-        contravariant_corrected_w_at_cells_on_half_levels_wp * dtime / ddqz_z_half_wp,
+        vertical_cfl_number,
         broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )
 
@@ -173,15 +184,17 @@ def _clip_contravariant_corrected_w(
         contravariant_corrected_w_at_cells_on_half_levels, wpfloat
     )
 
+    maximum_vertical_cfl = astype(VerticalCflConstants.W_MAX, vpfloat)
+
     contravariant_corrected_w_at_cells_on_half_levels_wp = where(
-        (cfl_clipping) & (vertical_cfl < -vpfloat("0.85")),
-        astype(-vpfloat("0.85") * ddqz_z_half, wpfloat) / dtime,
+        (cfl_clipping) & (vertical_cfl < -maximum_vertical_cfl),
+        astype(-maximum_vertical_cfl * ddqz_z_half, wpfloat) / dtime,
         contravariant_corrected_w_at_cells_on_half_levels_wp,
     )
 
     contravariant_corrected_w_at_cells_on_half_levels_wp = where(
-        (cfl_clipping) & (vertical_cfl > vpfloat("0.85")),
-        astype(vpfloat("0.85") * ddqz_z_half, wpfloat) / dtime,
+        (cfl_clipping) & (vertical_cfl > maximum_vertical_cfl),
+        astype(maximum_vertical_cfl * ddqz_z_half, wpfloat) / dtime,
         contravariant_corrected_w_at_cells_on_half_levels_wp,
     )
 
@@ -205,7 +218,6 @@ def _compute_contravariant_corrected_w_and_cfl(
     w: fa.CellKHalfField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKHalfField[ta.vpfloat],
     ddqz_z_half: fa.CellKHalfField[ta.vpfloat],
-    cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
     nlev: gtx.int32,
     end_index_of_damping_layer: gtx.int32,
@@ -220,7 +232,6 @@ def _compute_contravariant_corrected_w_and_cfl(
         _compute_cfl(
             ddqz_z_half=ddqz_z_half,
             contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
-            cfl_w_limit=cfl_w_limit,
             dtime=dtime,
         ),
         (
@@ -258,8 +269,6 @@ def _compute_advective_vertical_wind_tendency(
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     owner_mask: fa.CellField[bool],
-    scalfac_exdiff: ta.wpfloat,
-    cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
 ) -> fa.CellKHalfField[ta.vpfloat]:
     # TODO(havogt): the wp-vp roundtrips are here to be faithful to ICON's mixed precision.
@@ -286,8 +295,6 @@ def _compute_advective_vertical_wind_tendency(
         area,
         geofac_n2s,
         w,
-        scalfac_exdiff,
-        cfl_w_limit,
         dtime,
     )
 
@@ -326,8 +333,6 @@ def _compute_advection_in_vertical_momentum(
     area: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     owner_mask: fa.CellField[bool],
-    scalfac_exdiff: ta.wpfloat,
-    cfl_w_limit: ta.vpfloat,
     dtime: ta.wpfloat,
     skip_vertical_wind_advective_tendency: bool,
     nlev: gtx.int32,
@@ -341,7 +346,6 @@ def _compute_advection_in_vertical_momentum(
         w=w,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
-        cfl_w_limit=cfl_w_limit,
         dtime=dtime,
         nlev=nlev,
         end_index_of_damping_layer=end_index_of_damping_layer,
@@ -365,8 +369,6 @@ def _compute_advection_in_vertical_momentum(
             area=area,
             geofac_n2s=geofac_n2s,
             owner_mask=owner_mask,
-            scalfac_exdiff=scalfac_exdiff,
-            cfl_w_limit=cfl_w_limit,
             dtime=dtime,
         )
         if not skip_vertical_wind_advective_tendency
@@ -488,21 +490,17 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
-    cfl_w_limit: ta.vpfloat,
-    scalfac_exdiff: ta.wpfloat,
     dtime: ta.wpfloat,
 ) -> fa.EdgeKField[ta.vpfloat]:
     (
         contravariant_corrected_w_at_cells_on_model_levels_wp,
         ddqz_z_full_e_wp,
         normal_wind_advective_tendency_wp,
-        cfl_w_limit_wp,
     ) = astype(
         (
             contravariant_corrected_w_at_cells_on_model_levels,
             ddqz_z_full_e,
             normal_wind_advective_tendency,
-            cfl_w_limit,
         ),
         wpfloat,
     )
@@ -511,14 +509,15 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
     contravariant_corrected_w_at_edges_on_model_levels = neighbor_sum(
         c_lin_e * contravariant_corrected_w_at_cells_on_model_levels_wp(E2C), axis=dims.E2CDim
     )
-    difcoef = scalfac_exdiff * minimum(
-        wpfloat("0.85") - cfl_w_limit_wp * dtime,
+    vertical_cfl_number_at_edges = (
         abs(contravariant_corrected_w_at_edges_on_model_levels) * dtime / ddqz_z_full_e_wp
-        - cfl_w_limit_wp * dtime,
+    )
+    difcoef = (VerticalCflConstants.EXTRA_DIFFUSION_SCALING / dtime) * minimum(
+        VerticalCflConstants.W_MAX - VerticalCflConstants.W_LIMIT,
+        vertical_cfl_number_at_edges - VerticalCflConstants.W_LIMIT,
     )
     normal_wind_advective_tendency_wp = where(
-        abs(contravariant_corrected_w_at_edges_on_model_levels)
-        > astype(cfl_w_limit * ddqz_z_full_e, wpfloat),
+        vertical_cfl_number_at_edges > VerticalCflConstants.W_LIMIT,
         normal_wind_advective_tendency_wp
         + _compute_extra_diffusion(
             vn=vn,
@@ -551,8 +550,6 @@ def _compute_advection_in_horizontal_momentum(
     tangent_orientation: fa.EdgeField[ta.wpfloat],
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
-    cfl_w_limit: ta.vpfloat,
-    scalfac_exdiff: ta.wpfloat,
     dtime: ta.wpfloat,
     apply_extra_diffusion_on_vn: bool,
     nlev: gtx.int32,
@@ -587,8 +584,6 @@ def _compute_advection_in_horizontal_momentum(
                 geofac_grdiv=geofac_grdiv,
                 vn=vn,
                 normal_wind_advective_tendency=normal_wind_advective_tendency,
-                cfl_w_limit=cfl_w_limit,
-                scalfac_exdiff=scalfac_exdiff,
                 dtime=dtime,
             ),
             normal_wind_advective_tendency,

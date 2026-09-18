@@ -13,6 +13,7 @@
 import gt4py.next as gtx
 from gt4py.next import abs, astype, minimum, neighbor_sum, where  # noqa: A004
 
+from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import VerticalCflConstants
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2C2EO, E2V
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -31,25 +32,24 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     ddt_vn_apc: fa.EdgeKField[ta.vpfloat],
-    cfl_w_limit: ta.vpfloat,
-    scalfac_exdiff: ta.wpfloat,
     dtime: ta.wpfloat,
 ) -> fa.EdgeKField[ta.vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_20."""
-    z_w_con_c_full_wp, ddqz_z_full_e_wp, ddt_vn_apc_wp, cfl_w_limit_wp = astype(
-        (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc, cfl_w_limit), wpfloat
+    z_w_con_c_full_wp, ddqz_z_full_e_wp, ddt_vn_apc_wp = astype(
+        (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc), wpfloat
     )
 
     w_con_e = neighbor_sum(c_lin_e * z_w_con_c_full_wp(E2C), axis=dims.E2CDim)
-    difcoef = scalfac_exdiff * minimum(
-        wpfloat("0.85") - cfl_w_limit_wp * dtime,
-        abs(w_con_e) * dtime / ddqz_z_full_e_wp - cfl_w_limit_wp * dtime,
+    vertical_cfl_number_at_edges = abs(w_con_e) * dtime / ddqz_z_full_e_wp
+    difcoef = (VerticalCflConstants.EXTRA_DIFFUSION_SCALING / dtime) * minimum(
+        VerticalCflConstants.W_MAX - VerticalCflConstants.W_LIMIT,
+        vertical_cfl_number_at_edges - VerticalCflConstants.W_LIMIT,
     )
     ddt_vn_apc_wp = where(
         # TODO(havogt): my guess is if the second condition is `True`, then
         # `(levelmask | levelmask(dims.KDim + 1))` is also `True`
         (levelmask | levelmask(dims.KDim + 1))
-        & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
+        & (vertical_cfl_number_at_edges > VerticalCflConstants.W_LIMIT),
         ddt_vn_apc_wp
         + difcoef
         * area_edge
@@ -77,8 +77,6 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     ddt_vn_apc: fa.EdgeKField[ta.vpfloat],
-    cfl_w_limit: ta.vpfloat,
-    scalfac_exdiff: ta.wpfloat,
     dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -97,8 +95,6 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         geofac_grdiv=geofac_grdiv,
         vn=vn,
         ddt_vn_apc=ddt_vn_apc,
-        cfl_w_limit=cfl_w_limit,
-        scalfac_exdiff=scalfac_exdiff,
         dtime=dtime,
         out=ddt_vn_apc,
         domain={

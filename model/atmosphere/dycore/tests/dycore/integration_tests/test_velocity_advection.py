@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils import (
     velocity_advection_corrector,
     velocity_advection_predictor,
 )
+from icon4py.model.atmosphere.dycore.stencils.velocity_advection_terms import VerticalCflConstants
 from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -71,11 +72,13 @@ def create_vertical_params(
         (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
-def test_scale_factors_by_dtime(experiment, step_date_init, savepoint_velocity_init):
+def test_extra_diffusion_constants_match_icon(experiment, step_date_init, savepoint_velocity_init):
+    # ICON serializes both constants per second, divided by dtime.
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
-    cfl_w_limit, scalfac_exdiff = solve_nonhydro._velocity_advection_scale_factors(dtime)
-    assert cfl_w_limit == savepoint_velocity_init.cfl_w_limit()
-    assert scalfac_exdiff == savepoint_velocity_init.scalfac_exdiff()
+    assert VerticalCflConstants.W_LIMIT / dtime == savepoint_velocity_init.cfl_w_limit()
+    assert VerticalCflConstants.EXTRA_DIFFUSION_SCALING / dtime == pytest.approx(
+        savepoint_velocity_init.scalfac_exdiff(), rel=1e-14
+    )
 
 
 @pytest.mark.embedded_remap_error
@@ -171,7 +174,6 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_cfl = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend, dtype=ta.vpfloat
     )
-    cfl_w_limit, scalfac_exdiff = solve_nonhydro._velocity_advection_scale_factors(dtime)
 
     contravariant_correction_at_edges_on_model_levels = init_savepoint.z_w_concorr_me()
     horizontal_kinetic_energy_at_edges_on_model_levels = init_savepoint.z_kin_hor_e()
@@ -213,8 +215,6 @@ def test_velocity_predictor_step(  # noqa: PLR0917 [too-many-positional-argument
         ddqz_z_full_e=metric_state_nonhydro.ddqz_z_full_e,
         area_edge=edge_geometry.edge_areas,
         geofac_grdiv=interpolation_state.geofac_grdiv,
-        scalfac_exdiff=scalfac_exdiff,
-        cfl_w_limit=cfl_w_limit,
         dtime=dtime,
         skip_compute_predictor_vertical_advection=vn_only,
         apply_extra_diffusion_on_vn=True,
@@ -416,7 +416,6 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
     vertical_cfl = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KHalfDim, allocator=backend, dtype=ta.vpfloat
     )
-    cfl_w_limit, scalfac_exdiff = solve_nonhydro._velocity_advection_scale_factors(dtime)
 
     velocity_advection_corrector.compute_velocity_advection_in_corrector_step.with_backend(backend)(
         vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.corrector,
@@ -447,8 +446,6 @@ def test_velocity_corrector_step(  # noqa: PLR0917 [too-many-positional-argument
         ddqz_z_full_e=metric_state_nonhydro.ddqz_z_full_e,
         area_edge=edge_geometry.edge_areas,
         geofac_grdiv=interpolation_state.geofac_grdiv,
-        scalfac_exdiff=scalfac_exdiff,
-        cfl_w_limit=cfl_w_limit,
         dtime=dtime,
         apply_extra_diffusion_on_vn=True,
         end_index_of_damping_layer=vertical_params.end_index_of_damping_layer,
