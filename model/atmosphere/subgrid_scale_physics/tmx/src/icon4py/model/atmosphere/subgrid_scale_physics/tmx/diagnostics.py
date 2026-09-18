@@ -138,17 +138,12 @@ class Diagnostics:
         self._vertex_end_local = self._grid.end_index(vertex_domain(h_grid.Zone.LOCAL))
         self._vertex_end_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-        self._allocate_local_static_fields()
-        self._setup_init_and_diagnostics_programs(backend, num_levels)
+        self._initialize_static_fields(backend)
+        self._setup_diagnostics_programs(backend, num_levels)
 
-        # the init part, Smagorinsky_init in mo_tmx_smagorinsky.f90
-        self.compute_smagorinsky_mixing_length(mixing_length_sq=self.mixing_length_sq)
-        if use_louis:
-            # the Fortran init only computes the Louis scaling factor if the
-            # Louis stability correction is enabled; the field stays zero otherwise
-            self.compute_scaling_factor_louis(scaling_factor_louis=self.scaling_factor_louis)
-
-    def _allocate_local_static_fields(self) -> None:
+    def _initialize_static_fields(self, backend: model_backends.BackendLike) -> None:
+        """Allocate the fields that only depend on the grid and run ``Smagorinsky_init``
+        (mo_tmx_smagorinsky.f90) into them."""
         zero_field = functools.partial(data_alloc.zero_field, self._grid, allocator=self._allocator)
 
         # squared Smagorinsky mixing length at half-level cell centers [m^2]
@@ -163,56 +158,44 @@ class Diagnostics:
         self.fract_land: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
         self.fract_ice: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
 
-    def _setup_init_and_diagnostics_programs(
+        # compute_mixing_length (mo_tmx_smagorinsky.f90): cells rl 3..min_rlcell_int,
+        # all half levels
+        diag_stencils.compute_smagorinsky_mixing_length.with_backend(backend)(
+            ddqz_z_half=self._metric_state.ddqz_z_half,
+            geopot_agl_ifc=self._metric_state.geopot_agl_ifc,
+            cell_area=self._cell_params.area,
+            mixing_length_sq=self.mixing_length_sq,
+            smag_constant=self._smag_constant,
+            max_turb_scale=self._max_turb_scale,
+            grav=constants.GRAV,
+            horizontal_start=self._cell_start_lateral_boundary_level_3,
+            horizontal_end=self._cell_end_local,
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(self._grid.num_levels + 1),
+            offset_provider={},
+        )
+        if self._use_louis:
+            # the Fortran init only computes the Louis scaling factor if the
+            # Louis stability correction is enabled; the field stays zero otherwise
+            # compute_scaling_factor_louis (mo_tmx_smagorinsky.f90): cells rl
+            # 3..min_rlcell_int
+            diag_stencils.compute_scaling_factor_louis.with_backend(backend)(
+                cell_area=self._cell_params.area,
+                scaling_factor_louis=self.scaling_factor_louis,
+                horizontal_start=self._cell_start_lateral_boundary_level_3,
+                horizontal_end=self._cell_end_local,
+                offset_provider={},
+            )
+
+    def _setup_diagnostics_programs(
         self,
         backend: model_backends.BackendLike,
         num_levels: int,
     ) -> None:
-        """
-        Bind the init programs and the diagnostics step programs
-        (``Smagorinsky_init`` in mo_tmx_smagorinsky.f90 and
-        ``Compute_diagnostics`` l. 343-482 in mo_vdf_atmo.f90).
-        """
+        """Bind the diagnostics step programs (``Compute_diagnostics`` l. 343-482 in
+        mo_vdf_atmo.f90)."""
         # ---------------------------------------------------------------------
-        # Init programs (run once, at the end of __init__)
-        # ---------------------------------------------------------------------
-        # compute_mixing_length (mo_tmx_smagorinsky.f90): cells rl 3..min_rlcell_int,
-        # all half levels
-        self.compute_smagorinsky_mixing_length = setup_program(
-            backend=backend,
-            program=diag_stencils.compute_smagorinsky_mixing_length,
-            constant_args={
-                "ddqz_z_half": self._metric_state.ddqz_z_half,
-                "geopot_agl_ifc": self._metric_state.geopot_agl_ifc,
-                "cell_area": self._cell_params.area,
-                "smag_constant": self._smag_constant,
-                "max_turb_scale": self._max_turb_scale,
-                "grav": constants.GRAV,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_lateral_boundary_level_3,
-                "horizontal_end": self._cell_end_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
-            },
-            offset_provider={},
-        )
-        # compute_scaling_factor_louis (mo_tmx_smagorinsky.f90): cells rl
-        # 3..min_rlcell_int
-        self.compute_scaling_factor_louis = setup_program(
-            backend=backend,
-            program=diag_stencils.compute_scaling_factor_louis,
-            constant_args={"cell_area": self._cell_params.area},
-            horizontal_sizes={
-                "horizontal_start": self._cell_start_lateral_boundary_level_3,
-                "horizontal_end": self._cell_end_local,
-            },
-            offset_provider={},
-        )
-        # ---------------------------------------------------------------------
-        # Diagnostics step programs, in the Fortran call order of Compute_diagnostics
+        # In the Fortran call order of Compute_diagnostics
         # (mo_vdf_atmo.f90 l. 343-482). One program per halo-exchange interval
         # and horizontal dimension.
         # ---------------------------------------------------------------------
