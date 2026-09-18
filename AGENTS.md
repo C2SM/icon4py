@@ -185,14 +185,19 @@ Nox mirrors the CI pipeline. Useful for running comprehensive test suites:
 uv run --group test --frozen nox -l
 
 # Run all tests for a specific component and subset:
-uv run --group test --frozen nox -s 'test_common(datatest=True)'
-uv run --group test --frozen nox -s 'test_common(datatest=False)'
+uv run --group test --frozen nox -s "test_model-3.13(datatest, common)"
+
+# Select one subset across all subpackages by tag:
+uv run --group test --frozen nox -t basic
+uv run --group test --frozen nox -t datatest
 
 # Run tests in single-precision mode:
-ICON4PY_FLOAT_PRECISION=single uv run --group test --frozen nox -s 'test_<component>'
+ICON4PY_FLOAT_PRECISION=single uv run --group test --frozen nox -s "test_model-3.13(basic, dycore)"
 ```
 
-Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks).
+Subset options: `datatest`, `stencils`, `basic` (datatest-skip, no stencils/benchmarks). `test_model_mpi` has no `stencils` subset because stencil tests are serial by definition.
+
+Subpackage IDs are the last path component of the package directory: `tracer_advection`, `diffusion`, `dycore`, `microphysics`, `muphys`, `physics_driver`, `common`, `driver`, `testing`.
 
 ## Triggering CSCS CI
 
@@ -206,4 +211,4 @@ See `.github/workflows/mandatory_and_optional_test_reminder.yml` for the authori
   - `cscs-ci run default;MODEL_SUBPACKAGES=common:driver;SESSIONS=model`
 - The `cscs/merge` pipeline runs automatically on the merge queue; do not trigger it manually. It runs as a dummy pipeline on PR pushes and runs no tests.
 - Some pipelines, especially those running on the normal slrum partition, can in the worst case take hours to schedule (when cluster is busy) and run (see SLURM_TIMELIMIT in the CSCS CI configs). Keep this in mind when waiting for jobs to finish. Test jobs may also need to populate GT4Py caches which can take long.
-- CSCS CI configs are in the ci/ subdirectory. The CI runs using GitLab runners and the configuration is the same as for regular GitLab pipelines.
+- CSCS CI configs are in the `.cscs-ci/` subdirectory. The CI runs using GitLab runners and the configuration is the same as for regular GitLab pipelines.
