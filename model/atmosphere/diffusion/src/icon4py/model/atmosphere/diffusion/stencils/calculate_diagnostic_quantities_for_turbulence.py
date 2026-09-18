@@ -22,6 +22,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
     diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     wgtfac_c: fa.CellKHalfField[vpfloat],
 ) -> tuple[fa.CellKHalfField[vpfloat], fa.CellKHalfField[vpfloat]]:
+    # TODO(havogt): The wp-vp roundtrips are to be faithful to ICON, but they are most likely not on purpose on the Fortran side.
     kh_smag_ec_wp, diff_multfac_smag_wp = astype((kh_smag_ec, diff_multfac_smag), wpfloat)
     kh_c_wp = neighbor_sum(kh_smag_ec_wp(C2E) * e_bln_c_s, axis=dims.C2EDim) / diff_multfac_smag_wp
     div_wp = neighbor_sum(vn(C2E) * geofac_div, axis=dims.C2EDim)
