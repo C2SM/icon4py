@@ -901,7 +901,9 @@ class TestComputeShearAndViscosityLouis(_ShearAndViscosityDiagnostics, stencil_t
         )
 
 
-class TestComputeShearAndViscosityLouisMaskedLandIce(_ShearAndViscosityDiagnostics, stencil_tests.StencilTest):
+class TestComputeShearAndViscosityLouisMaskedLandIce(
+    _ShearAndViscosityDiagnostics, stencil_tests.StencilTest
+):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
@@ -911,7 +913,9 @@ class TestComputeShearAndViscosityLouisMaskedLandIce(_ShearAndViscosityDiagnosti
         )
 
 
-class TestComputeShearAndViscosityLouisMaskedLandOnly(_ShearAndViscosityDiagnostics, stencil_tests.StencilTest):
+class TestComputeShearAndViscosityLouisMaskedLandOnly(
+    _ShearAndViscosityDiagnostics, stencil_tests.StencilTest
+):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
@@ -921,7 +925,9 @@ class TestComputeShearAndViscosityLouisMaskedLandOnly(_ShearAndViscosityDiagnost
         )
 
 
-class TestComputeShearAndViscosityConstant(_ShearAndViscosityDiagnostics, stencil_tests.StencilTest):
+class TestComputeShearAndViscosityConstant(
+    _ShearAndViscosityDiagnostics, stencil_tests.StencilTest
+):
     @stencil_tests.input_data_fixture
     def input_data(
         data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
