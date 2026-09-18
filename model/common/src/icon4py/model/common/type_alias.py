@@ -57,8 +57,10 @@ def dataclass_float_to_wp(self, attributes: list[str] | None = None):
     if not dataclasses.is_dataclass(self):
         raise ValueError("This function is meant for dataclasses")
     if attributes is None:
-        attributes=[
-            field.name for field in self.__dataclass_fields__.values() if "float" in repr(field.type)
+        attributes = [
+            field.name
+            for field in self.__dataclass_fields__.values()
+            if "float" in repr(field.type)
         ]
     for name in attributes or []:
         if not isinstance(v := object.__getattribute__(self, name), wpfloat):

@@ -125,13 +125,14 @@ def test_full_muphys(
         "single": {
             **{field_name: {"atol": 8e-7, "rtol": 0.0} for field_name in ["qv", "qi", "qg"]},
             **{field_name: {"atol": 8e-7, "rtol": 0.0} for field_name in ["qc", "qr", "qs"]},
-            "t": {"atol": 0.0, "rtol": 1e-5}
-        }
+            "t": {"atol": 0.0, "rtol": 1e-5},
+        },
     }
 
     for field_name in list(out_references):
         test_utils.assert_dallclose(
             getattr(ref, field_name).asnumpy(),
             getattr(out, field_name).asnumpy(),
-            **tolerances[ta.precision][field_name], err_msg=field_name
+            **tolerances[ta.precision][field_name],
+            err_msg=field_name,
         )

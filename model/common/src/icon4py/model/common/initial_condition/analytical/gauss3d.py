@@ -69,9 +69,7 @@ def gauss3d(
     geometry = static_fields.geometry
     metrics = static_fields.metrics
     primal_normal_x = geometry.get(geometry_meta.EDGE_NORMAL_U).ndarray
-    inv_dual_edge_length = geometry.get(
-        f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
-    ).ndarray
+    inv_dual_edge_length = geometry.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}").ndarray
     edge_cell_distance = geometry.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray
     primal_edge_length = geometry.get(geometry_meta.EDGE_LENGTH).ndarray
     cell_area = geometry.get(geometry_meta.CELL_AREA).ndarray

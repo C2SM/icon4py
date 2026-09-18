@@ -118,7 +118,7 @@ class State(PhysicsState):
             offset_provider={},
         )
 
-        #TODO(pstark): Probably dz (or it + others wrapped in a MuphysMetricState) should be an arg in State.__init__
+        # TODO(pstark): Probably dz (or it + others wrapped in a MuphysMetricState) should be an arg in State.__init__
         self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
         self.rho: fa.CellKField[ta.wpfloat] | None = None
         self._tracers: tracer_states.TracerState | None = None

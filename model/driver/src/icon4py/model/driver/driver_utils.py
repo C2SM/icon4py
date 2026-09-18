@@ -50,7 +50,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory as states_factory, static_fields, tracer_states
+from icon4py.model.common.states import static_fields, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver_constants, driver_states
 
@@ -233,7 +233,7 @@ def initialize_granules(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        mean_cell_area=geometry_field_source.get_wpfloat(geometry_meta.MEAN_CELL_AREA)
+        mean_cell_area=geometry_field_source.get_wpfloat(geometry_meta.MEAN_CELL_AREA),
     )
 
     log.info("creating edge geometry")
@@ -280,19 +280,13 @@ def initialize_granules(
     log.info("creating diffusion interpolation state")
     diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
-        rbf_coeff_1=interpolation_field_source.get(
-            interpolation_attributes.RBF_VEC_COEFF_V1
-        ),
-        rbf_coeff_2=interpolation_field_source.get(
-            interpolation_attributes.RBF_VEC_COEFF_V2
-        ),
+        rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
+        rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V2),
         geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
         geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
         geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
-        nudgecoeff_e=interpolation_field_source.get(
-            interpolation_attributes.NUDGECOEFFS_E
-        ),
+        nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
     )
 
     log.info("creating diffusion metric state")
@@ -317,23 +311,15 @@ def initialize_granules(
         pos_on_tplane_e_2=interpolation_field_source.get(
             interpolation_attributes.POS_ON_TPLANE_E_Y
         ),
-        rbf_vec_coeff_e=interpolation_field_source.get(
-            interpolation_attributes.RBF_VEC_COEFF_E
-        ),
+        rbf_vec_coeff_e=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_E),
         e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
-        rbf_coeff_1=interpolation_field_source.get(
-            interpolation_attributes.RBF_VEC_COEFF_V1
-        ),
-        rbf_coeff_2=interpolation_field_source.get(
-            interpolation_attributes.RBF_VEC_COEFF_V2
-        ),
+        rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
+        rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V2),
         geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
         geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
         geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
-        nudgecoeff_e=interpolation_field_source.get(
-            interpolation_attributes.NUDGECOEFFS_E
-        ),
+        nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
     )
 
     log.info("creating solve nonhydro metric state")
@@ -434,9 +420,7 @@ def initialize_granules(
 
     tracer_advection_granule: tracer_advection.Advection | None = None
     if config.tracer_advection is not None:
-        lsq_pseudoinv = interpolation_field_source.get(
-            interpolation_attributes.LSQ_PSEUDOINV
-        )
+        lsq_pseudoinv = interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)
         deepatmo_shallow_factor = data_alloc.constant_field(
             grid, 1.0, dims.KDim, allocator=model_backends.get_allocator(backend)
         )
@@ -445,9 +429,7 @@ def initialize_granules(
             backend=backend,
             config=config.tracer_advection,
             interpolation_state=tracer_advection_states.AdvectionInterpolationState(
-                geofac_div=interpolation_field_source.get(
-                    interpolation_attributes.GEOFAC_DIV
-                ),
+                geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
                 rbf_vec_coeff_e=interpolation_field_source.get(
                     interpolation_attributes.RBF_VEC_COEFF_E
                 ),
