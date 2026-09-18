@@ -499,8 +499,6 @@ def convert_config_to_advection(
     exchange: decomposition.ExchangeRuntime,
     even_timestep: bool = False,
 ) -> Advection:
-    assert exchange is not None, "Exchange runtime must not be None."
-
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
         and config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION
