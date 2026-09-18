@@ -94,18 +94,9 @@ def test_soil_temperature_solve_matches_icon(
 
     # JSBACH runs on land columns only, but the savepoints span the whole grid, so the
     # rest must be excluded or we would be comparing against fields ICON never wrote.
-    # There is no land mask in the SSE savepoints (vol_heat_cap and heat_cond come from
-    # the FAO map and are positive everywhere), so use the one thing that does mark it:
-    # the entry coefficients are identically zero on every column the solve skipped.
-    # On this dataset that set is exactly notsea == 0 -- 14093 of 20480 columns, with no
-    # exceptions in either direction. Excludes the lstart step, where the coefficients
-    # are legitimately zero on land too; SSE_DATES already omits it.
-    solved = ~(
-        (entry.t_soil_acoef().asnumpy() == 0.0).all(axis=1)
-        & (entry.t_soil_bcoef().asnumpy() == 0.0).all(axis=1)
-    )
-    comparable = solved & snow_free
-    assert comparable.any(), "no solved snow-free columns to compare"
+    land = geometry.fract_land().asnumpy() > 0.0
+    comparable = land & snow_free
+    assert comparable.any(), "no land snow-free columns to compare"
     domain = dict(
         horizontal_start=gtx.int32(0),
         horizontal_end=gtx.int32(num_cells),

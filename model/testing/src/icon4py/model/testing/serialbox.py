@@ -2109,6 +2109,15 @@ class SseGeometrySavepoint(SseSavepoint):
     def soil_bots(self) -> fa.KField[float]:
         return self._get_field("sse_soil_bots", dims.KDim)
 
+    def fract_land(self) -> fa.CellField[float]:
+        """Fraction of each grid box covered by JSBACH's land tile.
+
+        Zero where the soil processes do not run, so `fract_land > 0` is the set of
+        columns a comparison against these savepoints may look at; the rest hold
+        whatever ICON left in memory.
+        """
+        return self._get_blocked_field("sse_fract_land", dims.CellDim)
+
 
 class SseSolveSavepoint(SseSavepoint):
     """State around JSBACH's soil temperature solve (`sse-solve-entry` / `-exit`).

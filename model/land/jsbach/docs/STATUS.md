@@ -55,8 +55,13 @@ soil-energy step from ICON's savepoints — back substitution with the OLD coeff
 forward elimination on the new temperatures, then the ground heat flux — and compares
 against the exit state, on both `embedded` and `gtfn_cpu`.
 
-**Scope of the claim — the comparison is restricted to snow-free columns.** On
-snow-covered columns the top boundary condition and the returned surface quantities are
+**Scope of the claim — the comparison is restricted to land, snow-free columns.** The
+land set comes from `sse_fract_land`, the land tile's grid-box fraction, serialized with
+the geometry savepoint (6387 of 20480 columns); off-land cells hold whatever ICON left
+in memory rather than a solve. Of those, 4083 are snow-free at 00:05 and 4189 at 00:10,
+and every one matches.
+
+On snow-covered columns the top boundary condition and the returned surface quantities are
 snow/soil blends the ported kernels do not form, so the test masks them out
 (`snow_depth_sl.max(axis=1) == 0`). `snow_temperature_back_substitution` therefore has
 **no savepoint evidence behind it** — it is TDD'd against a numpy transcription only.
@@ -203,16 +208,42 @@ one-time setup, not per-step.)
 5. **tmx seam** — replace the prescribed `land_*` fields in the `tmx-surface`
    worktree once that stabilises.
 
+### The tile trap — read this before serializing any JSBACH variable
+
+`jsbach_get_var(var, model_id, tile=...)` takes `tile` as an **optional** argument and
+falls back to the **box tile** when it is omitted ("box tile if not given",
+`mo_jsb_interface.f90`). The tile tree under `use_lakes = .TRUE.` is
+
+```
+box ─┬─ lake
+     └─ land ─┬─ glac
+              └─ veg      ← SSE runs ON_LEAFS_ here
+```
+
+so a box-tile read of a soil variable silently returns an aggregate that includes the
+**lake** tile. All 19 SSE reads originally omitted `tile=`. The result looked like a
+kernel bug: of the 4083 solved snow-free columns, the 1985 that disagreed were *exactly*
+those with `fract_lake > 0`, none of the 2098 that agreed had lake, and the 724
+glaciated columns agreed bit-for-bit. The deviation peaked at the top soil level (15 K,
+a lake surface temperature) and decayed downward through the back substitution — a wrong
+upper boundary, not a wrong recurrence. Adding `tile='land'` made all 4083 match.
+
+This was invisible for as long as the dataset came from synthetic land, which had no
+lakes. ICON's own code always passes the argument (`mo_aes_phy_init.f90` uses
+`tile='land'` for `seb_t`, `tile='veg'` for roughness and albedo). **Pass `tile=`
+explicitly on every `jsbach_get_var` call**; the default is never what a per-process
+port wants.
+
 ## Oracle gaps (read before starting slice 2)
 
 The oracle is one experiment (`exclaim_aesPhys`) carrying one dataset version, and it is
 meant to grow: each new slice adds savepoints to `mo_icon4py_verification.f90`, bumps
-the version, and reuses the grid, the synthetic land input and the campaign unchanged.
+the version, and reuses the grid, the real MPI-M land input and the campaign unchanged.
 What is *not* yet general:
 
 | gap | effect | cost to close |
 | --- | --- | --- |
-| `comm_size = 1` only | no MPI/distributed tests | rerun campaign for 2 and 4 |
+| tests read `comm_size = 1` | no MPI/distributed tests | archives for 2 and 4 are generated; the tests do not read them yet |
 | snow columns excluded | snow path unvalidated | needs the snow/soil blend ported, not new data |
 | `l_freeze = .FALSE.` | freeze/melt + thaw depth unvalidated | namelist flip + new savepoints |
 | `l_heat_cap/cond_dyn = .FALSE.` | moisture-coupled thermal properties unvalidated | coupled to HYDRO; flip once HYDRO is ported |
