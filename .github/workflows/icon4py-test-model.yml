@@ -10,12 +10,19 @@ on:
     types: [opened, reopened, synchronize]
   merge_group:
 
+concurrency:
+  # A new push to a pull request cancels its running tests. A group holds at most one
+  # pending run and replaces it on the next arrival, so every other run gets its own group.
+  group: icon4py-test-model-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   ICON4PY_TEST_DATA_PATH: "${{ github.workspace }}/testdata"
   NUM_PROCESSES: auto
   ICON4PY_ENABLE_GRID_DOWNLOAD: false
   ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
   PYTEST_ADDOPTS: "--durations=0"
+  GT4PY_BUILD_CACHE_LIFETIME: persistent
 
 jobs:
   test-model:
@@ -25,14 +32,21 @@ jobs:
         python-version: ["3.12"]
         backend: ["embedded", "dace_cpu", "gtfn_cpu"]
         component: ["tracer_advection", "diffusion", "dycore", "microphysics", "muphys", "tmx", "physics_driver", "common", "driver"]
+        exclude:
+          - {backend: "dace_cpu", component: "dycore"}
+          - {backend: "gtfn_cpu", component: "dycore"}
+        include:
+          - {python-version: "3.12", backend: "dace_cpu", component: "dycore", shard: "1/4"}
+          - {python-version: "3.12", backend: "dace_cpu", component: "dycore", shard: "2/4"}
+          - {python-version: "3.12", backend: "dace_cpu", component: "dycore", shard: "3/4"}
+          - {python-version: "3.12", backend: "dace_cpu", component: "dycore", shard: "4/4"}
+          - {python-version: "3.12", backend: "gtfn_cpu", component: "dycore", shard: "1/4"}
+          - {python-version: "3.12", backend: "gtfn_cpu", component: "dycore", shard: "2/4"}
+          - {python-version: "3.12", backend: "gtfn_cpu", component: "dycore", shard: "3/4"}
+          - {python-version: "3.12", backend: "gtfn_cpu", component: "dycore", shard: "4/4"}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install libboost-all-dev
 
       - name: install uv
         uses: astral-sh/setup-uv@v7
@@ -73,24 +87,31 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.GT4PY_BUILD_CACHE_DIR }}
-          key: gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          key: gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}${{ matrix.shard && format('-shard-{0}', matrix.shard) || '' }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-
-            gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-main-
+            gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}${{ matrix.shard && format('-shard-{0}', matrix.shard) || '' }}-branch-${{ github.head_ref || github.ref_name }}-
+            gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}${{ matrix.shard && format('-shard-{0}', matrix.shard) || '' }}-branch-main-
 
       - name: run nox session - unit tests
+        # These packages have no tests in this selection.
+        if: ${{ !contains(fromJSON('["dycore", "microphysics", "muphys", "tracer_advection"]'), matrix.component) }}
         shell: bash
         run: |
           uvx nox -s "test_model-${{matrix.python-version}}(basic, ${{ matrix.component }})" -- --backend=${{ matrix.backend }}
 
       - name: run nox session - stencil tests
         shell: bash
+        env:
+          SHARD_ARGS: ${{ matrix.shard && format('--shard={0}', matrix.shard) || '' }}
+          # This test takes ~14 min on dace_cpu.
+          DESELECT_ARGS: ${{ matrix.backend == 'dace_cpu' && matrix.component == 'tracer_advection' && '--deselect=model/atmosphere/tracer_advection/tests/tracer_advection/stencil_tests/test_prepare_ffsl_flux_area_patches_list.py' || '' }}
         run: |
-          uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_regional
+          uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_regional $SHARD_ARGS $DESELECT_ARGS
 
       - name: save GT4Py cache
-        if: always()
+        # A merge queue run saves under a key nothing restores.
+        if: always() && github.event_name != 'merge_group'
         uses: actions/cache/save@v6
         with:
           path: ${{ env.GT4PY_BUILD_CACHE_DIR }}
-          key: gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          key: gt4py-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}-${{ matrix.backend }}-${{ matrix.component }}${{ matrix.shard && format('-shard-{0}', matrix.shard) || '' }}-branch-${{ github.head_ref || github.ref_name }}-${{ github.sha }}

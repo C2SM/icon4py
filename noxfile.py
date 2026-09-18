@@ -184,7 +184,7 @@ def test_model(
     session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath
 ) -> None:
     """Run tests for selected icon4py model subpackages."""
-    _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
+    _install_session_venv(session, extras=["io", "testing"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
     success_codes = (
