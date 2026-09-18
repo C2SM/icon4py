@@ -526,7 +526,7 @@ class Diffusion:
             constants.GAS_CONSTANT_DRY_AIR / (constants.CPD - constants.GAS_CONSTANT_DRY_AIR),
             vpfloat,
         )
-        #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        #: threshold temperature deviation from neighboring grid points that activates extra diffusion against runaway cooling
         self.thresh_tdiff: wpfloat = wpfloat(-5.0)
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 

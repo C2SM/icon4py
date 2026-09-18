@@ -52,49 +52,49 @@ def _get_or_initialize(experiment: test_defs.Experiment, backend: gtx_typing.Bac
         grid = geometry_.grid
 
         cell_params = grid_states.CellParams(
-            cell_center_lat=geometry_.export_field(geometry_meta.CELL_LAT),
-            cell_center_lon=geometry_.export_field(geometry_meta.CELL_LON),
-            area=geometry_.export_field(geometry_meta.CELL_AREA),
+            cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
+            cell_center_lon=geometry_.get(geometry_meta.CELL_LON),
+            area=geometry_.get(geometry_meta.CELL_AREA),
         )
         edge_params = grid_states.EdgeParams(
-            tangent_orientation=geometry_.export_field(geometry_meta.TANGENT_ORIENTATION),
-            inverse_primal_edge_lengths=geometry_.export_field(
+            tangent_orientation=geometry_.get(geometry_meta.TANGENT_ORIENTATION),
+            inverse_primal_edge_lengths=geometry_.get(
                 f"inverse_of_{geometry_meta.EDGE_LENGTH}"
             ),
-            inverse_dual_edge_lengths=geometry_.export_field(
+            inverse_dual_edge_lengths=geometry_.get(
                 f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
             ),
-            inverse_vertex_vertex_lengths=geometry_.export_field(
+            inverse_vertex_vertex_lengths=geometry_.get(
                 f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
             ),
             primal_normal_vert=(
-                geometry_.export_field(geometry_meta.EDGE_NORMAL_VERTEX_U),
-                geometry_.export_field(geometry_meta.EDGE_NORMAL_VERTEX_V),
+                geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+                geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
             ),
             dual_normal_vert=(
-                geometry_.export_field(geometry_meta.EDGE_TANGENT_VERTEX_U),
-                geometry_.export_field(geometry_meta.EDGE_TANGENT_VERTEX_V),
+                geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+                geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
             ),
             primal_normal_cell=(
-                geometry_.export_field(geometry_meta.EDGE_NORMAL_CELL_U),
-                geometry_.export_field(geometry_meta.EDGE_NORMAL_CELL_V),
+                geometry_.get(geometry_meta.EDGE_NORMAL_CELL_U),
+                geometry_.get(geometry_meta.EDGE_NORMAL_CELL_V),
             ),
             dual_normal_cell=(
-                geometry_.export_field(geometry_meta.EDGE_TANGENT_CELL_U),
-                geometry_.export_field(geometry_meta.EDGE_TANGENT_CELL_V),
+                geometry_.get(geometry_meta.EDGE_TANGENT_CELL_U),
+                geometry_.get(geometry_meta.EDGE_TANGENT_CELL_V),
             ),
-            edge_areas=geometry_.export_field(geometry_meta.EDGE_AREA),
-            coriolis_frequency=geometry_.export_field(geometry_meta.CORIOLIS_PARAMETER),
+            edge_areas=geometry_.get(geometry_meta.EDGE_AREA),
+            coriolis_frequency=geometry_.get(geometry_meta.CORIOLIS_PARAMETER),
             edge_center=(
-                geometry_.export_field(geometry_meta.EDGE_LAT),
-                geometry_.export_field(geometry_meta.EDGE_LON),
+                geometry_.get(geometry_meta.EDGE_LAT),
+                geometry_.get(geometry_meta.EDGE_LON),
             ),
             primal_normal=(
-                geometry_.export_field(geometry_meta.EDGE_NORMAL_U),
-                geometry_.export_field(geometry_meta.EDGE_NORMAL_V),
+                geometry_.get(geometry_meta.EDGE_NORMAL_U),
+                geometry_.get(geometry_meta.EDGE_NORMAL_V),
             ),
-            primal_edge_lengths=geometry_.export_field(geometry_meta.EDGE_LENGTH),
-            dual_edge_lengths=geometry_.export_field(geometry_meta.DUAL_EDGE_LENGTH),
+            primal_edge_lengths=geometry_.get(geometry_meta.EDGE_LENGTH),
+            dual_edge_lengths=geometry_.get(geometry_meta.DUAL_EDGE_LENGTH),
         )
         grid_functionality[experiment.name]["grid"] = grid
         grid_functionality[experiment.name]["edge_geometry"] = edge_params
