@@ -14,16 +14,16 @@ import pytest
 import icon4py.model.common.type_alias as types
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
-from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
-    compute_cell_2_vertex_interpolation,
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_vertex import (
+    _interpolate_cell_field_to_vertex,
 )
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 
 @pytest.mark.skip_value_error
-class TestComputeCells2VertsInterpolation(stencil_tests.StencilTest):
-    PROGRAM = compute_cell_2_vertex_interpolation
-    OUTPUTS = ("vert_out",)
+class TestInterpolateCellFieldToVertex(stencil_tests.StencilTest):
+    PROGRAM = _interpolate_cell_field_to_vertex
+    OUTPUTS = ("out",)
 
     @stencil_tests.static_reference
     def reference(
@@ -34,26 +34,22 @@ class TestComputeCells2VertsInterpolation(stencil_tests.StencilTest):
         **kwargs: Any,
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
-        v2c = connectivities[dims.V2C]
-        c_int = np.expand_dims(c_int, axis=-1)
-        out_field = np.sum(cell_in[v2c] * c_int, axis=1)
-
         return dict(
-            vert_out=out_field,
+            out=reference_funcs.interpolate_cell_field_to_vertex_numpy(
+                connectivities, cell_in, c_int
+            ),
         )
 
     @stencil_tests.input_data_fixture
     def input_data(data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid) -> dict:
         cell_in = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=types.wpfloat)
         c_int = data_alloc.random_field(dims.VertexDim, dims.V2CDim, dtype=types.wpfloat)
-        vert_out = data_alloc.zero_field(dims.VertexDim, dims.KHalfDim, dtype=types.wpfloat)
-
         return dict(
             cell_in=cell_in,
             c_int=c_int,
-            vert_out=vert_out,
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_vertices),
-            vertical_start=0,
-            vertical_end=gtx.int32(grid.num_levels + 1),
+            out=data_alloc.zero_field(dims.VertexDim, dims.KHalfDim, dtype=types.wpfloat),
+            domain={
+                dims.VertexDim: (0, gtx.int32(grid.num_vertices)),
+                dims.KHalfDim: (0, gtx.int32(grid.num_levels + 1)),
+            },
         )
