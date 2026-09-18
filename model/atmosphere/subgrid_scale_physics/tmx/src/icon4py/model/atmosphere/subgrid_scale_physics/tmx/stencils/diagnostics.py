@@ -516,7 +516,7 @@ def _compute_edge_shear_diagnostics(
         wgtfacq_e=wgtfacq_e,
         nlev=nlev,
     )
-    vt_ie = _compute_tangential_wind_on_half_levels(vn=vn_ie, rbf_vec_coeff_e=rbf_vec_coeff_e)
+    vt_ie = _compute_tangential_wind_on_half_levels(vn_ie=vn_ie, rbf_vec_coeff_e=rbf_vec_coeff_e)
     shear, div_of_stress = _compute_shear_and_div_of_stress(
         u_vert=u_vert,
         v_vert=v_vert,

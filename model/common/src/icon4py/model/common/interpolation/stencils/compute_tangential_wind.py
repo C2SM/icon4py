@@ -32,11 +32,11 @@ def _compute_tangential_wind_wp(
 
 @gtx.field_operator
 def _compute_tangential_wind_on_half_levels(
-    vn: fa.EdgeKHalfField[wpfloat],
+    vn_ie: fa.EdgeKHalfField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
 ) -> fa.EdgeKHalfField[wpfloat]:
     """Half-level counterpart of :func:`_compute_tangential_wind_wp` (vn_ie -> vt_ie)."""
-    return neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=dims.E2C2EDim)
+    return neighbor_sum(rbf_vec_coeff_e * vn_ie(E2C2E), axis=dims.E2C2EDim)
 
 
 @gtx.field_operator

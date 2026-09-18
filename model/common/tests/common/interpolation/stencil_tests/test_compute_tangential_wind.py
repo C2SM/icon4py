@@ -82,7 +82,7 @@ class TestComputeTangentialWindOnHalfLevels(stencil_tests.StencilTest):
     def reference(
         grid: base.Grid,
         *,
-        vn: np.ndarray,
+        vn_ie: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
         domain: dict[gtx.Dimension, tuple[int, int]],
         **kwargs: Any,
@@ -91,7 +91,7 @@ class TestComputeTangentialWindOnHalfLevels(stencil_tests.StencilTest):
         (vertical_start, vertical_end) = domain[dims.KHalfDim]
         vt = tangential_wind_reference(
             grid,
-            vn=vn,
+            vn=vn_ie,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
@@ -106,7 +106,7 @@ class TestComputeTangentialWindOnHalfLevels(stencil_tests.StencilTest):
     ) -> dict[str, Any]:
         data = tangential_wind_input_data(data_alloc, grid, on_half_levels=True)
         return dict(
-            vn=data["vn"],
+            vn_ie=data["vn"],
             rbf_vec_coeff_e=data["rbf_vec_coeff_e"],
             domain={
                 dims.EdgeDim: (data["horizontal_start"], data["horizontal_end"]),
