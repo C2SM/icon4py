@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.testing import filters
+from icon4py.model.testing import filters, stencil_tests
 
 
 __all__ = [
@@ -126,6 +126,7 @@ def pytest_addoption(parser: pytest.Parser):
             "--static-variant",
             action="store",
             default=None,
+            choices=[variant.value for variant in stencil_tests.StandardStaticVariants],
             help="Run only this variant of the `StencilTest`s parametrized over `STATIC_PARAMS`, "
             "e.g. 'compile_time_domain'. Suites that do not define it run all their variants.",
         )

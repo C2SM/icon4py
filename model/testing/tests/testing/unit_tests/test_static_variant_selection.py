@@ -62,3 +62,13 @@ def test_static_variant_keeps_only_that_variant_of_suites_defining_it(pytester):
         "TestWithoutDomainVariant::test_program[none]",
         "TestWithoutStaticParams::test_program",
     ]
+
+
+def test_static_variant_rejects_unknown_names(pytester):
+    pytester.makepyfile(test_suites=_SUITES)
+
+    result = pytester.runpytest(
+        "-p", "icon4py.model.testing.pytest_hooks", "--static-variant=compile_time_domian"
+    )
+
+    assert result.ret == pytest.ExitCode.USAGE_ERROR
