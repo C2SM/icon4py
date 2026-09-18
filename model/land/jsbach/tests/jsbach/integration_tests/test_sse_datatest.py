@@ -14,6 +14,11 @@ This test replays one such step with the ported GT4Py kernels, in the Fortran's
 order -- back substitution with the OLD coefficients, forward elimination on the
 new temperatures, then the ground heat flux -- and compares against the exit state.
 
+The savepoints are taken from the `land` tile. JSBACH's tile tree is
+box -> {lake, land -> {glac, veg}} and SSE runs on the leaves under `land`, so the
+box aggregate that `jsbach_get_var` returns when no `tile=` is given would blend the
+lake tile into fields that describe soil.
+
 Preconditions baked into the experiment (see the runscript's header): l_freeze is
 off, so no freeze/melt mutates the soil temperature between the two halves of the
 solve, and the comparison is restricted to snow-free columns, where the surface
@@ -86,7 +91,21 @@ def test_soil_temperature_solve_matches_icon(
     # columns the top boundary and the returned surface quantities are blends of snow
     # and soil, and match no single kernel.
     snow_free = entry.snow_depth_sl().asnumpy().max(axis=1) == 0.0
-    assert snow_free.any(), "no snow-free columns to compare"
+
+    # JSBACH runs on land columns only, but the savepoints span the whole grid, so the
+    # rest must be excluded or we would be comparing against fields ICON never wrote.
+    # There is no land mask in the SSE savepoints (vol_heat_cap and heat_cond come from
+    # the FAO map and are positive everywhere), so use the one thing that does mark it:
+    # the entry coefficients are identically zero on every column the solve skipped.
+    # On this dataset that set is exactly notsea == 0 -- 14093 of 20480 columns, with no
+    # exceptions in either direction. Excludes the lstart step, where the coefficients
+    # are legitimately zero on land too; SSE_DATES already omits it.
+    solved = ~(
+        (entry.t_soil_acoef().asnumpy() == 0.0).all(axis=1)
+        & (entry.t_soil_bcoef().asnumpy() == 0.0).all(axis=1)
+    )
+    comparable = solved & snow_free
+    assert comparable.any(), "no solved snow-free columns to compare"
     domain = dict(
         horizontal_start=gtx.int32(0),
         horizontal_end=gtx.int32(num_cells),
@@ -95,7 +114,9 @@ def test_soil_temperature_solve_matches_icon(
     )
 
     # 1. back substitution, driven by the previous step's coefficients and the surface
-    #    temperature (which is the soil column's top boundary where there is no snow)
+    #    temperature (which is the soil column's top boundary where there is no snow).
+    #    Zero-initialised: the scan writes every level, as the Fortran's unconditional
+    #    `DO is = 1, nsoil-1` does, so nothing of the initial contents survives.
     t_soil = _zeros(num_cells, num_levels, backend)
     soil.soil_temperature_back_substitution.with_backend(backend)(
         t_soil_acoef=acoef_old,
@@ -106,7 +127,7 @@ def test_soil_temperature_solve_matches_icon(
         **domain,
     )
     assert test_utils.dallclose(
-        t_soil.asnumpy()[snow_free], t_soil_new.asnumpy()[snow_free], rtol=RTOL
+        t_soil.asnumpy()[comparable], t_soil_new.asnumpy()[comparable], rtol=RTOL
     )
 
     # 2. forward elimination: the coefficients carried into the next step
@@ -124,10 +145,10 @@ def test_soil_temperature_solve_matches_icon(
         **domain,
     )
     assert test_utils.dallclose(
-        acoef.asnumpy()[snow_free], exit_.t_soil_acoef().asnumpy()[snow_free], rtol=RTOL
+        acoef.asnumpy()[comparable], exit_.t_soil_acoef().asnumpy()[comparable], rtol=RTOL
     )
     assert test_utils.dallclose(
-        bcoef.asnumpy()[snow_free], exit_.t_soil_bcoef().asnumpy()[snow_free], rtol=RTOL
+        bcoef.asnumpy()[comparable], exit_.t_soil_bcoef().asnumpy()[comparable], rtol=RTOL
     )
 
     # 3. the surface quantities handed back to the surface energy balance, at the
@@ -149,13 +170,13 @@ def test_soil_temperature_solve_matches_icon(
         **domain,
     )
     assert test_utils.dallclose(
-        grnd_hflx.asnumpy()[snow_free, 0],
-        exit_.grnd_hflx().asnumpy()[snow_free],
+        grnd_hflx.asnumpy()[comparable, 0],
+        exit_.grnd_hflx().asnumpy()[comparable],
         rtol=RTOL,
         atol=GRND_HFLX_ATOL,
     )
     assert test_utils.dallclose(
-        hcap_grnd.asnumpy()[snow_free, 0], exit_.hcap_grnd().asnumpy()[snow_free], rtol=RTOL
+        hcap_grnd.asnumpy()[comparable, 0], exit_.hcap_grnd().asnumpy()[comparable], rtol=RTOL
     )
 
 
