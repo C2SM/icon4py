@@ -1181,8 +1181,9 @@ dependencies = [
   {name = "typing-extensions"}
 ]
 name = "dace"
-source = {git = "https://github.com/spcl/dace?branch=main#fa4064dc1f1e05bf25b71c9b89e33380e98dcc10"}
-version = "2.0.0a8"
+sdist = {url = "https://files.pythonhosted.org/packages/76/34/a6e66f329ea94167c1c0da89dfaf053b1d90836ccab7161176dd12f10f9e/dace-2.0.0a9.tar.gz", hash = "sha256:ee9cd2a40c16fb09d559556433bb4f51b71fa88760fbc04306d54552775b5c4a", size = 6572070, upload-time = "2026-09-17T09:31:23.155Z"}
+source = {registry = "https://pypi.org/simple"}
+version = "2.0.0a9"
 
 [[package]]
 dependencies = [
@@ -1660,7 +1661,7 @@ dependencies = [
   {name = "xxhash"}
 ]
 name = "gt4py"
-source = {git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering#5445e8d21519ce2c7c27c535a741f22ddb6e2e78"}
+source = {git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering#14229cf54f384859ceacd2febb3ea08bf0af130c"}
 version = "1.2.2+unknown.version.details"
 
 [package.optional-dependencies]
@@ -2207,7 +2208,6 @@ profiling = [
 dependencies = [
   {name = "array-api-compat"},
   {name = "cattrs"},
-  {name = "dace"},
   {name = "gt4py"},
   {name = "numpy"},
   {name = "packaging"},
@@ -2228,7 +2228,6 @@ requires-dist = [
   {name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0"},
   {name = "cupy-cuda13x", marker = "extra == 'cuda13'", specifier = ">=14.0"},
   {name = "cupy-rocm-7-0", marker = "extra == 'rocm7'", specifier = ">=14.1.1"},
-  {name = "dace", git = "https://github.com/spcl/dace?branch=main"},
   {name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1"},
   {name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.9.0"},
   {name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace_refactor_lowering"},
