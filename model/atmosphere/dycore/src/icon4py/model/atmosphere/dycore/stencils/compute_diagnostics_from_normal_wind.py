@@ -28,8 +28,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _interpolate_to_half_levels(
-    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
     x: fa.EdgeKField[ta.wpfloat],
+    wgtfac_e: fa.EdgeKHalfField[ta.vpfloat],
 ) -> fa.EdgeKHalfField[ta.vpfloat]:
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
     x_ie_wp = wgtfac_e_wp * x(dims.KHalfDim + 0.5) + (wpfloat("1.0") - wgtfac_e_wp) * x(
@@ -78,10 +78,10 @@ def _compute_diagnostics_from_normal_wind(
     horizontal_kinetic_energy_at_edges_on_model_levels = _compute_horizontal_kinetic_energy(
         vn, tangential_wind
     )
-    vn_on_half_levels = _interpolate_to_half_levels(wgtfac_e, vn)
+    vn_on_half_levels = _interpolate_to_half_levels(vn, wgtfac_e)
 
     tangential_wind_on_half_levels = (
-        _interpolate_to_half_levels(wgtfac_e, tangential_wind)
+        _interpolate_to_half_levels(tangential_wind, wgtfac_e)
         if not skip_compute_predictor_vertical_advection
         else tangential_wind_on_half_levels
     )

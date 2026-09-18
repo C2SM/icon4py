@@ -25,8 +25,8 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_vp,
 )
-from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp import (
-    _interpolate_to_cell_center_vp,
+from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center import (
+    _interpolate_to_cell_center,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -444,17 +444,17 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
     wgtfac_c: fa.CellKHalfField[ta.vpfloat],
     nflatlev: gtx.int32,
 ) -> fa.CellKHalfField[ta.vpfloat]:
-    contravariant_correction_at_cells_model_levels = _interpolate_to_cell_center_vp(
-        contravariant_correction_at_edges_on_model_levels, e_bln_c_s
-    )
     contravariant_correction_at_cells_model_levels = astype(
-        contravariant_correction_at_cells_model_levels, vpfloat
+        _interpolate_to_cell_center(
+            astype(contravariant_correction_at_edges_on_model_levels, wpfloat), e_bln_c_s
+        ),
+        vpfloat,
     )
 
     contravariant_correction_at_cells_on_half_levels = concat_where(
         dims.KHalfDim >= nflatlev + 1,
         _interpolate_cell_field_to_half_levels_vp(
-            wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
+            interpolant=contravariant_correction_at_cells_model_levels, wgtfac_c=wgtfac_c
         ),
         broadcast(vpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
     )

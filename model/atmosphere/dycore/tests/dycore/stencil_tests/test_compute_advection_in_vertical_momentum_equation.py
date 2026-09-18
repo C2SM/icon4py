@@ -56,7 +56,7 @@ def interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
     contravariant_correction_at_cells_on_half_levels = np.where(
         condition,
         interpolate_cell_field_to_half_levels_vp_numpy(
-            wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
+            interpolant=contravariant_correction_at_cells_model_levels, wgtfac_c=wgtfac_c
         )[:, :-1],
         np.zeros_like(contravariant_correction_at_cells_on_half_levels),
     )

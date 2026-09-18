@@ -6,9 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Configuration of the tmx turbulent mixing granule.
+"""Configuration of the tmx turbulent mixing component.
 
-Kept apart from the granule itself so that reading or building a configuration does
+Kept apart from the component itself so that reading or building a configuration does
 not import the stencils.
 """
 
