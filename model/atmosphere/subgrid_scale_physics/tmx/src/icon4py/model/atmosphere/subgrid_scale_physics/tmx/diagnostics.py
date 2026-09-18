@@ -372,6 +372,10 @@ class Diagnostics:
         """
         log.debug("tmx diagnostics (Compute_diagnostics): start")
 
+        # overlaps with the thermodynamic diagnostics, which read neither u nor v
+        log.debug("communication of input u, v (cells): start")
+        u_v_exchange = self._exchange.start(dims.CellDim, input_state.u, input_state.v)
+
         self.compute_thermodynamic_diagnostics(
             temperature=input_state.temperature,
             virtual_temperature=input_state.virtual_temperature,
@@ -383,8 +387,7 @@ class Diagnostics:
             bruvais=diagnostic_state.bruvais,
         )
 
-        log.debug("communication of input u, v (cells): start")
-        self._exchange.exchange(dims.CellDim, input_state.u, input_state.v)
+        u_v_exchange.finish()
         log.debug("communication of input u, v (cells): end")
 
         self.interpolate_cell_vector_to_edge_normal(
