@@ -17,8 +17,13 @@ coordinate/variable attributes.
 
 import dataclasses
 import datetime as dt
+import logging
+import queue
+import threading
+import timeit
 import types
 import uuid
+from collections.abc import Callable
 from typing import Final, Protocol, Required, Self, TypedDict
 
 import numpy as np
@@ -29,6 +34,8 @@ from icon4py.model.common.io import cf_utils
 from icon4py.model.common.states import metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
+log = logging.getLogger(__name__)
 
 EDGE: Final[str] = "edge"
 VERTEX: Final[str] = "vertex"
@@ -206,3 +213,109 @@ def canonicalize_time_slice(
         canonical_slices[var_name] = canonical_slice
         host_data[var_name] = data_alloc.as_numpy(canonical_slice.data)
     return canonical_slices, host_data
+
+
+# ------------------------------------------------------------------------------------
+# Asynchronous writing
+# ------------------------------------------------------------------------------------
+
+#: Upper bound of queued write tasks of one ``AsyncWriteQueue``. A task holds host
+#: copies of one capture step's fields, so the bound also caps the staging memory at
+#: this many captures. At the bound, ``submit`` blocks until the background thread
+#: catches up (recorded in ``wait_seconds``).
+MAX_PENDING_WRITES: Final[int] = 2
+
+
+class AsyncWriteQueue:
+    """Bounded FIFO queue whose tasks run on a single background thread.
+
+    Writers submit their local file writes as tasks to overlap them with the model
+    computation. The single consumer thread preserves submission order, so the time
+    slices of a file are written in sequence. The thread never communicates: MPI
+    calls (e.g. the per-append barrier of rank-block zarr output) stay with the
+    submitter, so the ``MPI_THREAD_FUNNELED`` thread level suffices (requested in
+    ``decomposition.mpi_decomposition.init_mpi``).
+
+    A failed task is logged on the background thread and re-raised (chained) by the
+    next ``submit``, ``drain`` or ``shutdown`` call; queued tasks behind the failure
+    are discarded, draining the queue so a submitter is never left blocked on a dead
+    consumer.
+
+    The thread is a daemon, so a run aborting without ``close`` never hangs on an
+    orphaned writer thread; ``drain`` and ``shutdown`` are the orderly paths that
+    guarantee queued writes are on disk.
+    """
+
+    def __init__(self, *, name: str, max_pending: int):
+        self._tasks: queue.Queue[Callable[[], None] | None] = queue.Queue(maxsize=max_pending)
+        self._failure: Exception | None = None
+        self._wait_seconds: list[float] = []
+        self._task_seconds: list[float] = []
+        self._thread = threading.Thread(target=self._consume, name=f"io-{name}", daemon=True)
+        self._thread.start()
+
+    def _consume(self) -> None:
+        while True:
+            task = self._tasks.get()
+            try:
+                if task is None:
+                    return
+                if self._failure is None:
+                    start = timeit.default_timer()
+                    task()
+                    self._task_seconds.append(timeit.default_timer() - start)
+            except Exception as err:
+                self._failure = err
+                log.error(f"Asynchronous write task failed: {err}")
+            finally:
+                self._tasks.task_done()
+
+    def _raise_on_failure(self) -> None:
+        if self._failure is not None:
+            raise RuntimeError("An asynchronous write task failed.") from self._failure
+
+    def submit(self, task: Callable[[], None]) -> None:
+        """Queue a task, blocking while the queue is full (recorded in ``wait_seconds``).
+
+        A failure of a task queued earlier may surface here (see the class docstring).
+        """
+        self._raise_on_failure()
+        if not self._thread.is_alive():
+            raise RuntimeError("The write queue has been shut down.")
+        start = timeit.default_timer()
+        self._tasks.put(task)
+        self._wait_seconds.append(timeit.default_timer() - start)
+
+    def drain(self) -> None:
+        """Block until every queued task has run; re-raise the first failure."""
+        self._tasks.join()
+        self._raise_on_failure()
+
+    def shutdown(self) -> None:
+        """Drain the queue, stop and join the background thread; idempotent.
+
+        Re-raises the first failure, also on repeated calls.
+        """
+        if self._thread.is_alive():
+            self._tasks.put(None)
+            self._thread.join()
+        self._raise_on_failure()
+
+    @property
+    def wait_seconds(self) -> list[float]:
+        """Seconds ``submit`` blocked on a full queue, one entry per task.
+
+        The backpressure signal: near-zero as long as writing keeps up with the
+        model. Appended by ``submit``, so only the owning thread mutates the list.
+        """
+        return self._wait_seconds
+
+    @property
+    def task_seconds(self) -> list[float]:
+        """Seconds the background thread spent running each task.
+
+        This time overlaps the model computation, so it is not part of the
+        model-visible output overhead. Appended by the background thread: read it
+        after ``drain`` or ``shutdown`` for a settled value.
+        """
+        return self._task_seconds

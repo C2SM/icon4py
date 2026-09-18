@@ -78,6 +78,15 @@ class OutputDistribution(Protocol):
         """Rank-block layout for writers doing per-rank region writes, None otherwise."""
         ...
 
+    @property
+    def prepare_returns_copy(self) -> bool:
+        """Whether ``prepare`` returns arrays decoupled from the input state.
+
+        When False the result aliases the model state, and a caller keeping it past
+        the next state mutation (asynchronous writing) must copy it first.
+        """
+        ...
+
     def prepare(self, state: dict[str, xr.DataArray]) -> dict[str, xr.DataArray] | None:
         """Assemble the state to write on this rank (None if this rank does not write).
 
@@ -109,6 +118,11 @@ class SingleNodeDistribution:
     @property
     def rank_blocks(self) -> dict[str, "RankBlock"] | None:
         return None
+
+    @property
+    def prepare_returns_copy(self) -> bool:
+        """False: the state is passed through as is."""
+        return False
 
     def prepare(self, state: dict[str, xr.DataArray]) -> dict[str, xr.DataArray] | None:
         return state
@@ -282,6 +296,11 @@ class GatherDistribution:
     def rank_blocks(self) -> dict[str, RankBlock] | None:
         return None
 
+    @property
+    def prepare_returns_copy(self) -> bool:
+        """True: gathering assembles freshly allocated global arrays."""
+        return True
+
     def prepare(self, state: dict[str, xr.DataArray]) -> dict[str, xr.DataArray] | None:
         gathered: dict[str, xr.DataArray] = {}
         for name, field in state.items():
@@ -387,6 +406,11 @@ class RankBlockDistribution:
     @property
     def rank_blocks(self) -> dict[str, RankBlock]:
         return self._rank_blocks
+
+    @property
+    def prepare_returns_copy(self) -> bool:
+        """True: halo stripping selects the owned entries into fresh host arrays."""
+        return True
 
     def prepare(self, state: dict[str, xr.DataArray]) -> dict[str, xr.DataArray] | None:
         return {
