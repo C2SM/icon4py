@@ -23,9 +23,8 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_trace
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_advection import (
-    compute_tracer_advection_even_timestep_after_horizontal_limiter,
+    compute_tracer_advection_after_horizontal_limiter,
     compute_tracer_advection_even_timestep_before_horizontal_limiter,
-    compute_tracer_advection_odd_timestep_after_horizontal_limiter,
     compute_tracer_advection_odd_timestep_before_horizontal_limiter,
 )
 from icon4py.model.common import (
@@ -345,10 +344,11 @@ class GodunovSplittingAdvection(Advection):
             vertical_sizes=vertical_domains,
             offset_provider=self._grid.connectivities,
         )
-        self._compute_even_timestep_after_horizontal_limiter = setup_program(
+        self._compute_after_horizontal_limiter = setup_program(
             backend=self._backend,
-            program=compute_tracer_advection_even_timestep_after_horizontal_limiter,
+            program=compute_tracer_advection_after_horizontal_limiter,
             constant_args={
+                **shared_vertical_args,
                 "deepatmo_divh": metric_state.deepatmo_divh,
                 "geofac_div": interpolation_state.geofac_div,
                 "ihadv_tracer": gtx.int32(horizontal_advection_type.value),
@@ -378,26 +378,6 @@ class GodunovSplittingAdvection(Advection):
             vertical_sizes=vertical_domains,
             offset_provider=self._grid.connectivities,
         )
-        self._compute_odd_timestep_after_horizontal_limiter = setup_program(
-            backend=self._backend,
-            program=compute_tracer_advection_odd_timestep_after_horizontal_limiter,
-            constant_args={
-                **shared_vertical_args,
-                "deepatmo_divh": metric_state.deepatmo_divh,
-                "geofac_div": interpolation_state.geofac_div,
-                "ihadv_tracer": gtx.int32(horizontal_advection_type.value),
-                "itype_hlimit": gtx.int32(horizontal_advection_limiter.value),
-            },
-            horizontal_sizes={
-                "start_cell_nudging": self._start_cell_nudging,
-                "end_cell_local": self._end_cell_local,
-                "start_edge_lateral_boundary_level_5": self._start_edge_lateral_boundary_level_5,
-                "end_edge_halo": self._end_edge_halo,
-            },
-            vertical_sizes=vertical_domains,
-            offset_provider=self._grid.connectivities,
-        )
-
         log.debug("tracer_advection class init - end")
 
     def _determine_local_domains(self) -> None:
@@ -472,31 +452,21 @@ class GodunovSplittingAdvection(Advection):
 
         self._exchange.exchange(dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM)
 
-        if self._even_timestep:
-            self._compute_even_timestep_after_horizontal_limiter(
-                p_mflx_tracer_h=diagnostic_state.hfl_tracer,
-                p_tracer_new=p_tracer_new,
-                r_m=self._r_m,
-                p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
-                p_tracer_after_vertical=self._p_tracer_after_vertical,
-                rhodz_ast2=self._rhodz_ast2,
-                rhodz_new=diagnostic_state.airmass_new,
-                p_dtime=dtime,
-            )
-        else:
-            self._compute_odd_timestep_after_horizontal_limiter(
-                p_mflx_tracer_h=diagnostic_state.hfl_tracer,
-                p_mflx_tracer_v=diagnostic_state.vfl_tracer,
-                p_tracer_new=p_tracer_new,
-                r_m=self._r_m,
-                p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
-                p_tracer_now=p_tracer_now,
-                rhodz_ast2=self._rhodz_ast2,
-                rhodz_now=diagnostic_state.airmass_now,
-                rhodz_new=diagnostic_state.airmass_new,
-                p_mflx_contra_v=prep_adv.mass_flx_ic,
-                p_dtime=dtime,
-            )
+        self._compute_after_horizontal_limiter(
+            p_mflx_tracer_h=diagnostic_state.hfl_tracer,
+            p_mflx_tracer_v=diagnostic_state.vfl_tracer,
+            p_tracer_new=p_tracer_new,
+            r_m=self._r_m,
+            p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
+            p_tracer_now=p_tracer_now,
+            p_tracer_after_vertical=self._p_tracer_after_vertical,
+            rhodz_ast2=self._rhodz_ast2,
+            rhodz_now=diagnostic_state.airmass_now,
+            rhodz_new=diagnostic_state.airmass_new,
+            p_mflx_contra_v=prep_adv.mass_flx_ic,
+            do_vertical_first=gtx.int32(1 if self._even_timestep else 0),
+            p_dtime=dtime,
+        )
 
         if self._grid.limited_area:
             self._apply_interpolated_tracer_time_tendency(
