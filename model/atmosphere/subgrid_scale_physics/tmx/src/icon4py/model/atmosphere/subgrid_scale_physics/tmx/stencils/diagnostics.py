@@ -538,93 +538,6 @@ def _compute_edge_shear_diagnostics(
     return w_ie, vn_ie, vt_ie, shear, div_of_stress
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_edge_shear_diagnostics(
-    w: fa.CellKHalfField[wpfloat],
-    vn: fa.EdgeKField[wpfloat],
-    u_vert: fa.VertexKField[wpfloat],
-    v_vert: fa.VertexKField[wpfloat],
-    w_vert: fa.VertexKHalfField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    wgtfac_e: fa.EdgeKHalfField[wpfloat],
-    wgtfacq1_e: fa.EdgeKField[wpfloat],
-    wgtfacq_e: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
-    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
-    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
-    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
-    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
-    tangent_orientation: fa.EdgeField[wpfloat],
-    inv_primal_edge_length: fa.EdgeField[wpfloat],
-    inv_vert_vert_length: fa.EdgeField[wpfloat],
-    inv_dual_edge_length: fa.EdgeField[wpfloat],
-    inv_ddqz_z_full_e: fa.EdgeKField[wpfloat],
-    w_ie: fa.EdgeKHalfField[wpfloat],
-    vn_ie: fa.EdgeKHalfField[wpfloat],
-    vt_ie: fa.EdgeKHalfField[wpfloat],
-    shear: fa.EdgeKField[wpfloat],
-    div_of_stress: fa.EdgeKField[wpfloat],
-    nlev: gtx.int32,
-    edge_start_lateral_boundary_level_2: gtx.int32,
-    edge_start_lateral_boundary_level_3: gtx.int32,
-    edge_start_lateral_boundary_level_4: gtx.int32,
-    edge_end_halo_level_2: gtx.int32,
-    edge_end_halo_level_3: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-    vertical_end_half: gtx.int32,
-) -> None:
-    _compute_edge_shear_diagnostics(
-        w=w,
-        vn=vn,
-        u_vert=u_vert,
-        v_vert=v_vert,
-        w_vert=w_vert,
-        c_lin_e=c_lin_e,
-        wgtfac_e=wgtfac_e,
-        wgtfacq1_e=wgtfacq1_e,
-        wgtfacq_e=wgtfacq_e,
-        rbf_vec_coeff_e=rbf_vec_coeff_e,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        tangent_orientation=tangent_orientation,
-        inv_primal_edge_length=inv_primal_edge_length,
-        inv_vert_vert_length=inv_vert_vert_length,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_ddqz_z_full_e=inv_ddqz_z_full_e,
-        nlev=nlev,
-        out=(w_ie, vn_ie, vt_ie, shear, div_of_stress),
-        domain=(
-            # w_ie
-            {
-                dims.EdgeDim: (edge_start_lateral_boundary_level_2, edge_end_halo_level_2),
-                dims.KHalfDim: (vertical_start, vertical_end_half),
-            },
-            # vn_ie
-            {
-                dims.EdgeDim: (edge_start_lateral_boundary_level_2, edge_end_halo_level_3),
-                dims.KHalfDim: (vertical_start, vertical_end_half),
-            },
-            # vt_ie
-            {
-                dims.EdgeDim: (edge_start_lateral_boundary_level_3, edge_end_halo_level_2),
-                dims.KHalfDim: (vertical_start, vertical_end_half),
-            },
-            # shear / div_of_stress
-            {
-                dims.EdgeDim: (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
-                dims.KDim: (vertical_start, vertical_end),
-            },
-            {
-                dims.EdgeDim: (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
-                dims.KDim: (vertical_start, vertical_end),
-            },
-        ),
-    )
-
-
 # ---------------------------------------------------------------------------
 # Compute_diagnostics: cell diagnostics
 # ---------------------------------------------------------------------------
@@ -654,42 +567,6 @@ def _compute_strain_rate_diagnostics(
         wgtfac_c=wgtfac_c,
     )
     return div_c, mech_prod
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_strain_rate_diagnostics(
-    shear: fa.EdgeKField[wpfloat],
-    div_of_stress: fa.EdgeKField[wpfloat],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    wgtfac_c: fa.CellKHalfField[wpfloat],
-    div_c: fa.CellKField[wpfloat],
-    mech_prod: fa.CellKHalfField[wpfloat],
-    cell_start_nudging: gtx.int32,
-    cell_start_lateral_boundary_level_3: gtx.int32,
-    cell_end_halo: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_start_interior: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _compute_strain_rate_diagnostics(
-        shear=shear,
-        div_of_stress=div_of_stress,
-        e_bln_c_s=e_bln_c_s,
-        wgtfac_c=wgtfac_c,
-        out=(div_c, mech_prod),
-        domain=(
-            # div_c
-            {
-                dims.CellDim: (cell_start_nudging, cell_end_halo),
-                dims.KDim: (vertical_start, vertical_end),
-            },
-            # mech_prod
-            {
-                dims.CellDim: (cell_start_lateral_boundary_level_3, cell_end_halo),
-                dims.KHalfDim: (vertical_start_interior, vertical_end),
-            },
-        ),
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -830,17 +707,38 @@ def _compute_eddy_viscosity(
     return km_ic, kh_ic
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_eddy_viscosity(
-    mech_prod: fa.CellKHalfField[wpfloat],
+# ---------------------------------------------------------------------------
+# Compute_diagnostics: edge shear, strain rate and eddy viscosity, fused
+# ---------------------------------------------------------------------------
+@gtx.field_operator
+def _compute_shear_and_viscosity_diagnostics(
+    w: fa.CellKHalfField[wpfloat],
+    vn: fa.EdgeKField[wpfloat],
+    u_vert: fa.VertexKField[wpfloat],
+    v_vert: fa.VertexKField[wpfloat],
+    w_vert: fa.VertexKHalfField[wpfloat],
     bruvais: fa.CellKHalfField[wpfloat],
     rho_ic: fa.CellKHalfField[wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    wgtfac_e: fa.EdgeKHalfField[wpfloat],
+    wgtfacq1_e: fa.EdgeKField[wpfloat],
+    wgtfacq_e: fa.EdgeKField[wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
+    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    inv_vert_vert_length: fa.EdgeField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_ddqz_z_full_e: fa.EdgeKField[wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
+    wgtfac_c: fa.CellKHalfField[wpfloat],
     mixing_length_sq: fa.CellKHalfField[wpfloat],
     scaling_factor_louis: fa.CellField[wpfloat],
     fract_land: fa.CellField[wpfloat],
     fract_ice: fa.CellField[wpfloat],
-    km_ic: fa.CellKHalfField[wpfloat],
-    kh_ic: fa.CellKHalfField[wpfloat],
     rturb_prandtl: wpfloat,
     louis_constant_b: wpfloat,
     km_const: wpfloat,
@@ -849,12 +747,47 @@ def compute_eddy_viscosity(
     use_louis_land: bool,
     use_louis_ice: bool,
     nlev: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-) -> None:
-    _compute_eddy_viscosity(
+) -> tuple[
+    fa.EdgeKHalfField[wpfloat],
+    fa.EdgeKHalfField[wpfloat],
+    fa.EdgeKHalfField[wpfloat],
+    fa.EdgeKField[wpfloat],
+    fa.EdgeKField[wpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKHalfField[wpfloat],
+    fa.CellKHalfField[wpfloat],
+    fa.CellKHalfField[wpfloat],
+]:
+    """The edge, strain-rate and eddy-viscosity diagnostics in one operator."""
+    w_ie, vn_ie, vt_ie, shear, div_of_stress = _compute_edge_shear_diagnostics(
+        w=w,
+        vn=vn,
+        u_vert=u_vert,
+        v_vert=v_vert,
+        w_vert=w_vert,
+        c_lin_e=c_lin_e,
+        wgtfac_e=wgtfac_e,
+        wgtfacq1_e=wgtfacq1_e,
+        wgtfacq_e=wgtfacq_e,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        tangent_orientation=tangent_orientation,
+        inv_primal_edge_length=inv_primal_edge_length,
+        inv_vert_vert_length=inv_vert_vert_length,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_ddqz_z_full_e=inv_ddqz_z_full_e,
+        nlev=nlev,
+    )
+    div_c, mech_prod = _compute_strain_rate_diagnostics(
+        shear=shear,
+        div_of_stress=div_of_stress,
+        e_bln_c_s=e_bln_c_s,
+        wgtfac_c=wgtfac_c,
+    )
+    km_ic, kh_ic = _compute_eddy_viscosity(
         mech_prod=mech_prod,
         bruvais=bruvais,
         rho_ic=rho_ic,
@@ -870,11 +803,154 @@ def compute_eddy_viscosity(
         use_louis_land=use_louis_land,
         use_louis_ice=use_louis_ice,
         nlev=nlev,
-        out=(km_ic, kh_ic),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KHalfDim: (vertical_start, vertical_end),
-        },
+    )
+    return w_ie, vn_ie, vt_ie, shear, div_of_stress, div_c, mech_prod, km_ic, kh_ic
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_shear_and_viscosity_diagnostics(
+    w: fa.CellKHalfField[wpfloat],
+    vn: fa.EdgeKField[wpfloat],
+    u_vert: fa.VertexKField[wpfloat],
+    v_vert: fa.VertexKField[wpfloat],
+    w_vert: fa.VertexKHalfField[wpfloat],
+    bruvais: fa.CellKHalfField[wpfloat],
+    rho_ic: fa.CellKHalfField[wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    wgtfac_e: fa.EdgeKHalfField[wpfloat],
+    wgtfacq1_e: fa.EdgeKField[wpfloat],
+    wgtfacq_e: fa.EdgeKField[wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
+    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    inv_vert_vert_length: fa.EdgeField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_ddqz_z_full_e: fa.EdgeKField[wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
+    wgtfac_c: fa.CellKHalfField[wpfloat],
+    mixing_length_sq: fa.CellKHalfField[wpfloat],
+    scaling_factor_louis: fa.CellField[wpfloat],
+    fract_land: fa.CellField[wpfloat],
+    fract_ice: fa.CellField[wpfloat],
+    w_ie: fa.EdgeKHalfField[wpfloat],
+    vn_ie: fa.EdgeKHalfField[wpfloat],
+    vt_ie: fa.EdgeKHalfField[wpfloat],
+    shear: fa.EdgeKField[wpfloat],
+    div_of_stress: fa.EdgeKField[wpfloat],
+    div_c: fa.CellKField[wpfloat],
+    mech_prod: fa.CellKHalfField[wpfloat],
+    km_ic: fa.CellKHalfField[wpfloat],
+    kh_ic: fa.CellKHalfField[wpfloat],
+    rturb_prandtl: wpfloat,
+    louis_constant_b: wpfloat,
+    km_const: wpfloat,
+    use_km_const: bool,
+    use_louis: bool,
+    use_louis_land: bool,
+    use_louis_ice: bool,
+    nlev: gtx.int32,
+    edge_start_lateral_boundary_level_2: gtx.int32,
+    edge_start_lateral_boundary_level_3: gtx.int32,
+    edge_start_lateral_boundary_level_4: gtx.int32,
+    edge_end_halo_level_2: gtx.int32,
+    edge_end_halo_level_3: gtx.int32,
+    cell_start_nudging: gtx.int32,
+    cell_start_lateral_boundary_level_3: gtx.int32,
+    cell_end_local: gtx.int32,
+    cell_end_halo: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_start_interior: gtx.int32,
+    vertical_end: gtx.int32,
+    vertical_end_half: gtx.int32,
+) -> None:
+    _compute_shear_and_viscosity_diagnostics(
+        w=w,
+        vn=vn,
+        u_vert=u_vert,
+        v_vert=v_vert,
+        w_vert=w_vert,
+        bruvais=bruvais,
+        rho_ic=rho_ic,
+        c_lin_e=c_lin_e,
+        wgtfac_e=wgtfac_e,
+        wgtfacq1_e=wgtfacq1_e,
+        wgtfacq_e=wgtfacq_e,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        tangent_orientation=tangent_orientation,
+        inv_primal_edge_length=inv_primal_edge_length,
+        inv_vert_vert_length=inv_vert_vert_length,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_ddqz_z_full_e=inv_ddqz_z_full_e,
+        e_bln_c_s=e_bln_c_s,
+        wgtfac_c=wgtfac_c,
+        mixing_length_sq=mixing_length_sq,
+        scaling_factor_louis=scaling_factor_louis,
+        fract_land=fract_land,
+        fract_ice=fract_ice,
+        rturb_prandtl=rturb_prandtl,
+        louis_constant_b=louis_constant_b,
+        km_const=km_const,
+        use_km_const=use_km_const,
+        use_louis=use_louis,
+        use_louis_land=use_louis_land,
+        use_louis_ice=use_louis_ice,
+        nlev=nlev,
+        out=(w_ie, vn_ie, vt_ie, shear, div_of_stress, div_c, mech_prod, km_ic, kh_ic),
+        domain=(
+            # w_ie
+            {
+                dims.EdgeDim: (edge_start_lateral_boundary_level_2, edge_end_halo_level_2),
+                dims.KHalfDim: (vertical_start, vertical_end_half),
+            },
+            # vn_ie
+            {
+                dims.EdgeDim: (edge_start_lateral_boundary_level_2, edge_end_halo_level_3),
+                dims.KHalfDim: (vertical_start, vertical_end_half),
+            },
+            # vt_ie
+            {
+                dims.EdgeDim: (edge_start_lateral_boundary_level_3, edge_end_halo_level_2),
+                dims.KHalfDim: (vertical_start, vertical_end_half),
+            },
+            # shear
+            {
+                dims.EdgeDim: (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            # div_of_stress
+            {
+                dims.EdgeDim: (edge_start_lateral_boundary_level_4, edge_end_halo_level_2),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            # div_c
+            {
+                dims.CellDim: (cell_start_nudging, cell_end_halo),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            # mech_prod
+            {
+                dims.CellDim: (cell_start_lateral_boundary_level_3, cell_end_halo),
+                dims.KHalfDim: (vertical_start_interior, vertical_end),
+            },
+            # km_ic
+            {
+                dims.CellDim: (cell_start_lateral_boundary_level_3, cell_end_local),
+                dims.KHalfDim: (vertical_start, vertical_end_half),
+            },
+            # kh_ic
+            {
+                dims.CellDim: (cell_start_lateral_boundary_level_3, cell_end_local),
+                dims.KHalfDim: (vertical_start, vertical_end_half),
+            },
+        ),
     )
 
 

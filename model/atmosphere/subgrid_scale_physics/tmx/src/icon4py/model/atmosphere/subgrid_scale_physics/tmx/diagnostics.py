@@ -139,7 +139,7 @@ class Diagnostics:
         self._vertex_end_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
         self._initialize_static_fields(backend)
-        self._setup_diagnostics_programs(backend, num_levels)
+        self._setup_programs(backend, num_levels)
 
     def _initialize_static_fields(self, backend: model_backends.BackendLike) -> None:
         """Allocate the fields that only depend on the grid and run ``Smagorinsky_init``
@@ -150,14 +150,6 @@ class Diagnostics:
         self.mixing_length_sq: fa.CellKHalfField[ta.wpfloat] = zero_field(
             dims.CellDim, dims.KHalfDim
         )
-        # cell-area scaling factor of the Louis constant b
-        self.scaling_factor_louis: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
-
-        # land and sea-ice fractions: the atmosphere-only port has no source for them,
-        # so they stay zero (see the warning in __init__)
-        self.fract_land: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
-        self.fract_ice: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
-
         # compute_mixing_length (mo_tmx_smagorinsky.f90): cells rl 3..min_rlcell_int,
         # all half levels
         diag_stencils.compute_smagorinsky_mixing_length.with_backend(backend)(
@@ -174,9 +166,10 @@ class Diagnostics:
             vertical_end=gtx.int32(self._grid.num_levels + 1),
             offset_provider={},
         )
+        # cell-area scaling factor of the Louis constant b; the viscosity stencil takes it
+        # in either branch, so it is allocated (and stays zero) with Louis switched off
+        self.scaling_factor_louis: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
         if self._use_louis:
-            # the Fortran init only computes the Louis scaling factor if the
-            # Louis stability correction is enabled; the field stays zero otherwise
             # compute_scaling_factor_louis (mo_tmx_smagorinsky.f90): cells rl
             # 3..min_rlcell_int
             diag_stencils.compute_scaling_factor_louis.with_backend(backend)(
@@ -187,7 +180,12 @@ class Diagnostics:
                 offset_provider={},
             )
 
-    def _setup_diagnostics_programs(
+        # land and sea-ice fractions: the atmosphere-only port has no source for them,
+        # so they stay zero (see the warning in __init__)
+        self.fract_land: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
+        self.fract_ice: fa.CellField[ta.wpfloat] = zero_field(dims.CellDim)
+
+    def _setup_programs(
         self,
         backend: model_backends.BackendLike,
         num_levels: int,
@@ -272,11 +270,14 @@ class Diagnostics:
         )
         # cells2edges_scalar (w -> w_ie),
         # interpolate_normal_velocity_edge_interface (vn -> vn_ie),
-        # rbf_vec_interpol_edge (vn_ie -> vt_ie) and
-        # compute_velocity_gradient_tensor + compute_shear
-        self.compute_edge_shear_diagnostics = setup_program(
+        # rbf_vec_interpol_edge (vn_ie -> vt_ie),
+        # compute_velocity_gradient_tensor + compute_shear,
+        # get_horizontal_divergence_strain_rate_cell (div_of_stress -> div_c),
+        # interpolate_rate_of_strain_full2half_edge2cell (shear -> mech_prod) and
+        # Smagorinsky_model / Assign_constant_eddy_viscosity (-> km_ic, kh_ic)
+        self.compute_shear_and_viscosity_diagnostics = setup_program(
             backend=backend,
-            program=diag_stencils.compute_edge_shear_diagnostics,
+            program=diag_stencils.compute_shear_and_viscosity_diagnostics,
             constant_args={
                 "c_lin_e": self._interpolation_state.c_lin_e,
                 "wgtfac_e": self._metric_state.wgtfac_e,
@@ -292,52 +293,8 @@ class Diagnostics:
                 "inv_vert_vert_length": self._edge_params.inverse_vertex_vertex_lengths,
                 "inv_dual_edge_length": self._edge_params.inverse_dual_edge_lengths,
                 "inv_ddqz_z_full_e": self._metric_state.inv_ddqz_z_full_e,
-            },
-            horizontal_sizes={
-                "edge_start_lateral_boundary_level_2": self._edge_start_lateral_boundary_level_2,
-                "edge_start_lateral_boundary_level_3": self._edge_start_lateral_boundary_level_3,
-                "edge_start_lateral_boundary_level_4": self._edge_start_lateral_boundary_level_4,
-                "edge_end_halo_level_2": self._edge_end_halo_level_2,
-                "edge_end_halo_level_3": self._edge_end_halo_level_3,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels),
-                "vertical_end_half": gtx.int32(num_levels + 1),
-                "nlev": gtx.int32(num_levels),
-            },
-            offset_provider=self._grid.connectivities,
-        )
-        # get_horizontal_divergence_strain_rate_cell (div_of_stress -> div_c) and
-        # interpolate_rate_of_strain_full2half_edge2cell (shear -> mech_prod)
-        self.compute_strain_rate_diagnostics = setup_program(
-            backend=backend,
-            program=diag_stencils.compute_strain_rate_diagnostics,
-            constant_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
                 "wgtfac_c": self._metric_state.wgtfac_c,
-            },
-            horizontal_sizes={
-                "cell_start_nudging": self._cell_start_nudging,
-                "cell_start_lateral_boundary_level_3": self._cell_start_lateral_boundary_level_3,
-                "cell_end_halo": self._cell_end_halo,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_start_interior": gtx.int32(1),
-                "vertical_end": gtx.int32(num_levels),
-            },
-            offset_provider=self._grid.connectivities,
-        )
-        # Smagorinsky_model / Assign_constant_eddy_viscosity (-> km_ic, kh_ic):
-        # cells rl 3..min_rlcell_int, all half levels (rows 0 and nlev are copies
-        # of the adjacent interior rows). Not fused with
-        # the strain-rate diagnostics: the bottom row would read the mechanical
-        # production one full level below the last one.
-        self.compute_viscosity = setup_program(
-            backend=backend,
-            program=diag_stencils.compute_eddy_viscosity,
-            constant_args={
                 "mixing_length_sq": self.mixing_length_sq,
                 "scaling_factor_louis": self.scaling_factor_louis,
                 "fract_land": self.fract_land,
@@ -351,15 +308,24 @@ class Diagnostics:
                 "use_louis_ice": self._use_louis_ice,
             },
             horizontal_sizes={
-                "horizontal_start": self._cell_start_lateral_boundary_level_3,
-                "horizontal_end": self._cell_end_local,
+                "edge_start_lateral_boundary_level_2": self._edge_start_lateral_boundary_level_2,
+                "edge_start_lateral_boundary_level_3": self._edge_start_lateral_boundary_level_3,
+                "edge_start_lateral_boundary_level_4": self._edge_start_lateral_boundary_level_4,
+                "edge_end_halo_level_2": self._edge_end_halo_level_2,
+                "edge_end_halo_level_3": self._edge_end_halo_level_3,
+                "cell_start_nudging": self._cell_start_nudging,
+                "cell_start_lateral_boundary_level_3": self._cell_start_lateral_boundary_level_3,
+                "cell_end_local": self._cell_end_local,
+                "cell_end_halo": self._cell_end_halo,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(num_levels + 1),
+                "vertical_start_interior": gtx.int32(1),
+                "vertical_end": gtx.int32(num_levels),
+                "vertical_end_half": gtx.int32(num_levels + 1),
                 "nlev": gtx.int32(num_levels),
             },
-            offset_provider={},
+            offset_provider=self._grid.connectivities,
         )
         # the km/kh loops that follow the kh_ic/km_ic exchange
         # ('interpolate_eddy_viscosity2cell' / '2vertex' / '2edge' in
@@ -427,6 +393,8 @@ class Diagnostics:
             normal_component=diagnostic_state.vn,
         )
 
+        # TODO(havogt): this halo_exchange can probably be skipped if we overcompute
+        # in `interpolate_cell_vector_to_edge_normal`.
         log.debug("communication of vn (edges): start")
         self._exchange.exchange(dims.EdgeDim, diagnostic_state.vn)
         log.debug("communication of vn (edges): end")
@@ -448,29 +416,21 @@ class Diagnostics:
         )
         log.debug("communication of w_vert, u_vert, v_vert (vertices): end")
 
-        self.compute_edge_shear_diagnostics(
+        self.compute_shear_and_viscosity_diagnostics(
             w=input_state.w,
             vn=diagnostic_state.vn,
             u_vert=diagnostic_state.u_vert,
             v_vert=diagnostic_state.v_vert,
             w_vert=diagnostic_state.w_vert,
+            bruvais=diagnostic_state.bruvais,
+            rho_ic=diagnostic_state.rho_ic,
             w_ie=diagnostic_state.w_ie,
             vn_ie=diagnostic_state.vn_ie,
             vt_ie=diagnostic_state.vt_ie,
             shear=diagnostic_state.shear,
             div_of_stress=diagnostic_state.div_of_stress,
-        )
-        self.compute_strain_rate_diagnostics(
-            shear=diagnostic_state.shear,
-            div_of_stress=diagnostic_state.div_of_stress,
             div_c=diagnostic_state.div_c,
             mech_prod=diagnostic_state.mech_prod,
-        )
-
-        self.compute_viscosity(
-            mech_prod=diagnostic_state.mech_prod,
-            bruvais=diagnostic_state.bruvais,
-            rho_ic=diagnostic_state.rho_ic,
             km_ic=diagnostic_state.km_ic,
             kh_ic=diagnostic_state.kh_ic,
         )
