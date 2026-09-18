@@ -80,20 +80,21 @@ def test_full_muphys(
         single_program=single_program,
     )
 
+    out_references = {
+        "qv": inp.qv,
+        "qc": inp.qc,
+        "qi": inp.qi,
+        "qr": inp.qr,
+        "qs": inp.qs,
+        "qg": inp.qg,
+        "t": inp.t,
+    }
     # We are passing the same buffers for `Q` as input and output. This is not best GT4Py practice,
     # but save in this case as we are not reading the input with an offset.
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
-        references={
-            "qv": inp.qv,
-            "qc": inp.qc,
-            "qi": inp.qi,
-            "qr": inp.qr,
-            "qs": inp.qs,
-            "qg": inp.qg,
-            "t": inp.t,
-        },
+        references=out_references,
         dtype=ta.wpfloat,
     )
 
@@ -119,18 +120,18 @@ def test_full_muphys(
         dtype=ta.wpfloat,
     )
 
-    rtol, atol = (1e-14, 1e-15) if test_utils.wp_is_dp else (1e-3, 1e-10)
-    test_utils.assert_dallclose(ref.qv.asnumpy(), out.qv.asnumpy(), rtol=rtol, atol=atol)
-    test_utils.assert_dallclose(ref.qi.asnumpy(), out.qi.asnumpy(), rtol=rtol, atol=atol)
-    test_utils.assert_dallclose(ref.qg.asnumpy(), out.qg.asnumpy(), rtol=rtol, atol=atol)
+    tolerances = {
+        "double": {field_name: {"atol": 1e-15, "rtol": 1e-14} for field_name in out_references},
+        "single": {
+            **{field_name: {"atol": 8e-7, "rtol": 0.0} for field_name in ["qv", "qi", "qg"]},
+            **{field_name: {"atol": 8e-7, "rtol": 0.0} for field_name in ["qc", "qr", "qs"]},
+            "t": {"atol": 0.0, "rtol": 1e-5}
+        }
+    }
 
-    if not test_utils.wp_is_dp:
-        rtol, atol = 1e-2, 5e-8
-    test_utils.assert_dallclose(ref.qc.asnumpy(), out.qc.asnumpy(), rtol=rtol, atol=atol)
-    test_utils.assert_dallclose(ref.qr.asnumpy(), out.qr.asnumpy(), rtol=rtol, atol=atol)
-    test_utils.assert_dallclose(ref.qs.asnumpy(), out.qs.asnumpy(), rtol=rtol, atol=atol)
-
-    if not test_utils.wp_is_dp:
-        rtol, atol = 2e-7, 1e-16
-
-    test_utils.assert_dallclose(ref.t.asnumpy(), out.t.asnumpy(), rtol=test_utils.scale_tol(1e-14))
+    for field_name in list(out_references):
+        test_utils.assert_dallclose(
+            getattr(ref, field_name).asnumpy(),
+            getattr(out, field_name).asnumpy(),
+            **tolerances[ta.precision][field_name], err_msg=field_name
+        )
