@@ -192,7 +192,7 @@ class State(PhysicsState):
         """
         assert self._tracers is not None, "gather_from_prognostic must be called first"
         # convert to seconds only at the gt4py boundary (stencils take a scalar dt)
-        dt_seconds = dtime.total_seconds()
+        dt_seconds = ta.wpfloat(dtime.total_seconds())
         # 1. Apply moisture tendencies to the tracers (in place; tracers were bound in gather).
         for s in SPECIES:
             tracer = getattr(self._tracers, f"q{s}")

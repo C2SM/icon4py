@@ -61,7 +61,7 @@ class MuphysComponent:
     ) -> None:
         self._ncells = grid.num_cells
         self._nlev = grid.num_levels
-        self._dt_seconds = dtime.total_seconds()
+        self._dt_seconds = ta.wpfloat(dtime.total_seconds())
         self._qnc = qnc
         self._backend = model_options.customize_backend(program=None, backend=backend)
 

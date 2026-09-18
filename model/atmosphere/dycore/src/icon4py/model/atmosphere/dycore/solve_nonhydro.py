@@ -1502,7 +1502,7 @@ class SolveNonhydro:
                     )
                     self._set_constant_on_half_levels_on_cells(
                         field=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
-                        value=0.0,
+                        value=ta.wpfloat(0.0),
                     )
                 self._update_mass_flux_weighted(
                     rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
