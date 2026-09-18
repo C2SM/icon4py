@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.testing import filters
+from icon4py.model.testing import filters, stencil_tests
 
 
 __all__ = [
@@ -123,6 +123,16 @@ def pytest_addoption(parser: pytest.Parser):
 
     with contextlib.suppress(ValueError):
         parser.addoption(
+            "--static-variant",
+            action="store",
+            default=None,
+            choices=[variant.value for variant in stencil_tests.StandardStaticVariants],
+            help="Run only this variant of the `StencilTest`s parametrized over `STATIC_PARAMS`, "
+            "e.g. 'compile_time_domain'. Suites that do not define it run all their variants.",
+        )
+
+    with contextlib.suppress(ValueError):
+        parser.addoption(
             "--mpi-subcomm-size",
             action="store",
             type=int,
@@ -140,6 +150,9 @@ def pytest_collection_modifyitems(config, items):
         items[:] = scheduler.filter_items(items)
         if not items:
             pytest.exit("No tests assigned to this MPI subcomm group", returncode=0)
+
+    if (static_variant := config.getoption("--static-variant")) is not None:
+        _deselect_other_static_variants(config, items, static_variant)
 
     test_level = config.getoption("--level")
     if test_level == "any":
@@ -174,6 +187,21 @@ def pytest_collection_modifyitems(config, items):
     if removed_items:
         config.hook.pytest_deselected(items=removed_items)
     items[:] = matched_items
+
+
+def _deselect_other_static_variants(
+    config: pytest.Config, items: list[pytest.Item], static_variant: str
+) -> None:
+    def is_other_variant(item: pytest.Item) -> bool:
+        static_params = getattr(getattr(item, "cls", None), "STATIC_PARAMS", None) or {}
+        callspec = getattr(item, "callspec", None)
+        param = callspec.params.get("static_variant") if callspec is not None else None
+        return static_variant in static_params and param is not None and param[0] != static_variant
+
+    removed_items = [item for item in items if is_other_variant(item)]
+    if removed_items:
+        config.hook.pytest_deselected(items=removed_items)
+        items[:] = [item for item in items if not is_other_variant(item)]
 
 
 @pytest.hookimpl(trylast=True)
