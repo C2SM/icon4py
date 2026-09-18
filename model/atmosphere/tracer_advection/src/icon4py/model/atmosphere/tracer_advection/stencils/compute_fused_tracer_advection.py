@@ -418,6 +418,151 @@ def compute_tracer_advection_even_timestep_before_horizontal_limiter(
 
 
 @gtx.field_operator
+def _compute_tracer_advection_odd_timestep_before_horizontal_limiter(
+    rhodz_now: fa.CellKField[ta.wpfloat],
+    rhodz_new: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
+    p_tracer_now: fa.CellKField[ta.wpfloat],
+    p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
+    p_vn: fa.EdgeKField[ta.wpfloat],
+    deepatmo_divzl: fa.KField[ta.wpfloat],
+    deepatmo_divzu: fa.KField[ta.wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
+    dbl_eps: ta.wpfloat,
+    p_dtime: ta.wpfloat,
+    ihadv_tracer: gtx.int32,
+    itype_hlimit: gtx.int32,
+) -> tuple[fa.CellKField[ta.wpfloat], fa.EdgeKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
+    rhodz_ast2 = _apply_density_increment(
+        rhodz_in=rhodz_new,
+        p_mflx_contra_v=p_mflx_contra_v,
+        deepatmo_divzl=deepatmo_divzl,
+        deepatmo_divzu=deepatmo_divzu,
+        p_dtime=p_dtime,
+        even_timestep=False,
+    )
+    p_mflx_tracer_h_unlimited = (
+        _compute_2nd_order_miura_horizontal_flux(
+            p_cc=p_tracer_now,
+            p_mass_flx_e=p_mass_flx_e,
+            p_vn=p_vn,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
+            pos_on_tplane_e_1=pos_on_tplane_e_1,
+            pos_on_tplane_e_2=pos_on_tplane_e_2,
+            primal_normal_cell_1=primal_normal_cell_1,
+            dual_normal_cell_1=dual_normal_cell_1,
+            primal_normal_cell_2=primal_normal_cell_2,
+            dual_normal_cell_2=dual_normal_cell_2,
+            lsq_pseudoinv_1=lsq_pseudoinv_1,
+            lsq_pseudoinv_2=lsq_pseudoinv_2,
+            p_dtime=p_dtime,
+        )
+        if (ihadv_tracer == 2)
+        else broadcast(0.0, (dims.EdgeDim, dims.KDim))
+    )
+    r_m = (
+        _compute_positive_definite_horizontal_multiplicative_flux_factor(
+            geofac_div=geofac_div,
+            p_cc=p_tracer_now,
+            p_rhodz_now=rhodz_now,
+            p_mflx_tracer_h=p_mflx_tracer_h_unlimited,
+            p_dtime=p_dtime,
+            dbl_eps=dbl_eps,
+        )
+        if (itype_hlimit == 4)
+        else broadcast(1.0, (dims.CellDim, dims.KDim))
+    )
+    return rhodz_ast2, p_mflx_tracer_h_unlimited, r_m
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_tracer_advection_odd_timestep_before_horizontal_limiter(
+    rhodz_ast2: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_h_unlimited: fa.EdgeKField[ta.wpfloat],
+    r_m: fa.CellKField[ta.wpfloat],
+    rhodz_now: fa.CellKField[ta.wpfloat],
+    rhodz_new: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKHalfField[ta.wpfloat],
+    p_tracer_now: fa.CellKField[ta.wpfloat],
+    p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
+    p_vn: fa.EdgeKField[ta.wpfloat],
+    deepatmo_divzl: fa.KField[ta.wpfloat],
+    deepatmo_divzu: fa.KField[ta.wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
+    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
+    dbl_eps: ta.wpfloat,
+    p_dtime: ta.wpfloat,
+    ihadv_tracer: gtx.int32,
+    itype_hlimit: gtx.int32,
+    start_cell_lateral_boundary_level_2: gtx.int32,
+    start_cell_lateral_boundary_level_3: gtx.int32,
+    end_cell_local: gtx.int32,
+    end_cell_end: gtx.int32,
+    start_edge_lateral_boundary_level_5: gtx.int32,
+    end_edge_halo: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    _compute_tracer_advection_odd_timestep_before_horizontal_limiter(
+        rhodz_now=rhodz_now,
+        rhodz_new=rhodz_new,
+        p_mflx_contra_v=p_mflx_contra_v,
+        p_tracer_now=p_tracer_now,
+        p_mass_flx_e=p_mass_flx_e,
+        p_vn=p_vn,
+        deepatmo_divzl=deepatmo_divzl,
+        deepatmo_divzu=deepatmo_divzu,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        pos_on_tplane_e_1=pos_on_tplane_e_1,
+        pos_on_tplane_e_2=pos_on_tplane_e_2,
+        primal_normal_cell_1=primal_normal_cell_1,
+        dual_normal_cell_1=dual_normal_cell_1,
+        primal_normal_cell_2=primal_normal_cell_2,
+        dual_normal_cell_2=dual_normal_cell_2,
+        lsq_pseudoinv_1=lsq_pseudoinv_1,
+        lsq_pseudoinv_2=lsq_pseudoinv_2,
+        geofac_div=geofac_div,
+        dbl_eps=dbl_eps,
+        p_dtime=p_dtime,
+        ihadv_tracer=ihadv_tracer,
+        itype_hlimit=itype_hlimit,
+        out=(rhodz_ast2, p_mflx_tracer_h_unlimited, r_m),
+        domain=(
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_end),
+                dims.KDim: (0, vertical_end),
+            },
+            {
+                dims.EdgeDim: (start_edge_lateral_boundary_level_5, end_edge_halo),
+                dims.KDim: (0, vertical_end),
+            },
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_2, end_cell_local),
+                dims.KDim: (0, vertical_end),
+            },
+        ),
+    )
+
+
+
+
+@gtx.field_operator
 def _compute_tracer_advection_after_horizontal_limiter(
     r_m: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h_unlimited: fa.EdgeKField[ta.wpfloat],
