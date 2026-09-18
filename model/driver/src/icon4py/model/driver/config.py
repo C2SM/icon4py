@@ -26,6 +26,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys import config as muphys_config
 from icon4py.model.atmosphere.tracer_advection import tracer_advection
 from icon4py.model.common import (
+    backend_configuration as backend_cfg,
     initial_condition,
     prescribed_tendencies,
     time,
@@ -247,6 +248,17 @@ class DriverConfig:
             icon_equivalent=None,
         ),
     ] = False
+    backend_config: typing.Annotated[
+        backend_cfg.BackendConfig | None,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Backend configuration options, which affect performance but not "
+                "the scientific outcome. `None` falls back to environment variables, "
+                "if set, otherwise the default configuration is used."
+            ),
+            icon_equivalent=None,
+        ),
+    ] = dataclasses.field(default_factory=backend_cfg.backend_config_from_env)
     output_backend: typing.Annotated[
         common_io.OutputBackend,
         common_conf_opt.ConfigOption(
