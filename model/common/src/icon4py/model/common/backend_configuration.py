@@ -24,12 +24,14 @@ from __future__ import annotations
 
 import dataclasses
 import os
+import typing
 from collections.abc import Iterable
 from typing import ClassVar, Final
 
 import gt4py.next as gtx
 from gt4py.next.program_processors.runners.dace.workflow import common as gtx_wfdcommon
 
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.utils import data_allocation
 
 
@@ -37,8 +39,19 @@ from icon4py.model.common.utils import data_allocation
 class BackendConfig:
     """External DaCe workspace sizing, configurable per experiment."""
 
-    #: Workspace size in bytes, per device.
-    workspace_size: int
+    workspace_size: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Size of the workspace memory (in Bytes) for externally allocated "
+                "temporary fields. This is a performance feature of the DaCe backend "
+                "to avoid runtime allocation of temporary fields, for each program "
+                "call. Note that the memory buffer is allocated once and shared "
+                "across all compiled programs."
+            ),
+            icon_equivalent=None,
+        ),
+    ] = 256 * 1024 * 1024  # 256 MiB
 
     def __post_init__(self) -> None:
         if self.workspace_size <= 0:
