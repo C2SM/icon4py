@@ -37,8 +37,8 @@ from ..fixtures import *  # noqa: F403  [pytest resolves fixtures from this name
 #: coefficients yet), so the entry/exit pair at 00:00:00 is not a solve to compare
 #: against -- the other kernels match there, but t_soil_sl does not.
 SSE_DATES = [
-    "2008-09-01T00:05:00.000",
-    "2008-09-01T00:10:00.000",
+    "1979-01-01T00:05:00.000",
+    "1979-01-01T00:10:00.000",
 ]
 
 #: ICON is built with nvfortran and `-acc=gpu`, which contracts `a + b*c` into a fused

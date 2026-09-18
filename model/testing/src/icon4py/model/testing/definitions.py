@@ -69,13 +69,14 @@ class Grids:
         ),
     )
     R02B04_GLOBAL_MPIM: Final = GridDescription(
-        name="icon_grid_0013_R02B04_G",
+        name="icon_grid_0049_R02B04_G",
         description=(
-            "R02B04, the MPI-M public grid 0013 (centre=252, icosahedral-symmetric, "
-            "rotated 37 deg about z, modified SRTM30 topography). uuidOfHGrid "
-            "c8481318-398c-11e8-a225-05e6d8b4e7ef. Used by experiments that need the "
-            "published ICON-Land boundary data, which is generated per grid and exists "
-            "for this one only."
+            "R02B04, the MPI-M public grid 0049 (centre=252, spring-dynamics optimised, "
+            "rotated 37 deg about z, modified SRTM30 topography, 2024). uuidOfHGrid "
+            "2edbc23c-2027-11ef-a1e3-a9a7b49264d6. Used by experiments needing the "
+            "published ICON-Land boundary data: land data is generated per grid, and "
+            "0049 is the R02B04 that has a current revision (r0103). Grid 0013's last "
+            "land revision predates fields the current JSBACH requires."
         ),
         params=icon_grid.GridParams(
             icon_grid.IcosahedronParams(
