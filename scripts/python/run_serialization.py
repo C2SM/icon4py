@@ -46,6 +46,7 @@ class SerializationSettings:
     comm_sizes: list[int]
     experiment_descriptions: list[test_defs.ExperimentDescription]
     sbatch_partition: str
+    sbatch_gres: str
     sbatch_time: str
     sbatch_account: str
     sbatch_uenv: str
@@ -81,7 +82,11 @@ class SerializationSettings:
 
         # Slurm settings. Leave the account or the uenv empty where the submission is
         # brokered and those are not the job's to choose.
-        SBATCH_PARTITION = "normal"
+        SBATCH_PARTITION = "debug"
+        # Request the GPUs explicitly rather than inheriting whatever the
+        # partition happens to default to: an -acc=gpu binary on a node with no
+        # visible device dies at the first OpenACC PRESENT clause.
+        SBATCH_GRES = "gpu:4"
         SBATCH_TIME = "00:20:00"
         SBATCH_ACCOUNT = "cwd01"
         SBATCH_UENV = "icon/26.7:v1"
@@ -107,6 +112,7 @@ class SerializationSettings:
             comm_sizes=COMM_SIZES,
             experiment_descriptions=EXPERIMENTS,
             sbatch_partition=SBATCH_PARTITION,
+            sbatch_gres=SBATCH_GRES,
             sbatch_time=SBATCH_TIME,
             sbatch_account=SBATCH_ACCOUNT,
             sbatch_uenv=SBATCH_UENV,
@@ -307,6 +313,8 @@ def update_slurm_variables(script_path: pathlib.Path, *, settings: Serialization
     directives = [f"#SBATCH --partition={settings.sbatch_partition}"]
     if settings.sbatch_account:
         directives.append(f"#SBATCH --account={settings.sbatch_account}")
+    if settings.sbatch_gres:
+        directives.append(f"#SBATCH --gres={settings.sbatch_gres}")
     directives.append(f"#SBATCH --time={settings.sbatch_time}")
     if settings.sbatch_uenv:
         directives.append(f"#SBATCH --uenv='{settings.sbatch_uenv}'")
@@ -318,6 +326,7 @@ def update_slurm_variables(script_path: pathlib.Path, *, settings: Serialization
     content = re.sub(r"^#SBATCH\s+--partition=.*$\n?", "", content, flags=re.MULTILINE)
     content = re.sub(r"^#SBATCH\s+--account=.*$\n?", "", content, flags=re.MULTILINE)
     content = re.sub(r"^#SBATCH\s+--time=.*$\n?", "", content, flags=re.MULTILINE)
+    content = re.sub(r"^#SBATCH\s+--gres=.*$\n?", "", content, flags=re.MULTILINE)
     content = re.sub(r"^#SBATCH\s+--uenv=.*$\n?", "", content, flags=re.MULTILINE)
     content = re.sub(r"^#SBATCH\s+--view=.*$\n?", "", content, flags=re.MULTILINE)
 
