@@ -70,24 +70,8 @@ class ThermodynamicConsts(ta.wpfloat, enum.Enum):
     cv_v = 78.37934216297742  # (rcpv + 1.0) * cpd - rv
 
 
-class IndexConsts(ta.wpfloat, enum.Enum):
-    prefactor_r = 14.58
-    exponent_r = 0.111
-    offset_r = 1.0e-12
-    prefactor_i = 1.25
-    exponent_i = 0.160
-    offset_i = 1.0e-12
-    prefactor_s = 57.80
-    exponent_s = 1 / 6
-    offset_s = 1.0e-12
-    prefactor_g = 12.24
-    exponent_g = 0.217
-    offset_g = 1.0e-08
-
-
 class AesGraupelConsts(ta.wpfloat, enum.Enum):
-    # Constants of the newer MPIM rain-microphysics revisions in ICON
-    # (mo_aes_graupel.f90), used by the AES_GRAUPEL scheme variants only.
+    # Constants of MPIM rain-microphysics revisions in ICON (mo_aes_graupel.f90).
     # Hydrometeor-density clamp bounds, shared by all polynomial fits and fall speeds
     rhox_mn = 3.26216e-08
     rhox_mx = 6.97604e-03
