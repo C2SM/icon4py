@@ -487,7 +487,7 @@ class SolveNonhydro:
         exchange: decomposition.ExchangeRuntime,
         max_nudging_coefficient: state_utils.FloatType,
     ):
-        self._exchange = exchange or decomposition.SingleNodeExchange()
+        self._exchange = exchange
 
         self._grid = grid
         self._config = config
