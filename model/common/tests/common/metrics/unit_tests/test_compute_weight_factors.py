@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -24,7 +25,6 @@ from icon4py.model.testing.fixtures.datatest import (
     experiment_description,
     grid_savepoint,
     icon_grid,
-    interpolation_savepoint,
     metrics_savepoint,
     process_props,
 )
@@ -47,9 +47,8 @@ def test_compute_wgtfac_c(
     wgtfac_c = data_alloc.zero_field(
         icon_grid,
         dims.CellDim,
-        dims.KDim,
+        dims.KHalfDim,
         dtype=ta.wpfloat,
-        extend={dims.KDim: 1},
         allocator=backend,
     )
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
@@ -65,46 +64,33 @@ def test_compute_wgtfac_c(
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=vertical_end + 1,
-        offset_provider={"Koff": dims.KDim},
+        offset_provider={},
     )
 
     assert test_utils.dallclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
 
 
-@pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_wgtfacq_e_dsl(
-    metrics_savepoint: sb.MetricSavepoint,
-    interpolation_savepoint: sb.InterpolationSavepoint,
-    icon_grid: base_grid.Grid,
-    backend: gtx_typing.Backend | None,
-) -> None:
-    wgtfacq_e_ref = metrics_savepoint.wgtfacq_e()
-    wgtfacq_c_ref = metrics_savepoint.wgtfacq_c()
-
-    wgtfacq_e_dsl = weight_factors.compute_wgtfacq_e_dsl(
-        e2c=icon_grid.get_connectivity("E2C").ndarray,
-        z_ifc=metrics_savepoint.z_ifc().ndarray,
-        wgtfacq_c_dsl=wgtfacq_c_ref.ndarray,
-        c_lin_e=interpolation_savepoint.c_lin_e().ndarray,
-        n_edges=icon_grid.num_edges,
-        nlev=icon_grid.num_levels,
-        exchange=decomposition.single_node_exchange,
-    )
-
-    assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_e_dsl), wgtfacq_e_ref.asnumpy())
-
-
-@pytest.mark.datatest
-def test_compute_wgtfacq_c_dsl(
+def test_compute_wgtfacq_c(
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
     wgtfacq_c_ref = metrics_savepoint.wgtfacq_c()
 
-    wgtfacq_c_dsl = weight_factors.compute_wgtfacq_c_dsl(
-        z_ifc=metrics_savepoint.z_ifc().ndarray,
-        nlev=icon_grid.num_levels,
+    nlev = icon_grid.num_levels
+    wgtfacq_c = gtx.constructors.zeros(
+        gtx.domain({dims.CellDim: (0, icon_grid.num_cells), dims.KDim: (nlev - 3, nlev)}),
+        allocator=backend,
     )
-    assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_c_dsl), wgtfacq_c_ref.asnumpy())
+    weight_factors.compute_wgtfacq_c.with_backend(backend)(
+        z_ifc=metrics_savepoint.z_ifc(),
+        wgtfacq_c=wgtfacq_c,
+        nlev=nlev,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=nlev - 3,
+        vertical_end=nlev,
+        offset_provider={},
+    )
+    assert test_utils.dallclose(wgtfacq_c.asnumpy(), wgtfacq_c_ref.asnumpy())

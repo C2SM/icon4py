@@ -41,11 +41,11 @@ def add_analysis_increments_from_data_assimilation(
     vertical_end: gtx.int32,
 ) -> None:
     _add_analysis_increments_from_data_assimilation(
-        z_rho_expl,
-        z_exner_expl,
-        rho_incr,
-        exner_incr,
-        iau_wgt_dyn,
+        z_rho_expl=z_rho_expl,
+        z_exner_expl=z_exner_expl,
+        rho_incr=rho_incr,
+        exner_incr=exner_incr,
+        iau_wgt_dyn=iau_wgt_dyn,
         out=(z_rho_expl, z_exner_expl),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

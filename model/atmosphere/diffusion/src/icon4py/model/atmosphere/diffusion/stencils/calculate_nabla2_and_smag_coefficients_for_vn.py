@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, maximum, minimum, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C2V, E2C2VDim
+from icon4py.model.common.dimension import E2C2V
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -39,9 +39,9 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
 
     v_n = u_vert_wp(E2C2V) * primal_normal_vert_x + v_vert_wp(E2C2V) * primal_normal_vert_y
 
-    nabla2_of_vn = (v_n[E2C2VDim(0)] + v_n[E2C2VDim(1)] - wpfloat("2.0") * vn) * (
+    nabla2_of_vn = (v_n[dims.E2C2VDim(0)] + v_n[dims.E2C2VDim(1)] - wpfloat("2.0") * vn) * (
         inv_primal_edge_length * inv_primal_edge_length
-    ) + (v_n[E2C2VDim(2)] + v_n[E2C2VDim(3)] - wpfloat("2.0") * vn) * (
+    ) + (v_n[dims.E2C2VDim(2)] + v_n[dims.E2C2VDim(3)] - wpfloat("2.0") * vn) * (
         inv_vert_vert_length * inv_vert_vert_length
     )
     # The factor of 4 comes from the lengths in the denominator being twice those needed
@@ -52,11 +52,11 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     l_p = tangent_orientation * inv_primal_edge_length
     l_vv = inv_vert_vert_length
 
-    kh_smag_part1 = (v_n[E2C2VDim(3)] - v_n[E2C2VDim(2)]) * l_vv - (
-        v_t[E2C2VDim(1)] - v_t[E2C2VDim(0)]
+    kh_smag_part1 = (v_n[dims.E2C2VDim(3)] - v_n[dims.E2C2VDim(2)]) * l_vv - (
+        v_t[dims.E2C2VDim(1)] - v_t[dims.E2C2VDim(0)]
     ) * l_p
-    kh_smag_part2 = (v_n[E2C2VDim(1)] - v_n[E2C2VDim(0)]) * l_p + (
-        v_t[E2C2VDim(3)] - v_t[E2C2VDim(2)]
+    kh_smag_part2 = (v_n[dims.E2C2VDim(1)] - v_n[dims.E2C2VDim(0)]) * l_p + (
+        v_t[dims.E2C2VDim(3)] - v_t[dims.E2C2VDim(2)]
     ) * l_vv
 
     kh_smag_wp = diff_multfac_smag_wp * sqrt(
@@ -93,19 +93,19 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_nabla2_and_smag_coefficients_for_vn(
-        diff_multfac_smag,
-        tangent_orientation,
-        inv_primal_edge_length,
-        inv_vert_vert_length,
-        u_vert,
-        v_vert,
-        primal_normal_vert_x,
-        primal_normal_vert_y,
-        dual_normal_vert_x,
-        dual_normal_vert_y,
-        vn,
-        smag_limit,
-        smag_offset,
+        diff_multfac_smag=diff_multfac_smag,
+        tangent_orientation=tangent_orientation,
+        inv_primal_edge_length=inv_primal_edge_length,
+        inv_vert_vert_length=inv_vert_vert_length,
+        u_vert=u_vert,
+        v_vert=v_vert,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        vn=vn,
+        smag_limit=smag_limit,
+        smag_offset=smag_offset,
         out=(kh_smag_e, kh_smag_ec, z_nabla2_e),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

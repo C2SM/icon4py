@@ -8,7 +8,7 @@
 
 import dataclasses
 import logging
-from typing import Annotated, TypeAlias
+from typing import Annotated
 
 import numpy as np
 from gt4py import next as gtx
@@ -41,7 +41,7 @@ class GridState:
 
 grid_state: GridState | None = None  # TODO(havogt): remove module global state
 
-NumpyInt32Array1D: TypeAlias = Annotated[
+type NumpyInt32Array1D = Annotated[
     np.ndarray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -51,7 +51,7 @@ NumpyInt32Array1D: TypeAlias = Annotated[
     ),
 ]
 
-NumpyBoolArray1D: TypeAlias = Annotated[
+type NumpyBoolArray1D = Annotated[
     np.ndarray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -63,7 +63,7 @@ NumpyBoolArray1D: TypeAlias = Annotated[
 
 
 @icon4py_export.export
-def grid_init(
+def grid_init(  # noqa: PLR0917 [too-many-positional-arguments]
     cell_starts: NumpyInt32Array1D,
     cell_ends: NumpyInt32Array1D,
     vertex_starts: NumpyInt32Array1D,
@@ -106,7 +106,7 @@ def grid_init(
     edge_center_lon: fa.EdgeField[wpfloat],
     primal_normal_x: fa.EdgeField[wpfloat],
     primal_normal_y: fa.EdgeField[wpfloat],
-    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
+    vct_a: gtx.Field[gtx.Dims[dims.KHalfDim], gtx.float64],
     lowest_layer_thickness: gtx.float64,
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,
@@ -137,16 +137,16 @@ def grid_init(
             decomposition_info,
             exchange_runtime,
         ) = wrapper_common.construct_decomposition(
-            c_glb_index,
-            e_glb_index,
-            v_glb_index,
-            c_owner_mask,
-            e_owner_mask,
-            v_owner_mask,
-            num_cells,
-            num_edges,
-            num_vertices,
-            comm_id,
+            c_glb_index=c_glb_index,
+            e_glb_index=e_glb_index,
+            v_glb_index=v_glb_index,
+            c_owner_mask=c_owner_mask,
+            e_owner_mask=e_owner_mask,
+            v_owner_mask=v_owner_mask,
+            num_cells=num_cells,
+            num_edges=num_edges,
+            num_vertices=num_vertices,
+            comm_id=comm_id,
         )
 
     grid = wrapper_common.construct_icon_grid(
@@ -177,12 +177,12 @@ def grid_init(
 
     if comm_id is not None:
         wrapper_debug_utils.print_grid_decomp_info(
-            grid,
-            process_props,
-            decomposition_info,
-            num_cells,
-            num_edges,
-            num_vertices,
+            icon_grid=grid,
+            process_props=process_props,
+            decomposition_info=decomposition_info,
+            num_cells=num_cells,
+            num_edges=num_edges,
+            num_verts=num_vertices,
         )
 
     # Vertical grid config
@@ -210,20 +210,32 @@ def grid_init(
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        primal_normal_cell_x=primal_normal_cell_x,
-        primal_normal_cell_y=primal_normal_cell_y,
-        dual_normal_cell_x=dual_normal_cell_x,
-        dual_normal_cell_y=dual_normal_cell_y,
+        primal_normal_vert=(
+            primal_normal_vert_x,
+            primal_normal_vert_y,
+        ),
+        dual_normal_vert=(
+            dual_normal_vert_x,
+            dual_normal_vert_y,
+        ),
+        primal_normal_cell=(
+            primal_normal_cell_x,
+            primal_normal_cell_y,
+        ),
+        dual_normal_cell=(
+            dual_normal_cell_x,
+            dual_normal_cell_y,
+        ),
         edge_areas=edge_areas,
         coriolis_frequency=f_e,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
+        edge_center=(
+            edge_center_lat,
+            edge_center_lon,
+        ),
+        primal_normal=(
+            primal_normal_x,
+            primal_normal_y,
+        ),
     )
 
     # Cell geometry

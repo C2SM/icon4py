@@ -6,15 +6,20 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 import functools
 import logging
+import typing
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.config import options as common_conf_opt
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
@@ -39,93 +44,150 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 log = logging.getLogger(__name__)
 
 
+def convert_nudge_max_coeff(nudge_max_coeff: float) -> float:
+    return constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * nudge_max_coeff
+
+
 @dataclasses.dataclass
 class InterpolationConfig:
-    divergence_averaging_central_cell_weight: float = 0.5  # divavg_cntrwgt in ICON
-    """
-    Central-cell weight used in divergence averaging.
-    """
+    divergence_averaging_central_cell_weight: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Central-cell weight used in divergence averaging.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="divavg_cntrwgt",
+                path=("dynamics_nml",),
+            ),
+        ),
+    ] = 0.5
 
-    max_nudging_coefficient: float | None = None  # default: 0.375, set in __post_init__
-    """
-    Maximum nudging coefficient applied in the lateral nudging zone.
-    """
+    max_nudging_coefficient: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="Maximum nudging coefficient applied in the lateral nudging zone.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="nudge_max_coeff",
+                path=("interpol_nml",),
+                converter=convert_nudge_max_coeff,
+            ),
+        ),
+    ] = 0.375
 
-    #: Raw namelist value (nudge_max_coeff in mo_interpol_nml.f90), scaled to
-    #: max_nudging_coefficient in __post_init__ if provided.
-    _nudge_max_coeff: float | None = None
+    nudge_efold_width: typing.Annotated[
+        float,
+        common_conf_opt.ConfigOption(
+            description="E-folding width controlling the exponential decay of nudging strength.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="nudge_efold_width",
+                path=("interpol_nml",),
+            ),
+        ),
+    ] = 2.0
 
-    nudge_efold_width: float = 2.0
-    """
-    E-folding width controlling the exponential decay of nudging strength.
-    """
+    nudge_zone_width: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description="Width of the lateral nudging zone in grid refinement levels.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="nudge_zone_width",
+                path=("interpol_nml",),
+            ),
+        ),
+    ] = 10
 
-    nudge_zone_width: int = 10
-    """
-    Width of the lateral nudging zone in grid refinement levels.
-    """
+    rbf_kernel_cell: typing.Annotated[
+        rbf.InterpolationKernel,
+        common_conf_opt.ConfigOption(
+            description="Radial basis function kernel used for cell-based interpolation.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="rbf_vec_kern_c",
+                path=("interpol_nml",),
+            ),
+        ),
+    ] = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL]
 
-    rbf_kernel_cell: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL]
-    """
-    Radial basis function kernel used for cell-based interpolation.
-    """
+    rbf_kernel_edge: typing.Annotated[
+        rbf.InterpolationKernel,
+        common_conf_opt.ConfigOption(
+            description="Radial basis function kernel used for edge-based interpolation.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="rbf_vec_kern_e",
+                path=("interpol_nml",),
+            ),
+        ),
+    ] = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE]
 
-    rbf_kernel_edge: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE]
-    """
-    Radial basis function kernel used for edge-based interpolation.
-    """
+    rbf_kernel_vertex: typing.Annotated[
+        rbf.InterpolationKernel,
+        common_conf_opt.ConfigOption(
+            description="Radial basis function kernel used for vertex-based interpolation.",
+            icon_equivalent=common_conf_opt.IconOption(
+                name="rbf_vec_kern_v",
+                path=("interpol_nml",),
+            ),
+        ),
+    ] = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX]
 
-    rbf_kernel_vertex: rbf.InterpolationKernel = rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX]
-    """
-    Radial basis function kernel used for vertex-based interpolation.
-    """
+    lsq_dim_unk: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Number of unknowns in the least-squares reconstruction. "
+                "Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter."
+            ),
+        ),
+    ] = 2
 
-    lsq_dim_unk: int = 2
-    """
-    Number of unknowns in the least-squares reconstruction.
-    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
-    """
-
-    lsq_dim_c: int = 3
-    """
-    Dimension of the least-squares coefficient space.
-    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
-    """
-
-    lsq_wgt_exp: int = 2
-    """
-    Exponent used in distance-based least-squares weighting.
-    Hardcoded in Fortran mo_intp_coeffs_lsq_bln.f90, not a namelist parameter.
-    """
-
-    lsq_dim_stencil: int = 3
-    """
-    Stencil size used for least-squares reconstruction.
-    """
-
-    def __post_init__(self):
-        if self._nudge_max_coeff is not None and self.max_nudging_coefficient is not None:
-            raise ValueError("Cannot set both '_nudge_max_coeff' and 'max_nudging_coefficient'.")
-        elif self.max_nudging_coefficient is not None:
-            pass
-        elif self._nudge_max_coeff is not None:
-            self.max_nudging_coefficient = (
-                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * self._nudge_max_coeff
+    lsq_dim_c: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Dimension of the least-squares coefficient space. "
+                "Hardcoded in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter."
             )
-        else:  # default value in ICON
-            self.max_nudging_coefficient = 0.375
+        ),
+    ] = 3
+
+    lsq_wgt_exp: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Exponent used in distance-based least-squares weighting. "
+                "Derived in Fortran mo_interpol_config.f90 under lsq_lin_set data structure, not a namelist parameter."
+            )
+        ),
+    ] = 2
+
+    lsq_high_ord: typing.Annotated[
+        int,
+        common_conf_opt.ConfigOption(
+            description=(
+                "Complexity of least-squares reconstruction in terms of the polynomial order and stencil size. "
+                "This is not used in the current implementation, but is kept for higher-order reconstruction in the future."
+            ),
+            icon_equivalent=common_conf_opt.IconOption(
+                name="lsq_high_ord",
+                path=("interpol_nml",),
+            ),
+        ),
+    ] = 1
+
+    @classmethod
+    def from_fortran_dict(cls, atmo_dict: dict[str, Any], **overrides: Any) -> InterpolationConfig:
+        return common_conf_opt.construct_config_from_icon(cls, atmo_dict, **overrides)
 
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
+        *,
         grid: icon.IconGrid,
         decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
         config: InterpolationConfig,
-        exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange,
+        process_props: decomposition.ProcessProperties,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -135,7 +197,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
-        self._exchange = exchange
+        self._exchange = decomposition.create_exchange(process_props, decomposition_info)
         self._config = config
         domain_length = self.grid.grid_params.domain_length
         domain_height = self.grid.grid_params.domain_height
@@ -148,7 +210,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(
             factory.PrecomputedFieldProvider(
-                {
+                fields={
                     "refinement_control_at_edges": self._grid.refinement_control[dims.EdgeDim],
                 }
             )
@@ -161,7 +223,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     @property
     def _sources(self) -> factory.FieldSource:
-        return factory.CompositeSource(self, (self._geometry,))
+        return factory.CompositeSource(me=self, others=(self._geometry,))
 
     def _register_computed_fields(self) -> None:
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
@@ -317,7 +379,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "lsq_dim_unk": self._config.lsq_dim_unk,
                 "lsq_dim_c": self._config.lsq_dim_c,
                 "lsq_wgt_exp": self._config.lsq_wgt_exp,
-                "lsq_dim_stencil": self._config.lsq_dim_stencil,
                 "start_idx": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -390,7 +451,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     params={
                         "grid_sphere_radius": constants.EARTH_RADIUS,
                         "horizontal_start": self.grid.start_index(
-                            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                            edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
                         ),
                     },
                     do_exchange=True,

@@ -18,13 +18,13 @@ def _update_density_exner_wind(
     grf_tend_rho: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],
     grf_tend_thv: fa.CellKField[wpfloat],
-    w_now: fa.CellKField[wpfloat],
-    grf_tend_w: fa.CellKField[wpfloat],
+    w_now: fa.CellKHalfField[wpfloat],
+    grf_tend_w: fa.CellKHalfField[wpfloat],
     dtime: wpfloat,
 ) -> tuple[
     fa.CellKField[wpfloat],
     fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
+    fa.CellKHalfField[wpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_61."""
     rho_new_wp = rho_now + dtime * grf_tend_rho
@@ -39,11 +39,11 @@ def update_density_exner_wind(
     grf_tend_rho: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],
     grf_tend_thv: fa.CellKField[wpfloat],
-    w_now: fa.CellKField[wpfloat],
-    grf_tend_w: fa.CellKField[wpfloat],
+    w_now: fa.CellKHalfField[wpfloat],
+    grf_tend_w: fa.CellKHalfField[wpfloat],
     rho_new: fa.CellKField[wpfloat],
     exner_new: fa.CellKField[wpfloat],
-    w_new: fa.CellKField[wpfloat],
+    w_new: fa.CellKHalfField[wpfloat],
     dtime: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -51,16 +51,26 @@ def update_density_exner_wind(
     vertical_end: gtx.int32,
 ) -> None:
     _update_density_exner_wind(
-        rho_now,
-        grf_tend_rho,
-        theta_v_now,
-        grf_tend_thv,
-        w_now,
-        grf_tend_w,
-        dtime,
+        rho_now=rho_now,
+        grf_tend_rho=grf_tend_rho,
+        theta_v_now=theta_v_now,
+        grf_tend_thv=grf_tend_thv,
+        w_now=w_now,
+        grf_tend_w=grf_tend_w,
+        dtime=dtime,
         out=(rho_new, exner_new, w_new),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+        domain=(
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KHalfDim: (vertical_start, vertical_end),
+            },
+        ),
     )

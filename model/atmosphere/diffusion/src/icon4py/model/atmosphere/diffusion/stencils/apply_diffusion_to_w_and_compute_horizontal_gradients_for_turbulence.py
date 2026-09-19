@@ -18,34 +18,33 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     _calculate_nabla2_for_w,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
 def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: fa.CellField[wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[CellDim, C2E2CODim], wpfloat],
-    geofac_grg_x: gtx.Field[gtx.Dims[CellDim, C2E2CODim], wpfloat],
-    geofac_grg_y: gtx.Field[gtx.Dims[CellDim, C2E2CODim], wpfloat],
-    w_old: fa.CellKField[wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
+    geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
+    geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
+    w_old: fa.CellKHalfField[wpfloat],
     type_shear: gtx.int32,
-    dwdx: fa.CellKField[vpfloat],
-    dwdy: fa.CellKField[vpfloat],
+    dwdx: fa.CellKHalfField[vpfloat],
+    dwdy: fa.CellKHalfField[vpfloat],
     diff_multfac_w: wpfloat,
-    diff_multfac_n2w: fa.KField[wpfloat],
+    diff_multfac_n2w: fa.KHalfField[wpfloat],
     nrdmax: gtx.int32,
     interior_idx: gtx.int32,
     halo_idx: gtx.int32,
 ) -> tuple[
-    fa.CellKField[wpfloat],
-    fa.CellKField[vpfloat],
-    fa.CellKField[vpfloat],
+    fa.CellKHalfField[wpfloat],
+    fa.CellKHalfField[vpfloat],
+    fa.CellKHalfField[vpfloat],
 ]:
     dwdx, dwdy = (
         concat_where(
-            0 < KDim,
+            0 < dims.KHalfDim,
             _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
             (dwdx, dwdy),
         )
@@ -56,13 +55,16 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     z_nabla2_c = _calculate_nabla2_for_w(w_old, geofac_n2s)
 
     w = concat_where(
-        (interior_idx <= CellDim) & (CellDim < halo_idx),
+        (interior_idx <= dims.CellDim) & (dims.CellDim < halo_idx),
         _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
         w_old,
     )
 
     w = concat_where(
-        (0 < KDim) & (KDim < nrdmax) & (interior_idx <= CellDim) & (CellDim < halo_idx),
+        (0 < dims.KHalfDim)
+        & (dims.KHalfDim < nrdmax)
+        & (interior_idx <= dims.CellDim)
+        & (dims.CellDim < halo_idx),
         _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
@@ -73,16 +75,16 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: fa.CellField[wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[CellDim, C2E2CODim], wpfloat],
-    geofac_grg_x: gtx.Field[gtx.Dims[CellDim, C2E2CODim], wpfloat],
-    geofac_grg_y: gtx.Field[gtx.Dims[CellDim, C2E2CODim], wpfloat],
-    w_old: fa.CellKField[wpfloat],
-    w: fa.CellKField[wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
+    geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
+    geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
+    w_old: fa.CellKHalfField[wpfloat],
+    w: fa.CellKHalfField[wpfloat],
     type_shear: gtx.int32,
-    dwdx: fa.CellKField[vpfloat],
-    dwdy: fa.CellKField[vpfloat],
+    dwdx: fa.CellKHalfField[vpfloat],
+    dwdy: fa.CellKHalfField[vpfloat],
     diff_multfac_w: wpfloat,
-    diff_multfac_n2w: fa.KField[wpfloat],
+    diff_multfac_n2w: fa.KHalfField[wpfloat],
     nrdmax: gtx.int32,
     interior_idx: gtx.int32,
     halo_idx: gtx.int32,
@@ -92,22 +94,22 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
-        area,
-        geofac_n2s,
-        geofac_grg_x,
-        geofac_grg_y,
-        w_old,
-        type_shear,
-        dwdx,
-        dwdy,
-        diff_multfac_w,
-        diff_multfac_n2w,
-        nrdmax,
-        interior_idx,
-        halo_idx,
+        area=area,
+        geofac_n2s=geofac_n2s,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
+        w_old=w_old,
+        type_shear=type_shear,
+        dwdx=dwdx,
+        dwdy=dwdy,
+        diff_multfac_w=diff_multfac_w,
+        diff_multfac_n2w=diff_multfac_n2w,
+        nrdmax=nrdmax,
+        interior_idx=interior_idx,
+        halo_idx=halo_idx,
         out=(w, dwdx, dwdy),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

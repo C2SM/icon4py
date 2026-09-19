@@ -6,6 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Mapping
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 
@@ -31,19 +34,42 @@ def enhanced_smagorinski_factor_numpy(
 
 
 def nabla2_on_cell_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
 ) -> np.ndarray:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     nabla2_psi_c = np.sum(np.where((c2e2cO != -1), psi_c[c2e2cO] * geofac_n2s, 0), axis=1)
     return nabla2_psi_c
 
 
 def nabla2_on_cell_k_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray], psi_c: np.ndarray, geofac_n2s: np.ndarray
 ) -> np.ndarray:
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     nabla2_psi_c = np.sum(
         np.where((c2e2cO != -1)[:, :, np.newaxis], psi_c[c2e2cO] * geofac_n2s, 0), axis=1
     )
     return nabla2_psi_c
+
+
+def compute_tangential_wind_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    vn: np.ndarray,
+    rbf_vec_coeff_e: np.ndarray,
+) -> np.ndarray:
+    """RBF interpolation of the normal wind to the edge-tangential direction."""
+    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
+    e2c2e = connectivities[dims.E2C2E]
+    return np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
+
+
+def interpolate_to_cell_center_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    interpolant: np.ndarray,
+    e_bln_c_s: np.ndarray,
+    **kwargs: Any,
+) -> np.ndarray:
+    """Interpolate an edge field to the cell centers with the bilinear C2E weights."""
+    e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
+    c2e = connectivities[dims.C2E]
+    return np.sum(interpolant[c2e] * e_bln_c_s, axis=1)

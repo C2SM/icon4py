@@ -34,9 +34,9 @@ def compute_vn_on_lateral_boundary(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_vn_on_lateral_boundary(
-        grf_tend_vn,
-        vn_now,
-        dtime,
+        grf_tend_vn=grf_tend_vn,
+        vn_now=vn_now,
+        dtime=dtime,
         out=vn_new,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

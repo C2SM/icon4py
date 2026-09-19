@@ -19,9 +19,9 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
-from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.states import nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils as testing_test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 
@@ -205,7 +205,7 @@ def solve_nh_init(
         extra_diffu=cfg.extra_diffu,
         rhotheta_offctr=cfg.rhotheta_offctr,
         veladv_offctr=cfg.veladv_offctr,
-        nudge_max_coeff=cfg.max_nudging_coefficient,
+        nudge_max_coeff=experiment.config.interpolation.max_nudging_coefficient,
         divdamp_fac=cfg.fourth_order_divdamp_factor,
         divdamp_fac2=cfg.fourth_order_divdamp_factor2,
         divdamp_fac3=cfg.fourth_order_divdamp_factor3,
@@ -227,14 +227,14 @@ def solve_nh_init(
     "experiment_description, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
     ],
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
-def test_dycore_wrapper_granule_inputs(
+def test_dycore_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     istep_init,
     istep_exit,
@@ -269,7 +269,7 @@ def test_dycore_wrapper_granule_inputs(
 
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
 
     # metric state parameters
     mask_prog_halo_c = test_utils.array_to_array_info(metrics_savepoint.mask_prog_halo_c().ndarray)
@@ -481,7 +481,7 @@ def test_dycore_wrapper_granule_inputs(
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
-    expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+    expected_diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=data_alloc.scalar_like_array(max_vertical_cfl, backend),
         tangential_wind=sp.vt(),
         vn_on_half_levels=sp.vn_ie(),
@@ -535,7 +535,7 @@ def test_dycore_wrapper_granule_inputs(
     )
     expected_second_order_divdamp_factor = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
-    expected_lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    expected_prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
     expected_at_first_substep = substep_init == 1
     expected_at_last_substep = substep_init == ndyn_substeps
 
@@ -610,7 +610,7 @@ def test_dycore_wrapper_granule_inputs(
             extra_diffu=cfg.extra_diffu,
             rhotheta_offctr=cfg.rhotheta_offctr,
             veladv_offctr=cfg.veladv_offctr,
-            nudge_max_coeff=cfg.max_nudging_coefficient,
+            nudge_max_coeff=experiment.config.interpolation.max_nudging_coefficient,
             divdamp_fac=cfg.fourth_order_divdamp_factor,
             divdamp_fac2=cfg.fourth_order_divdamp_factor2,
             divdamp_fac3=cfg.fourth_order_divdamp_factor3,
@@ -716,7 +716,7 @@ def test_dycore_wrapper_granule_inputs(
             vn_traj=vn_traj,
             dtime=dtime,
             max_vcfl_size1_array=max_vcfl_size1_array,
-            lprep_adv=lprep_adv,
+            lprep_adv=prepare_fluxes_for_advection,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
             ndyn_substeps_var=ndyn_substeps,
@@ -752,7 +752,7 @@ def test_dycore_wrapper_granule_inputs(
         assert result, f"dtime comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
-            captured_kwargs["lprep_adv"], expected_lprep_adv
+            captured_kwargs["prepare_fluxes_for_advection"], expected_prepare_fluxes_for_advection
         )
         assert result, f"Prep Advection flag comparison failed: {error_message}"
 
@@ -776,13 +776,13 @@ def test_dycore_wrapper_granule_inputs(
     "experiment_description,step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
     ],
 )
-def test_granule_solve_nonhydro_single_step_regional(
+def test_granule_solve_nonhydro_single_step_regional(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
     istep_init,
@@ -810,7 +810,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
 
     # solve nh run parameters
     second_order_divdamp_factor = sp.divdamp_fac_o2()  # This is a scalar, don't convert
@@ -913,7 +913,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         vol_flx_ic=vol_flx_ic,
         dtime=dtime,
         max_vcfl_size1_array=max_vcfl_size1_array,
-        lprep_adv=lprep_adv,
+        lprep_adv=prepare_fluxes_for_advection,
         at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=second_order_divdamp_factor,  # This is a scalar
         ndyn_substeps_var=ndyn_substeps,
@@ -924,41 +924,41 @@ def test_granule_solve_nonhydro_single_step_regional(
 
     # Comparison asserts should now use py2fgen.as_array
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, theta_v_new, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, theta_v_new),
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, exner_new, py2fgen.FLOAT64), sp_step_exit.exner_new().asnumpy()
+        py2fgen.as_array(ffi, exner_new), sp_step_exit.exner_new().asnumpy()
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, vn_new, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, vn_new),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-12,
         atol=1e-13,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, rho_new, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, rho_new),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, w_new, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, w_new),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, exner_dyn_incr, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, exner_dyn_incr),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment_description", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment_description", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, vn_only, at_initial_timestep",
     [
@@ -967,7 +967,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     ],
 )
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
-def test_granule_solve_nonhydro_multi_step_regional(
+def test_granule_solve_nonhydro_multi_step_regional(  # noqa: PLR0917 [too-many-positional-arguments]
     grid_init,  # initializes the grid as side-effect
     solve_nh_init,  # initializes solve_nh as side-effect
     step_date_init,
@@ -992,7 +992,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
-    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = sp.get_metadata("prep_adv").get("prep_adv")
 
     # solve nh run parameters
     linit = sp.get_metadata("linit").get("linit")
@@ -1104,7 +1104,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             vol_flx_ic=vol_flx_ic,
             dtime=dtime,
             max_vcfl_size1_array=max_vcfl_size1_array,
-            lprep_adv=lprep_adv,
+            lprep_adv=prepare_fluxes_for_advection,
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=second_order_divdamp_factor,
             ndyn_substeps_var=ndyn_substeps,
@@ -1127,63 +1127,63 @@ def test_granule_solve_nonhydro_multi_step_regional(
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, rho_ic, py2fgen.FLOAT64)[cell_start_lb_plus2:, :],
+        py2fgen.as_array(ffi, rho_ic)[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, theta_v_ic, py2fgen.FLOAT64)[cell_start_lb_plus2:, :],
+        py2fgen.as_array(ffi, theta_v_ic)[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, mass_fl_e, py2fgen.FLOAT64)[edge_start_lb_plus4:, :],
+        py2fgen.as_array(ffi, mass_fl_e)[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
         atol=5e-7,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, mass_flx_me, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, mass_flx_me),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         atol=5e-7,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, vn_traj, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, vn_traj),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         atol=1e-12,
     )
 
     # we compare against _now fields as _new and _now are switched internally in the granule.
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, theta_v_now, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, theta_v_now),
         sp_step_exit.theta_v_new().asnumpy(),
         atol=5e-7,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, rho_now, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, rho_now),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, exner_now, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, exner_now),
         sp_step_exit.exner_new().asnumpy(),
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, w_now, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, w_now),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, vn_now, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, vn_now),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         atol=5e-13,
     )
     assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, exner_dyn_incr, py2fgen.FLOAT64),
+        py2fgen.as_array(ffi, exner_dyn_incr),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )

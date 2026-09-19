@@ -75,6 +75,7 @@ def gather_field(field: np.ndarray, process_props: decomp_defs.ProcessProperties
 
 
 def check_local_global_field(
+    *,
     decomposition_info: decomp_defs.DecompositionInfo,
     process_props: decomp_defs.ProcessProperties,  # F811 # fixture
     dim: gtx.Dimension,
@@ -84,7 +85,7 @@ def check_local_global_field(
     atol: float,
     rtol: float = 0.0,
 ) -> None:
-    if dim == dims.KDim:
+    if dim.kind == gtx.DimensionKind.VERTICAL:
         test_utils.assert_dallclose(global_reference_field, local_field)
         return
 
@@ -155,5 +156,5 @@ def check_local_global_field(
 
         # abuse err_msg to print the domain region
         test_utils.assert_dallclose(
-            actual=sorted_, desired=global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
+            sorted_, global_reference_field, atol=atol, rtol=rtol, err_msg="internal"
         )

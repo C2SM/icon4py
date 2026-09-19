@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
@@ -18,29 +19,26 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
+from icon4py.model.testing.reference_funcs import interpolate_to_cell_center_numpy
 
 from .test_add_interpolated_horizontal_advection_of_w import (
     add_interpolated_horizontal_advection_of_w_numpy,
 )
-from .test_compute_advective_vertical_wind_tendency import (
-    compute_advective_vertical_wind_tendency_numpy,
-)
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity_numpy,
 )
-from .test_interpolate_cell_field_to_half_levels_vp import (
+from .test_interpolate_cell_field_to_half_levels import (
     interpolate_cell_field_to_half_levels_vp_numpy,
 )
-from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
 
 
 def interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    *,
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     contravariant_correction_at_cells_on_half_levels: np.ndarray,
     contravariant_correction_at_edges_on_model_levels: np.ndarray,
     e_bln_c_s: np.ndarray,
@@ -59,7 +57,7 @@ def interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
         condition,
         interpolate_cell_field_to_half_levels_vp_numpy(
             wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
-        ),
+        )[:, :-1],
         np.zeros_like(contravariant_correction_at_cells_on_half_levels),
     )
 
@@ -82,6 +80,7 @@ def interpolate_contravariant_vertical_velocity_to_full_levels_numpy(
 
 
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
+    *,
     w: np.ndarray,
     contravariant_correction_at_cells_on_half_levels: np.ndarray,
     ddqz_z_half: np.ndarray,
@@ -125,7 +124,8 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
 
 
 def compute_horizontal_advection_of_w(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    *,
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     w: np.ndarray,
     tangential_wind_on_half_levels: np.ndarray,
     vn_on_half_levels: np.ndarray,
@@ -140,14 +140,14 @@ def compute_horizontal_advection_of_w(
 
     horizontal_advection_of_w_at_edges_on_half_levels = (
         compute_horizontal_advection_term_for_vertical_velocity_numpy(
-            connectivities,
-            vn_on_half_levels,
-            inv_dual_edge_length,
-            w,
-            tangential_wind_on_half_levels,
-            inv_primal_edge_length,
-            tangent_orientation,
-            w_at_vertices,
+            connectivities=connectivities,
+            vn_ie=vn_on_half_levels,
+            inv_dual_edge_length=inv_dual_edge_length,
+            w=w,
+            z_vt_ie=tangential_wind_on_half_levels,
+            inv_primal_edge_length=inv_primal_edge_length,
+            tangent_orientation=tangent_orientation,
+            z_w_v=w_at_vertices,
         )
     )
 
@@ -155,7 +155,8 @@ def compute_horizontal_advection_of_w(
 
 
 def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    *,
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     cfl_clipping: np.ndarray,
     owner_mask: np.ndarray,
     contravariant_corrected_w_at_cells_on_half_levels: np.ndarray,
@@ -183,7 +184,7 @@ def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
         0,
     )
 
-    c2e2cO = connectivities[dims.C2E2CODim]
+    c2e2cO = connectivities[dims.C2E2CO]
     vertical_wind_advective_tendency = np.where(
         (cfl_clipping == 1) & (owner_mask == 1),
         vertical_wind_advective_tendency
@@ -202,8 +203,26 @@ def add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
     return vertical_wind_advective_tendency
 
 
+def compute_advective_vertical_wind_tendency_numpy(
+    z_w_con_c: np.ndarray,
+    w: np.ndarray,
+    coeff1_dwdz: np.ndarray,
+    coeff2_dwdz: np.ndarray,
+    **kwargs: Any,
+) -> np.ndarray:
+    # coeff*_dwdz live on model levels; model level k pairs with half level k
+    nlev = coeff1_dwdz.shape[1]
+    ddt_w_adv = np.zeros((z_w_con_c.shape[0], nlev + 1))
+    c1, c2 = coeff1_dwdz[:, 1:nlev], coeff2_dwdz[:, 1:nlev]
+    ddt_w_adv[:, 1:nlev] = -z_w_con_c[:, 1:nlev] * (
+        w[:, 0 : nlev - 1] * c1 - w[:, 2 : nlev + 1] * c2 + w[:, 1:nlev] * (c2 - c1)
+    )
+    return ddt_w_adv
+
+
 def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    *,
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     vertical_wind_advective_tendency: np.ndarray,
     w: np.ndarray,
     horizontal_advection_of_w_at_edges_on_half_levels: np.ndarray,
@@ -229,7 +248,7 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
         condition1,
         compute_advective_vertical_wind_tendency_numpy(
             contravariant_corrected_w_at_cells_on_half_levels, w, coeff1_dwdz, coeff2_dwdz
-        ),
+        )[:, :-1],
         vertical_wind_advective_tendency,
     )
 
@@ -249,18 +268,18 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
     vertical_wind_advective_tendency = np.where(
         condition2,
         add_extra_diffusion_for_w_approaching_cfl_wihtout_levmask_numpy(
-            connectivities,
-            cfl_clipping,
-            owner_mask,
-            contravariant_corrected_w_at_cells_on_half_levels,
-            ddqz_z_half,
-            area,
-            geofac_n2s,
-            w[:, :-1],
-            vertical_wind_advective_tendency,
-            scalfac_exdiff,
-            cfl_w_limit,
-            dtime,
+            connectivities=connectivities,
+            cfl_clipping=cfl_clipping,
+            owner_mask=owner_mask,
+            contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
+            ddqz_z_half=ddqz_z_half,
+            area=area,
+            geofac_n2s=geofac_n2s,
+            w=w[:, :-1],
+            vertical_wind_advective_tendency=vertical_wind_advective_tendency,
+            scalfac_exdiff=scalfac_exdiff,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
         ),
         vertical_wind_advective_tendency,
     )
@@ -293,9 +312,10 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
+        *,
         vertical_wind_advective_tendency: np.ndarray,
         contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
         vertical_cfl: np.ndarray,
@@ -320,17 +340,18 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         end_index_of_damping_layer: int,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         nlev = kwargs["vertical_end"]
 
         horizontal_advection_of_w_at_edges_on_half_levels = compute_horizontal_advection_of_w(
-            connectivities,
-            w,
-            tangential_wind_on_half_levels,
-            vn_on_half_levels,
-            c_intp,
-            inv_dual_edge_length,
-            inv_primal_edge_length,
-            tangent_orientation,
+            connectivities=connectivities,
+            w=w,
+            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+            vn_on_half_levels=vn_on_half_levels,
+            c_intp=c_intp,
+            inv_dual_edge_length=inv_dual_edge_length,
+            inv_primal_edge_length=inv_primal_edge_length,
+            tangent_orientation=tangent_orientation,
         )
 
         # We need to store the initial return field, because we only compute on a subdomain.
@@ -345,36 +366,36 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
             cfl_clipping,
             vertical_cfl,
         ) = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
-            w[:, :-1],
-            contravariant_correction_at_cells_on_half_levels[:, :-1],
-            ddqz_z_half,
-            cfl_w_limit,
-            dtime,
-            nlev,
-            end_index_of_damping_layer,
+            w=w[:, :-1],
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels[
+                :, :-1
+            ],
+            ddqz_z_half=ddqz_z_half[:, :-1],
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
+            nlev=nlev,
+            end_index_of_damping_layer=end_index_of_damping_layer,
         )
 
-        vertical_wind_advective_tendency = (
-            compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
-                connectivities,
-                vertical_wind_advective_tendency,
-                w,
-                horizontal_advection_of_w_at_edges_on_half_levels,
-                contravariant_corrected_w_at_cells_on_half_levels,
-                cfl_clipping,
-                coeff1_dwdz,
-                coeff2_dwdz,
-                e_bln_c_s,
-                ddqz_z_half,
-                area,
-                geofac_n2s,
-                owner_mask,
-                scalfac_exdiff,
-                cfl_w_limit,
-                dtime,
-                nlev,
-                end_index_of_damping_layer,
-            )
+        vertical_wind_advective_tendency = compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
+            connectivities=connectivities,
+            vertical_wind_advective_tendency=vertical_wind_advective_tendency[:, :-1],
+            w=w,
+            horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
+            contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
+            cfl_clipping=cfl_clipping,
+            coeff1_dwdz=coeff1_dwdz,
+            coeff2_dwdz=coeff2_dwdz,
+            e_bln_c_s=e_bln_c_s,
+            ddqz_z_half=ddqz_z_half[:, :-1],
+            area=area,
+            geofac_n2s=geofac_n2s,
+            owner_mask=owner_mask,
+            scalfac_exdiff=scalfac_exdiff,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
+            nlev=nlev,
+            end_index_of_damping_layer=end_index_of_damping_layer,
         )
 
         contravariant_corrected_w_at_cells_on_model_levels = (
@@ -409,37 +430,35 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
             vertical_cfl=vertical_cfl_ret,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim
+            dims.CellDim, dims.KDim
         )
-        vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        tangential_wind_on_half_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
-        )
-        vn_on_half_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
-        )
+        vertical_wind_advective_tendency = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        tangential_wind_on_half_levels = data_alloc.random_field(dims.EdgeDim, dims.KHalfDim)
+        vn_on_half_levels = data_alloc.random_field(dims.EdgeDim, dims.KHalfDim)
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            dims.CellDim, dims.KHalfDim
         )
 
-        coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        coeff2_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        coeff1_dwdz = data_alloc.random_field(dims.CellDim, dims.KDim)
+        coeff2_dwdz = data_alloc.random_field(dims.CellDim, dims.KDim)
 
-        c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
-        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
-        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
-        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
+        c_intp = data_alloc.random_field(dims.VertexDim, dims.V2CDim)
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim, low=1.0e-5)
+        inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim, low=1.0e-5)
+        tangent_orientation = data_alloc.random_field(dims.EdgeDim, low=1.0e-5)
+        e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim)
 
-        vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        owner_mask = data_alloc.random_mask(grid, dims.CellDim)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        area = data_alloc.random_field(grid, dims.CellDim)
-        geofac_n2s = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
+        vertical_cfl = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
+        owner_mask = data_alloc.random_mask(dims.CellDim)
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        area = data_alloc.random_field(dims.CellDim)
+        geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
 
         scalfac_exdiff = 10.0
         dtime = 2.0
@@ -494,12 +513,28 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         "vertical_cfl",
     )
     STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: (),  # For now compile time variants triger error in gt4py
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nflatlev",
+            "skip_compute_predictor_vertical_advection",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "end_index_of_damping_layer",
+            "nflatlev",
+            "skip_compute_predictor_vertical_advection",
+        ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
+        *,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         vertical_wind_advective_tendency: np.ndarray,
         contravariant_corrected_w_at_cells_on_model_levels: np.ndarray,
@@ -523,6 +558,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         skip_compute_predictor_vertical_advection: bool,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         nlev = kwargs["vertical_end"]
 
         # We need to store the initial return field, because we only compute on a subdomain.
@@ -535,16 +571,16 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         vertical_wind_advective_tendency_ret = vertical_wind_advective_tendency.copy()
         vertical_cfl_ret = vertical_cfl.copy()
 
-        contravariant_correction_at_cells_on_half_levels_nlev = (
-            interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
-                connectivities,
-                contravariant_correction_at_cells_on_half_levels[:, :-1],
-                contravariant_correction_at_edges_on_model_levels,
-                e_bln_c_s,
-                wgtfac_c,
-                nflatlev,
-                nlev,
-            )
+        contravariant_correction_at_cells_on_half_levels_nlev = interpolate_contravariant_correction_to_cells_on_half_levels_numpy(
+            connectivities=connectivities,
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels[
+                :, :-1
+            ],
+            contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
+            e_bln_c_s=e_bln_c_s,
+            wgtfac_c=wgtfac_c,
+            nflatlev=nflatlev,
+            nlev=nlev,
         )
 
         (
@@ -552,36 +588,34 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             cfl_clipping,
             vertical_cfl,
         ) = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
-            w[:, :-1],
-            contravariant_correction_at_cells_on_half_levels_nlev,
-            ddqz_z_half,
-            cfl_w_limit,
-            dtime,
-            nlev,
-            end_index_of_damping_layer,
+            w=w[:, :-1],
+            contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels_nlev,
+            ddqz_z_half=ddqz_z_half[:, :-1],
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
+            nlev=nlev,
+            end_index_of_damping_layer=end_index_of_damping_layer,
         )
         if not skip_compute_predictor_vertical_advection:
-            vertical_wind_advective_tendency = (
-                compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
-                    connectivities,
-                    vertical_wind_advective_tendency,
-                    w,
-                    horizontal_advection_of_w_at_edges_on_half_levels,
-                    contravariant_corrected_w_at_cells_on_half_levels,
-                    cfl_clipping,
-                    coeff1_dwdz,
-                    coeff2_dwdz,
-                    e_bln_c_s,
-                    ddqz_z_half,
-                    area,
-                    geofac_n2s,
-                    owner_mask,
-                    scalfac_exdiff,
-                    cfl_w_limit,
-                    dtime,
-                    nlev,
-                    end_index_of_damping_layer,
-                )
+            vertical_wind_advective_tendency = compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
+                connectivities=connectivities,
+                vertical_wind_advective_tendency=vertical_wind_advective_tendency[:, :-1],
+                w=w,
+                horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
+                contravariant_corrected_w_at_cells_on_half_levels=contravariant_corrected_w_at_cells_on_half_levels,
+                cfl_clipping=cfl_clipping,
+                coeff1_dwdz=coeff1_dwdz,
+                coeff2_dwdz=coeff2_dwdz,
+                e_bln_c_s=e_bln_c_s,
+                ddqz_z_half=ddqz_z_half[:, :-1],
+                area=area,
+                geofac_n2s=geofac_n2s,
+                owner_mask=owner_mask,
+                scalfac_exdiff=scalfac_exdiff,
+                cfl_w_limit=cfl_w_limit,
+                dtime=dtime,
+                nlev=nlev,
+                end_index_of_damping_layer=end_index_of_damping_layer,
             )
 
         contravariant_corrected_w_at_cells_on_model_levels = (
@@ -622,7 +656,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             vertical_cfl=vertical_cfl_ret,
         )
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"skip_compute_predictor_vertical_advection": value} for value in [True, False]
         ],  # True for benchmarking, False for testing
@@ -631,34 +665,36 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         ),
     )
     def input_data(
-        self, grid: base.Grid, request: pytest.FixtureRequest
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim
+            dims.CellDim, dims.KDim
         )
-        vertical_wind_advective_tendency = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        vertical_wind_advective_tendency = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+            dims.EdgeDim, dims.KHalfDim
         )
         contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
+            dims.EdgeDim, dims.KDim
         )
         contravariant_correction_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            dims.CellDim, dims.KHalfDim
         )
 
-        coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        coeff2_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        coeff1_dwdz = data_alloc.random_field(dims.CellDim, dims.KDim)
+        coeff2_dwdz = data_alloc.random_field(dims.CellDim, dims.KDim)
 
-        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        e_bln_c_s = data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        wgtfac_c = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
 
-        vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        owner_mask = data_alloc.random_mask(grid, dims.CellDim)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        area = data_alloc.random_field(grid, dims.CellDim)
-        geofac_n2s = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
+        vertical_cfl = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
+        owner_mask = data_alloc.random_mask(dims.CellDim)
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        area = data_alloc.random_field(dims.CellDim)
+        geofac_n2s = data_alloc.random_field(dims.CellDim, dims.C2E2CODim)
 
         scalfac_exdiff = 10.0
         dtime = 2.0

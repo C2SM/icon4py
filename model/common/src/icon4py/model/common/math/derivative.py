@@ -8,25 +8,26 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat
 
 
 @gtx.field_operator
 def _compute_first_vertical_derivative_at_cells(
-    cell_kdim_field: fa.CellKField[vpfloat],
+    cell_khalfdim_field: fa.CellKHalfField[vpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
     """
     This stencil computes the first vertical at cells
     """
-    first_vertical_derivative = (cell_kdim_field - cell_kdim_field(Koff[1])) * inv_ddqz_z_full
+    first_vertical_derivative = (
+        cell_khalfdim_field(dims.KDim - 0.5) - cell_khalfdim_field(dims.KDim + 0.5)
+    ) * inv_ddqz_z_full
     return first_vertical_derivative
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_first_vertical_derivative_at_cells(
-    cell_kdim_field: fa.CellKField[vpfloat],
+def compute_first_vertical_derivative_at_cells(  # noqa: PLR0917 [too-many-positional-arguments]
+    cell_khalfdim_field: fa.CellKHalfField[vpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     first_vertical_derivative: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
@@ -35,8 +36,8 @@ def compute_first_vertical_derivative_at_cells(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_first_vertical_derivative_at_cells(
-        cell_kdim_field,
-        inv_ddqz_z_full,
+        cell_khalfdim_field=cell_khalfdim_field,
+        inv_ddqz_z_full=inv_ddqz_z_full,
         out=first_vertical_derivative,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

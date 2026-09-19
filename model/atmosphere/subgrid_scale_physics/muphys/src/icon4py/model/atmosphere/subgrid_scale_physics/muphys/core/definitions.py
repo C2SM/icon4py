@@ -27,3 +27,11 @@ class Q_scalar(NamedTuple):
     s: ta.wpfloat  # Specific snow water
     i: ta.wpfloat  # Specific ice water content
     g: ta.wpfloat  # Specific graupel water content
+
+
+SPECIES: tuple[str, ...] = Q._fields
+
+# muphys precip diagnostic field names (pure diagnostics -- never applied to the
+# prognostic state): total precip flux, surface rain / snow / ice / graupel rates,
+# and surface precip energy flux.
+PRECIP_DIAGNOSTICS: tuple[str, ...] = ("pflx", "pr", "ps", "pi", "pg", "pre")

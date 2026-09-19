@@ -17,11 +17,11 @@ from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_for
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
+    *,
     vwind_impl_wgt: np.ndarray,
     theta_v_ic: np.ndarray,
     ddqz_z_half: np.ndarray,
@@ -44,8 +44,9 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
     z_c = np.zeros_like(z_gamma)
     z_g = np.zeros_like(z_gamma)
 
-    k_size = w.shape[1]
-    for k in range(1, k_size):
+    # z_beta/z_exner_expl live on model levels, so the sweep stops at the last model level
+    nlev = z_beta.shape[1]
+    for k in range(1, nlev):
         z_a[:, k] = -z_gamma[:, k] * z_beta[:, k - 1] * z_alpha[:, k - 1]
         z_c[:, k] = -z_gamma[:, k] * z_beta[:, k] * z_alpha[:, k + 1]
         z_b[:, k] = 1.0 + z_gamma[:, k] * z_alpha[:, k] * (z_beta[:, k - 1] + z_beta[:, k])
@@ -57,13 +58,14 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
     return z_q, w
 
 
-class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
+class TestSolveTridiagonalMatrixForWForwardSweep(stencil_tests.StencilTest):
     PROGRAM = solve_tridiagonal_matrix_for_w_forward_sweep
     OUTPUTS = ("w", "z_q")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base_grid.Grid,
+        *,
         vwind_impl_wgt: np.ndarray,
         theta_v_ic: np.ndarray,
         ddqz_z_half: np.ndarray,
@@ -78,39 +80,37 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         **kwargs: Any,
     ) -> dict:
         z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
-            vwind_impl_wgt,
-            theta_v_ic,
-            ddqz_z_half,
-            z_alpha,
-            z_beta,
-            z_exner_expl,
-            z_w_expl,
-            z_q,
-            w,
-            dtime,
-            cpd,
+            vwind_impl_wgt=vwind_impl_wgt,
+            theta_v_ic=theta_v_ic,
+            ddqz_z_half=ddqz_z_half,
+            z_alpha=z_alpha,
+            z_beta=z_beta,
+            z_exner_expl=z_exner_expl,
+            z_w_expl=z_w_expl,
+            z_q_ref=z_q,
+            w_ref=w,
+            dtime=dtime,
+            cpd=cpd,
         )
         return dict(z_q=z_q_ref, w=w_ref)
 
-    @pytest.fixture
-    def input_data(self, grid: base_grid.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
-        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_alpha = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
-        )
-        z_beta = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
-        z_exner_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        z_w_expl = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
-        )
-        z_q = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base_grid.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        vwind_impl_wgt = data_alloc.random_field(dims.CellDim, dtype=ta.wpfloat)
+        theta_v_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
+        z_alpha = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
+        z_beta = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_exner_expl = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_w_expl = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
+        z_q = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.vpfloat)
         # z_q first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
-        z_q.asnumpy()[:, 0] = 0.0
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        z_q.ndarray[:, 0] = 0.0  # type: ignore[index]
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat)
         # w first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
-        w.asnumpy()[:, 0] = 0.0
+        w.ndarray[:, 0] = 0.0  # type: ignore[index]
 
         h_start = 0
         h_end = gtx.int32(grid.num_cells)

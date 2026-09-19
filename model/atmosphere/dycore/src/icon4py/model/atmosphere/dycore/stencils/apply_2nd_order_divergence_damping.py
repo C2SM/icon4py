@@ -36,9 +36,9 @@ def apply_2nd_order_divergence_damping(
     vertical_end: gtx.int32,
 ) -> None:
     _apply_2nd_order_divergence_damping(
-        z_graddiv_vn,
-        vn,
-        scal_divdamp_o2,
+        z_graddiv_vn=z_graddiv_vn,
+        vn=vn,
+        scal_divdamp_o2=scal_divdamp_o2,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

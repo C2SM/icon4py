@@ -32,9 +32,9 @@ def compute_airmass(
     vertical_end: gtx.int32,
 ) -> None:
     _compute_airmass(
-        rho_in,
-        ddqz_z_full_in,
-        deepatmo_t1mc_in,
+        rho_in=rho_in,
+        ddqz_z_full_in=ddqz_z_full_in,
+        deepatmo_t1mc_in=deepatmo_t1mc_in,
         out=airmass_out,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

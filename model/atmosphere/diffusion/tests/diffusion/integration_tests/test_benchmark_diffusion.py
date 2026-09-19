@@ -40,7 +40,7 @@ from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-def test_diffusion_benchmark(
+def test_diffusion_benchmark(  # noqa: PLR0917 [too-many-positional-arguments]
     geometry_field_source: grid_geometry.GridGeometry,
     grid_manager: gm.GridManager,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
@@ -53,17 +53,15 @@ def test_diffusion_benchmark(
 
     config = diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
+        apply_to_vertical_wind=True,
+        apply_to_horizontal_wind=True,
         type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
         type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
         hdiff_efdt_ratio=24.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
-        zdiffu_t=False,
-        velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coefficient=0.375,
-        n_substeps=5,
+        apply_zdiffusion_t=False,
+        velocity_boundary_diffusion_denominator=150.0,
         shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
@@ -77,32 +75,44 @@ def test_diffusion_benchmark(
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
     )
     edge_geometry = grid_states.EdgeParams(
-        edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
-        edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
         tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
-        coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
-        edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
-        primal_edge_lengths=geometry_field_source.get(geometry_meta.EDGE_LENGTH),
         inverse_primal_edge_lengths=geometry_field_source.get(
             f"inverse_of_{geometry_meta.EDGE_LENGTH}"
         ),
-        dual_edge_lengths=geometry_field_source.get(geometry_meta.DUAL_EDGE_LENGTH),
         inverse_dual_edge_lengths=geometry_field_source.get(
             f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
         ),
         inverse_vertex_vertex_lengths=geometry_field_source.get(
             f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
         ),
-        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
-        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
-        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
-        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-        primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
-        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
-        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
-        dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        primal_normal_vert=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        ),
+        dual_normal_vert=(
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+        ),
+        primal_normal_cell=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
+        ),
+        dual_normal_cell=(
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
+            geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        ),
+        edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
+        coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
+        edge_center=(
+            geometry_field_source.get(geometry_meta.EDGE_LAT),
+            geometry_field_source.get(geometry_meta.EDGE_LON),
+        ),
+        primal_normal=(
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
+            geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+        ),
+        primal_edge_lengths=geometry_field_source.get(geometry_meta.EDGE_LENGTH),
+        dual_edge_lengths=geometry_field_source.get(geometry_meta.DUAL_EDGE_LENGTH),
     )
 
     vertical_config = v_grid.VerticalGridConfig(
@@ -140,16 +150,14 @@ def test_diffusion_benchmark(
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
-        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
+        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, allocator=allocator),
     )
 
     prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, allocator=allocator
-        ),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KHalfDim, low=0.0, allocator=allocator),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
@@ -166,7 +174,9 @@ def test_diffusion_benchmark(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend_like,
-        exchange=decomp_defs.single_node_exchange,
+        exchange=decomp_defs.SingleNodeExchange(),
+        ndyn_substeps=5,
+        max_nudging_coefficient=0.375,
     )
 
     benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)

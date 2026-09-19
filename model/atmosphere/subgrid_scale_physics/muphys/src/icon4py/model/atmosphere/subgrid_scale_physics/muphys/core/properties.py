@@ -6,9 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import exp, maximum, minimum, power, where
+from gt4py.next import exp, log, maximum, minimum, power, sqrt, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
+    AesGraupelConsts,
     GraupelConsts,
     ThermodynamicConsts,
 )
@@ -50,7 +51,7 @@ def deposition_auto_conversion(
     ice_dep: fa.CellKField[ta.wpfloat],  # Rate of ice deposition (some to snow)
     conversion_rate: fa.CellKField[ta.wpfloat],  # output
 ):
-    _deposition_auto_conversion(qi, m_ice, ice_dep, out=conversion_rate)
+    _deposition_auto_conversion(qi=qi, m_ice=m_ice, ice_dep=ice_dep, out=conversion_rate)
 
 
 @gtx.field_operator
@@ -83,75 +84,11 @@ def deposition_factor(
     qvsi: fa.CellKField[ta.wpfloat],  # Saturation (ice) specific vapor mass
     deposition_rate: fa.CellKField[ta.wpfloat],  # deposition rate
 ):
-    _deposition_factor(t, qvsi, out=deposition_rate)
+    _deposition_factor(t=t, qvsi=qvsi, out=deposition_rate)
 
 
 @gtx.field_operator
-def _fall_speed_scalar(
-    density: ta.wpfloat,
-    prefactor: ta.wpfloat,
-    offset: ta.wpfloat,
-    exponent: ta.wpfloat,
-) -> ta.wpfloat:  # Fall speed
-    """
-    Compute the scalar fall speed (can be used in scan operator)
-
-    Args:
-        density:       Density of species
-        prefactor:     Multiplicative factor
-        offset:        Linear offset to density
-        exponent:      Exponent of power function
-
-    Result:            Fall speed
-    """
-    return prefactor * power((density + offset), exponent)
-
-
-@gtx.field_operator
-def _fall_speed(
-    density: fa.CellKField[ta.wpfloat],
-    prefactor: ta.wpfloat,
-    offset: ta.wpfloat,
-    exponent: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:  # Fall speed
-    """
-    Compute the fall speed
-
-    Args:
-        density:       Density of species
-        prefactor:     Multiplicative factor
-        offset:        Linear offset to density
-        exponent:      Exponent of power function
-
-    Result:            Fall speed
-    """
-    return prefactor * power((density + offset), exponent)
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def fall_speed_scalar(
-    density: ta.wpfloat,  # Density of species
-    prefactor: ta.wpfloat,
-    offset: ta.wpfloat,
-    exponent: ta.wpfloat,
-    speed: ta.wpfloat,  # output
-):
-    _fall_speed_scalar(density, prefactor, offset, exponent, out=speed)
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def fall_speed(
-    density: fa.CellKField[ta.wpfloat],  # Density of species
-    prefactor: ta.wpfloat,
-    offset: ta.wpfloat,
-    exponent: ta.wpfloat,
-    speed: fa.CellKField[ta.wpfloat],  # output
-):
-    _fall_speed(density, prefactor, offset, exponent, out=speed)
-
-
-@gtx.field_operator
-def _ice_deposition_nucleation(
+def _ice_deposition_nucleation(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
     qi: fa.CellKField[ta.wpfloat],
@@ -183,7 +120,7 @@ def _ice_deposition_nucleation(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def ice_deposition_nucleation(
+def ice_deposition_nucleation(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],  # Temperature
     qc: fa.CellKField[ta.wpfloat],  # Specific humidity of cloud
     qi: fa.CellKField[ta.wpfloat],  # Specific humidity of ice
@@ -192,7 +129,9 @@ def ice_deposition_nucleation(
     dt: ta.wpfloat,  # Time step
     vapor_deposition_rate: fa.CellKField[ta.wpfloat],  # output
 ):
-    _ice_deposition_nucleation(t, qc, qi, ni, dvsi, dt, out=vapor_deposition_rate)
+    _ice_deposition_nucleation(
+        t=t, qc=qc, qi=qi, ni=ni, dvsi=dvsi, dt=dt, out=vapor_deposition_rate
+    )
 
 
 @gtx.field_operator
@@ -219,7 +158,7 @@ def ice_mass(
     ni: fa.CellKField[ta.wpfloat],  # Ice crystal number
     mass: fa.CellKField[ta.wpfloat],  # output
 ):
-    _ice_mass(qi, ni, out=mass)
+    _ice_mass(qi=qi, ni=ni, out=mass)
 
 
 @gtx.field_operator
@@ -248,7 +187,7 @@ def ice_number(
     rho: fa.CellKField[ta.wpfloat],  # Ambient density
     number: fa.CellKField[ta.wpfloat],  # output
 ):
-    _ice_number(t, rho, out=number)
+    _ice_number(t=t, rho=rho, out=number)
 
 
 @gtx.field_operator
@@ -282,62 +221,25 @@ def ice_sticking(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     sticking_factor: fa.CellKField[ta.wpfloat],  # output
 ):
-    _ice_sticking(t, out=sticking_factor)
-
-
-@gtx.field_operator
-def _snow_lambda(
-    rho: fa.CellKField[ta.wpfloat],
-    qs: fa.CellKField[ta.wpfloat],
-    ns: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
-    """
-    Compute the riming snow rate
-
-    Args:
-        rho:          Ambient density
-        qs:           Snow specific mass
-        ns:           Snow number
-
-    Result:           Riming snow rate
-    """
-    A2 = GraupelConsts.ams * wpfloat(2.0)  # (with ams*gam(bms+1.0_wp) where gam(3) = 2)
-    LMD_0 = wpfloat(1.0e10)  # no snow value of lambda
-    BX = wpfloat(1.0) / (GraupelConsts.bms + wpfloat(1.0))  # Exponent
-    QSMIN = wpfloat(0.0e-6)  # TODO(): Check with Georgiana that this value is correct
-
-    return where(qs > GraupelConsts.qmin, power((A2 * ns / ((qs + QSMIN) * rho)), BX), LMD_0)
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def snow_lambda(
-    rho: fa.CellKField[ta.wpfloat],  # Ambient density
-    qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
-    ns: fa.CellKField[ta.wpfloat],  # Snow number
-    riming_snow_rate: fa.CellKField[ta.wpfloat],  # output
-):
-    _snow_lambda(rho, qs, ns, out=riming_snow_rate)
+    _ice_sticking(t=t, out=sticking_factor)
 
 
 @gtx.field_operator
 def _snow_number(
     t: fa.CellKField[ta.wpfloat],
-    rho: fa.CellKField[ta.wpfloat],
-    qs: fa.CellKField[ta.wpfloat],
+    rho_s: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Compute the snow number
+    Compute the snow number.
 
     Args:
         t:            Temperature
-        rho:          Ambient air density
-        qs:           Snow specific mass
+        rho_s:        Snow mass density rho*qs
 
     Result:           Snow number
     """
     TMIN = ThermodynamicConsts.tmelt - wpfloat(40.0)
     TMAX = ThermodynamicConsts.tmelt
-    QSMIN = wpfloat(2.0e-6)
     XA1 = wpfloat(-1.65e0)
     XA2 = wpfloat(5.45e-2)
     XA3 = wpfloat(3.27e-4)
@@ -353,40 +255,39 @@ def _snow_number(
     N0S6 = wpfloat(1.0e2) * N0S1
     N0S7 = wpfloat(1.0e9)
 
-    # TODO(): see if these can be incorporated into WHERE statement
     tc = maximum(minimum(t, TMAX), TMIN) - ThermodynamicConsts.tmelt
     alf = power(wpfloat(10.0), (XA1 + tc * (XA2 + tc * XA3)))
     bet = XB1 + tc * (XB2 + tc * XB3)
     n0s = (
         N0S3
-        * power(((qs + QSMIN) * rho / GraupelConsts.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
+        * power(
+            (maximum(rho_s, AesGraupelConsts.rho_s_mn) / GraupelConsts.ams),
+            (wpfloat(4.0) - wpfloat(3.0) * bet),
+        )
         / (alf * alf * alf)
     )
     y = exp(N0S2 * tc)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
-    return where(qs > GraupelConsts.qmin, minimum(n0smx, maximum(n0smn, n0s)), N0S0)
+    return where(rho_s > GraupelConsts.qmin, minimum(n0smx, maximum(n0smn, n0s)), N0S0)
 
 
 @gtx.field_operator
 def _snow_number_scalar(
     t: ta.wpfloat,
-    rho: ta.wpfloat,
-    qs: ta.wpfloat,
+    rho_s: ta.wpfloat,
 ) -> ta.wpfloat:
     """
-    Compute the snow number
+    Compute the snow number (scalar version for scan operators).
 
     Args:
         t:            Temperature
-        rho:          Ambient air density
-        qs:           Snow specific mass
+        rho_s:        Snow mass density rho*qs
 
     Result:           Snow number
     """
     TMIN = ThermodynamicConsts.tmelt - wpfloat(40.0)
     TMAX = ThermodynamicConsts.tmelt
-    QSMIN = wpfloat(2.0e-6)
     XA1 = wpfloat(-1.65e0)
     XA2 = wpfloat(5.45e-2)
     XA3 = wpfloat(3.27e-4)
@@ -402,151 +303,159 @@ def _snow_number_scalar(
     N0S6 = wpfloat(1.0e2) * N0S1
     N0S7 = wpfloat(1.0e9)
 
-    # TODO(): see if these can be incorporated into WHERE statement
     tc = maximum(minimum(t, TMAX), TMIN) - ThermodynamicConsts.tmelt
     alf = power(wpfloat(10.0), (XA1 + tc * (XA2 + tc * XA3)))
     bet = XB1 + tc * (XB2 + tc * XB3)
     n0s = (
         N0S3
-        * power(((qs + QSMIN) * rho / GraupelConsts.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
+        * power(
+            (maximum(rho_s, AesGraupelConsts.rho_s_mn) / GraupelConsts.ams),
+            (wpfloat(4.0) - wpfloat(3.0) * bet),
+        )
         / (alf * alf * alf)
     )
     y = exp(N0S2 * tc)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
-    return minimum(n0smx, maximum(n0smn, n0s)) if qs > GraupelConsts.qmin else N0S0
+    return minimum(n0smx, maximum(n0smn, n0s)) if rho_s > GraupelConsts.qmin else N0S0
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def snow_number(
     t: fa.CellKField[ta.wpfloat],  # Temperature
-    rho: fa.CellKField[ta.wpfloat],  # Ambient air density
-    qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
+    rho_s: fa.CellKField[ta.wpfloat],  # Snow mass density rho*qs
     number: fa.CellKField[ta.wpfloat],  # output
 ):
-    _snow_number(t, rho, qs, out=number)
+    _snow_number(t=t, rho_s=rho_s, out=number)
 
 
 @gtx.field_operator
-def _vel_scale_factor_ice(
-    xrho: fa.CellKField[ta.wpfloat],
+def _snow_lambda(
+    rho_s: fa.CellKField[ta.wpfloat],
+    ns: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Compute the velocity scaling factor of ice
+    Compute the snow slope parameter.
 
     Args:
-        xrho:              sqrt(rho_00/rho)
+        rho_s:        Snow mass density rho*qs
+        ns:           Snow number
 
-    Result:                velocity scaling factor of ice
+    Result:           Snow slope parameter (lambda)
     """
-    B_I = wpfloat(0.66666666666666667)
-    return power(xrho, B_I)
+    A2 = GraupelConsts.ams * wpfloat(2.0)  # (with ams*gam(bms+1.0_wp) where gam(3) = 2)
+    LMD_0 = wpfloat(1.0e10)  # no snow value of lambda
+    BX = wpfloat(1.0) / (GraupelConsts.bms + wpfloat(1.0))  # Exponent
+
+    return where(rho_s > GraupelConsts.qmin, power((A2 * ns / rho_s), BX), LMD_0)
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def snow_lambda(
+    rho_s: fa.CellKField[ta.wpfloat],  # Snow mass density rho*qs
+    ns: fa.CellKField[ta.wpfloat],  # Snow number
+    riming_snow_rate: fa.CellKField[ta.wpfloat],  # output
+):
+    _snow_lambda(rho_s=rho_s, ns=ns, out=riming_snow_rate)
 
 
 @gtx.field_operator
-def _vel_scale_factor_ice_scalar(
-    xrho: ta.wpfloat,
+def _vm_rain_scalar(
+    rho_x: ta.wpfloat,
+    rho: ta.wpfloat,
 ) -> ta.wpfloat:
     """
-    Compute the velocity scaling factor of ice
+    Rain fall speed (scalar version for scan operators).
+
+    Degree-4 polynomial in log of the clamped rain mass density. As in the Fortran
+    (mo_aes_graupel.f90 vm), the density correction sqrt(rho_00/rho) multiplies
+    only the polynomial part, not the constant term.
 
     Args:
-        xrho:              sqrt(rho_00/rho)
+        rho_x:        Rain mass density rho*qr
+        rho:          Ambient air density
 
-    Result:                velocity scaling factor of ice
+    Result:           Fall speed
     """
-    B_I = wpfloat(0.66666666666666667)
-    return power(xrho, B_I)
+    x = log(minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x)))
+    return AesGraupelConsts.vm_a_r_1 + x * (
+        AesGraupelConsts.vm_a_r_2
+        + x
+        * (
+            AesGraupelConsts.vm_a_r_3
+            + x * (AesGraupelConsts.vm_a_r_4 + x * AesGraupelConsts.vm_a_r_5)
+        )
+    ) * sqrt(GraupelConsts.rho_00 / rho)
 
 
 @gtx.field_operator
-def _vel_scale_factor_snow(
-    xrho: fa.CellKField[ta.wpfloat],
-    rho: fa.CellKField[ta.wpfloat],
-    t: fa.CellKField[ta.wpfloat],
-    qs: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
+def _vm_ice_scalar(
+    rho_x: ta.wpfloat,
+    rho: ta.wpfloat,
+) -> ta.wpfloat:
     """
-    Compute the velocity scaling factor of snow
+    Ice fall speed (scalar version for scan operators).
 
     Args:
-        xrho:              sqrt(rho_00/rho)
-        rho:               Density of condensate
-        t:                 Temperature
-        qs:                Specific mass
+        rho_x:        Ice mass density rho*qi
+        rho:          Ambient air density
 
-    Result:                Velocity scaling factor of snow
+    Result:           Fall speed
     """
-    B_S = wpfloat(-0.16666666666666667)
-    return xrho * power(_snow_number(t, rho, qs), B_S)
+    B_I = wpfloat(0.33333333333333333)
+    x = minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x))
+    return (
+        AesGraupelConsts.vm_prefactor_i
+        * power(x, AesGraupelConsts.vm_exponent_i)
+        * power(GraupelConsts.rho_00 / rho, B_I)
+    )
 
 
 @gtx.field_operator
-def _vel_scale_factor_snow_scalar(
-    xrho: ta.wpfloat,
+def _vm_snow_scalar(
+    rho_x: ta.wpfloat,
     rho: ta.wpfloat,
     t: ta.wpfloat,
-    qs: ta.wpfloat,
 ) -> ta.wpfloat:
     """
-    Compute the velocity scaling factor of snow
+    Snow fall speed (scalar version for scan operators).
+
+    snow_number is evaluated at the clamped falling-mass density, as in the Fortran.
 
     Args:
-        xrho:              sqrt(rho_00/rho)
-        rho:               Density of condensate
-        t:                 Temperature
-        qs:                Specific mass
+        rho_x:        Snow mass density (rho*qs, or the level-averaged value for vt)
+        rho:          Ambient air density
+        t:            Temperature
 
-    Result:                Velocity scaling factor of snow
+    Result:           Fall speed
     """
     B_S = wpfloat(-0.16666666666666667)
-    return xrho * power(_snow_number_scalar(t, rho, qs), B_S)
+    x = minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x))
+    return (
+        AesGraupelConsts.vm_prefactor_s
+        * power(x, AesGraupelConsts.vm_exponent_s)
+        * sqrt(GraupelConsts.rho_00 / rho)
+        * power(_snow_number_scalar(t=t, rho_s=x), B_S)
+    )
 
 
 @gtx.field_operator
-def _vel_scale_factor_default(
-    xrho: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
-    """
-    Compute the default velocity scaling factor
-
-    Args:
-        xrho:              sqrt(rho_00/rho)
-
-    Result:                default velocity scaling factor
-    """
-    return xrho
-
-
-@gtx.field_operator
-def _vel_scale_factor_default_scalar(
-    xrho: ta.wpfloat,
+def _vm_graupel_scalar(
+    rho_x: ta.wpfloat,
+    rho: ta.wpfloat,
 ) -> ta.wpfloat:
     """
-    Compute the default velocity scaling factor
+    Graupel fall speed (scalar version for scan operators).
 
     Args:
-        xrho:              sqrt(rho_00/rho)
+        rho_x:        Graupel mass density rho*qg
+        rho:          Ambient air density
 
-    Result:                default velocity scaling factor
+    Result:           Fall speed
     """
-    return xrho
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def vel_scale_factor_ice(
-    xrho: fa.CellKField[ta.wpfloat],  # sqrt(rho_00/rho)
-    scale_factor: fa.CellKField[ta.wpfloat],  # output
-):
-    _vel_scale_factor_ice(xrho, out=scale_factor)
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def vel_scale_factor_snow(
-    xrho: fa.CellKField[ta.wpfloat],  # sqrt(rho_00/rho)
-    rho: fa.CellKField[ta.wpfloat],  # Density of condensate
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    qs: fa.CellKField[ta.wpfloat],  # Specific mass
-    scale_factor: fa.CellKField[ta.wpfloat],  # output
-) -> None:
-    _vel_scale_factor_snow(xrho, rho, t, qs, out=scale_factor)
+    x = minimum(AesGraupelConsts.rhox_mx, maximum(AesGraupelConsts.rhox_mn, rho_x))
+    return (
+        AesGraupelConsts.vm_prefactor_g
+        * power(x, AesGraupelConsts.vm_exponent_g)
+        * sqrt(GraupelConsts.rho_00 / rho)
+    )

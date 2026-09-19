@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+from collections.abc import Mapping
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -15,15 +18,13 @@ from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wi
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import reference_funcs, stencil_tests
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity_numpy,
 )
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
-from .test_compute_tangential_wind import compute_tangential_wind_numpy
 from .test_extrapolate_at_top import extrapolate_at_top_numpy
 from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
     interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy,
@@ -37,7 +38,8 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 
 
 def compute_diagnostics_from_normal_wind_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    *,
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     tangential_wind_on_half_levels: np.ndarray,
     tangential_wind: np.ndarray,
     vn_on_half_levels: np.ndarray,
@@ -70,7 +72,7 @@ def compute_diagnostics_from_normal_wind_numpy(
 
     tangential_wind = np.where(
         k_nlev >= vertical_start,
-        compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
+        reference_funcs.compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
         tangential_wind,
     )
 
@@ -82,15 +84,15 @@ def compute_diagnostics_from_normal_wind_numpy(
         horizontal_kinetic_energy_at_edges_on_model_levels,
     )
 
-    vn_on_half_levels[:, : nlevp1 - 1] = (
+    vn_on_half_levels = (
         interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_vn_ie_numpy(wgtfac_e, vn)
     )
 
     if not skip_compute_predictor_vertical_advection:
-        tangential_wind_on_half_levels = np.where(
+        tangential_wind_on_half_levels[:, : nlevp1 - 1] = np.where(
             k_nlev >= vertical_start,
-            interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind),
-            tangential_wind_on_half_levels,
+            interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind)[:, : nlevp1 - 1],
+            tangential_wind_on_half_levels[:, : nlevp1 - 1],
         )
 
     contravariant_correction_at_edges_on_model_levels = np.where(
@@ -103,19 +105,19 @@ def compute_diagnostics_from_normal_wind_numpy(
         w_at_vertices = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
             connectivities, w, c_intp
         )
-        horizontal_advection_of_w_at_edges_on_half_levels = np.where(
+        horizontal_advection_of_w_at_edges_on_half_levels[:, : nlevp1 - 1] = np.where(
             k_nlev >= vertical_start,
             compute_horizontal_advection_term_for_vertical_velocity_numpy(
-                connectivities,
-                vn_on_half_levels[:, : nlevp1 - 1],
-                inv_dual_edge_length,
-                w,
-                tangential_wind_on_half_levels,
-                inv_primal_edge_length,
-                tangent_orientation,
-                w_at_vertices,
-            ),
-            horizontal_advection_of_w_at_edges_on_half_levels,
+                connectivities=connectivities,
+                vn_ie=vn_on_half_levels,
+                inv_dual_edge_length=inv_dual_edge_length,
+                w=w,
+                z_vt_ie=tangential_wind_on_half_levels,
+                inv_primal_edge_length=inv_primal_edge_length,
+                tangent_orientation=tangent_orientation,
+                z_w_v=w_at_vertices,
+            )[:, : nlevp1 - 1],
+            horizontal_advection_of_w_at_edges_on_half_levels[:, : nlevp1 - 1],
         )
 
     vn_on_half_levels[:, -1] = extrapolate_to_surface_numpy(wgtfacq_e, vn)
@@ -178,10 +180,10 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         ),
     }
 
-    @classmethod
+    @stencil_tests.static_reference
     def reference(
-        cls,
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
+        *,
         tangential_wind: np.ndarray,
         tangential_wind_on_half_levels: np.ndarray,
         vn_on_half_levels: np.ndarray,
@@ -205,7 +207,9 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         horizontal_end: int,
         vertical_start: int,
         vertical_end: int,
+        **kwargs: object,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         initial_tangential_wind = tangential_wind.copy()
         initial_tangential_wind_on_half_levels = tangential_wind_on_half_levels.copy()
         initial_horizontal_kinetic_energy_at_edges_on_model_levels = (
@@ -290,7 +294,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         )
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"skip_compute_predictor_vertical_advection": value} for value in [True, False]
         ],  # True for benchmarking, False for testing
@@ -299,33 +303,33 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         ),
     )
     def input_data(
-        self, grid: base.Grid, request: pytest.FixtureRequest
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
+            dims.EdgeDim, dims.KHalfDim
         )
-        tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        tangential_wind_on_half_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        vn_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
-        )
+        tangential_wind = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        tangential_wind_on_half_levels = data_alloc.random_field(dims.EdgeDim, dims.KHalfDim)
+        vn_on_half_levels = data_alloc.zero_field(dims.EdgeDim, dims.KHalfDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
+            dims.EdgeDim, dims.KDim
         )
         contravariant_correction_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
+            dims.EdgeDim, dims.KDim
         )
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
-        wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        w = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
+        rbf_vec_coeff_e = data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim)
+        wgtfac_e = data_alloc.random_field(dims.EdgeDim, dims.KHalfDim)
+        ddxn_z_full = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        ddxt_z_full = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        inv_dual_edge_length = data_alloc.random_field(dims.EdgeDim)
+        inv_primal_edge_length = data_alloc.random_field(dims.EdgeDim)
+        tangent_orientation = data_alloc.random_field(dims.EdgeDim)
+        wgtfacq_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        c_intp = data_alloc.random_field(dims.VertexDim, dims.V2CDim)
 
         nlev = grid.num_levels
         nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime

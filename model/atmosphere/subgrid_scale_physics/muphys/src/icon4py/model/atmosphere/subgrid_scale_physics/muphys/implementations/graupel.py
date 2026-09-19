@@ -8,12 +8,11 @@
 from typing import NamedTuple
 
 import gt4py.next as gtx
-from gt4py.next import broadcast, maximum, minimum, power, sqrt, where
+from gt4py.next import broadcast, maximum, minimum, where
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import (
     GraupelConsts,
-    IndexConsts,
     ThermodynamicConsts,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q, Q_scalar
@@ -26,12 +25,12 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
     _ice_sticking,
     _snow_lambda,
     _snow_number,
-    _vel_scale_factor_default_scalar,
-    _vel_scale_factor_ice_scalar,
-    _vel_scale_factor_snow_scalar,
+    _vm_graupel_scalar,
+    _vm_ice_scalar,
+    _vm_rain_scalar,
+    _vm_snow_scalar,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
-    _internal_energy_scalar,
     _qsat_ice_rho,
     _qsat_rho,
     _qsat_rho_tmelt,
@@ -53,14 +52,15 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
     _vapor_x_snow,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.physics.thermodynamics.compute_energy import (
+    compute_internal_energy_per_area_scalar,
+)
 from icon4py.model.common.type_alias import wpfloat
 
 
 class PrecipStateQx(NamedTuple):
     x: ta.wpfloat
     p: ta.wpfloat
-    vc: ta.wpfloat
     activated: bool
 
 
@@ -78,35 +78,30 @@ class IntegrationState(NamedTuple):
     t_state: TempState
     rho: ta.wpfloat
     pflx_tot: ta.wpfloat
+    # input temperature of the level, carried for the snow fall speed of
+    # the next level (snow_number depends on the previous level's temperature)
+    t_in: ta.wpfloat
 
 
 @gtx.field_operator
-def precip_qx_level_update(
+def precip_qx_level_update(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level_q: PrecipStateQx,
-    previous_level_rho: ta.wpfloat,
-    prefactor: ta.wpfloat,  # param[0] of fall_speed
-    exponent: ta.wpfloat,  # param[1] of fall_speed
-    offset: ta.wpfloat,  # param[1] of fall_speed
     zeta: ta.wpfloat,  # dt/(2dz)
-    vc: ta.wpfloat,  # state dependent fall speed correction
     q: ta.wpfloat,  # specific mass of hydrometeor
     rho: ta.wpfloat,  # density
+    fall_speed: ta.wpfloat,  # vm at this level's hydrometeor density
+    vt_prev: ta.wpfloat,  # vm at the level-averaged density of the level above
     mask: bool,
 ) -> PrecipStateQx:
+    # the fall speeds are evaluated by the caller with the full
+    # species-specific vm formulas (clamped densities, previous-level rho and t)
     current_level_activated = previous_level_q.activated | mask
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + wpfloat(2.0) * previous_level_q.p
-    # Inlined calculation using _fall_speed_scalar
-    flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
-
-    rhox_prev = (previous_level_q.x + q) * wpfloat(0.5) * previous_level_rho
+    flx_partial = minimum(rho_x * fall_speed, flx_eff)
 
     if current_level_activated:
-        vt = (
-            previous_level_q.vc * prefactor * power((rhox_prev + offset), exponent)
-            if previous_level_q.activated
-            else wpfloat(0.0)
-        )
+        vt = vt_prev if previous_level_q.activated else wpfloat(0.0)
         x = (zeta * (flx_eff - flx_partial)) / ((wpfloat(1.0) + zeta * vt) * rho)  # q update
         p = (x * rho * vt + flx_partial) * wpfloat(0.5)  # flux
     else:
@@ -116,13 +111,12 @@ def precip_qx_level_update(
     return PrecipStateQx(
         x=x,
         p=p,
-        vc=vc,
         activated=current_level_activated,
     )
 
 
 @gtx.field_operator
-def _temperature_update(
+def _temperature_update(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level: TempState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
@@ -145,14 +139,14 @@ def _temperature_update(
         )
 
         e_int = (
-            _internal_energy_scalar(
+            compute_internal_energy_per_area_scalar(
                 t=t, qv=q.v, qliq=q.c + q.r, qice=q.s + q.i + q.g, rho=rho, dz=dz
             )
             + dt * previous_level.eflx
             - dt * eflx
         )
 
-        #  Inlined calculation using T_from_internal_energy_scalar
+        #  Inlined calculation using compute_temperature_from_internal_energy_per_area_scalar
         #  in order to avoid scan_operator -> field_operator
         qtot = qliq + qice + q.v  # total water specific mass
         cv = (
@@ -176,16 +170,17 @@ def _temperature_update(
     axis=dims.KDim,
     forward=True,
     init=IntegrationState(
-        r=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
-        s=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
-        i=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
-        g=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
+        r=PrecipStateQx(x=0.0, p=0.0, activated=False),
+        s=PrecipStateQx(x=0.0, p=0.0, activated=False),
+        i=PrecipStateQx(x=0.0, p=0.0, activated=False),
+        g=PrecipStateQx(x=0.0, p=0.0, activated=False),
         t_state=TempState(t=0.0, eflx=0.0, activated=False),
         rho=0.0,
         pflx_tot=0.0,
+        t_in=0.0,
     ),
 )
-def _precip_and_t(
+def _precip_and_t(  # noqa: PLR0917 [too-many-positional-arguments]
     previous_level: IntegrationState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
@@ -199,12 +194,6 @@ def _precip_and_t(
     dz: ta.wpfloat,
 ) -> IntegrationState:
     zeta = dt / (wpfloat(2.0) * dz)
-    xrho = sqrt(GraupelConsts.rho_00 / rho)
-
-    vc_r = _vel_scale_factor_default_scalar(xrho)
-    vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q.s)
-    vc_i = _vel_scale_factor_ice_scalar(xrho)
-    vc_g = _vel_scale_factor_default_scalar(xrho)
     any_mask = mask_r | mask_s | mask_i | mask_g
     previous_level_activated = (
         previous_level.r.activated
@@ -216,52 +205,55 @@ def _precip_and_t(
     current_level_activated = any_mask | previous_level_activated
     # TODO(): Use of combined if-statement to reduce checks in case any of the masks or previous levels are not activated. Can be made unnecessary with future transformations.
     if current_level_activated:
+        # full vm formulas: fall_speed at this level's hydrometeor density,
+        # vt at the level-averaged density using the previous level's rho and t
         r_update = precip_qx_level_update(
             previous_level.r,
-            previous_level.rho,
-            IndexConsts.prefactor_r,
-            IndexConsts.exponent_r,
-            IndexConsts.offset_r,
             zeta,
-            vc_r,
             q.r,
             rho,
+            _vm_rain_scalar(q.r * rho, rho),
+            _vm_rain_scalar(
+                (previous_level.r.x + q.r) * wpfloat(0.5) * previous_level.rho,
+                previous_level.rho,
+            ),
             mask_r,
         )
         s_update = precip_qx_level_update(
             previous_level.s,
-            previous_level.rho,
-            IndexConsts.prefactor_s,
-            IndexConsts.exponent_s,
-            IndexConsts.offset_s,
             zeta,
-            vc_s,
             q.s,
             rho,
+            _vm_snow_scalar(q.s * rho, rho, t),
+            _vm_snow_scalar(
+                (previous_level.s.x + q.s) * wpfloat(0.5) * previous_level.rho,
+                previous_level.rho,
+                previous_level.t_in,
+            ),
             mask_s,
         )
         i_update = precip_qx_level_update(
             previous_level.i,
-            previous_level.rho,
-            IndexConsts.prefactor_i,
-            IndexConsts.exponent_i,
-            IndexConsts.offset_i,
             zeta,
-            vc_i,
             q.i,
             rho,
+            _vm_ice_scalar(q.i * rho, rho),
+            _vm_ice_scalar(
+                (previous_level.i.x + q.i) * wpfloat(0.5) * previous_level.rho,
+                previous_level.rho,
+            ),
             mask_i,
         )
         g_update = precip_qx_level_update(
             previous_level.g,
-            previous_level.rho,
-            IndexConsts.prefactor_g,
-            IndexConsts.exponent_g,
-            IndexConsts.offset_g,
             zeta,
-            vc_g,
             q.g,
             rho,
+            _vm_graupel_scalar(q.g * rho, rho),
+            _vm_graupel_scalar(
+                (previous_level.g.x + q.g) * wpfloat(0.5) * previous_level.rho,
+                previous_level.rho,
+            ),
             mask_g,
         )
 
@@ -282,10 +274,10 @@ def _precip_and_t(
             mask=any_mask,
         )
     else:
-        r_update = PrecipStateQx(x=q.r, p=wpfloat(0.0), vc=vc_r, activated=False)
-        s_update = PrecipStateQx(x=q.s, p=wpfloat(0.0), vc=vc_s, activated=False)
-        i_update = PrecipStateQx(x=q.i, p=wpfloat(0.0), vc=vc_i, activated=False)
-        g_update = PrecipStateQx(x=q.g, p=wpfloat(0.0), vc=vc_g, activated=False)
+        r_update = PrecipStateQx(x=q.r, p=wpfloat(0.0), activated=False)
+        s_update = PrecipStateQx(x=q.s, p=wpfloat(0.0), activated=False)
+        i_update = PrecipStateQx(x=q.i, p=wpfloat(0.0), activated=False)
+        g_update = PrecipStateQx(x=q.g, p=wpfloat(0.0), activated=False)
         t_update = TempState(t=t, eflx=previous_level.t_state.eflx, activated=False)
 
     return IntegrationState(
@@ -296,6 +288,7 @@ def _precip_and_t(
         t_state=t_update,
         rho=rho,
         pflx_tot=s_update.p + i_update.p + g_update.p + r_update.p,
+        t_in=t,
     )
 
 
@@ -339,7 +332,7 @@ def sink_saturation(
 
 
 @gtx.field_operator
-def _q_t_update(
+def _q_t_update(  # noqa: PLR0917 [too-many-positional-arguments]
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
@@ -359,15 +352,14 @@ def _q_t_update(
     dvsw = q.v - _qsat_rho(t, rho)
     qvsi = _qsat_ice_rho(t, rho)
     dvsi = q.v - qvsi
-    n_snow = _snow_number(t, rho, q.s)
-
-    l_snow = _snow_lambda(rho, q.s, n_snow)
+    n_snow = _snow_number(t, rho * q.s)
+    l_snow = _snow_lambda(rho * q.s, n_snow)
 
     t_below_tmelt = t < ThermodynamicConsts.tmelt
     t_at_least_tmelt = ~t_below_tmelt
 
     # Define conversion 'matrix'
-    c2r = _cloud_to_rain(t, q.c, q.r, qnc)
+    c2r = _cloud_to_rain(t, rho, q.c, q.r, qnc)
     r2v = _rain_to_vapor(t, rho, q.c, q.r, dvsw, dt)
     c2i, i2c = symmetric(_cloud_x_ice(t, q.c, q.i, dt))
 
@@ -386,11 +378,14 @@ def _q_t_update(
     v2i, i2v = cond_symmetric(
         t_below_tmelt & is_sig_present, _vapor_x_ice(q.i, m_ice, eta, dvsi, rho, dt)
     )
+    # ICON computes ice_dep from the vapor_x_ice deposition alone, BEFORE
+    # the nucleation contribution is added (and only where is_sig_present)
+    ice_dep = where(t_below_tmelt & is_sig_present, minimum(v2i, dvsi / dt), wpfloat(0.0))
     v2i = where(
-        t_below_tmelt, v2i + _ice_deposition_nucleation(t, q.c, q.i, n_ice, dvsi, dt), wpfloat(0.0)
-    )  # 0.0 or v2i both OK
-
-    ice_dep = where(t_below_tmelt, minimum(v2i, dvsi / dt), wpfloat(0.0))
+        t_below_tmelt,
+        v2i + _ice_deposition_nucleation(t, q.c, q.i, n_ice, dvsi, dt),
+        wpfloat(0.0),
+    )
     # TODO(): _deposition_auto_conversion yields roundoff differences in i2s
     i2s = where(
         t_below_tmelt & is_sig_present,
@@ -484,7 +479,7 @@ def _q_t_update(
 
 
 @gtx.field_operator
-def _precipitation_effects(
+def _precipitation_effects(  # noqa: PLR0917 [too-many-positional-arguments]
     last_lev: gtx.int32,
     kmin_r: fa.CellKField[bool],  # rain minimum level
     kmin_i: fa.CellKField[bool],  # ice minimum level
@@ -508,7 +503,7 @@ def _precipitation_effects(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    t_kp1 = concat_where(dims.KDim < last_lev, t(Koff[1]), t)
+    t_kp1 = concat_where(dims.KDim < last_lev, t(dims.KDim + 1), t)
 
     precip_state = _precip_and_t(
         t,
@@ -540,7 +535,7 @@ def _precipitation_effects(
 
 
 @gtx.field_operator
-def graupel(
+def graupel(  # noqa: PLR0917 [too-many-positional-arguments]
     last_level: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
@@ -569,7 +564,11 @@ def graupel(
         | ((te < GraupelConsts.tfrz_het2) & (q.v > _qsat_ice_rho(te, rho)))
         | ~enable_masking
     )
-    q, t = where(mask, _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking), (q, te))
+    q, t = where(
+        mask,
+        _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking),
+        (q, te),
+    )
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
         last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
@@ -578,7 +577,7 @@ def graupel(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def graupel_run(
+def graupel_run(  # noqa: PLR0917 [too-many-positional-arguments]
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure

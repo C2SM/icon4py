@@ -82,13 +82,13 @@ def field_annotation_descriptor_hook(annotation: Any) -> py2fgen.ParamDescriptor
         return py2fgen.ScalarParamDescriptor(dtype=dtype)
 
 
-def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Callable:
+def _as_field(dims: Sequence[gtx.Dimension]) -> Callable:
     # in case the cache lookup is still performance relevant, we can replace it by a custom swap cache
     # (only for substitution mode where we know we have exactly 2 entries)
     # or by even marking fields as constant over the whole program run and immediately return on second call
     @functools.cache
     def impl(array_info: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> gtx.Field | None:
-        arr = py2fgen.as_array(ffi, array_info, scalar_kind)
+        arr = py2fgen.as_array(ffi, array_info)
         if arr is None:
             return None
         _, shape, _, _ = array_info
@@ -112,8 +112,8 @@ def field_annotation_mapping_hook(
     if maybe_gt4py_type is None:
         return None
     gt4py_type, _ = maybe_gt4py_type
-    dims, dtype = _parse_type_spec(gt4py_type)
-    return _as_field(dims, dtype)
+    dims, _ = _parse_type_spec(gt4py_type)
+    return _as_field(dims)
 
 
 export = py2fgen.export(

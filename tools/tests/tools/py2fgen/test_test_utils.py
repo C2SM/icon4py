@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.tools import py2fgen
-from icon4py.tools.py2fgen.test_utils import array_to_array_info, from_np_dtype
+from icon4py.tools.py2fgen.test_utils import array_to_array_info
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def test_array_as_array_info(ffi, dtype):
     result = array_to_array_info(testee, ffi=ffi)
 
     assert isinstance(result, tuple)
-    arr = py2fgen.as_array(ffi, result, from_np_dtype(dtype))
+    arr = py2fgen.as_array(ffi, result)
     assert isinstance(arr, np.ndarray)
     assert np.array_equal(arr, testee)
 
@@ -45,6 +45,6 @@ def test_array_as_array_info_lifetime(ffi):
     # is "most of the time" testing something, but sometimes not (but also will not fail).
     _dummy = np.arange(100000, dtype=np.int32) + 1
 
-    arr = py2fgen.as_array(ffi, result, from_np_dtype(np.int32))
+    arr = py2fgen.as_array(ffi, result)
     assert isinstance(arr, np.ndarray)
     assert np.array_equal(arr, np.arange(100000, dtype=np.int32))

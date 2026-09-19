@@ -18,10 +18,9 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
-from .test_interpolate_to_surface import interpolate_to_surface_numpy
+from .test_extrapolate_quadratically_to_surface import extrapolate_quadratically_to_surface_numpy
 
 
 def set_theta_v_prime_ic_at_lower_boundary_numpy(
@@ -31,22 +30,24 @@ def set_theta_v_prime_ic_at_lower_boundary_numpy(
     z_theta_v_pr_ic: np.ndarray,
     theta_v_ic: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
-    z_theta_v_pr_ic = interpolate_to_surface_numpy(
+    z_theta_v_pr_ic = extrapolate_quadratically_to_surface_numpy(
         wgtfacq_c=wgtfacq_c,
         interpolant=z_rth_pr,
         interpolation_to_surface=z_theta_v_pr_ic,
     )
-    theta_v_ic[:, 3:] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3:]
+    nlev = z_rth_pr.shape[1]
+    theta_v_ic[:, 3 : nlev + 1] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3 : nlev + 1]
     return (z_theta_v_pr_ic, theta_v_ic)
 
 
-class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
+class TestInitThetaVPrimeIcAtLowerBoundary(stencil_tests.StencilTest):
     PROGRAM = set_theta_v_prime_ic_at_lower_boundary
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
+        *,
         wgtfacq_c: np.ndarray,
         z_rth_pr: np.ndarray,
         theta_ref_ic: np.ndarray,
@@ -63,13 +64,15 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
         )
         return dict(z_theta_v_pr_ic=z_theta_v_pr_ic, theta_v_ic=theta_v_ic)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_theta_v_pr_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        wgtfacq_c = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_ref_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        z_theta_v_pr_ic = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        theta_v_ic = data_alloc.zero_field(dims.CellDim, dims.KHalfDim, dtype=wpfloat)
 
         return dict(
             wgtfacq_c=wgtfacq_c,
@@ -80,5 +83,5 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=3,
-            vertical_end=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

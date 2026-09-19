@@ -9,50 +9,51 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.math import derivative
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 
 def compute_first_vertical_derivative_numpy(
-    cell_kdim_field: np.ndarray, inv_ddqz_z_full: np.ndarray
+    cell_khalfdim_field: np.ndarray, inv_ddqz_z_full: np.ndarray
 ) -> np.ndarray:
-    first_vertical_derivative = (cell_kdim_field[:, :-1] - cell_kdim_field[:, 1:]) * inv_ddqz_z_full
+    first_vertical_derivative = (
+        cell_khalfdim_field[:, :-1] - cell_khalfdim_field[:, 1:]
+    ) * inv_ddqz_z_full
     return first_vertical_derivative
 
 
-class TestComputeFirstVerticalDerivative(StencilTest):
+class TestComputeFirstVerticalDerivative(stencil_tests.StencilTest):
     PROGRAM = derivative.compute_first_vertical_derivative_at_cells
     OUTPUTS = ("first_vertical_derivative",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
-        cell_kdim_field: np.ndarray,
+        grid: base.Grid,
+        *,
+        cell_khalfdim_field: np.ndarray,
         inv_ddqz_z_full: np.ndarray,
         **kwargs: Any,
     ) -> dict:
         first_vertical_derivative = compute_first_vertical_derivative_numpy(
-            cell_kdim_field, inv_ddqz_z_full
+            cell_khalfdim_field, inv_ddqz_z_full
         )
         return dict(first_vertical_derivative=first_vertical_derivative)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        cell_kdim_field = random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
-        )
-        inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        first_vertical_derivative = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        cell_khalfdim_field = data_alloc.random_field(dims.CellDim, dims.KHalfDim, dtype=vpfloat)
+        inv_ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, dtype=vpfloat)
+        first_vertical_derivative = data_alloc.zero_field(dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
-            cell_kdim_field=cell_kdim_field,
+            cell_khalfdim_field=cell_khalfdim_field,
             inv_ddqz_z_full=inv_ddqz_z_full,
             first_vertical_derivative=first_vertical_derivative,
             horizontal_start=0,

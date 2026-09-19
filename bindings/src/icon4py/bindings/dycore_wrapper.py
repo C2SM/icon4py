@@ -19,7 +19,7 @@ Fortran granule interfaces:
 import dataclasses
 import logging
 from collections.abc import Callable
-from typing import Annotated, TypeAlias
+from typing import Annotated
 
 import gt4py.next as gtx
 import numpy as np
@@ -35,6 +35,7 @@ from icon4py.bindings import (
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
+from icon4py.model.common.states import nonhydro_states
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 from icon4py.tools import py2fgen
@@ -53,7 +54,7 @@ granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 
 @icon4py_export.export
-def solve_nh_init(
+def solve_nh_init(  # noqa: PLR0917 [too-many-positional-arguments]
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], gtx.float64],
@@ -70,18 +71,18 @@ def solve_nh_init(
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     nudgecoeff_e: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
     mask_prog_halo_c: gtx.Field[gtx.Dims[dims.CellDim], bool],
-    rayleigh_w: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
+    rayleigh_w: gtx.Field[gtx.Dims[dims.KHalfDim], gtx.float64],
     exner_exfac: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     exner_ref_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     wgtfacq_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     inv_ddqz_z_full: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     rho_ref_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     theta_ref_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vwind_expl_wgt: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    d_exner_dz_ref_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    ddqz_z_half: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    theta_ref_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    d_exner_dz_ref_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    ddqz_z_half: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    theta_ref_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     d2dexdz2_fac1_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     d2dexdz2_fac2_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     rho_ref_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
@@ -94,7 +95,7 @@ def solve_nh_init(
     pg_exdist: wrapper_common.OptionalFloat64Array1D,
     ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddxt_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    wgtfac_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    wgtfac_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KHalfDim], gtx.float64],
     wgtfacq_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vwind_impl_wgt: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
     hmask_dd3d: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
@@ -144,7 +145,7 @@ def solve_nh_init(
         assert all(field is None for field in [pg_edgeidx, pg_vertidx, pg_exdist])
         pg_exdist_dsl = gtx.zeros(pg_exdist_domain, dtype=gtx.float64, allocator=allocator)
     else:
-        pg_exdist_dsl = data_alloc.list2field(
+        pg_exdist_dsl = data_alloc.scattered_field(
             domain=pg_exdist_domain,
             values=pg_exdist,
             indices=(
@@ -168,7 +169,6 @@ def solve_nh_init(
         extra_diffu=extra_diffu,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        max_nudging_coefficient=nudge_max_coeff,
         fourth_order_divdamp_factor=divdamp_fac,
         fourth_order_divdamp_factor2=divdamp_fac2,
         fourth_order_divdamp_factor3=divdamp_fac3,
@@ -212,7 +212,7 @@ def solve_nh_init(
         nudgecoeff_e=nudgecoeff_e,
     )
 
-    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
+    nlev = wgtfac_c.domain[dims.KHalfDim].unit_range.stop - 1
     if len(wgtfacq_c.domain[dims.KDim].unit_range) != 3:
         raise ValueError(
             f"Expected wgtfacq_c to have a vertical dimension of size 3, but got {len(wgtfacq_c.domain[dims.KDim].unit_range)}."
@@ -283,6 +283,7 @@ def solve_nh_init(
             owner_mask=c_owner_mask,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
+            max_nudging_coefficient=nudge_max_coeff,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
@@ -290,7 +291,7 @@ def solve_nh_init(
         gtx.wait_for_compilation()
 
 
-NumpyFloatArray1D: TypeAlias = Annotated[
+type NumpyFloatArray1D = Annotated[
     np.ndarray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
@@ -302,41 +303,41 @@ NumpyFloatArray1D: TypeAlias = Annotated[
 
 
 @icon4py_export.export
-def solve_nh_run(
+def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
     rho_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     rho_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     exner_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     exner_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    w_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    w_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    w_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    w_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     theta_v_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     theta_v_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn_now: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vn_new: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    w_concorr_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    w_concorr_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     ddt_vn_apc_ntl1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddt_vn_apc_ntl2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    ddt_w_adv_ntl1: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    ddt_w_adv_ntl2: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    theta_v_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    rho_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    ddt_w_adv_ntl1: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    ddt_w_adv_ntl2: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    theta_v_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    rho_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     exner_pr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     exner_dyn_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     ddt_exner_phy: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     grf_tend_rho: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     grf_tend_thv: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    grf_tend_w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    grf_tend_w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     mass_fl_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddt_vn_phy: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     grf_tend_vn: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KHalfDim], gtx.float64],
     vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64] | None,
     rho_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
     exner_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
     mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
     vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     dtime: gtx.float64,
     max_vcfl_size1_array: NumpyFloatArray1D,  # receive from Fortran as a single-element array
@@ -377,7 +378,7 @@ def solve_nh_run(
     # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
     max_vcfl = data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)
 
-    diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+    diagnostic_state_nh = nonhydro_states.DiagnosticStateNonHydro(
         max_vertical_cfl=max_vcfl,
         theta_v_at_cells_on_half_levels=theta_v_ic,
         perturbed_exner_at_cells_on_model_levels=exner_pr,
@@ -431,7 +432,7 @@ def solve_nh_run(
         dtime=dtime,
         ndyn_substeps_var=ndyn_substeps_var,
         at_initial_timestep=at_initial_timestep,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=lprep_adv,
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
         is_iau_active=is_iau_active,

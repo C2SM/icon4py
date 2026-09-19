@@ -20,7 +20,7 @@ from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 
 @gtx.field_operator
-def dot_product_on_edges(
+def dot_product_on_edges(  # noqa: PLR0917 [too-many-positional-arguments]
     x1: fa.EdgeField[ta.wpfloat],
     x2: fa.EdgeField[ta.wpfloat],
     y1: fa.EdgeField[ta.wpfloat],
@@ -33,7 +33,7 @@ def dot_product_on_edges(
 
 
 @gtx.field_operator
-def dot_product_on_cells(
+def dot_product_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
     x1: fa.CellField[ta.wpfloat],
     x2: fa.CellField[ta.wpfloat],
     y1: fa.CellField[ta.wpfloat],
@@ -46,7 +46,7 @@ def dot_product_on_cells(
 
 
 @gtx.field_operator
-def dot_product_on_vertices(
+def dot_product_on_vertices(  # noqa: PLR0917 [too-many-positional-arguments]
     x1: fa.VertexField[ta.wpfloat],
     x2: fa.VertexField[ta.wpfloat],
     y1: fa.VertexField[ta.wpfloat],
@@ -59,7 +59,7 @@ def dot_product_on_vertices(
 
 
 @gtx.field_operator
-def cross_product_on_edges(
+def cross_product_on_edges(  # noqa: PLR0917 [too-many-positional-arguments]
     x1: fa.EdgeField[ta.wpfloat],
     x2: fa.EdgeField[ta.wpfloat],
     y1: fa.EdgeField[ta.wpfloat],
@@ -89,7 +89,7 @@ def norm2_on_edges(
         norma
 
     """
-    return sqrt(dot_product_on_edges(x, x, y, y, z, z))
+    return sqrt(dot_product_on_edges(x1=x, x2=x, y1=y, y2=y, z1=z, z2=z))
 
 
 @gtx.field_operator
@@ -107,7 +107,7 @@ def norm2_on_cells(
         norma
 
     """
-    return sqrt(dot_product_on_cells(x, x, y, y, z, z))
+    return sqrt(dot_product_on_cells(x1=x, x2=x, y1=y, y2=y, z1=z, z2=z))
 
 
 @gtx.field_operator
@@ -125,7 +125,7 @@ def norm2_on_vertices(
         norma
 
     """
-    return sqrt(dot_product_on_vertices(x, x, y, y, z, z))
+    return sqrt(dot_product_on_vertices(x1=x, x2=x, y1=y, y2=y, z1=z, z2=z))
 
 
 @gtx.field_operator

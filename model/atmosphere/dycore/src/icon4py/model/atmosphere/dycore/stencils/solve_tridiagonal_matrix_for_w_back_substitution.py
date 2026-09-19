@@ -12,18 +12,18 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=False, init=wpfloat("0.0"))
+@gtx.scan_operator(axis=dims.KHalfDim, forward=False, init=wpfloat("0.0"))
 def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
     w_state: wpfloat, z_q: vpfloat, w: wpfloat
 ) -> wpfloat:
     """Formerly known as _mo_solve_nonhydro_stencil_53_scan."""
-    return w + w_state * astype(z_q, wpfloat)
+    return w + w_state * astype(z_q, wpfloat)  # type: ignore[return-value] # return type hints for scan operator broken in GT4Py
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def solve_tridiagonal_matrix_for_w_back_substitution(
-    z_q: fa.CellKField[vpfloat],
-    w: fa.CellKField[wpfloat],
+    z_q: fa.CellKHalfField[vpfloat],
+    w: fa.CellKHalfField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -35,6 +35,6 @@ def solve_tridiagonal_matrix_for_w_back_substitution(
         out=w,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

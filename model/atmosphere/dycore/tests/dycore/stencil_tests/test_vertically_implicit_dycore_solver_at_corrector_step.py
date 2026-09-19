@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 from .test_add_analysis_increments_from_data_assimilation import (
@@ -74,7 +73,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             "vertical_end_index_model_surface",
             "at_first_substep",
             "at_last_substep",
-            "lprep_adv",
+            "prepare_fluxes_for_advection",
             "is_iau_active",
             "rayleigh_type",
         ),
@@ -85,15 +84,16 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             "vertical_end_index_model_surface",
             "at_first_substep",
             "at_last_substep",
-            "lprep_adv",
+            "prepare_fluxes_for_advection",
             "is_iau_active",
             "rayleigh_type",
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
+        *,
         next_w: np.ndarray,
         next_rho: np.ndarray,
         next_exner: np.ndarray,
@@ -126,7 +126,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         reference_exner_at_cells_on_model_levels: np.ndarray,
         advection_explicit_weight_parameter: float,
         advection_implicit_weight_parameter: float,
-        lprep_adv: bool,
+        prepare_fluxes_for_advection: bool,
         r_nsubsteps: float,
         ndyn_substeps_var: float,
         iau_wgt_dyn: float,
@@ -139,6 +139,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         kstart_moist: int,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         horizontal_start = kwargs["start_cell_index_nudging"]
         horizontal_end = kwargs["end_cell_index_local"]
         n_lev = kwargs["vertical_end_index_model_surface"] - 1
@@ -182,7 +183,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
                 w_nnow=current_w[:, :n_lev],
                 ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency[:, :n_lev],
                 ddt_w_adv_ntl2=corrector_vertical_wind_advective_tendency[:, :n_lev],
-                z_th_ddz_exner_c=nonhydro_buoy_at_cells_on_half_levels,
+                z_th_ddz_exner_c=nonhydro_buoy_at_cells_on_half_levels[:, :n_lev],
                 rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                 vwind_expl_wgt=exner_w_explicit_weight_parameter,
@@ -276,7 +277,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
                 vwind_impl_wgt=exner_w_implicit_weight_parameter,
                 theta_v_ic=theta_v_at_cells_on_half_levels[:, :n_lev],
-                ddqz_z_half=ddqz_z_half,
+                ddqz_z_half=ddqz_z_half[:, :n_lev],
                 z_alpha=tridiagonal_alpha_coeff_at_cells_on_half_levels,
                 z_beta=tridiagonal_beta_coeff_at_cells_on_model_levels,
                 z_w_expl=w_explicit_term,
@@ -289,14 +290,14 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             (tridiagonal_intermediate_result, next_w[:, :n_lev]),
         )
 
-        next_w[:, :n_lev] = np.where(
+        next_w = np.where(
             (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
             solve_tridiagonal_matrix_for_w_back_substitution_numpy(
                 connectivities=connectivities,
-                z_q=tridiagonal_intermediate_result[:, :n_lev],
-                w=next_w[:, :n_lev],
+                z_q=tridiagonal_intermediate_result,
+                w=next_w,
             ),
-            next_w[:, :n_lev],
+            next_w,
         )
 
         if rayleigh_type == constants.RayleighType.KLEMP:
@@ -307,7 +308,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
                 & (vert_idx < (end_index_of_damping_layer + 1)),
                 apply_rayleigh_damping_mechanism_numpy(
                     connectivities=connectivities,
-                    z_raylfac=rayleigh_damping_factor,
+                    z_raylfac=rayleigh_damping_factor[:n_lev],
                     w=next_w[:, :n_lev],
                 ),
                 next_w[:, :n_lev],
@@ -334,7 +335,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             (next_rho, next_exner, next_theta_v),
         )
 
-        if lprep_adv:
+        if prepare_fluxes_for_advection:
             if at_first_substep:
                 dynamical_vertical_mass_flux_at_cells_on_half_levels = np.zeros_like(
                     vertical_mass_flux_at_cells_on_half_levels
@@ -396,9 +397,14 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             exner_dynamical_increment=exner_dynamical_increment,
         )
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
-            {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la, "is_iau_active": ia}
+            {
+                "at_first_substep": afs,
+                "at_last_substep": als,
+                "prepare_fluxes_for_advection": la,
+                "is_iau_active": ia,
+            }
             for afs, als, la, ia in [
                 (True, True, True, True),  # For testing the whole functionality of the stencil
                 (True, False, True, False),  # For benchmarking against MCH experiments
@@ -409,68 +415,64 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         ids=lambda p: (
             f"at_first_substep[{p['at_first_substep']}]__"
             f"at_last_substep[{p['at_last_substep']}]__"
-            f"lprep_adv[{p['lprep_adv']}]__"
+            f"prepare_fluxes_for_advection[{p['prepare_fluxes_for_advection']}]__"
             f"is_iau_active[{p['is_iau_active']}]"
         ),
     )
     def input_data(
-        self, request: pytest.FixtureRequest, grid: base.Grid
+        data_alloc: stencil_tests.DataAllocationWrapper,
+        grid: base.Grid,
+        request: pytest.FixtureRequest,
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
-        )
-        current_w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        geofac_div = data_alloc.random_field(dims.CellDim, dims.C2EDim)
+        mass_flux_at_edges_on_model_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        current_w = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         predictor_vertical_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            dims.CellDim, dims.KHalfDim
         )
         corrector_vertical_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            dims.CellDim, dims.KHalfDim
         )
-        nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
-        )
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(dims.CellDim, dims.KHalfDim)
         rho_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
+            dims.CellDim, dims.KHalfDim, low=1.0e-5
         )
         contravariant_correction_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            dims.CellDim, dims.KHalfDim
         )
-        exner_w_explicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
-        current_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        current_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        current_theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        exner_w_implicit_weight_parameter = data_alloc.random_field(grid, dims.CellDim)
+        exner_w_explicit_weight_parameter = data_alloc.random_field(dims.CellDim)
+        current_exner = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
+        current_rho = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
+        current_theta_v = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
+        inv_ddqz_z_full = data_alloc.random_field(dims.CellDim, dims.KDim, low=1.0e-5)
+        exner_w_implicit_weight_parameter = data_alloc.random_field(dims.CellDim)
         theta_v_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
+            dims.CellDim, dims.KHalfDim, low=1.0e-5
         )
-        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
-        )
-        exner_tendency_due_to_slow_physics = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        rho_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        exner_iau_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5)
-        rayleigh_damping_factor = data_alloc.random_field(grid, dims.KDim)
+        perturbed_exner_at_cells_on_model_levels = data_alloc.random_field(dims.CellDim, dims.KDim)
+        exner_tendency_due_to_slow_physics = data_alloc.random_field(dims.CellDim, dims.KDim)
+        rho_iau_increment = data_alloc.random_field(dims.CellDim, dims.KDim)
+        exner_iau_increment = data_alloc.random_field(dims.CellDim, dims.KDim)
+        ddqz_z_half = data_alloc.random_field(dims.CellDim, dims.KHalfDim, low=1.0e-5)
+        rayleigh_damping_factor = data_alloc.random_field(dims.KHalfDim)
         reference_exner_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-5
+            dims.CellDim, dims.KDim, low=1.0e-5
         )
 
-        next_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        next_rho = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
-        next_exner = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
-        next_theta_v = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
-        exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        next_w = data_alloc.zero_field(dims.CellDim, dims.KHalfDim)
+        next_rho = data_alloc.constant_field(1.0e-5, dims.CellDim, dims.KDim)
+        next_exner = data_alloc.constant_field(1.0e-5, dims.CellDim, dims.KDim)
+        next_theta_v = data_alloc.constant_field(1.0e-5, dims.CellDim, dims.KDim)
+        exner_dynamical_increment = data_alloc.random_field(dims.CellDim, dims.KDim)
         dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            dims.CellDim, dims.KHalfDim
         )
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+            dims.CellDim, dims.KHalfDim
         )
 
-        lprep_adv = request.param["lprep_adv"]
+        prepare_fluxes_for_advection = request.param["prepare_fluxes_for_advection"]
         r_nsubsteps = 0.5
         is_iau_active = request.param["is_iau_active"]
         at_first_substep = request.param["at_first_substep"]
@@ -522,7 +524,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
             advection_explicit_weight_parameter=advection_explicit_weight_parameter,
             advection_implicit_weight_parameter=advection_implicit_weight_parameter,
-            lprep_adv=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=ndyn_substeps_var,
             iau_wgt_dyn=iau_wgt_dyn,

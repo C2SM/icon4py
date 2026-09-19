@@ -14,7 +14,7 @@ Conventions for standardized project development scripts using Python, Bash, and
 
 ## Prerequisites
 
-- [uv](https://docs.astral.sh/uv/) — Python scripts (including the single entry point) use a special `uv` shebang (more or less: `uv` `uv run --isolated --group scripts`) so all dependencies declared in the scripts dependency group (e.g. `typer`) are installed automatically into an ephemeral isolated environment.
+- [uv](https://docs.astral.sh/uv/) — Python scripts (including the single entry point) use a special `uv` shebang (more or less: `uv` `uv run --isolated --only-group scripts`) so all dependencies declared in the scripts dependency group (e.g. `typer`) are installed automatically into an ephemeral isolated environment.
 - [bats-core](https://github.com/bats-core/bats-core) — only needed to run Bash tests.
 
 ## Layout
@@ -61,7 +61,7 @@ scripts/
 1. Create a new `python/my_tool.py` module
    - use the same *she-bang* as the `run` script
    ```bash
-   #!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --group scripts python3
+   #!/usr/bin/env -S uv run -q --frozen --isolated --python 3.12 --only-group scripts python3
    ```
    - it should define a global `cli` Typer app
    ```python

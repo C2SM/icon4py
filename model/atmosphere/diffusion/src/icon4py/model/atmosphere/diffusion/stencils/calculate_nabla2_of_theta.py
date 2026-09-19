@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E, C2EDim
+from icon4py.model.common.dimension import C2E
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -18,7 +18,7 @@ def _calculate_nabla2_of_theta(
     z_nabla2_e: fa.EdgeKField[wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
 ) -> fa.CellKField[vpfloat]:
-    z_temp_wp = neighbor_sum(z_nabla2_e(C2E) * geofac_div, axis=C2EDim)
+    z_temp_wp = neighbor_sum(z_nabla2_e(C2E) * geofac_div, axis=dims.C2EDim)
     return astype(z_temp_wp, vpfloat)
 
 
@@ -33,8 +33,8 @@ def calculate_nabla2_of_theta(
     vertical_end: gtx.int32,
 ) -> None:
     _calculate_nabla2_of_theta(
-        z_nabla2_e,
-        geofac_div,
+        z_nabla2_e=z_nabla2_e,
+        geofac_div=geofac_div,
         out=z_temp,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

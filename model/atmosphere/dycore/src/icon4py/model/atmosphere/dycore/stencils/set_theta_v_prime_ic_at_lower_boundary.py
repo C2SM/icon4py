@@ -8,7 +8,9 @@
 import gt4py.next as gtx
 from gt4py.next import astype
 
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_quadratically_to_surface import (
+    _extrapolate_quadratically_to_surface,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -17,10 +19,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _set_theta_v_prime_ic_at_lower_boundary(
     wgtfacq_c: fa.CellKField[vpfloat],
     z_rth_pr: fa.CellKField[vpfloat],
-    theta_ref_ic: fa.CellKField[vpfloat],
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
+    theta_ref_ic: fa.CellKHalfField[vpfloat],
+) -> tuple[fa.CellKHalfField[vpfloat], fa.CellKHalfField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_11_upper."""
-    z_theta_v_pr_ic_vp = _interpolate_to_surface(wgtfacq_c=wgtfacq_c, interpolant=z_rth_pr)
+    z_theta_v_pr_ic_vp = _extrapolate_quadratically_to_surface(
+        wgtfacq_c=wgtfacq_c, interpolant=z_rth_pr
+    )
     theta_v_ic_vp = theta_ref_ic + z_theta_v_pr_ic_vp
     return z_theta_v_pr_ic_vp, astype(theta_v_ic_vp, wpfloat)
 
@@ -29,21 +33,21 @@ def _set_theta_v_prime_ic_at_lower_boundary(
 def set_theta_v_prime_ic_at_lower_boundary(
     wgtfacq_c: fa.CellKField[vpfloat],
     z_rth_pr: fa.CellKField[vpfloat],
-    theta_ref_ic: fa.CellKField[vpfloat],
-    z_theta_v_pr_ic: fa.CellKField[vpfloat],
-    theta_v_ic: fa.CellKField[wpfloat],
+    theta_ref_ic: fa.CellKHalfField[vpfloat],
+    z_theta_v_pr_ic: fa.CellKHalfField[vpfloat],
+    theta_v_ic: fa.CellKHalfField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
     _set_theta_v_prime_ic_at_lower_boundary(
-        wgtfacq_c,
-        z_rth_pr,
-        theta_ref_ic,
+        wgtfacq_c=wgtfacq_c,
+        z_rth_pr=z_rth_pr,
+        theta_ref_ic=theta_ref_ic,
         out=(z_theta_v_pr_ic, theta_v_ic),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KHalfDim: (vertical_start, vertical_end),
         },
     )

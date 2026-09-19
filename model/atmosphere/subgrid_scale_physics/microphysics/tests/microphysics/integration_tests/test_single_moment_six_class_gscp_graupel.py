@@ -20,10 +20,10 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
-    tracer_state as tracers,
+    tracer_states as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -39,13 +39,13 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description",
-    [definitions.Experiments.WEISMAN_KLEMP_TORUS],
+    [test_defs.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 def test_graupel(
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     date: str,
     *,
     data_provider: sb.IconSerialDataProvider,
@@ -91,6 +91,7 @@ def test_graupel(
     )
 
     graupel_config = experiment.config.graupel
+    assert graupel_config is not None, "expected microphysics configuration for this experiment"
 
     graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(
         graupel_config=graupel_config,
@@ -125,24 +126,24 @@ def test_graupel(
     )
 
     graupel_microphysics.run(
-        dtime,
-        prognostic_state.rho,
-        diagnostic_state.temperature,
-        diagnostic_state.pressure,
-        tracer_state.qv,
-        tracer_state.qc,
-        tracer_state.qr,
-        tracer_state.qi,
-        tracer_state.qs,
-        tracer_state.qg,
-        qnc,
-        temperature_tendency,
-        qv_tendency,
-        qc_tendency,
-        qr_tendency,
-        qi_tendency,
-        qs_tendency,
-        qg_tendency,
+        dtime=dtime,
+        rho=prognostic_state.rho,
+        temperature=diagnostic_state.temperature,
+        pressure=diagnostic_state.pressure,
+        qv=tracer_state.qv,
+        qc=tracer_state.qc,
+        qr=tracer_state.qr,
+        qi=tracer_state.qi,
+        qs=tracer_state.qs,
+        qg=tracer_state.qg,
+        qnc=qnc,
+        temperature_tendency=temperature_tendency,
+        qv_tendency=qv_tendency,
+        qc_tendency=qc_tendency,
+        qr_tendency=qr_tendency,
+        qi_tendency=qi_tendency,
+        qs_tendency=qs_tendency,
+        qg_tendency=qg_tendency,
     )
 
     new_temperature = (

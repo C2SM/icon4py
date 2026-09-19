@@ -24,7 +24,7 @@ from icon4py.model.common.math import (
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, serialbox
+from icon4py.model.testing import definitions as test_defs, serialbox
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -38,7 +38,7 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
     import gt4py.next.typing as gtx_typing
 
@@ -62,15 +62,15 @@ class SimpleFieldSource(factory.FieldSource):
         self._vertical_grid = vertical_grid
         self._metadata = {}
         self._initial_data = data_
-        self._exchange: decomposition.ExchangeRuntime = decomposition.single_node_exchange
+        self._exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange()
 
         for key, value in data_.items():
-            self.register_provider(factory.PrecomputedFieldProvider({key: value[0]}))
+            self.register_provider(factory.PrecomputedFieldProvider(fields={key: value[0]}))
             self._metadata[key] = value[1]
 
     def _register_initial_fields(self) -> None:
         for key, value in self._initial_data.items():
-            self.register_provider(factory.PrecomputedFieldProvider({key: value[0]}))
+            self.register_provider(factory.PrecomputedFieldProvider(fields={key: value[0]}))
             self._metadata[key] = value[1]
 
     def reset(self) -> None:
@@ -137,7 +137,7 @@ def cell_coordinate_source(
 def height_coordinate_source(
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.Experiment,
     backend: gtx_typing.Backend,
 ) -> Generator[SimpleFieldSource, None, None]:
     grid = grid_savepoint.construct_icon_grid(backend=backend)
@@ -168,14 +168,14 @@ def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> N
     fields = {"x": "x", "y": "y", "z": "z"}
 
     provider = factory.EmbeddedFieldOperatorProvider(
-        field_op, domain, fields, deps, do_exchange=False
+        func=field_op, domain=domain, fields=fields, deps=deps, do_exchange=False
     )
     provider(
-        "x",
-        cell_coordinate_source,
-        cell_coordinate_source.backend,
-        cell_coordinate_source,
-        exchange=decomposition.single_node_exchange,
+        field_name="x",
+        field_src=cell_coordinate_source,
+        backend=cell_coordinate_source.backend,
+        grid=cell_coordinate_source,
+        exchange=decomposition.SingleNodeExchange(),
     )
     x = provider.fields["x"]
     assert isinstance(x, gtx.Field)
@@ -193,17 +193,88 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
         "input_field": "height_coordinate",
     }
     fields = {"average": "output_f"}
-    provider = factory.ProgramFieldProvider(program, domain, fields, deps, do_exchange=False)
+    provider = factory.ProgramFieldProvider(
+        func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
+    )
+    height_coordinate_source.with_metadata({"output_f": {"standard_name": "output_f", "units": ""}})
+    height_coordinate_source.register_provider(provider)
     provider(
-        "output_f",
-        height_coordinate_source,
-        height_coordinate_source.backend,
-        height_coordinate_source,
-        exchange=decomposition.single_node_exchange,
+        field_name="output_f",
+        field_src=height_coordinate_source,
+        backend=height_coordinate_source.backend,
+        grid=height_coordinate_source,
+        exchange=decomposition.SingleNodeExchange(),
     )
     x = provider.fields["output_f"]
     assert isinstance(x, gtx.Field)
     assert dims.CellDim in x.domain.dims
+
+
+def _average_downwards(z_ifc: data_alloc.NDArray) -> data_alloc.NDArray:
+    return 0.5 * (z_ifc[:, 1:-1] + z_ifc[:, 2:])
+
+
+def _program_provider(domain: dict) -> factory.FieldProvider:
+    return factory.ProgramFieldProvider(
+        func=vertical_ops.average_two_vertical_levels_downwards_on_cells,
+        domain=domain,
+        fields={"average": "output_f"},
+        deps={"input_field": "height_coordinate"},
+        do_exchange=False,
+    )
+
+
+def _field_operator_provider(domain: dict) -> factory.FieldProvider:
+    return factory.EmbeddedFieldOperatorProvider(
+        func=vertical_ops.average_level_plus1_on_cells.with_backend(None),
+        domain=domain,
+        fields={"average": "output_f"},
+        deps={"half_level_field": "height_coordinate"},
+        do_exchange=False,
+    )
+
+
+def _numpy_provider(domain: dict) -> factory.FieldProvider:
+    return factory.NumpyDataProvider(
+        func=_average_downwards,
+        domain=domain,
+        fields=("output_f",),
+        deps={"z_ifc": "height_coordinate"},
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "make_provider", [_program_provider, _field_operator_provider, _numpy_provider]
+)
+def test_provider_vertical_extent_is_declared_domain(
+    height_coordinate_source: SimpleFieldSource,
+    make_provider: Callable[[dict], factory.FieldProvider],
+) -> None:
+    assert height_coordinate_source.vertical_grid is not None
+    num_levels = height_coordinate_source.vertical_grid.num_levels
+    provider = make_provider(
+        {
+            dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
+            dims.KDim: (v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1), k_domain(v_grid.Zone.BOTTOM)),
+        }
+    )
+    height_coordinate_source.with_metadata({"output_f": {"standard_name": "output_f", "units": ""}})
+    height_coordinate_source.register_provider(provider)
+    provider(
+        field_name="output_f",
+        field_src=height_coordinate_source,
+        backend=height_coordinate_source.backend,
+        grid=height_coordinate_source,
+        exchange=decomposition.SingleNodeExchange(),
+    )
+    x = provider.fields["output_f"]
+    assert isinstance(x, gtx.Field)
+    assert x.domain[dims.CellDim].unit_range == gtx.common.UnitRange(
+        0, height_coordinate_source.grid.num_cells
+    )
+    assert x.domain[dims.KDim].unit_range == gtx.common.UnitRange(1, num_levels)
+    assert np.all(x.asnumpy() != 0.0)
 
 
 @pytest.mark.datatest
@@ -239,7 +310,7 @@ def test_composite_field_source_contains_all_metadata(
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
-        test_source, (cell_coordinate_source, height_coordinate_source)
+        me=test_source, others=(cell_coordinate_source, height_coordinate_source)
     )
 
     assert composite.backend == test_source.backend
@@ -264,7 +335,7 @@ def test_composite_field_source_get_all_fields(
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
-        test_source, (cell_coordinate_source, height_coordinate_source)
+        me=test_source, others=(cell_coordinate_source, height_coordinate_source)
     )
     foo = composite.get("foo")
     assert isinstance(foo, gtx.Field)
@@ -282,7 +353,7 @@ def test_composite_field_source_get_all_fields(
 
     lat = composite.get("height_coordinate")
     assert isinstance(lat, gtx.Field)
-    assert dims.KDim in lat.domain.dims
+    assert dims.KHalfDim in lat.domain.dims
     assert len(lat.domain.dims) == 2
 
 
@@ -301,7 +372,7 @@ def test_composite_field_source_raises_upon_get_unknown_field(
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
-        test_source, (cell_coordinate_source, height_coordinate_source)
+        me=test_source, others=(cell_coordinate_source, height_coordinate_source)
     )
     with pytest.raises(ValueError, match="Field 'alice' not provided by the source"):
         composite.get("alice")

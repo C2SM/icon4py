@@ -9,7 +9,7 @@ import functools
 import logging
 import pathlib
 from types import ModuleType
-from typing import Literal, TypeAlias
+from typing import Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -34,7 +34,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 _log = logging.getLogger(__name__)
 _single_node_decomposer = decomp.SingleNodeDecomposer()
-_single_process_props = decomposition.SingleNodeProcessProperties()
 _fortran_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
 
 
@@ -42,11 +41,9 @@ class IconGridError(RuntimeError):
     pass
 
 
-CoordinateDict: TypeAlias = dict[
-    gtx.Dimension, dict[Literal["lat", "lon", "x", "y", "z"], gtx.Field]
-]
+type CoordinateDict = dict[gtx.Dimension, dict[Literal["lat", "lon", "x", "y", "z"], gtx.Field]]
 # TODO (halungge): use a TypeDict for that
-GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
+type GeometryDict = dict[gridfile.GeometryName, gtx.Field]
 
 
 class GridManager:
@@ -103,8 +100,8 @@ class GridManager:
         self,
         allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
+        process_props: decomposition.ProcessProperties,
         decomposer: decomp.Decomposer = _single_node_decomposer,
-        process_props: decomposition.ProcessProperties = _single_process_props,
     ) -> None:
         if not process_props.is_single_rank() and isinstance(
             decomposer, decomp.SingleNodeDecomposer
@@ -370,6 +367,11 @@ class GridManager:
         return refinement_control_fields
 
     @property
+    def file_path(self) -> str:
+        """Path of the ICON grid file this manager reads from."""
+        return self._file_name
+
+    @property
     def grid(self) -> icon.IconGrid:
         return self._grid
 
@@ -462,7 +464,7 @@ class GridManager:
         )
 
         self._grid = icon.icon_grid(
-            self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
+            id_=self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
             allocator=allocator,
             config=grid_config,
             neighbor_tables=neighbor_tables,

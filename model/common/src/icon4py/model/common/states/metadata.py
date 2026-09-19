@@ -17,6 +17,42 @@ INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "model_interface_height"
 
 INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
 
+#: from the standard name table https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
+LEVEL_STANDARD_NAME: Final[str] = "model_level_number"
+
+#: COARDS axis labels: CF conventions encourage the COARDS order of the dimensions --
+#: ``T`` (time), ``Z`` (height or depth), ``Y`` (latitude), ``X`` (longitude); in the
+#: unstructured case ``Y`` and ``X`` combine to the horizontal dimension (see
+#: ``common.io.cf_utils`` for the dimension positions).
+COARDS_TIME_COORDINATE_NAME: Final[str] = "T"
+COARDS_VERTICAL_COORDINATE_NAME: Final[str] = "Z"
+COARDS_LONGITUDE_COORDINATE_NAME: Final[str] = "X"
+COARDS_LATITUDE_COORDINATE_NAME: Final[str] = "Y"
+
+#: CF attributes of the vertical coordinate variables of output files (the horizontal
+#: coordinates live in the UGRID topology file, see ``common.io``).
+LEVEL_ATTRIBUTES: Final[dict[str, str]] = {
+    "units": "1",
+    "positive": "down",
+    "long_name": "model full level index",
+    "standard_name": LEVEL_STANDARD_NAME,
+}
+
+HALF_LEVEL_ATTRIBUTES: Final[dict[str, str]] = {
+    "units": "1",
+    "positive": "down",
+    "long_name": "model half level index",
+    "standard_name": INTERFACE_LEVEL_STANDARD_NAME,
+}
+
+HEIGHT_ATTRIBUTES: Final[dict[str, str]] = {
+    "units": "m",
+    "positive": "up",
+    "axis": COARDS_VERTICAL_COORDINATE_NAME,
+    "long_name": "height value of half levels without topography",
+    "standard_name": INTERFACE_LEVEL_HEIGHT_STANDARD_NAME,
+}
+
 attrs: Final[dict[str, model.FieldMetaData]] = {
     "z_ifv": dict(
         standard_name="z_ifv",

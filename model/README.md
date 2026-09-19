@@ -6,7 +6,7 @@ It includes the following packages:
 
 - `atmosphere/dycore`: Contains implementations of the dynamical core of the ICON model
 - `atmosphere/diffusion`: Contains the implementation of diffusion in the ICON model
-- `atmosphere/advection`: Contains implementations of the advection component of the ICON model
+- `atmosphere/tracer_advection`: Contains implementations of the advection component of the ICON model
 - `atmosphere/subgrid_scale_physics/microphysics`: Contains implementations of the microphysics and saturation adjustment components of the ICON model
 - `common`: Contains shared functionality that is required by multiple components.
 - `driver`: Contains the driving code for the model
@@ -31,7 +31,7 @@ a `stencil_tests` subfolder of the packages test path. For example
 ```
 model/atmosphere/diffusion/tests/stencil_tests
 model/atmosphere/dycore/tests/stencil_tests
-model/atmosphere/advection/tests/stencil_tests
+model/atmosphere/tracer_advection/tests/stencil_tests
 model/common/tests/tests/stencil_tests
 ```
 
@@ -98,14 +98,14 @@ Note that the current Python build for GHEX seems not to run on MacOS.
 3. Run parallel tests
    In order to run the parallel tests you need to specify the `--with-mpi` option to `pytest`
    and pass the exact folder location of the tests to `pytest`, or use the `-k mpi_tests` filter.
-   Use the `ci/scripts/ci-mpi-wrapper.sh` helper script to avoid cluttering stdout with output
+   Use the `.cscs-ci/scripts/ci-mpi-wrapper.sh` helper script to avoid cluttering stdout with output
    from all ranks. Output from the the first rank will go to stdout, and the output of all
    ranks will go to rank-specific log files `pytest-log-rank-<rank>.txt`.
 
 ```bash
-mpirun -np 4 ci/scripts/ci-mpi-wrapper pytest -v -s --with-mpi -k mpi_tests
-mpirun -np 4 ci/scripts/ci-mpi-wrapper pytest -v -s --with-mpi model/atmosphere/diffusion/diffusion_tests/mpi_tests/
-mpirun -np 4 ci/scripts/ci-mpi-wrapper pytest -v -s --with-mpi model/common/tests/mpi_tests/
+mpirun -np 4 .cscs-ci/scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi -k mpi_tests
+mpirun -np 4 .cscs-ci/scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi model/atmosphere/diffusion/diffusion_tests/mpi_tests/
+mpirun -np 4 .cscs-ci/scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi model/common/tests/mpi_tests/
 ```
 
 You can restrict the number of compile process that gt4py uses by setting `GT4PY_BUILD_JOBS` environment variable:

@@ -5,13 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
     compute_horizontal_velocity_quantities_and_fluxes,
 )
@@ -32,7 +32,8 @@ from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_
 
 
 def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
+    *,
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     vn: np.ndarray,
     tangential_wind: np.ndarray,
     vn_on_half_levels: np.ndarray,
@@ -45,30 +46,38 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     k = np.arange(nlevp1)[np.newaxis, :]
     k_nlev = k[:, :-1]
 
+    vn_ie, z_kin_hor_e = interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
+        wgtfac_e, vn, tangential_wind
+    )
     vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels = np.where(
         k_nlev >= 1,
-        interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
-            wgtfac_e, vn, tangential_wind
-        ),
+        (vn_ie[:, :-1], z_kin_hor_e),
         (vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels),
     )
 
-    tangential_wind_on_half_levels = np.where(
+    tangential_wind_on_half_levels[:, :-1] = np.where(
         k_nlev >= 1,
-        interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind),
-        tangential_wind_on_half_levels,
+        interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind)[:, :-1],
+        tangential_wind_on_half_levels[:, :-1],
     )
 
+    vn_ie_at_top, tangential_wind_on_half_levels_at_top, z_kin_hor_e_at_top = (
+        compute_horizontal_kinetic_energy_numpy(vn, tangential_wind)
+    )
     (
         vn_on_half_levels[:, :-1],
-        tangential_wind_on_half_levels,
+        tangential_wind_on_half_levels[:, :-1],
         horizontal_kinetic_energy_at_edges_on_model_levels,
     ) = np.where(
         k_nlev == 0,
-        compute_horizontal_kinetic_energy_numpy(vn, tangential_wind),
+        (
+            vn_ie_at_top[:, :-1],
+            tangential_wind_on_half_levels_at_top[:, :-1],
+            z_kin_hor_e_at_top,
+        ),
         (
             vn_on_half_levels[:, :-1],
-            tangential_wind_on_half_levels,
+            tangential_wind_on_half_levels[:, :-1],
             horizontal_kinetic_energy_at_edges_on_model_levels,
         ),
     )
@@ -113,9 +122,10 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray],
+        grid: base.Grid,
+        *,
         spatially_averaged_vn: np.ndarray,
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
         tangential_wind: np.ndarray,
@@ -143,6 +153,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         vertical_end: gtx.int32,
         **kwargs: Any,
     ) -> dict:
+        connectivities = stencil_tests.connectivities_asnumpy(grid)
         k = np.arange(vertical_end)[np.newaxis, :]
         k_nlev = k[:, :-1]
 
@@ -167,11 +178,11 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
             horizontal_gradient_of_normal_wind_divergence,
             tangential_wind,
         ) = compute_avg_vn_and_graddiv_vn_and_vt_numpy(
-            connectivities,
-            e_flx_avg,
-            vn,
-            geofac_grdiv,
-            rbf_vec_coeff_e,
+            connectivities=connectivities,
+            e_flx_avg=e_flx_avg,
+            vn=vn,
+            geofac_grdiv=geofac_grdiv,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
         )
 
         (
@@ -195,15 +206,15 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
             tangential_wind_on_half_levels,
             horizontal_kinetic_energy_at_edges_on_model_levels,
         ) = compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
-            connectivities,
-            vn,
-            tangential_wind,
-            vn_on_half_levels,
-            tangential_wind_on_half_levels,
-            horizontal_kinetic_energy_at_edges_on_model_levels,
-            wgtfac_e,
-            wgtfacq_e,
-            vertical_end,
+            connectivities=connectivities,
+            vn=vn,
+            tangential_wind=tangential_wind,
+            vn_on_half_levels=vn_on_half_levels,
+            tangential_wind_on_half_levels=tangential_wind_on_half_levels,
+            horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
+            wgtfac_e=wgtfac_e,
+            wgtfacq_e=wgtfacq_e,
+            nlevp1=vertical_end,
         )
 
         spatially_averaged_vn[:horizontal_start, :] = initial_spatially_averaged_vn[
@@ -273,37 +284,37 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+    @stencil_tests.input_data_fixture
+    def input_data(
+        data_alloc: stencil_tests.DataAllocationWrapper, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        spatially_averaged_vn = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
         horizontal_gradient_of_normal_wind_divergence = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
+            dims.EdgeDim, dims.KDim
         )
-        tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        mass_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        tangential_wind_on_half_levels = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        vn_on_half_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
-        )
+        tangential_wind = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        mass_flux_at_edges_on_model_levels = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(dims.EdgeDim, dims.KDim)
+        tangential_wind_on_half_levels = data_alloc.zero_field(dims.EdgeDim, dims.KHalfDim)
+        vn_on_half_levels = data_alloc.zero_field(dims.EdgeDim, dims.KHalfDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
+            dims.EdgeDim, dims.KDim
         )
         contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim
+            dims.EdgeDim, dims.KDim
         )
 
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        e_flx_avg = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
-        geofac_grdiv = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
-        rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
-        rho_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        vn = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        wgtfac_e = data_alloc.random_field(dims.EdgeDim, dims.KHalfDim)
+        wgtfacq_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        e_flx_avg = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
+        geofac_grdiv = data_alloc.random_field(dims.EdgeDim, dims.E2C2EODim)
+        rbf_vec_coeff_e = data_alloc.random_field(dims.EdgeDim, dims.E2C2EDim)
+        rho_at_edges_on_model_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        theta_v_at_edges_on_model_levels = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        ddqz_z_full_e = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        ddxn_z_full = data_alloc.random_field(dims.EdgeDim, dims.KDim)
+        ddxt_z_full = data_alloc.random_field(dims.EdgeDim, dims.KDim)
 
         nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
