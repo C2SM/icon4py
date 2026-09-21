@@ -63,14 +63,14 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
         "compute_averaged_vn_and_fluxes",
         {
             "at_first_substep": False,
-            "prepare_advection": True,
+            "prepare_fluxes_for_advection": True,
         },
     ),
     "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first": (
         "compute_averaged_vn_and_fluxes",
         {
             "at_first_substep": True,
-            "prepare_advection": True,
+            "prepare_fluxes_for_advection": True,
         },
     ),
     "compute_horizontal_velocity_quantities_and_fluxes": None,

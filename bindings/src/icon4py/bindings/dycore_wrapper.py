@@ -432,7 +432,7 @@ def solve_nh_run(  # noqa: PLR0917 [too-many-positional-arguments]
         dtime=dtime,
         ndyn_substeps_var=ndyn_substeps_var,
         at_initial_timestep=at_initial_timestep,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=lprep_adv,
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
         is_iau_active=is_iau_active,
