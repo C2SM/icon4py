@@ -1,143 +1,182 @@
-# Use and benchmark the GT4Py fusion passes from ICON4Py
+# Reproduce the two compiler optimizations together
 
-Run from `dganellari/icon4py:dycore-optimizations`, based on C2SM `mi300_opt`.
-The original solver equations are retained. Both optimizations are independently
-opt-in compiler transformations in [dganellari/gt4py:dycore-fusion-passes](https://github.com/dganellari/gt4py/tree/dycore-fusion-passes).
-There are no compiler patch files to apply in ICON4Py.
+Use `dganellari/icon4py:dycore-optimizations` with the companion
+[`dganellari/gt4py:dycore-fusion-passes`](https://github.com/dganellari/gt4py/tree/dycore-fusion-passes).
+Both passes are selected through ICON4Py's normal `model_options.py`. The solver
+uses its original equations. No archived experiment directory, copied compiler
+patch, generated model rewrite or private setup script is required.
 
-## Install the companion compiler in your existing GPU environment
+The controlled runner is [fusion_benchmark/run.py](../fusion_benchmark/run.py).
+It measures the full `solve_nonhydro` granule, excluding diffusion and other
+parts of a full model timestep. Device time and synchronized host wall time are
+reported separately.
 
-Use a working ICON4Py GPU environment with the vendor's CuPy package and compilers.
-On your local setup or GPU machine, install the reviewed compiler revision into
-that environment (after the normal ICON4Py dependency setup):
+## Prepare the PR pair
+
+Start the appropriate GPU uenv and activate a Python 3.12 environment containing
+its working CuPy build. The supplied job wrappers name the uenvs used for the
+measurements: ROCm `prgenv-gnu/7.2.3:2804758683` on Beverin and
+`icon/26.7:v1@santis` on Santis. Compiler, Ninja, CMake and grid-data access are
+required. The usual ICON4Py grid fixture downloads missing benchmark grids.
+Keep the vendor CuPy installation; do not install a CUDA wheel on Beverin.
+
+From a directory for the two checkouts:
 
 ```bash
+git clone --branch dycore-optimizations https://github.com/dganellari/icon4py.git
+git clone --branch dycore-fusion-passes https://github.com/dganellari/gt4py.git
+cd icon4py
+
+# Install this checkout's workspace and test/I/O dependencies into the active
+# GPU venv. --inexact retains its vendor packages.
+uv sync --active --frozen --group test --extra io --inexact
+
+GT4PY_REV=$(python -c 'import json; print(json.load(open("amd_scripts/fusion_benchmark/stack.json"))["gt4py_commit"])')
+DACE_REV=$(python -c 'import json; print(json.load(open("amd_scripts/fusion_benchmark/stack.json"))["dace_commit"])')
+git -C ../gt4py checkout --detach "$GT4PY_REV"
 uv pip install --python "$VIRTUAL_ENV/bin/python" --no-deps \
-  'gt4py @ git+https://github.com/dganellari/gt4py.git@24ad90d2d0065c0a270f924aed6367b346aeb5db'
+  "dace @ git+https://github.com/GridTools/dace.git@$DACE_REV"
+uv pip install --python "$VIRTUAL_ENV/bin/python" --no-deps --editable ../gt4py
 ```
 
-The measured DaCe base is `5115128a73dc518071dbe9580b63d382540efe46` from
-`GridTools/dace`. Keep the working vendor environment, workspace allocation and
-launch settings fixed when comparing variants. The repository's standard lock
-still selects released GT4Py; a subsequent `uv sync` can replace the custom
-compiler, so verify the installation after environment changes. `--no-deps`
-above preserves an already configured stack; it does not create one from scratch.
+For existing checkouts, fetch and update the two PR branches first, then use the
+same installation steps. Do not reset or overwrite local changes. The compiler
+pin is `403f9d996b4ab7435b6989bd004fcba39e7a1bf4`; the existing measured DaCe base
+is `5115128a73dc518071dbe9580b63d382540efe46`. These are also recorded in
+[stack.json](../fusion_benchmark/stack.json). The GT4Py pin includes the CuPy
+scalar-conversion warning fix that was previously an undocumented local edit.
 
-Verify the two compiler capabilities before submitting a job:
+A later ordinary `uv sync` can replace these compiler versions. Reapply the
+pinned installation after syncing. The runner rejects a wrong compiler revision,
+local compiler edits, an ICON4Py package imported from another checkout, or a
+CuPy runtime for the wrong vendor. It also checks a CuPy reduction and a small
+CMake build before compiling the granule. `--check` checks the GPU environment
+without running the granule; use it inside your GPU allocation.
+
+## Run the combined comparison on both meshes
+
+Submit from the ICON4Py checkout, with the GPU venv activated. You submit and
+manage the jobs. Each command runs original versus both passes on regional/120
+and global/120, using a fresh process and build directory for each mesh.
 
 ```bash
-python - <<'PY'
-import gt4py
-from gt4py.next.program_processors.runners.dace import scan_fusion
-from gt4py.next.program_processors.runners.dace.transformations import map_fusion_extended
-print(gt4py.__file__)
-assert callable(scan_fusion.normalize_scan_producers)
-assert callable(scan_fusion.fuse_scan_inputs)
-assert 'allow_shared_data' in map_fusion_extended.VerticalSplitMapRange.__properties__
-PY
+# Beverin / MI300A
+sbatch --export=ALL,VENV_PATH="$VIRTUAL_ENV" \
+  amd_scripts/fusion_benchmark/run_amd.sh
+
+# Santis / GH200
+sbatch --export=ALL,VENV_PATH="$VIRTUAL_ENV" \
+  amd_scripts/fusion_benchmark/run_nvidia.sh
 ```
 
-The archived GPU stack also retained an unrelated `domain_utils.py` warning fix:
-convert the CuPy scalar to `float` before `round` when formatting the
-non-contiguous-domain warning. That fix is outside the fusion branch. If your
-compiler reaches this warning and fails with `round(cupy.ndarray)`, the stack
-needs that fix; do not interpret the failure as a fusion result. The measured
-environment must retain it when replaying the historical experiments.
+The wrappers request eight hours and account `csstaff`; override account, time
+or uenv with `sbatch` flags if your allocation differs. They include the measured
+workspace/layout settings and AMD compiler environment setup. They do not fetch,
+install or alter source code in the job.
 
-## Enable either pass or both
-
-Set the variables before constructing the model/backend, in a fresh process.
-
-| Variant     | ICON4PY_DACE_THETA_FUSION | ICON4PY_DACE_SOLVER_FUSION |
-| ----------- | ------------------------: | -------------------------: |
-| Original    |                         0 |                          0 |
-| Theta only  |                         1 |                          0 |
-| Solver only |                         0 |                          1 |
-| Combined    |                         1 |                          1 |
-
-Unset means `0`. Theta selection is restricted to
-`compute_rho_theta_pgrad_and_update_vn`. Solver selection is restricted to the
-predictor and corrector solver programs, using the bounded `field_operator`
-scope. Unrelated programs keep their existing options. Missing compiler support
-fails clearly when an option is enabled.
-
-## Current-branch benchmark checks
-
-Run the following **inside a GPU allocation you start yourself**, with the
-working vendor environment activated and ICON4Py packages installed editable
-from this checkout. This benchmarks the current branch and its normal model
-configuration; it does not check out or patch an older implementation.
+If already inside a GPU allocation with the working compiler environment, use:
 
 ```bash
-# Choose regional or global; repeat for each variant from the table.
-GRID=regional
-VARIANT=combined
-export ICON4PY_DACE_THETA_FUSION=1
-export ICON4PY_DACE_SOLVER_FUSION=1
-
-OUT="$PWD/benchmark-results/$GRID/$VARIANT"
-mkdir -p "$OUT"
-export GT4PY_BUILD_CACHE_DIR="$OUT/build"
-export GT4PY_BUILD_CACHE_LIFETIME=persistent
-export DACE_compiler_build_folder_mode=development
-export GT4PY_COLLECT_METRICS_LEVEL=10
-export GT4PY_METRICS_OUTPUT_PATH="$OUT/program-metrics.json"
-export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE=1
-export ICON4PY_BACKEND_WORKSPACE_SIZE=8589934592
-
-python -m pytest -sv -p no:tach -m continuous_benchmarking \
-  --backend=dace_gpu --grid="icon_benchmark_${GRID}:120" \
-  --benchmark-warmup=on --benchmark-min-rounds=50 \
-  --benchmark-json="$OUT/benchmark.json" \
-  'model/atmosphere/dycore/tests/dycore/integration_tests/test_benchmark_solve_nonhydro.py::test_benchmark_solve_nonhydro[False-False]' \
-  > "$OUT/run.log" 2>&1
+python amd_scripts/fusion_benchmark/run.py --platform amd
+# On GH200 use --platform nvidia.
 ```
 
-Use a fresh output directory for each repeat. The explicit depth is now respected
-by the fixture. The benchmark JSON records host wall time; the metrics JSON
-contains instrumented program timings. Do not substitute one for the other or
-divide raw timer sums from different round counts: `--benchmark-min-rounds` is a
-floor. Generated code and caches are isolated by mesh and variant.
+Logs are `dycore_fusion_<job>_<node>.out` and
+`fusion-results/<vendor>_<job>/<mesh>/<comparison>/run.log`. The latter prints
+quartet progress. First compilation can dominate runtime; the CMake wrapper
+unblocks inherited SIGCHLD and terminates a stalled compiler process group after
+20 minutes. Do not modify either source checkout while the job is running.
 
-These commands let colleagues exercise either pass separately or together.
-They are ordinary benchmark checks, **not a replay of the published paired
-experiment**: they do not supply the frozen state restoration, 148-field A/B
-comparison or interleaved identical-arm controls. Avoid attributing a small
-difference from separate invocations to the optimization without those controls.
+## Measure each contribution separately
 
-## What produced the published results
+Select one comparison per job, for example:
 
-The controlled measurements used original→both compiler passes and
-frontend-solver→compiler-solver comparisons, each with 12 balanced ABBA/BAAB
-quartets, interleaved identical-arm controls, restored state, 148-field exact
-checks, code-generation audits and unchanged source hashes.
+```bash
+sbatch --export=ALL,VENV_PATH="$VIRTUAL_ENV" \
+  amd_scripts/fusion_benchmark/run_amd.sh --comparisons theta
+sbatch --export=ALL,VENV_PATH="$VIRTUAL_ENV" \
+  amd_scripts/fusion_benchmark/run_amd.sh --comparisons solver
+```
 
-| Mesh / levels  | MI300A job / node  | GH200 job / node   |
-| -------------- | ------------------ | ------------------ |
-| Regional / 120 | 641726 / nid002706 | 873329 / nid005017 |
-| Global / 120   | 644950 / nid002934 | 875596 / nid005231 |
+Use the NVIDIA wrapper for GH200. Add `--grids regional` or `--grids global` to
+limit the run. Multiple comparisons can share one job, for example
+`--comparisons combined theta solver`; allow more compilation time. Every
+comparison has its own build directory and process. Inputs are checked to match
+between comparisons of the same mesh within a run.
 
-See [GLOBAL_REVIEW.md](GLOBAL_REVIEW.md), [REVIEW.md](REVIEW.md) and
-[COMPILER_FUSION_RESULTS.json](COMPILER_FUSION_RESULTS.json). The complete frozen
-run bundles and independent `review_results.py` checker remain in the author's
-`amd_scripts/compiler_stage_fusion_runs/` experiment archive. They are needed
-for exact historical replay and are not included in this PR. The previous
-launchers replayed the older frontend experiments at `cdc034acb`, so they have
-been removed instead of being presented as reproduction of the current passes.
+| Comparison           | Arm A: theta, solver | Arm B: theta, solver | Question                                     |
+| -------------------- | -------------------- | -------------------- | -------------------------------------------- |
+| `combined` (default) | 0, 0                 | 1, 1                 | Total benefit of both passes                 |
+| `theta`              | 0, 0                 | 1, 0                 | Theta pass alone                             |
+| `solver`             | 0, 0                 | 0, 1                 | Solver pass alone                            |
+| `solver-increment`   | 1, 0                 | 1, 1                 | Additional solver benefit with theta enabled |
+
+Outside this benchmark, set `ICON4PY_DACE_THETA_FUSION=1` and/or
+`ICON4PY_DACE_SOLVER_FUSION=1` before constructing the model. Both default to off.
+Theta selection is restricted to `compute_rho_theta_pgrad_and_update_vn`; solver
+selection is restricted to the predictor and corrector solver programs, with
+bounded `field_operator` scope.
+
+## What the experiment checks and saves
+
+The runner retains the published measurement method:
+
+- Same allocated model fields for both arms; deterministic fixture inputs.
+- Restore arrays and primitive model state, including the Rayleigh cached
+  timestep, before validation and every block. Compare all 148 state fields
+  between arms at `rtol=1e-11`, `atol=1e-12`, recording the actual maximum error.
+  Historical runs matched exactly; the runner does not assume exact equality.
+- Twelve balanced ABBA/BAAB quartets, with interleaved A/A control quartets.
+  Each block has five warmups and ten timed calls. State evolves within a block,
+  identically to the published method; restoration is outside the measured calls.
+- Sum per-program device medians for each block; independently record
+  synchronized granule wall time. Compute uncertainty across quartets, not
+  individual calls. Retain controls and order diagnostics.
+- Save the normal backend options, generated SDFGs and code for target programs,
+  initial-state fingerprints, package versions and source hashes. Verify sources
+  stayed unchanged. A failed validation or incomplete run produces no `COMPLETE`.
+
+Read `RESULTS.md` first, then `RESULTS.json`. A performance effect is labelled
+resolved only if its interval excludes zero, it exceeds the conservative A/A
+threshold, the matched-control adjustment agrees, and no order sensitivity is
+detected. `COMPLETE` means the experiment completed its checks; it does **not**
+mean the optimization was faster.
+
+Raw per-call/per-program samples are in each `timing.json`; optimized SDFGs and
+code are in `generated/A/` and `generated/B/`. A structurally unchanged program
+may reuse its compiled artifact. The two arms never rename the program or
+rewrite generated code to force a difference.
+
+## Published reference and new replay status
+
+| Mesh / levels  | MI300A device reduction | MI300A wall reduction | GH200 device reduction | GH200 wall reduction |
+| -------------- | ----------------------: | --------------------: | ---------------------: | -------------------: |
+| Regional / 120 |                   5.99% |                 4.55% |                  2.06% |    0.88%, unresolved |
+| Global / 120   |                   4.81% |                 4.60% |                  4.45% |                4.23% |
+
+These are the earlier controlled compiler-only runs: AMD 641726/644950 and
+NVIDIA 873329/875596. See [REVIEW.md](REVIEW.md), [GLOBAL_REVIEW.md](GLOBAL_REVIEW.md)
+and [COMPILER_FUSION_RESULTS.json](COMPILER_FUSION_RESULTS.json). Full historical
+captures remain archived separately; they are not needed for a new run.
+
+The new PR-only runner has local method and CPU compilation checks. **Its full
+GPU replay is pending.** It makes the experiment reproducible from the published
+source pair; it does not promise identical timing percentages on another node.
+No new measurement has replaced the reference table above.
 
 ## Local checks
 
-With the companion compiler and normal test dependencies installed:
+With the two compiler dependencies installed in the test environment:
 
 ```bash
-python -m pytest -q model/common/tests/common/test_model_options.py
-python -m pytest -q model/testing/tests/testing/unit_tests/test_grid_preset_levels.py
-python -m pytest -q --backend=embedded \
-  model/atmosphere/dycore/tests/dycore/stencil_tests/test_solve_tridiagonal_matrix_for_w_forward_sweep.py
+python -m pytest -q -p no:tach --benchmark-disable \
+  amd_scripts/fusion_benchmark/test_fusion_benchmark.py
+python -m pytest -q -p no:tach \
+  model/testing/tests/testing/unit_tests/test_grid_preset_levels.py
 ```
 
-The model-options tests cover default-off behavior, targeted selection, invalid
-settings, missing support, callback conflicts and the connection to the normal
-auto-optimizer. The numerical solver test retains its independent NumPy
-reference at 2, 40 and 120 levels. GPU timing claims refer to the recorded jobs;
-this cleanup does not create a new GPU validation result.
+The harness tests cover restored state, validation failures, timer coverage,
+controls, option selection and compilation of two configurations of the same
+scan program. They use a NumPy stand-in for GPU storage only in method tests;
+production runs require CuPy and the selected GPU vendor. GT4Py's own pass tests
+and ICON4Py's model-option/solver-reference tests remain in their usual locations.

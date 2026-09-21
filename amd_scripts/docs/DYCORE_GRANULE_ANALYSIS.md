@@ -271,7 +271,7 @@ This ICON4Py branch remains based on C2SM `mi300_opt` at
 `397d774a17135702b411d97edd4fb42cd0e21566`.
 The companion [GT4Py branch](https://github.com/dganellari/gt4py/tree/dycore-fusion-passes)
 is based on `amd_chiplet_setting` at `eb763b97`. The reviewed pin is
-`24ad90d2d0065c0a270f924aed6367b346aeb5db`.
+`403f9d996b4ab7435b6989bd004fcba39e7a1bf4`.
 
 - [Normal model options](../../model/common/src/icon4py/model/common/model_options.py):
   `ICON4PY_DACE_THETA_FUSION=1` selects only the theta output and compatible
@@ -279,14 +279,15 @@ is based on `amd_chiplet_setting` at `eb763b97`. The reviewed pin is
   two solver programs with `scan_fusion_scope="field_operator"`.
 - [Original solver equations](../../model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/solve_tridiagonal_matrix_for_w_forward_sweep.py)
   and [depth-parameterized numerical tests](../../model/atmosphere/dycore/tests/dycore/stencil_tests/test_solve_tridiagonal_matrix_for_w_forward_sweep.py).
-- [GT4Py design, options, safety and tests](https://github.com/dganellari/gt4py/blob/24ad90d2d0065c0a270f924aed6367b346aeb5db/docs/development/ADRs/next/0028-Guarded_DaCe_Fusion.md).
-- [Current-branch setup and benchmark checks](REPRODUCE_DYCORE_OPTIMIZATIONS.md).
+- [GT4Py design, options, safety and tests](https://github.com/dganellari/gt4py/blob/403f9d996b4ab7435b6989bd004fcba39e7a1bf4/docs/development/ADRs/next/0028-Guarded_DaCe_Fusion.md).
+- [Controlled PR-only reproduction](REPRODUCE_DYCORE_OPTIMIZATIONS.md).
 
 The benchmark fixture now honours explicit `--grid <name>:120` instead of
 silently using its 80-level benchmark default. Defaults remain unchanged when
 no depth is supplied. This is a harness correctness fix, not a performance
-optimization. The separate GPU scalar-conversion warning fix retained by the
-measured experiment stack is documented in the reproduction notes.
+optimization. The required GPU scalar-conversion warning fix is now included in the pinned
+GT4Py branch. The reproduction runner uses both published passes through normal
+model options; its full GPU replay remains pending.
 
 ## Provenance of the starting comparison and diagnostics
 
