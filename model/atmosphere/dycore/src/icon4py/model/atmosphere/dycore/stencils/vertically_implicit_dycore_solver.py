@@ -804,8 +804,8 @@ def _solve_w_and_update_vertical_fluxes_at_corrector_step(
                 dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
             ) = (
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
-                broadcast(wpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
+                value_of_size_on_cells_on_half_levels_wp(wpfloat("0.0"), current_w),
+                value_of_size_on_cells_on_half_levels_wp(wpfloat("0.0"), current_w),
             )
 
         (
