@@ -2,10 +2,10 @@
 
 MI300A was close to GH200 on the global mesh, but substantially slower on the
 operational regional mesh. We investigated that difference and found two code
-changes that improve the regional calculation on MI300A.
+compiler changes that improve the calculation on both meshes and GPUs.
 
-[Reproduction instructions](REPRODUCE_DYCORE_OPTIMIZATIONS.md) cover each
-measured increment and the pending direct combined comparison.
+[Reproduction instructions](REPRODUCE_DYCORE_OPTIMIZATIONS.md) cover enabling each pass separately or together in this branch. The completed
+[global/regional comparison](GLOBAL_REVIEW.md) records the controlled GPU results.
 
 All results below concern the **solve_nonhydro granule**, not diffusion or a
 complete model timestep. Both meshes use 120 vertical levels. Device time is
@@ -13,10 +13,10 @@ the sum of the GPU time recorded for the programs inside the granule.
 
 ## Starting point: the grid changes the comparison
 
-| Mesh | Cells (approximately) | MI300A device time | GH200 device time | MI300A / GH200 |
-|---|---:|---:|---:|---:|
-| Global, R02B06 | 327,000 | 35.2163 ms | 31.8123 ms | **1.107×** |
-| Regional, MeteoSwiss operational domain | 44,500 | 5.7351 ms | 3.8774 ms | **1.479×** |
+| Mesh                                    | Cells (approximately) | MI300A device time | GH200 device time | MI300A / GH200 |
+| --------------------------------------- | --------------------: | -----------------: | ----------------: | -------------: |
+| Global, R02B06                          |               327,000 |         35.2163 ms |        31.8123 ms |     **1.107×** |
+| Regional, MeteoSwiss operational domain |                44,500 |          5.7351 ms |         3.8774 ms |     **1.479×** |
 
 ## How the 48% is measured
 
@@ -53,14 +53,14 @@ than global on both chips; **GH200 gains more from moving to regional**.
 Subtracting GH200's program times from AMD's gives a useful accounting of the
 1.858 ms. It tells us where to investigate, independently of cache hypotheses.
 
-| Regional calculation | MI300A ms | GH200 ms | Extra ms | Share of total gap |
-|---|---:|---:|---:|---:|
-| Theta-rho / pressure-gradient / wind update | 1.041091 | 0.475281 | **0.565810** | **30.5%** |
-| Predictor and corrector vertical solvers together | 1.897274 | 1.507057 | **0.390217** | **21.0%** |
-| Corrector vertical momentum advection | 0.497702 | 0.265080 | 0.232623 | 12.5% |
-| Horizontal velocity quantities and fluxes | 0.569663 | 0.394180 | 0.175484 | 9.4% |
-| Horizontal momentum advection | 0.377937 | 0.213962 | 0.163976 | 8.8% |
-| All remaining programs, including the tiny halo update | 1.351472 | 1.021825 | 0.329647 | 17.7% |
+| Regional calculation                                   | MI300A ms | GH200 ms |     Extra ms | Share of total gap |
+| ------------------------------------------------------ | --------: | -------: | -----------: | -----------------: |
+| Theta-rho / pressure-gradient / wind update            |  1.041091 | 0.475281 | **0.565810** |          **30.5%** |
+| Predictor and corrector vertical solvers together      |  1.897274 | 1.507057 | **0.390217** |          **21.0%** |
+| Corrector vertical momentum advection                  |  0.497702 | 0.265080 |     0.232623 |              12.5% |
+| Horizontal velocity quantities and fluxes              |  0.569663 | 0.394180 |     0.175484 |               9.4% |
+| Horizontal momentum advection                          |  0.377937 | 0.213962 |     0.163976 |               8.8% |
+| All remaining programs, including the tiny halo update |  1.351472 | 1.021825 |     0.329647 |              17.7% |
 
 Theta-rho is **2.190×** GH200 on regional, versus **1.159×** on global. It is the
 largest individual contributor, but cannot explain the other 69.5% of the gap.
@@ -103,11 +103,11 @@ renumbering the mesh. They argue against blaming the halo alone.
 
 The fixed-call cache collection supports a larger reuse improvement on GH200:
 
-| Counter statistic over generated stencil kernels | Global | Regional | Change |
-|---|---:|---:|---:|
-| MI300A L2 hits / all requests | 29.26% | 38.08% | **+8.82 percentage points** |
-| GH200 L2 hits / read+write sectors | 29.37% | 54.98% | **+25.61 points** |
-| GH200 L2 hits / read sectors only | 8.84% | 42.88% | **+34.04 points** |
+| Counter statistic over generated stencil kernels | Global | Regional |                      Change |
+| ------------------------------------------------ | -----: | -------: | --------------------------: |
+| MI300A L2 hits / all requests                    | 29.26% |   38.08% | **+8.82 percentage points** |
+| GH200 L2 hits / read+write sectors               | 29.37% |   54.98% |           **+25.61 points** |
+| GH200 L2 hits / read sectors only                |  8.84% |   42.88% |           **+34.04 points** |
 
 So yes: **AMD's mixed-request hit statistic improves much less between grids**.
 That is relevant evidence, not something to dismiss. But requests and fixed-size
@@ -140,10 +140,10 @@ with edge count, but reads forwarded towards L2 are about **1.83×** that simple
 reference, and reads beyond L2 are **1.61×**. The extra traffic appears further
 down the memory path; it is not explained by doing 1.61× as many initial requests.
 
-| Program | Regional reads beyond L2 | Reference scaled from global | Positive excess |
-|---|---:|---:|---:|
-| Theta-rho | 2.178 GB/call | 1.350 GB/call | **0.829 GB/call** |
-| Corrector vertical momentum | 1.152 GB/call | 0.692 GB/call | **0.459 GB/call** |
+| Program                     | Regional reads beyond L2 | Reference scaled from global |   Positive excess |
+| --------------------------- | -----------------------: | ---------------------------: | ----------------: |
+| Theta-rho                   |            2.178 GB/call |                1.350 GB/call | **0.829 GB/call** |
+| Corrector vertical momentum |            1.152 GB/call |                0.692 GB/call | **0.459 GB/call** |
 
 Together these account for **79.2% of the 1.626 GB/call positive excess** across
 programs common to both meshes. That is a traffic-ranking statistic, **not 79.2%
@@ -215,133 +215,78 @@ plausible losses, and a controlled structural change has reduced part of the gap
 We still cannot allocate the remaining milliseconds uniquely among locality,
 cache capacity, latency hiding, launch overhead and other code-generation effects.
 
-## Two successful changes
+## Both optimizations now live in GT4Py
 
-**Theta-rho compiler fusion.** The original program produces fields across a
-vertical column, then consumes them in separate vertical bands. The GT4Py change
-allows the compiler to split that producer safely, retain its externally needed
-outputs, and fuse compatible calculations using the existing DaCe transformations.
-The measured regional program goes from six GPU kernels to five. This is an
-opt-in GT4Py change; its default remains off.
+**Theta-rho:** safely split a producer into vertical bands and fuse compatible
+consumers while retaining externally required outputs. The regional program
+goes from six GPU kernels to five; global retains three.
 
-**Vertical solver fusion.** Compute the tridiagonal coefficients inside the
-forward sweep, immediately before they are used, instead of materialising their
-full-column arrays first. Both predictor and corrector use this sweep. In the
-measured full solver, each specialization loses one kernel and a net three
-coefficient-sized intermediate arrays. This is a storage/code-generation result;
-we did not measure the resulting HBM traffic reduction.
+**Vertical solver:** compute local coefficients inside the forward scan instead
+of first storing full-column coefficient arrays. The compiler keeps upstream
+wind preparation outside the recurrence. Each measured solver specialization
+loses one kernel and three temporary arrays. It uses the existing GT4Py fusion
+helper with bounded producer scope and optional input selection.
 
-| Paired comparison, MI300A regional/120 | Granule device time | Reduction | Target-program reduction |
-|---|---:|---:|---:|
-| Original → compiler theta fusion | 5.511207 → 5.393807 ms | **2.13%** | Theta-rho **14.33%** |
-| Compiler theta fusion → theta + solver fusion | 5.519307 → 5.338015 ms | **3.28% additional** | Both solvers **8.33%** |
+The earlier Python solver rewrite and copied GT4Py patches have been removed
+from this branch. The solver equations are restored to the C2SM `mi300_opt` base.
+ICON4Py keeps the program-specific selection in `model_options.py`; the compiler
+transformations and their safety tests belong to the separate GT4Py branch.
 
-The solver change also reduces whole-call wall time by **2.93%**. Each row is
-its own same-node paired experiment; the rows ran on different nodes, so their
-absolute baselines differ. Multiplying the measured reductions suggests about
-**5.34% less device time combined**, but that is an estimate, not a direct
-original-versus-combined measurement. The earlier Python theta rewrite is an
-alternative to compiler fusion, not another gain to add.
+## Completed combined measurements: both grids and both GPUs
 
-## Evidence and remaining validation
+| GPU    | Mesh / levels  | Original device ms | Compiler device ms | Device reduction |             Wall reduction |
+| ------ | -------------- | -----------------: | -----------------: | ---------------: | -------------------------: |
+| MI300A | Regional / 120 |           5.426298 |           5.101430 |        **5.99%** |                  **4.55%** |
+| GH200  | Regional / 120 |           3.857321 |           3.777862 |        **2.06%** | 0.88% observed; unresolved |
+| MI300A | Global / 120   |          35.632809 |          33.919402 |        **4.81%** |                  **4.60%** |
+| GH200  | Global / 120   |          31.918701 |          30.499036 |        **4.45%** |                  **4.23%** |
 
-The measured runs are jobs **639200** (theta, nid002952) and **639284** (solvers,
-nid002926). Each used 12 balanced A/B quartets, interleaved identical-arm controls,
-restored input state and source checksums. Both reported gains clear the
-conservative control-noise screen. Validation covered 148 state arrays with
-zero observed finite-value error and matching nonfinite patterns.
+Each comparison uses 12 balanced quartets with interleaved identical-arm
+controls. All 148 checked fields match exactly. All four device gains and three
+wall gains pass the conservative noise criterion. The measurements compare both
+compiler passes with original code, not a sum of gains from different jobs.
+Direct compiler-versus-frontend comparisons find no resolved difference: the
+compiler recovers the frontend benefit; it does not add another gain to it.
 
-This review branch is based directly on **C2SM's `mi300_opt`**, commit
-`397d774a17135702b411d97edd4fb42cd0e21566`, the model base used for the measurements.
-It retains that branch's vertical-level interface, workspace and vendor tuning;
-it is not a port to upstream `main`. The solver scan, field operator and public
-program match the measured prototype structurally, ignoring docstrings, while
-the existing standalone scan API is retained for compatibility.
+The solvers improve on both meshes: MI300A 11.72% regional / 11.68% global,
+GH200 4.81% / 11.19%. A small GH200 global theta-rho slowdown (0.16%) occurs
+within the combined treatment and is outweighed by the solver gain. Neither
+these timings nor the earlier cache counters establish a unique cause for the
+remaining vendor gap. Other levels, precisions and model variants are outside
+the GPU performance evidence; both options remain off by default.
 
-The restored implementation passes six isolated embedded/compiled CPU
-comparisons against the independent NumPy reference at 2, 40 and 120 levels
-in double precision. This complements the recorded regional GPU validation;
-it does not establish global-grid, mixed-precision or combined performance.
-The PR base should be **C2SM/icon4py:mi300_opt**, so reviewers see only the
-optimisation, tests, explanation and reproduction entry points.
+See [the full global/regional comparison](GLOBAL_REVIEW.md),
+[regional controls and provenance](REVIEW.md), and
+[reconstructed numerical results](COMPILER_FUSION_RESULTS.json).
 
-The [GT4Py patch](../../patches/gt4py-shared-output-fusion.patch) contains the compiler
-transformation and regression tests (22 focused tests and pre-commit checks pass).
-GT4Py is a separate repository, so the change is carried here as an applyable
-patch rather than copying the compiler into Icon4Py. Its base is GT4Py
-`a461b874` (upstream main); the modified transformation source is
-unchanged from the measured prototype. Normal Icon4Py runs can now opt in with
-`ICON4PY_DACE_THETA_FUSION=1`; the default is off. The restricted callback is
-registered in [model options](../../model/common/src/icon4py/model/common/model_options.py),
-and requires the patched compiler. The same compiler change is also committed separately as
-`857e718d` on GT4Py branch `dycore-shared-output-fusion`, ready to push to
-`dganellari/gt4py` for a normal compiler PR.
+The original isolated MI300A experiments measured 2.13% for theta compiler fusion
+(job 639200) and 3.28% additional gain for the frontend solver rewrite
+(job 639284). Their old 5.34% product was a cross-run estimate. The direct
+compiler-only measurements above supersede that estimate; they do not establish
+each compiler pass's isolated contribution on every grid and vendor.
 
-This branch contains the solver change, depth-parameterised
-tests, compiler patch, this analysis and small launchers for reproducing the
-experiments directly from this branch.
-Benchmark scripts, raw data and unsuccessful experiments stay on the experiment
-branch; the retained evidence is under `amd_scripts/review_2026_09_16/` there.
+## Code and dependency for review
 
-Direct combined timing, GH200 validation of these exact changes, and global-grid
-correctness/performance checks are still needed before recommending both
-optimisations for general use. No combined saving or reduction of the vendor
-gap is claimed as measured yet.
+This ICON4Py branch remains based on C2SM `mi300_opt` at
+`397d774a17135702b411d97edd4fb42cd0e21566`.
+The companion [GT4Py branch](https://github.com/dganellari/gt4py/tree/dycore-fusion-passes)
+is based on `amd_chiplet_setting` at `eb763b97`. The reviewed pin is
+`24ad90d2d0065c0a270f924aed6367b346aeb5db`.
 
-## Compiler replacement for the Python solver rewrite
+- [Normal model options](../../model/common/src/icon4py/model/common/model_options.py):
+  `ICON4PY_DACE_THETA_FUSION=1` selects only the theta output and compatible
+  horizontal ranges/vertical bands; `ICON4PY_DACE_SOLVER_FUSION=1` selects the
+  two solver programs with `scan_fusion_scope="field_operator"`.
+- [Original solver equations](../../model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/solve_tridiagonal_matrix_for_w_forward_sweep.py)
+  and [depth-parameterized numerical tests](../../model/atmosphere/dycore/tests/dycore/stencil_tests/test_solve_tridiagonal_matrix_for_w_forward_sweep.py).
+- [GT4Py design, options, safety and tests](https://github.com/dganellari/gt4py/blob/24ad90d2d0065c0a270f924aed6367b346aeb5db/docs/development/ADRs/next/0028-Guarded_DaCe_Fusion.md).
+- [Current-branch setup and benchmark checks](REPRODUCE_DYCORE_OPTIMIZATIONS.md).
 
-A new, opt-in GT4Py pass (commit `832aa13f` on
-`dycore-shared-output-fusion`) now performs the coefficient fusion without changing
-the scientist's equations. It runs before the SDFG is built: it moves coefficient
-expressions into the vertical scan and supplies neighbouring-level inputs in a
-form DaCe can lower. Unsupported accesses and assignments that read their own
-outputs are left unchanged.
-
-The option follows normal model configuration:
-`ICON4PY_DACE_SOLVER_FUSION=1` → `model_options.py` →
-`optimization_args["fuse_scan_inputs"]` → GT4Py's DaCe translator.
-It applies only to the predictor/corrector solvers and defaults off. This earlier
-compiler stage differs from theta's callback inside SDFG `gt_auto_optimize`.
-
-**This is a candidate replacement, not another measured optimisation.** Eleven
-compiler tests and fourteen model-option tests pass. The original ICON standalone
-forward sweep also matches the original and manually fused CPU outputs exactly
-for three randomized inputs; its four full-column coefficient arrays disappear.
-The branch retains the measured Python rewrite until the compiler replacement
-passes full-granule GPU validation. The 3.28% measured increment and 5.34% combined
-estimate above have not changed. No GPU speedup is claimed for this new pass.
-
-## Where to review the code
-
-- [Solver implementation](../../model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/solve_tridiagonal_matrix_for_w_forward_sweep.py):
-  `_coefficient_forward_scan` computes coefficients as scalar values within each
-  column's recurrence. The field operator supplies neighbouring-level inputs.
-  Casts and arithmetic order are retained; the existing standalone scan API stays available.
-- [Solver tests](../../model/atmosphere/dycore/tests/dycore/stencil_tests/test_solve_tridiagonal_matrix_for_w_forward_sweep.py):
-  the independent NumPy recurrence now covers 2, 40 and 120 levels.
-- [Experimental solver compiler patch and tests](../../patches/gt4py-scan-input-fusion.patch):
-  `scan_fusion.py` implements the pre-SDFG pass; `workflow/translation.py` consumes
-  the option. This preserves the original model equations when used as a
-  replacement for the Python rewrite, after GPU validation.
-- [Normal model configuration](../../model/common/src/icon4py/model/common/model_options.py):
-  separate theta and solver opt-ins, both off by default.
-- [Compiler patch and tests](../../patches/gt4py-shared-output-fusion.patch):
-  `allow_shared_data=False` in GT4Py's DaCe transformation layer; guarded splitting
-  preserves external outputs and rejects unsupported aliasing, shifted/overlapping
-  accesses and reductions. Existing DaCe fusion joins the compatible pieces.
-  There is no DaCe core patch.
-
-The measured theta selection used the existing optimizer callback
-`TopLevelDataFlowVerticalSplitCallBack`. It opted in only for
-`theta_v_at_edges_on_model_levels`, matching horizontal ranges and differing
-vertical bands, and reset the flag for every candidate. It was not enabled
-indiscriminately for other programs. Normal model configuration now retains this
-restriction under the explicit switch; broader grid/variant validation remains pending.
-
-The explicit benchmark-level fix and the GPU scalar conversion needed by the
-profiling harness remain recorded in the experiment branch. They are not speedup
-claims and are not bundled into this optimisation diff. Any reproduction must
-verify that the actual grid has 120 levels rather than relying on the CLI label.
+The benchmark fixture now honours explicit `--grid <name>:120` instead of
+silently using its 80-level benchmark default. Defaults remain unchanged when
+no depth is supplied. This is a harness correctness fix, not a performance
+optimization. The separate GPU scalar-conversion warning fix retained by the
+measured experiment stack is documented in the reproduction notes.
 
 ## Provenance of the starting comparison and diagnostics
 
@@ -366,4 +311,4 @@ The historical fusion intervention is independently reviewed in
 archive. Full profiling captures remain separate from this small review branch;
 the numerical tables here retain the definitions, run identities and limitations
 needed to interpret the results. The later compiler/solver timing evidence and
-replay instructions are included through the pinned experiment bundle.
+current-branch instructions are linked above; full experiment bundles remain archived separately.

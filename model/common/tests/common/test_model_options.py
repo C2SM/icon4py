@@ -251,7 +251,11 @@ def test_solver_fusion_options(monkeypatch, setting, program):
         monkeypatch.setenv("ICON4PY_DACE_SOLVER_FUSION", setting)
     options = model_options.get_dace_options(program, None)
     assert options["optimization_args"].get("fuse_scan_inputs", False) == (setting == "1")
+    assert options["optimization_args"].get("scan_fusion_scope") == (
+        "field_operator" if setting == "1" else None
+    )
     other = model_options.get_dace_options("another_program", None)
+    assert "scan_fusion_scope" not in other.get("optimization_args", {})
     assert "fuse_scan_inputs" not in other.get("optimization_args", {})
 
 
@@ -263,5 +267,5 @@ def test_solver_fusion_configuration_errors(monkeypatch):
     monkeypatch.setenv("ICON4PY_DACE_SOLVER_FUSION", "1")
     monkeypatch.delattr(dace_backend, "scan_fusion", raising=False)
     monkeypatch.setitem(sys.modules, f"{dace_backend.__name__}.scan_fusion", None)
-    with pytest.raises(RuntimeError, match="requires the GT4Py scan-input fusion patch"):
+    with pytest.raises(RuntimeError, match="requires the GT4Py scan-input fusion support"):
         model_options.get_dace_options(program, None)

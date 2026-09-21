@@ -1,0 +1,778 @@
+{
+  "amd_641726": {
+    "comparisons": {
+      "compiler_vs_frontend": {
+        "metrics": {
+          "granule_device": {
+            "AA_bias_ms": 0.00925772916666645,
+            "AA_threshold_ms": 0.06171459073511872,
+            "adjusted_ci95_ms": [
+              -0.016724534363728775,
+              0.015192367697062588
+            ],
+            "compiler_ms": 5.105542666666667,
+            "exceeds_AA_threshold": false,
+            "order_review": "order-sensitive; review before claiming an effect",
+            "positive_quartets": 7,
+            "raw_ci95_ms": [
+              -0.008765731388891218,
+              0.025749023055557936
+            ],
+            "reduction_pct": 0.16604592997308634,
+            "reference_ms": 5.1140343125,
+            "saving_ms": 0.008491645833333358
+          },
+          "granule_wall": {
+            "AA_bias_ms": 0.015434687500000063,
+            "AA_threshold_ms": 0.08124449316965962,
+            "adjusted_ci95_ms": [
+              -0.03175128716087684,
+              0.013004245494209697
+            ],
+            "compiler_ms": 6.092505854166667,
+            "exceeds_AA_threshold": false,
+            "order_review": "order-sensitive; review before claiming an effect",
+            "positive_quartets": 7,
+            "raw_ci95_ms": [
+              -0.015269198469056007,
+              0.027391531802388985
+            ],
+            "reduction_pct": 0.09938673537506301,
+            "reference_ms": 6.098567020833333,
+            "saving_ms": 0.006061166666666488
+          },
+          "solvers_device": {
+            "AA_bias_ms": 0.0030001041666666097,
+            "AA_threshold_ms": 0.027459316909013452,
+            "adjusted_ci95_ms": [
+              -0.004001834924672189,
+              0.007488376591338846
+            ],
+            "compiler_ms": 1.6749382083333335,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 9,
+            "raw_ci95_ms": [
+              -0.0013214984414751715,
+              0.010808248441475049
+            ],
+            "reduction_pct": 0.28239727380868795,
+            "reference_ms": 1.6796815833333334,
+            "saving_ms": 0.004743374999999939
+          },
+          "theta_device": {
+            "AA_bias_ms": 0.00166695833333332,
+            "AA_threshold_ms": 0.013708588523170057,
+            "adjusted_ci95_ms": [
+              -0.004292821128314964,
+              0.003177112794981647
+            ],
+            "compiler_ms": 0.7405546875000001,
+            "exceeds_AA_threshold": false,
+            "order_review": "order-sensitive; review before claiming an effect",
+            "positive_quartets": 6,
+            "raw_ci95_ms": [
+              -0.002628493071519037,
+              0.00484670140485236
+            ],
+            "reduction_pct": 0.14954271451951065,
+            "reference_ms": 0.7416637916666667,
+            "saving_ms": 0.0011091041666666617
+          }
+        },
+        "scope_audit_passed": true,
+        "validation": {
+          "atol": 1e-12,
+          "fields": 148,
+          "finite_values": 496298382,
+          "max_abs_error": 0.0,
+          "rtol": 1e-11,
+          "status": "passed"
+        }
+      },
+      "compiler_vs_native": {
+        "metrics": {
+          "granule_device": {
+            "AA_bias_ms": 0.008074624999999891,
+            "AA_threshold_ms": 0.03693717866977968,
+            "adjusted_ci95_ms": [
+              0.30313628680664456,
+              0.33045017152668926
+            ],
+            "compiler_ms": 5.101430208333333,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              0.31332511526191514,
+              0.33641059307141846
+            ],
+            "reduction_pct": 5.986915027977543,
+            "reference_ms": 5.426298062500001,
+            "saving_ms": 0.3248678541666668
+          },
+          "granule_wall": {
+            "AA_bias_ms": 0.0062763958333333925,
+            "AA_threshold_ms": 0.04164901022026166,
+            "adjusted_ci95_ms": [
+              0.2656121882521309,
+              0.2989521450812022
+            ],
+            "compiler_ms": 6.055173479166666,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              0.2757745558611228,
+              0.3013425691388771
+            ],
+            "reduction_pct": 4.5487192807751065,
+            "reference_ms": 6.343732041666667,
+            "saving_ms": 0.28855856249999995
+          },
+          "solvers_device": {
+            "AA_bias_ms": 0.006267374999999964,
+            "AA_threshold_ms": 0.02568744085221963,
+            "adjusted_ci95_ms": [
+              0.20816044539701753,
+              0.22437738793631598
+            ],
+            "compiler_ms": 1.6754326041666667,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              0.21661927199749387,
+              0.22845331133583957
+            ],
+            "reduction_pct": 11.724970422603192,
+            "reference_ms": 1.8979688958333334,
+            "saving_ms": 0.22253629166666672
+          },
+          "theta_device": {
+            "AA_bias_ms": 0.0004325833333333103,
+            "AA_threshold_ms": 0.010600149615687194,
+            "adjusted_ci95_ms": [
+              0.11035432335471468,
+              0.11805996831195201
+            ],
+            "compiler_ms": 0.7426676458333334,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              0.11148685011258803,
+              0.11779260822074526
+            ],
+            "reduction_pct": 13.372068468052856,
+            "reference_ms": 0.857307375,
+            "saving_ms": 0.11463972916666665
+          }
+        },
+        "scope_audit_passed": true,
+        "validation": {
+          "atol": 1e-12,
+          "fields": 148,
+          "finite_values": 496298382,
+          "max_abs_error": 0.0,
+          "rtol": 1e-11,
+          "status": "passed"
+        }
+      }
+    },
+    "grid": "regional",
+    "grid_dimensions": {
+      "cells": 44528,
+      "edges": 67096,
+      "levels": 120,
+      "limited_area": true,
+      "vertices": 22569
+    },
+    "hostname": "nid002706",
+    "sources_unchanged": true,
+    "state_fingerprint": "78550b2fb38227c47f1fb07a774f1698112b7ca4b215da8c82989a51af003082",
+    "within_run_inputs_match": true
+  },
+  "amd_644950": {
+    "comparisons": {
+      "compiler_vs_frontend": {
+        "metrics": {
+          "granule_device": {
+            "AA_bias_ms": -0.019913645833331845,
+            "AA_threshold_ms": 0.10700539723730125,
+            "adjusted_ci95_ms": [
+              -0.041991464917054404,
+              0.06959171491705103
+            ],
+            "compiler_ms": 33.99685047916667,
+            "exceeds_AA_threshold": false,
+            "order_review": "order-sensitive; review before claiming an effect",
+            "positive_quartets": 5,
+            "raw_ci95_ms": [
+              -0.04262049315500951,
+              0.03039345148834244
+            ],
+            "reduction_pct": -0.017985843733919732,
+            "reference_ms": 33.990736958333336,
+            "saving_ms": -0.006113520833333534
+          },
+          "granule_wall": {
+            "AA_bias_ms": -0.010446104166667544,
+            "AA_threshold_ms": 0.06487047711100628,
+            "adjusted_ci95_ms": [
+              -0.009350439771339938,
+              0.047633148104672667
+            ],
+            "compiler_ms": 34.900802625000004,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 7,
+            "raw_ci95_ms": [
+              -0.01293586586763543,
+              0.030326365867633074
+            ],
+            "reduction_pct": 0.02490797785500609,
+            "reference_ms": 34.909497875,
+            "saving_ms": 0.008695249999998822
+          },
+          "solvers_device": {
+            "AA_bias_ms": -0.007500916666666561,
+            "AA_threshold_ms": 0.05990487581330346,
+            "adjusted_ci95_ms": [
+              -0.009121151252194508,
+              0.026263026252194295
+            ],
+            "compiler_ms": 12.544270604166668,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 6,
+            "raw_ci95_ms": [
+              -0.006276846605210608,
+              0.008416888271877275
+            ],
+            "reduction_pct": 0.008529229020701325,
+            "reference_ms": 12.545340625000001,
+            "saving_ms": 0.0010700208333333332
+          },
+          "theta_device": {
+            "AA_bias_ms": -0.00438502083333329,
+            "AA_threshold_ms": 0.07621486455965656,
+            "adjusted_ci95_ms": [
+              -0.050881964100454063,
+              0.034460630767120734
+            ],
+            "compiler_ms": 5.187172729166667,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 5,
+            "raw_ci95_ms": [
+              -0.04203380564959376,
+              0.01684243064959386
+            ],
+            "reduction_pct": -0.24341482209226203,
+            "reference_ms": 5.174577041666667,
+            "saving_ms": -0.012595687499999952
+          }
+        },
+        "scope_audit_passed": true,
+        "validation": {
+          "atol": 1e-12,
+          "fields": 148,
+          "finite_values": 3645277412,
+          "max_abs_error": 0.0,
+          "rtol": 1e-11,
+          "status": "passed"
+        }
+      },
+      "compiler_vs_native": {
+        "metrics": {
+          "granule_device": {
+            "AA_bias_ms": 0.004871166666666464,
+            "AA_threshold_ms": 0.13127002298581558,
+            "adjusted_ci95_ms": [
+              1.6470304357830456,
+              1.7700421058836229
+            ],
+            "compiler_ms": 33.919401979166665,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              1.6674979388542586,
+              1.759316936145743
+            ],
+            "reduction_pct": 4.808510655066626,
+            "reference_ms": 35.63280941666667,
+            "saving_ms": 1.7134074375000008
+          },
+          "granule_wall": {
+            "AA_bias_ms": 0.03181943750000057,
+            "AA_threshold_ms": 0.18688496620731357,
+            "adjusted_ci95_ms": [
+              1.576036039083002,
+              1.7217867525836614
+            ],
+            "compiler_ms": 34.86273345833333,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              1.632133312744252,
+              1.7293283539224127
+            ],
+            "reduction_pct": 4.599265192590415,
+            "reference_ms": 36.543464291666666,
+            "saving_ms": 1.6807308333333324
+          },
+          "solvers_device": {
+            "AA_bias_ms": 0.015129812500000117,
+            "AA_threshold_ms": 0.06583668069990034,
+            "adjusted_ci95_ms": [
+              1.624943248267948,
+              1.6592140850653854
+            ],
+            "compiler_ms": 12.529388729166667,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              1.6423016377892743,
+              1.6721153205440593
+            ],
+            "reduction_pct": 11.681507939008855,
+            "reference_ms": 14.186597208333334,
+            "saving_ms": 1.6572084791666668
+          },
+          "theta_device": {
+            "AA_bias_ms": -0.004929375000000051,
+            "AA_threshold_ms": 0.07480936736467056,
+            "adjusted_ci95_ms": [
+              -0.038429846361596486,
+              0.017885846361596222
+            ],
+            "compiler_ms": 5.198398020833333,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 3,
+            "raw_ci95_ms": [
+              -0.03465965300222247,
+              0.004256903002222104
+            ],
+            "reduction_pct": -0.29328184976775407,
+            "reference_ms": 5.183196645833333,
+            "saving_ms": -0.015201375000000183
+          }
+        },
+        "scope_audit_passed": true,
+        "validation": {
+          "atol": 1e-12,
+          "fields": 148,
+          "finite_values": 3645277412,
+          "max_abs_error": 0.0,
+          "rtol": 1e-11,
+          "status": "passed"
+        }
+      }
+    },
+    "grid": "global",
+    "grid_dimensions": {
+      "cells": 327680,
+      "edges": 491520,
+      "levels": 120,
+      "limited_area": false,
+      "vertices": 163842
+    },
+    "hostname": "nid002934",
+    "sources_unchanged": true,
+    "state_fingerprint": "26ab3a369c6eb449194c1b8d054c3b6aa3503b89dc0eeeea1aeaba936392e42b",
+    "within_run_inputs_match": true
+  },
+  "nvidia_873329": {
+    "comparisons": {
+      "compiler_vs_frontend": {
+        "metrics": {
+          "granule_device": {
+            "AA_bias_ms": -0.00028589583333319773,
+            "AA_threshold_ms": 0.007771355020858507,
+            "adjusted_ci95_ms": [
+              -0.0026139927895803545,
+              0.004933784456246759
+            ],
+            "compiler_ms": 3.7591286875,
+            "exceeds_AA_threshold": false,
+            "order_review": "order-sensitive; review before claiming an effect",
+            "positive_quartets": 7,
+            "raw_ci95_ms": [
+              -0.0009013324166338837,
+              0.0026493324166338927
+            ],
+            "reduction_pct": 0.023244664236692903,
+            "reference_ms": 3.7600026875,
+            "saving_ms": 0.0008740000000000044
+          },
+          "granule_wall": {
+            "AA_bias_ms": -3.537500000002266e-05,
+            "AA_threshold_ms": 0.0665129013151192,
+            "adjusted_ci95_ms": [
+              -0.029232710588367985,
+              0.02183683558836801
+            ],
+            "compiler_ms": 4.8314370625,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 6,
+            "raw_ci95_ms": [
+              -0.011844942032077968,
+              0.004378317032077946
+            ],
+            "reduction_pct": -0.07733101891349509,
+            "reference_ms": 4.8277037499999995,
+            "saving_ms": -0.0037333125000000114
+          },
+          "solvers_device": {
+            "AA_bias_ms": 0.0002565624999999831,
+            "AA_threshold_ms": 0.0016927308891680952,
+            "adjusted_ci95_ms": [
+              -0.0007844244111448729,
+              0.0005937160778116391
+            ],
+            "compiler_ms": 1.4202395,
+            "exceeds_AA_threshold": false,
+            "order_review": "order-sensitive; review before claiming an effect",
+            "positive_quartets": 7,
+            "raw_ci95_ms": [
+              -0.00032519612599525463,
+              0.0006476127926619869
+            ],
+            "reduction_pct": 0.01134949682773141,
+            "reference_ms": 1.4204007083333334,
+            "saving_ms": 0.00016120833333336618
+          },
+          "theta_device": {
+            "AA_bias_ms": -0.00023010416666666145,
+            "AA_threshold_ms": 0.0013015370742156095,
+            "adjusted_ci95_ms": [
+              -0.0002880824956726899,
+              0.0007053741623392963
+            ],
+            "compiler_ms": 0.4634629166666667,
+            "exceeds_AA_threshold": false,
+            "order_review": "order-sensitive; review before claiming an effect",
+            "positive_quartets": 8,
+            "raw_ci95_ms": [
+              -0.0003053041842612267,
+              0.00026238751759451016
+            ],
+            "reduction_pct": -0.004630214441868992,
+            "reference_ms": 0.46344145833333333,
+            "saving_ms": -2.1458333333358264e-05
+          }
+        },
+        "scope_audit_passed": true,
+        "validation": {
+          "atol": 1e-12,
+          "fields": 148,
+          "finite_values": 496298382,
+          "max_abs_error": 0.0,
+          "rtol": 1e-11,
+          "status": "passed"
+        }
+      },
+      "compiler_vs_native": {
+        "metrics": {
+          "granule_device": {
+            "AA_bias_ms": 0.000436645833333323,
+            "AA_threshold_ms": 0.007517023010813223,
+            "adjusted_ci95_ms": [
+              0.07605929320745018,
+              0.08198391512588309
+            ],
+            "compiler_ms": 3.777862479166667,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              0.07790101962924413,
+              0.08101548037075577
+            ],
+            "reduction_pct": 2.0599337099242474,
+            "reference_ms": 3.857320729166667,
+            "saving_ms": 0.07945824999999995
+          },
+          "granule_wall": {
+            "AA_bias_ms": 0.008129000000000053,
+            "AA_threshold_ms": 0.06346687038646373,
+            "adjusted_ci95_ms": [
+              0.010860301575266584,
+              0.059402698424733
+            ],
+            "compiler_ms": 4.860488041666667,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              0.03178066375852922,
+              0.054740336241470476
+            ],
+            "reduction_pct": 0.8821924622035501,
+            "reference_ms": 4.903748541666666,
+            "saving_ms": 0.04326049999999985
+          },
+          "solvers_device": {
+            "AA_bias_ms": -0.00010133333333334216,
+            "AA_threshold_ms": 0.0016515965709999168,
+            "adjusted_ci95_ms": [
+              0.07140283170242878,
+              0.07291887663090449
+            ],
+            "compiler_ms": 1.4264506875,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              0.07159775522852935,
+              0.07252128643813724
+            ],
+            "reduction_pct": 4.808744073454062,
+            "reference_ms": 1.4985102083333335,
+            "saving_ms": 0.0720595208333333
+          },
+          "theta_device": {
+            "AA_bias_ms": 0.00016202083333332248,
+            "AA_threshold_ms": 0.0016553232513794708,
+            "adjusted_ci95_ms": [
+              0.00895125343289723,
+              0.010134454900436128
+            ],
+            "compiler_ms": 0.4647281458333334,
+            "exceeds_AA_threshold": true,
+            "order_review": "order-sensitive; review before claiming an effect",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              0.009376124686246271,
+              0.010033625313753732
+            ],
+            "reduction_pct": 2.0455732577284684,
+            "reference_ms": 0.4744330208333334,
+            "saving_ms": 0.009704875000000002
+          }
+        },
+        "scope_audit_passed": true,
+        "validation": {
+          "atol": 1e-12,
+          "fields": 148,
+          "finite_values": 496298382,
+          "max_abs_error": 0.0,
+          "rtol": 1e-11,
+          "status": "passed"
+        }
+      }
+    },
+    "grid": "regional",
+    "grid_dimensions": {
+      "cells": 44528,
+      "edges": 67096,
+      "levels": 120,
+      "limited_area": true,
+      "vertices": 22569
+    },
+    "hostname": "nid005017",
+    "sources_unchanged": true,
+    "state_fingerprint": "b7da4a0ebfe7ab8f9c9cfb46099ea4a046644c16f76db11dbdeb96fdffd9409f",
+    "within_run_inputs_match": true
+  },
+  "nvidia_875596": {
+    "comparisons": {
+      "compiler_vs_frontend": {
+        "metrics": {
+          "granule_device": {
+            "AA_bias_ms": -0.008483395833332352,
+            "AA_threshold_ms": 0.03691932531800376,
+            "adjusted_ci95_ms": [
+              0.0019490455626951422,
+              0.02241257943730284
+            ],
+            "compiler_ms": 30.47815172916667,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 8,
+            "raw_ci95_ms": [
+              -0.0021272664819254107,
+              0.009522099815258688
+            ],
+            "reduction_pct": 0.0121298962178351,
+            "reference_ms": 30.481849145833337,
+            "saving_ms": 0.0036974166666666384
+          },
+          "granule_wall": {
+            "AA_bias_ms": -0.009463125000000497,
+            "AA_threshold_ms": 0.05753716482708131,
+            "adjusted_ci95_ms": [
+              0.005962076871880027,
+              0.04685092312812278
+            ],
+            "compiler_ms": 31.382776166666666,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 11,
+            "raw_ci95_ms": [
+              0.005375426483696145,
+              0.028511323516305673
+            ],
+            "reduction_pct": 0.05396027495569653,
+            "reference_ms": 31.399719541666666,
+            "saving_ms": 0.01694337500000091
+          },
+          "solvers_device": {
+            "AA_bias_ms": -0.002902729166665748,
+            "AA_threshold_ms": 0.011779961179103567,
+            "adjusted_ci95_ms": [
+              0.00035822366428571754,
+              0.006600943002379799
+            ],
+            "compiler_ms": 11.342916083333334,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 7,
+            "raw_ci95_ms": [
+              -0.0014052517284741579,
+              0.0025589600618081787
+            ],
+            "reduction_pct": 0.005085331033794814,
+            "reference_ms": 11.3434929375,
+            "saving_ms": 0.0005768541666670105
+          },
+          "theta_device": {
+            "AA_bias_ms": -0.0011947500000000961,
+            "AA_threshold_ms": 0.006055077065313604,
+            "adjusted_ci95_ms": [
+              -0.00016366375461762694,
+              0.0035838720879509314
+            ],
+            "compiler_ms": 4.197608395833334,
+            "exceeds_AA_threshold": false,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 8,
+            "raw_ci95_ms": [
+              -0.0006804194043274887,
+              0.0017111277376606004
+            ],
+            "reduction_pct": 0.012275821232438795,
+            "reference_ms": 4.198123750000001,
+            "saving_ms": 0.0005153541666665559
+          }
+        },
+        "scope_audit_passed": true,
+        "validation": {
+          "atol": 1e-12,
+          "fields": 148,
+          "finite_values": 3645277412,
+          "max_abs_error": 0.0,
+          "rtol": 1e-11,
+          "status": "passed"
+        }
+      },
+      "compiler_vs_native": {
+        "metrics": {
+          "granule_device": {
+            "AA_bias_ms": 0.0033883541666677175,
+            "AA_threshold_ms": 0.011060044327898293,
+            "adjusted_ci95_ms": [
+              1.4100488235577324,
+              1.4225046347755983
+            ],
+            "compiler_ms": 30.49903616666667,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              1.4133444426463804,
+              1.4259857240202858
+            ],
+            "reduction_pct": 4.447753284865665,
+            "reference_ms": 31.91870125,
+            "saving_ms": 1.419665083333333
+          },
+          "granule_wall": {
+            "AA_bias_ms": 0.0053897708333323635,
+            "AA_threshold_ms": 0.022310288443698843,
+            "adjusted_ci95_ms": [
+              1.3696425992854546,
+              1.3976112340478803
+            ],
+            "compiler_ms": 31.427212895833332,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              1.3768259939384282,
+              1.4012073810615715
+            ],
+            "reduction_pct": 4.23271260938963,
+            "reference_ms": 32.81622958333333,
+            "saving_ms": 1.3890166874999998
+          },
+          "solvers_device": {
+            "AA_bias_ms": 0.0006551249999997566,
+            "AA_threshold_ms": 0.004354291788861606,
+            "adjusted_ci95_ms": [
+              1.4274704948091979,
+              1.4305367551908026
+            ],
+            "compiler_ms": 11.349062291666668,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 12,
+            "raw_ci95_ms": [
+              1.4280351507695443,
+              1.4312823492304556
+            ],
+            "reduction_pct": 11.187807804383658,
+            "reference_ms": 12.778721041666667,
+            "saving_ms": 1.42965875
+          },
+          "theta_device": {
+            "AA_bias_ms": 0.000751916666666593,
+            "AA_threshold_ms": 0.0024068813234347963,
+            "adjusted_ci95_ms": [
+              -0.00891845874772409,
+              -0.006171707918942574
+            ],
+            "compiler_ms": 4.1993249375,
+            "exceeds_AA_threshold": true,
+            "order_review": "no order dependence detected",
+            "positive_quartets": 0,
+            "raw_ci95_ms": [
+              -0.008113147190932486,
+              -0.005473186142400992
+            ],
+            "reduction_pct": -0.16203017741989553,
+            "reference_ms": 4.192531770833334,
+            "saving_ms": -0.006793166666666739
+          }
+        },
+        "scope_audit_passed": true,
+        "validation": {
+          "atol": 1e-12,
+          "fields": 148,
+          "finite_values": 3645277412,
+          "max_abs_error": 0.0,
+          "rtol": 1e-11,
+          "status": "passed"
+        }
+      }
+    },
+    "grid": "global",
+    "grid_dimensions": {
+      "cells": 327680,
+      "edges": 491520,
+      "levels": 120,
+      "limited_area": false,
+      "vertices": 163842
+    },
+    "hostname": "nid005231",
+    "sources_unchanged": true,
+    "state_fingerprint": "7ab3e57f3c47c065bc074488c4cf559f6e0163b50b3bb6f2b2317f44104bca48",
+    "within_run_inputs_match": true
+  }
+}

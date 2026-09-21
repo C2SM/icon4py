@@ -93,7 +93,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(stencil_tests.StencilTest):
         )
         return dict(z_q=z_q_ref, w=w_ref)
 
-    @pytest.fixture(scope="class", params=[2, 40, 120])
+    @pytest.fixture(scope="session", params=[2, 40, 120])
     def grid(
         self, request: pytest.FixtureRequest, backend_like: model_backends.BackendLike
     ) -> base_grid.Grid:

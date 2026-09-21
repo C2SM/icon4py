@@ -68,7 +68,7 @@ def _configure_theta_fusion(optimization_hooks: dict[Any, Any]) -> None:
         return
     if "allow_shared_data" not in map_fusion_extended.VerticalSplitMapRange.__properties__:
         raise RuntimeError(
-            "'ICON4PY_DACE_THETA_FUSION=1' requires the GT4Py shared-output fusion patch."
+            "'ICON4PY_DACE_THETA_FUSION=1' requires the GT4Py shared-output fusion support."
         )
     hook = gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowVerticalSplitCallBack
     if hook in optimization_hooks and optimization_hooks[hook] is not _dace_select_theta_split:
@@ -88,11 +88,15 @@ def _configure_solver_fusion(optimization_args: dict[str, Any]) -> None:
         )
     except ImportError as error:
         raise RuntimeError(
-            "'ICON4PY_DACE_SOLVER_FUSION=1' requires the GT4Py scan-input fusion patch."
+            "'ICON4PY_DACE_SOLVER_FUSION=1' requires the GT4Py scan-input fusion support."
         ) from error
-    if not callable(getattr(scan_fusion, "fuse_scan_inputs", None)):
-        raise RuntimeError("The GT4Py scan-input fusion patch is incompatible.")
+    if not all(
+        callable(getattr(scan_fusion, name, None))
+        for name in ("fuse_scan_inputs", "normalize_scan_producers")
+    ):
+        raise RuntimeError("The GT4Py scan-input fusion support is incompatible.")
     optimization_args["fuse_scan_inputs"] = True
+    optimization_args["scan_fusion_scope"] = "field_operator"
 
 
 def _set_program_specific_dace_options(
