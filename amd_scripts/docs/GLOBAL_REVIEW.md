@@ -115,8 +115,8 @@ limited-area flag.
 `python3 review_results.py` independently rebuilds block medians, program sums,
 quartet contrasts and intervals for both meshes. All agree with the reports;
 results are in `COMPILER_FUSION_RESULTS.json`. The source snapshot and raw reports are in each job
-directory. This review used only rsync for cluster access. No jobs were run by
-Codex and no compiler implementation was changed.
+directory. This review used only rsync for cluster access. No cluster jobs were executed
+and no compiler implementation was changed during the review.
 
 ## Published evidence and archived captures
 
