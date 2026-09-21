@@ -17,7 +17,6 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
-@pytest.mark.uses_concat_where
 class TestComputePpmSlope(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_slope
     OUTPUTS = (

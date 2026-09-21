@@ -28,6 +28,10 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp import (
     _interpolate_to_cell_center_vp,
 )
+from icon4py.model.common.math.value_of_size import (
+    value_of_size_on_cells_on_half_levels_bool,
+    value_of_size_on_cells_on_half_levels_vp,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -185,8 +189,8 @@ def _compute_contravariant_corrected_w_and_cfl(
         ),
         (
             contravariant_corrected_w_at_cells_on_half_levels,
-            broadcast(False, (dims.CellDim, dims.KHalfDim)),
-            broadcast(vpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
+            value_of_size_on_cells_on_half_levels_bool(False, ddqz_z_half),
+            value_of_size_on_cells_on_half_levels_vp(vpfloat("0.0"), ddqz_z_half),
         ),
     )
 
@@ -456,7 +460,7 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=contravariant_correction_at_cells_model_levels
         ),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KHalfDim)),
+        value_of_size_on_cells_on_half_levels_vp(vpfloat("0.0"), wgtfac_c),
     )
 
     return contravariant_correction_at_cells_on_half_levels

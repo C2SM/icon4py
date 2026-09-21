@@ -136,7 +136,6 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
     return normal_wind_advective_tendency
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
 class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
     PROGRAM = compute_advection_in_horizontal_momentum
