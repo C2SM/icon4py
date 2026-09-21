@@ -574,7 +574,7 @@ def _vertically_implicit_solver_at_corrector_step(
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
-    lprep_adv: bool,
+    prepare_fluxes_for_advection: bool,
     r_nsubsteps: ta.wpfloat,
     ndyn_substeps_var: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
@@ -701,7 +701,7 @@ def _vertically_implicit_solver_at_corrector_step(
         dtime=dtime,
     )
 
-    if lprep_adv:
+    if prepare_fluxes_for_advection:
         if at_first_substep:
             (
                 dynamical_vertical_mass_flux_at_cells_on_half_levels,
@@ -789,7 +789,7 @@ def vertically_implicit_solver_at_corrector_step(
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
-    lprep_adv: bool,
+    prepare_fluxes_for_advection: bool,
     r_nsubsteps: ta.wpfloat,
     ndyn_substeps_var: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
@@ -846,7 +846,7 @@ def vertically_implicit_solver_at_corrector_step(
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=ndyn_substeps_var,
         iau_wgt_dyn=iau_wgt_dyn,

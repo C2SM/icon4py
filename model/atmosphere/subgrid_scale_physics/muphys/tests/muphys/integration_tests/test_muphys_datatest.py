@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 # accumulators isolates the mig contribution even if other AES processes ever
 # run before mig in this experiment (today they contribute exactly zero).
 #
-# The granule runs with MuphysScheme.AES_GRAUPEL, the port of the ICON
+# The granule runs with the aes-graupel scheme, the port of the ICON
 # formulation (mo_aes_graupel.f90) that generates the reference data, so
 # near-roundoff agreement is expected. Remaining known deviations:
 #   - Fortran clamps tendencies to full depletion (MAX(-q/dt), mo_cloud_mig.f90)
@@ -57,6 +57,7 @@ if TYPE_CHECKING:
 #     1.0 and not set in the experiment, hence a no-op here).
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "experiment_description",
@@ -80,15 +81,12 @@ def test_muphys_granule(
     # numpy index of the first level ICON computes the scheme on (Fortran jks_cloudy is 1-based)
     jks = init_savepoint.jks_cloudy() - 1
 
-    # MuphysConfig().qnc matches the Fortran cloud_num = 50.0e6 m^-3 (mo_cloud_mig.f90);
-    # the default scheme is AES_GRAUPEL, matching the Fortran that generated the data
     muphys_configuration = muphys_config.MuphysConfig()
     component = muphys_component.MuphysComponent(
         grid=icon_grid,
         dtime=datetime.timedelta(seconds=dtime),
         qnc=muphys_configuration.qnc,
         backend=backend,
-        scheme=muphys_configuration.scheme,
     )
 
     state = {
@@ -121,7 +119,7 @@ def test_muphys_granule(
         )
         actual = outputs[name].asnumpy()
         test_utils.assert_dallclose(
-            actual[:, jks:], reference[:, jks:], atol=1e-13, err_msg=f"{name} in cloud"
+            actual[:, jks:], reference[:, jks:], atol=1e-13 if test_utils.wp_is_dp else 3e-9, err_msg=f"{name} in cloud"
         )
         # above the cloudy region ICON does not run the scheme; the full-column
         # granule must produce (near-)zero tendencies there
@@ -132,11 +130,11 @@ def test_muphys_granule(
     test_utils.assert_dallclose(
         tend_ta_actual[:, jks:],
         tend_ta_reference[:, jks:],
-        atol=1e-10,
+        atol=1e-10 if test_utils.wp_is_dp else 2e-5,
         err_msg="tend_temperature in cloud",
     )
     test_utils.assert_dallclose(
-        tend_ta_actual[:, :jks], 0.0, atol=1e-10, err_msg="tend_temperature above cloud"
+        tend_ta_actual[:, :jks], 0.0, atol=1e-10 if test_utils.wp_is_dp else 6e-8, err_msg="tend_temperature above cloud"
     )
 
     # surface precip: the granule keeps the surface value in the last level; ICON
@@ -149,7 +147,7 @@ def test_muphys_granule(
     energy_flux = outputs["pre"].asnumpy()[:, -1]
 
     test_utils.assert_dallclose(
-        rain, exit_savepoint.rsfl().asnumpy(), atol=1e-10, err_msg="rsfl (rain)"
+        rain, exit_savepoint.rsfl().asnumpy(), atol=1e-10 if test_utils.wp_is_dp else 9e-8, err_msg="rsfl (rain)"
     )
     test_utils.assert_dallclose(
         ice + snow + graupel,
@@ -160,9 +158,9 @@ def test_muphys_granule(
     test_utils.assert_dallclose(
         rain + ice + snow + graupel,
         exit_savepoint.pr().asnumpy(),
-        atol=1e-10,
+        atol=1e-10 if test_utils.wp_is_dp else 9e-8,
         err_msg="pr (total precipitation)",
     )
     test_utils.assert_dallclose(
-        energy_flux, exit_savepoint.ufcs().asnumpy(), atol=1e-10, err_msg="ufcs (energy flux)"
+        energy_flux, exit_savepoint.ufcs().asnumpy(), atol=1e-10, rtol=1e-12 if test_utils.wp_is_dp else 5e-4, err_msg="ufcs (energy flux)"
     )

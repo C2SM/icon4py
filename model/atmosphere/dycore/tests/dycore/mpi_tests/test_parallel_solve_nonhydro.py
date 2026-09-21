@@ -102,7 +102,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
     vertical_config = experiment.config.vertical_grid
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = savepoint_nonhydro_init.dtime()
-    lprep_adv = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
+    prepare_fluxes_for_advection = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=savepoint_nonhydro_init.vn_traj(),
         mass_flx_me=savepoint_nonhydro_init.mass_flx_me(),
@@ -152,7 +152,7 @@ def test_run_solve_nonhydro_single_step(  # noqa: PLR0917 [too-many-positional-a
         dtime=dtime,
         ndyn_substeps_var=experiment.config.driver.ndyn_substeps,
         at_initial_timestep=at_initial_timestep,
-        lprep_adv=lprep_adv,
+        prepare_fluxes_for_advection=prepare_fluxes_for_advection,
         at_first_substep=(substep_init == 1),
         at_last_substep=(substep_init == experiment.config.driver.ndyn_substeps),
         is_iau_active=is_iau_active,

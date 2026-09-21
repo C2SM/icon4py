@@ -73,15 +73,17 @@ def as_numpy(array: NDArrayInterface) -> np.ndarray:
         return cp.asnumpy(array)
 
 
-def _array_ns(try_cupy: bool) -> ModuleType:
-    """CuPy if requested and installed, NumPy otherwise."""
-    if try_cupy:
+def array_ns(use_cupy: bool) -> ModuleType:
+    """CuPy if requested, NumPy otherwise.
+
+    Raises RuntimeError if CuPy is requested but not available.
+    """
+    if use_cupy:
         try:
             import cupy as cp  # noqa: PLC0415 [import-outside-top-level]
-
-            return cp
-        except ImportError:
-            log.warning("No cupy installed, falling back to numpy for array_ns")
+        except ImportError as err:
+            raise RuntimeError(f"cupy is not available: {err!r}.") from err
+        return cp
     import numpy as np  # noqa: PLC0415 [import-outside-top-level]
 
     return np
@@ -89,7 +91,7 @@ def _array_ns(try_cupy: bool) -> ModuleType:
 
 def import_array_ns(allocator: gtx_typing.Allocator | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
-    return _array_ns(device_utils.is_cupy_device(allocator))
+    return array_ns(device_utils.is_cupy_device(allocator))
 
 
 def scalar_like_array[ScalarT: gtx_typing.Scalar](

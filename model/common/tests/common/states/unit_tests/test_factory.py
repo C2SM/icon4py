@@ -337,21 +337,21 @@ def test_composite_field_source_get_all_fields(
     composite = factory.CompositeSource(
         me=test_source, others=(cell_coordinate_source, height_coordinate_source)
     )
-    foo = composite.get_full_precision("foo")
+    foo = composite.get("foo")
     assert isinstance(foo, gtx.Field)
     assert {dims.CellDim, dims.KDim}.issubset(foo.domain.dims)
 
-    bar = composite.get_full_precision("bar")
+    bar = composite.get("bar")
     assert len(bar.domain.dims) == 2
     assert isinstance(bar, gtx.Field)
     assert {dims.EdgeDim, dims.KDim}.issubset(bar.domain.dims)
 
-    lon = composite.get_full_precision("lon")
+    lon = composite.get("lon")
     assert isinstance(lon, gtx.Field)
     assert dims.CellDim in lon.domain.dims
     assert len(lon.domain.dims) == 1
 
-    lat = composite.get_full_precision("height_coordinate")
+    lat = composite.get("height_coordinate")
     assert isinstance(lat, gtx.Field)
     assert dims.KHalfDim in lat.domain.dims
     assert len(lat.domain.dims) == 2
@@ -375,7 +375,7 @@ def test_composite_field_source_raises_upon_get_unknown_field(
         me=test_source, others=(cell_coordinate_source, height_coordinate_source)
     )
     with pytest.raises(ValueError, match="Field 'alice' not provided by the source"):
-        composite.get_full_precision("alice")
+        composite.get("alice")
 
 
 def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:
@@ -394,6 +394,6 @@ def test_compute_scalar_value_from_numpy_provider(
         func=sample_func, deps={"ar": "height_coordinate"}, domain=(), fields=("minimal_height",)
     )
     height_coordinate_source.register_provider(provider)
-    value = height_coordinate_source.get_full_precision("minimal_height")
+    value = height_coordinate_source.get_scalar("minimal_height")
     assert np.isscalar(value)
     assert value_ref == value

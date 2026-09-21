@@ -664,7 +664,7 @@ class SolveNonhydro:
             },
             variants={
                 "at_first_substep": [False, True],
-                "prepare_advection": [False, True],
+                "prepare_fluxes_for_advection": [False, True],
             },
             horizontal_sizes={
                 "horizontal_start": gtx.int32(self._start_edge_lateral_boundary_level_5),
@@ -729,7 +729,7 @@ class SolveNonhydro:
             variants={
                 "at_first_substep": [False, True],
                 "at_last_substep": [False, True],
-                "lprep_adv": [False, True],
+                "prepare_fluxes_for_advection": [False, True],
                 "is_iau_active": [False, True] if self._config.iau_init else [False],
             },
             horizontal_sizes={
@@ -1086,7 +1086,7 @@ class SolveNonhydro:
         dtime: ta.wpfloat,
         ndyn_substeps_var: int,
         at_initial_timestep: bool,
-        lprep_adv: bool,
+        prepare_fluxes_for_advection: bool,
         at_first_substep: bool,
         at_last_substep: bool,
         is_iau_active: bool = False,
@@ -1102,14 +1102,14 @@ class SolveNonhydro:
             dtime: time step
             ndyn_substeps_var: number of dynamical substeps
             at_initial_timestep: initial time step of the model run
-            lprep_adv: Preparation for tracer advection
+            prepare_fluxes_for_advection: Preparation for tracer advection
             at_first_substep: first substep
             at_last_substep: last substep
             is_iau_active: Incremental analysis update active during dycore step
             iau_wgt_dyn: weight scalar for the incremental analysis update
         """
         log.info(
-            f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {lprep_adv}"
+            f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {prepare_fluxes_for_advection}"
         )
 
         if self.p_test_run:
@@ -1141,7 +1141,7 @@ class SolveNonhydro:
             second_order_divdamp_factor=second_order_divdamp_factor,
             dtime=dtime,
             ndyn_substeps_var=ndyn_substeps_var,
-            lprep_adv=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
             is_iau_active=is_iau_active,
@@ -1348,14 +1348,14 @@ class SolveNonhydro:
         prep_adv: dycore_states.PrepAdvection,
         dtime: ta.wpfloat,
         ndyn_substeps_var: int,
-        lprep_adv: bool,
+        prepare_fluxes_for_advection: bool,
         at_first_substep: bool,
         at_last_substep: bool,
         is_iau_active: bool,
         iau_wgt_dyn: ta.wpfloat,
     ) -> None:
         log.info(
-            f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  "
+            f"running corrector step: dtime = {dtime}, prep_adv = {prepare_fluxes_for_advection},  "
             f"second_order_divdamp_factor = {second_order_divdamp_factor}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
         )
 
@@ -1452,7 +1452,7 @@ class SolveNonhydro:
             vn=prognostic_states.next.vn,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
-            prepare_advection=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
         )
@@ -1485,7 +1485,7 @@ class SolveNonhydro:
             is_iau_active=is_iau_active,
             iau_wgt_dyn=iau_wgt_dyn,
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
-            lprep_adv=lprep_adv,
+            prepare_fluxes_for_advection=prepare_fluxes_for_advection,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=ndyn_substeps_var_wp,
             dtime=dtime,
@@ -1495,7 +1495,7 @@ class SolveNonhydro:
 
         # prepare flux field for tracer advection on lateral boundary, if exists
         if self._grid.limited_area:
-            if lprep_adv:
+            if prepare_fluxes_for_advection:
                 if at_first_substep:
                     log.debug(
                         "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
