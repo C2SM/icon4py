@@ -27,6 +27,7 @@ _log = logging.getLogger(__file__)
 
 @pytest.mark.datatest
 @pytest.mark.mpi
+@pytest.mark.uses_concat_where
 @pytest.mark.parametrize(
     "experiment_description, step_date_init, step_date_exit",
     [
