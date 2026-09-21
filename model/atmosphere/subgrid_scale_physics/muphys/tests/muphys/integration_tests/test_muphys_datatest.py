@@ -119,7 +119,10 @@ def test_muphys_granule(
         )
         actual = outputs[name].asnumpy()
         test_utils.assert_dallclose(
-            actual[:, jks:], reference[:, jks:], atol=1e-13 if test_utils.wp_is_dp else 3e-9, err_msg=f"{name} in cloud"
+            actual[:, jks:],
+            reference[:, jks:],
+            atol=1e-13 if test_utils.wp_is_dp else 3e-9,
+            err_msg=f"{name} in cloud",
         )
         # above the cloudy region ICON does not run the scheme; the full-column
         # granule must produce (near-)zero tendencies there
@@ -134,7 +137,10 @@ def test_muphys_granule(
         err_msg="tend_temperature in cloud",
     )
     test_utils.assert_dallclose(
-        tend_ta_actual[:, :jks], 0.0, atol=1e-10 if test_utils.wp_is_dp else 6e-8, err_msg="tend_temperature above cloud"
+        tend_ta_actual[:, :jks],
+        0.0,
+        atol=1e-10 if test_utils.wp_is_dp else 6e-8,
+        err_msg="tend_temperature above cloud",
     )
 
     # surface precip: the granule keeps the surface value in the last level; ICON
@@ -147,7 +153,10 @@ def test_muphys_granule(
     energy_flux = outputs["pre"].asnumpy()[:, -1]
 
     test_utils.assert_dallclose(
-        rain, exit_savepoint.rsfl().asnumpy(), atol=1e-10 if test_utils.wp_is_dp else 9e-8, err_msg="rsfl (rain)"
+        rain,
+        exit_savepoint.rsfl().asnumpy(),
+        atol=1e-10 if test_utils.wp_is_dp else 9e-8,
+        err_msg="rsfl (rain)",
     )
     test_utils.assert_dallclose(
         ice + snow + graupel,
@@ -162,5 +171,9 @@ def test_muphys_granule(
         err_msg="pr (total precipitation)",
     )
     test_utils.assert_dallclose(
-        energy_flux, exit_savepoint.ufcs().asnumpy(), atol=1e-10, rtol=1e-12 if test_utils.wp_is_dp else 5e-4, err_msg="ufcs (energy flux)"
+        energy_flux,
+        exit_savepoint.ufcs().asnumpy(),
+        atol=1e-10,
+        rtol=1e-12 if test_utils.wp_is_dp else 5e-4,
+        err_msg="ufcs (energy flux)",
     )
