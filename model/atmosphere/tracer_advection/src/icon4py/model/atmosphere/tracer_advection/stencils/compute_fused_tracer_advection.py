@@ -283,11 +283,15 @@ def _compute_tracer_advection_before_horizontal_limiter(
             iadv_slev_jt=iadv_slev_jt,
         )
         if even_timestep
-        else p_tracer_now
+        else p_tracer_now + broadcast(0.0, (dims.CellDim, dims.KDim))
     )
 
     # Even: horizontal flux from vertically-integrated tracer; odd: from p_tracer_now directly.
-    tracer_for_h = p_tracer_after_vertical if even_timestep else p_tracer_now
+    tracer_for_h = (
+        p_tracer_after_vertical
+        if even_timestep
+        else p_tracer_now + broadcast(0.0, (dims.CellDim, dims.KDim))
+    )
     p_mflx_tracer_h_unlimited = (
         _compute_2nd_order_miura_horizontal_flux(
             p_cc=tracer_for_h,
@@ -473,7 +477,11 @@ def _compute_tracer_advection_after_horizontal_limiter(
     dbl_eps: ta.wpfloat,
     p_dtime: ta.wpfloat,
 ) -> tuple[fa.EdgeKField[ta.wpfloat], fa.CellKHalfField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
-    tracer_now_for_h = p_tracer_after_vertical if (do_vertical_first == 1) else p_tracer_now
+    tracer_now_for_h = (
+        p_tracer_after_vertical
+        if (do_vertical_first == 1)
+        else p_tracer_now + broadcast(0.0, (dims.CellDim, dims.KDim))
+    )
     rhodz_for_h_now = rhodz_ast2 if (do_vertical_first == 1) else rhodz_now
     rhodz_for_h_new = rhodz_new if (do_vertical_first == 1) else rhodz_ast2
 

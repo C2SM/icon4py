@@ -354,25 +354,6 @@ class GodunovSplittingAdvection(Advection):
             vertical_sizes=vertical_domains,
             offset_provider=self._grid.connectivities,
         )
-        self._compute_after_horizontal_limiter = setup_program(
-            backend=self._backend,
-            program=compute_tracer_advection_after_horizontal_limiter,
-            constant_args={
-                **shared_vertical_args,
-                "deepatmo_divh": metric_state.deepatmo_divh,
-                "geofac_div": interpolation_state.geofac_div,
-                "ihadv_tracer": gtx.int32(horizontal_advection_type.value),
-                "itype_hlimit": gtx.int32(horizontal_advection_limiter.value),
-            },
-            horizontal_sizes={
-                "start_cell_nudging": self._start_cell_nudging,
-                "end_cell_local": self._end_cell_local,
-                "start_edge_lateral_boundary_level_5": self._start_edge_lateral_boundary_level_5,
-                "end_edge_halo": self._end_edge_halo,
-            },
-            vertical_sizes=vertical_domains,
-            offset_provider=self._grid.connectivities,
-        )
         self._compute_before_horizontal_limiter = setup_program(
             backend=self._backend,
             program=compute_tracer_advection_before_horizontal_limiter,
