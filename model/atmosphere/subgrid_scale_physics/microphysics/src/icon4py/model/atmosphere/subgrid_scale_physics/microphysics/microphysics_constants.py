@@ -179,20 +179,14 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
     QI0 = ta.wpfloat(0.0)
 
     #: ice crystal number concentration at threshold temperature for mixed-phase cloud
-    NIMIX = ta.wpfloat(5.0) * gtx.astype(
-        gtx.exp(
-            ta.wpfloat(0.304) * (PhysicsConstants.tmelt - THRESHOLD_FREEZE_TEMPERATURE_MIXEDPHASE)
-        ),
-        ta.wpfloat,
+    NIMIX = ta.wpfloat(5.0) * gtx.exp(
+        ta.wpfloat(0.304) * (PhysicsConstants.tmelt - THRESHOLD_FREEZE_TEMPERATURE_MIXEDPHASE)
     )
 
     CCSDEP = (
         ta.wpfloat(0.26)
-        * gtx.astype(
-            gtx.gamma((POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED + ta.wpfloat(5.0)) / ta.wpfloat(2.0)),
-            ta.wpfloat,
-        )
-        * gtx.astype(gtx.sqrt(ta.wpfloat(1.0) / AIR_KINEMATIC_VISCOSITY), ta.wpfloat)
+        * gtx.gamma((POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED + ta.wpfloat(5.0)) / ta.wpfloat(2.0))
+        * gtx.sqrt(ta.wpfloat(1.0) / AIR_KINEMATIC_VISCOSITY)
     )
     _ccsvxp = -(
         POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED
@@ -200,8 +194,8 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
         + ta.wpfloat(1.0)
     )
     CCSVXP = _ccsvxp + ta.wpfloat(1.0)
-    CCSLAM = POWER_LAW_COEFF_FOR_SNOW_MD_RELATION * gtx.astype(
-        gtx.gamma(POWER_LAW_EXPONENT_FOR_SNOW_MD_RELATION + ta.wpfloat(1.0)), ta.wpfloat
+    CCSLAM = POWER_LAW_COEFF_FOR_SNOW_MD_RELATION * gtx.gamma(
+        POWER_LAW_EXPONENT_FOR_SNOW_MD_RELATION + ta.wpfloat(1.0)
     )
     CCSLXP = ta.wpfloat(1.0) / (POWER_LAW_EXPONENT_FOR_SNOW_MD_RELATION + ta.wpfloat(1.0))
     CCSWXP = POWER_LAW_EXPONENT_FOR_SNOW_FALL_SPEED * CCSLXP
@@ -218,15 +212,10 @@ class MicrophysicsConstants(ta.wpfloat, enum.Enum):
     CCIDEP = ta.wpfloat(4.0) * POWER_LAW_EXPONENT_FOR_ICE_MD_RELATION ** (
         ta.wpfloat(-1.0) / ta.wpfloat(3.0)
     )
-    CCSWXP_LN1O2 = gtx.astype(
-        gtx.exp(CCSWXP * gtx.astype(gtx.log(ta.wpfloat(0.5)), ta.wpfloat)), ta.wpfloat
-    )
+    CCSWXP_LN1O2 = gtx.exp(CCSWXP * gtx.log(ta.wpfloat(0.5)))
 
-    PVSW0 = TETENS_P0 * gtx.astype(
-        gtx.exp(
-            TETENS_AW
-            * (PhysicsConstants.tmelt - PhysicsConstants.tmelt)
-            / (PhysicsConstants.tmelt - TETENS_BW)
-        ),
-        ta.wpfloat,
+    PVSW0 = TETENS_P0 * gtx.exp(
+        TETENS_AW
+        * (PhysicsConstants.tmelt - PhysicsConstants.tmelt)
+        / (PhysicsConstants.tmelt - TETENS_BW)
     )
