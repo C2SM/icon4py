@@ -24,8 +24,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.apply_interpolated_trace
 )
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_fused_tracer_advection import (
     compute_tracer_advection_after_horizontal_limiter,
-    compute_tracer_advection_even_timestep_before_horizontal_limiter,
-    compute_tracer_advection_odd_timestep_before_horizontal_limiter,
+    compute_tracer_advection_before_horizontal_limiter,
 )
 from icon4py.model.common import (
     constants,
@@ -336,11 +335,22 @@ class GodunovSplittingAdvection(Advection):
         }
         vertical_domains: dict[str, gtx.int32] = {"vertical_end": gtx.int32(self._grid.num_levels)}
 
-        self._compute_even_timestep_before_horizontal_limiter = setup_program(
+        self._compute_after_horizontal_limiter = setup_program(
             backend=self._backend,
-            program=compute_tracer_advection_even_timestep_before_horizontal_limiter,
-            constant_args={**shared_vertical_args, **shared_horizontal_args},
-            horizontal_sizes=horizontal_domains,
+            program=compute_tracer_advection_after_horizontal_limiter,
+            constant_args={
+                **shared_vertical_args,
+                "deepatmo_divh": metric_state.deepatmo_divh,
+                "geofac_div": interpolation_state.geofac_div,
+                "ihadv_tracer": gtx.int32(horizontal_advection_type.value),
+                "itype_hlimit": gtx.int32(horizontal_advection_limiter.value),
+            },
+            horizontal_sizes={
+                "start_cell_nudging": self._start_cell_nudging,
+                "end_cell_local": self._end_cell_local,
+                "start_edge_lateral_boundary_level_5": self._start_edge_lateral_boundary_level_5,
+                "end_edge_halo": self._end_edge_halo,
+            },
             vertical_sizes=vertical_domains,
             offset_provider=self._grid.connectivities,
         )
@@ -363,18 +373,11 @@ class GodunovSplittingAdvection(Advection):
             vertical_sizes=vertical_domains,
             offset_provider=self._grid.connectivities,
         )
-        self._compute_odd_timestep_before_horizontal_limiter = setup_program(
+        self._compute_before_horizontal_limiter = setup_program(
             backend=self._backend,
-            program=compute_tracer_advection_odd_timestep_before_horizontal_limiter,
-            constant_args={
-                "deepatmo_divzl": metric_state.deepatmo_divzl,
-                "deepatmo_divzu": metric_state.deepatmo_divzu,
-                **shared_horizontal_args,
-            },
-            horizontal_sizes={
-                **horizontal_domains,
-                "start_cell_lateral_boundary_level_3": self._start_cell_lateral_boundary_level_3,
-            },
+            program=compute_tracer_advection_before_horizontal_limiter,
+            constant_args={**shared_vertical_args, **shared_horizontal_args},
+            horizontal_sizes=horizontal_domains,
             vertical_sizes=vertical_domains,
             offset_provider=self._grid.connectivities,
         )
@@ -388,9 +391,6 @@ class GodunovSplittingAdvection(Advection):
         )
         self._start_cell_lateral_boundary_level_2 = self._grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-        )
-        self._start_cell_lateral_boundary_level_3 = self._grid.start_index(
-            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_lateral_boundary_level_4 = self._grid.end_index(
@@ -422,33 +422,21 @@ class GodunovSplittingAdvection(Advection):
             stream=decomposition.DEFAULT_STREAM,
         )
 
-        if self._even_timestep:
-            self._compute_even_timestep_before_horizontal_limiter(
-                rhodz_ast2=self._rhodz_ast2,
-                p_mflx_tracer_v=diagnostic_state.vfl_tracer,
-                p_tracer_after_vertical=self._p_tracer_after_vertical,
-                p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
-                r_m=self._r_m,
-                rhodz_now=diagnostic_state.airmass_now,
-                p_mflx_contra_v=prep_adv.mass_flx_ic,
-                p_tracer_now=p_tracer_now,
-                p_mass_flx_e=prep_adv.mass_flx_me,
-                p_vn=prep_adv.vn_traj,
-                p_dtime=dtime,
-            )
-        else:
-            self._compute_odd_timestep_before_horizontal_limiter(
-                rhodz_ast2=self._rhodz_ast2,
-                p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
-                r_m=self._r_m,
-                rhodz_now=diagnostic_state.airmass_now,
-                rhodz_new=diagnostic_state.airmass_new,
-                p_mflx_contra_v=prep_adv.mass_flx_ic,
-                p_tracer_now=p_tracer_now,
-                p_mass_flx_e=prep_adv.mass_flx_me,
-                p_vn=prep_adv.vn_traj,
-                p_dtime=dtime,
-            )
+        self._compute_before_horizontal_limiter(
+            rhodz_ast2=self._rhodz_ast2,
+            p_mflx_tracer_v=diagnostic_state.vfl_tracer,
+            p_tracer_after_vertical=self._p_tracer_after_vertical,
+            p_mflx_tracer_h_unlimited=self._p_mflx_tracer_h_unlimited,
+            r_m=self._r_m,
+            rhodz_now=diagnostic_state.airmass_now,
+            rhodz_new=diagnostic_state.airmass_new,
+            p_mflx_contra_v=prep_adv.mass_flx_ic,
+            p_tracer_now=p_tracer_now,
+            p_mass_flx_e=prep_adv.mass_flx_me,
+            p_vn=prep_adv.vn_traj,
+            p_dtime=dtime,
+            even_timestep=self._even_timestep,
+        )
 
         self._exchange.exchange(dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM)
 
