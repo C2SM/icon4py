@@ -339,7 +339,10 @@ def test_verify_diffusion_init_against_savepoint(  # noqa: PLR0917 [too-many-pos
 # `embedded_remap_error`: on the limited-area grid `_calculate_nabla2_of_theta` gathers
 # `z_nabla2_e(C2E)` from a `theta_v(E2C)` intermediate whose edge domain excludes the boundary
 # edges (E2C skip values); embedded cannot form the non-contiguous inverse image over cells,
-# gtfn and dace never evaluate those edges.
+# gtfn and dace never evaluate those edges. Behind it, in the same operator,
+# `_truly_horizontal_diffusion_nabla_of_theta_over_steep_points` reads
+# `theta_v(as_offset(Koff, zd_vertoffset + 1))` below the bottom level at every point its `where`
+# masks out (`zd_diffcoef == 0`), which embedded cannot remap either.
 # The APE case: the savepoint has no dwdx/dwdy, the state holds 1x1 placeholders and the w
 # program writes them over its whole domain; embedded rejects that out-of-bounds write, gtfn and
 # dace perform it silently.
@@ -409,7 +412,10 @@ def test_run_diffusion_single_step(  # noqa: PLR0917 [too-many-positional-argume
 # `embedded_remap_error`: on the limited-area grid `_calculate_nabla2_of_theta` gathers
 # `z_nabla2_e(C2E)` from a `theta_v(E2C)` intermediate whose edge domain excludes the boundary
 # edges (E2C skip values); embedded cannot form the non-contiguous inverse image over cells,
-# gtfn and dace never evaluate those edges.
+# gtfn and dace never evaluate those edges. Behind it, in the same operator,
+# `_truly_horizontal_diffusion_nabla_of_theta_over_steep_points` reads
+# `theta_v(as_offset(Koff, zd_vertoffset + 1))` below the bottom level at every point its `where`
+# masks out (`zd_diffcoef == 0`), which embedded cannot remap either.
 @pytest.mark.embedded_remap_error
 def test_run_diffusion_initial_step(  # noqa: PLR0917 [too-many-positional-arguments]
     experiment,
