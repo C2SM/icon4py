@@ -469,8 +469,6 @@ def _update_max_vertical_cfl(
 ) -> None:
     # Reductions should be performed on flat, contiguous arrays for best cupy performance
     # as otherwise cupy won't use cub optimized kernels.
-    # `vertical_cfl` keeps its sign because the clipping distinguishes up- from downdrafts,
-    # but the stability limit is on the magnitude, so reduce `abs`.
     max_vertical_cfl = vertical_cfl.array_ns.max(  # type: ignore[attr-defined]
         vertical_cfl.array_ns.abs(  # type: ignore[attr-defined]
             vertical_cfl.ndarray[horizontal_start:horizontal_end, :].ravel(order="K")  # type: ignore[attr-defined]
