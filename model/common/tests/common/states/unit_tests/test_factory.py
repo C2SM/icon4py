@@ -102,6 +102,11 @@ class SimpleFieldSource(factory.FieldSource):
     def backend(self) -> gtx_typing.Backend | None:
         return self._backend
 
+def _metadata(name: str, *dims: gtx.Dimension) -> model.FieldMetaData:
+    return {"standard_name": name, "units": "", "dims": dims}
+
+def _prep_for_dict(name: str, field: state_utils.GTXFieldType) -> tuple[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]]:
+    return name, (field, _metadata(name, field.domain.dims))
 
 # TODO(): this reads lat lon from the grid_savepoint, which could be read from the grid file/geometry, to make it non datatests
 @pytest.fixture(scope="function")
@@ -109,25 +114,9 @@ def cell_coordinate_source(
     grid_savepoint: sb.IconGridSavepoint, backend: gtx_typing.Backend
 ) -> Generator[SimpleFieldSource, None, None]:
     grid = grid_savepoint.construct_icon_grid(backend=backend)
-    lat = grid_savepoint.lat(dims.CellDim)
-    lon = grid_savepoint.lon(dims.CellDim)
-    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "lat": (lat, {"standard_name": "lat", "units": ""}),
-        "lon": (lon, {"standard_name": "lon", "units": ""}),
-        "x": (
-            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-            {"standard_name": "x", "units": ""},
-        ),
-        "y": (
-            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-            {"standard_name": "y", "units": ""},
-        ),
-        "z": (
-            data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-            {"standard_name": "z", "units": ""},
-        ),
-    }
-
+    data = dict([_prep_for_dict("lat", grid_savepoint.lat(dims.CellDim)),
+                 _prep_for_dict("lon", grid_savepoint.lon(dims.CellDim))] +
+                [_prep_for_dict(name, data_alloc.random_field(grid, dims.CellDim, dims.KDim)) for name in ["x", "y","z"]])
     coordinate_source = SimpleFieldSource(data_=data, backend=backend, grid=grid)
     yield coordinate_source
     coordinate_source.reset()
@@ -144,9 +133,7 @@ def height_coordinate_source(
     z_ifc = metrics_savepoint.z_ifc()
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
-    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})
-    }
+    data = dict([_prep_for_dict("height_coordinate", z_ifc)])
     vertical_grid = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=experiment.config.vertical_grid.num_levels),
         vct_a,
@@ -303,10 +290,8 @@ def test_composite_field_source_contains_all_metadata(
     grid = cell_coordinate_source.grid
     foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
     bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "foo": (foo, {"standard_name": "foo", "units": ""}),
-        "bar": (bar, {"standard_name": "bar", "units": ""}),
-    }
+    data = dict([_prep_for_dict("foo", foo),
+                 _prep_for_dict("bar", bar)])
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
@@ -328,10 +313,10 @@ def test_composite_field_source_get_all_fields(
     grid = cell_coordinate_source.grid
     foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
     bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "foo": (foo, {"standard_name": "foo", "units": ""}),
-        "bar": (bar, {"standard_name": "bar", "units": ""}),
-    }
+    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = dict(
+        [_prep_for_dict("foo", foo),
+         _prep_for_dict("bar", bar)]
+    )
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
@@ -365,10 +350,10 @@ def test_composite_field_source_raises_upon_get_unknown_field(
     grid = cell_coordinate_source.grid
     foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
     bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
-        "foo": (foo, {"standard_name": "foo", "units": ""}),
-        "bar": (bar, {"standard_name": "bar", "units": ""}),
-    }
+    data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = dict(
+        [_prep_for_dict("foo", foo),
+         _prep_for_dict("bar", bar)]
+    )
 
     test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
@@ -384,7 +369,7 @@ def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:
 
 @pytest.mark.datatest
 def test_compute_scalar_value_from_numpy_provider(
-    height_coordinate_source: factory.FieldSource,
+    height_coordinate_source: SimpleFieldSource,
     metrics_savepoint: serialbox.MetricSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -393,6 +378,7 @@ def test_compute_scalar_value_from_numpy_provider(
     provider = factory.NumpyDataProvider(
         func=sample_func, deps={"ar": "height_coordinate"}, domain=(), fields=("minimal_height",)
     )
+    height_coordinate_source.with_metadata({"minimal_height": _metadata("minimal_height")})
     height_coordinate_source.register_provider(provider)
     value = height_coordinate_source.get_scalar("minimal_height")
     assert np.isscalar(value)

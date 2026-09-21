@@ -104,7 +104,7 @@ def test_factory_nflat_gradp(
         topography_savepoint=topography_savepoint,
         process_props=decomposition.SingleNodeProcessProperties(),
     )
-    value = factory.get(attrs.NFLAT_GRADP)
+    value = factory.get_scalar(attrs.NFLAT_GRADP)
     assert value_ref == value
 
 
