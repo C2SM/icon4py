@@ -94,11 +94,18 @@ def timeloop_diffusion_linit_exit() -> bool:
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
         ),
-        (
+        # `embedded_remap_error`: over the steep points, diffusion's
+        # `_truly_horizontal_diffusion_nabla_of_theta_over_steep_points` reads
+        # `theta_v(as_offset(Koff, zd_vertoffset + 1))` below the bottom level wherever
+        # `zd_diffcoef == 0`; the enclosing `where` masks all of those points, but embedded
+        # evaluates both branches over the whole domain and cannot remap the partial image.
+        # MCH_CH_R04B09 has the same shape, behind the failure noted on its cases below.
+        pytest.param(
             test_defs.Experiments.GAUSS3D,
             "2001-01-01T00:00:00.000",
             "2001-01-01T00:00:04.000",
             "2001-01-01T00:00:04.000",
+            marks=pytest.mark.embedded_remap_error,
         ),
         (
             test_defs.Experiments.EXCLAIM_APE_AES,
@@ -106,27 +113,26 @@ def timeloop_diffusion_linit_exit() -> bool:
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
         ),
-        (
+        # `embedded_remap_error`: on the limited-area grid, diffusion's `_calculate_nabla2_of_theta`
+        # gathers `z_nabla2_e(C2E)` from a `theta_v(E2C)` intermediate whose edge domain excludes
+        # the boundary edges (E2C skip values); the second gather's inverse image is not contiguous.
+        # Behind it, the same operator hits the steep-points failure noted on GAUSS3D above.
+        pytest.param(
             test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:00.000",
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
+            marks=pytest.mark.embedded_remap_error,
         ),
-        (
+        pytest.param(
             test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
+            marks=pytest.mark.embedded_remap_error,
         ),
     ],
 )
-# `uses_concat_where`: the dycore's vertically implicit solver programs write their outputs with
-# a per-output tuple `domain=`, which the embedded scan cannot resolve (icon4py-f27).
-# `embedded_remap_error`: on the limited-area grid, diffusion's `_calculate_nabla2_of_theta`
-# gathers `z_nabla2_e(C2E)` from a `theta_v(E2C)` intermediate whose edge domain excludes the
-# boundary edges (E2C skip values); the second gather's inverse image is not contiguous.
-@pytest.mark.uses_concat_where
-@pytest.mark.embedded_remap_error
 def test_driver(
     experiment_description: test_defs.ExperimentDescription,
     timeloop_date_init: str,
