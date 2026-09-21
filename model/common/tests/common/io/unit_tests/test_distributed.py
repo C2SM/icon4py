@@ -57,7 +57,20 @@ def test_single_node_distribution_passes_state_through() -> None:
     assert distribution.writes_output
     assert distribution.rank_blocks is None
     assert distribution.output_horizontal_size == horizontal_size
+    # the state is passed through by reference, and the distribution says so
     assert distribution.prepare(state) is state
+    assert not distribution.prepare_returns_copy
+
+
+def test_distributed_distributions_declare_that_prepare_copies() -> None:
+    # asynchronous output relies on this declaration: results marked as copies are
+    # kept past the next mutation of the model state without copying again
+    assert distributed.GatherDistribution(
+        decomposition.SingleNodeProcessProperties(), synthetic_decomposition_info()
+    ).prepare_returns_copy
+    assert distributed.RankBlockDistribution(
+        decomposition.SingleNodeProcessProperties(), synthetic_decomposition_info()
+    ).prepare_returns_copy
 
 
 def test_gather_distribution_single_rank_reorders_owned_entries() -> None:
