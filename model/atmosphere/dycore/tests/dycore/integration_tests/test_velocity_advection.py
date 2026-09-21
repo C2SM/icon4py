@@ -68,7 +68,6 @@ def create_vertical_params(
     )
 
 
-@pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, step_date_init",
@@ -105,7 +104,6 @@ def test_verify_velocity_init_against_savepoint(  # noqa: PLR0917 [too-many-posi
     assert test_utils.dallclose(velocity_advection._vertical_cfl.asnumpy(), 0.0)
 
 
-@pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment_description, step_date_init",
