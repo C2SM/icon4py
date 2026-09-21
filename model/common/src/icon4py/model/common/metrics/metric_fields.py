@@ -31,12 +31,12 @@ from gt4py.next.experimental import concat_where
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C
-from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
-    _compute_cell_2_vertex_interpolation,
-)
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_edge import (
     _interpolate_cell_field_to_edge,
     _interpolate_cell_field_to_edge_on_half_levels,
+)
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_vertex import (
+    _interpolate_cell_field_to_vertex,
 )
 from icon4py.model.common.math.gradient import _grad_fd_tang, grad_fd_norm
 from icon4py.model.common.math.vertical_operations import (
@@ -361,7 +361,7 @@ def _compute_ddxt_z_half_e(
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
 ):
-    z_ifv = _compute_cell_2_vertex_interpolation(cell_in, c_int)
+    z_ifv = _interpolate_cell_field_to_vertex(cell_in, c_int)
     ddxt_z_half_e = _grad_fd_tang(
         z_ifv,
         inv_primal_edge_length,

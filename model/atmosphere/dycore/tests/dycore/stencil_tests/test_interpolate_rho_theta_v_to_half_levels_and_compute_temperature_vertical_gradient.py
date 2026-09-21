@@ -33,7 +33,6 @@ from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
 
-@pytest.mark.continuous_benchmarking
 def _lower(a: np.ndarray) -> np.ndarray:
     """model level k-1, read at half level k"""
     return np.concatenate([a[:, :1], a], axis=1)
@@ -44,6 +43,7 @@ def _upper(a: np.ndarray) -> np.ndarray:
     return np.concatenate([a, a[:, -1:]], axis=1)
 
 
+@pytest.mark.continuous_benchmarking
 class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration(
     stencil_tests.StencilTest
 ):

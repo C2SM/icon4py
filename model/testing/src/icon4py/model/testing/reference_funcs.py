@@ -75,6 +75,26 @@ def interpolate_to_cell_center_numpy(
     return np.sum(interpolant[c2e] * e_bln_c_s, axis=1)
 
 
+def interpolate_cell_field_to_vertex_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    cell_field: np.ndarray,
+    c_intp: np.ndarray,
+) -> np.ndarray:
+    v2c = connectivities[dims.V2C]
+    c_intp = np.expand_dims(c_intp, axis=-1)
+    return np.sum(np.where((v2c != -1)[:, :, np.newaxis], cell_field[v2c] * c_intp, 0), axis=1)
+
+
+def compute_curl_numpy(
+    connectivities: Mapping[gtx.FieldOffset, np.ndarray],
+    edge_field: np.ndarray,
+    geofac_rot: np.ndarray,
+) -> np.ndarray:
+    v2e = connectivities[dims.V2E]
+    geofac_rot = np.expand_dims(geofac_rot, axis=-1)
+    return np.sum(np.where((v2e != -1)[:, :, np.newaxis], edge_field[v2e] * geofac_rot, 0), axis=1)
+
+
 def compute_dry_static_energy_numpy(
     temperature: np.ndarray,
     height_above_ground: np.ndarray,

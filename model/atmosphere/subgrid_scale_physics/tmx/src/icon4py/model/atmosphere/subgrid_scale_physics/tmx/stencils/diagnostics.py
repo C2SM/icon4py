@@ -19,9 +19,6 @@ from gt4py.next import abs, maximum, minimum, power, sqrt, where  # noqa: A004
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.dimension import E2C, E2C2V, E2C2VDim, KDim
-from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
-    _compute_cell_2_vertex_interpolation,
-)
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
     _compute_tangential_wind_on_half_levels,
 )
@@ -31,6 +28,9 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_edge 
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels import (
     _interpolate_cell_field_to_half_levels_with_boundaries,
     _interpolate_cell_field_to_half_levels_wp,
+)
+from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_vertex import (
+    _interpolate_cell_field_to_vertex,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels import (
     _interpolate_edge_field_to_half_levels_with_boundaries,
@@ -310,7 +310,7 @@ def _interpolate_wind_to_vertices(
     Note that ``w`` lives on half levels and ``vn`` on full levels, so the
     three outputs do not share a vertical domain.
     """
-    w_vert = _compute_cell_2_vertex_interpolation(w, cells_aw_verts)
+    w_vert = _interpolate_cell_field_to_vertex(w, cells_aw_verts)
     u_vert, v_vert = _mo_intp_rbf_rbf_vec_interpol_vertex(
         p_e_in=vn, ptr_coeff_1=rbf_coeff_v1, ptr_coeff_2=rbf_coeff_v2
     )
@@ -975,7 +975,7 @@ def _interpolate_km(
     """
     return (
         maximum(km_min, average_level_plus1_on_cells(km_ic)),
-        maximum(km_min, _compute_cell_2_vertex_interpolation(km_ic, cells_aw_verts)),
+        maximum(km_min, _interpolate_cell_field_to_vertex(km_ic, cells_aw_verts)),
         maximum(km_min, _interpolate_cell_field_to_edge_on_half_levels(km_ic, c_lin_e)),
     )
 
