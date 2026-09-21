@@ -139,6 +139,3 @@ venv.bak/
 ### Others ###
 .obsidian
 pyrightconfig.json
-
-# Controlled fusion benchmark results and compiled artefacts.
-/fusion-results/

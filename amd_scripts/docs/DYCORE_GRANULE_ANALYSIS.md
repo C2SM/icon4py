@@ -270,7 +270,7 @@ each compiler pass's isolated contribution on every grid and vendor.
 This ICON4Py branch remains based on C2SM `mi300_opt` at
 `397d774a17135702b411d97edd4fb42cd0e21566`.
 The companion [GT4Py branch](https://github.com/dganellari/gt4py/tree/dycore-fusion-passes)
-is based on `amd_chiplet_setting` at `eb763b97`. The reviewed pin is
+is based on `amd_chiplet_setting` at `eb763b97`. The reviewed compiler revision is
 `403f9d996b4ab7435b6989bd004fcba39e7a1bf4`.
 
 - [Normal model options](../../model/common/src/icon4py/model/common/model_options.py):
@@ -280,14 +280,15 @@ is based on `amd_chiplet_setting` at `eb763b97`. The reviewed pin is
 - [Original solver equations](../../model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/solve_tridiagonal_matrix_for_w_forward_sweep.py)
   and [depth-parameterized numerical tests](../../model/atmosphere/dycore/tests/dycore/stencil_tests/test_solve_tridiagonal_matrix_for_w_forward_sweep.py).
 - [GT4Py design, options, safety and tests](https://github.com/dganellari/gt4py/blob/403f9d996b4ab7435b6989bd004fcba39e7a1bf4/docs/development/ADRs/next/0028-Guarded_DaCe_Fusion.md).
-- [Controlled PR-only reproduction](REPRODUCE_DYCORE_OPTIMIZATIONS.md).
+- [Normal model configuration and benchmark commands](REPRODUCE_DYCORE_OPTIMIZATIONS.md).
 
 The benchmark fixture now honours explicit `--grid <name>:120` instead of
 silently using its 80-level benchmark default. Defaults remain unchanged when
 no depth is supplied. This is a harness correctness fix, not a performance
-optimization. The required GPU scalar-conversion warning fix is now included in the pinned
-GT4Py branch. The reproduction runner uses both published passes through normal
-model options; its full GPU replay remains pending.
+optimization. The required GPU scalar-conversion warning fix is included in the
+GT4Py branch. Both transformations are selected during normal model construction;
+the standard dycore benchmark exercises that same configuration. A full GPU run
+through this ordinary path remains pending.
 
 ## Provenance of the starting comparison and diagnostics
 
