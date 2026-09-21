@@ -52,7 +52,9 @@ def _compare_cfl(
         == icon_result_cfl_clipping[horizontal_start:horizontal_end, vertical_start:vertical_end]
     ).all()
 
-    assert vertical_cfl[horizontal_start:horizontal_end, :].max() == icon_result_max_vcfl_dyn
+    assert (
+        np.abs(vertical_cfl[horizontal_start:horizontal_end, :]).max() == icon_result_max_vcfl_dyn
+    )
 
 
 def create_vertical_params(

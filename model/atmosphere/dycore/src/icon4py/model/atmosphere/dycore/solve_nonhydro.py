@@ -470,7 +470,9 @@ def _update_max_vertical_cfl(
     # Reductions should be performed on flat, contiguous arrays for best cupy performance
     # as otherwise cupy won't use cub optimized kernels.
     max_vertical_cfl = vertical_cfl.array_ns.max(  # type: ignore[attr-defined]
-        vertical_cfl.ndarray[horizontal_start:horizontal_end, :].ravel(order="K")  # type: ignore[attr-defined]
+        vertical_cfl.array_ns.abs(  # type: ignore[attr-defined]
+            vertical_cfl.ndarray[horizontal_start:horizontal_end, :].ravel(order="K")  # type: ignore[attr-defined]
+        )
     )
     diagnostic_state.max_vertical_cfl = vertical_cfl.array_ns.maximum(  # type: ignore[attr-defined]
         max_vertical_cfl, diagnostic_state.max_vertical_cfl
