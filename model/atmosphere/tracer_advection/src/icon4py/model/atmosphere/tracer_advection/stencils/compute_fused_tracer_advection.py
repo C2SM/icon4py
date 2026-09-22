@@ -309,8 +309,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
         else broadcast(0.0, (dims.EdgeDim, dims.KDim))
     )
 
-    # Even: r_m uses rhodz_ast2 and vertically-integrated tracer.
-    # Odd:  r_m uses rhodz_now and p_tracer_now.
     r_m = (
         _compute_positive_definite_horizontal_multiplicative_flux_factor(
             geofac_div=geofac_div,
