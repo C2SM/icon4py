@@ -81,6 +81,5 @@ def compute_tangential_wind_numpy(
     """Reconstruct tangential wind from normal components via RBF interpolation.
     """
     e2c2e = connectivities[dims.E2C2E]
-    # rbf_vec_coeff_e_exp: (nedges, 4, 1) for broadcasting over K
     rbf_vec_coeff_e_exp = np.expand_dims(rbf_vec_coeff_e, axis=-1)
     return np.sum(rbf_vec_coeff_e_exp * vn[e2c2e], axis=1)
