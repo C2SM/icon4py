@@ -31,11 +31,11 @@ def _calculate_nabla2_for_theta(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def calculate_nabla2_for_theta(
-    kh_smag_e: fa.EdgeKField[float],
-    inv_dual_edge_length: fa.EdgeField[float],
-    theta_v: fa.CellKField[float],
-    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], float],
-    z_temp: fa.CellKField[float],
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
+    z_temp: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

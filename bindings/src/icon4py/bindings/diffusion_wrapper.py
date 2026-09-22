@@ -163,8 +163,8 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     if zd_cellidx is None:
         # then zdiffu_t is False or the list on that rank is empty, then all of the following are not initialized
         assert zd_vertidx is None and zd_intcoef is None and zd_diffcoef is None
-        zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype, allocator=allocator)
-        zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype, allocator=allocator)
+        zd_diffcoef = gtx.zeros(cell_k_domain, dtype=wpfloat, allocator=allocator)
+        zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wpfloat, allocator=allocator)
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32, allocator=allocator)
     else:
         # transform lists to fields
@@ -183,7 +183,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
                 data_alloc.adjust_fortran_indices(zd_cellidx),
                 data_alloc.adjust_fortran_indices(zd_vertidx),
             ),
-            default_value=gtx.float64(0.0),
+            default_value=wpfloat(0.0),
             allocator=allocator,
         )
         zd_intcoef = data_alloc.scattered_field(
@@ -194,7 +194,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
                 slice(None),
                 data_alloc.adjust_fortran_indices(zd_vertidx),
             ),
-            default_value=gtx.float64(0.0),
+            default_value=wpfloat(0.0),
             allocator=allocator,
         )
         zd_vertoffset = data_alloc.scattered_field(

@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -18,7 +19,7 @@ def _apply_interpolated_tracer_time_tendency(
     p_grf_tend_tracer: fa.CellKField[ta.wpfloat],
     p_dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
-    p_tracer_new = maximum(0.0, p_tracer_now + p_dtime * p_grf_tend_tracer)
+    p_tracer_new = maximum(wpfloat(0.0), p_tracer_now + p_dtime * p_grf_tend_tracer)
     return p_tracer_new
 
 

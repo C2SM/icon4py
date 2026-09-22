@@ -50,7 +50,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import factory as states_factory, static_fields, tracer_states
+from icon4py.model.common.states import static_fields, tracer_states
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import config as driver_config, driver_constants, driver_states
 
@@ -233,9 +233,7 @@ def initialize_granules(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        mean_cell_area=geometry_field_source.get(
-            geometry_meta.MEAN_CELL_AREA, states_factory.RetrievalType.SCALAR
-        ),
+        mean_cell_area=geometry_field_source.get_wpfloat(geometry_meta.MEAN_CELL_AREA),
     )
 
     log.info("creating edge geometry")
@@ -422,6 +420,7 @@ def initialize_granules(
 
     tracer_advection_granule: tracer_advection.Advection | None = None
     if config.tracer_advection is not None:
+        lsq_pseudoinv = interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)
         deepatmo_shallow_factor = data_alloc.constant_field(
             grid, 1.0, dims.KDim, allocator=model_backends.get_allocator(backend)
         )
@@ -442,12 +441,8 @@ def initialize_granules(
                 ),
             ),
             least_squares_state=tracer_advection_states.AdvectionLeastSquaresState(
-                lsq_pseudoinv_1=interpolation_field_source.get(
-                    interpolation_attributes.LSQ_PSEUDOINV
-                )[:, 0, :],
-                lsq_pseudoinv_2=interpolation_field_source.get(
-                    interpolation_attributes.LSQ_PSEUDOINV
-                )[:, 1, :],
+                lsq_pseudoinv_1=lsq_pseudoinv[:, 0, :],
+                lsq_pseudoinv_2=lsq_pseudoinv[:, 1, :],
             ),
             metric_state=tracer_advection_states.AdvectionMetricState(
                 # Shallow atmosphere: the deep-atmosphere modification factors are 1, as

@@ -118,6 +118,7 @@ class State(PhysicsState):
             offset_provider={},
         )
 
+        # TODO(pstark): Probably dz (or it + others wrapped in a MuphysMetricState) should be an arg in State.__init__
         self.dz = metrics.get(metrics_attributes.DDQZ_Z_FULL)
         self.rho: fa.CellKField[ta.wpfloat] | None = None
         self._tracers: tracer_states.TracerState | None = None
@@ -191,7 +192,7 @@ class State(PhysicsState):
         """
         assert self._tracers is not None, "gather_from_prognostic must be called first"
         # convert to seconds only at the gt4py boundary (stencils take a scalar dt)
-        dt_seconds = dtime.total_seconds()
+        dt_seconds = ta.wpfloat(dtime.total_seconds())
         # 1. Apply moisture tendencies to the tracers (in place; tracers were bound in gather).
         for s in SPECIES:
             tracer = getattr(self._tracers, f"q{s}")

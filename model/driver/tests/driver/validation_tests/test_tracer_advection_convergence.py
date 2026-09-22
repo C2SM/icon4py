@@ -196,8 +196,8 @@ def test_horizontal_tracer_advection_convergence(
         error_l1.append(current_error_l1)
         error_linf.append(current_error_linf)
         mean_edge_length.append(
-            icon4py_driver.static_field_factories.geometry.get(
-                geometry_meta.MEAN_EDGE_LENGTH, states_factory.RetrievalType.SCALAR
+            icon4py_driver.static_field_factories.geometry.get_scalar(
+                geometry_meta.MEAN_EDGE_LENGTH
             )
         )
 

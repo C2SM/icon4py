@@ -22,7 +22,7 @@ from gt4py.next.experimental import concat_where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E, C2E2CO, E2C, E2C2EO, E2V
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_vertex import (
-    _interpolate_cell_field_to_vertex,
+    _interpolate_cell_field_to_vertex_wp,
 )
 from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center_vp import (
     _interpolate_to_cell_center_vp,
@@ -33,10 +33,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 class VerticalCflConstants(ta.wpfloat, enum.Enum):
     #: w is clipped and extra diffusion is applied above this vertical CFL number
-    W_LIMIT = 0.65
+    W_LIMIT = ta.wpfloat(0.65)
     #: w is clipped to this vertical CFL number
-    W_MAX = 0.85
-    EXTRA_DIFFUSION_SCALING = 0.05 / (W_MAX - W_LIMIT)
+    W_MAX = ta.wpfloat(0.85)
+    EXTRA_DIFFUSION_SCALING = ta.wpfloat(0.05) / (W_MAX - W_LIMIT)
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -68,7 +68,7 @@ def _compute_horizontal_advection_of_w(
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
 ) -> fa.EdgeKHalfField[ta.vpfloat]:
-    w_at_vertices = astype(_interpolate_cell_field_to_vertex(w, c_intp), vpfloat)
+    w_at_vertices = astype(_interpolate_cell_field_to_vertex_wp(w, c_intp), vpfloat)
     vn_on_half_levels_wp = astype(vn_on_half_levels, wpfloat)
 
     horizontal_advection_of_w_at_edges_on_half_levels = (

@@ -23,10 +23,10 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
     z_graddiv2_vn: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
-    mean_cell_area: float,
-    second_order_divdamp_factor: float,
-    max_nudging_coefficient: float,
-    dbl_eps: float,
+    mean_cell_area: wpfloat,
+    second_order_divdamp_factor: wpfloat,
+    max_nudging_coefficient: wpfloat,
+    wp_eps: wpfloat,
 ) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_27."""
     scal_divdamp = _calculate_fourth_order_divdamp_scaling_coeff(
@@ -36,7 +36,7 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
         second_order_divdamp_factor,
     )
     bdy_divdamp = _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
-        scal_divdamp, max_nudging_coefficient, dbl_eps
+        scal_divdamp, max_nudging_coefficient, wp_eps
     )
     z_graddiv2_vn_wp = astype(z_graddiv2_vn, wpfloat)
     vn_wp = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn_wp
@@ -50,10 +50,10 @@ def apply_weighted_2nd_and_4th_order_divergence_damping(
     z_graddiv2_vn: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
     divdamp_order: gtx.int32,
-    mean_cell_area: float,
-    second_order_divdamp_factor: float,
-    max_nudging_coefficient: float,
-    dbl_eps: float,
+    mean_cell_area: wpfloat,
+    second_order_divdamp_factor: wpfloat,
+    max_nudging_coefficient: wpfloat,
+    wp_eps: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -68,7 +68,7 @@ def apply_weighted_2nd_and_4th_order_divergence_damping(
         mean_cell_area=mean_cell_area,
         second_order_divdamp_factor=second_order_divdamp_factor,
         max_nudging_coefficient=max_nudging_coefficient,
-        dbl_eps=dbl_eps,
+        wp_eps=wp_eps,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),

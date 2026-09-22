@@ -13,6 +13,7 @@ import pathlib
 
 import pytest
 
+from icon4py.model.common import type_alias as ta
 from icon4py.model.testing import (
     config,
     data_handling,
@@ -30,6 +31,9 @@ class MuphysExperiment:
     name: str
     dt: float = 30.0
     qnc: float = 100.0
+
+    def __post_init__(self):
+        ta.dataclass_float_to_wp(self)
 
     @property
     def input_file(self) -> pathlib.Path:

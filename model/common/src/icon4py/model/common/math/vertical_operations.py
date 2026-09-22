@@ -13,27 +13,27 @@ Contains averaging and difference operations between adjacent vertical levels
 on cell and edge fields.
 """
 
-from gt4py import next as gtx
+import gt4py.next as gtx
 from gt4py.next import broadcast
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
 def average_level_plus1_on_cells(
-    half_level_field: fa.CellKHalfField[wpfloat],
-) -> fa.CellKField[wpfloat]:
+    half_level_field: fa.CellKHalfField[gtx.float64],
+) -> fa.CellKField[gtx.float64]:
     """
     Calculate the mean value of adjacent interface levels.
 
     Computes the average of two adjacent interface levels upwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: fa.CellKHalfField[wpfloat]
+        half_level_field: fa.CellKHalfField[gtx.float64]
 
-    Returns: fa.CellKField[wpfloat] full level field
+    Returns: fa.CellKField[gtx.float64] full level field
 
     """
     return 0.5 * (half_level_field(dims.KDim - 0.5) + half_level_field(dims.KDim + 0.5))
@@ -41,17 +41,17 @@ def average_level_plus1_on_cells(
 
 @gtx.field_operator
 def average_level_plus1_on_edges(
-    half_level_field: fa.EdgeKHalfField[wpfloat],
-) -> fa.EdgeKField[wpfloat]:
+    half_level_field: fa.EdgeKHalfField[gtx.float64],
+) -> fa.EdgeKField[gtx.float64]:
     """
     Calculate the mean value of adjacent interface levels.
 
     Computes the average of two adjacent interface levels upwards over an edge field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: fa.EdgeKHalfField[wpfloat]
+        half_level_field: fa.EdgeKHalfField[gtx.float64]
 
-    Returns: fa.EdgeKField[wpfloat] full level field
+    Returns: fa.EdgeKField[gtx.float64] full level field
 
     """
     return 0.5 * (half_level_field(dims.KDim - 0.5) + half_level_field(dims.KDim + 0.5))
@@ -59,17 +59,17 @@ def average_level_plus1_on_edges(
 
 @gtx.field_operator
 def difference_level_plus1_on_cells(
-    half_level_field: fa.CellKHalfField[wpfloat],
-) -> fa.CellKField[wpfloat]:
+    half_level_field: fa.CellKHalfField[gtx.float64],
+) -> fa.CellKField[gtx.float64]:
     """
     Calculate the difference value of adjacent interface levels.
 
     Computes the difference of two adjacent interface levels upwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: fa.CellKHalfField[wpfloat]
+        half_level_field: fa.CellKHalfField[gtx.float64]
 
-    Returns: fa.CellKField[wpfloat] full level field
+    Returns: fa.CellKField[gtx.float64] full level field
 
     """
     return half_level_field(dims.KDim - 0.5) - half_level_field(dims.KDim + 0.5)
@@ -77,11 +77,11 @@ def difference_level_plus1_on_cells(
 
 @gtx.field_operator
 def with_boundaries_on_half_levels_on_cells(
-    top: fa.CellKHalfField[wpfloat],
-    interior: fa.CellKHalfField[wpfloat],
-    bottom: fa.CellKHalfField[wpfloat],
+    top: fa.CellKHalfField[gtx.float64],
+    interior: fa.CellKHalfField[gtx.float64],
+    bottom: fa.CellKHalfField[gtx.float64],
     nlev: gtx.int32,
-) -> fa.CellKHalfField[wpfloat]:
+) -> fa.CellKHalfField[gtx.float64]:
     """
     Assemble a half-level field: ``top`` at k==0, ``bottom`` at k==nlev, ``interior`` in between.
 
@@ -99,8 +99,8 @@ def with_boundaries_on_half_levels_on_cells(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def average_two_vertical_levels_downwards_on_edges(  # noqa: PLR0917 [too-many-positional-arguments]
-    input_field: fa.EdgeKHalfField[wpfloat],
-    average: fa.EdgeKField[wpfloat],
+    input_field: fa.EdgeKHalfField[gtx.float64],
+    average: fa.EdgeKField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -118,8 +118,8 @@ def average_two_vertical_levels_downwards_on_edges(  # noqa: PLR0917 [too-many-p
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def average_two_vertical_levels_downwards_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
-    input_field: fa.CellKHalfField[wpfloat],
-    average: fa.CellKField[wpfloat],
+    input_field: fa.CellKHalfField[gtx.float64],
+    average: fa.CellKField[gtx.float64],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -264,12 +264,27 @@ def copy_half_level_below_to_model_levels_on_cells(  # noqa: PLR0917 [too-many-p
 
 
 @gtx.field_operator
-def _set_constant_on_model_levels_on_cells(value: wpfloat) -> fa.CellKField[wpfloat]:
+def _set_constant_on_model_levels_on_cells_wp(value: wpfloat) -> fa.CellKField[wpfloat]:
     return broadcast(value, (dims.CellDim, dims.KDim))
 
 
+@gtx.field_operator
+def _set_constant_on_model_levels_on_cells_vp(value: vpfloat) -> fa.CellKField[vpfloat]:
+    return broadcast(value, (dims.CellDim, dims.KDim))
+
+
+@gtx.field_operator
+def _set_constant_on_model_levels_on_edges_wp(value: wpfloat) -> fa.EdgeKField[wpfloat]:
+    return broadcast(value, (dims.EdgeDim, dims.KDim))
+
+
+@gtx.field_operator
+def _set_constant_on_model_levels_on_edges_vp(value: vpfloat) -> fa.EdgeKField[vpfloat]:
+    return broadcast(value, (dims.EdgeDim, dims.KDim))
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def set_constant_on_model_levels_on_cells(  # noqa: PLR0917 [too-many-positional-arguments]
+def set_constant_on_model_levels_on_cells_wp(  # noqa: PLR0917 [too-many-positional-arguments]
     field: fa.CellKField[wpfloat],
     value: wpfloat,
     horizontal_start: gtx.int32,
@@ -277,7 +292,7 @@ def set_constant_on_model_levels_on_cells(  # noqa: PLR0917 [too-many-positional
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ) -> None:
-    _set_constant_on_model_levels_on_cells(
+    _set_constant_on_model_levels_on_cells_wp(
         value=value,
         out=field,
         domain={

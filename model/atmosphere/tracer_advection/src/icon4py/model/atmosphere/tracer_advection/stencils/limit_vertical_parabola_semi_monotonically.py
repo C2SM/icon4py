@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next import minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -26,10 +27,13 @@ def _limit_vertical_parabola_semi_monotonically(
             where(
                 p_face(dims.KDim - 0.5) > p_face(dims.KDim + 0.5),
                 (
-                    3.0 * p_cc - 2.0 * p_face(dims.KDim + 0.5),
+                    wpfloat(3.0) * p_cc - wpfloat(2.0) * p_face(dims.KDim + 0.5),
                     p_face(dims.KDim + 0.5),
                 ),
-                (p_face(dims.KDim - 0.5), 3.0 * p_cc - 2.0 * p_face(dims.KDim - 0.5)),
+                (
+                    p_face(dims.KDim - 0.5),
+                    wpfloat(3.0) * p_cc - wpfloat(2.0) * p_face(dims.KDim - 0.5),
+                ),
             ),
         ),
         (p_face(dims.KDim - 0.5), p_face(dims.KDim + 0.5)),

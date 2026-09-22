@@ -102,7 +102,7 @@ def test_factory_raises_error_on_unknown_field(
         process_props=SingleNodeProcessProperties(),
     )
     with pytest.raises(ValueError, match="Field 'foo' not provided by the source"):
-        interpolation_source.get("foo", factory.RetrievalType.METADATA)
+        interpolation_source.get_metadata("foo")
 
 
 @pytest.mark.level("integration")
@@ -252,7 +252,7 @@ def test_e_bln_c_s(
     grid = factory.grid
     field = factory.get(attrs.E_BLN_C_S).asnumpy()
     assert field.shape == (grid.num_cells, C2E_SIZE)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field, rtol=rtol)
+    test_helpers.assert_dallclose(field, field_ref.asnumpy(), rtol=rtol)
 
 
 @pytest.mark.level("integration")

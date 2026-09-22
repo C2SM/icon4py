@@ -285,6 +285,7 @@ class DriverConfig:
                 f"the time loop cannot start at {self.start_of_timestepping}, before the "
                 f"beginning of the simulation ({self.start_of_simulation})."
             )
+        ta.dataclass_float_to_wp(self)
 
     @classmethod
     def make_initial(cls, **kwargs: Any) -> DriverConfig:

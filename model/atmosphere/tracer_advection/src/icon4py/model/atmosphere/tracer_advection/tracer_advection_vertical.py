@@ -116,7 +116,7 @@ class NoFluxCondition(BoundaryConditions):
         log.debug("running stencil set_constant_on_half_levels_on_cells - start")
         self._set_constant_on_half_levels_on_cells(
             field=p_mflx_tracer_v,
-            value=0.0,
+            value=ta.wpfloat(0.0),
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,
@@ -129,7 +129,7 @@ class NoFluxCondition(BoundaryConditions):
         log.debug("running stencil set_constant_on_half_levels_on_cells - start")
         self._set_constant_on_half_levels_on_cells(
             field=p_mflx_tracer_v,
-            value=0.0,
+            value=ta.wpfloat(0.0),
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=self._grid.num_levels,
@@ -749,7 +749,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             backend=self._backend,
             program=vertical_operations.set_constant_on_half_levels_on_cells,
             constant_args={
-                "value": 0.0,
+                "value": ta.wpfloat(0.0),
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
@@ -765,7 +765,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
                 "k_half": self._k_half_field,
                 "slevp1_ti": self._slevp1_ti,
                 "nlev": self._nlev,
-                "dbl_eps": constants.DBL_EPS,
+                "wp_eps": constants.WP_EPS,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(1),

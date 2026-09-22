@@ -33,6 +33,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import coordinate_transformations as coord_trans, utils as math_utils
 from icon4py.model.common.states import factory, model, utils as state_utils
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -62,24 +63,13 @@ class GridGeometry(factory.FieldSource):
         GridGeometry for geometry_type=SPHERE grid=f2e06839-694a-cca1-a3d5-028e0ff326e0 : R9B4
         >>> geometry.get("edge_length")
         NumPyArrayField(_domain=Domain(dims=(Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),), ranges=(UnitRange(0, 31558),)), _ndarray=array([3746.2669054 , 3746.2669066 , 3746.33418138, ..., 3736.61622936, 3792.41317057]))
-        >>> geometry.get("edge_length", RetrievalType.METADATA)
+        >>> geometry.get_metadata("edge_length")
         {'standard_name': 'edge_length',
         'long_name': 'edge length',
         'units': 'm',
         'dims': (Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),),
         'icon_var_name': 't_grid_edges%primal_edge_length',
         'dtype': numpy.float64}
-        >>> geometry.get("edge_length", RetrievalType.DATA_ARRAY)
-        <xarray.DataArray (dim_0: 31558)> Size: 252kB
-        array([3746.2669054 , 3746.2669066 , 3746.33418138, ..., 3889.53098062, 3736.61622936, 3792.41317057])
-        Dimensions without coordinates: dim_0
-        .Attributes:
-        standard_name:  edge_length
-        long_name:      edge length
-        units:          m
-        dims:           (Dimension(value='Edge', kind=<DimensionKind.HORIZONTAL: ...
-        icon_var_name:  t_grid_edges%primal_edge_length
-        dtype:          <class 'numpy.float64'>
 
 
     """
@@ -229,7 +219,7 @@ class GridGeometry(factory.FieldSource):
                 # TODO(msimberg): Check if we can/should get it from the grid
                 # file directly instead (e.g. via
                 # MPIMPropertyName.MEAN_EDGE_LENGTH).
-                edge_length = self.get(attrs.EDGE_LENGTH).ndarray
+                edge_length = self.get_full_precision(attrs.EDGE_LENGTH).ndarray
                 if self._process_props.comm is not None:
                     assert edge_length.size > 0
                     send_buffer = np.empty(1, dtype=edge_length.dtype)
@@ -300,7 +290,7 @@ class GridGeometry(factory.FieldSource):
                         "vertex_lat": attrs.VERTEX_LAT,
                         "vertex_lon": attrs.VERTEX_LON,
                     },
-                    params={"radius": self._grid.grid_params.radius},
+                    params={"radius": gtx.float64(self._grid.grid_params.radius)},
                     do_exchange=True,
                 )
                 self.register_provider(vertex_vertex_distance)
@@ -308,7 +298,7 @@ class GridGeometry(factory.FieldSource):
                 coriolis_param = factory.ProgramFieldProvider(
                     func=stencils.compute_coriolis_parameter_on_edges,
                     deps={"edge_center_lat": attrs.EDGE_LAT},
-                    params={"angular_velocity": constants.EARTH_ANGULAR_VELOCITY},
+                    params={"angular_velocity": gtx.float64(constants.EARTH_ANGULAR_VELOCITY)},
                     fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
                     domain={
                         dims.EdgeDim: (
@@ -430,7 +420,7 @@ class GridGeometry(factory.FieldSource):
             self.register_provider(mean_dual_cell_area_np)
 
             characteristic_length_np = factory.NumpyDataProvider(
-                func=math_utils.compute_sqrt,
+                func=lambda input_val: gtx.sqrt(input_val),  # noqa: PLW0108
                 domain=(),
                 deps={
                     "input_val": attrs.MEAN_CELL_AREA,
@@ -816,8 +806,8 @@ class GridGeometry(factory.FieldSource):
             f"{self.__class__.__name__} for geometry_type={geometry_name} (grid={self._grid.id!r})"
         )
 
-    def get_wpfloat(self, name: str) -> float:
-        return ta.wpfloat(self.get(name, type_=factory.RetrievalType.SCALAR))
+    def get_wpfloat(self, name: str) -> wpfloat:
+        return ta.wpfloat(self.get_scalar(name))
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
@@ -880,7 +870,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
             intermediates = _IntermediateFields(
                 self._wrapped_provider,
                 {
-                    name: field_src.get(target, factory.RetrievalType.METADATA)
+                    name: field_src.get_metadata(target)
                     for target, pair in zip(self.fields, self._pairs, strict=True)
                     for name in pair
                 },

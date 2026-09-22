@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "experiment_description",
     [test_defs.Experiments.WEISMAN_KLEMP_TORUS],
@@ -156,57 +157,57 @@ def test_graupel(
     new_qs = entry_savepoint.qs().asnumpy() + qs_tendency.asnumpy() * dtime
     new_qg = entry_savepoint.qg().asnumpy() + qg_tendency.asnumpy() * dtime
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_temperature,
         exit_savepoint.temperature().asnumpy(),
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qv,
         exit_savepoint.qv().asnumpy(),
         atol=1.0e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qc,
         exit_savepoint.qc().asnumpy(),
         atol=1.0e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qr,
         exit_savepoint.qr().asnumpy(),
-        atol=1.0e-12,
+        atol=1.0e-12 if test_utils.wp_is_dp else 3e-10,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qi,
         exit_savepoint.qi().asnumpy(),
         atol=1.0e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qs,
         exit_savepoint.qs().asnumpy(),
         atol=1.0e-12,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         new_qg,
         exit_savepoint.qg().asnumpy(),
-        atol=1.0e-12,
+        atol=1.0e-12 if test_utils.wp_is_dp else 4e-11,
     )
 
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         graupel_microphysics.rain_precipitation_flux.asnumpy()[:, -1],
         exit_savepoint.rain_flux().asnumpy()[:],
         atol=9.0e-11,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         graupel_microphysics.snow_precipitation_flux.asnumpy()[:, -1],
         exit_savepoint.snow_flux().asnumpy()[:],
         atol=9.0e-11,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         graupel_microphysics.graupel_precipitation_flux.asnumpy()[:, -1],
         exit_savepoint.graupel_flux().asnumpy()[:],
         atol=9.0e-11,
     )
-    assert test_utils.dallclose(
+    test_utils.assert_dallclose(
         graupel_microphysics.ice_precipitation_flux.asnumpy()[:, -1],
         exit_savepoint.ice_flux().asnumpy()[:],
         atol=9.0e-11,
