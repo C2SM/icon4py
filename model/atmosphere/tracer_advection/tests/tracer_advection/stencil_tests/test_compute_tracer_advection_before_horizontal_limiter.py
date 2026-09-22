@@ -88,7 +88,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
 
-        # Step 1: apply density increment (even timestep uses rhodz_now)
         rhodz_ast2 = apply_density_increment_numpy(
             rhodz_now, p_mflx_contra_v, deepatmo_divzl, deepatmo_divzu, p_dtime, True
         )
