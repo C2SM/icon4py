@@ -91,9 +91,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         else:
             p_tracer_new = tracer_now_for_h.copy()
 
-        # Step 3: vertical flux output
-        # Even (do_vertical_first==1): pass through the existing p_mflx_tracer_v (already computed)
-        # Odd (do_vertical_first==0): ivadv_tracer==0 => zero vertical flux
         p_mflx_tracer_v_out = p_mflx_tracer_v.copy()
 
         return dict(
