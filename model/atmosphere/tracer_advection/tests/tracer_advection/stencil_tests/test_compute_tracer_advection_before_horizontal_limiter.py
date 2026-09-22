@@ -108,7 +108,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             iadv_slev_jt,
         )
 
-        # Step 4: 2nd-order Miura horizontal flux from vertically-integrated tracer
         if ihadv_tracer == 2:
             z_real_vt = compute_tangential_wind_numpy(p_vn, rbf_vec_coeff_e, connectivities)
             p_distv_bary_1, p_distv_bary_2 = compute_barycentric_backtrajectory_alt_numpy(
