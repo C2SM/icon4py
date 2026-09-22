@@ -304,7 +304,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
         p_mflx_tracer_v = np.zeros_like(p_mflx_contra_v)
         p_tracer_after_vertical = p_tracer_now + np.zeros_like(p_tracer_now)
 
-        # Step 2: 2nd-order Miura horizontal flux from p_tracer_now
         if ihadv_tracer == 2:
             z_real_vt = compute_tangential_wind_numpy(p_vn, rbf_vec_coeff_e, connectivities)
             p_distv_bary_1, p_distv_bary_2 = compute_barycentric_backtrajectory_alt_numpy(
