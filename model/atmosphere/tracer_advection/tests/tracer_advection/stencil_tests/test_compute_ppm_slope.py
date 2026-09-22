@@ -22,9 +22,7 @@ def compute_ppm_slope_numpy(
     p_cellhgt_mc_now: np.ndarray,
     elev: int,
 ) -> np.ndarray:
-    """Return z_slope for interior levels k=1..nlev-1 (shape: (ncells, nlev-1)).
-
-    p_cc and p_cellhgt_mc_now have shape (ncells, nlev+1) due to KDim extended by 1.
+    """Return z_slope for interior k levels.
     """
     zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
         p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
