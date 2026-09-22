@@ -74,6 +74,13 @@ def pytest_addoption(parser: pytest.Parser):
         pass
     with contextlib.suppress(ValueError):
         parser.addoption(
+            "--dycore-compare",
+            choices=("theta", "solver", "combined"),
+            default=None,
+            help="Compare dycore compiler options with paired pytest-benchmark timing.",
+        )
+    with contextlib.suppress(ValueError):
+        parser.addoption(
             "--backend",
             action="store",
             default=model_backends.DEFAULT_BACKEND,

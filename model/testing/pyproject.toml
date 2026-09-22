@@ -36,6 +36,7 @@ dependencies = [
   'packaging>=20.0',
   "pooch>=1.7.0",
   "pytest>=8.0.1",
+  "scipy>=1.10",
   "serialbox4py>=2.6.2"
 ]
 description = "Testing utils for the icon4py model."
