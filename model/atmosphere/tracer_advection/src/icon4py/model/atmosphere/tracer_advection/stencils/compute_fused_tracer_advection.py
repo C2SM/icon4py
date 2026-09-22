@@ -71,7 +71,7 @@ from icon4py.model.atmosphere.tracer_advection.stencils.reconstruct_linear_coeff
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.interpolation.stencils.compute_tangential_wind import (
-    _compute_tangential_wind_wp,
+    _compute_tangential_wind,
 )
 
 
@@ -168,7 +168,7 @@ def _compute_2nd_order_miura_horizontal_flux(
     lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat],
     p_dtime: ta.wpfloat,
 ) -> fa.EdgeKField[ta.wpfloat]:
-    z_real_vt = _compute_tangential_wind_wp(vn=p_vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
+    z_real_vt = _compute_tangential_wind(vn=p_vn, rbf_vec_coeff_e=rbf_vec_coeff_e)
     p_distv_bary_1, p_distv_bary_2 = _compute_barycentric_backtrajectory_alt(
         p_vn=p_vn,
         p_vt=z_real_vt,
