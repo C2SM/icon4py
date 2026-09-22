@@ -82,7 +82,7 @@ def create_vertical_params(
 )
 def test_extra_diffusion_constants_match_icon(experiment, step_date_init, savepoint_velocity_init):
     # ICON serializes both constants per second, divided by dtime.
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_velocity_init.dtime()
     assert VerticalCflConstants.W_LIMIT / dtime == savepoint_velocity_init.cfl_w_limit()
     assert VerticalCflConstants.EXTRA_DIFFUSION_SCALING / dtime == pytest.approx(
         savepoint_velocity_init.scalfac_exdiff(), rel=1e-14

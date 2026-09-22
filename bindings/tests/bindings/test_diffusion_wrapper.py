@@ -103,7 +103,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
 
     # --- Expected objects that form inputs into init and run functions
     expected_icon_grid = icon_grid
-    expected_dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+    expected_dtime = savepoint_diffusion_init.dtime()
     expected_edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     expected_interpolation_state = diffusion_states.DiffusionInterpolationState(
