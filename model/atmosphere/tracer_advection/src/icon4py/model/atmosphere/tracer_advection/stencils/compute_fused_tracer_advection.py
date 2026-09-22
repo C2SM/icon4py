@@ -235,8 +235,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
     fa.EdgeKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    # Even: update density from rhodz_now (vertical flux divergence not yet applied).
-    # Odd:  update density from rhodz_new (horizontal flux divergence already applied).
     rhodz_ast2 = _apply_density_increment(
         rhodz_in=rhodz_now if even_timestep else rhodz_new,
         p_mflx_contra_v=p_mflx_contra_v,
