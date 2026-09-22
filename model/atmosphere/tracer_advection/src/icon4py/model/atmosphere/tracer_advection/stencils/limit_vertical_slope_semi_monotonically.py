@@ -18,7 +18,7 @@ def _limit_vertical_slope_semi_monotonically_inner(
     p_cc: fa.CellKField[ta.wpfloat],
     z_slope: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
-    """Limit the vertical slope for interior levels (not the last level)."""
+    """Limit the vertical slope for interior levels."""
     p_cc_min = minimum(minimum(p_cc(dims.KDim - 1), p_cc), p_cc(dims.KDim + 1))
     slope_l = minimum(abs(z_slope), 2.0 * (p_cc - p_cc_min))
     return where(z_slope >= 0.0, slope_l, -slope_l)
