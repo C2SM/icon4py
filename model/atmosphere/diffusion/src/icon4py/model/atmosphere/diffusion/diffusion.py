@@ -51,6 +51,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.math.stencils import generic_math_operations
 from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -221,7 +222,7 @@ class DiffusionConfig:
     ] = TemperatureDiscretizationType.HETEROGENEOUS
 
     hdiff_efdt_ratio: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description="Ratio of e-folding time to (2*)time step.",
             icon_equivalent=common_conf_opt.IconOption("hdiff_efdt_ratio", ("diffusion_nml",)),
@@ -229,7 +230,7 @@ class DiffusionConfig:
     ] = 36.0
 
     hdiff_w_efdt_ratio: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description="Ratio of e-folding time to time step for w diffusion (NH only).",
             icon_equivalent=common_conf_opt.IconOption("hdiff_w_efdt_ratio", ("diffusion_nml",)),
@@ -238,7 +239,7 @@ class DiffusionConfig:
 
     # TODO(muellch): The four smagorinsky factors and heights should be in one or two dataclasses.
     smagorinski_scaling_factor: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description="Smagorinsky factor for z <= smagorinski_scaling_height (constant base value).",
             icon_equivalent=common_conf_opt.IconOption("hdiff_smag_fac", ("diffusion_nml",)),
@@ -246,7 +247,7 @@ class DiffusionConfig:
     ] = 0.015
 
     smagorinski_scaling_factor2: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description=(
                 "Smagorinsky factor at z = smagorinski_scaling_height2: end of the linear segment and"
@@ -257,7 +258,7 @@ class DiffusionConfig:
     ] = 2e-6 * (1600.0 + 25000.0 + math.sqrt(1600.0 * (1600 + 50000.0)))
 
     smagorinski_scaling_factor3: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description=(
                 "Smagorinsky factor at z = smagorinski_scaling_height3: interior control point of the"
@@ -268,7 +269,7 @@ class DiffusionConfig:
     ] = 0.0
 
     smagorinski_scaling_factor4: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description=(
                 "Smagorinsky factor for z >= smagorinski_scaling_height4 (constant asymptotic value)."
@@ -279,7 +280,7 @@ class DiffusionConfig:
     ] = 1.0
 
     smagorinski_scaling_height: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description=(
                 "Lower boundary of the linear segment: factor is constant at smagorinski_scaling_factor "
@@ -290,7 +291,7 @@ class DiffusionConfig:
     ] = 32500.0
 
     smagorinski_scaling_height2: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description="Transition height between linear and quadratic segments.",
             icon_equivalent=common_conf_opt.IconOption("hdiff_smag_z2", ("diffusion_nml",)),
@@ -298,7 +299,7 @@ class DiffusionConfig:
     ] = 1600.0 + 50000.0 + math.sqrt(1600.0 * (1600 + 50000.0))
 
     smagorinski_scaling_height3: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description="Interior control point height within the quadratic segment (height2 <= height3 <= height4).",
             icon_equivalent=common_conf_opt.IconOption("hdiff_smag_z3", ("diffusion_nml",)),
@@ -306,7 +307,7 @@ class DiffusionConfig:
     ] = 50000.0
 
     smagorinski_scaling_height4: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description=(
                 "Upper boundary of the quadratic segment: factor is constant at "
@@ -325,7 +326,7 @@ class DiffusionConfig:
     ] = True
 
     temperature_boundary_diffusion_denominator: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description="Denominator for temperature boundary diffusion.",
             icon_equivalent=common_conf_opt.IconOption("denom_diffu_t", ("gridref_nml",)),
@@ -333,7 +334,7 @@ class DiffusionConfig:
     ] = 135.0
 
     velocity_boundary_diffusion_denominator: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description="Denominator for velocity boundary diffusion.",
             icon_equivalent=common_conf_opt.IconOption("denom_diffu_v", ("gridref_nml",)),
@@ -357,7 +358,7 @@ class DiffusionConfig:
     ] = ForcingType.NO_FORCING
 
     a_hshr: typing.Annotated[
-        float,
+        ta.wpfloat,
         common_conf_opt.ConfigOption(
             description="Scaling factor for horizontal shear production term.",
             icon_equivalent=common_conf_opt.IconOption("a_hshr", ("turbdiff_nml",)),
@@ -502,7 +503,7 @@ class Diffusion:
         | None,
         exchange: decomposition.ExchangeRuntime,
         ndyn_substeps: int,
-        max_nudging_coefficient: float,
+        max_nudging_coefficient: state_utils.FloatType,
     ) -> None:
         self._allocator = model_backends.get_allocator(backend)
         self._exchange = exchange
@@ -744,28 +745,40 @@ class Diffusion:
         )(diff_multfac_n2w=self.diff_multfac_n2w)
 
     def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None) -> None:
-        self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
-        self.diff_multfac_n2w = data_alloc.zero_field(
-            self._grid, dims.KHalfDim, allocator=allocator
+        self.diff_multfac_vn = data_alloc.zero_field(
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
-        self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
-        self.enh_smag_fac = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
+        self.diff_multfac_n2w = data_alloc.zero_field(
+            self._grid, dims.KHalfDim, dtype=ta.wpfloat, allocator=allocator
+        )
+        # TODO(pstark): smag_limit, enh_smag_fac and diff_multfac_smag are consumed as vpfloat by the
+        #  stencils but produced as wpfloat by diffusion_utils; switch to vpfloat once the producers do.
+        self.smag_limit = data_alloc.zero_field(
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+        )
+        self.enh_smag_fac = data_alloc.zero_field(
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+        )
+        # TODO(pstark): u_vert and v_vert are consumed as vpfloat by the stencils but produced as
+        #  wpfloat by mo_intp_rbf_rbf_vec_interpol_vertex.
         self.u_vert = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, allocator=allocator
+            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.v_vert = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, allocator=allocator
+            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.kh_smag_e = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         self.kh_smag_ec = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         self.z_nabla2_e = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
-        self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
+        self.diff_multfac_smag = data_alloc.zero_field(
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
+        )
         self.vertical_index = data_alloc.index_field(self._grid, dims.KHalfDim, allocator=allocator)
         self.horizontal_cell_index = data_alloc.index_field(
             self._grid, dims.CellDim, allocator=allocator
@@ -774,10 +787,10 @@ class Diffusion:
             self._grid, dims.EdgeDim, allocator=allocator
         )
         self.w_tmp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KHalfDim, allocator=allocator
+            self._grid, dims.CellDim, dims.KHalfDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.theta_v_tmp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=allocator
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
 
     def _determine_horizontal_domains(self) -> None:
@@ -834,16 +847,18 @@ class Diffusion:
         """
         if initial_run:
             diff_multfac_vn = data_alloc.zero_field(
-                self._grid, dims.KDim, allocator=self._allocator
+                self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
             )
-            smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=self._allocator)
+            smag_limit = data_alloc.zero_field(
+                self._grid, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
+            )
             self.setup_fields_for_initial_step(
                 self._params.K4,
                 self.config.hdiff_efdt_ratio,
                 diff_multfac_vn,
                 smag_limit,
             )
-            smag_offset = wpfloat(0.0)
+            smag_offset = vpfloat(0.0)
         else:
             diff_multfac_vn = self.diff_multfac_vn
             smag_limit = self.smag_limit
