@@ -29,11 +29,6 @@ def apply_density_increment_numpy(  # noqa: PLR0917
     even_timestep: bool,
 ) -> np.ndarray:
     """Compute the updated air-mass column density after the vertical mass flux increment.
-
-    p_mflx_contra_v has shape (ncells, nlev+1) on KHalfDim.
-    At full level k:
-      - lower interface (k+1 in KHalfDim) contributes with deepatmo_divzl
-      - upper interface (k   in KHalfDim) contributes with deepatmo_divzu
     """
     rhodz_incr = p_dtime * (
         p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
