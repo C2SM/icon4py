@@ -110,7 +110,7 @@ def _basic_metadata(name: str, *dims: gtx.Dimension) -> model.FieldMetaData:
 def _prep_for_dict(
     name: str, field: state_utils.GTXFieldType
 ) -> tuple[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]]:
-    return name, (field, _basic_metadata(name, field.domain.dims))
+    return name, (field, _basic_metadata(name, *field.domain.dims))
 
 
 # TODO(): this reads lat lon from the grid_savepoint, which could be read from the grid file/geometry, to make it non datatests
