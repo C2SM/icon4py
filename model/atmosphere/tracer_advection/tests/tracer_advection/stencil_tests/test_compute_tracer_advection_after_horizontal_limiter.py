@@ -69,7 +69,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
             rhodz_for_h_now = rhodz_now
             rhodz_for_h_new = rhodz_ast2
 
-        # Step 1: apply limiter to get final horizontal flux
         if itype_hlimit == 4:
             p_mflx_tracer_h = apply_positive_definite_horizontal_multiplicative_flux_factor_numpy(
                 r_m, p_mflx_tracer_h_unlimited, connectivities
