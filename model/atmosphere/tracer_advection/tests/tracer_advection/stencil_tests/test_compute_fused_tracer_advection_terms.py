@@ -70,10 +70,6 @@ def reconstruct_linear_coefficients_svd_numpy(
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Reconstruct linear LSQ reconstruction coefficients via SVD pseudo-inverse.
-
-    lsq_pseudoinv_1 and lsq_pseudoinv_2 have shape (ncells, 3) (C2E2CDim = 3 neighbors).
-    p_cc has shape (ncells, nlevels).
-    Returns (p_coeff_1, p_coeff_2, p_coeff_3) each of shape (ncells, nlevels).
     """
     c2e2c = connectivities[dims.C2E2C]
     # Expand pseudoinverse to broadcast over K dimension: (ncells, 3, 1)
