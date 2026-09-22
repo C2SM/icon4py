@@ -77,7 +77,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         else:
             p_mflx_tracer_h = p_mflx_tracer_h_unlimited.copy()
 
-        # Step 2: integrate tracer horizontally
         if ihadv_tracer != 0:
             p_tracer_new = integrate_tracer_horizontally_numpy(
                 connectivities,
