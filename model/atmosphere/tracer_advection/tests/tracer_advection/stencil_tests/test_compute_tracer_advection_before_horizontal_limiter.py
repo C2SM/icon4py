@@ -93,7 +93,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterEven(stencil_tests.Stenci
             rhodz_now, p_mflx_contra_v, deepatmo_divzl, deepatmo_divzu, p_dtime, True
         )
 
-        # Step 2: vertical tracer flux (ivadv_tracer==0 in this test -> zero flux)
         p_mflx_tracer_v = np.zeros_like(p_mflx_contra_v)
 
         # Step 3: vertical integration (ivadv_tracer==0 -> tracer_now unchanged)
