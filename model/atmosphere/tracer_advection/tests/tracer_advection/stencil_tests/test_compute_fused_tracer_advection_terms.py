@@ -65,9 +65,7 @@ def reconstruct_linear_coefficients_svd_numpy(
     c2e2c = connectivities[dims.C2E2C]
     lsq_pseudoinv_1_exp = np.expand_dims(lsq_pseudoinv_1, axis=-1)
     lsq_pseudoinv_2_exp = np.expand_dims(lsq_pseudoinv_2, axis=-1)
-    # p_cc[c2e2c] has shape (ncells, 3, nlevels)
     p_cc_neighbors = p_cc[c2e2c]
-    # diff: (ncells, 3, nlevels) = neighbor values minus center value
     diff = p_cc_neighbors - p_cc[:, np.newaxis, :]
     p_coeff_1 = p_cc
     p_coeff_2 = np.sum(lsq_pseudoinv_1_exp * diff, axis=1)
