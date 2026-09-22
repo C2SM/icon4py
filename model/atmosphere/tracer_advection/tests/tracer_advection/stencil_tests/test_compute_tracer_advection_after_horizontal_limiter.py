@@ -119,10 +119,8 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         # it is already declared above as the input field.
         p_tracer_new = data_alloc.zero_field(dims.CellDim, dims.KDim)
 
-        # Scalar parameters
         p_dtime = np.float64(5.0)
         dbl_eps = np.float64(1e-9)
-        # Use even timestep (do_vertical_first=1): vertical integration done before this program
         do_vertical_first = gtx.int32(1)
         ivadv_tracer = gtx.int32(0)
         ihadv_tracer = gtx.int32(2)
