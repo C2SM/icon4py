@@ -301,7 +301,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
             rhodz_new, p_mflx_contra_v, deepatmo_divzl, deepatmo_divzu, p_dtime, False
         )
 
-        # Odd timestep: no vertical flux or integration before the limiter
         p_mflx_tracer_v = np.zeros_like(p_mflx_contra_v)
         p_tracer_after_vertical = p_tracer_now + np.zeros_like(p_tracer_now)
 
