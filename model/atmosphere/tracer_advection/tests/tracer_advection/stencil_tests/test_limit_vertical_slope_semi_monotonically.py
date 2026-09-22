@@ -46,9 +46,7 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
         elev: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        slope = limit_vertical_slope_semi_monotonically_numpy(
-            p_cc, z_slope, elev, grid.num_levels
-        )
+        slope = limit_vertical_slope_semi_monotonically_numpy(p_cc, z_slope, elev, grid.num_levels)
         return dict(z_slope=slope)
 
     @stencil_tests.input_data_fixture

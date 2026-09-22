@@ -18,7 +18,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
-def compute_barycentric_backtrajectory_alt_numpy(
+def compute_barycentric_backtrajectory_alt_numpy(  # noqa: PLR0917
     p_vn: np.ndarray,
     p_vt: np.ndarray,
     pos_on_tplane_e_1: np.ndarray,
@@ -45,17 +45,13 @@ def compute_barycentric_backtrajectory_alt_numpy(
     )
     p_distv_bary_1 = np.where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_1[:, 0]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
-        z_ntdistv_bary_1 * primal_normal_cell_1[:, 1]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
+        z_ntdistv_bary_1 * primal_normal_cell_1[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
+        z_ntdistv_bary_1 * primal_normal_cell_1[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
     )
     p_distv_bary_2 = np.where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_2[:, 0]
-        + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
-        z_ntdistv_bary_1 * primal_normal_cell_2[:, 1]
-        + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
+        z_ntdistv_bary_1 * primal_normal_cell_2[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
+        z_ntdistv_bary_1 * primal_normal_cell_2[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
     )
     return p_distv_bary_1, p_distv_bary_2
 

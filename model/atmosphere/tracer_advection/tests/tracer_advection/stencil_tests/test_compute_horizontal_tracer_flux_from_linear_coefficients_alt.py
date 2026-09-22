@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
@@ -14,16 +15,12 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
-from collections.abc import Mapping
-
-import gt4py.next as gtx
-
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing import stencil_tests
 
 
-def compute_horizontal_tracer_flux_from_linear_coefficients_alt_numpy(
+def compute_horizontal_tracer_flux_from_linear_coefficients_alt_numpy(  # noqa: PLR0917
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     z_lsq_coeff_1: np.ndarray,
     z_lsq_coeff_2: np.ndarray,
@@ -40,10 +37,8 @@ def compute_horizontal_tracer_flux_from_linear_coefficients_alt_numpy(
     lvn_pos_inv = p_vn < 0.0
     return (
         np.where(lvn_pos_inv, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
-        + distv_bary_1
-        * np.where(lvn_pos_inv, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
-        + distv_bary_2
-        * np.where(lvn_pos_inv, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
+        + distv_bary_1 * np.where(lvn_pos_inv, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
+        + distv_bary_2 * np.where(lvn_pos_inv, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
     ) * p_mass_flx_e
 
 

@@ -29,9 +29,7 @@ def compute_ppm_slope_numpy(
     zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
         p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
     )
-    zfac = (p_cc[:, 2:] - p_cc[:, 1:-1]) / (
-        p_cellhgt_mc_now[:, 2:] + p_cellhgt_mc_now[:, 1:-1]
-    )
+    zfac = (p_cc[:, 2:] - p_cc[:, 1:-1]) / (p_cellhgt_mc_now[:, 2:] + p_cellhgt_mc_now[:, 1:-1])
     z_slope_a = (
         p_cellhgt_mc_now[:, 1:-1]
         / (p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 2:])
@@ -43,9 +41,7 @@ def compute_ppm_slope_numpy(
     zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
         p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
     )
-    zfac = (p_cc[:, 1:-1] - p_cc[:, 1:-1]) / (
-        p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1]
-    )
+    zfac = (p_cc[:, 1:-1] - p_cc[:, 1:-1]) / (p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1])
     z_slope_b = (
         p_cellhgt_mc_now[:, 1:-1]
         / (p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1])

@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
-def integrate_tracer_vertically_numpy(
+def integrate_tracer_vertically_numpy(  # noqa: PLR0917
     tracer_now: np.ndarray,
     rhodz_now: np.ndarray,
     p_mflx_tracer_v: np.ndarray,

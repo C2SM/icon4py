@@ -20,7 +20,7 @@ import numpy as np
 from icon4py.model.common import dimension as dims
 
 
-def apply_density_increment_numpy(
+def apply_density_increment_numpy(  # noqa: PLR0917
     rhodz_in: np.ndarray,
     p_mflx_contra_v: np.ndarray,
     deepatmo_divzl: np.ndarray,
@@ -36,8 +36,7 @@ def apply_density_increment_numpy(
       - upper interface (k   in KHalfDim) contributes with deepatmo_divzu
     """
     rhodz_incr = p_dtime * (
-        p_mflx_contra_v[:, 1:] * deepatmo_divzl
-        - p_mflx_contra_v[:, :-1] * deepatmo_divzu
+        p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
     )
     if even_timestep:
         rhodz_out = rhodz_in + rhodz_incr
@@ -106,5 +105,4 @@ def compute_tangential_wind_numpy(
     e2c2e = connectivities[dims.E2C2E]
     # rbf_vec_coeff_e_exp: (nedges, 4, 1) for broadcasting over K
     rbf_vec_coeff_e_exp = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-    # vn[e2c2e]: (nedges, 4, nlevels)
     return np.sum(rbf_vec_coeff_e_exp * vn[e2c2e], axis=1)

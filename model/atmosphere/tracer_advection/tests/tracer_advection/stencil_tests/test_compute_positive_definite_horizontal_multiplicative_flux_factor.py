@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Mapping
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,16 +15,12 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
-from collections.abc import Mapping
-
-import gt4py.next as gtx
-
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
-def compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(
+def compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(  # noqa: PLR0917
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     geofac_div: np.ndarray,
     p_cc: np.ndarray,

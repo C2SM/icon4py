@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Mapping
 from typing import Any
 
 import gt4py.next as gtx
@@ -14,16 +15,12 @@ import pytest
 from icon4py.model.atmosphere.tracer_advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
 )
-from collections.abc import Mapping
-
-import gt4py.next as gtx
-
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.testing import stencil_tests
 
 
-def integrate_tracer_horizontally_numpy(
+def integrate_tracer_horizontally_numpy(  # noqa: PLR0917
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
     p_mflx_tracer_h: np.ndarray,
     deepatmo_divh: np.ndarray,
