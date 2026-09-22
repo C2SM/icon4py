@@ -103,6 +103,7 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     a_hshr: gtx.float64,
     loutshs: bool,
     backend: gtx.int32,
+    external_gpu_stream: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception(
@@ -116,6 +117,9 @@ def diffusion_init(  # noqa: PLR0917 [too-many-positional-arguments]
     )
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
+    if backend_name.startswith("run_dace_"):
+        assert isinstance(actual_backend, dict)
+        actual_backend["external_gpu_stream"] = external_gpu_stream
     allocator = model_backends.get_allocator(actual_backend)
 
     # Diffusion parameters

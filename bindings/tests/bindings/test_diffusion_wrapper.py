@@ -179,6 +179,7 @@ def test_diffusion_wrapper_granule_inputs(  # noqa: PLR0917 [too-many-positional
             a_hshr=cfg.a_hshr,
             loutshs=cfg.loutshs,
             backend=wrapper_common.BackendIntEnum.DEFAULT,
+            external_gpu_stream=0,
         )
 
         # Check input arguments to Diffusion.init
@@ -373,6 +374,7 @@ def test_diffusion_wrapper_single_step(  # noqa: PLR0917 [too-many-positional-ar
         a_hshr=cfg.a_hshr,
         loutshs=cfg.loutshs,
         backend=wrapper_common.BackendIntEnum.DEFAULT,
+        external_gpu_stream=0,
     )
 
     # Call diffusion_run
