@@ -79,12 +79,6 @@ def compute_tangential_wind_numpy(
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
 ) -> np.ndarray:
     """Reconstruct tangential wind from normal components via RBF interpolation.
-
-    Computes: z_real_vt[e, k] = sum_{e' in E2C2E} rbf_vec_coeff_e[e, e'] * vn[e', k]
-
-    vn has shape (nedges, nlevels).
-    rbf_vec_coeff_e has shape (nedges, 4) (E2C2EDim = 4 neighbors).
-    Returns z_real_vt of shape (nedges, nlevels).
     """
     e2c2e = connectivities[dims.E2C2E]
     # rbf_vec_coeff_e_exp: (nedges, 4, 1) for broadcasting over K
