@@ -337,7 +337,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
                 (grid.num_edges, grid.num_levels), dtype=rhodz_now.dtype
             )
 
-        # Step 3: positive definite limiter factor uses p_tracer_now and rhodz_now
         if itype_hlimit == 4:
             r_m = compute_positive_definite_horizontal_multiplicative_flux_factor_numpy(
                 connectivities,
