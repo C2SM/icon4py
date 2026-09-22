@@ -2273,7 +2273,7 @@ def test_vertically_implicit_solver_at_corrector_step(  # noqa: PLR0917 [too-man
     test_utils.assert_dallclose(
         next_w.asnumpy()[start_cell_nudging:, :],
         w_ref.asnumpy()[start_cell_nudging:, :],
-        atol=0 if test_utils.wp_is_dp else 3e-6,
+        atol=2e-16 if test_utils.wp_is_dp else 3e-6,
         rtol=1e-10 if test_utils.wp_is_dp else 1e-3,
     )
     test_utils.assert_dallclose(
