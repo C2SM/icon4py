@@ -8,11 +8,15 @@
 
 from __future__ import annotations
 
+import copy
 import functools
+import importlib
+import inspect
 import os
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
@@ -35,6 +39,7 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory, nonhydro_states, prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.testing import paired_benchmark
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
     interpolation_field_source,
@@ -42,6 +47,72 @@ from icon4py.model.testing.fixtures.benchmark import (
 )
 from icon4py.model.testing.fixtures.datatest import backend_like
 from icon4py.model.testing.fixtures.stencil_tests import grid_manager
+
+
+@pytest.fixture(scope="session", autouse=True)
+def compiler_comparison(request):
+    """Build both choices through normal model options, only when requested."""
+    choice = request.config.getoption("dycore_compare")
+    if choice is None:
+        yield None
+        return
+    if len(request.session.items) != 1 or request.config.getoption("numprocesses", default=0):
+        raise pytest.UsageError("Select one dycore benchmark and run it without xdist.")
+    if request.config.getoption("backend") != "dace_gpu":
+        raise pytest.UsageError("Compiler comparisons require '--backend=dace_gpu'.")
+    if not request.config.getoption("benchmark_json"):
+        raise pytest.UsageError("Save the paired comparison with '--benchmark-json'.")
+    settings = {
+        "ICON4PY_DACE_THETA_FUSION": str(int(choice in {"theta", "combined"})),
+        "ICON4PY_DACE_SOLVER_FUSION": str(int(choice in {"solver", "combined"})),
+    }
+    targets = set()
+    if choice in {"theta", "combined"}:
+        targets.add("compute_rho_theta_pgrad_and_update_vn")
+    if choice in {"solver", "combined"}:
+        targets.update(
+            (
+                "vertically_implicit_solver_at_predictor_step",
+                "vertically_implicit_solver_at_corrector_step",
+            )
+        )
+    native_setup = solve_nh.setup_program
+    pairs = {}
+    original_rng = np.random.default_rng
+    sequence = np.random.SeedSequence(20260910)
+
+    def seeded_rng(seed=None):
+        return original_rng(sequence.spawn(1)[0] if seed is None else seed)
+
+    def setup(**kwargs):
+        native = native_setup(**{**kwargs, "backend": copy.deepcopy(kwargs["backend"])})
+        if kwargs["program"].__name__ in targets:
+            with pytest.MonkeyPatch.context() as options:
+                for name, setting in settings.items():
+                    options.setenv(name, setting)
+                variant = native_setup(**{**kwargs, "backend": copy.deepcopy(kwargs["backend"])})
+            pairs[id(native)] = (native, variant)
+        return native
+
+    def bind(model):
+        bindings = [
+            (name, pairs[id(value)]) for name, value in vars(model).items() if id(value) in pairs
+        ]
+        if len(bindings) != len(targets):
+            raise RuntimeError("Not all requested compiler options reached the dycore model.")
+
+        def select(arm):
+            for name, pair in bindings:
+                setattr(model, name, pair[0 if arm == "A" else 1])
+
+        return select
+
+    with pytest.MonkeyPatch.context() as patch:
+        for name in settings:
+            patch.setenv(name, "0")
+        patch.setattr(np.random, "default_rng", seeded_rng)
+        patch.setattr(solve_nh, "setup_program", setup)
+        yield dict(choice=choice, settings=settings, bind=bind, input_seed=20260910)
 
 
 @pytest.fixture(scope="module")
@@ -223,6 +294,7 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
     at_last_substep: bool,
     backend_like: model_backends.BackendLike,
     benchmark: Any,
+    compiler_comparison: dict[str, Any] | None,
 ) -> None:
     allocator = model_backends.get_allocator(backend_like)
     mesh = grid_manager.grid
@@ -335,11 +407,72 @@ def test_benchmark_solve_nonhydro(  # noqa: PLR0917 [too-many-positional-argumen
         lprep_adv=lprep_adv,
     )
 
-    benchmark(
+    callback = functools.partial(
         solve_nonhydro_timestep_variants,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
     )
+    if compiler_comparison is None:
+        benchmark(
+            solve_nonhydro_timestep_variants,
+            at_first_substep=at_first_substep,
+            at_last_substep=at_last_substep,
+        )
+    else:
+        compiler_modules = [
+            importlib.import_module(name)
+            for name in (
+                "gt4py.next.program_processors.runners.dace.scan_fusion",
+                "gt4py.next.program_processors.runners.dace.transformations.map_fusion_extended",
+                "gt4py.next.program_processors.runners.dace.workflow.translation",
+                "icon4py.model.common.model_options",
+            )
+        ]
+
+        xp = data_alloc.import_array_ns(allocator)
+        if mesh.num_levels != 120 or os.environ.get("GT4PY_COLLECT_METRICS_LEVEL") != "10":
+            raise ValueError("Reference comparisons require 120 levels and metrics level 10.")
+        paired_benchmark.compare(
+            benchmark,
+            callback,
+            select=compiler_comparison["bind"](solve_nonhydro),
+            roots=[callback],
+            synchronize=xp.cuda.runtime.deviceSynchronize,
+            metadata=dict(
+                choice=compiler_comparison["choice"],
+                settings=compiler_comparison["settings"],
+                input_seed=compiler_comparison["input_seed"],
+                grid=dict(
+                    cells=mesh.num_cells,
+                    edges=mesh.num_edges,
+                    vertices=mesh.num_vertices,
+                    levels=mesh.num_levels,
+                    limited_area=mesh.limited_area,
+                ),
+                gpu_properties={
+                    key: str(value) for key, value in xp.cuda.runtime.getDeviceProperties(0).items()
+                },
+                environment={
+                    key: os.environ.get(key)
+                    for key in (
+                        "GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE",
+                        "DACE_compiler_cuda_chiplet_number",
+                        "ICON4PY_BACKEND_WORKSPACE_SIZE",
+                        "GT4PY_COLLECT_METRICS_LEVEL",
+                        "GT4PY_BUILD_CACHE_DIR",
+                    )
+                },
+            ),
+            source_files=[__file__]
+            + [
+                inspect.getfile(module)
+                for module in (
+                    paired_benchmark,
+                    solve_nh,
+                    *compiler_modules,
+                )
+            ],
+        )
 
     if gtx_metrics.sources:
         gtx_metrics.dump_json(os.getenv("GT4PY_METRICS_OUTPUT_PATH", "gt4py_metrics.json"))

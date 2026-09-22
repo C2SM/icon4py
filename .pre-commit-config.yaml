@@ -14,7 +14,8 @@ repos:
     hooks:
       - id: pretty-format-toml
         args: [--autofix, --indent, "2"]
-        exclude: tach.toml
+        # uv-lock validates the generated lockfile without TOML reformatting.
+        exclude: ^(tach\.toml|uv\.lock)$
       - id: pretty-format-yaml
         args: [--autofix, --preserve-quotes, --indent, "2", --offset, "2"]
 

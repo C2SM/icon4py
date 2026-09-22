@@ -1,123 +1,123 @@
-# Global/120 compiler regression validation — 2026-09-21
+# Dycore compiler fusion: results and reproduction
 
-The combined compiler passes improve total solve_nonhydro granule performance
-on both GPUs. Global correctness passes, and no compiler-versus-frontend
-performance difference clears the conservative identical-arm control threshold.
-This completes the planned global check for the opt-in PR; it is not universal
-validation of all configurations.
+Both opt-in GT4Py passes improve the `solve_nonhydro` granule on regional and
+global meshes. The latest paired runs reproduce the approximate compute gains
+reported earlier. These results cover **120 levels, one GPU, and solve_nonhydro
+only**; they exclude diffusion and the rest of a model timestep.
 
-AMD job 644950, nid002934; NVIDIA job 875596, nid005231. Both COMPLETE markers and
-final status records are present. Mesh: 327,680 cells, 491,520 edges, 163,842
-vertices, 120 levels, limited_area=False. Each comparison uses 12 balanced
-quartets and interleaved identical-arm controls.
+## What the times mean
 
-| Original to both compiler passes  | Original ms | Compiler ms | Reduction |
-| --------------------------------- | ----------: | ----------: | --------: |
-| MI300A summed program device time |   35.632809 |   33.919402 | **4.81%** |
-| GH200 summed program device time  |   31.918701 |   30.499036 | **4.45%** |
-| MI300A granule wall time          |   36.543464 |   34.862733 | **4.60%** |
-| GH200 granule wall time           |   32.816230 |   31.427213 | **4.23%** |
+- **Compute**, previously called GPU/device time here: the sum of timings inside
+  the compiled GT4Py/DaCe programs. This includes their launches and
+  synchronization, not just pure GPU kernel-event durations.
+- **Granule wall**: elapsed time for the whole synchronized solve_nonhydro call,
+  including Python dispatch, runtime overhead and work outside the program timers.
 
-All four total contrasts are positive in all 12 quartets, clear the conservative
-control threshold, and show no detected order dependence. Device saving raw
-95% intervals: AMD [1.667498, 1.759317] ms; NVIDIA [1.413344, 1.425986] ms.
-Control-adjusted intervals remain positive: AMD [1.647030, 1.770042], NVIDIA
-[1.410049, 1.422505] ms. These times exclude diffusion and the rest of a model
-timestep.
+The metric scopes did not change. All percentages below are time reductions:
+`100 * (original - optimized) / original`.
 
 ## Global versus regional: combined compiler benefit
 
-Both compiler passes together reduce whole-granule GPU time on both meshes and
-both GPUs, with all 148 checked fields matching exactly. The regional grid has
-44,528 cells; the global grid has 327,680. Both use 120 levels. Each percentage
-compares the original and optimized code on the same GPU within one job.
+Earlier regional: AMD 641726 / GH200 873329. Earlier global: AMD 644950 / GH200
+875596\. Latest: **AMD 647055 (nid002424)** and **GH200 879091 (nid005260)**; each
+latest job measured both meshes on its node. Regional has 44,528 cells; global
+has 327,680.
 
-| GPU    | Mesh     | Original GPU ms | Optimized GPU ms | GPU-time reduction | Original wall ms | Optimized wall ms |        Wall-time reduction |
-| ------ | -------- | --------------: | ---------------: | -----------------: | ---------------: | ----------------: | -------------------------: |
-| MI300A | Regional |        5.426298 |         5.101430 |          **5.99%** |         6.343732 |          6.055173 |                  **4.55%** |
-| MI300A | Global   |       35.632809 |        33.919402 |          **4.81%** |        36.543464 |         34.862733 |                  **4.60%** |
-| GH200  | Regional |        3.857321 |         3.777862 |          **2.06%** |         4.903749 |          4.860488 | 0.88% observed; unresolved |
-| GH200  | Global   |       31.918701 |        30.499036 |          **4.45%** |        32.816230 |         31.427213 |                  **4.23%** |
+| GPU / mesh      | Earlier compute reduction | Latest compute reduction | Earlier wall reduction | Latest wall reduction |
+| --------------- | ------------------------: | -----------------------: | ---------------------: | --------------------: |
+| MI300A regional |                     5.99% |                **6.60%** |                  4.55% |             **5.88%** |
+| MI300A global   |                     4.81% |                **4.46%** |                  4.60% |             **4.31%** |
+| GH200 regional  |                     2.06% |                **2.13%** |      0.88%, unresolved |             **1.77%** |
+| GH200 global    |                     4.45% |                **4.74%** |                  4.23% | **4.65%, unresolved** |
 
-GPU time means summed per-program device time. Wall time includes the host-side
-cost of invoking the granule. All four GPU-time gains pass the identical-arm
-controls, as do three wall-time gains; GH200 regional wall time does not clear
-the noise threshold. These measurements cover solve_nonhydro, not a full model
-timestep. Percentages are time reductions, calculated as `(original - optimized) / original`.
+All latest compute gains pass the timing controls. GH200 global wall time does
+not: one identical-code control block took 101 ms instead of roughly 33 ms.
+Its observed saving, 1.516 ms, is smaller than the control uncertainty; the
+control-adjusted 95% interval is [-7.639, 4.917] ms. No block was discarded.
+GH200 regional wall time improves in this run; its earlier sequential-run
+11.59% increase did not recur, but the cause of that earlier slowdown remains unknown.
 
-The solver improvement is shared across meshes. Theta-rho provides an additional
-regional opportunity because its generated kernel structure differs:
+The 11–13% figures describe **individual programs inside the granule**:
 
-| Program or structural change    | MI300A regional      | MI300A global              | GH200 regional                              | GH200 global             |
-| ------------------------------- | -------------------- | -------------------------- | ------------------------------------------- | ------------------------ |
-| Two solvers, GPU-time reduction | **11.72%**           | **11.68%**                 | **4.81%**                                   | **11.19%**               |
-| Theta-rho, GPU-time change      | **13.37% reduction** | 0.29% increase; unresolved | Positive saving, but sensitive to run order | 0.16% increase; resolved |
-| Theta-rho kernel count          | 6 → 5                | 3 → 3                      | 6 → 5                                       | 3 → 3                    |
+| GPU / mesh      | Two solvers: earlier reduction | Two solvers: latest reduction | Theta-rho: earlier change   | Theta-rho: latest change      |
+| --------------- | -----------------------------: | ----------------------------: | --------------------------- | ----------------------------- |
+| MI300A regional |                         11.72% |                    **12.48%** | 13.37% reduction            | **13.83% reduction**          |
+| MI300A global   |                         11.68% |                    **11.64%** | 0.29% increase; unresolved  | 0.53% increase; unresolved    |
+| GH200 regional  |                          4.81% |                     **4.73%** | Saving, but order-sensitive | **2.63% reduction; resolved** |
+| GH200 global    |                         11.19% |                    **11.51%** | 0.16% increase; resolved    | 0.40% reduction; unresolved   |
 
-These program timings are contributions within the combined treatment, not
-separate measurements of each pass. The global solver gain outweighs the small
-GH200 theta-rho slowdown. On both meshes, the compiler implementation recovers
-the frontend implementation's benefit without a resolved performance difference;
-these gains must not be added to earlier frontend gains.
+These are program contributions within the combined treatment, not independent
+single-pass measurements. The solver percentage uses their summed times. On AMD
+regional, the three target programs occupied about half the original compute
+time: improving that half by roughly 12–14% gives 6.6% for the whole granule.
 
-This is a strong result for the tested configurations: the optimizations help
-both vendors and both meshes without requiring the scientist to rewrite the
-model equations. Each mesh used different nodes, so the difference between its
-percentage gains is descriptive, not a controlled measurement of the mesh's
-influence. It also does not establish cache capacity as the cause of the original
-vendor gap. Regional provenance and timing controls are in [REVIEW.md](REVIEW.md);
-global provenance and controls are recorded above and below.
+Earlier generated-code inspection found theta-rho **6 → 5 kernels on regional**
+and **3 → 3 on global**, on both GPUs. Each solver specialization lost one kernel
+and three temporary arrays, while explicit-wind preparation remained outside
+the forward scan. The latest timing runs did not recount kernels. Earlier direct
+compiler/frontend comparisons found no resolved performance difference; the
+compiler gains replace the frontend gains and must not be added to them.
 
-## Which work improved
+## How the measurements differ, and why
 
-The two solver programs account for essentially all the global device saving:
-AMD 14.186597→12.529389 ms (**11.68%**); NVIDIA 12.778721→11.349062 (**11.19%**).
-Their generated-code records show one fewer kernel and three fewer global
-temporary arrays in each specialization. Explicit-wind preparation stays outside
-the sequential forward scan. Compiler/frontend kernel-count and temporary-shape
-multisets match for both solvers.
+| Runs                                                    | Measurement procedure                                                                                                                                                            | Purpose and limitation                                                                                                                                |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Earlier GLOBAL_REVIEW results                           | Separate experiment plugin; synchronized wall calls timed with `perf_counter_ns`, plus GT4Py program timers; restored, alternating A/B blocks and A/A controls.                  | Controlled evidence for the compiler changes, using experimental infrastructure.                                                                      |
+| Intermediate ordinary checks, AMD 646116 / GH200 878418 | Normal pytest benchmark, separate off then on processes; measured-call means, without restored alternating blocks or A/A controls.                                               | Checked the normal model path, but small differences could be mixed with run order and changing state. This produced the GH200 regional disagreement. |
+| Latest paired checks, AMD 647055 / GH200 879091         | Existing dycore test and normal model options; `pytest-benchmark.pedantic` supplies the synchronized wall timer, with the same GT4Py program timers and controlled block design. | Keeps the earlier comparison controls while using the normal benchmark and production compiler configuration.                                         |
 
-Theta remains at three kernels, including two fused pressure/velocity kernels,
-and four global temporary arrays on both GPUs. The regional 6→5 kernel change
-is absent here. AMD theta's observed +0.29% time is unresolved. NVIDIA theta is
-0.006793 ms (**0.16%**) slower in the combined arm, raw interval for saving
-[-0.008113, -0.005473] ms, above its 0.002407 ms control threshold; control
-adjustment retains the negative sign. Keep this small per-program regression in
-the record. These combined-arm measurements do not establish that the theta pass
-caused it, and the positive whole-granule result does not mean every program
-improved.
+The earlier and latest paired designs use input seed 20260910, order seed
+20260915, **12 balanced ABBA/BAAB quartets**, interleaved identical-code controls,
+**five warmups and ten measured calls per block**. A is original; B enables both
+passes. State is restored before each block. Compilation, restoration, warmup
+and metrics bookkeeping are outside the timed interval. Block medians are
+combined into quartet contrasts; uncertainty is calculated across quartets,
+not by treating all calls as independent runs.
 
-The data now show solver fusion helps both meshes; the additional theta
-structural benefit is regional. No cache-capacity attribution follows from this
-comparison.
+A result is resolved only if its 95% interval excludes zero, the size of the change exceeds
+the identical-code noise threshold, and no order sensitivity is detected. This
+rule was kept for the latest results. The new analysis also reproduced the
+archived means and intervals from their raw samples. Harness and node differences
+remain, so reproduction means comparable gains under a documented procedure,
+not identical milliseconds or percentages on every node.
 
-## Compiler versus frontend solver (theta fixed)
+## Why regional benefits more on MI300A
 
-| GPU    | Frontend granule device ms | Compiler granule device ms | Saving and raw 95% interval, ms  |
-| ------ | -------------------------: | -------------------------: | -------------------------------- |
-| MI300A |                  33.990737 |                  33.996850 | -0.006114 [-0.042620, +0.030393] |
-| GH200  |                  30.481849 |                  30.478152 | +0.003697 [-0.002127, +0.009522] |
+The difference is specific to regional: **global solver gains are almost equal**
+on the two GPUs. Fusion combines compatible calculations and avoids writing
+some intermediate results to full arrays before reading them back. The cost
+saved depends on memory access, launches and the resource use of the fused code.
 
-Neither device contrast clears its control threshold. Some NVIDIA
-control-adjusted or wall-time intervals are positive, but their contrasts also
-remain below the conservative control thresholds; no extra compiler benefit is
-claimed. This is comparable observed performance, not formal equivalence.
+Earlier [profiling](DYCORE_GRANULE_ANALYSIS.md) found better small-grid cache
+reuse on GH200 and excess regional theta-rho traffic on AMD. It is plausible
+that GH200 already handles some small intermediate working sets more efficiently,
+so removing them saves less. Timing confirms a larger regional benefit on AMD;
+it does not separate cache capacity, register use, scheduling and launch costs
+into individual causes.
 
-## Validation and reproducibility
+## Reproduce and next step
 
-All four comparisons pass **148 fields exactly**, covering 3,645,277,412 finite
-values per comparison, maximum absolute error zero, plus scalar-state checks.
-Inputs match between comparisons within each device. Source hashes before/after
-are identical. All 24 recorded bundle source hashes match the archived sources.
-The region is independently checked through reported grid identity, levels and
-limited-area flag.
+Use [the reproduction guide](REPRODUCE_DYCORE_OPTIMIZATIONS.md), keeping the usual
+vendor environment and adding `--dycore-compare=combined` to the existing dycore
+benchmark. `theta` and `solver` select either pass separately. Run each mesh once;
+the comparison switches off/on internally. Read
+`benchmarks[0].extra_info.comparison` in its JSON, **not the pooled pytest table**.
 
-`python3 review_results.py` independently rebuilds block medians, program sums,
-quartet contrasts and intervals for both meshes. All agree with the reports;
-results are in `COMPILER_FUSION_RESULTS.json`. The source snapshot and raw reports are in each job
-directory. This review used only rsync for cluster access. No cluster jobs were executed
-and no compiler implementation was changed during the review.
+The latest jobs used ICON4Py model packages `d51c1027d`, GT4Py `403f9d99`, DaCe
+`5115128a`, and the paired testing helper including its scalar-array restoration
+fix. All **148 checked fields matched with maximum absolute difference zero**;
+cached timestep/CFL values were restored, and source checks passed. The testing
+helper in this change includes the GPU-tested scalar-array restoration fix.
 
-## Published evidence and archived captures
+The latest raw JSONs are in `amd_scripts/dycore_runs/`:
+`mi300a_{regional,global}120_paired_647055_nid002424.json` and
+`gh200_{regional,global}120_paired_879091_nid005260.json`; per-program timer files
+are at the repo root. Earlier compact evidence is in
+[COMPILER_FUSION_RESULTS.json](COMPILER_FUSION_RESULTS.json), with regional detail
+in [REVIEW.md](REVIEW.md). Raw block medians, sums and intervals were checked
+independently for the latest jobs.
 
-The compact reconstructed results are included in [COMPILER_FUSION_RESULTS.json](COMPILER_FUSION_RESULTS.json). The `review_results.py` checker, raw job directories, and frozen experiment sources mentioned above remain in the original `amd_scripts/compiler_stage_fusion_runs/` archive; they are not bundled into this small PR. [Current-branch setup and benchmark checks](REPRODUCE_DYCORE_OPTIMIZATIONS.md) use the published compiler dependency, without applying copied compiler patches.
+Proceed with review of the two opt-in passes and the tested benchmark integration.
+Another broad profiling run is not needed to establish their benefit. Repeat
+GH200 global only if a newly confirmed wall-time percentage is required; retain
+its current wall result as unresolved until then.
