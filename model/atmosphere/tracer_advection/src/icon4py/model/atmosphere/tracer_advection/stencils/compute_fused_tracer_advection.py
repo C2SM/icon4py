@@ -266,7 +266,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
         p_mflx_tracer_v if even_timestep else broadcast(0.0, (dims.CellDim, dims.KHalfDim))
     )
 
-    # Even: integrate vertically first; odd: pass through p_tracer_now as placeholder.
     p_tracer_after_vertical = (
         _integrate_tracer_vertically(
             tracer_now=p_tracer_now,
