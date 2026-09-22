@@ -296,7 +296,6 @@ class TestComputeTracerAdvectionBeforeHorizontalLimiterOdd(stencil_tests.Stencil
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
 
-        # Step 1: apply density increment (odd timestep uses rhodz_new)
         rhodz_ast2 = apply_density_increment_numpy(
             rhodz_new, p_mflx_contra_v, deepatmo_divzl, deepatmo_divzu, p_dtime, False
         )
