@@ -47,7 +47,6 @@ def integrate_tracer_vertically_numpy(  # noqa: PLR0917
         )
         return tracer_new
     return tracer_now
-    
 
 
 class TestIntegrateTracerVertically(stencil_tests.StencilTest):

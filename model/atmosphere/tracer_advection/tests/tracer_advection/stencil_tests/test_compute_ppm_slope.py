@@ -22,8 +22,7 @@ def compute_ppm_slope_numpy(
     p_cellhgt_mc_now: np.ndarray,
     elev: int,
 ) -> np.ndarray:
-    """Return z_slope for interior k levels.
-    """
+    """Return z_slope for interior k levels."""
     zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
         p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
     )

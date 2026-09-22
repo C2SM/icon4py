@@ -28,8 +28,7 @@ def apply_density_increment_numpy(  # noqa: PLR0917
     p_dtime: float,
     even_timestep: bool,
 ) -> np.ndarray:
-    """Compute the updated air-mass column density after the vertical mass flux increment.
-    """
+    """Compute the updated air-mass column density after the vertical mass flux increment."""
     rhodz_incr = p_dtime * (
         p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
     )
@@ -60,8 +59,7 @@ def reconstruct_linear_coefficients_svd_numpy(
     lsq_pseudoinv_2: np.ndarray,
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Reconstruct linear LSQ reconstruction coefficients via SVD pseudo-inverse.
-    """
+    """Reconstruct linear LSQ reconstruction coefficients via SVD pseudo-inverse."""
     c2e2c = connectivities[dims.C2E2C]
     lsq_pseudoinv_1_exp = np.expand_dims(lsq_pseudoinv_1, axis=-1)
     lsq_pseudoinv_2_exp = np.expand_dims(lsq_pseudoinv_2, axis=-1)
@@ -78,8 +76,7 @@ def compute_tangential_wind_numpy(
     rbf_vec_coeff_e: np.ndarray,
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
 ) -> np.ndarray:
-    """Reconstruct tangential wind from normal components via RBF interpolation.
-    """
+    """Reconstruct tangential wind from normal components via RBF interpolation."""
     e2c2e = connectivities[dims.E2C2E]
     rbf_vec_coeff_e_exp = np.expand_dims(rbf_vec_coeff_e, axis=-1)
     return np.sum(rbf_vec_coeff_e_exp * vn[e2c2e], axis=1)
