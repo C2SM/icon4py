@@ -49,7 +49,7 @@ DEFAULT_OUTPUT_BASENAME: Final[str] = "icon4py_output"
 #: Default prognostic output variables, selected by CF name from the
 #: ``states.data.PROGNOSTIC_CF_ATTRIBUTES`` catalog (which also holds fields the driver does
 #: not output, e.g. ``tangential_velocity``). The metadata, the state attribute
-#: (``icon_var_name``) and the vertical placement (``is_on_half_levels``) all come from that
+#: (``icon_var_name``) all come from that
 #: catalog; this list only selects which entries to emit.
 PROGNOSTIC_VARIABLES: Final[list[str]] = [
     "air_density",
@@ -83,7 +83,6 @@ def prognostic_state_to_dataarrays(
         state[name] = io_utils.to_data_array(
             field,
             metadata,
-            is_on_half_levels=bool(metadata.is_on_half_levels),
             to_host=True,
         )
     return state
@@ -242,7 +241,6 @@ def diagnostic_fields_to_dataarrays(
         state[name] = io_utils.to_data_array(
             field,
             metadata,
-            is_on_half_levels=bool(metadata.is_on_half_levels),
             to_host=True,
         )
     return state

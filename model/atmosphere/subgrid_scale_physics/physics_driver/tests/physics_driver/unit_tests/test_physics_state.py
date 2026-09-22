@@ -320,19 +320,13 @@ def test_diagnostics_store_allocates_from_metadata():
     assert store["tmx"] is buffers
 
 
-def test_diagnostics_store_rejects_half_level_output_declared_on_full_levels():
-    # The buffer shape comes from `dims` alone, so a declaration that still says
-    # is_on_half_levels while carrying KDim would quietly be one level too short.
+def test_diagnostics_store_allocates_a_half_level_output_from_khalfdim():
+    # Half levels are stated by the dimension alone, so a KHalfDim output must get
+    # one level more than a full-level one.
     grid = simple.simple_grid()
     store = physics_state.DiagnosticsStore(grid=grid)
-    props = {
-        "kh": model.FieldMetaData(
-            standard_name="test_field",
-            units="1",
-            dims=(dims.CellDim, dims.KDim),
-            is_on_half_levels=True,
-        )
-    }
 
-    with pytest.raises(ValueError, match="must contain KHalfDim"):
-        store.allocate("tmx", props)
+    buffers = store.allocate("tmx", {"kh": _meta(dims.CellDim, dims.KHalfDim)})
+
+    assert buffers["kh"].domain.dims == (dims.CellDim, dims.KHalfDim)
+    assert buffers["kh"].ndarray.shape == (grid.num_cells, grid.num_levels + 1)

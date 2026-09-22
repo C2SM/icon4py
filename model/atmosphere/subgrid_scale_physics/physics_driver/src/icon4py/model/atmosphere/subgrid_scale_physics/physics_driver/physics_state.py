@@ -444,11 +444,6 @@ class DiagnosticsStore:
                     f"diagnostic output '{name}' of process '{process_name}' declares no dims; "
                     "the store allocates its buffer from that metadata"
                 )
-            if props.is_on_half_levels and dims.KHalfDim not in props.dims:
-                raise ValueError(
-                    f"diagnostic output '{name}' of process '{process_name}' is declared on "
-                    "half levels; its dims must contain KHalfDim"
-                )
             buffers[name] = data_alloc.zero_field(self._grid, *props.dims, allocator=self._backend)
         self._store[process_name] = buffers
         return buffers

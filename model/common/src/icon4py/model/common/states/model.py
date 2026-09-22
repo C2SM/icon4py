@@ -62,9 +62,6 @@ class FieldMetaData:
     # TODO(halungge): dims should probably be required?
     dims: Sequence[gtx.Dimension] | None = None
     dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64 | None = None
-    #: whether the vertical dimension of the field lives on interface (half) levels
-    #: rather than full levels
-    is_on_half_levels: bool | None = None
     #: set when a consumer must handle this output specially; see ``FieldKind``
     kind: FieldKind | None = None
 

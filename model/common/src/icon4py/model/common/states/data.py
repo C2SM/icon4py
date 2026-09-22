@@ -35,7 +35,6 @@ PROGNOSTIC_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
         long_name="vertical air velocity component",
         units="m s-1",
         icon_var_name="w",
-        is_on_half_levels=True,
     ),
     normal_velocity=model.FieldMetaData(
         standard_name="normal_velocity",
