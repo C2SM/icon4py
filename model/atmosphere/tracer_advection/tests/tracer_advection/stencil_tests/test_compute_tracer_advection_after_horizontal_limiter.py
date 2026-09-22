@@ -58,8 +58,6 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
     ) -> dict:
         connectivities = stencil_tests.connectivities_asnumpy(grid)
 
-        # Even timestep (do_vertical_first==1): use p_tracer_after_vertical and (rhodz_ast2, rhodz_new)
-        # Odd timestep (do_vertical_first==0): use p_tracer_now and (rhodz_now, rhodz_ast2)
         if do_vertical_first == 1:
             tracer_now_for_h = p_tracer_after_vertical
             rhodz_for_h_now = rhodz_ast2
