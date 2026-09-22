@@ -72,7 +72,6 @@ def reconstruct_linear_coefficients_svd_numpy(
     """Reconstruct linear LSQ reconstruction coefficients via SVD pseudo-inverse.
     """
     c2e2c = connectivities[dims.C2E2C]
-    # Expand pseudoinverse to broadcast over K dimension: (ncells, 3, 1)
     lsq_pseudoinv_1_exp = np.expand_dims(lsq_pseudoinv_1, axis=-1)
     lsq_pseudoinv_2_exp = np.expand_dims(lsq_pseudoinv_2, axis=-1)
     # p_cc[c2e2c] has shape (ncells, 3, nlevels)
