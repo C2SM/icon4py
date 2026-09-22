@@ -19,23 +19,31 @@ The metric scopes did not change. All percentages below are time reductions:
 ## Global versus regional: combined compiler benefit
 
 Earlier regional: AMD 641726 / GH200 873329. Earlier global: AMD 644950 / GH200
-875596\. Latest: **AMD 647055 (nid002424)** and **GH200 879091 (nid005260)**; each
-latest job measured both meshes on its node. Regional has 44,528 cells; global
-has 327,680.
+875596\. Latest: **AMD 647055 (nid002424)** and **GH200 879091 (nid005260)**; both
+jobs measured both meshes on their respective nodes. A global-only confirmation,
+**GH200 879318**, repeated the same protocol on nid005260; its values are the
+latest GH200 global entries below. Regional has 44,528 cells; global has 327,680.
 
 | GPU / mesh      | Earlier compute reduction | Latest compute reduction | Earlier wall reduction | Latest wall reduction |
 | --------------- | ------------------------: | -----------------------: | ---------------------: | --------------------: |
 | MI300A regional |                     5.99% |                **6.60%** |                  4.55% |             **5.88%** |
 | MI300A global   |                     4.81% |                **4.46%** |                  4.60% |             **4.31%** |
 | GH200 regional  |                     2.06% |                **2.13%** |      0.88%, unresolved |             **1.77%** |
-| GH200 global    |                     4.45% |                **4.74%** |                  4.23% | **4.65%, unresolved** |
+| GH200 global    |                     4.45% |                **4.56%** |                  4.23% |             **4.46%** |
 
-All latest compute gains pass the timing controls. GH200 global wall time does
-not: one identical-code control block took 101 ms instead of roughly 33 ms.
-Its observed saving, 1.516 ms, is smaller than the control uncertainty; the
-control-adjusted 95% interval is [-7.639, 4.917] ms. No block was discarded.
-GH200 regional wall time improves in this run; its earlier sequential-run
-11.59% increase did not recur, but the cause of that earlier slowdown remains unknown.
+All latest compute and wall gains pass the timing controls. In GH200 global
+confirmation job 879318, compute fell from 31.730 to 30.282 ms and granule wall
+from 32.525 to 31.075 ms. The wall saving was 1.450 ms against a 0.060 ms
+identical-code noise threshold; its control-adjusted 95% interval was
+[1.426, 1.473] ms. All 12 wall contrasts were positive, with no detected order
+sensitivity. Code hashes, installed packages, initial inputs, node and timing
+schedule matched the preceding run.
+
+The preceding GH200 global run, 879091, remains an unresolved observation:
+4.65% lower wall time, but one identical-code control block took 101 ms instead
+of roughly 33 ms. The confirmation establishes a new controlled result; no
+samples were removed from either run. GH200 regional's earlier sequential-run
+11.59% wall increase also did not recur in the paired run; its cause remains unknown.
 
 The 11–13% figures describe **individual programs inside the granule**:
 
@@ -44,7 +52,7 @@ The 11–13% figures describe **individual programs inside the granule**:
 | MI300A regional |                         11.72% |                    **12.48%** | 13.37% reduction            | **13.83% reduction**          |
 | MI300A global   |                         11.68% |                    **11.64%** | 0.29% increase; unresolved  | 0.53% increase; unresolved    |
 | GH200 regional  |                          4.81% |                     **4.73%** | Saving, but order-sensitive | **2.63% reduction; resolved** |
-| GH200 global    |                         11.19% |                    **11.51%** | 0.16% increase; resolved    | 0.40% reduction; unresolved   |
+| GH200 global    |                         11.19% |                    **11.39%** | 0.16% increase; resolved    | 0.002% reduction; unresolved  |
 
 These are program contributions within the combined treatment, not independent
 single-pass measurements. The solver percentage uses their summed times. On AMD
@@ -60,11 +68,11 @@ compiler gains replace the frontend gains and must not be added to them.
 
 ## How the measurements differ, and why
 
-| Runs                                                    | Measurement procedure                                                                                                                                                            | Purpose and limitation                                                                                                                                |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Earlier GLOBAL_REVIEW results                           | Separate experiment plugin; synchronized wall calls timed with `perf_counter_ns`, plus GT4Py program timers; restored, alternating A/B blocks and A/A controls.                  | Controlled evidence for the compiler changes, using experimental infrastructure.                                                                      |
-| Intermediate ordinary checks, AMD 646116 / GH200 878418 | Normal pytest benchmark, separate off then on processes; measured-call means, without restored alternating blocks or A/A controls.                                               | Checked the normal model path, but small differences could be mixed with run order and changing state. This produced the GH200 regional disagreement. |
-| Latest paired checks, AMD 647055 / GH200 879091         | Existing dycore test and normal model options; `pytest-benchmark.pedantic` supplies the synchronized wall timer, with the same GT4Py program timers and controlled block design. | Keeps the earlier comparison controls while using the normal benchmark and production compiler configuration.                                         |
+| Runs                                                                        | Measurement procedure                                                                                                                                                            | Purpose and limitation                                                                                                                                |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Earlier GLOBAL_REVIEW results                                               | Separate experiment plugin; synchronized wall calls timed with `perf_counter_ns`, plus GT4Py program timers; restored, alternating A/B blocks and A/A controls.                  | Controlled evidence for the compiler changes, using experimental infrastructure.                                                                      |
+| Intermediate ordinary checks, AMD 646116 / GH200 878418                     | Normal pytest benchmark, separate off then on processes; measured-call means, without restored alternating blocks or A/A controls.                                               | Checked the normal model path, but small differences could be mixed with run order and changing state. This produced the GH200 regional disagreement. |
+| Latest paired checks, AMD 647055 / GH200 879091; global confirmation 879318 | Existing dycore test and normal model options; `pytest-benchmark.pedantic` supplies the synchronized wall timer, with the same GT4Py program timers and controlled block design. | Keeps the earlier comparison controls while using the normal benchmark and production compiler configuration.                                         |
 
 The earlier and latest paired designs use input seed 20260910, order seed
 20260915, **12 balanced ABBA/BAAB quartets**, interleaved identical-code controls,
@@ -103,21 +111,22 @@ benchmark. `theta` and `solver` select either pass separately. Run each mesh onc
 the comparison switches off/on internally. Read
 `benchmarks[0].extra_info.comparison` in its JSON, **not the pooled pytest table**.
 
-The latest jobs used ICON4Py model packages `d51c1027d`, GT4Py `403f9d99`, DaCe
-`5115128a`, and the paired testing helper including its scalar-array restoration
+The paired jobs, including confirmation 879318, used ICON4Py model packages
+`d51c1027d`, GT4Py `403f9d99`, DaCe `5115128a`, and the paired testing helper including its scalar-array restoration
 fix. All **148 checked fields matched with maximum absolute difference zero**;
 cached timestep/CFL values were restored, and source checks passed. The testing
 helper in this change includes the GPU-tested scalar-array restoration fix.
 
 The latest raw JSONs are in `amd_scripts/dycore_runs/`:
 `mi300a_{regional,global}120_paired_647055_nid002424.json` and
-`gh200_{regional,global}120_paired_879091_nid005260.json`; per-program timer files
-are at the repo root. Earlier compact evidence is in
+`gh200_{regional,global}120_paired_879091_nid005260.json`, plus the confirmation
+`gh200_global120_paired_879318_nid005260.json`; per-program timer files are at the
+repo root. Earlier compact evidence is in
 [COMPILER_FUSION_RESULTS.json](COMPILER_FUSION_RESULTS.json), with regional detail
 in [REVIEW.md](REVIEW.md). Raw block medians, sums and intervals were checked
 independently for the latest jobs.
 
 Proceed with review of the two opt-in passes and the tested benchmark integration.
-Another broad profiling run is not needed to establish their benefit. Repeat
-GH200 global only if a newly confirmed wall-time percentage is required; retain
-its current wall result as unresolved until then.
+The GH200 global confirmation closes the remaining wall-time measurement
+question. No further run is needed for this comparison; it does not settle the
+separate question of how much of the saving comes from each hardware mechanism.

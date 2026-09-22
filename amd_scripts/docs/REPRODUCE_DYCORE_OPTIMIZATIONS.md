@@ -147,8 +147,9 @@ statistic after seeing the outcome or discard an unsuccessful run.
 The paired integration completed on both GPUs and both meshes in AMD job
 647055 and NVIDIA job 879091, including the scalar-array restoration fix.
 All 148 checked fields matched with maximum absolute difference zero. Approximate
-compute gains reproduced on all four configurations; GH200 global wall time
-remained unresolved under its controls. See the latest comparison in
+compute gains reproduced on all four configurations. GH200 global wall time
+was unresolved in job 879091; confirmation job 879318 on the same node and code
+measured a 4.46% wall reduction that passed the controls. See the latest comparison in
 [GLOBAL_REVIEW.md](GLOBAL_REVIEW.md). This is not a guarantee of identical
 percentages on another node; keep both successful and unresolved comparisons.
 
@@ -179,6 +180,6 @@ and the numerical/structural pass tests live in GT4Py. The ordinary benchmark co
 Global gains on both GPUs and the AMD regional gain carried over; GH200 regional
 did not reproduce a clear mean gain and had worse wall time. Those sequential
 runs are recorded in GLOBAL_REVIEW.md. The paired pytest mode above subsequently completed on both GPUs and both meshes
-(AMD 647055, NVIDIA 879091); its results and remaining wall-time caveat are also
-recorded there. Use the helper version containing the scalar-array restoration
+(AMD 647055, NVIDIA 879091), followed by the successful GH200 global wall-time
+confirmation 879318. These results are recorded there. Use the helper version containing the scalar-array restoration
 fix tested in those jobs.
