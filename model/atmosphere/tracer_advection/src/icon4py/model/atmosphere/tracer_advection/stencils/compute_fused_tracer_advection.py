@@ -244,7 +244,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
         even_timestep=even_timestep,
     )
 
-    # Even: compute PPM vertical flux; odd: zeros (vertical step happens later in after program).
     p_mflx_tracer_v = (
         _compute_ppm4gpu_flux(
             p_cc=p_tracer_now,
