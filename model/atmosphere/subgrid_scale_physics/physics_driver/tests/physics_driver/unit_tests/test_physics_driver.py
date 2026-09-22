@@ -41,23 +41,11 @@ def _tc(
     interval: datetime.timedelta = _DT,
     start: datetime.datetime = _T0,
     end: datetime.datetime = _T0 + datetime.timedelta(days=1),
-    enable_process: bool = True,
 ) -> ProcessTimeControl:
-    return ProcessTimeControl(
-        interval=interval,
-        start_date=start,
-        end_date=end,
-        enable_process=enable_process,
-    )
+    return ProcessTimeControl(interval=interval, start_date=start, end_date=end)
 
 
 class TestProcessTimeControl:
-    def test_enable_process_defaults_true(self) -> None:
-        assert _tc().enable_process is True
-
-    def test_is_active_false_when_disabled(self) -> None:
-        assert _tc(enable_process=False).is_active(_T0) is False
-
     def test_is_active_false_when_interval_zero(self) -> None:
         assert _tc(interval=datetime.timedelta(0)).is_active(_T0) is False
 
@@ -105,12 +93,9 @@ class TestProcessTimeControl:
         with pytest.raises(ValueError, match="integer multiple"):
             _tc(interval=1.5 * _DT).validate_interval(_DT)
 
-    def test_validate_interval_rejects_zero_interval_when_enabled(self) -> None:
+    def test_validate_interval_rejects_zero_interval(self) -> None:
         with pytest.raises(ValueError, match="positive"):
             _tc(interval=datetime.timedelta(0)).validate_interval(_DT)
-
-    def test_validate_interval_skips_disabled_process(self) -> None:
-        _tc(interval=1.5 * _DT, enable_process=False).validate_interval(_DT)
 
 
 def test_physics_process_construction() -> None:
@@ -131,7 +116,7 @@ def test_physics_process_construction() -> None:
     assert proc.name == "muphys"
     assert proc.component is not None
     assert proc.state is state
-    assert proc.time_control.enable_process
+    assert proc.time_control.interval == _DT
 
 
 @dataclasses.dataclass
@@ -193,10 +178,14 @@ class RecordingCoupling:
     events: list = dataclasses.field(default_factory=list)
 
     # EntryState surface
-    def diagnose_from(self, prognostic, tracers) -> None:
+    def diagnose(self, prognostic, tracers) -> None:
         self.events.append(("diagnose", prognostic))
 
     # TendencyAccumulators surface
+    @property
+    def acc(self) -> dict:
+        return {}
+
     def zero(self) -> None:
         self.events.append(("zero",))
 
@@ -304,41 +293,6 @@ def test_run_raises_for_non_multiple_interval() -> None:
     assert comp.call_count == 0
 
 
-def test_disabled_process_is_never_invoked() -> None:
-    state = RecordingComponentState()
-    comp = RecordingComponent(
-        outputs={"tend_temperature": "X"},
-        output_kinds={"tend_temperature": model.FieldKind.TENDENCY},
-    )
-    driver, coupling = _driver(
-        [
-            PhysicsProcess(
-                name="disabled",
-                component=comp,
-                state=state,
-                time_control=_tc(enable_process=False),
-            )
-        ]
-    )
-
-    driver.run(
-        prognostic="prog",
-        tracers="tracers",
-        dtime=_DT,
-        simulation_current_datetime=_T0,
-    )
-
-    assert comp.call_count == 0
-    assert state.input_calls == []
-    # entry diagnosis and the (empty) apply still frame the step
-    assert coupling.events == [
-        ("allocate", "disabled"),
-        ("diagnose", "prog"),
-        ("zero",),
-        ("apply", 300.0),
-    ]
-
-
 def test_out_of_window_process_does_nothing() -> None:
     state = RecordingComponentState()
     comp = RecordingComponent(
@@ -361,10 +315,12 @@ def test_out_of_window_process_does_nothing() -> None:
 
     assert comp.call_count == 0
     assert state.input_calls == []
+    # the accumulate call still happens, with nothing in it to add
     assert coupling.events == [
         ("allocate", "future"),
         ("diagnose", "prog"),
         ("zero",),
+        ("accumulate", {}),
         ("apply", 300.0),
     ]
 

@@ -42,6 +42,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.common.grid import base as base_grid
@@ -118,7 +120,7 @@ class EntryState:
             grid, dims.CellDim, dims.KDim, allocator=backend
         )
 
-        # Pointers into the model state — bound by every diagnose_from call
+        # Pointers into the model state — bound by every diagnose call
         self.exner: gtx.Field | None = None
         self.theta_v: gtx.Field | None = None
         self.rho: gtx.Field | None = None
@@ -126,7 +128,7 @@ class EntryState:
         self.w: gtx.Field | None = None
         self.tracers: tracer_states.TracerState | None = None
 
-    def diagnose_from(
+    def diagnose(
         self,
         prognostic: prognostics.PrognosticState,
         tracers: tracer_states.TracerState,
@@ -198,25 +200,33 @@ class TendencyAccumulators:
 
     def __init__(self, *, backend: gtx_typing.Backend | None = None) -> None:
         self._backend = backend
-        self.acc: dict[str, gtx.Field] = {}
+        self._acc: dict[str, gtx.Field] = {}
+
+    @property
+    def acc(self) -> Mapping[str, gtx.Field]:
+        """The tendencies accumulated so far this step, keyed by output name."""
+        return self._acc
 
     def zero(self) -> None:
         """Reset all accumulators; called by the driver at the start of every run."""
-        for buffer in self.acc.values():
+        for buffer in self._acc.values():
             buffer.ndarray[...] = 0.0  # type: ignore[index] # NDArrayObject Protocol doesn't support this
 
     def accumulate(self, outputs: dict, outputs_properties: dict[str, model.FieldMetaData]) -> None:
         """Add a process's tendency outputs to the per-variable sums.
 
         Element-wise sum with no neighbor access, so a plain array operation on
-        the field buffers rather than a stencil.
+        the field buffers rather than a stencil. A process that did not run this
+        step has no outputs and contributes nothing.
         """
+        if not outputs:
+            return
         for name, props in outputs_properties.items():
             if props.kind != model.FieldKind.TENDENCY:
                 continue
             field = outputs[name]
-            if (buffer := self.acc.get(name)) is None:
-                buffer = self.acc[name] = gtx.zeros(
+            if (buffer := self._acc.get(name)) is None:
+                buffer = self._acc[name] = gtx.zeros(
                     field.domain, dtype=field.dtype, allocator=self._backend
                 )
             buffer.ndarray[...] += field.ndarray  # type: ignore[index] # NDArrayObject Protocol doesn't support this
@@ -318,13 +328,16 @@ class ApplyToPrognostic:
     def __call__(
         self,
         entry_state: EntryState,
-        accumulators: TendencyAccumulators,
+        acc: Mapping[str, gtx.Field],
         dt_seconds: float,
     ) -> None:
-        """Write the accumulated tendencies to the model state — through the facade's pointers."""
-        acc = accumulators.acc
+        """Write the accumulated tendencies to the model state — through the facade's pointers.
+
+        Takes the summed tendencies themselves, not the object that summed them,
+        so the application depends on nothing but a mapping of fields by name.
+        """
         tracers = entry_state.tracers
-        assert tracers is not None, "diagnose_from must run before apply"
+        assert tracers is not None, "diagnose must run before apply"
 
         # 1. Tracers: q += dt * sum of tendencies (mo_interface_iconam_aes:513)
         for name in MOISTURE_SPECIES:

@@ -111,7 +111,7 @@ def _entry_state(grid) -> physics_state.EntryState:
 # ---------------------------------------------------------------------------
 
 
-def test_diagnose_from_fills_working_fields_and_leaves_inputs_untouched():
+def test_diagnose_fills_working_fields_and_leaves_inputs_untouched():
     """The dyn2phy diagnosis fills plausible fields and is strictly read-only.
 
     Read-only-ness is the load-bearing invariant of parallel coupling: the
@@ -125,7 +125,7 @@ def test_diagnose_from_fills_working_fields_and_leaves_inputs_untouched():
     exner_before = prognostic.exner.asnumpy().copy()
     vn_before = prognostic.vn.asnumpy().copy()
 
-    ws.diagnose_from(prognostic, tracers)
+    ws.diagnose(prognostic, tracers)
 
     # wiring smoke test: physically plausible diagnostics
     assert 200.0 < ws.diagnostics.temperature.asnumpy().mean() < 320.0
@@ -229,7 +229,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
     apply_once = _apply_to_prognostic(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
-    ws.diagnose_from(prognostic, tracers)
+    ws.diagnose(prognostic, tracers)
     exner_before = prognostic.exner.asnumpy().copy()
     theta_v_before = prognostic.theta_v.asnumpy().copy()
 
@@ -245,7 +245,7 @@ def test_apply_updates_tracers_w_and_thermodynamics_once():
         tend_w=tend_w,
     )
 
-    apply_once(ws, acc, dt_seconds=dt)
+    apply_once(ws, acc.acc, dt_seconds=dt)
 
     np.testing.assert_allclose(tracers.qv.asnumpy(), 1e-3 + 1e-7 * dt, rtol=1e-12)
     np.testing.assert_allclose(prognostic.w.asnumpy(), 1e-4 * dt, rtol=1e-12)
@@ -264,7 +264,7 @@ def test_apply_projects_accumulated_wind_tendency_to_vn():
     apply_once = _apply_to_prognostic(grid)
     prognostic = _uniform_prognostic(grid, exner=0.95, theta_v=300.0)
     tracers = _tracer_state(grid, qv=1e-3)
-    ws.diagnose_from(prognostic, tracers)
+    ws.diagnose(prognostic, tracers)
     dt = 300.0
     acc = _accumulated(
         grid,
@@ -272,7 +272,7 @@ def test_apply_projects_accumulated_wind_tendency_to_vn():
         tend_v=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
 
-    apply_once(ws, acc, dt_seconds=dt)
+    apply_once(ws, acc.acc, dt_seconds=dt)
 
     np.testing.assert_allclose(prognostic.vn.asnumpy(), 1e-4 * dt, rtol=1e-12)
 
@@ -283,11 +283,11 @@ def test_apply_rejects_a_lone_horizontal_wind_tendency():
     grid = simple.simple_grid()
     ws = _entry_state(grid)
     apply_once = _apply_to_prognostic(grid)
-    ws.diagnose_from(_uniform_prognostic(grid, exner=0.95, theta_v=300.0), _tracer_state(grid))
+    ws.diagnose(_uniform_prognostic(grid, exner=0.95, theta_v=300.0), _tracer_state(grid))
     acc = _accumulated(grid, tend_u=data_alloc.constant_field(grid, 1e-4, dims.CellDim, dims.KDim))
 
     with pytest.raises(ValueError, match="applied as a pair"):
-        apply_once(ws, acc, dt_seconds=300.0)
+        apply_once(ws, acc.acc, dt_seconds=300.0)
 
 
 def test_entry_state_groups_diagnostics_in_common_container():

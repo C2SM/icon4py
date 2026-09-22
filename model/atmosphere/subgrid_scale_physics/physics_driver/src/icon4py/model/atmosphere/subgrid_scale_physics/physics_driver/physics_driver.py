@@ -69,8 +69,8 @@ class PhysicsProcess:
         entry_state: physics_state.EntryState,
         step_start_datetime: datetime.datetime,
         dtime: datetime.timedelta,
-    ) -> dict[str, Any] | None:
-        """This step's outputs: freshly computed, recycled, or ``None`` if it does not run.
+    ) -> dict[str, Any]:
+        """This step's outputs: freshly computed, recycled, or empty if it does not run.
 
         Takes the entry state rather than the component's input mapping: building
         that mapping may derive inputs of its own, which must not happen on a step
@@ -78,8 +78,10 @@ class PhysicsProcess:
         """
         tc = self.time_control
         tc.validate_interval(dtime)
-        if not tc.enable_process or not tc.is_in_window(step_start_datetime):
-            return None
+        # Outside its window the process contributes nothing -- and must not reach the
+        # recycling branch below, which would compute once on the first step.
+        if not tc.is_in_window(step_start_datetime):
+            return {}
         # Compute on a firing (active) step, and also on the first in-window step -- when
         # there is nothing cached to recycle yet. Otherwise reuse the last computed forcing.
         if tc.is_active(step_start_datetime) or self._cached_output is None:
@@ -155,11 +157,10 @@ class PhysicsDriver:
         simulation_current_datetime: datetime.datetime,
     ) -> None:
         step_start_datetime = simulation_current_datetime - dtime
-        self._entry.diagnose_from(prognostic, tracers)
+        self._entry.diagnose(prognostic, tracers)
         self._accumulators.zero()
         dt_seconds = dtime.total_seconds()
         for process in self._processes:
             outputs = process.run(self._entry, step_start_datetime, dtime)
-            if outputs is not None:
-                self._accumulators.accumulate(outputs, process.component.outputs_properties)
-        self._apply(self._entry, self._accumulators, dt_seconds)
+            self._accumulators.accumulate(outputs, process.component.outputs_properties)
+        self._apply(self._entry, self._accumulators.acc, dt_seconds)
