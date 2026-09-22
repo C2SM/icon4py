@@ -88,11 +88,9 @@ class TestComputeTracerAdvectionAfterHorizontalLimiter(stencil_tests.StencilTest
         else:
             p_tracer_new = tracer_now_for_h.copy()
 
-        p_mflx_tracer_v_out = p_mflx_tracer_v.copy()
-
         return dict(
             p_mflx_tracer_h=p_mflx_tracer_h,
-            p_mflx_tracer_v=p_mflx_tracer_v_out,
+            p_mflx_tracer_v=p_mflx_tracer_v,
             p_tracer_new=p_tracer_new,
         )
 
