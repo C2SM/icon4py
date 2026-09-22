@@ -50,11 +50,7 @@ def apply_positive_definite_horizontal_multiplicative_flux_factor_numpy(
     p_mflx_tracer_h: np.ndarray,
     connectivities: Mapping[gtx.FieldOffset, np.ndarray],
 ) -> np.ndarray:
-    """Scale horizontal tracer fluxes by the positive-definite limiter factor r_m.
-
-    Upwind fluxes (p_mflx_tracer_h >= 0) use the upwind cell's r_m (E2C[0]),
-    downwind fluxes use the downwind cell's r_m (E2C[1]).
-    """
+    """Scale horizontal tracer fluxes by the positive-definite limiter factor r_m."""
     e2c = connectivities[dims.E2C]
     return np.where(
         p_mflx_tracer_h >= 0.0,
