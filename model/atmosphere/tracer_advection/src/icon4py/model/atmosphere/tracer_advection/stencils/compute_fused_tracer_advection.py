@@ -284,7 +284,6 @@ def _compute_tracer_advection_before_horizontal_limiter(
         else p_tracer_now + broadcast(0.0, (dims.CellDim, dims.KDim))
     )
 
-    # Even: horizontal flux from vertically-integrated tracer; odd: from p_tracer_now directly.
     tracer_for_h = (
         p_tracer_after_vertical
         if even_timestep
